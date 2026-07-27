@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Community support
+    url: https://github.com/getspctre/spctre/discussions
+    about: Ask installation, integration, and usage questions in GitHub Discussions.
+  - name: Security vulnerability report
+    url: mailto:security@spctre.dev
+    about: Report suspected vulnerabilities privately; do not open a public issue.

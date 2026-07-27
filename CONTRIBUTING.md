@@ -27,6 +27,17 @@ pnpm oss:check
 pnpm typecheck
 ```
 
+## Community process
+
+Please follow [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md). Use
+[GitHub Discussions](https://github.com/getspctre/spctre/discussions) for
+questions and early design conversations; use Issues for reproducible bugs and
+scoped feature requests. The pull-request template lists the contribution
+requirements enforced by CI.
+
+Repository governance and maintainer responsibilities are described in
+[GOVERNANCE.md](GOVERNANCE.md).
+
 ## Security
 
 Do not open public issues for vulnerabilities. Follow `SECURITY.md`.
