@@ -5,20 +5,25 @@ packages:
 
 overrides:
   '@grpc/grpc-js': '>=1.14.4'
-  axios: 1.17.0
+  axios: 1.18.1
   axios>form-data: 4.0.6
   esbuild: 0.28.1
   '@types/request>form-data': 2.5.6
   '@opentelemetry/core': 2.8.0
   hono: 4.12.25
-  js-yaml@4.1.1: 4.2.0
+  js-yaml@^4.0.0: 4.3.0
   js-yaml@<3.15.0: 3.15.0
-  postcss: 8.5.14
+  postcss: 8.5.23
   protobufjs: 8.6.4
   uuid: 11.1.1
   ws: ^8.21.0
   joi: ^17.13.4
   '@babel/core': ^7.29.6
+  brace-expansion@^2.0.0: 2.1.2
+  brace-expansion@^5.0.0: 5.0.8
+  fast-uri: 3.1.4
+  websocket-driver: 0.7.5
+  sharp: 0.35.3
 
 # Hold newly published dependency versions for 3 days before normal installs.
 # This gives the ecosystem time to detect and yank compromised releases.
@@ -39,3 +44,6 @@ allowBuilds:
 
 pmOnFail: ignore
 
+auditConfig:
+  ignoreGhsas:
+    - GHSA-mh99-v99m-4gvg

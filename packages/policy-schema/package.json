@@ -36,7 +36,7 @@
     "test:vendor-sdk-matrix": "vitest run tests/vendor-sdk-compatibility.test.ts"
   },
   "dependencies": {
-    "js-yaml": "^4.2.0"
+    "js-yaml": "^4.3.0"
   },
   "devDependencies": {
     "@mastra/core": "1.50.1",

@@ -19,12 +19,12 @@
     "@spctre/ui": "workspace:*",
     "@upstash/ratelimit": "^2.0.8",
     "@upstash/redis": "^1.38.0",
-    "firebase": "^12.14.0",
+    "firebase": "^12.16.0",
     "fumadocs-core": "^16.10.5",
     "fumadocs-ui": "^16.10.5",
     "jose": "^6.2.3",
     "lucide-react": "^1.17.0",
-    "next": "^16.2.9",
+    "next": "^16.2.11",
     "next-intl": "^4.13.1",
     "postgres": "^3.4.9",
     "react": "^19.2.7",
@@ -33,7 +33,7 @@
     "zod": "^4.4.3"
   },
   "optionalDependencies": {
-    "@google-cloud/firestore": "^8.6.0",
+    "@google-cloud/firestore": "^8.7.0",
     "@google-cloud/storage": "^7.21.0",
     "@node-saml/node-saml": "5.1.0"
   },
