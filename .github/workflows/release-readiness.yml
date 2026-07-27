@@ -1,0 +1,74 @@
+name: Release readiness
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  attestations: write
+  id-token: write
+
+jobs:
+  verify:
+    name: Build and verify release artifacts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 25
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate API clients
+        run: pnpm generate
+
+      - name: Build release-managed packages
+        run: |
+          pnpm --filter @spctre/policy-schema build
+          pnpm --filter @spctre/cli build
+          pnpm --filter @spctre/sdk build
+
+      - name: Verify Changesets state
+        run: pnpm changeset status
+
+      - name: Pack release artifacts
+        run: |
+          mkdir -p release-artifacts
+          pnpm --filter @spctre/policy-schema pack --pack-destination release-artifacts
+          pnpm --filter @spctre/cli pack --pack-destination release-artifacts
+          pnpm --filter @spctre/sdk pack --pack-destination release-artifacts
+
+      - name: Smoke-test packed packages
+        run: |
+          mkdir release-smoke-test
+          cd release-smoke-test
+          npm init --yes
+          npm install ../release-artifacts/*.tgz
+          npx --no-install spctre --help
+          node --input-type=module -e "import('@spctre/sdk').then(({ createSpctreClient }) => { if (typeof createSpctreClient !== 'function') process.exit(1) })"
+
+      - name: Verify npm publication dry run
+        run: |
+          for package in packages/policy-schema packages/cli packages/sdk; do
+            (cd "$package" && npm publish --dry-run --access public --ignore-scripts)
+          done
+
+      - name: Generate SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          path: release-artifacts
+          artifact-name: spctre-release-sbom
+
+      - name: Attest release artifacts
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-path: release-artifacts/*.tgz

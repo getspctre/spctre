@@ -20,6 +20,8 @@
     "test": "pnpm -r --if-present test && pnpm --filter @spctre/web test:integration",
     "generate": "pnpm --filter @spctre/api-contracts emit && pnpm --filter @spctre/sdk generate",
     "generate:python-sdk": "bash scripts/generate-python-sdk.sh",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
     "postinstall": "pnpm --filter @spctre/policy-schema --filter @spctre/cli build",
     "lint:deadcode": "knip",
     "lint:security": "gitleaks detect --redact --no-git && osv-scanner -r .",
@@ -30,6 +32,7 @@
   },
   "packageManager": "pnpm@11.13.0",
   "devDependencies": {
+    "@changesets/cli": "2.31.1",
     "@openapitools/openapi-generator-cli": "^2.38.0",
     "eslint": "^10.6.0",
     "knip": "^6.24.0",
