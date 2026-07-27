@@ -1,0 +1,108 @@
+name: Public CI
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: public-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  oss:
+    name: OSS checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 25
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm oss:check
+
+  quality:
+    name: Typecheck and lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 25
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm generate
+      - run: pnpm typecheck
+      - run: pnpm lint
+
+  test:
+    name: Package tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 25
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm generate
+      - run: pnpm --filter @spctre/policy-schema build
+      - run: pnpm -r --if-present test --reporter=verbose
+
+  dependencies:
+    name: Dependency audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 25
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm audit --prod --audit-level=high
+
+  secrets:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  dco:
+    name: DCO sign-off
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Verify commits are signed off
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          missing=""
+          for commit in $(git log --format=%H "$BASE_SHA..$HEAD_SHA"); do
+            if ! git log -1 --format=%B "$commit" | grep -Eiq '^Signed-off-by: .+ <.+@.+>$'; then
+              missing="${missing}${commit}\n"
+            fi
+          done
+          if [ -n "$missing" ]; then
+            echo "The following commits are missing DCO Signed-off-by trailers:"
+            echo -e "$missing"
+            exit 1
+          fi
