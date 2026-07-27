@@ -1,0 +1,86 @@
+---
+title: Python SDK
+description: How Python agents integrate with Spctre today — framework adapters and direct REST calls.
+---
+
+<Callout type="warn">
+  A published `spctre` Python package is not yet available on PyPI. The content below reflects how Python agents integrate with Spctre today.
+</Callout>
+
+Python agents have two integration paths: the **framework adapter** (zero-code, recommended) or **direct REST calls** via `httpx` or `requests`.
+
+## Framework adapter (recommended)
+
+For CrewAI, LangChain, LangGraph, AutoGen, Google ADK, AWS Bedrock, Azure AI, and Gemini agents, the CLI generates a `sitecustomize.py` adapter that patches framework internals — no SDK calls in your agent code.
+
+```bash
+spctre init --workspace <slug> --agent <agent-id>
+spctre watch --framework crewai   # replace with your framework
+```
+
+Run your agent through the Spctre wrapper to activate the adapter:
+
+```bash
+.spctre/spctre-python my_agent.py
+```
+
+See [Framework adapters](/help-docs/ai-agents/adapters/framework-adapters) for the full list of supported frameworks and how the adapter works.
+
+## Direct REST — submitting evidence
+
+For custom frameworks or agents that don't use a supported adapter, call the evidence endpoint directly:
+
+```python
+import httpx, os
+
+client = httpx.AsyncClient(
+    base_url=os.environ["SPCTRE_API_URL"],
+    headers={"Authorization": f"Bearer {os.environ['SPCTRE_API_TOKEN']}"},
+)
+
+await client.post("/api/v1/evidence", json={
+    "decisionId": "dec_01j9xk2f",
+    "agentId": "payments-agent",
+    "connector": "stripe",
+    "action": "charge",
+    "environment": "production",
+    "status": "ALLOW",
+    "reason": "Amount within approved tier",
+    "runtimeTarget": {"stack": "CUSTOM"},
+    "policyRefs": ["br_01j9xk"],
+    "artifactHash": "sha256:abc123…",
+    "policyContext": [
+        {
+            "scope": "CONNECTOR",
+            "branchId": "br_01j9xk",
+            "revisionId": "rev_99",
+            "artifactHash": "sha256:abc123…",
+        }
+    ],
+    "sessionId": "sess_abc123",
+})
+```
+
+## Token management
+
+The CLI handles token rotation automatically when you run `spctre watch`. For long-running Python processes that call the REST API directly, read the token from `.spctre/spctre-config.json` and re-read it when the access token expires (every hour):
+
+```python
+import json, pathlib
+
+def load_token() -> str:
+    config = json.loads(pathlib.Path(".spctre/spctre-config.json").read_text())
+    return config["accessToken"]
+```
+
+Or set `SPCTRE_API_TOKEN` to a long-lived service token issued from the control plane.
+
+## Generating the SDK
+
+A Python SDK can be generated locally from the OpenAPI spec for use in your own projects:
+
+```bash
+pnpm generate:python-sdk   # outputs to target/sdk-python/
+```
+
+This runs `openapi-generator-cli` against the Spctre OpenAPI spec and produces a raw generated Python client. The generated package is not published to PyPI and the class/method names are derived from the spec operationIds, not the names shown in older versions of this page.

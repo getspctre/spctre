@@ -1,0 +1,391 @@
+---
+title: Packs
+description: Bundling rules into packs, pack versioning, and built-in packs.
+---
+
+A **pack** is a versioned, curated bundle of rules for a specific connector or governance use case. Packs make it easy to distribute and reuse governance logic across workspaces and tenants.
+
+## Pack fields
+
+| Field | Description |
+|---|---|
+| `id` | Unique identifier, e.g. `stripe-payments-v1` |
+| `name` | Display name |
+| `connector` | Target connector identifier |
+| `description` | Governance purpose |
+| `riskLevel` | `LOW`, `MEDIUM`, or `HIGH` |
+| `tags` | Topic tags, e.g. `["payments", "refunds"]` |
+| `domains` | Policy domains |
+| `rules` | Array of rule summaries |
+| `metadata.version` | Semantic version, e.g. `1.2.0` |
+| `metadata.author` | Pack author |
+| `metadata.minimumApprovals` | Number of reviewers required to publish |
+| `metadata.compatibilityTargets` | Frameworks this pack is designed for |
+| `metadata.changelog` | Array of `{ version, date, summary }` entries |
+
+## Scaffolding a pack
+
+Use the CLI to generate a new pack template:
+
+```bash
+spctre pack scaffold my-connector \
+  --connector my-connector \
+  --version 1.0.0 \
+  --output ./packs/my-connector
+```
+
+This creates a directory with a pack manifest and starter rule files.
+
+## Publishing a pack
+
+1. Write your rules inside the pack directory
+2. Attach the pack to a policy branch in the control plane
+3. Meet the `minimumApprovals` threshold
+4. Publish the branch — the pack rules are included in the next bundle
+
+## Built-in packs
+
+| Pack | ID | Purpose |
+|---|---|---|
+| Simulation Guidance Governance | `spctre-agent-governance-v1` | Spctre-managed baseline for human decision boundaries and auditable inline simulation guidance |
+| Trust Governance | `trust-governance-v1` | Trust score and context budget enforcement |
+| Gateway · Portkey | `gateway-portkey-v1` | Portkey gateway integration |
+| Gateway · Helicone | `gateway-helicone-v1` | Helicone gateway integration |
+| Gateway · LiteLLM | `gateway-litellm-v1` | LiteLLM gateway integration |
+| Gateway · Notion | `gateway-notion-v1` | Notion orchestration governance |
+
+See [Trust Governance Pack](/help-docs/developer/policies/trust-governance) for the full rule set in `trust-governance-v1`.
+
+The Simulation Guidance Governance Pack is published to each workspace as part of the
+initial policy baseline. It is connector-scoped to `spctre-agent`, so it
+composes with, rather than replaces, customer organization baselines. Its rules
+are maintained by Spctre and are excluded from stale and unused-rule cleanup
+analysis.
+
+The `spctre-agent.*` stable-rule-ID namespace is reserved for this pack.
+Customer-authored rules must use an organization namespace such as
+`acme.advisor.*`.
+
+## Pack versioning
+
+Pack versions follow semver. Bump the version in `metadata.version` when you change rules. Older versions remain available — agents that synced before the bump continue to use the previous revision.
+
+---
+
+## Framework governance packs
+
+Framework packs govern agents at the runtime framework level. All are `HIGH` risk, OSS, and available on any plan. Each requires Security + Compliance review before publishing (minimum 1 approval except Strands which requires 2).
+
+All framework packs share a common set of immutable rules (marked **†**) and mutable warn rules. Immutable rules cannot have their `effect` changed in the UI.
+
+### CrewAI (`crewai-governance-v1`)
+
+| Rule ID | Effect | Trigger |
+|---|---|---|
+| `crewai.delegation.block_unknown_agent` † | DENY | Delegation to an agent not in the workspace registry |
+| `crewai.tools.require_consequence_tier_for_mutation` † | DENY | Mutating tool call without a declared consequence tier |
+| `crewai.tools.warn_high_blast_radius` | WARN | Shell, file write/delete, HTTP, or browser tool execution |
+| `crewai.crew.warn_unbounded_iteration` | WARN | Crew or task loop with no declared max iteration boundary |
+| `crewai.tools.warn_rate_limit_missing` | WARN | Tool call with no rate-limit budget or throttle policy |
+| `crewai.data.warn_sensitivity_unclassified` | WARN | Tool input or output without a data sensitivity classification |
+| `crewai.provenance.warn_gap` | WARN | Tool call event where policy context could not be resolved |
+
+### LangChain / LangGraph (`langchain-governance-v1`)
+
+| Rule ID | Effect | Trigger |
+|---|---|---|
+| `langchain.tools.block_unapproved_shell` † | DENY | Shell or system-level tool execution without HITL approval |
+| `langchain.tools.require_consequence_tier_for_mutation` † | DENY | Mutating tool call without a declared consequence tier |
+| `langchain.tools.warn_high_blast_radius` | WARN | File write/delete, HTTP, computer, or browser tool |
+| `langchain.chains.warn_unbounded_recursion` | WARN | Chain or agent node self-invokes without a stop condition |
+| `langchain.retrieval.warn_unscoped_vector_query` | WARN | Vector store query without a workspace or tenant scope filter |
+| `langchain.tools.warn_rate_limit_missing` | WARN | Tool call with no rate-limit budget or throttle policy |
+| `langchain.data.warn_sensitivity_unclassified` | WARN | Tool input, retrieval output, or chain state without sensitivity classification |
+| `langchain.provenance.warn_gap` | WARN | Tool call event where policy context could not be resolved |
+
+### OpenAI Agents SDK (`openai-agents-governance-v1`)
+
+| Rule ID | Effect | Trigger |
+|---|---|---|
+| `openai-agents.handoffs.block_unknown_agent` † | DENY | Handoff to an agent not declared in the workspace agent registry |
+| `openai-agents.data.require_hitl_production_write` † | DENY | Production data write without human-in-the-loop approval |
+| `openai-agents.tools.require_consequence_tier_for_mutation` † | DENY | Mutating tool call without a declared consequence tier |
+| `openai-agents.tools.warn_high_blast_radius` | WARN | Bash, shell, computer, file write, or execute tool |
+| `openai-agents.outputs.warn_large_tool_output` | WARN | Tool returns unusually large output that could inflate context |
+| `openai-agents.tools.warn_rate_limit_missing` | WARN | Tool call with no rate-limit budget or throttle policy |
+| `openai-agents.data.warn_sensitivity_unclassified` | WARN | Tool inputs, outputs, or handoff context without sensitivity classification |
+| `openai-agents.provenance.warn_gap` | WARN | Tool call event where policy context could not be resolved |
+
+### AutoGen (`autogen-governance-v1`)
+
+Covers AutoGen v0.2 and v0.4+.
+
+| Rule ID | Effect | Trigger |
+|---|---|---|
+| `autogen.code.block_unapproved_execution` † | DENY | Code execution in Docker or shell sandbox without approval |
+| `autogen.tools.require_consequence_tier_for_mutation` † | DENY | Mutating tool call without a declared consequence tier |
+| `autogen.group_chat.warn_no_quorum` | WARN | Group-chat workflow without a declared minimum speaker or approval quorum |
+| `autogen.agents.warn_unbounded_loop` | WARN | Conversation loop without a declared max-turn or termination condition |
+| `autogen.data.warn_exfiltration_pattern` | WARN | Function calls with file export or outbound HTTP send patterns |
+| `autogen.tools.warn_rate_limit_missing` | WARN | Tool call with no rate-limit budget or throttle policy |
+| `autogen.data.warn_sensitivity_unclassified` | WARN | Function-call inputs, outputs, or shared agent memory without sensitivity classification |
+| `autogen.provenance.warn_gap` | WARN | Tool execution event where policy context could not be resolved |
+
+### Google ADK (`google-adk-governance-v1`)
+
+| Rule ID | Effect | Trigger |
+|---|---|---|
+| `google-adk.tools.block_non_allowlisted_service` † | DENY | Tool call targeting an external service not in the workspace allowlist |
+| `google-adk.tools.require_consequence_tier_for_mutation` † | DENY | Mutating tool call without a declared consequence tier |
+| `google-adk.vertex.warn_unscoped_resource_access` | WARN | Vertex AI resource access without an explicit workspace or project scope |
+| `google-adk.tools.warn_high_blast_radius` | WARN | File write, shell, code execution, or browser tool |
+| `google-adk.sessions.warn_context_budget_exceeded` | WARN | Multi-turn session exceeding declared context token budget |
+| `google-adk.tools.warn_rate_limit_missing` | WARN | Tool call with no rate-limit budget or throttle policy |
+| `google-adk.data.warn_sensitivity_unclassified` | WARN | Tool input, output, or session context without sensitivity classification |
+| `google-adk.provenance.warn_gap` | WARN | Tool call event where policy context could not be resolved |
+
+### Strands Agents (`strands-governance-v1`)
+
+Requires 2 approvals (Security + Compliance). Targets AWS-native agent workloads.
+
+| Rule ID | Effect | Trigger |
+|---|---|---|
+| `strands.aws.block_high_privilege_service_calls` † | DENY | Calls to IAM mutations, S3 deletes, or EC2 mutations without approval |
+| `strands.bedrock.warn_unapproved_model` | WARN | Bedrock model invocation using a model not in the approved model list |
+| `strands.tools.warn_missing_consequence_tier` | WARN | Tool call without a declared consequence tier |
+| `strands.aws.warn_cross_account_access` | WARN | AWS tool call targeting a resource in a different account |
+| `strands.tools.warn_rate_limit_missing` | WARN | Tool call with no rate-limit budget or throttle policy |
+| `strands.data.warn_sensitivity_unclassified` | WARN | Tool input, output, or AWS resource context without sensitivity classification |
+| `strands.provenance.warn_gap` | WARN | Tool call event where policy context could not be resolved |
+
+### Google Antigravity SDK (`google-antigravity-governance-v1`)
+
+Covers Python agents built with the `google-antigravity` SDK (the
+`antigravity-sdk` watch adapter). The Antigravity CLI (`agy`) harness is
+governed separately via `install-hook --antigravity` and has no framework pack,
+matching the other developer harnesses.
+
+| Rule ID | Effect | Trigger |
+|---|---|---|
+| `google-antigravity.tools.block_non_allowlisted_service` † | DENY | Tool call targeting an external service not in the workspace allowlist |
+| `google-antigravity.tools.require_consequence_tier_for_mutation` † | DENY | Mutating tool call without a declared consequence tier |
+| `google-antigravity.vertex.warn_unscoped_resource_access` | WARN | Vertex AI resource access without an explicit workspace or project scope |
+| `google-antigravity.tools.warn_high_blast_radius` | WARN | File write, shell, code execution, or browser tool |
+| `google-antigravity.sessions.warn_context_budget_exceeded` | WARN | Multi-turn session exceeding declared context token budget |
+| `google-antigravity.tools.warn_rate_limit_missing` | WARN | Tool call with no rate-limit budget or throttle policy |
+| `google-antigravity.data.warn_sensitivity_unclassified` | WARN | Tool input, output, or session context without sensitivity classification |
+| `google-antigravity.provenance.warn_gap` | WARN | Tool call event where policy context could not be resolved |
+
+---
+
+## Enterprise AI platform packs
+
+Enterprise platform packs govern agents running on managed orchestration platforms that do not natively emit AGT-compatible evidence. All carry `provenance_gap: true` on their evidence. All are OSS and available on any plan.
+
+<Callout type="info">
+  Because these platforms do not emit AGT-native evidence, all rules in these packs operate on normalized Spctre gateway events rather than on-device policy decisions. Deploy the gateway ingest endpoint and configure the platform's webhook or event stream to send events to `/api/gateway-ingest/{connector}`.
+</Callout>
+
+### Salesforce Agent Fabric (`agent-fabric-v1`)
+
+Risk level: **MEDIUM** · Minimum approvals: 1
+
+| Rule ID | Effect | Trigger |
+|---|---|---|
+| `agent-fabric.cost.block_high_spend` † | DENY | AI Gateway LLM call exceeds per-call spend cap |
+| `agent-fabric.delegation.warn_cross_vendor_a2a` † | WARN | A2A delegation crosses vendor trust boundaries to a third-party agent |
+| `agent-fabric.guardrails.warn_override` † | WARN | Agent action bypasses or exceeds a configured Agent Fabric guardrail |
+| `agent-fabric.routing.warn_unverified_vendor` | WARN | Agent Broker routes to a vendor not in the approved-vendor list |
+| `agent-fabric.provenance.warn_gap` | WARN | Agent Fabric event where policy context could not be resolved |
+
+### Microsoft Copilot Studio (`copilot-studio-v1`)
+
+Risk level: **MEDIUM** · Minimum approvals: 1
+
+| Rule ID | Effect | Trigger |
+|---|---|---|
+| `copilot-studio.actions.warn_high_blast_radius_flow` † | WARN | Agent triggers a Power Automate flow with write, delete, or send actions |
+| `copilot-studio.delegation.warn_cross_environment_a2a` † | WARN | A2A delegation to an agent outside the approved Copilot Studio environment |
+| `copilot-studio.dlp.warn_policy_bypass` † | WARN | Agent action scoped outside an active DLP policy boundary |
+| `copilot-studio.data.warn_m365_sensitivity_unclassified` | WARN | M365 content access without a declared sensitivity label |
+| `copilot-studio.provenance.warn_gap` | WARN | Copilot Studio event where policy context could not be resolved |
+
+### ServiceNow AI Control Tower (`servicenow-ai-control-tower-v1`)
+
+Risk level: **HIGH** · Minimum approvals: 2 (Security + Compliance + Platform)
+
+| Rule ID | Effect | Trigger |
+|---|---|---|
+| `servicenow-ai-control-tower.actions.block_cmdb_write_unapproved` † | DENY | Agent CMDB write when no open approved change record exists |
+| `servicenow-ai-control-tower.actions.warn_production_system_change` † | WARN | Agent action targeting a production-classified configuration item |
+| `servicenow-ai-control-tower.delegation.warn_external_agent_invocation` † | WARN | Action Fabric routes to an agent built outside the ServiceNow platform |
+| `servicenow-ai-control-tower.desktop.warn_arc_autonomous_execution` | WARN | Project Arc multi-step desktop automation without a human checkpoint |
+| `servicenow-ai-control-tower.provenance.warn_gap` | WARN | ServiceNow event where policy context could not be resolved |
+
+### Google Gemini Enterprise Agent Platform (`gemini-enterprise-agent-platform-v1`)
+
+Risk level: **MEDIUM** · Minimum approvals: 1
+
+| Rule ID | Effect | Trigger |
+|---|---|---|
+| `gemini-enterprise-agent-platform.cost.block_high_spend` † | DENY | Gemini API call exceeds per-session spend cap |
+| `gemini-enterprise-agent-platform.identity.warn_unregistered_agent` † | WARN | Agent operating through Agent Gateway absent from Agent Registry |
+| `gemini-enterprise-agent-platform.routing.warn_external_tool_unapproved` | WARN | Agent Gateway routes to an external tool not in the approved tool registry |
+| `gemini-enterprise-agent-platform.data.warn_sensitivity_unclassified` | WARN | GCP data access without a declared sensitivity classification |
+| `gemini-enterprise-agent-platform.provenance.warn_gap` | WARN | Gemini Enterprise event where policy context could not be resolved |
+
+### Azure AI Foundry (`azure-ai-foundry-v1`)
+
+Risk level: **MEDIUM** · Minimum approvals: 1
+
+| Rule ID | Effect | Trigger |
+|---|---|---|
+| `azure-ai-foundry.cost.block_high_spend` † | DENY | Azure OpenAI call exceeds per-deployment spend cap |
+| `azure-ai-foundry.safety.warn_prompt_shield_bypass` † | WARN | Request bypasses or scores above threshold on Prompt Shields |
+| `azure-ai-foundry.models.warn_unapproved_deployment` | WARN | Agent deployment references a model not in the approved model registry |
+| `azure-ai-foundry.data.warn_rag_sensitivity_unclassified` | WARN | RAG pipeline retrieves from a data source without a sensitivity classification |
+| `azure-ai-foundry.provenance.warn_gap` | WARN | Azure AI Foundry event where policy context could not be resolved |
+
+### Amazon Bedrock Agents (`amazon-bedrock-agents-v1`)
+
+Risk level: **MEDIUM** · Minimum approvals: 1
+
+| Rule ID | Effect | Trigger |
+|---|---|---|
+| `amazon-bedrock-agents.cost.block_high_spend` † | DENY | Bedrock API call exceeds per-session spend cap |
+| `amazon-bedrock-agents.actions.warn_lambda_high_blast_radius` † | WARN | Action group invokes a Lambda function with broad IAM permissions |
+| `amazon-bedrock-agents.guardrails.warn_policy_bypass` † | WARN | Agent response bypasses or scores above threshold on a Bedrock Guardrail |
+| `amazon-bedrock-agents.data.warn_kb_sensitivity_unclassified` | WARN | Knowledge base retrieval from a data source without a sensitivity classification |
+| `amazon-bedrock-agents.provenance.warn_gap` | WARN | Bedrock Agents event where policy context could not be resolved |
+
+### IBM watsonx Orchestrate (`ibm-watsonx-orchestrate-v1`)
+
+Risk level: **HIGH** · Minimum approvals: 2 (Security + Compliance)
+
+| Rule ID | Effect | Trigger |
+|---|---|---|
+| `ibm-watsonx-orchestrate.cost.block_high_spend` † | DENY | watsonx API call exceeds per-session spend cap |
+| `ibm-watsonx-orchestrate.actions.warn_erp_write_unapproved` † | WARN | Skill writes to an ERP or financial system without a corresponding approved task |
+| `ibm-watsonx-orchestrate.delegation.warn_cross_system_handoff` † | WARN | Orchestration routes to a skill or API not in the approved tool catalog |
+| `ibm-watsonx-orchestrate.data.warn_sensitivity_unclassified` | WARN | Skill accesses business data without a declared sensitivity or data residency classification |
+| `ibm-watsonx-orchestrate.provenance.warn_gap` | WARN | watsonx Orchestrate event where policy context could not be resolved |
+
+### Kore.ai (`kore-ai-v1`)
+
+Risk level: **MEDIUM** · Minimum approvals: 1
+
+| Rule ID | Effect | Trigger |
+|---|---|---|
+| `kore-ai.data.warn_pii_unclassified` † | WARN | Session content contains potential PII without a declared sensitivity classification |
+| `kore-ai.handoff.warn_cross_agent_unverified` † | WARN | Agent handoff routes to an agent or skill absent from the approved catalog |
+| `kore-ai.actions.warn_external_api_unapproved` | WARN | Agent invokes an external API or webhook not in the integration registry |
+| `kore-ai.session.warn_long_running` | WARN | Session accumulates a high turn count or duration without a human checkpoint |
+| `kore-ai.provenance.warn_gap` | WARN | Kore.ai event where policy context could not be resolved |
+
+---
+
+## High-risk connector packs
+
+Hand-authored packs for high-blast-radius third-party connectors: payments, databases, source control, deployment, and support platforms. Unlike the framework and enterprise-platform packs above, these operate on the normalized tool-call parameters (amount, row count, branch name, environment, role) already present in the governed request — no live fraud scoring, query planning, or external lookups. All are `HIGH` risk and require 2 approvals (Security + Compliance) to publish.
+
+### Stripe
+
+| Pack | ID | Purpose |
+|---|---|---|
+| Stripe Governance | `stripe-v1` | Core payments, refunds, subscriptions, payouts |
+| Stripe Billing | `stripe-billing-v1` | Subscription pricing and invoicing |
+| Stripe Connect | `stripe-connect-v1` | Marketplace platform payouts and transfers |
+| Stripe Issuing | `stripe-issuing-v1` | Corporate card spending limits and status |
+
+| Rule ID | Effect | Trigger |
+|---|---|---|
+| `stripe.refund.high_value_review` | ESCALATE | Refund at or above `stripe.refund_review_threshold_cents` (default $500) |
+| `stripe.payout.destination_change.block` † | DENY | Payout destination or external account change |
+| `stripe.customer.bulk_export.block` † | DENY | Bulk customer or payment data export |
+| `stripe.dispute.evidence_submission.warn` | WARN | Automated dispute evidence submission or update |
+| `stripe-billing.price.large_increase_review` | ESCALATE | Price change at or above `stripe-billing.price_increase_review_ratio` (default 2x) |
+| `stripe-billing.invoice.void_paid.block` † | DENY | Voiding an already-paid invoice |
+| `stripe-connect.transfer.high_value_review` | ESCALATE | Transfer to a connected account at or above `stripe-connect.transfer_review_threshold_cents` (default $1,000) |
+| `stripe-connect.account.payout_schedule_change.block` † | DENY | Connected-account payout schedule change |
+| `stripe-issuing.card.spending_limit_increase_review` | ESCALATE | Spending limit increase at or above `stripe-issuing.spending_limit_review_cents` (default $5,000) |
+| `stripe-issuing.card.reactivate_after_freeze.block` † | DENY | Reactivating a card that was previously canceled/frozen |
+
+### Databases
+
+| Pack | ID | Purpose |
+|---|---|---|
+| PostgreSQL | `postgresql-v1` | Schema DDL, bulk deletes, regulated-data exports |
+| MongoDB | `mongodb-v1` | Collection/database drops, bulk document deletes |
+| Snowflake | `snowflake-v1` | Warehouse query cost, data shares, destructive DDL |
+| DynamoDB (AWS) | `aws-dynamodb-v1` | Table deletion, PITR, capacity scaling |
+
+| Rule ID | Effect | Trigger |
+|---|---|---|
+| `postgresql.statement.destructive_ddl.block` † | DENY | `DROP`/`TRUNCATE` statement |
+| `postgresql.data.bulk_delete_review` | ESCALATE | Bulk delete at or above `postgresql.bulk_delete_review_rows` (default 10,000 rows) |
+| `postgresql.export.regulated_data.block` † | DENY | Export or backup download; semantic check for PII/regulated data |
+| `mongodb.collection.drop.block` † | DENY | Collection or database drop |
+| `mongodb.data.bulk_delete_review` | ESCALATE | Bulk document delete at or above `mongodb.bulk_delete_review_rows` (default 10,000) |
+| `mongodb.export.bulk_export.block` † | DENY | Bulk collection export |
+| `snowflake.statement.destructive_ddl.block` † | DENY | `DROP`/`TRUNCATE` statement on a table or schema |
+| `snowflake.query.high_cost_review` | ESCALATE | Query at or above `snowflake.query_cost_review_credits` (default 50 credits) |
+| `snowflake.share.create.block` † | DENY | Creating a data share or updating share grants |
+| `aws-dynamodb.table.delete.block` † | DENY | Table deletion |
+| `aws-dynamodb.backup.disable_pitr.block` † | DENY | Disabling point-in-time recovery |
+| `aws-dynamodb.capacity.large_increase_review` | ESCALATE | Capacity increase at or above `aws-dynamodb.capacity_increase_review_units` (default 40,000 units) |
+
+### GitHub
+
+| Pack | ID | Purpose |
+|---|---|---|
+| GitHub Operations | `github-v1` | Protected-branch and secret handling |
+| GitHub Actions | `github-actions-v1` | Workflow and self-hosted runner controls |
+| GitHub Enterprise Admin | `github-enterprise-admin-v1` | Org-level SSO/SAML and owner grants |
+
+| Rule ID | Effect | Trigger |
+|---|---|---|
+| `github.branch.force_push_protected.block` † | DENY | Force-push to a protected branch (`github.protected_branches`) |
+| `github.branch.delete_protected.block` † | DENY | Deleting a protected branch |
+| `github.repository.visibility_change.block` † | DENY | Repository visibility changed to public |
+| `github.secret.bulk_read.warn` | WARN | Bulk read of repository/organization secrets |
+| `github-actions.workflow.unpinned_third_party_action.block` † | DENY | Workflow run references an unpinned/mutable third-party action (semantic check) |
+| `github-actions.runner.self_hosted_register.review` | ESCALATE | Registering a new self-hosted runner |
+| `github-enterprise-admin.owner.grant.block` † | DENY | Granting the organization-owner role |
+| `github-enterprise-admin.sso_policy.change.block` † | DENY | SSO/SAML enforcement policy change |
+
+### Deployment
+
+| Pack | ID | Purpose |
+|---|---|---|
+| Deployment Pipeline | `deployment-v1` | Generic CI/CD production deploys and secrets |
+| Kubernetes | `kubernetes-v1` | Cluster RBAC, namespace deletes, secret mounts |
+| Vercel | `vercel-v1` | Production domain and env-var changes |
+| Argo CD | `argo-cd-v1` | GitOps sync policy and production app deletes |
+
+| Rule ID | Effect | Trigger |
+|---|---|---|
+| `deployment.production.unreviewed_deploy.block` † | DENY | Deploy/promote to a protected environment (`deployment.protected_environments`) without a recorded approval |
+| `deployment.secret.production_write.block` † | DENY | Secret or env-var write into a protected environment |
+| `deployment.rollback.warn` | WARN | Automated production rollback |
+| `kubernetes.rbac.cluster_admin_grant.block` † | DENY | Granting the `cluster-admin` RBAC role |
+| `kubernetes.namespace.production_delete.block` † | DENY | Workload or namespace delete in a protected namespace (`kubernetes.protected_namespaces`) |
+| `kubernetes.secret.mount.warn` | WARN | Workload mounts an undeclared secret |
+| `vercel.domain.production_reassign.block` † | DENY | Reassigning a production domain to a different project |
+| `vercel.environment.production_var_change.block` † | DENY | Production environment-variable change |
+| `argo-cd.application.production_delete.block` † | DENY | Deleting an application targeting a production cluster |
+| `argo-cd.sync.disable_auto_sync.warn` | WARN | Disabling auto-sync drift correction |
+
+### Support (Zendesk)
+
+| Pack | ID | Purpose |
+|---|---|---|
+| Zendesk Support | `zendesk-v1` | Ticket replies, exports, macros |
+| Zendesk Support Admin | `zendesk-support-admin-v1` | Agent roles and SLA policy |
+
+| Rule ID | Effect | Trigger |
+|---|---|---|
+| `zendesk.reply.pii_exposure.warn` | WARN | Customer-facing reply appears to expose PII/regulated data (semantic check) |
+| `zendesk.ticket.bulk_export.block` † | DENY | Bulk ticket export |
+| `zendesk.macro.bulk_apply.warn` | WARN | Macro applied across 100+ tickets |
+| `zendesk-support-admin.user.role_escalation.block` † | DENY | Escalating an agent to administrator |
+| `zendesk-support-admin.sla_policy.change.warn` | WARN | SLA policy change |

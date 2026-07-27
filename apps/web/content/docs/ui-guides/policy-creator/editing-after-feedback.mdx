@@ -1,0 +1,53 @@
+---
+title: Editing a branch after feedback
+description: Responding to reviewer comments, making changes, and re-submitting.
+---
+
+When a reviewer rejects your branch, the branch moves back to `DRAFT` and you'll receive a notification. The rejection includes structured feedback that you respond to before re-submitting.
+
+## Finding reviewer feedback
+
+1. Go to **Policies**.
+2. Click your branch to open the branch inspector slideout panel.
+3. Click **Review & Publish** to open the review surface, then click the **Approve** tab to see all comments.
+
+## Reading the feedback
+
+Each piece of feedback is attached to a specific rule or to the branch overall. Comments show:
+- The reviewer's name and timestamp
+- The specific concern (e.g. "This condition allows charges above the tier limit for premium accounts")
+- A suggested action if the reviewer left one
+
+## Making changes
+
+With the branch back in `DRAFT`, you can:
+
+- **Edit a rule** — click **Author rules** from the branch inspector, click the rule row, and modify it.
+- **Delete a rule** — on the **Rule Authoring** page, click the rule row and select **Remove rule** in the edit panel.
+- **Add a rule** — on the **Rule Authoring** page, click **Add rule** at the bottom of the list.
+- **Re-import** — upload a revised policy file via **Create policy → Upload or paste existing** on the Policies page.
+
+<Callout type="info">
+When you edit a rule that a reviewer left a comment on, the comment is preserved and shown in context. Reviewers can see what changed between submissions.
+</Callout>
+
+## Responding to comments
+
+Click **Reply** on a reviewer comment to add your response. This is visible to reviewers in the next review cycle. Use replies to explain the decision you made — if you chose not to act on a suggestion, say why.
+
+You can mark a comment as **Resolved** once you've addressed it. Resolved comments are collapsed but not deleted.
+
+## Re-submitting
+
+When you're done making changes:
+
+1. Click **Submit for review** again.
+2. The same reviewers receive a notification.
+3. They see a diff view showing exactly what changed since the previous submission.
+4. The branch re-enters `IN_REVIEW`.
+
+Reviewers can approve or reject again. Previous approvals are **reset** on re-submission — all configured reviewers must approve again.
+
+## Abandoning changes
+
+If you decide the feedback requires a fundamentally different approach, you can discard the branch and start fresh. See [Managing draft branches](/help-docs/ui-guides/policy-creator/managing-drafts).

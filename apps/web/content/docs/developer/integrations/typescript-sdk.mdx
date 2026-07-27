@@ -1,0 +1,102 @@
+---
+title: TypeScript SDK
+description: Installation, typed client, and evidence submission.
+---
+
+The Spctre TypeScript SDK (`@spctre/sdk`) is a thin, fully typed wrapper over the Spctre REST API, generated from the OpenAPI spec using `openapi-fetch`. It exports a single `createSpctreClient` factory and the raw OpenAPI `paths`, `components`, and `operations` types.
+
+## Installation
+
+```bash
+npm install @spctre/sdk
+# or
+pnpm add @spctre/sdk
+```
+
+## Creating a client
+
+```typescript
+import { createSpctreClient } from "@spctre/sdk";
+
+const spctre = createSpctreClient({
+  baseUrl: process.env.SPCTRE_API_URL ?? "/api/v1",
+  token: process.env.SPCTRE_API_TOKEN!,
+});
+```
+
+`createSpctreClient` returns an `openapi-fetch` client typed against the full Spctre API surface. All paths, methods, request bodies, and responses are inferred from the spec — no separate client classes required.
+
+## Submitting evidence
+
+```typescript
+const { data, error } = await spctre.POST("/evidence", {
+  body: {
+    decisionId: "dec_01j9xk2f",
+    agentId: "search-agent",
+    connector: "github",
+    action: "create_issue",
+    environment: "production",
+    status: "ALLOW",
+    reason: "Issue creation permitted by policy",
+    runtimeTarget: { stack: "LANGCHAIN" },
+    policyRefs: ["br_01j9xk"],
+    artifactHash: "sha256:abc123…",
+    policyContext: [
+      {
+        scope: "CONNECTOR",
+        branchId: "br_01j9xk",
+        revisionId: "rev_99",
+        artifactHash: "sha256:abc123…",
+      },
+    ],
+    sessionId: "sess_abc123",
+  },
+});
+```
+
+## Evaluating a gateway decision
+
+```typescript
+const { data, error } = await spctre.POST("/gateway/decide", {
+  body: {
+    decisionId: "dec_01abc…",
+    artifactHash: "sha256:abc123…",
+    policyContext: [
+      {
+        scope: "CONNECTOR",
+        branchId: "br_01",
+        revisionId: "rev_99",
+        artifactHash: "sha256:abc123…",
+      },
+    ],
+    connector: "stripe",
+    action: "charge",
+    riskLevel: "HIGH",
+  },
+});
+
+if (data?.decision.outcome === "ABORT") {
+  throw new Error("Gateway denied: " + data.decision.reason);
+}
+```
+
+## Types
+
+All OpenAPI types are available from the root import:
+
+```typescript
+import type { components, paths, operations } from "@spctre/sdk";
+
+type EvidenceIngestResponse = components["schemas"]["EvidenceIngestResponse"];
+type GatewayDecision = components["schemas"]["GatewayDecision"];
+```
+
+## Regenerating the SDK
+
+If you maintain a fork of the Spctre API, regenerate the SDK from the OpenAPI spec after editing `packages/api-contracts/src/openapi.ts`:
+
+```bash
+pnpm generate
+```
+
+This re-runs `openapi-typescript` against the spec and updates `packages/sdk/src/schema.ts`.

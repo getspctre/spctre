@@ -1,0 +1,239 @@
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum GatewayOutcome {
+    Proceed,
+    Escalate,
+    Abort,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum RiskLevel {
+    Low,
+    High,
+    Critical,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum RuntimeDecisionStatus {
+    Allow,
+    Warn,
+    Escalate,
+    Deny,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TriggerKind {
+    Interactive,
+    Scheduled,
+    MobileDispatch,
+    InboundWebhook,
+    Routine,
+    GatewayMessage,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum EvidenceLayer {
+    Agent,
+    Sandbox,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GatewayDecisionInput {
+    pub reason: Option<String>,
+    pub consequence: Option<String>,
+    pub confidence: Option<f64>,
+    pub amount_usd: Option<f64>,
+    pub data_sensitivity: Option<String>,
+    pub trust_score: Option<f64>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GatewayDecisionResult {
+    pub outcome: GatewayOutcome,
+    pub reason: String,
+    pub risk_level: RiskLevel,
+    pub should_queue: bool,
+    pub sla_hours: Option<u8>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct OperationsLogHashInput {
+    pub event_type: String,
+    pub source_id: Option<String>,
+    pub source_table: Option<String>,
+    pub actor_id: String,
+    pub payload: Value,
+    pub prev_hash: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct OperationsLogChainEntry {
+    pub id: String,
+    pub event_type: String,
+    pub source_id: Option<String>,
+    pub source_table: Option<String>,
+    pub actor_id: String,
+    pub payload: Value,
+    pub prev_hash: Option<String>,
+    pub content_hash: String,
+    pub created_at: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum ChainIssueKind {
+    ContentHashMismatch,
+    PrevHashMismatch,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ChainIssue {
+    pub entry_id: String,
+    pub created_at: String,
+    pub kind: ChainIssueKind,
+    pub expected: Option<String>,
+    pub actual: Option<String>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PolicyEvidenceInput {
+    pub connector: String,
+    pub action: String,
+    #[serde(default)]
+    pub domains: Vec<String>,
+    pub runtime_target: Option<RuntimeTargetEvidence>,
+    pub execution_context: Option<ExecutionContextEvidence>,
+    pub orchestrator_ref: Option<OrchestratorRefEvidence>,
+    pub skill_context: Option<SkillContextEvidence>,
+    pub trigger_kind: Option<TriggerKind>,
+    pub layer: Option<EvidenceLayer>,
+    pub trust_level: Option<String>,
+    pub plugin_source: Option<String>,
+    pub catalog_provider: Option<String>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RuntimeTargetEvidence {
+    pub stack: String,
+    pub adapter: Option<String>,
+    pub environment: Option<String>,
+    pub sandbox_name: Option<String>,
+    pub inference_provider: Option<String>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExecutionContextEvidence {
+    pub backend: Option<String>,
+    pub session_id: Option<String>,
+    pub sandbox_name: Option<String>,
+    pub inference_provider: Option<String>,
+    pub sandbox_policy_ref: Option<String>,
+    pub inference_router_ref: Option<String>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct OrchestratorRefEvidence {
+    pub platform: String,
+    pub company_id: Option<String>,
+    pub issue_id: Option<String>,
+    pub goal_id: Option<String>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SkillContextEvidence {
+    #[serde(default)]
+    pub active_skills: Vec<String>,
+    #[serde(default)]
+    pub instruction_files: Vec<String>,
+    #[serde(default)]
+    pub prompt_policy_refs: Vec<String>,
+    pub prompt_surface: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PolicyRule {
+    pub stable_rule_id: String,
+    pub title: String,
+    pub effect: RuntimeDecisionStatus,
+    #[serde(default)]
+    pub domains: Vec<String>,
+    #[serde(default)]
+    pub connectors: Vec<String>,
+    #[serde(default)]
+    pub actions: Vec<String>,
+    #[serde(default)]
+    pub runtime_stacks: Vec<String>,
+    #[serde(default)]
+    pub sandbox_names: Vec<String>,
+    #[serde(default)]
+    pub inference_providers: Vec<String>,
+    #[serde(default)]
+    pub orchestrator_platforms: Vec<String>,
+    #[serde(default)]
+    pub company_ids: Vec<String>,
+    #[serde(default)]
+    pub issue_ids: Vec<String>,
+    #[serde(default)]
+    pub goal_ids: Vec<String>,
+    pub trigger_kind: Option<TriggerKind>,
+    pub layer: Option<EvidenceLayer>,
+    #[serde(default)]
+    pub trust_levels: Vec<String>,
+    #[serde(default)]
+    pub plugin_sources: Vec<String>,
+    #[serde(default)]
+    pub skill_ids: Vec<String>,
+    #[serde(default)]
+    pub prompt_surfaces: Vec<String>,
+    #[serde(default)]
+    pub catalog_providers: Vec<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct EvaluationTraceStep {
+    pub stable_rule_id: String,
+    pub title: String,
+    pub effect: RuntimeDecisionStatus,
+    pub matched: bool,
+    pub match_reason: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct EvaluationResult {
+    pub status: RuntimeDecisionStatus,
+    pub matched_refs: Vec<String>,
+    pub reason: String,
+    pub trace: Vec<EvaluationTraceStep>,
+    pub rule_count: usize,
+    pub evaluated_at: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PolicyEvaluationInput {
+    #[serde(flatten)]
+    pub evidence: PolicyEvidenceInput,
+    #[serde(default)]
+    pub rules: Vec<PolicyRule>,
+    pub evaluated_at: Option<String>,
+}

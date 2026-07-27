@@ -1,0 +1,7 @@
+{
+  "description": "Deleting a workload in a staging namespace is allowed by default",
+  "action": "workload.delete",
+  "domains": ["namespaces", "workloads"],
+  "toolParameters": { "namespace": "staging" },
+  "expected": { "status": "ALLOW", "matchedRefs": [] }
+}

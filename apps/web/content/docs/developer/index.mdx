@@ -1,0 +1,25 @@
+---
+title: Developer References
+description: Spctre is a stack-neutral policy operations platform for agent governance. Author governance policies, govern agent behaviour at runtime, and prove compliance — all from one control plane.
+---
+
+## The author–govern–prove loop
+
+```
+┌─────────────┐     policy bundle      ┌─────────────┐
+│   Author    │ ─────────────────────► │    Agent    │
+│  (Control   │                        │  (Runtime)  │
+│   Plane)    │ ◄───────────────────── │             │
+└─────────────┘     evidence ingest    └─────────────┘
+       │
+       ▼
+┌─────────────┐
+│    Prove    │
+│ (Compliance │
+│  & Audit)   │
+└─────────────┘
+```
+
+1. **Author** — write policies and rules in the control plane, organise them into packs, and publish a signed bundle.
+2. **Govern** — agents fetch the bundle at startup, evaluate every decision against it, and stream evidence back.
+3. **Prove** — compliance reports, operations logs, and audit trails are generated automatically from the accumulated evidence.

@@ -1,0 +1,75 @@
+---
+title: Setting rule conditions
+description: Using the condition builder, supported operators, and testing a condition against sample data.
+---
+
+Conditions let you scope a rule to specific decisions based on fields in the evidence payload. A rule without conditions matches every decision for the targeted connector and action. A rule with conditions only matches when all conditions are satisfied.
+
+## Opening the condition builder
+
+In the rule form, click **+ Add condition** in the Conditions section.
+
+## Anatomy of a condition
+
+Each condition has three parts:
+
+| Part | Description |
+|---|---|
+| **Field** | The name of the field in the agent's evidence payload |
+| **Operator** | The comparison to perform |
+| **Value** | The value to compare against |
+
+Example: `amount_usd` `lt` `500` — matches decisions where the `amount_usd` field is less than 500.
+
+## Supported operators
+
+| Operator | Description | Example |
+|---|---|---|
+| `eq` | Equal | `status eq APPROVED` |
+| `ne` | Not equal | `risk_level ne HIGH` |
+| `lt` | Less than | `amount_usd lt 500` |
+| `lte` | Less than or equal | `amount_usd lte 10000` |
+| `gt` | Greater than | `confidence gt 0.9` |
+| `gte` | Greater than or equal | `amount_usd gte 0` |
+| `in` | Value is in the list | `customer_tier in [enterprise, premium]` |
+| `not_in` | Value is not in the list | `connector not_in [legacy-svc]` |
+| `contains` | String contains substring | `plan_summary contains "wire transfer"` |
+| `exists` | Field is present in the payload | `amount_usd exists` |
+
+## Multiple conditions
+
+When you add more than one condition, all conditions must be satisfied for the rule to match (logical `AND`). Spctre does not currently support `OR` across conditions within a single rule.
+
+To express `OR` logic, create two separate rules with the same effect and different condition sets.
+
+## Testing a condition
+
+Click **Test condition** to open the condition tester. Paste a sample evidence JSON payload and click **Evaluate**. The tester shows whether each condition matched, making it easy to verify your logic before submitting.
+
+```json
+{
+  "amount_usd": 250,
+  "customer_tier": "enterprise",
+  "connector": "stripe",
+  "action": "charge"
+}
+```
+
+<Callout type="info">
+The test runs client-side against the condition you've configured — it doesn't send data to any external service.
+</Callout>
+
+## Common patterns
+
+**Allow only low-value transactions:**
+- `amount_usd` `lt` `1000`
+
+**Block external messages:**
+- `recipient_type` `eq` `external`
+
+**Escalate large transfers for high-risk customers:**
+- `amount_usd` `gte` `50000`
+- `customer_risk_tier` `eq` `HIGH`
+
+**Warn on prompts containing sensitive keywords:**
+- `prompt_text` `contains` `"social security"`

@@ -1,0 +1,111 @@
+.evidenceHero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(360px, 0.9fr);
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+  max-width: 1180px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.evidenceHeroMain,
+.evidenceHeroStats {
+  background: var(--panel);
+}
+
+.evidenceHeroMain {
+  padding: 18px;
+  display: grid;
+  gap: 6px;
+  align-content: center;
+}
+
+.evidenceHeroMain h2 {
+  font-size: 20px;
+}
+
+.evidenceHeroMain .meta {
+  max-width: 72ch;
+}
+
+.evidenceHeroStats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.evidenceHeroStats > div {
+  padding: 16px;
+  border-right: 1px solid var(--line);
+  display: grid;
+  gap: 5px;
+  align-content: center;
+}
+
+.evidenceHeroStats > div:last-child {
+  border-right: 0;
+}
+
+.evidenceHeroStats strong {
+  color: var(--ink);
+  font-size: 17px;
+  overflow-wrap: anywhere;
+}
+
+.evidencePanel {
+  display: grid;
+  gap: 16px;
+  padding: 18px;
+  max-width: 1180px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.evidencePanel > .rowHeader {
+  padding-bottom: 2px;
+}
+
+.demoEvidenceBanner {
+  border: 1px solid oklch(0.86 0.04 82);
+  border-radius: 8px;
+  background: var(--warn-soft);
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.demoEvidenceBanner .meta {
+  max-width: 70ch;
+}
+
+.evidencePanel .auditTableWrapper {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: auto;
+}
+
+.evidencePanel .auditTable thead th {
+  background: oklch(0.982 0.006 236);
+}
+
+.evidencePanel .auditRow:last-child td {
+  border-bottom: 0;
+}
+
+.evidenceSourceText {
+  margin-top: 4px;
+}
+
+.evidenceGuidanceCard {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  background: oklch(0.988 0.006 236);
+}

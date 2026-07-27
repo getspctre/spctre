@@ -1,0 +1,8 @@
+{
+  "description": "A normal reply with no PII allows by default",
+  "action": "ticket.reply",
+  "domains": ["tickets"],
+  "planSummary": "Thank the customer for their patience and confirm the ticket is resolved",
+  "toolParameters": {},
+  "expected": { "status": "ALLOW", "matchedRefs": [] }
+}

@@ -1,0 +1,601 @@
+import { createHash } from "crypto";
+import { assertCustomerRulesDoNotUseReservedIds } from "@/lib/policy/reserved-rule-ids";
+import { sql } from "@/lib/db";
+import { ensureDemoTenant } from "@/lib/repositories/seed/local-dev";
+import type { AgtCompatibilityReport, PolicyBranch, PolicyRuleSummary } from "@spctre/policy-schema";
+
+export interface BranchRevision {
+  revisionId: string;
+  parentRevisionId: string | null;
+  message: string;
+  authorId: string;
+  authorEmail: string | null;
+  sourceFormat: string;
+  sourceHash: string;
+  packId?: string;
+  packVersion?: string;
+  ruleCount: number;
+  isActive: boolean;
+  publishedAt: string | null;
+  createdAt: string;
+}
+
+export interface CommittedRuleRow {
+  tenant_id: string;
+  workspace_id: string | null;
+  branch_id: string;
+  revision_id: string;
+  stable_rule_id: string;
+  title: string;
+  effect: string;
+  source_path: string;
+  domains: string[];
+  connectors: string[];
+  actions: string[];
+  immutable: boolean;
+}
+
+export interface BranchStatusSummary {
+  workspaceId: string;
+  firstBranchId: string | null;
+  hasInReview: boolean;
+}
+
+export async function listBranchStatusSummariesForTenant(
+  tenantId: string
+): Promise<Map<string, BranchStatusSummary>> {
+  if (!sql) return new Map();
+
+  const rows = await sql<
+    {
+      workspace_id: string;
+      branch_id: string;
+      has_approvals: boolean;
+      created_at: Date;
+    }[]
+  >`
+    WITH requested_workspace AS (
+      SELECT id
+      FROM workspace
+      WHERE tenant_id = ${tenantId}
+    )
+    SELECT
+      rw.id AS workspace_id,
+      pb.id AS branch_id,
+      EXISTS (
+        SELECT 1
+        FROM policy_approval pa
+        WHERE pa.revision_id = pb.active_revision_id
+          AND pa.tenant_id = pb.tenant_id
+      ) AS has_approvals,
+      pb.created_at
+    FROM requested_workspace rw
+    JOIN policy_branch pb
+      ON pb.tenant_id = ${tenantId}
+     AND (pb.workspace_id = rw.id OR pb.scope = 'ORGANIZATION')
+    ORDER BY rw.id, pb.created_at DESC
+  `;
+
+  const summaries = new Map<string, BranchStatusSummary>();
+  for (const row of rows) {
+    const current = summaries.get(row.workspace_id);
+    if (!current) {
+      summaries.set(row.workspace_id, {
+        workspaceId: row.workspace_id,
+        firstBranchId: row.branch_id,
+        hasInReview: row.has_approvals,
+      });
+      continue;
+    }
+    current.hasInReview ||= row.has_approvals;
+  }
+  return summaries;
+}
+
+export async function listBranches(
+  workspaceId: string | null,
+  tenantId: string
+): Promise<PolicyBranch[]> {
+  if (!sql) return [];
+  const rows = await sql<
+    {
+      id: string;
+      name: string;
+      scope: string;
+      environment: string | null;
+      connector: string | null;
+      active_revision_id: string | null;
+      created_by: string;
+      author_display_name: string | null;
+      author_email: string | null;
+      message: string | null;
+      is_published: boolean;
+      has_approvals: boolean;
+    }[]
+  >`
+    SELECT
+      pb.id, pb.name, pb.scope,
+      pb.environment,
+      pb.connector,
+      pb.active_revision_id,
+      pb.created_by,
+      author.display_name AS author_display_name,
+      author.email AS author_email,
+      pr.message,
+      (EXISTS (
+        SELECT 1 FROM policy_publish pp
+        WHERE pp.revision_id = pb.active_revision_id
+          AND pp.tenant_id = pb.tenant_id
+      )) AS is_published,
+      (EXISTS (
+        SELECT 1 FROM policy_approval pa
+        WHERE pa.revision_id = pb.active_revision_id
+          AND pa.tenant_id = pb.tenant_id
+      )) AS has_approvals
+    FROM policy_branch pb
+    LEFT JOIN policy_revision pr ON pr.id = pb.active_revision_id AND pr.tenant_id = pb.tenant_id
+    LEFT JOIN app_principal author ON author.id::text = pb.created_by AND author.tenant_id = pb.tenant_id
+    WHERE pb.tenant_id = ${tenantId}
+      AND (pb.workspace_id = ${workspaceId} OR pb.scope = 'ORGANIZATION')
+    ORDER BY pb.created_at DESC
+  `;
+  return rows.map((row) => ({
+    id: row.id,
+    name: row.name,
+    scope: row.scope as PolicyBranch["scope"],
+    environment: row.environment ?? undefined,
+    connector: row.connector ?? undefined,
+    activeRevision: row.active_revision_id ?? "",
+    author: row.author_display_name ?? row.author_email ?? row.created_by,
+    status: row.is_published ? "PUBLISHED" : row.has_approvals ? "IN_REVIEW" : ("DRAFT" as const),
+    message: row.message ?? ""
+  }));
+}
+
+export async function listBranchRevisions(
+  branchId: string,
+  workspaceId: string | null,
+  tenantId: string
+): Promise<BranchRevision[]> {
+  if (!sql) return [];
+
+  const rows = await sql<
+    {
+      revision_id: string;
+      parent_revision_id: string | null;
+      message: string;
+      author_id: string;
+      author_email: string | null;
+      source_format: string;
+      source_hash: string;
+      source_document: unknown;
+      rule_count: number;
+      is_active: boolean;
+      published_at: Date | null;
+      created_at: Date;
+    }[]
+  >`
+    SELECT
+      pr.id AS revision_id,
+      pr.parent_revision_id,
+      pr.message,
+      pr.author_id,
+      COALESCE(author.display_name, author.email) AS author_email,
+      pr.source_format,
+      pr.source_hash,
+      pr.source_document,
+      COUNT(rule.id)::int AS rule_count,
+      (pr.id = pb.active_revision_id) AS is_active,
+      (
+        SELECT pp.published_at
+        FROM policy_publish pp
+        WHERE pp.revision_id = pr.id
+          AND pp.tenant_id = pr.tenant_id
+        ORDER BY pp.published_at DESC
+        LIMIT 1
+      ) AS published_at,
+      pr.created_at
+    FROM policy_revision pr
+    JOIN policy_branch pb ON pb.id = pr.branch_id AND pb.tenant_id = pr.tenant_id
+    LEFT JOIN policy_rule rule ON rule.revision_id = pr.id AND rule.tenant_id = pr.tenant_id
+    LEFT JOIN app_principal author ON author.id::text = pr.author_id AND author.tenant_id = pr.tenant_id
+    WHERE pr.tenant_id = ${tenantId}
+      AND pr.branch_id = ${branchId}
+      AND (pb.workspace_id = ${workspaceId} OR pb.scope = 'ORGANIZATION')
+    GROUP BY
+      pr.id, pr.parent_revision_id, pr.message, pr.author_id, author.display_name, author.email,
+      pr.source_format, pr.source_hash, pr.source_document, pb.active_revision_id, pr.created_at
+    ORDER BY pr.created_at DESC
+  `;
+
+  return rows.map((row) => {
+    const sourceDocument =
+      row.source_document && typeof row.source_document === "object" && !Array.isArray(row.source_document)
+        ? (row.source_document as Record<string, unknown>)
+        : {};
+    const metadata =
+      sourceDocument.metadata && typeof sourceDocument.metadata === "object" && !Array.isArray(sourceDocument.metadata)
+        ? (sourceDocument.metadata as Record<string, unknown>)
+        : {};
+    const spctrePack =
+      metadata.spctre_pack && typeof metadata.spctre_pack === "object" && !Array.isArray(metadata.spctre_pack)
+        ? (metadata.spctre_pack as Record<string, unknown>)
+        : {};
+
+    return {
+      revisionId: row.revision_id,
+      parentRevisionId: row.parent_revision_id ?? null,
+      message: row.message,
+      authorId: row.author_id,
+      authorEmail: row.author_email ?? null,
+      sourceFormat: row.source_format,
+      sourceHash: row.source_hash,
+      packId: typeof spctrePack.packId === "string" ? spctrePack.packId : undefined,
+      packVersion:
+        typeof spctrePack.version === "string"
+          ? spctrePack.version
+          : typeof metadata.version === "string"
+            ? metadata.version
+            : undefined,
+      ruleCount: row.rule_count,
+      isActive: row.is_active,
+      publishedAt: row.published_at?.toISOString() ?? null,
+      createdAt: row.created_at.toISOString()
+    };
+  });
+}
+
+export async function getBranchForRollback(params: {
+  tenantId: string;
+  branchId: string;
+}): Promise<{ workspace_id: string | null; workspace_slug: string | null } | null> {
+  if (!sql) return null;
+  const rows = await sql<{ workspace_id: string | null; workspace_slug: string | null }[]>`
+    SELECT pb.workspace_id, w.slug AS workspace_slug
+    FROM policy_branch pb
+    LEFT JOIN workspace w ON w.id = pb.workspace_id
+    WHERE pb.tenant_id = ${params.tenantId}
+      AND pb.id = ${params.branchId}
+    LIMIT 1
+  `;
+  return rows[0] ?? null;
+}
+
+export async function getBranchWithPublishStatus(params: {
+  tenantId: string;
+  branchId: string;
+}): Promise<{ id: string; has_published_revision: boolean } | null> {
+  if (!sql) return null;
+  const rows = await sql<{ id: string; has_published_revision: boolean }[]>`
+    SELECT
+      pb.id,
+      (EXISTS (
+        SELECT 1 FROM policy_publish pp
+        INNER JOIN policy_revision pr ON pr.id = pp.revision_id
+        WHERE pr.branch_id = pb.id
+          AND pp.tenant_id = pb.tenant_id
+      )) AS has_published_revision
+    FROM policy_branch pb
+    WHERE pb.id = ${params.branchId}
+      AND pb.tenant_id = ${params.tenantId}
+    LIMIT 1
+  `;
+  return rows[0] ?? null;
+}
+
+export async function deletePolicyBranch(params: {
+  tenantId: string;
+  branchId: string;
+}): Promise<void> {
+  if (!sql) return;
+  await sql`
+    UPDATE policy_branch
+    SET active_revision_id = NULL
+    WHERE id = ${params.branchId} AND tenant_id = ${params.tenantId}
+  `;
+  await sql`DELETE FROM policy_publish WHERE branch_id = ${params.branchId} AND tenant_id = ${params.tenantId}`;
+  await sql`DELETE FROM simulation_run WHERE branch_id = ${params.branchId} AND tenant_id = ${params.tenantId}`;
+  await sql`
+    DELETE FROM policy_branch
+    WHERE id = ${params.branchId} AND tenant_id = ${params.tenantId}
+  `;
+}
+
+export async function getPublishBranchScope(params: {
+  tenantId: string;
+  branchId: string;
+}): Promise<{ workspace_id: string | null; scope: string; environment: string | null; workspace_slug: string | null } | null> {
+  if (!sql) return null;
+  const rows = await sql<{ workspace_id: string | null; scope: string; environment: string | null; workspace_slug: string | null }[]>`
+    SELECT pb.workspace_id, pb.scope, pb.environment, w.slug AS workspace_slug
+    FROM policy_branch pb
+    LEFT JOIN workspace w ON w.id = pb.workspace_id
+    WHERE pb.id = ${params.branchId}
+      AND pb.tenant_id = ${params.tenantId}
+    LIMIT 1
+  `;
+  return rows[0] ?? null;
+}
+
+export async function revisionExistsOnBranch(params: {
+  tenantId: string;
+  branchId: string;
+  targetRevisionId: string;
+  workspaceId: string | null;
+}): Promise<boolean> {
+  if (!sql) return false;
+  const rows = await sql<{ id: string }[]>`
+    SELECT id
+    FROM policy_revision
+    WHERE tenant_id = ${params.tenantId}
+      AND branch_id = ${params.branchId}
+      AND id = ${params.targetRevisionId}
+      AND (
+        workspace_id = ${params.workspaceId}
+        OR (${params.workspaceId}::uuid IS NULL AND workspace_id IS NULL)
+      )
+    LIMIT 1
+  `;
+  return rows.length > 0;
+}
+
+export async function revisionExistsOnPublishBranch(params: {
+  tenantId: string;
+  branchId: string;
+  revisionId: string;
+  workspaceId: string | null;
+}): Promise<boolean> {
+  if (!sql) return false;
+  const rows = await sql<{ id: string }[]>`
+    SELECT id
+    FROM policy_revision
+    WHERE tenant_id = ${params.tenantId}
+      AND branch_id = ${params.branchId}
+      AND id = ${params.revisionId}
+      AND (
+        workspace_id = ${params.workspaceId}
+        OR (${params.workspaceId}::uuid IS NULL AND workspace_id IS NULL)
+      )
+    LIMIT 1
+  `;
+  return rows.length > 0;
+}
+
+export async function getRevisionWorkspaceScope(params: {
+  tenantId: string;
+  revisionId: string;
+}): Promise<{ workspace_id: string | null; workspace_slug: string | null } | null> {
+  if (!sql) return null;
+  const rows = await sql<{ workspace_id: string | null; workspace_slug: string | null }[]>`
+    SELECT pr.workspace_id, w.slug AS workspace_slug
+    FROM policy_revision pr
+    LEFT JOIN workspace w ON w.id = pr.workspace_id
+    WHERE pr.id = ${params.revisionId}
+      AND pr.tenant_id = ${params.tenantId}
+    LIMIT 1
+  `;
+  return rows[0] ?? null;
+}
+
+export async function getRevisionAgeHours(revisionId: string, tenantId: string): Promise<number | null> {
+  if (!sql || !revisionId) return null;
+  const rows = await sql<{ age_hours: number }[]>`
+    SELECT EXTRACT(EPOCH FROM (now() - created_at)) / 3600 AS age_hours
+    FROM policy_revision
+    WHERE tenant_id = ${tenantId}
+      AND id = ${revisionId}
+    LIMIT 1
+  `;
+  const value = rows[0]?.age_hours;
+  return typeof value === "number" ? Math.round(value * 10) / 10 : null;
+}
+
+export async function getRevisionForDraft(params: {
+  tenantId: string;
+  branchId: string;
+  revisionId: string;
+}): Promise<{
+  workspace_id: string | null;
+  workspace_slug: string | null;
+  source_format: string;
+  source_path: string | null;
+  source_document: unknown;
+} | null> {
+  if (!sql) return null;
+  const rows = await sql<{
+    workspace_id: string | null;
+    workspace_slug: string | null;
+    source_format: string;
+    source_path: string | null;
+    source_document: unknown;
+  }[]>`
+    SELECT pr.workspace_id, w.slug AS workspace_slug, pr.source_format, pr.source_path, pr.source_document
+    FROM policy_revision pr
+    LEFT JOIN workspace w ON w.id = pr.workspace_id
+    WHERE pr.tenant_id = ${params.tenantId}
+      AND pr.branch_id = ${params.branchId}
+      AND pr.id = ${params.revisionId}
+    LIMIT 1
+  `;
+  return rows[0] ?? null;
+}
+
+export async function persistImportedBranch(params: {
+  tenantId: string;
+  authorId: string;
+  branchName: string;
+  scope: string;
+  workspaceId: string;
+  environment?: string;
+  connector?: string;
+  sourcePath: string;
+  source: string;
+  rules: PolicyRuleSummary[];
+  metadata: Record<string, unknown>;
+  sourceDocument?: Record<string, unknown>;
+  compatibility?: AgtCompatibilityReport;
+  message: string;
+  targetStacks?: string[];
+}): Promise<{ branchId: string; revisionId: string; sourceHash: string; importedAt: string }> {
+  if (!sql) throw new Error("Database not configured.");
+  assertCustomerRulesDoNotUseReservedIds(params.rules);
+
+  const sourceHash = `sha256:${createHash("sha256").update(params.source).digest("hex").slice(0, 16)}`;
+  const branchId = crypto.randomUUID();
+  const revisionId = crypto.randomUUID();
+  const importedAt = new Date().toISOString();
+
+  await ensureDemoTenant();
+
+  if (params.scope !== "ORGANIZATION") {
+    const workspaceRows = await sql<{ id: string }[]>`
+      SELECT id FROM workspace
+      WHERE id = ${params.workspaceId} AND tenant_id = ${params.tenantId}
+      LIMIT 1
+    `;
+    if (!workspaceRows.length) throw new Error("Workspace is not available in the selected tenant.");
+  }
+
+  await sql.begin(async (tx) => {
+    const workspaceId = params.scope === "ORGANIZATION" ? null : params.workspaceId;
+    await tx`
+      INSERT INTO policy_branch (
+        id, tenant_id, workspace_id, scope, environment, connector, name, created_by
+      ) VALUES (
+        ${branchId}, ${params.tenantId}, ${workspaceId},
+        ${params.scope}, ${params.environment ?? null}, ${params.connector ?? null},
+        ${params.branchName}, ${params.authorId}
+      )
+    `;
+    const targetStacksJson = JSON.stringify((params.targetStacks ?? []).map((stack) => ({ stack })));
+    await tx`
+      INSERT INTO policy_revision (
+        id, tenant_id, workspace_id, branch_id,
+        source_format, source_path, source_document, source_hash,
+        author_id, message, target_stacks
+      ) VALUES (
+        ${revisionId}, ${params.tenantId}, ${workspaceId}, ${branchId},
+        'AGT_YAML', ${params.sourcePath},
+        ${JSON.stringify({
+          ...(params.sourceDocument ?? { rules: params.rules, metadata: params.metadata }),
+          metadata: params.metadata,
+          spctre_agt_compatibility: params.compatibility,
+        })},
+        ${sourceHash}, ${params.authorId}, ${params.message},
+        ${targetStacksJson}::jsonb
+      )
+    `;
+    if (params.rules.length > 0) {
+      const ruleRows = params.rules.map((rule) => ({
+        tenant_id: params.tenantId,
+        workspace_id: workspaceId,
+        branch_id: branchId,
+        revision_id: revisionId,
+        stable_rule_id: rule.stableRuleId,
+        title: rule.title,
+        effect: rule.effect,
+        source_path: rule.sourcePath ?? params.sourcePath,
+        domains: rule.domains ?? [],
+        connectors: rule.connectors ?? [],
+        actions: rule.actions ?? [],
+        immutable: rule.immutable ?? false,
+      }));
+      await tx`INSERT INTO policy_rule ${tx(ruleRows, "tenant_id", "workspace_id", "branch_id", "revision_id", "stable_rule_id", "title", "effect", "source_path", "domains", "connectors", "actions", "immutable")}`;
+    }
+    await tx`
+      UPDATE policy_branch
+      SET active_revision_id = ${revisionId}
+      WHERE id = ${branchId} AND tenant_id = ${params.tenantId}
+    `;
+  });
+
+  return { branchId, revisionId, sourceHash, importedAt };
+}
+
+export async function createDraftRevision(params: {
+  tenantId: string;
+  draftRevisionId: string;
+  branchId: string;
+  baseRevisionId: string;
+  baseWorkspaceId: string | null;
+  sourceFormat: string;
+  sourcePath: string;
+  sourceDocument: Record<string, unknown>;
+  sourceHash: string;
+  actorId: string;
+  message: string;
+}): Promise<void> {
+  if (!sql) throw new Error("Database not configured.");
+  await sql.begin(async (tx) => {
+    await tx`
+      INSERT INTO policy_revision (
+        id, tenant_id, workspace_id, branch_id, parent_revision_id,
+        source_format, source_path, source_document, source_hash,
+        author_id, message
+      ) VALUES (
+        ${params.draftRevisionId}, ${params.tenantId}, ${params.baseWorkspaceId}, ${params.branchId}, ${params.baseRevisionId},
+        ${params.sourceFormat}, ${params.sourcePath},
+        ${JSON.stringify(params.sourceDocument)}, ${params.sourceHash},
+        ${params.actorId}, ${params.message}
+      )
+    `;
+    await tx`
+      INSERT INTO policy_rule (
+        tenant_id, workspace_id, branch_id, revision_id,
+        stable_rule_id, title, effect, source_path,
+        domains, connectors, actions, immutable
+      )
+      SELECT
+        tenant_id, workspace_id, branch_id, ${params.draftRevisionId},
+        stable_rule_id, title, effect, source_path,
+        domains, connectors, actions, immutable
+      FROM policy_rule
+      WHERE tenant_id = ${params.tenantId} AND revision_id = ${params.baseRevisionId}
+    `;
+    await tx`
+      UPDATE policy_branch
+      SET active_revision_id = ${params.draftRevisionId}
+      WHERE tenant_id = ${params.tenantId} AND id = ${params.branchId}
+    `;
+  });
+}
+
+export async function createCommittedRevision(params: {
+  tenantId: string;
+  revisionId: string;
+  branchId: string;
+  branchWorkspaceId: string | null;
+  parentRevisionId: string;
+  sourcePath: string;
+  sourceDocument: Record<string, unknown>;
+  sourceHash: string;
+  actorId: string;
+  message: string;
+  rules: CommittedRuleRow[];
+}): Promise<void> {
+  if (!sql) throw new Error("Database not configured.");
+  assertCustomerRulesDoNotUseReservedIds(params.rules.map((rule) => ({ stableRuleId: rule.stable_rule_id })));
+  await sql.begin(async (tx) => {
+    await tx`
+      INSERT INTO policy_revision (
+        id, tenant_id, workspace_id, branch_id, parent_revision_id,
+        source_format, source_path, source_document, source_hash,
+        author_id, message
+      ) VALUES (
+        ${params.revisionId}, ${params.tenantId}, ${params.branchWorkspaceId}, ${params.branchId}, ${params.parentRevisionId},
+        'AGT_YAML', ${params.sourcePath}, ${JSON.stringify(params.sourceDocument)}, ${params.sourceHash},
+        ${params.actorId}, ${params.message}
+      )
+    `;
+    await tx`INSERT INTO policy_rule ${tx(params.rules, "tenant_id", "workspace_id", "branch_id", "revision_id", "stable_rule_id", "title", "effect", "source_path", "domains", "connectors", "actions", "immutable")}`;
+    await tx`
+      UPDATE policy_branch
+      SET active_revision_id = ${params.revisionId}
+      WHERE tenant_id = ${params.tenantId} AND id = ${params.branchId}
+    `;
+    await tx`
+      DELETE FROM policy_approval
+      WHERE tenant_id = ${params.tenantId} AND revision_id = ${params.parentRevisionId}
+    `;
+  });
+}

@@ -1,0 +1,88 @@
+---
+title: Trust Governance Pack
+description: Trust score calibration and context budget enforcement for multi-turn agent sessions.
+---
+
+The **Trust Governance Pack** (`trust-governance-v1`) provides high-risk governance rules for trust score calibration and context budget management across agent sessions. It is designed to feed the [Decision Gateway](/help-docs/developer/integrations/gateway) and requires two approvals (Security + Compliance) before publishing.
+
+<Callout type="warn">
+  This pack has `riskLevel: HIGH`. All four immutable rules require the gateway to be in `BLOCKING` or `HYBRID` mode before they have enforcement effect.
+</Callout>
+
+## Pack details
+
+| Field | Value |
+|---|---|
+| ID | `trust-governance-v1` |
+| Connector | `trust-governance` |
+| Risk level | `HIGH` |
+| Minimum approvals | 2 (Security + Compliance roles) |
+| Compatibility | All major frameworks |
+
+## Rules
+
+| Rule ID | Effect | Trigger |
+|---|---|---|
+| `trust-governance.trust_score.block_critically_low` | `DENY` | Agent trust score is critically low in production |
+| `trust-governance.trust_score.escalate_low_high_consequence` | `DENY` | Low-trust agent attempts a high-consequence action |
+| `trust-governance.trust_score.warn_below_threshold` | `WARN` | Agent trust score drops below the workspace warn threshold |
+| `trust-governance.context_budget.warn_overrun` | `WARN` | Session context token count exceeds the configured budget warn threshold |
+| `trust-governance.context_budget.escalate_severe_overrun` | `DENY` | Session context token count exceeds the escalation threshold |
+| `trust-governance.decay.warn_rapid_drop` | `WARN` | Agent trust score drops by more than 0.1 in a single observation window |
+| `trust-governance.restoration.require_review` | `DENY` | Trust restoration attempted without human policy review |
+| `trust-governance.context_budget.warn_high_summarization` | `WARN` | Multiple summarization events indicate context pressure |
+
+Rules marked `DENY` are **immutable** — their effect cannot be changed from the UI. `WARN` rules are mutable and can be tuned per workspace.
+
+## How trust scores work
+
+A trust score is a numeric signal (0.0–1.0) that reflects an agent's observed behavioral quality over time. It is submitted as `trustScore` on each [gateway decide](/help-docs/developer/integrations/gateway) call:
+
+```json
+{
+  "decisionId": "dec_01abc…",
+  "artifactHash": "sha256:…",
+  "policyContext": [...],
+  "trustScore": 0.62,
+  "contextBudget": 14500,
+  "riskLevel": "HIGH"
+}
+```
+
+Spctre does not compute the trust score — the agent or a trust service computes it and includes it in the gateway request. The pack then evaluates it against the configured thresholds.
+
+## Context budget
+
+The `contextBudget` field (integer, token count remaining) triggers the context budget rules. Submit it alongside `trustScore` on each gateway call. Rules fire when the budget drops below configured thresholds or when multiple summarization events are observed in a session.
+
+## Attaching the pack
+
+1. Go to **Packs** in the control plane
+2. Search for `trust-governance-v1`
+3. Click **Attach to workspace**
+4. Configure threshold values in the rule conditions:
+   - `trustScore.criticalThreshold` — score below which actions are blocked (default: `0.2`)
+   - `trustScore.warnThreshold` — score below which warnings fire (default: `0.5`)
+   - `contextBudget.warnThreshold` — tokens remaining that triggers a warning
+   - `contextBudget.escalateThreshold` — tokens remaining that triggers escalation
+5. Submit the branch for review (requires Security + Compliance approval)
+6. Publish the branch
+
+## Trust API
+
+The control plane exposes a trust subsystem for recording observations and reading trust history:
+
+| Endpoint | Method | v1 alias | Purpose |
+|---|---|---|---|
+| `/api/trust/ingest` | POST | ✓ `/api/v1/trust/ingest` | Submit a trust score observation |
+| `/api/trust/evaluate` | POST | ✓ `/api/v1/trust/evaluate` | Evaluate current trust state for an agent |
+| `/api/trust/history` | GET | — | Read historical trust scores for an agent |
+| `/api/trust/context-budget` | GET / POST | ✓ `/api/v1/trust/context-budget` | Read or update context budget for a session |
+| `/api/trust/policy` | GET / POST | — | List or create trust policies |
+| `/api/trust/policy/[id]` | PATCH / DELETE | — | Update or delete a trust policy |
+
+All endpoints require a service token with `operations:read` or `evidence:write` scope.
+
+## Cross-surface trust history
+
+If an agent operates across multiple surfaces (e.g. a CS tool running as both a Zendesk integration and a web chat widget), trust observations from all surfaces can be aggregated into a single history view. See [Cross-surface agent identity](/help-docs/developer/agents/cross-surface-identity) for how to link surfaces and read the unified trust history via `GET /api/agents/{canonicalAgentId}/trust-history`.

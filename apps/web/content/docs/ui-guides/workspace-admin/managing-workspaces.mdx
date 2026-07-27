@@ -1,0 +1,63 @@
+---
+title: Creating and managing workspaces
+description: New workspace setup, renaming, archiving, and per-workspace policy isolation.
+---
+
+Workspaces are isolated policy environments within your Spctre organisation. Each workspace has its own policy branches, bundles, users, and settings. Use workspaces to separate concerns: by team, product line, environment tier, or regulatory scope.
+
+## Creating a workspace
+
+<Steps>
+<Step>
+
+In the left nav, click **Admin → Workspaces**.
+
+</Step>
+<Step>
+
+Click **New workspace**.
+
+</Step>
+<Step>
+
+Fill in:
+- **Name** — short identifier (e.g. `payments-prod`, `ml-platform`, `compliance-sandbox`). This becomes the workspace slug and appears in bundle paths.
+- **Display name** — full label shown in the UI
+- **Description** — optional; helps other admins understand the purpose
+
+</Step>
+<Step>
+
+Click **Create workspace**. The workspace is created with no users and no policy branches. You're automatically added as an Admin.
+
+</Step>
+</Steps>
+
+## Renaming a workspace
+
+1. Go to **Admin → Workspaces**, click the workspace name.
+2. Click **Settings** → **General**.
+3. Update the **Display name** field. Note: the slug (URL-safe name used in API calls and bundle paths) cannot be changed after creation.
+
+## Policy isolation
+
+Each workspace has its own:
+- Policy branches and published bundles
+- User role assignments (someone can be a Reviewer in Workspace A and a Policy Creator in Workspace B)
+- Settings (retention period, rate limit overrides, gateway mode)
+
+Organisation-scope policies apply across all workspaces — these are authored in the `organisation` workspace scope. Workspace-scope policies only affect agents in that workspace.
+
+## Archiving a workspace
+
+Archiving removes a workspace from active use without deleting its history.
+
+1. Go to the workspace **Settings → General**.
+2. Click **Archive workspace**.
+3. Confirm.
+
+Archived workspaces are listed under **Admin → Workspaces → Archived**. Their policy history, audit trail, and compliance data are preserved. Archived workspaces cannot receive new branches or bundles. To restore, click **Unarchive**.
+
+<Callout type="warn">
+Deleting a workspace is permanent and removes all associated data. Archive instead if you might need the history.
+</Callout>

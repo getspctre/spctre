@@ -1,0 +1,59 @@
+---
+title: Managing roles and permissions
+description: What each role can and cannot do, and role inheritance across workspaces.
+---
+
+## Role reference
+
+| Capability | Viewer | Policy Creator | Reviewer | Admin |
+|---|---|---|---|---|
+| Read compliance reports | ✓ | ✓ | ✓ | ✓ |
+| Read audit trail | ✓ | ✓ | ✓ | ✓ |
+| Read operations log | | | ✓ | ✓ |
+| Browse packs | ✓ | ✓ | ✓ | ✓ |
+| Create/edit policy branches | | ✓ | | ✓ |
+| Submit branches for review | | ✓ | | ✓ |
+| Approve/reject branches | | | ✓ | ✓ |
+| Handle escalations | | | ✓ | ✓ |
+| Acknowledge WARN records | | | ✓ | ✓ |
+| Invite users | | | | ✓ |
+| Change user roles | | | | ✓ |
+| Configure SSO | | | | ✓ |
+| Manage service tokens | | | | ✓ |
+| Archive workspaces | | | | ✓ |
+| View/export all data | | | | ✓ |
+
+## Changing a user's role
+
+1. Go to **Admin → Users**.
+2. Click the user's name to open their detail page.
+3. Under **Workspace access**, click **Edit** on the relevant workspace row.
+4. Change the role and click **Save**.
+
+The role change takes effect immediately — the user's next request uses the new permissions.
+
+## Multi-workspace role assignments
+
+Users can have different roles in different workspaces. A common pattern:
+- `Policy Creator` in `sandbox` — can author freely
+- `Reviewer` in `staging` — can review but not author
+- `Viewer` in `production` — read-only access to production data
+
+To update a user's role in a specific workspace, go to **Admin → Users** → select the user → **Workspace access** tab.
+
+## Organisation Admin
+
+An **Organisation Admin** has Admin access across all workspaces automatically. Assign this role only to users who genuinely need platform-wide control (e.g. platform engineering leads, security team).
+
+To assign Organisation Admin:
+1. Go to **Admin → Users** → select the user.
+2. Click **Assign Organisation Admin**.
+3. Confirm — this is an elevated operation logged in the operations log.
+
+## Removing a user
+
+1. Go to **Admin → Users**, click the user.
+2. Click **Remove user**.
+3. Confirm.
+
+Removing a user revokes all workspace access and invalidates their sessions. If SCIM is configured, deprovisioning through your IdP removes the user automatically.

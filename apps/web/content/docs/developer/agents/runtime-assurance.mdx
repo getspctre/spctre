@@ -1,0 +1,54 @@
+---
+title: Runtime assurance
+description: Verifying that production runtimes are enforcing the published policy bundle.
+---
+
+Runtime assurance is a bounded, evidence-based check that production agent runtimes are actually enforcing the policy bundle Spctre published — not a general infrastructure, SaaS, or non-human-identity discovery product. Every signal it surfaces is derived from evidence a runtime already submitted; it never scans, crawls, or probes for unmanaged assets.
+
+The surface lives on the **Agents** page and is also available via `GET /api/agents/runtime-assurance`.
+
+## Production heartbeat assurance
+
+`spctre watch --heartbeat` submits a periodic heartbeat from a production runner containing its branch, revision, and artifact hash. Runtime assurance compares that heartbeat against the currently published bundle and assigns one status per runtime:
+
+| Status | Meaning |
+|---|---|
+| `CURRENT` (shown as **Assured**) | The heartbeat's artifact hash matches the published bundle. |
+| `DRIFTED` | The runtime reported a heartbeat, but its artifact hash does not match the current published bundle. |
+| `PROVENANCE_GAP` | No policy bundle is published yet, or the heartbeat is missing branch, revision, or artifact hash. |
+| `STALE` | No heartbeat has been observed within the last hour. |
+
+Only production heartbeat evidence can earn `CURRENT`. General tool-call evidence from an agent adapter does not count toward assurance — it proves policy was evaluated for a decision, not that a specific runtime binary matches the published bundle.
+
+## Connector/action coverage
+
+The same surface collapses the last 30 days of observed production tool activity by connector (Stripe, GitHub, PostgreSQL, etc.) into one of three states:
+
+| Status | Meaning |
+|---|---|
+| `GOVERNED` | Every observed action for the connector matches the active published revision. |
+| `AUDIT_ONLY` | The connector has retained policy evidence, but at least one observed action doesn't match an active rule. |
+| `PROVENANCE_GAP` | The retained evidence for the connector lacks policy references entirely. |
+
+## Policy-scoped discovery
+
+Runtime assurance also surfaces two kinds of review candidates, derived only from evidence that already references a policy — this is not an asset inventory or network/SaaS scan:
+
+- **`UNMANAGED_RUNTIME_CANDIDATE`** — a runtime observed submitting policy-scoped evidence in the last 30 days with no matching production heartbeat.
+- **`STALE_POLICY_ARTIFACT`** — a runtime with an observed artifact hash that doesn't match any recently published revision.
+
+## API
+
+`GET /api/agents/runtime-assurance` requires an authenticated session and returns the same `CURRENT` / `DRIFTED` / `PROVENANCE_GAP` reporting-runtime inventory shown in the UI, plus `productionHeartbeatAssurance`, `policyScopedDiscovery`, and `connectorActionCoverage`.
+
+Query parameters:
+
+| Parameter | Values | Effect |
+|---|---|---|
+| `status` | `CURRENT`, `DRIFTED`, `PROVENANCE_GAP` | Filters the runtime inventory (and its derived alerts) to one drift status. |
+| `agentId` | an agent ID | Filters the runtime inventory to one agent. |
+
+```bash
+curl -H "Authorization: Bearer $SPCTRE_ACCESS_TOKEN" \
+  "https://app.spctre.dev/api/agents/runtime-assurance?status=DRIFTED"
+```

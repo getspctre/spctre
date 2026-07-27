@@ -1,0 +1,95 @@
+---
+title: Gateway decisions
+description: Calling the gateway before high-stakes actions to receive a PROCEED, ESCALATE, or ABORT decision.
+---
+
+The gateway is an inline pre-execution check for high-stakes actions. Unlike local bundle evaluation (which happens offline), the gateway call reaches the control plane and can trigger human review before the agent continues.
+
+Use the gateway for actions with material consequences: financial transactions, credential grants, deployments, data deletions, external communications.
+
+## POST /api/v1/gateway/decide
+
+```http
+POST /api/v1/gateway/decide
+Authorization: Bearer <token>
+Content-Type: application/json
+```
+
+### Request
+
+```json
+{
+  "decisionId": "dec_01j9xk…",
+  "connector": "stripe",
+  "action": "refund",
+  "riskLevel": "HIGH",
+  "artifactHash": "sha256:abc123…",
+  "policyContext": [
+    { "scope": "CONNECTOR", "branchId": "br_01", "revisionId": "rev_99", "artifactHash": "sha256:abc123…" }
+  ],
+  "consequence": "Full refund of $2,400 to enterprise customer",
+  "amountUsd": 2400,
+  "toolIntent": "process refund for disputed charge",
+  "planSummary": "Billing agent: refund for invoice INV-0042"
+}
+```
+
+### Response
+
+```json
+{
+  "gatewayEnabled": true,
+  "mode": "HYBRID",
+  "decision": {
+    "outcome": "PROCEED",
+    "reason": "Amount within approved tier; reviewer on record",
+    "riskLevel": "HIGH",
+    "shouldQueue": false
+  },
+  "meta": {
+    "traceId": "trc_01j9xk…",
+    "ts": "2026-06-09T10:00:00Z"
+  }
+}
+```
+
+## Outcome handling
+
+| `outcome` | Required agent behaviour |
+|---|---|
+| `PROCEED` | Continue with execution |
+| `ESCALATE` | **Pause.** Poll `/api/gateway/escalations/status?decisionId=<decisionId>` until resolved. See [Escalation handling](/help-docs/ai-agents/operations/escalation-handling). |
+| `ABORT` | **Halt.** Log the reason. Ingest evidence with `DENY` status. |
+
+<Callout type="warn">
+  Never proceed past `ESCALATE` or `ABORT`. The evidence record must reflect what the agent actually did — proceeding after a block destroys the audit trail.
+</Callout>
+
+## Risk levels
+
+| Value | Use for |
+|---|---|
+| `LOW` | Reads, lookups, informational queries |
+| `MEDIUM` | State changes with limited blast radius |
+| `HIGH` | Financial operations, credential grants, bulk mutations |
+| `CRITICAL` | Irreversible, large-scale, or security-sensitive actions |
+
+## Gateway modes
+
+| Mode | Behaviour |
+|---|---|
+| `HYBRID` | Enforces when reachable; falls back to local bundle on outage |
+| `PASSTHROUGH` | Records the decision but always returns `PROCEED` (audit-only) |
+| `BLOCKING` | Must respond before execution; no fallback |
+
+Set via `GATEWAY_MODE` environment variable or workspace gateway settings.
+
+## Outage behaviour
+
+When `GATEWAY_MODE=HYBRID` and the control plane is unreachable:
+
+1. Agent falls back to local bundle evaluation
+2. Evidence is submitted with `ingestMode: "gateway"` to signal the gateway was skipped
+3. The outage is logged with a trace ID
+
+For high-value credential grants and irreversible actions, use `GATEWAY_MODE=BLOCKING` or set `SPCTRE_GATEWAY_OUTAGE_POLICY=fail-closed`.

@@ -1,0 +1,1797 @@
+{
+  "common": {
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "save": "Enregistrer"
+  },
+  "shared": {
+    "advisor_decision": {
+      "accept": "Accepter",
+      "edit_record": "Modifier + enregistrer",
+      "edited_summary": "Résumé modifié",
+      "edited_summary_placeholder": "Modification facultative du reviewer avant l'enregistrement du feedback",
+      "rationale_placeholder": "Pourquoi accepter, modifier ou rejeter cette recommandation ?",
+      "reject": "Rejeter",
+      "reviewer_rationale": "Justification du reviewer"
+    },
+    "recommendation_decision": {
+      "accept": "Enregistrer l’indication",
+      "edit_record": "Modifier + enregistrer l’indication",
+      "edited_summary": "Indication modifiée",
+      "edited_summary_placeholder": "Modification facultative avant l’enregistrement de l’indication",
+      "rationale_placeholder": "Pourquoi enregistrer, modifier ou écarter cette indication ?",
+      "reject": "Écarter l’indication",
+      "reviewer_rationale": "Justification du reviewer"
+    },
+    "slide_out": {
+      "close": "Fermer le panneau"
+    }
+  },
+  "navigation": {
+    "agents": "Agents",
+    "alerting": "Alertes",
+    "account": "Compte",
+    "admin": "Admin",
+    "api_docs": "Docs API",
+    "audit": "Audit",
+    "audit_ledger": "Registre d'audit",
+    "audit_log": "Journal d'audit",
+    "compliance_report": "Rapport de conformité",
+    "cost": "Coût",
+    "cost_usage": "Coût et usage",
+    "escalations": "Escalades",
+    "escalation_routing": "Routage des escalades",
+    "evidence": "Preuves",
+    "help_docs": "Documentation",
+    "operations": "Opérations",
+    "packs": "Packs",
+    "policies": "Politiques",
+    "review": "Revue",
+    "rules": "Règles",
+    "siem_export": "Export SIEM",
+    "usage_billing": "Usage et facturation"
+  },
+  "sidebar": {
+    "go_to": "Aller à...",
+    "open_command_palette": "Ouvrir la palette de commandes (⌘K)",
+    "opens_new_tab": "Ouvre dans un nouvel onglet",
+    "primary_nav": "Principal"
+  },
+  "command_palette": {
+    "aria_label": "Palette de commandes",
+    "close": "Fermer",
+    "close_palette": "Fermer la palette de commandes",
+    "no_results": "Aucun résultat pour « {query} »",
+    "placeholder": "Aller à…",
+    "search_aria_label": "Rechercher dans la navigation",
+    "footer": {
+      "close": "fermer",
+      "navigate": "naviguer",
+      "open": "ouvrir",
+      "toggle": "basculer"
+    },
+    "items": {
+      "advisors": {
+        "description": "Performance des advisors et recommandations",
+        "label": "Conseillers"
+      },
+      "agents": {
+        "description": "Santé et état de la flotte d'agents",
+        "label": "Agents"
+      },
+      "audit_ledger": {
+        "description": "Journal d'événements infalsifiable chaîné par hash",
+        "label": "Registre d'audit"
+      },
+      "audit_log": {
+        "description": "Décisions runtime des agents et simulations",
+        "label": "Journal d'audit"
+      },
+      "billing": {
+        "description": "Plan d'abonnement et facturation",
+        "label": "Usage et facturation"
+      },
+      "compliance": {
+        "description": "Paquet de conformité, rétention et export",
+        "label": "Rapport de conformité"
+      },
+      "cost_usage": {
+        "description": "Dépenses, usage, budgets et enforcement des breaches",
+        "label": "Coût et usage"
+      },
+      "escalations": {
+        "description": "File de revue human-in-the-loop",
+        "label": "Escalades"
+      },
+      "escalation_routing": {
+        "description": "Acheminer les violations de politique et les notifications aux réviseurs",
+        "label": "Routage des escalades"
+      },
+      "packs": {
+        "description": "Parcourir et installer des packs de politiques",
+        "label": "Packs"
+      },
+      "policies": {
+        "description": "Gérer les branches de politiques",
+        "label": "Politiques"
+      },
+      "review": {
+        "description": "Examiner les diffs et publier",
+        "label": "Revue et publication"
+      },
+      "siem_export": {
+        "description": "Exporter les preuves d’exécution gouvernée vers Splunk ou Sentinel",
+        "label": "Export SIEM"
+      },
+      "rules": {
+        "description": "Parcourir l'inventaire des règles",
+        "label": "Règles"
+      }
+    }
+  },
+  "import_policy_panel": {
+    "trigger": "Importer",
+    "new_branch": {
+      "description": "Démarrez une nouvelle branche de politique workspace depuis un modèle scaffold, puis ajustez les règles et le scope.",
+      "eyebrow": "Scaffold de branche",
+      "title": "Créer une branche de politique"
+    }
+  },
+  "onboarding": {
+    "cli_approve": {
+      "approve": "Approuver la CLI",
+      "approved_badge": "Approuvé",
+      "approved_description": "Retournez dans votre terminal. La CLI échangera cette approbation contre un token dev et terminera la configuration du workspace ",
+      "approved_description_suffix": ".",
+      "approved_title": "CLI approuvée",
+      "auth_required": "Authentification requise",
+      "default_workspace": "default",
+      "description": "Approuvez un token de développement limité pour la synchronisation de bundles, le heartbeat et les preuves runtime.",
+      "eyebrow": "Autorisation CLI",
+      "missing": "manquant",
+      "principal": "Principal connecté",
+      "request_code": "Code de demande",
+      "sign_in": "Se connecter pour approuver",
+      "title": "Connecter la CLI Spctre",
+      "token_scope": "Scope du token"
+    }
+  },
+  "policies": {
+    "meta_summary": "{branchesCount} branches · {rulesCount} règles actives",
+    "title": "Politiques",
+    "workspace_policy": "Politique du workspace"
+  },
+  "operations": {
+    "verify_chain": {
+      "api_json": "JSON de l'API",
+      "api_title": "Sortie API développeur",
+      "broken": "Rompue",
+      "broken_at": "Rompue à {location}",
+      "title": "Vérifier la chaîne de hash du registre d'audit sur cette page",
+      "verified": "Vérifiée",
+      "verified_count": "Vérifiée ({count})",
+      "verify": "Vérifier la chaîne",
+      "verifying": "Vérification...",
+      "errors": {
+        "unreachable": "Impossible de joindre le service de vérification.",
+        "verify": "Impossible de vérifier le registre d'audit."
+      }
+    },
+    "title": "Registre d'audit",
+    "hero": {
+      "aria_label": "Aperçu du journal des opérations",
+      "eyebrow": "Audit · Registre des opérations",
+      "title": "Registre d'audit",
+      "description": "Chaîné par hachage. Couvre la politique, les preuves, l'identité, l'agent, la simulation, la vérification et la conformité.",
+      "stats": {
+        "loaded": "Événements chargés",
+        "event_types": "Types d'événements",
+        "actors": "Acteurs",
+        "chain_health": "Santé de la chaîne"
+      }
+    },
+    "filters": {
+      "clear": "Effacer le filtre"
+    },
+    "events": {
+      "eyebrow": "Audit · Événements",
+      "title": "Événements",
+      "description": "Filtrer par type d'événement. La chaîne est vérifiée à chaque chargement de page.",
+      "empty": {
+        "title": "Aucun événement dans la plage",
+        "description": "Les événements apparaissent à mesure que les modifications de politique, de preuves et d'identité sont enregistrées.",
+        "hint": "Les opérations apparaissent ici lorsque des politiques sont importées, publiées ou approuvées, ou lorsque des preuves sont ingérées et traitées."
+      }
+    },
+    "bundle_exports": {
+      "eyebrow": "Politique · Exports de bundles",
+      "title": "Historique des exports de bundles",
+      "description": "Métadonnées issues de <table>bundle_export_log</table>. Les artefacts complets ne sont pas stockés.",
+      "blocked": "{count, plural, one {# bloqué} other {# bloqués}}",
+      "empty": {
+        "title": "Aucun export de bundle enregistré",
+        "description": "Prévisualisez ou téléchargez un bundle cible pour alimenter cet historique."
+      },
+      "table": {
+        "format": "Format",
+        "outcome": "Résultat",
+        "revision": "Révision",
+        "artifact": "Artefact",
+        "compiled": "Compilé",
+        "verified": "Vérifié"
+      }
+    },
+    "table": {
+      "time": "Heure",
+      "event": "Événement",
+      "source": "Source",
+      "actor": "Acteur",
+      "hash": "Hash"
+    },
+    "pagination": {
+      "previous": "Précédent",
+      "next": "Suivant"
+    }
+  },
+  "account": {
+    "eyebrow": "Compte · Sécurité",
+    "settings_label": "Paramètres du compte",
+    "title": "Compte et sécurité",
+    "preferences": {
+      "description": "Choisissez la langue utilisée dans le control plane. Elle s'applique à votre compte pour cette session et les suivantes.",
+      "display_language": "Langue d'affichage",
+      "eyebrow": "Paramètres · Préférences",
+      "saving": "Enregistrement…",
+      "title": "Langue"
+    },
+    "passkeys": {
+      "badge": "PASSKEY",
+      "cancel": "Annuler",
+      "created": "Créé le {date}",
+      "description": "Utilisez un authentificateur de plateforme ou une clé matérielle pour la connexion sans mot de passe.",
+      "empty": "Aucun passkey enregistré pour le moment.",
+      "eyebrow": "Sécurité · Passkeys",
+      "fallback_name": "Passkey …{suffix}",
+      "last_used": "Dernière utilisation {date}",
+      "name_placeholder": "p. ex. MacBook Touch ID",
+      "never": "Jamais",
+      "register": "Enregistrer un nouveau passkey",
+      "registering": "Enregistrement...",
+      "remove": "Supprimer",
+      "rename": "Renommer",
+      "save": "Enregistrer",
+      "title": "Passkeys enregistrés",
+      "errors": {
+        "authenticator_no_public_key": "L'authentificateur n'a pas fourni de clé publique.",
+        "browser_unsupported": "Ce navigateur ne prend pas en charge l'enregistrement de passkey.",
+        "cancelled": "L'enregistrement du passkey a été annulé.",
+        "finish_failed": "Impossible de terminer l'enregistrement du passkey.",
+        "start_failed": "Impossible de démarrer l'enregistrement du passkey.",
+        "unknown": "Impossible d'enregistrer le passkey."
+      }
+    },
+    "recovery": {
+      "confirm_replace": "Confirmer : remplacer les codes existants",
+      "copy_all": "Tout copier",
+      "description": "Codes de secours à usage unique pour récupérer le compte. Chaque code ne peut être utilisé qu'une seule fois.",
+      "empty": "Aucun code de récupération n'a encore été généré.",
+      "eyebrow": "Sécurité · Récupération",
+      "generate": "Générer des codes de récupération",
+      "generate_new": "Générer de nouveaux codes",
+      "generating": "Génération…",
+      "replace_warning": "Cela invalidera vos codes inutilisés existants. Cliquez à nouveau pour confirmer.",
+      "save_codes": "Enregistrez ces codes dans un endroit sûr. Ils ne seront plus affichés.",
+      "title": "Codes de récupération",
+      "unused_remaining": "{count, plural, one {# code inutilisé restant.} other {# codes inutilisés restants.}}",
+      "errors": {
+        "empty_response": "Aucun code renvoyé.",
+        "generate": "Impossible de générer les codes.",
+        "unknown": "Impossible de générer les codes."
+      }
+    },
+    "sessions": {
+      "browser": "Navigateur",
+      "description": "Auditez et révoquez les sessions actives sur vos appareils.",
+      "device_label": "{browser} sur {os}",
+      "empty": "Aucune session active trouvée.",
+      "eyebrow": "Paramètres · Sécurité",
+      "ip_created": "IP : {ip} • Créée :",
+      "last_active": "Dernière activité :",
+      "revoke": "Révoquer",
+      "revoking": "Révocation…",
+      "this_device": "Cet appareil",
+      "title": "Sessions actives",
+      "unknown": "Inconnue",
+      "unknown_device": "Appareil inconnu",
+      "unknown_os": "Système inconnu",
+      "errors": {
+        "demo_unavailable": "La gestion des sessions n'est pas disponible en mode démo. Créez un compte Spctre Cloud gratuit pour commencer."
+      }
+    },
+    "sms": {
+      "cancel": "Annuler",
+      "channel": "SMS ({phone})",
+      "channel_fallback": "Canal",
+      "code_label": "Saisissez le code à 6 chiffres",
+      "description": "Enregistrez un numéro de téléphone pour recevoir des codes d'authentification à 6 chiffres par SMS.",
+      "eyebrow": "Sécurité · MFA",
+      "phone_label": "Saisissez le numéro de téléphone (format E.164)",
+      "remove": "Supprimer",
+      "send": "Envoyer le SMS de vérification",
+      "sending": "Envoi du code de vérification par SMS...",
+      "sent": "Nous avons envoyé un code de vérification à 6 chiffres à {phone}.",
+      "title": "Vérification SMS",
+      "verified": "L'enrôlement SMS est vérifié.",
+      "verified_at": "Vérifié {date}",
+      "verified_channels": "Canaux SMS vérifiés",
+      "verify": "Vérifier le code",
+      "errors": {
+        "invalid_code": "Saisissez un code valide à 6 chiffres.",
+        "start": "Impossible de démarrer l'enrôlement SMS.",
+        "unexpected": "Une erreur inattendue s'est produite.",
+        "unexpected_verify": "Une erreur inattendue s'est produite pendant la vérification.",
+        "verify": "Impossible de vérifier le code SMS."
+      }
+    },
+    "social": {
+      "cannot_unlink": "Vous devez conserver au moins une méthode de connexion.",
+      "connect": "Connecter",
+      "description": "Associez des comptes sociaux pour les utiliser comme méthodes de connexion à part entière.",
+      "disconnect": "Déconnecter",
+      "empty": "Aucun fournisseur d'identité sociale n'est configuré.",
+      "eyebrow": "Paramètres · Connexion sociale",
+      "github": "Compte GitHub",
+      "google": "Compte Google",
+      "linked": "Associé : {value}",
+      "not_linked": "Non associé",
+      "title": "Comptes connectés",
+      "yes": "Oui"
+    },
+    "totp": {
+      "code_label": "Saisissez le code à 6 chiffres",
+      "description": "Enregistrez une application d'authentification pour les codes de vérification à 6 chiffres.",
+      "empty": "Aucun enrôlement MFA vérifié pour le moment.",
+      "enroll": "Enrôler TOTP",
+      "eyebrow": "Sécurité · MFA",
+      "otpauth_url": "URL otpauth",
+      "remove": "Supprimer",
+      "secret": "Secret (base32)",
+      "title": "Enrôlement TOTP",
+      "verified": "L'enrôlement TOTP est vérifié.",
+      "verified_at": "Vérifié {date}",
+      "verified_badge": "VÉRIFIÉ",
+      "verified_enrollments": "Enrôlements vérifiés",
+      "verify": "Vérifier l'enrôlement",
+      "errors": {
+        "invalid_code": "Saisissez un code valide à 6 chiffres.",
+        "start": "Impossible de démarrer l'enrôlement TOTP.",
+        "verify": "Impossible de vérifier l'enrôlement MFA."
+      }
+    }
+  },
+  "admin": {
+    "auth": {
+      "aria_label": "Configuration d'authentification",
+      "eyebrow": "Organisation · Authentification",
+      "mfa_optional": "MFA optionnel",
+      "mfa_required": "MFA requis",
+      "provider_count": "{count, plural, one {# fournisseur} other {# fournisseurs}}",
+      "state_aria_label": "État de l'authentification",
+      "title": "Paramètres d'authentification",
+      "access_section": {
+        "eyebrow": "Admin · Contrôles du tenant",
+        "title": "Politique d'accès"
+      },
+      "idp": {
+        "add_provider": "Ajouter un fournisseur",
+        "add_title": "Ajouter un fournisseur d'identité",
+        "client_id": "ID client",
+        "client_secret": "Secret client",
+        "client_secret_keep": "Secret client (laisser vide pour conserver l'actuel)",
+        "description": "Connectez une autorité de connexion pour les reviewers et admins.",
+        "edit_title": "Modifier le fournisseur",
+        "issuer": "Émetteur",
+        "metadata_url": "URL de métadonnées",
+        "name": "Nom",
+        "provider_type": "Type de fournisseur",
+        "saml_cert": "Certificat de signature IdP",
+        "saml_cert_keep": "Certificat de signature IdP (laisser vide pour conserver l'actuel)",
+        "saml_cert_placeholder": "Collez le certificat base64 ou le bloc PEM complet",
+        "saml_entity_id": "ID d'entité IdP",
+        "saml_entry_point": "URL du point d'entrée IdP",
+        "saml_help_prefix": "Téléchargez les métadonnées SP depuis",
+        "saml_help_suffix": "pour configurer votre IdP.",
+        "save_provider": "Enregistrer le fournisseur",
+        "saving": "Enregistrement...",
+        "scope": "Portée",
+        "view_plans": "Voir les plans",
+        "status": {
+          "client_id_required": "L'ID client est requis pour les fournisseurs OIDC.",
+          "missing_provider": "Le fournisseur d'identité est manquant.",
+          "name_issuer_required": "Le nom et l'issuer sont requis.",
+          "removed": "Fournisseur d'identité supprimé.",
+          "saml_cert_required": "Le certificat de signature IdP est requis pour les fournisseurs SAML.",
+          "saml_entry_point_required": "L'URL du point d'entrée IdP est requise pour les fournisseurs SAML.",
+          "saved": "Fournisseur d'identité enregistré."
+        }
+      },
+      "mfa": {
+        "description": "Définissez la posture d'authentification de base pour chaque principal du control plane.",
+        "grace_days": "Délai de grâce MFA (jours)",
+        "require": "Exiger MFA",
+        "require_description": "S'applique à tous les utilisateurs locaux du control plane.",
+        "saving": "Enregistrement...",
+        "submit": "Enregistrer les paramètres du tenant",
+        "title": "Exigences MFA",
+        "status": {
+          "updated": "Paramètres MFA du tenant mis à jour."
+        }
+      },
+      "provider_section": {
+        "eyebrow": "Admin · Fédération d'identité",
+        "title": "Connexion du fournisseur"
+      },
+      "providers": {
+        "client_id": "ID client",
+        "empty_description": "Ajoutez OIDC pour faire passer la connexion au control plane par votre fournisseur d'identité.",
+        "empty_title": "Aucun fournisseur configuré",
+        "eyebrow": "Admin · Fournisseurs",
+        "issuer": "Émetteur",
+        "title": "Fournisseurs d'identité"
+      },
+      "remove_provider": {
+        "confirm": "Supprimer {providerName} comme fournisseur d'identité ? Les utilisateurs peuvent perdre ce chemin de connexion.",
+        "remove": "Supprimer le fournisseur",
+        "removed": "Supprimé",
+        "removing": "Suppression...",
+        "status": {
+          "removed": "Fournisseur d'identité supprimé."
+        }
+      },
+      "scim": {
+        "description": "Synchronisez les utilisateurs, groupes et grants de workspace depuis votre fournisseur d'identité.",
+        "eyebrow": "Admin · SCIM",
+        "plan": "Enterprise",
+        "title": "Cycle de vie du directory",
+        "tokens": {
+          "eyebrow": "Tokens de provisioning",
+          "title": "Tokens SCIM par tenant",
+          "endpoint_hint": "URL de base SCIM :",
+          "empty": "Aucun token de provisioning actif.",
+          "label": "Libellé",
+          "label_placeholder": "p. ex. Okta production",
+          "generate": "Générer un token",
+          "generating": "Génération…",
+          "created": "Créé",
+          "created_by": "Créé par",
+          "last_used": "Dernière utilisation",
+          "never_used": "Jamais",
+          "revoke": "Révoquer",
+          "copy": "Copier",
+          "copied": "Copié",
+          "copy_warning": "Copiez ce token maintenant — il n'est affiché qu'une seule fois.",
+          "status": {
+            "auth_required": "Authentification requise.",
+            "workspace_unavailable": "Contexte de workspace indisponible.",
+            "admin_required": "La permission Admin est requise.",
+            "not_entitled": "Le provisioning SCIM nécessite un abonnement Enterprise.",
+            "write_denied": "L'accès en écriture est désactivé pour ce tenant de démo.",
+            "create_failed": "Échec de la création du token SCIM.",
+            "revoke_failed": "Token introuvable ou déjà révoqué."
+          }
+        }
+      }
+    },
+    "service_keys": {
+      "active_count": "{count, plural, one {# clé active} other {# clés actives}}",
+      "aria_label": "Gestion des clés de compte de service",
+      "description": "Émettez des clés d'automatisation limitées pour la CLI, CI/CD et l'accès runtime sans interface.",
+      "eyebrow": "Administration · Clés de service",
+      "generate_aria_label": "Générer une nouvelle clé",
+      "never": "Jamais",
+      "title": "Clés de compte de service",
+      "active": {
+        "eyebrow": "Clés de service · Actives",
+        "title": "Clés API pour ce workspace"
+      },
+      "empty": {
+        "description": "Générez une clé pour activer l'accès CLI sans interface et CI/CD.",
+        "title": "Aucune clé active"
+      },
+      "form": {
+        "copied": "Copié",
+        "copy": "Copier",
+        "copy_warning": "Ce token ne sera plus affiché. Copiez-le maintenant.",
+        "created_eyebrow": "Clés de service · Créée",
+        "done": "Terminé",
+        "expires": "Expire dans quelques jours",
+        "expires_hint": "(facultatif, 1–365)",
+        "expires_placeholder": "Jamais (laisser vide)",
+        "generate": "Générer la clé",
+        "generating": "Génération…",
+        "label": "Libellé",
+        "label_placeholder": "p. ex. GitHub Actions — my-repo",
+        "prefix": "Préfixe :",
+        "scopes": "Portées",
+        "status": {
+          "admin_required": "Une autorisation admin est requise.",
+          "auth_required": "Authentification requise.",
+          "label_required": "Un libellé est requis.",
+          "permission_denied": "Autorisation refusée.",
+          "write_denied": "Accès en écriture refusé.",
+          "workspace_unavailable": "Contexte de workspace indisponible.",
+          "scope_required": "Sélectionnez au moins un scope."
+        }
+      },
+      "new": {
+        "eyebrow": "Clés de service · Nouvelle",
+        "title": "Générer une clé de compte de service"
+      },
+      "revoke": {
+        "confirm": "Révoquer la clé de service {label} ? La CI, la CLI et les automatisations existantes utilisant cette clé ne pourront plus s'authentifier.",
+        "revoke": "Révoquer",
+        "revoked": "Révoquée",
+        "revoking": "Révocation...",
+        "status": {
+          "admin_required": "Une autorisation admin est requise.",
+          "auth_required": "Authentification requise.",
+          "missing_key": "La clé de service est manquante.",
+          "not_found": "La clé de service est introuvable ou déjà révoquée.",
+          "permission_denied": "Autorisation refusée.",
+          "write_denied": "Accès en écriture refusé.",
+          "workspace_unavailable": "Contexte de workspace indisponible.",
+          "revoked": "Clé de service révoquée."
+        }
+      },
+      "table": {
+        "actions": "Actions",
+        "created": "Créée",
+        "expires": "Expiration",
+        "label": "Libellé",
+        "last_used": "Dernière utilisation",
+        "scopes": "Portées",
+        "token_prefix": "Préfixe du token"
+      },
+      "usage": {
+        "code_sample": "# Enregistrez comme secret dans votre fournisseur CI, puis référencez-le :\nSPCTRE_API_TOKEN=spctre_svc_... spctre sync",
+        "description": "Enregistrez la clé comme secret de repository et référencez-la dans votre workflow.",
+        "eyebrow": "Clés de service · CI/CD",
+        "title": "Utiliser une clé de compte de service"
+      }
+    },
+    "webhooks": {
+      "active_count": "{count, plural, one {# secret actif} other {# secrets actifs}}",
+      "aria_label": "Gestion des secrets de webhook gateway",
+      "description": "Créez des secrets par intégration pour les webhooks gateway entrants (Portkey, Helicone, LiteLLM, Notion). Chaque secret associe un fournisseur à ce workspace, afin que le tenant et le workspace soient déduits du secret plutôt que des headers fournis par l'appelant. Les secrets ne sont affichés qu'une seule fois.",
+      "eyebrow": "Administration · Webhooks",
+      "generate_aria_label": "Générer un nouveau secret webhook",
+      "title": "Secrets de webhook gateway",
+      "active": {
+        "eyebrow": "Webhooks gateway · Actifs",
+        "title": "Secrets webhook pour ce workspace"
+      },
+      "empty": {
+        "description": "Générez un secret pour authentifier les webhooks gateway entrants pour ce workspace.",
+        "title": "Aucun secret webhook actif"
+      },
+      "form": {
+        "configure_generic_prefix": "(le header générique",
+        "configure_generic_suffix": "fonctionne également). Le tenant et le workspace sont déduits du secret — aucun autre header n'est considéré fiable.",
+        "configure_header_suffix": "en-tête",
+        "configure_prefix": "Configurez votre webhook {provider} pour envoyer ce secret dans le",
+        "copied": "Copié",
+        "copy": "Copier",
+        "copy_warning": "Ce secret ne sera plus affiché. Copiez-le maintenant.",
+        "created_eyebrow": "Webhooks gateway · Créé",
+        "done": "Terminé",
+        "generate": "Générer le secret webhook",
+        "generating": "Génération…",
+        "label": "Libellé",
+        "label_hint": "(facultatif)",
+        "label_placeholder": "p. ex. Portkey — prod gateway",
+        "provider": "Fournisseur",
+        "status": {
+          "admin_required": "Une autorisation admin est requise.",
+          "auth_required": "Authentification requise.",
+          "permission_denied": "Autorisation refusée.",
+          "unsupported_provider": "Sélectionnez un fournisseur pris en charge.",
+          "write_denied": "Accès en écriture refusé.",
+          "workspace_unavailable": "Contexte de workspace indisponible."
+        }
+      },
+      "new": {
+        "eyebrow": "Webhooks gateway · Nouveau",
+        "title": "Générer un secret webhook"
+      },
+      "revoke": {
+        "confirm": "Révoquer le secret webhook {label} ? Les webhooks entrants utilisant ce secret cesseront immédiatement de s'authentifier.",
+        "revoke": "Révoquer",
+        "revoked": "Révoqué",
+        "revoking": "Révocation...",
+        "status": {
+          "admin_required": "Une autorisation admin est requise.",
+          "auth_required": "Authentification requise.",
+          "missing_registration": "L'enregistrement webhook est manquant.",
+          "not_found": "Le webhook est introuvable ou déjà révoqué.",
+          "permission_denied": "Autorisation refusée.",
+          "revoked": "Secret webhook révoqué.",
+          "write_denied": "Accès en écriture refusé.",
+          "workspace_unavailable": "Contexte de workspace indisponible."
+        }
+      },
+      "setup": {
+        "code_sample": "# Chaque webhook gateway entrant transporte le secret, p. ex. Portkey :\nx-portkey-webhook-secret: gwh_...",
+        "description_prefix": "Collez le secret dans la configuration webhook de votre fournisseur. Il est envoyé sur chaque requête entrante dans le header de signature du fournisseur (ou dans le header générique",
+        "description_suffix": " en-tête).",
+        "eyebrow": "Webhooks gateway · Configuration",
+        "title": "Utiliser un secret webhook"
+      },
+      "table": {
+        "actions": "Actions",
+        "created": "Créé",
+        "created_by": "Créé par",
+        "label": "Libellé",
+        "provider": "Fournisseur",
+        "registration": "Enregistrement"
+      }
+    },
+    "members": {
+      "aria_label": "Gestion des membres",
+      "description": "Gérez les rôles intégrés, les remplacements de workspace, l'état des invitations et l'historique d'audit RBAC.",
+      "enterprise": "Enterprise",
+      "eyebrow": "Organisation · Membres",
+      "none": "Aucun",
+      "sidebar_aria_label": "Invitations, audit RBAC et contrôles Cloud",
+      "title": "Membres de l'organisation",
+      "view_plans": "Voir les plans",
+      "counts": {
+        "active": "{count} actifs",
+        "pending": "{count} en attente",
+        "seats": "{count, plural, one {# siège} other {# sièges}}"
+      },
+      "summary": {
+        "active": "Actifs",
+        "admins": "Admins",
+        "aria_label": "Résumé des accès membres",
+        "mfa_or_passkey": "MFA ou passkey",
+        "pending_invites": "{count, plural, one {# invitation en attente} other {# invitations en attente}}",
+        "provisioned_users": "utilisateurs provisionnés",
+        "stronger_auth": "avec authentification renforcée",
+        "tenant_level_access": "accès au niveau tenant",
+        "total_seats": "Sièges au total"
+      },
+      "table_section": {
+        "eyebrow": "Admin · Gestion des sièges",
+        "title": "Membres et remplacements workspace"
+      },
+      "table": {
+        "access_state": "État d'accès",
+        "actions": "Actions",
+        "member": "Membre",
+        "org_role": "Rôle org",
+        "workspace_access": "Accès workspace"
+      },
+      "member_row": {
+        "active": "Actif",
+        "inherit_org_role": "Tous les workspaces héritent du rôle org",
+        "last_active": "Dernière activité : {date}",
+        "mfa_enrolled": "MFA enrôlé",
+        "mfa_not_enrolled": "MFA non enrôlé",
+        "no_reviewer_lanes": "Aucune lane de reviewer",
+        "passkeys": "{count, plural, one {# passkey} other {# passkeys}}",
+        "pending": "En attente",
+        "you": "Vous"
+      },
+      "role_matrix": {
+        "capabilities": "Capacités",
+        "eyebrow": "Organisation · Rôles",
+        "publish_scopes": "Scopes de publication",
+        "reviewer_lanes": "Lanes de reviewer",
+        "role": "Rôle",
+        "title": "Matrice des autorisations"
+      },
+      "invite_section": {
+        "eyebrow": "Workflow · Cycle de vie utilisateur",
+        "title": "Inviter un membre"
+      },
+      "invite_form": {
+        "create": "Créer l'invitation",
+        "creating": "Création...",
+        "description": "Attribuez le rôle org de base. Les remplacements workspace peuvent être ajoutés après la création de l'invitation.",
+        "display_name": "Nom d'affichage",
+        "display_name_placeholder": "Avery Reviewer",
+        "email": "E-mail",
+        "email_placeholder": "avery@example.com",
+        "organization_role": "Rôle d'organisation",
+        "title": "Inviter un membre"
+      },
+      "granular": {
+        "coming_soon": "La configuration granulaire des rôles arrive bientôt.",
+        "description": "Composez des rôles personnalisés à partir des lanes de reviewer, scopes de publication, limites d'environnement et contraintes de workspace, tout en conservant chaque modification dans le journal d'audit RBAC.",
+        "eyebrow": "Admin · Rôles personnalisés",
+        "fallback_description": "Les lanes de reviewer avancées, scopes de publication et grants par environnement sont gérés ici via des rôles personnalisés plutôt que par des grants ponctuels lors de l'invitation.",
+        "title": "Grants granulaires",
+        "dimensions": {
+          "environment_bounds": {
+            "label": "Limites d'environnement",
+            "value": "Développement, staging, production ou tags personnalisés"
+          },
+          "publish_scopes": {
+            "label": "Scopes de publication",
+            "value": "Workspace, connecteur, environnement, organisation"
+          },
+          "reviewer_lanes": {
+            "label": "Lanes de reviewer",
+            "value": "Security, Platform, Legal, Ops, Admin"
+          }
+        }
+      },
+      "audit": {
+        "badge": "Audit",
+        "empty_description": "Les invitations, changements de rôle et remplacements workspace apparaîtront ici.",
+        "empty_title": "Aucun changement RBAC pour le moment",
+        "eyebrow": "Audit · RBAC",
+        "tenant": "tenant",
+        "title": "Changements récents"
+      },
+      "inspector": {
+        "active": "Actif",
+        "all_workspaces_inherit": "Tous les workspaces héritent du rôle d'organisation.",
+        "applying": "Application…",
+        "apply_role": "Appliquer le rôle",
+        "cannot_remove_self": "Vous ne pouvez pas supprimer votre propre adhésion depuis cet écran.",
+        "confirm_remove_member": "Supprimer {name} de l'organisation ? Cette action est irréversible.",
+        "confirm_revoke_invite": "Révoquer l'invitation en attente pour {name} ? Elle ne pourra plus être acceptée.",
+        "current_user": "Utilisateur actuel",
+        "inherit_org_role": "Hériter du rôle org",
+        "inspect": "Inspecter",
+        "invite_revoked": "Invitation révoquée",
+        "last_active": "Dernière activité",
+        "lifecycle": "Cycle de vie",
+        "member_actions": "Actions du membre",
+        "member_removed": "Membre supprimé",
+        "mfa_enrolled": "MFA enrôlé",
+        "mfa_not_enrolled": "MFA non enrôlé",
+        "no_reviewer_lanes_tenant": "Aucune lane de reviewer n'est attribuée par le rôle tenant.",
+        "no_workspaces": "Aucun workspace",
+        "organization_role": "Rôle d'organisation",
+        "override_option": "Remplacement : {role}",
+        "override_role": "Rôle de remplacement",
+        "overrides": "Remplacements",
+        "panel_eyebrow": "Admin · Membre",
+        "passkeys": "Passkeys",
+        "pending": "En attente",
+        "remove_member": "Supprimer le membre",
+        "removing": "Suppression...",
+        "revoke_invite": "Révoquer l'invitation",
+        "revoking": "Révocation...",
+        "reviewer_lanes": "Lanes de reviewer : {lanes}",
+        "role": "Rôle",
+        "save_override": "Enregistrer le remplacement",
+        "saving": "Enregistrement...",
+        "status": "État",
+        "summary_aria_label": "Résumé des accès membres",
+        "tenant_access": "Accès tenant",
+        "workspace": "Workspace",
+        "workspace_access": "Accès workspace",
+        "workspace_override": "remplacement workspace"
+      }
+    },
+    "workflows": {
+      "builder_aria_label": "Constructeur de workflows d'approbation",
+      "cloud": "Cloud",
+      "description": "Configurez les gates de publication par workspace et environnement.",
+      "eyebrow": "Administration · Workflows",
+      "sidebar_aria_label": "Audit des workflows et contrôles gérés",
+      "title": "Workflows d'approbation",
+      "counts": {
+        "enabled": "{count} activés",
+        "workflows": "{count, plural, one {# workflow} other {# workflows}}"
+      },
+      "rules": {
+        "eyebrow": "Workflow · Gates",
+        "title": "Règles de workflow actives"
+      },
+      "enforcement": {
+        "description": "Acheminez automatiquement les policies à haut risque, expirez les approbations obsolètes et notifiez les reviewers.",
+        "eyebrow": "Workflow · Application",
+        "title": "Routage du risque et rappels"
+      },
+      "audit": {
+        "badge": "Audit",
+        "empty_description": "Les modifications de règles et de mode apparaîtront ici.",
+        "empty_title": "Aucun changement de workflow pour le moment",
+        "eyebrow": "Audit · Workflows",
+        "title": "Changements récents",
+        "workflow_fallback": "workflow"
+      },
+      "form": {
+        "allow_immediate_publish": "Autoriser la publication immédiate du pack",
+        "allow_immediate_publish_description": "Lorsque cette option est activée, les admins du workspace peuvent installer ou mettre à niveau un pack de policies et le publier directement sans étape de review séparée.",
+        "approval_role": "Rôle d'approbation",
+        "create_description": "Définissez le scope et le mode de review, puis le premier gate requis.",
+        "create_title": "Créer une policy de workflow",
+        "edit_description": "Ajustez le scope et le mode de review, puis ajoutez le prochain gate requis.",
+        "edit_title": "Modifier la policy de workflow",
+        "environment": "Environnement",
+        "environment_placeholder": "production",
+        "name": "Nom",
+        "require_verification": "Exiger la vérification AGT avant publication",
+        "require_verification_description": "Laissez désactivé pour les équipes qui n'exécutent pas de vérification AGT dans leur pipeline.",
+        "required_count": "Nombre requis",
+        "required_rule": "Règle requise",
+        "review_mode": "Mode de review",
+        "save_changes": "Enregistrer les modifications",
+        "save_workflow": "Enregistrer le workflow",
+        "saving": "Enregistrement...",
+        "tenant_default": "Défaut du tenant",
+        "workspace_scope": "Scope du workspace",
+        "review_modes": {
+          "parallel": "Parallèle",
+          "sequential": "Séquentiel"
+        }
+      },
+      "table": {
+        "active_approval_gates": "Gates d'approbation actifs",
+        "configuration": "Configuration",
+        "confirm_disable": "Désactiver le workflow \"{name}\" ?",
+        "confirm_remove_rule": "Supprimer la règle {sequence} ({role}) de \"{name}\" ?",
+        "create_panel_description": "Créez un workflow avec un scope, un mode de review et un gate d'approbation initial.",
+        "current_state": "État actuel",
+        "details_aria_label": "Détails du workflow",
+        "disable_blocked_title": "Au moins un workflow activé doit rester.",
+        "disable_workflow": "Désactiver le workflow",
+        "disabled": "Désactivé",
+        "disabling": "Désactivation...",
+        "enabled": "Activé",
+        "fallback_behavior": "Comportement de repli : gate d'approbation Admin uniquement (1 requis).",
+        "gate_configuration": "Configuration des gates",
+        "inspect": "Inspecter",
+        "lifecycle_aria_label": "Contrôles du cycle de vie du workflow",
+        "lifecycle_description": "Les modifications ici peuvent réinitialiser les approbations des révisions actives non publiées dans ce scope afin que les approvers revoient avec la dernière configuration de gates.",
+        "lifecycle_eyebrow": "Workflow · Cycle de vie",
+        "mode": "Mode",
+        "new_workflow": "Nouveau workflow",
+        "no_rules": "Aucune règle",
+        "no_rules_configured": "Aucune règle n'est configurée pour ce workflow.",
+        "one_rule": "Règle {role}",
+        "panel_description": "{scope} · review {mode}",
+        "panel_eyebrow": "Workflow · Gates",
+        "policy_editor_eyebrow": "Workflow · Éditeur de policy",
+        "rereview_required": "Nouvelle review requise",
+        "remove": "Supprimer",
+        "review_impact_title": "Impact review et cycle de vie",
+        "rule_builder_aria_label": "Constructeur de règles de workflow",
+        "rule_required_from": "{count} requis parmi {roles}",
+        "rule_set_eyebrow": "Workflow · Jeu de règles",
+        "rules": "Règles",
+        "rules_aria_label": "Règles du workflow",
+        "scope": "Portée",
+        "snapshot_eyebrow": "Workflow · Snapshot",
+        "status": "État",
+        "tenant_default": "Défaut du tenant",
+        "toolbar_description": "Ouvrez un workflow pour modifier la policy, ajuster les gates et gérer les actions de cycle de vie au même endroit.",
+        "updated": "Mis à jour",
+        "workflow": "Workflow"
+      }
+    },
+    "localization": {
+      "aria_label": "Remplacements terminologiques",
+      "description": "Utilisez des noms familiers pour les termes produit courants de la langue sélectionnée.",
+      "eyebrow": "Administration · Localisation",
+      "title": "Terminologie et branding",
+      "language": {
+        "description": "Les remplacements sont liés à une seule langue. Changez de langue pour gérer chaque ensemble séparément.",
+        "eyebrow": "Localisation · Langue",
+        "field": "Langue",
+        "submit": "Changer de langue",
+        "title": "Langue"
+      },
+      "add": {
+        "custom_value": "Valeur personnalisée",
+        "custom_value_placeholder": "Piste d'audit",
+        "description": "Choisissez la clé de libellé à remplacer et indiquez le terme préféré par votre organisation (par exemple, renommer <code>navigation.audit_log</code>).",
+        "eyebrow": "Localisation · Ajouter un remplacement",
+        "submit": "Enregistrer le remplacement",
+        "title": "Ajouter ou mettre à jour un remplacement",
+        "translation_key": "Clé de traduction",
+        "translation_key_placeholder": "navigation.audit_log"
+      },
+      "manage": {
+        "actions": "Actions",
+        "custom_value": "Valeur personnalisée",
+        "empty": "Aucun remplacement terminologique pour cette langue pour le moment.",
+        "eyebrow": "Localisation · Gérer",
+        "key": "Clé",
+        "remove": "Supprimer",
+        "standard_label": "Libellé standard",
+        "title": "Remplacements actifs ({locale})"
+      },
+      "status": {
+        "admin_required": "Une autorisation admin est requise.",
+        "missing_fields": "Une clé de traduction et une valeur personnalisée sont toutes deux requises.",
+        "missing_key": "Une clé de traduction est requise pour supprimer un remplacement.",
+        "removed": "Remplacement supprimé pour \"{key}\".",
+        "saved": "Remplacement enregistré pour \"{key}\".",
+        "storage_unavailable": "Le stockage de localisation n'est pas encore disponible sur cette base de données.",
+        "unknown_key": "Clé de traduction inconnue \"{key}\".",
+        "unsupported_language": "Sélection de langue non prise en charge."
+      }
+    },
+    "workspace": {
+      "aria_label": "Gestion des workspaces",
+      "description": "Créez, mettez à jour et supprimez les workspaces du tenant depuis un seul endroit.",
+      "eyebrow": "Administration · Workspace",
+      "title": "Gestion des workspaces",
+      "create": {
+        "eyebrow": "Workspace · Créer",
+        "name": "Nom",
+        "name_placeholder": "Payments Ops",
+        "slug": "Slug (facultatif)",
+        "slug_placeholder": "payments-ops",
+        "submit": "Créer le workspace",
+        "title": "Nouveau workspace"
+      },
+      "language": {
+        "description": "La langue de repli pour les membres qui n'ont pas défini de préférence personnelle. Chaque utilisateur peut toujours la remplacer dans les paramètres de son compte.",
+        "eyebrow": "Organisation · Langue",
+        "field": "Langue par défaut",
+        "submit": "Enregistrer la langue par défaut",
+        "title": "Langue par défaut"
+      },
+      "manage": {
+        "eyebrow": "Workspace · Gérer",
+        "title": "Workspaces existants"
+      },
+      "card": {
+        "active": "ACTIF",
+        "confirm_label": "Saisissez DELETE pour confirmer",
+        "created": "Créé le {createdAt}",
+        "delete": "Supprimer le workspace",
+        "delete_description": "\"{name}\" et toutes ses données seront supprimés définitivement. Cette action est irréversible.",
+        "delete_disabled_title": "Basculez vers un autre workspace avant de supprimer celui-ci.",
+        "delete_eyebrow": "Admin · Zone de danger",
+        "delete_title": "Supprimer le workspace",
+        "name": "Nom",
+        "permanently_delete": "Supprimer définitivement",
+        "save": "Enregistrer le workspace",
+        "saving": "Enregistrement…",
+        "slug": "Slug"
+      },
+      "status": {
+        "admin_required": "Une autorisation admin est requise.",
+        "created": "Workspace {slug} créé.",
+        "database_unconfigured": "La base de données n'est pas configurée.",
+        "deleted": "Workspace {slug} supprimé.",
+        "delete_confirm": "Saisissez DELETE pour confirmer la suppression du workspace.",
+        "locale_storage_unavailable": "Le stockage de localisation n'est pas encore disponible sur cette base de données.",
+        "locale_updated": "Langue par défaut de l'organisation définie sur {locale}.",
+        "unsupported_language": "Sélection de langue non prise en charge.",
+        "updated": "Workspace {slug} mis à jour."
+      }
+    }
+  },
+  "auth": {
+    "awaiting_access": {
+      "back": "Retour à la connexion",
+      "description": "Un administrateur doit encore attribuer des rôles de reviewer ou des scopes de publication avant que ce compte puisse utiliser le control plane.",
+      "eyebrow": "Accès en attente",
+      "title": "Votre compte SSO est connecté"
+    },
+    "device": {
+      "approve": "Approuver l'appareil",
+      "approved_badge": "Approuvé",
+      "approved_description": "Retournez dans votre terminal. La CLI terminera la connexion au workspace",
+      "approved_title": "Appareil approuvé",
+      "auth_required": "Authentification requise",
+      "default_workspace": "default",
+      "description": "Saisissez le code affiché dans votre terminal pour approuver un token limité pour la synchronisation de bundles, le heartbeat et les preuves d'exécution.",
+      "device_code": "Code appareil",
+      "eyebrow": "Autorisation d'appareil",
+      "format": "Format : <code>SPCTRE-XXXX-XXXX</code>",
+      "principal": "Principal connecté",
+      "sign_in": "Se connecter pour approuver",
+      "title": "Connecter une CLI ou un agent CI",
+      "token_scope": "Scope du token",
+      "errors": {
+        "missing_code": "Code appareil manquant."
+      }
+    },
+    "login": {
+      "email": {
+        "email": "Adresse e-mail",
+        "email_placeholder": "vous@example.com",
+        "magic_link": "Envoyer un lien magique",
+        "magic_sent": "Si cette adresse e-mail possède un compte, un lien de connexion est en route. Vérifiez votre boîte de réception.",
+        "sending_link": "Envoi du lien…",
+        "use_passkey": "Utiliser un passkey",
+        "verifying": "Vérification…",
+        "errors": {
+          "browser_unsupported": "Ce navigateur ne prend pas en charge la connexion par passkey.",
+          "cancelled": "La connexion par passkey a été annulée.",
+          "magic_link": "Une erreur s'est produite lors de l'envoi du lien magique. Réessayez.",
+          "passkey_failed": "Échec de la connexion par passkey.",
+          "passkey_unknown": "Impossible de se connecter avec un passkey.",
+          "start_passkey": "Impossible de démarrer la connexion par passkey."
+        }
+      },
+      "sms_mfa": {
+        "retry": "Réessayer l'envoi du code",
+        "send": "Envoyer le code par SMS",
+        "sending": "Envoi du code...",
+        "sent": "Code envoyé ! Vérifiez votre téléphone.",
+        "errors": {
+          "send_failed": "Impossible d'envoyer le code de vérification.",
+          "unknown": "Impossible d'envoyer le SMS."
+        }
+      },
+      "page": {
+        "auth_error": "Erreur d'authentification : {error}",
+        "brand_meta": "Accès au control plane",
+        "create_local": "Créer un utilisateur de développement local",
+        "description": "Connectez-vous avec un lien magique par e-mail ou un passkey.",
+        "description_sso": "Connectez-vous avec un lien magique par e-mail, SSO ou un passkey.",
+        "header_note": "Accédez à votre workspace avec un lien magique par e-mail ou un passkey.",
+        "header_note_sso": "Accédez à votre workspace avec e-mail magique, SSO ou passkey.",
+        "local_signup_created": "Utilisateur local créé. Sélectionnez-le ci-dessous pour vous connecter.",
+        "recover": "Accès perdu ? Utiliser un code de récupération",
+        "title": "Connexion",
+        "demo": {
+          "default_persona": "Persona par défaut",
+          "description": "Ouvrez le tenant et le workspace de démonstration préconfigurés avec des branches de politique, preuves et files de revue.",
+          "launch": "Lancer la démo",
+          "tenant": "Tenant",
+          "title": "Expérience Demo Cloud",
+          "warning": "Les écritures de démo sont bloquées. Créez ou connectez-vous à un workspace hors démo pour enregistrer des modifications.",
+          "workspace": "Workspace"
+        },
+        "local": {
+          "empty": "Aucun compte local disponible",
+          "field": "Compte local",
+          "hint": "Ces comptes sont préconfigurés dans votre déploiement.",
+          "select": "Sélectionner un compte local",
+          "submit": "Se connecter"
+        },
+        "mfa": {
+          "code": "Code MFA",
+          "description": "Ce tenant exige MFA avant l'accès au control plane.",
+          "submit": "Vérifier et continuer"
+        },
+        "sso": {
+          "github": "Continuer avec GitHub",
+          "google": "Continuer avec Google",
+          "oidc": "Continuer avec SSO",
+          "or": "ou",
+          "saml": "Continuer avec SAML SSO"
+        }
+      }
+    },
+    "recover": {
+      "back": "Retour à la connexion",
+      "brand_meta": "Récupération du compte",
+      "code": "Code de récupération",
+      "description": "Utilisez l'un de vos codes de récupération de secours. Chaque code ne peut être utilisé qu'une seule fois.",
+      "email": "Adresse e-mail",
+      "email_placeholder": "vous@example.com",
+      "header_note": "Saisissez votre e-mail et un code de récupération pour retrouver l'accès.",
+      "submit": "Vérifier et se connecter",
+      "title": "Code de récupération",
+      "verifying": "Vérification…",
+      "errors": {
+        "invalid_code": "Adresse e-mail ou code de récupération invalide.",
+        "unexpected": "Une erreur s'est produite. Réessayez.",
+        "verify": "Vérification impossible. Réessayez."
+      }
+    },
+    "signup": {
+      "back": "Retour à la connexion",
+      "description": "Ce raccourci est disponible uniquement lorsque <code>LOCAL_SIGNUP_ENABLED=true</code>.",
+      "display_name": "Nom affiché",
+      "display_name_placeholder": "Local Admin",
+      "email": "E-mail",
+      "email_placeholder": "vous@example.com",
+      "error": "Erreur d'inscription : {error}",
+      "eyebrow": "Développement local",
+      "submit": "Créer l'utilisateur local",
+      "title": "Créer un utilisateur local"
+    }
+  },
+  "errors": {
+    "LIMIT_EXCEEDED": "Limite {limit} dépassée. Valeur actuelle : {actual}.",
+    "POLICY_FILE_NOT_FOUND": "Fichier de politique introuvable : {filePath}",
+    "UNKNOWN_CONNECTOR": "Le connecteur \"{connector}\" est introuvable dans le catalogue de packs.",
+    "UNKNOWN_ACTION": "L'action \"{action}\" est introuvable pour le connecteur \"{connector}\".",
+    "AUTH_REQUIRED": "Authentification requise.",
+    "INVALID_WORKSPACE": "Contexte de workspace invalide.",
+    "PLAN_REQUIRED": "Cette fonctionnalité nécessite la formule {plan}.",
+    "POLICY_NOT_FOUND": "Politique introuvable."
+  },
+  "agents": {
+    "title": "Agents",
+    "summary": {
+      "current": "{count} à jour",
+      "outdated": "{count} obsolètes",
+      "stale": "{count} inactifs"
+    },
+    "hero": {
+      "aria_label": "Aperçu de la flotte d'agents",
+      "eyebrow": "Provenance · Flotte",
+      "title": "Agents connectés",
+      "meta": "{total} agents · {current} à jour · {outdated} obsolètes · {stale} inactifs (dernière heure).",
+      "guidance": "Orientation",
+      "guardrails": "Garde-fous",
+      "install_hint": "Installé par agent via <skill>spctre install-skill</skill> et <hook>spctre install-hook</hook>.",
+      "stats": {
+        "total_agents": "Total des agents",
+        "current_policy": "Sur la politique actuelle",
+        "deny_rate": "Taux de refus de la flotte"
+      }
+    },
+    "fleet": {
+      "eyebrow": "Provenance · Conformité de la flotte",
+      "title": "Agents sur la politique",
+      "description": "Dérive, heartbeat, exécution et couverture des connecteurs par agent.",
+      "empty": {
+        "title": "Aucun agent connecté",
+        "description": "Connectez un agent pour voir ici la dérive, le heartbeat, l'exécution et la couverture des connecteurs."
+      }
+    },
+    "trust": {
+      "eyebrow": "Configuration de politique · Étalonnage de confiance",
+      "title": "Étalonnage de confiance",
+      "description_prefix": "Les seuils de score de confiance et de budget de contexte sont des objets de politique — configurez-les dans",
+      "link": "Coût et usage → Étalonnage de confiance"
+    }
+  },
+  "packs": {
+    "title": "Packs",
+    "hero": {
+      "aria_label": "Accélérateurs de packs de politiques maintenus",
+      "eyebrow": "Création de politiques · vocabulaire maintenu",
+      "title": "Commencez par des actions gouvernées, puis adaptez la politique",
+      "description": "Les packs fournissent des valeurs sûres, des actions et paramètres typés pour créer des règles, ainsi que des scénarios de régression.",
+      "stats": {
+        "maintained": "Accélérateurs maintenus",
+        "installed": "Installés",
+        "high_risk": "À haut risque installés"
+      }
+    },
+    "catalog": {
+      "eyebrow": "Catalogue de packs · accélérateurs de création",
+      "title": "Packs maintenus en premier",
+      "description": "Stripe, GitHub, Kubernetes/déploiement, PostgreSQL et Zendesk/support sont maintenus. Les packs compatibles restent disponibles pour les flux de travail existants.",
+      "updates": "{count, plural, one {# mise à jour} other {# mises à jour}}"
+    },
+    "filters": {
+      "search_aria_label": "Rechercher des packs de politiques",
+      "find_label": "Trouver un pack",
+      "placeholder": "Rechercher un connecteur, une étiquette, un domaine, une règle ou une action",
+      "count": "sur {total} packs",
+      "reset": "Réinitialiser",
+      "quick_filters_aria_label": "Filtres rapides par étiquette",
+      "empty_title": "Aucun pack ne correspond à ces filtres.",
+      "empty_description": "Effacez une étiquette ou recherchez un autre connecteur, domaine, règle ou action."
+    },
+    "tiers": {
+      "catalog_status": "Statut du catalogue",
+      "canonical": {
+        "eyebrow": "Ensemble maintenu",
+        "title": "Accélérateurs de création recommandés",
+        "description": "Valeurs sûres, vocabulaire typé et scénarios de régression maintenus par Spctre.",
+        "pill": "Maintenu",
+        "status": "Accélérateur maintenu"
+      },
+      "compatible": {
+        "eyebrow": "Packs supplémentaires pris en charge",
+        "title": "Plus d’options pour votre flux de travail",
+        "description": "Prêts à l’emploi lorsqu’ils correspondent à votre flux de travail. Il vous manque un connecteur ? Dites-nous quelles actions gouvernées il devrait prendre en charge.",
+        "pill": "Compatible",
+        "status": "Compatible"
+      }
+    }
+  },
+  "evidence": {
+    "header": {
+      "eyebrow_context": "Journal d'audit",
+      "title": "Journal d'audit",
+      "policy_replay": "Rejeu de politique"
+    },
+    "overview": {
+      "aria_label": "Aperçu des preuves",
+      "eyebrow": "Audit · Décisions",
+      "title": "Décisions d'exécution",
+      "live_ingest": "Ingestion en direct",
+      "demo_ingest": "Ingestion de démo",
+      "meta": "{mode} · {count} décisions conservées (30 j) · {shown} dernières affichées.",
+      "stats": {
+        "total": "Total des décisions",
+        "matches": "Correspondances de recherche",
+        "statuses": "Refuser / Avertir / Autoriser"
+      }
+    },
+    "stream": {
+      "eyebrow": "Audit · Flux de preuves",
+      "title": "Flux de preuves",
+      "showing": "Affichage de {shown} décisions sur {total}",
+      "prev_short": "Préc.",
+      "next_short": "Suiv.",
+      "previous_page": "Page précédente",
+      "next_page": "Page suivante",
+      "demo": {
+        "eyebrow": "Preuves de démo",
+        "description": "Ces enregistrements sont préchargés. Connectez un agent ou envoyez une décision de démarrage rapide pour créer de vrais enregistrements d'audit.",
+        "quick_start": "Démarrage rapide",
+        "cli_setup": "Configuration CLI"
+      }
+    },
+    "rule_analysis": {
+      "eyebrow": "Diff · Analyse des règles",
+      "title": "Analyse des règles",
+      "description": "Principaux facteurs de refus et règles sans correspondance récente."
+    },
+    "intent_patterns": {
+      "eyebrow": "Schémas de risque",
+      "title": "Schémas d'intention récurrents",
+      "description": "Principales intentions pre-flight refusées ou averties.",
+      "flags": "{count, plural, one {# signalement} other {# signalements}}"
+    }
+  },
+  "review": {
+    "empty": {
+      "title": "Aucune branche de politique prête pour la revue",
+      "description": "Importez une politique ou installez un pack pour créer la première branche examinable."
+    }
+  },
+  "usage_billing": {
+    "header": {
+      "eyebrow": "Workspace · Usage et facturation",
+      "title": "Usage et facturation",
+      "download_json": "Télécharger le JSON",
+      "packs": "Packs",
+      "compliance_packet": "Dossier de conformité"
+    },
+    "overview": {
+      "aria_label": "Usage et facturation",
+      "panel_aria_label": "Aperçu de l'usage et de la facturation",
+      "eyebrow": "Risque gouverné",
+      "title": "Posture d'usage du workspace",
+      "description": "Spctre hébergé facture la confiance opérationnelle : volume de preuves conservées, profondeur de la fenêtre de rétention, fidélité de la simulation et accès à la conformité.",
+      "current_plan": "Formule actuelle",
+      "recommended": "Recommandé",
+      "governed_agents": "Agents gouvernés",
+      "evidence_retained": "Preuves conservées"
+    },
+    "meters": {
+      "eyebrow": "Dimensions d'usage",
+      "title": "Compteurs d'usage",
+      "sample_only": "Échantillon uniquement"
+    },
+    "anchors": {
+      "eyebrow": "Surface de confiance",
+      "title": "Ancrages de valeur payante",
+      "description": "La valeur hébergée commence là où l'historique d'audit, les simulations, les packs gérés, le RBAC et les exports de conformité deviennent des enregistrements métier durables.",
+      "count": "{count, plural, one {# ancrage} other {# ancrages}}",
+      "aria_label": "Ancrages de valeur hébergée",
+      "group_eyebrow": "Ancrages de valeur",
+      "group_title": "Dimensions de confiance opérationnelle"
+    },
+    "posture": {
+      "eyebrow": "Adéquation de la formule",
+      "title": "Posture de facturation",
+      "over_plan": "{count} au-delà de la formule",
+      "description": "Usage inclus actuel comparé à la capacité recommandée de la formule hébergée.",
+      "current_plan": "Formule actuelle",
+      "recommended_plan": "Formule recommandée",
+      "dimensions_beyond": "{count} dimensions au-delà de l'usage inclus actuel",
+      "billing_status": "Statut de facturation",
+      "review_requested": "Revue demandée",
+      "updated": "Mis à jour {date}",
+      "no_event": "Aucun événement de facturation pour l'instant",
+      "primary_dimension": "Dimension de tarification principale",
+      "agent_detail": "agents gouvernés rapportant des preuves d'exécution",
+      "evidence_retained": "Preuves conservées",
+      "evidence_detail": "événements disponibles pour la recherche, le replay et l'export de conformité",
+      "policy_surface": "Surface de politique gérée",
+      "policy_detail": "packs de connecteurs importés dans ce workspace"
+    },
+    "events": {
+      "eyebrow": "Journal des événements d'usage et de facturation",
+      "title": "Historique des revues",
+      "system": "Système",
+      "empty": {
+        "title": "Aucun événement de facturation pour l'instant",
+        "description": "Demandez une revue lorsque l'usage gouverné commence à ressembler à un risque de production."
+      }
+    },
+    "proof": {
+      "eyebrow": "Chemin d'activation",
+      "title": "Prochains points de preuve de facturation",
+      "evidence": {
+        "title": "Développer l'historique des preuves",
+        "description": "Le volume d'événements conservés et la profondeur de la fenêtre sont les principales dimensions de facturation."
+      },
+      "simulation": {
+        "title": "Simuler face à la production",
+        "description": "La simulation en masse face au journal d'événements conservé est une fonctionnalité débloquée au niveau Business."
+      },
+      "compliance": {
+        "title": "Exporter le dossier de conformité",
+        "description": "L'export PDF de conformité confirme une obligation de niveau audit et le besoin du niveau Business."
+      }
+    }
+  },
+  "escalations": {
+    "title": "Escalades",
+    "open_count": "{count} ouvertes",
+    "refresh": "Actualiser",
+    "refreshing": "Actualisation...",
+    "select_prompt": "Sélectionnez une escalade dans la file pour en examiner les détails.",
+    "empty": {
+      "title": "La file est vide",
+      "description": "Aucune escalade ouverte. Les agents soumettent ici des décisions lorsqu'une règle de politique requiert une validation humaine avant qu'un appel d'outil ne se poursuive — utilisez <post>POST /api/escalations</post> avec un <decision>decisionId</decision> et des <notes>handoffNotes</notes> pour en acheminer une vers la revue."
+    },
+    "queue": {
+      "eyebrow": "File",
+      "title": "Escalades ouvertes",
+      "runtime_decision": "décision d'exécution",
+      "assigned": "Assignée",
+      "unassigned": "Non assignée"
+    },
+    "detail": {
+      "eyebrow": "Examen de la décision",
+      "id": "ID : {id}",
+      "policy_revision": "Révision de politique :",
+      "created": "Créée :",
+      "assignee": "Responsable :",
+      "unassigned": "Non assignée",
+      "resolve_title": "Résoudre la décision"
+    },
+    "context": {
+      "title": "Contexte et notes de transfert",
+      "connector": "Connecteur :",
+      "action": "Action :",
+      "risk_level": "Niveau de risque :",
+      "handoff_notes": "Notes de transfert",
+      "no_handoff_notes": "Aucune note de transfert fournie.",
+      "tool_intent": "Intention de l'outil",
+      "plan_summary": "Résumé du plan"
+    },
+    "triage": {
+      "title": "Gestion de la file et triage",
+      "upgrade_description": "Passez à une offre supérieure pour gérer le suivi des SLA de service, le routage automatique et les remplacements manuels d'agents."
+    }
+  },
+  "compliance": {
+    "hero": {
+      "aria_label": "Aperçu de la conformité",
+      "eyebrow": "Audit · Dossier",
+      "packet_title": "Dossier d'audit",
+      "packet_meta": "Conservé jusqu'au {date} · {events} événements de cycle de vie · {records} enregistrements de preuves.",
+      "empty_title": "Aucun dossier d'audit pour l'instant",
+      "empty_description": "Publiez une révision de politique et ingérez des preuves d'exécution pour générer le premier dossier de conformité.",
+      "sections": "{count, plural, one {# section} other {# sections}}",
+      "stats": {
+        "evidence_records": "Enregistrements de preuves",
+        "approvals": "Approbations",
+        "retention_records": "Enregistrements de rétention"
+      }
+    }
+  },
+  "author": {
+    "title": "Modifier les règles",
+    "branch_title": "Modifier les règles de {branch}",
+    "edit_rules": "Modifier les règles",
+    "back_to_policies": "Retour aux politiques",
+    "empty_title": "Aucune branche de politique sélectionnée pour la création",
+    "empty_body": "Sélectionnez une branche de politique sur la page Politiques pour créer des règles."
+  },
+  "simulate": {
+    "eyebrow_segment": "Simulation",
+    "title": "Rejeu de politique",
+    "diff_eyebrow": "Diff · Simulation",
+    "run_heading": "<code>{revision}</code> face à {count} événements",
+    "sampled_meta": "{count} résultats échantillonnés · écarts par rapport à la révision précédemment publiée.",
+    "summary_aria": "Résumé du rejeu de simulation",
+    "newly_denied": "Nouvellement refusés",
+    "newly_allowed": "Nouvellement autorisés",
+    "unchanged": "Inchangés",
+    "deny_by_connector": "Taux de refus par connecteur",
+    "deny_ratio": "{deny} refus / {total}",
+    "cloud_eyebrow": "Simulation cloud",
+    "cloud_title": "Rejeu des événements de production disponible",
+    "cloud_body": "Exécutez des projections de politique sur l'ensemble du journal d'événements de production conservé.",
+    "guidance_eyebrow": "Simulation · Indication de revue",
+    "guidance_title": "Examiner les résultats modifiés",
+    "guidance_body": "Indication fondée sur les preuves et en lecture seule. L’enregistrement d’un retour ne crée pas de révision."
+  },
+  "advisors": {
+    "title": "Conseillers",
+    "empty": {
+      "title": "Aucune donnée de conseiller",
+      "body": "Les conseillers apparaissent ici une fois des recommandations générées."
+    },
+    "rate": {
+      "awaiting": "En attente de la première recommandation",
+      "no_data": "Aucune donnée pour l'instant"
+    },
+    "boundary": {
+      "eyebrow": "Limite de politique publiée",
+      "revision": "Révision",
+      "artifact": "Artefact",
+      "environment": "Environnement",
+      "pending": "en attente",
+      "published": "Publiée"
+    },
+    "guardrail": {
+      "eyebrow": "Garde-fou",
+      "title": "Variation nette refus/avertissement",
+      "baseline_pending": "Référence en attente",
+      "pts": "{value} pts",
+      "current_30d": "30 j actuels",
+      "previous_30d": "30 j précédents",
+      "current_deny_warn": "Refus / avertissement actuels",
+      "triage_median": "Médiane de triage jusqu'au responsable"
+    },
+    "performance": {
+      "eyebrow": "Conseiller · Performance",
+      "title": "Performance des conseillers",
+      "meta": "Taux d'acceptation, de modification, de rejet · capture des justifications · garde-fous refus/avertissement.",
+      "triage_audit": "Audit de triage",
+      "recommendation_audit": "Audit des recommandations"
+    },
+    "metrics": {
+      "governance_pack": "Pack de gouvernance",
+      "not_installed": "Non installé",
+      "active": "Actif",
+      "generated": "Générées",
+      "generated_sub": "recommandations de conseillers",
+      "dispositions": "Décisions du relecteur",
+      "dispositions_sub": "accepter / modifier / rejeter",
+      "rationale": "Capture des justifications",
+      "rationale_sub": "accepter / modifier / rejeter avec justification"
+    },
+    "table": {
+      "advisor": "Conseiller",
+      "generated": "Générées",
+      "accepted": "Acceptées",
+      "edited": "Modifiées",
+      "rejected": "Rejetées",
+      "rationale": "Justification",
+      "precision": "Précision"
+    },
+    "precision": {
+      "eyebrow": "Précision de l'optimisation des preuves",
+      "empty": "La précision apparaît après que les relecteurs ont accepté, modifié ou rejeté les recommandations d'optimisation des preuves."
+    },
+    "scope": {
+      "eyebrow": "Portée",
+      "body": "Tous les conseillers sont uniquement consultatifs ; les décisions des relecteurs sont enregistrées dans le registre d'audit."
+    }
+  },
+  "economic": {
+    "header": {
+      "title": "Coût et usage",
+      "manage_budgets": "Gérer les budgets"
+    },
+    "advisory": {
+      "eyebrow": "Note consultative de gouvernance",
+      "title": "Estimations heuristiques et de télémétrie",
+      "body": "Ces chiffres sont une <strong>télémétrie de gouvernance estimée et directionnellement précise</strong> capturée au mieux à partir des intégrations de passerelle d'agent. Ils ne conviennent pas aux audits de facturation, à la comptabilité financière ou au rapprochement de registres. Les systèmes de facturation du fournisseur restent la seule source de vérité."
+    },
+    "hero": {
+      "aria": "Aperçu de l'observabilité",
+      "eyebrow": "Posture de gouvernance",
+      "title": "Gouvernance économique et des tokens",
+      "meta": "Suit la consommation de tokens LLM et les dépenses estimées par agent pour évaluer les seuils de conformité économique.",
+      "est_cost": "Coût est. (30 j)",
+      "tracked_tokens": "Tokens suivis",
+      "directional_roi": "ROI directionnel",
+      "active_budgets": "Budgets actifs"
+    },
+    "spend": {
+      "eyebrow": "Télémétrie",
+      "title": "Tendance des dépenses LLM estimées sur 30 jours",
+      "meta": "Estimations de coûts quotidiennes tracées à partir des événements d'usage de passerelle ingérés.",
+      "empty": "Aucun journal de télémétrie quotidien enregistré au cours des 30 derniers jours.",
+      "bar_title": "{date} : {cost} ({tokens} tokens)"
+    },
+    "agents": {
+      "eyebrow": "Analyse du ROI",
+      "title": "Résumé de gouvernance par agent",
+      "meta": "Compare les taux de consommation LLM aux économies de main-d'œuvre (valorisées à 1,00 $ par action autorisée).",
+      "empty": "Aucune télémétrie d'agent active trouvée.",
+      "th_agent_id": "ID d'agent",
+      "th_stack": "Stack",
+      "th_environment": "Environnement",
+      "th_est_cost": "Coût est.",
+      "th_tokens": "Tokens",
+      "th_actions": "Actions (A/D/W/E)",
+      "th_roi": "ROI directionnel"
+    },
+    "breaches": {
+      "eyebrow": "Audits",
+      "title": "Dépassements de budget récents",
+      "meta": "Limites économiques dépassées dans la fenêtre d'évaluation.",
+      "ok_title": "Tous les agents dans le budget",
+      "ok_meta": "Aucun dépassement économique enregistré.",
+      "policy_fallback": "Politique de budget",
+      "agent_label": "Agent :",
+      "reason_fallback": "Plafond de budget dépassé."
+    },
+    "budgets": {
+      "eyebrow": "Coût · Politiques de budget",
+      "title": "Politiques de budget",
+      "meta": "Politiques de seuil appliquées par agent, connecteur ou environnement."
+    }
+  },
+  "economic_policies": {
+    "validate": {
+      "name_required": "Veuillez indiquer un nom de politique.",
+      "threshold_required": "Au moins un seuil de coût ou de tokens doit être défini."
+    },
+    "scope": {
+      "wildcard": "Tous les événements (Joker)"
+    },
+    "error": {
+      "save_failed": "Échec de l'enregistrement de la politique de budget",
+      "delete_failed": "Échec de la suppression de la politique de budget",
+      "status_failed": "Échec de la mise à jour du statut de la politique"
+    },
+    "confirm": {
+      "delete": "Voulez-vous vraiment supprimer cette politique de budget économique ? Cette action est irréversible."
+    },
+    "limits": {
+      "cost_title": "Limites de coût estimées (USD)",
+      "token_title": "Limites de tokens suivies",
+      "warn_label": "Avertir",
+      "escalate_label": "Escalader",
+      "deny_label": "Refuser",
+      "no_cost": "Aucune limite de coût configurée",
+      "no_token": "Aucune limite de tokens configurée"
+    },
+    "card": {
+      "active": "Actif",
+      "disabled": "Désactivé",
+      "fail_open": "Fail-Open",
+      "fail_closed": "Fail-Closed",
+      "scope": "Portée :",
+      "eval_window": "Fenêtre d'évaluation :",
+      "hours": "{hours} heures",
+      "edit": "Modifier",
+      "delete_title": "Supprimer la politique"
+    },
+    "fields": {
+      "agent_id": "ID d'agent",
+      "agent_id_ph": "p. ex. support-agent",
+      "agent_class": "Classe d'agent",
+      "agent_class_ph": "p. ex. customer-service",
+      "environment": "Environnement",
+      "environment_ph": "p. ex. production",
+      "connector": "Connecteur",
+      "connector_ph": "p. ex. stripe",
+      "warn_cost": "Seuil de coût d'avertissement (USD)",
+      "warn_cost_ph": "p. ex. 10.00",
+      "esc_cost": "Seuil de coût d'escalade (USD)",
+      "esc_cost_ph": "p. ex. 25.00",
+      "deny_cost": "Seuil de coût de refus (USD)",
+      "deny_cost_ph": "p. ex. 50.00",
+      "warn_tok": "Seuil de tokens d'avertissement",
+      "warn_tok_ph": "p. ex. 500000",
+      "esc_tok": "Seuil de tokens d'escalade",
+      "esc_tok_ph": "p. ex. 1000000",
+      "deny_tok": "Seuil de tokens de refus",
+      "deny_tok_ph": "p. ex. 2000000"
+    },
+    "modal": {
+      "edit_title": "Modifier la politique de budget",
+      "create_title": "Créer une politique de budget",
+      "name": "Nom de la politique",
+      "name_ph": "p. ex. Budget quotidien du support client critique",
+      "breach_action": "Action principale en cas de dépassement",
+      "action_warn": "Avertir — journaliser la violation et continuer",
+      "action_escalate": "Escalader — envoyer à la file de revue humaine",
+      "action_deny": "Bloquer — refuser fermement l'action",
+      "description": "Description",
+      "description_ph": "Applique des règles de consommation de tokens au cluster d'agents du service client",
+      "target_scope": "PORTÉE CIBLE (NULL = JOKER, TOUT CORRESPONDRE)",
+      "threshold_config": "BUDGETS DE SEUIL & CONFIGURATION D'APPLICATION",
+      "period": "Fenêtre d'évaluation glissante (heures)",
+      "period_hint": "Les dépenses sont mesurées sur les N dernières heures, recalculées à chaque requête (et non sur une fenêtre calendaire fixe).",
+      "active_policy": "Politique active",
+      "fail_open": "Fail-Open — autoriser toutes les dépenses si le service est injoignable",
+      "fail_open_hint": "Si le moteur de politique est hors service, les agents s'exécutent sans limites de coût.",
+      "cancel": "Annuler",
+      "saving": "Enregistrement...",
+      "save_changes": "Enregistrer les modifications",
+      "create_policy": "Créer la politique"
+    },
+    "list": {
+      "title": "Politiques de budget économique",
+      "meta": "Configurez des avertissements, des limites à l'échelle du tenant ou des blocages stricts sur les dépenses des agents.",
+      "add": "Ajouter une politique",
+      "empty_title": "Aucune politique de budget économique configurée.",
+      "empty_meta": "Configurez des avertissements, des limites à l'échelle du tenant ou des blocages stricts sur les dépenses des agents et la consommation de tokens."
+    }
+  },
+  "rules": {
+    "title": "Règles",
+    "hero": {
+      "aria": "Aperçu des règles gérées",
+      "eyebrow": "Provenance · Règles publiées",
+      "title": "Catalogue de règles actives",
+      "meta": "Règles de la branche actuellement publiée. Pour créer ou modifier des règles, utilisez la <review>Revue</review>.",
+      "search_label": "Rechercher dans l'inventaire",
+      "search_ph": "Rechercher des règles",
+      "search_btn": "Rechercher",
+      "reset": "Réinitialiser",
+      "managed": "Règles gérées",
+      "connectors": "Connecteurs actifs",
+      "immutable": "Immuable",
+      "deny_warn": "Refuser / Avertir"
+    },
+    "inv": {
+      "eyebrow": "Provenance · Inventaire",
+      "title": "Règles",
+      "filtered": "Filtré par « {query} ».",
+      "hint": "Sélectionnez une règle pour examiner les conditions, la source et l'historique.",
+      "no_match_title": "Aucune règle correspondante",
+      "no_match_body": "Essayez un autre terme ou effacez les filtres.",
+      "empty_title": "Aucune règle gérée pour l'instant",
+      "empty_body": "Importez une politique ou un pack pour ajouter des règles."
+    },
+    "table": {
+      "rule_title": "Titre de la règle",
+      "effect": "Effet",
+      "connector": "Connecteur",
+      "actions": "Actions",
+      "source": "Source",
+      "inspect_aria": "Inspecter la règle {title}",
+      "immutable": "IMMUABLE",
+      "none": "Aucun"
+    },
+    "panel": {
+      "semantic_title": "Vérifications sémantiques (contrôles en langage naturel)",
+      "override_effect": "Effet de remplacement :",
+      "managed_rule": "Règle gérée",
+      "close": "Fermer le panneau",
+      "effect": "Effet",
+      "source_format": "Format source",
+      "immutable": "Immuable",
+      "yes": "Oui",
+      "no": "Non",
+      "priority": "Priorité",
+      "connectors": "Connecteurs",
+      "actions": "Actions",
+      "domains": "Domaines",
+      "source_path": "Chemin source",
+      "conditions": "Conditions"
+    }
+  },
+  "alerting": {
+    "header": {
+      "eyebrow": "Workspace · Alertes",
+      "title": "Alertes"
+    },
+    "validate": {
+      "channel_name": "Veuillez indiquer un nom de canal.",
+      "pagerduty_key": "Veuillez fournir une clé de routage PagerDuty.",
+      "valid_email": "Veuillez fournir une adresse e-mail de destinataire valide.",
+      "splunk": "Veuillez fournir l'URL du point de terminaison Splunk HEC et le token.",
+      "sentinel": "Veuillez fournir l'ID de workspace Sentinel et la clé primaire.",
+      "recipient_email": "Veuillez fournir une adresse e-mail de destinataire.",
+      "endpoint_url": "Veuillez fournir une URL de point de terminaison."
+    },
+    "int": {
+      "routing_key": "Clé d'intégration (clé de routage)",
+      "routing_key_ph": "Clé d'intégration PagerDuty de 32 caractères",
+      "hec_url": "URL du point de terminaison HEC",
+      "hec_token": "Token HEC",
+      "hec_token_ph": "Token Splunk HEC",
+      "workspace_id": "ID de workspace",
+      "primary_key": "Clé primaire",
+      "primary_key_ph": "Clé primaire du workspace Log Analytics",
+      "log_type": "Type de log (facultatif)",
+      "endpoint_url": "URL du point de terminaison",
+      "endpoint_url_ph": "https://hooks.slack.com/... ou URL d'intégration",
+      "modal_title": "Ajouter une intégration",
+      "channel_name": "Nom du canal",
+      "channel_name_ph": "p. ex. Alertes Slack de sécurité",
+      "platform_type": "Type de plateforme",
+      "opt_slack": "Webhook Slack",
+      "opt_teams": "Microsoft Teams",
+      "opt_email": "E-mail",
+      "opt_pagerduty": "PagerDuty Event V2 API",
+      "opt_webhook": "Webhook générique",
+      "opt_splunk": "Splunk HTTP Event Collector",
+      "opt_sentinel": "Microsoft Sentinel",
+      "adding": "Ajout...",
+      "save": "Enregistrer l'intégration",
+      "pane_title": "Intégrations",
+      "add_channel": "Ajouter un canal",
+      "empty_title": "Aucune intégration configurée.",
+      "empty_body": "Connectez Slack, PagerDuty, Teams ou des webhooks personnalisés.",
+      "delete_title": "Supprimer l'intégration",
+      "saved": "Intégration enregistrée.",
+      "add_failed": "Échec de l'ajout de l'intégration",
+      "remove_confirm": "Voulez-vous vraiment supprimer cette intégration ? Toutes les règles la ciblant seront supprimées.",
+      "removed": "Intégration supprimée.",
+      "remove_failed": "Échec de la suppression de l'intégration"
+    },
+    "rule": {
+      "modal_title": "Créer une règle d'alerte",
+      "name": "Nom de la règle",
+      "name_ph": "p. ex. Alertes de violation Slack critiques",
+      "connector": "Connecteur (filtre)",
+      "connector_ph": "Tous (ou github, aws, slack)",
+      "min_risk": "Niveau de risque minimum",
+      "risk_all": "Tous les risques",
+      "risk_low": "Faible",
+      "risk_medium": "Moyen",
+      "risk_high": "Élevé",
+      "risk_critical": "Critique",
+      "min_occurrences": "Occurrences minimales",
+      "window": "Fenêtre (minutes)",
+      "window_ph": "p. ex. 15 (si min > 1)",
+      "target_channel": "Canal cible",
+      "creating": "Création...",
+      "save": "Enregistrer la règle",
+      "pane_title": "Règles d'alerte",
+      "add": "Ajouter une règle",
+      "empty_title": "Aucune règle d'alerte personnalisée configurée.",
+      "empty_body": "Reliez les filtres et fréquences d'événements système aux intégrations.",
+      "active": "Actif",
+      "disabled": "Désactivé",
+      "connector_label": "Connecteur :",
+      "all": "Tous",
+      "min_risk_label": "Risque min :",
+      "frequency_label": "Fréquence :",
+      "freq_threshold": ">= {count} événements en {minutes} min",
+      "freq_every": "Chaque événement correspondant",
+      "target_label": "Cible :",
+      "unknown": "Inconnu",
+      "delete_title": "Supprimer la règle",
+      "name_int_required": "Veuillez indiquer le nom de la règle et l'intégration.",
+      "saved": "Règle d'alerte enregistrée.",
+      "add_failed": "Échec de l'ajout de la règle",
+      "remove_confirm": "Voulez-vous vraiment supprimer cette règle d'alerte ?",
+      "removed": "Règle d'alerte supprimée.",
+      "remove_failed": "Échec de la suppression de la règle",
+      "need_integration": "Veuillez ajouter au moins une intégration avant de créer des règles d'alerte."
+    },
+    "siem": {
+      "modal_title": "Ajouter un flux SIEM",
+      "stream_name": "Nom du flux",
+      "stream_name_ph": "p. ex. Splunk de production",
+      "destination": "Destination",
+      "hec_url": "URL du point de terminaison HEC",
+      "hec_token": "Token HEC",
+      "hec_token_ph": "Token Splunk HEC",
+      "workspace_id": "ID de workspace",
+      "primary_key": "Clé primaire",
+      "primary_key_ph": "Clé primaire du workspace Log Analytics",
+      "log_type": "Type de log (facultatif)",
+      "saving": "Enregistrement...",
+      "save": "Enregistrer le flux",
+      "section_title": "Diffusion d'événements SIEM",
+      "add": "Ajouter un flux",
+      "empty_title": "Aucun flux SIEM configuré.",
+      "empty_body": "Transférez tous les événements de preuves vers Splunk ou Microsoft Sentinel.",
+      "active": "Actif",
+      "paused": "En pause",
+      "last_forwarded": "· dernier transfert {time}",
+      "not_forwarded": "· pas encore transféré",
+      "pause": "Mettre le flux en pause",
+      "resume": "Reprendre le flux",
+      "delete_title": "Supprimer le flux",
+      "name_required": "Veuillez indiquer un nom de flux.",
+      "saved": "Flux SIEM enregistré.",
+      "add_failed": "Échec de l'ajout du flux SIEM",
+      "remove_confirm": "Supprimer ce flux SIEM ? Le transfert s'arrêtera immédiatement.",
+      "removed": "Flux SIEM supprimé.",
+      "remove_failed": "Échec de la suppression du flux SIEM",
+      "paused_status": "Flux mis en pause.",
+      "resumed_status": "Flux repris.",
+      "toggle_failed": "Échec de la bascule du flux SIEM"
+    }
+  }
+}

@@ -1,0 +1,51 @@
+---
+title: Reviewer overview
+description: The Reviewer role — what lands in your queue and why.
+---
+
+As a Reviewer, you evaluate policy branches submitted by Policy Creators and decide whether they're safe and correct to publish. You also handle escalations — live decisions that agents have paused on and sent to you for a human call.
+
+## Two queues
+
+| Queue | What's in it |
+|---|---|
+| **Review queue** | Policy branches in `IN_REVIEW` status |
+| **Escalation queue** | Live agent decisions paused with `ESCALATE` effect |
+
+Both are accessible from the left nav under **Review**.
+
+## What you can do
+
+| Action | Where |
+|---|---|
+| Review a policy branch | **Review → Branches** |
+| Approve or reject a branch | Branch detail → **Approve / Reject** |
+| Work the WARN record queue | **Audit Log** |
+| Mark WARN records as acknowledged | Audit Log record → **Acknowledge** |
+| Handle escalations | **Review → Escalations** |
+| Reassign an escalation | Escalation detail → **Reassign** |
+| Configure queue alerting | **Settings → Alerting** |
+
+## Reviewing a policy revision
+
+The Review workspace follows one explicit path: inspect **Review changes**, assess the **Impact summary**, complete **Approvals & readiness**, then publish. The page always identifies the next required step.
+
+Artifact tools download the revision currently shown in Review. The separate **latest published bundle** download represents what is deployed now and can be a different revision.
+
+Restoring a prior revision republishes it to agents. Spctre requires an explicit production-change acknowledgement before that restore is submitted.
+
+## What you cannot do
+
+Reviewers cannot author or edit policy branches — that's the Policy Creator's role. Approval also does not publish the bundle. Once the minimum approval threshold is reached, the branch moves to `APPROVED`; a user with publish authority must release it manually from the **Publish** stage.
+
+## How you're assigned
+
+Policy Creators select you by name or email when submitting a branch. For escalations, assignment is based on the escalation routing rules configured in the workspace — either round-robin, a specific role, or a named individual.
+
+## Notification channels
+
+By default, you receive in-app notifications. Configure Slack, PagerDuty, or email alerts in **Settings → Alerting** so new items in your queue reach you immediately.
+
+## Responding to time pressure
+
+Escalations have an SLA countdown. When the countdown expires, the escalation auto-resolves with a `TIMEOUT` decision (configurable per workspace — typically `DENY` for safety). Prioritise escalations over branch reviews.

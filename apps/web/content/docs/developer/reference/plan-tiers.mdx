@@ -1,0 +1,60 @@
+---
+title: Plan tiers
+description: What each Spctre plan includes — OSS, Cloud, Business, and Enterprise feature gates.
+---
+
+Spctre is open-core. Self-hosted deployments default to the OSS tier. Set `SPCTRE_PLAN` to unlock higher-tier features.
+
+## Tiers
+
+| Tier | `SPCTRE_PLAN` value | Typical use case |
+|---|---|---|
+| OSS | `oss` (default) | Self-hosted, open-source deployments |
+| Cloud | `cloud` | Managed cloud; SLA-backed escalations, archival, SIEM |
+| Business | `business` | Compliance exports, full-history simulation |
+| Enterprise | `enterprise` | Multi-tenant isolation, SAML/SCIM, custom RBAC |
+
+## Feature gate matrix
+
+| Feature | OSS | Cloud | Business | Enterprise |
+|---|---|---|---|---|
+| Policy authoring, review, publish | ✓ | ✓ | ✓ | ✓ |
+| Evidence ingest & gateway | ✓ | ✓ | ✓ | ✓ |
+| CLI, MCP server, framework adapters | ✓ | ✓ | ✓ | ✓ |
+| Alerting (Slack, PagerDuty, Teams, Webhook) | ✓ | ✓ | ✓ | ✓ |
+| Basic policy simulation (30-day window) | ✓ | ✓ | ✓ | ✓ |
+| SLA-tracked HITL escalation queue | — | ✓ | ✓ | ✓ |
+| Long-term forensic archival | — | ✓ | ✓ | ✓ |
+| Managed workflow enforcement | — | ✓ | ✓ | ✓ |
+| SIEM event streaming (Splunk, Sentinel) | — | ✓ | ✓ | ✓ |
+| Compliance PDF export | — | — | ✓ | ✓ |
+| Bulk production simulation (full history) | — | — | ✓ | ✓ |
+| Multi-tenant workspace isolation | — | — | — | ✓ |
+| SAML 2.0 + SCIM provisioning | — | — | — | ✓ |
+| Custom roles and granular grant scopes | — | — | — | ✓ |
+| Immutable access audit trails | — | — | — | ✓ |
+
+## Setting the plan
+
+```bash
+SPCTRE_PLAN=cloud   # or: business, enterprise
+```
+
+Set this on the web app and worker processes. The value is read at startup; restart both services after changing it.
+
+<Callout type="info">
+  `SPCTRE_PLAN` is not validated against a license key in OSS builds — it is an honour-system gate. Cloud and Enterprise deployments enforce the plan via a signed license token set by Spctre.
+</Callout>
+
+## Feature flag API
+
+For server-side feature checks in custom integrations:
+
+```ts
+import { isFeatureEnabledForPlan, normalizeSpctrePlan } from "@/lib/feature-flags";
+
+const plan = normalizeSpctrePlan(process.env.SPCTRE_PLAN);
+if (isFeatureEnabledForPlan("siemEventStreaming", plan)) {
+  // SIEM is active
+}
+```

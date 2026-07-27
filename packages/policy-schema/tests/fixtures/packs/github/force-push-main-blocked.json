@@ -1,0 +1,7 @@
+{
+  "description": "Force-pushing to main is blocked",
+  "action": "branch.push",
+  "domains": ["branches"],
+  "toolParameters": { "ref": "main", "force": true },
+  "expected": { "status": "DENY", "matchedRefs": ["github.branch.force_push_protected.block"] }
+}

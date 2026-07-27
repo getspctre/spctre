@@ -1,0 +1,115 @@
+.operationsHero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(380px, 0.95fr);
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+  max-width: 1180px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.operationsHeroMain,
+.operationsHeroStats {
+  background: var(--panel);
+}
+
+.operationsHeroMain {
+  padding: 18px;
+  display: grid;
+  gap: 8px;
+  align-content: center;
+}
+
+.operationsHeroMain h2 {
+  font-size: 20px;
+}
+
+.operationsHeroMain .meta {
+  max-width: 72ch;
+}
+
+.operationsHeroFilter {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.operationsHeroStats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.operationsHeroStats > div {
+  padding: 16px;
+  border-right: 1px solid var(--line);
+  display: grid;
+  gap: 5px;
+  align-content: center;
+}
+
+.operationsHeroStats > div:last-child {
+  border-right: 0;
+}
+
+.operationsHeroStats strong {
+  color: var(--ink);
+  font-size: 17px;
+}
+
+.operationsPanel {
+  display: grid;
+  gap: 16px;
+  padding: 18px;
+  max-width: 1180px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.operationsPanel > .rowHeader {
+  padding-bottom: 2px;
+}
+
+.operationsFilters {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.operationsTableWrapper {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: auto;
+}
+
+.operationsTableWrapper .auditTable thead th {
+  background: oklch(0.982 0.006 236);
+}
+
+.operationsTableWrapper .auditRow:last-child td {
+  border-bottom: 0;
+}
+
+.operationsRow {
+  cursor: default;
+}
+
+.operationsRow td:first-child {
+  white-space: nowrap;
+}
+
+.operationsPagination {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.operationsEmptyHint {
+  margin-top: 8px;
+}

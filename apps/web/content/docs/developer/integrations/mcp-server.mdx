@@ -1,0 +1,298 @@
+---
+title: MCP server
+description: Connecting AI harnesses to Spctre via the Model Context Protocol (STDIO and HTTP/SSE transports).
+---
+
+The Spctre MCP server (`@spctre/mcp-server`) exposes control plane operations as MCP tools. AI harnesses — Claude Code, Codex, Gemini CLI — can call these tools to read policy state, submit evidence, and check escalations without direct API integration.
+
+## Transports
+
+| Transport | Default | How to enable |
+|---|---|---|
+| STDIO | Yes | `npx @spctre/mcp-server` |
+| HTTP/SSE | No | `SPCTRE_MCP_TRANSPORT=http npx @spctre/mcp-server` |
+
+STDIO is the standard transport for local harness integrations. HTTP/SSE is suitable for remote or multi-client deployments.
+
+## Starting the server
+
+### STDIO (for local harness integration)
+
+```bash
+SPCTRE_API_TOKEN=<your-access-token> npx @spctre/mcp-server
+```
+
+The server reads from stdin and writes to stdout. Your harness manages the process.
+
+### HTTP/SSE
+
+```bash
+SPCTRE_MCP_TRANSPORT=http \
+SPCTRE_MCP_HTTP_PORT=8090 \
+SPCTRE_API_TOKEN=<your-access-token> \
+npx @spctre/mcp-server
+```
+
+The server listens on `SPCTRE_MCP_HTTP_PORT` (default: `8090`). The SSE endpoint is at `SPCTRE_MCP_HTTP_SSE_PATH` (default: `/sse`) and the message endpoint at `SPCTRE_MCP_HTTP_MESSAGE_PATH` (default: `/message`).
+
+## Authentication
+
+The MCP server authenticates to the control plane using `SPCTRE_API_TOKEN`. Set this to a service token with the scopes required by the tools your harness will call. For long-running processes, set `SPCTRE_API_REFRESH_TOKEN` instead and the server will rotate the access token automatically.
+
+Bearer auth on the MCP HTTP endpoints is **enabled by default** — unauthenticated SSE connections are rejected with 401. To disable it (e.g. in a trusted private network):
+
+```bash
+SPCTRE_MCP_REQUIRE_BEARER_AUTH=false
+```
+
+## Installing for Claude Code
+
+Use the CLI to write the MCP server config directly into Claude's settings:
+
+```bash
+spctre install-skill --claude
+```
+
+This adds `@spctre/mcp-server` to `.claude/settings.json` with STDIO transport and your current `SPCTRE_API_TOKEN`.
+
+## Installing for other harnesses
+
+```bash
+spctre install-skill --codex     # Codex
+spctre install-skill --gemini    # Gemini CLI
+```
+
+To install globally (applies to all projects):
+
+```bash
+spctre install-skill --claude --global
+```
+
+## Workspace scoping and RBAC
+
+All MCP tool calls are scoped to the workspace associated with the access token. A token issued via `spctre init --workspace <slug>` restricts tool results to that workspace. There is no cross-workspace leakage.
+
+## Token rotation
+
+The MCP server rotates the access token before it expires. No restart is required — the server handles this transparently as long as `SPCTRE_API_REFRESH_TOKEN` is set. If only `SPCTRE_API_TOKEN` is set (no refresh token), the server uses it as-is and the caller is responsible for rotation.
+
+## LLM gateway ingest via MCP
+
+The MCP server exposes an `ingest_gateway_event` tool that lets harnesses forward LLM gateway events (Portkey, Helicone, LiteLLM) to Spctre as evidence without a separate webhook setup. Pass the provider name and raw payload — the MCP server authenticates using the bearer token already configured for the session.
+
+This is useful when a harness is directly orchestrating LLM calls and you want to record them as evidence without configuring provider-side webhook callbacks.
+
+## Environment variables
+
+| Variable | Default | Description |
+|---|---|---|
+| `SPCTRE_MCP_TRANSPORT` | `stdio` | Transport type: `stdio` or `http` |
+| `SPCTRE_MCP_HTTP_PORT` | `8090` | HTTP server port (HTTP/SSE only) |
+| `SPCTRE_MCP_HTTP_MESSAGE_PATH` | `/message` | MCP message endpoint path |
+| `SPCTRE_MCP_HTTP_SSE_PATH` | `/sse` | MCP SSE endpoint path |
+| `SPCTRE_MCP_REQUIRE_BEARER_AUTH` | `true` | Require bearer token on MCP HTTP endpoints (set to `false` to disable) |
+| `SPCTRE_MCP_AUDIT_SEAL_SECRET` | — | Signing secret for MCP audit seals |
+| `SPCTRE_API_TOKEN` | — | Access token for control plane authentication |
+| `SPCTRE_API_REFRESH_TOKEN` | — | Refresh token; enables automatic access token rotation |
+
+## Resources
+
+The MCP server also exposes read-only resources accessible via `spctre://` URIs:
+
+| URI | Description |
+|---|---|
+| `spctre://policies/main/current` | Active policy bundle for the current workspace |
+| `spctre://evidence/{decision_id}` | Audit record for a specific decision |
+| `spctre://approvals/{approval_id}` | State of a pending approval |
+| `spctre://approvals/queue` | Full pending approval queue with elapsed SLA times |
+| `spctre://agents/{agent_id}/audit` | Decision history for a specific agent |
+| `spctre://trust/{agent_id}/history` | Trust score timeline for a specific agent |
+| `spctre://identity/{principal_id}/events` | Identity lifecycle event log for a principal |
+| `spctre://verification/results` | AGT verification run results |
+| `spctre://workspaces/list` | All workspaces with active policy branch and publication status |
+| `spctre://workflows/config` | Approval workflow rules for the current workspace |
+| `spctre://members/list` | Org members, roles, and workspace-scoped grant overrides |
+
+## Prompts
+
+| Name | Description |
+|---|---|
+| `policy-governance-101` | Guidance on when and how to use governance tools; accepts optional `governance_scenario` argument |
+| `evidence-investigation` | Template for investigating policy decisions; accepts optional `decision_id` argument |
+
+## Tools reference
+
+All tools return a JSON text content block. Errors are returned as `{ "error": "..." }` in the same shape rather than thrown exceptions.
+
+| Tool | Purpose |
+|---|---|
+| `evaluate_policy` | Evaluate a proposed governed action. |
+| `create_evidence_record` | Record a completed action as audit evidence. |
+| `escalate_to_review` | Send a decision to human review. |
+| `get_policy_status` | Read current policy publication state and metadata. |
+| `get_effective_policy` | Resolve the policy rules that apply to a connector. |
+| `list_pending_escalations` | List open human-review queue items. |
+| `get_compliance_status` | Read the workspace compliance summary. |
+| `ingest_gateway_event` | Ingest an LLM gateway event as evidence. |
+| `discover_mcp_tools` | List policy-approved downstream MCP tools. |
+| `authorize_mcp_tool_call` | Authorize a downstream MCP call and return its audit seal. |
+
+---
+
+## evaluate_policy
+
+Evaluates whether a tool execution is allowed under the current published policy bundle. Calls `/api/gateway/decide` and returns the decision without recording evidence — use `create_evidence_record` after execution to persist the audit record.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `connector` | string | Yes | Connector identifier (e.g. `stripe`, `github`) |
+| `action` | string | Yes | Action being evaluated (e.g. `charge`, `create_pr`) |
+| `agent_context.agent_id` | string | Yes | Agent identifier |
+| `agent_context.workspace_id` | string | Yes | Workspace identifier — must match the token's workspace |
+| `agent_context.environment` | `dev` \| `staging` \| `prod` | No | Target environment |
+| `tool_context` | object | No | Contextual fields: `amount`, `target`, `batch_size`, `raw_args` |
+| `risk_level` | `LOW` \| `MEDIUM` \| `HIGH` | No | Risk level hint; defaults to `MEDIUM` |
+
+**Returns:** `{ decision, reason, matched_rules, policy_refs, decision_id, escalation, confidence, latency_ms }`
+
+---
+
+## create_evidence_record
+
+Records a completed tool execution as a tamper-evident evidence entry. Should be called after the tool runs, with the `decision_id` from `evaluate_policy` and the actual execution outcome.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `decision_id` | string | Yes | Decision ID from `evaluate_policy` (or a caller-generated UUID) |
+| `connector` | string | Yes | Connector identifier |
+| `action` | string | Yes | Action that was executed |
+| `agent_context.agent_id` | string | Yes | Agent identifier |
+| `agent_context.workspace_id` | string | Yes | Workspace identifier |
+| `agent_context.environment` | string | No | Execution environment |
+| `outcome` | `EXECUTED` \| `BLOCKED` \| `SKIPPED` \| `ERROR` | No | Actual execution result |
+| `result` | object | No | Tool return value or summary |
+| `raw_evidence` | object | No | Full raw payload for forensic storage |
+| `audit_seal` | string | No | Cryptographic seal from `authorize_mcp_tool_call` |
+| `tags` | string[] | No | Free-form labels for filtering |
+
+**Returns:** `{ evidence_id, tenant_id, workspace_id, agent_id, persisted_at, audit_ready }`
+
+---
+
+## escalate_to_review
+
+Pushes a decision to the human-in-the-loop review queue. Use when `evaluate_policy` returns `ESCALATE` or when the agent determines human sign-off is required.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `decision_id` | string | Yes | Decision ID to escalate |
+| `reason` | string | Yes | Human-readable explanation of why escalation is needed |
+| `priority` | `LOW` \| `NORMAL` \| `HIGH` \| `URGENT` | No | Queue priority; defaults to `NORMAL` |
+| `assignee` | string | No | Principal ID of the intended reviewer |
+
+**Returns:** `{ escalation_id, decision_id, reason, priority, assigned_to, sla_deadline, queue_position, status }`
+
+---
+
+## get_policy_status
+
+Returns the current policy publication state for a workspace — revision ID, artifact hash, publish timestamp, and the list of registered connectors.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `workspace_id` | string | Yes | Workspace to query |
+| `environment` | `dev` \| `staging` \| `prod` | No | Filter by environment |
+| `connector` | string | No | Filter by connector |
+
+**Returns:** `{ version, approval_status, policies_count, connectors, artifact_hash, last_updated_at, last_updated_by }`
+
+---
+
+## get_effective_policy
+
+Resolves the composed runtime policy bundle for a connector and returns only the rules that would apply — the same set the decision gateway evaluates. Useful for an agent that needs to understand its own policy constraints before acting.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `connector` | string | Yes | Connector to filter rules for |
+| `environment` | `dev` \| `staging` \| `prod` \| `production` | No | Target environment |
+| `agent_id` | string | No | Agent identifier; defaults to the token's agent |
+
+**Returns:** `{ workspace_id, agent_id, connector, environment, revision_id, artifact_hash, published_at, rules, rules_count, total_rules }`
+
+---
+
+## list_pending_escalations
+
+Returns open HITL queue items with SLA elapsed time. Intended for agents or operators that need to surface governance blockers.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `limit` | integer (1–100) | No | Maximum items to return; defaults to `20` |
+
+**Returns:** `{ queue, count, generated_at }` — each queue item includes escalation ID, decision ID, priority, assignee, and SLA deadline.
+
+---
+
+## get_compliance_status
+
+Returns the latest compliance packet summary for the current workspace — evidence count, approval count, pass/fail status, and staleness. No parameters required.
+
+**Returns:** The full compliance status object from `/api/compliance/status`.
+
+---
+
+## ingest_gateway_event
+
+Ingests a `spctre.gateway.event.v1` payload from an LLM gateway (Portkey, Helicone, LiteLLM) into the evidence pipeline. The MCP server forwards to `/api/gateway-ingest/mcp` using its own bearer token — no separate webhook setup needed.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `provider` | `portkey` \| `helicone` \| `litellm` | Yes | Gateway provider |
+| `gateway_event_id` | string | Yes | Provider-assigned event ID; used for deduplication |
+| `agent_id` | string | Yes | Agent identifier |
+| `model` | string | No | Model name (e.g. `gpt-4o`) |
+| `connector` | string | No | Connector identifier |
+| `action` | string | No | Action label |
+| `tool_declarations` | string[] | No | Tool names declared in the request |
+| `prompt_tokens` | integer | No | Prompt token count |
+| `completion_tokens` | integer | No | Completion token count |
+| `latency_ms` | number | No | Request latency |
+| `cost_usd` | number | No | Reported cost |
+| `event_timestamp` | string | No | ISO 8601 timestamp from the provider |
+| `environment` | string | No | Target environment; defaults to `production` |
+| `raw_event` | object | No | Full provider payload for forensic storage |
+
+**Returns:** `{ decision_id, provenance_gap, deduplicated, ingest_mode }`
+
+---
+
+## discover_mcp_tools
+
+Returns the list of approved downstream MCP tools for the agent's workspace, sourced from the workspace MCP policy registry. Does not execute any tool or affect planning.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `agent_id` | string | No | Agent identifier; defaults to the token's agent |
+| `environment` | string | No | Environment context; defaults to `production` |
+
+**Returns:** `{ workspace_id, agent_id, registry_source, tools, count }` — each tool entry includes server name, tool name, connector, action, and allowed status.
+
+---
+
+## authorize_mcp_tool_call
+
+Evaluates whether a downstream MCP tool call is permitted and returns a cryptographic audit seal. The seal must be passed to `create_evidence_record` as `audit_seal` to close the evidence chain. Requires `SPCTRE_MCP_AUDIT_SEAL_SECRET` to be set.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `server_name` | string | Yes | MCP server name hosting the downstream tool |
+| `tool_name` | string | Yes | Tool name on that server |
+| `connector` | string | No | Connector override |
+| `action` | string | No | Action override |
+| `agent_context.agent_id` | string | No | Agent identifier; defaults to token's agent |
+| `agent_context.workspace_id` | string | No | Workspace; defaults to token's workspace |
+| `agent_context.environment` | string | No | Environment context |
+| `tool_arguments` | object | No | Arguments that will be passed to the downstream tool |
+
+**Returns:** `{ decision_id, outcome, reason, server_name, tool_name, connector, action, audit_seal, issued_at, capability, wrapper_contract }` — `wrapper_contract.execute_downstream` is `true` only when `outcome` is `ALLOW`.

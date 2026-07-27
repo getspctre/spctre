@@ -1,0 +1,51 @@
+{
+  "name": "@spctre/policy-schema",
+  "version": "0.1.0",
+  "description": "Shared types and logic for governed agent systems",
+  "license": "Apache-2.0",
+  "main": "dist/index.js",
+  "types": "src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "require": "./dist/index.js",
+      "import": "./dist/index.js"
+    },
+    "./packs": {
+      "types": "./src/packs.ts",
+      "require": "./dist/packs.js",
+      "import": "./dist/packs.js"
+    },
+    "./types": {
+      "types": "./src/types.ts",
+      "require": "./dist/types.js",
+      "import": "./dist/types.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build:native": "node scripts/build-native.mjs",
+    "prebuild": "pnpm build:native",
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "dev": "tsc -p tsconfig.build.json -w",
+    "test": "vitest run",
+    "test:vendor-sdk-matrix": "vitest run tests/vendor-sdk-compatibility.test.ts"
+  },
+  "dependencies": {
+    "js-yaml": "^4.2.0"
+  },
+  "devDependencies": {
+    "@mastra/core": "1.50.1",
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^26.0.0",
+    "ai": "7.0.22",
+    "genkit": "1.39.0",
+    "governance-sdk": "0.18.1",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.8"
+  }
+}

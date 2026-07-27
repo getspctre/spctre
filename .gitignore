@@ -1,0 +1,53 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Environment and local secrets
+.env
+.env.*
+!.env*.example
+
+# Build outputs
+dist/
+target/
+apps/web/.next/
+apps/web/.source/
+apps/worker/dist/
+packages/cli/dist/
+packages/mcp-server/dist/
+packages/policy-schema/dist/
+packages/policy-schema/native/target/
+packages/ui/storybook-static/
+
+# Caches and test output
+.turbo/
+.cache/
+coverage/
+.nyc_output/
+.pytest_cache/
+__pycache__/
+*.tsbuildinfo
+
+# Native artifacts
+*.node
+
+# Local tooling
+.venv/
+.agents/
+.antigravitycli/
+.claude/
+.codex/
+.vscode/
+.idea/
+.spctre/
+packages/cli/.spctre/
+.polly/
+.worktrees/
+.pi/
+
+# Local notes and OS files
+concepts/
+.DS_Store
+.playwright-cli/
+DESIGN.md
+PRODUCT.md

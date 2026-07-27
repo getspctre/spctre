@@ -1,0 +1,57 @@
+---
+title: Exporting a compliance report
+description: JSON and CSV export, what each field means, and attaching to an audit package.
+---
+
+Export compliance data to attach to audit packages, share with auditors, or import into your organisation's GRC tools.
+
+## Opening the export dialog
+
+1. Apply any filters you need (date, connector, agent, etc.).
+2. Click **Export** in the report toolbar.
+3. The export dialog opens.
+
+## Export formats
+
+| Format | Best for |
+|---|---|
+| **CSV** | Spreadsheet analysis, GRC tools, auditor-friendly tabular format |
+| **JSON** | Programmatic ingestion, custom reporting pipelines |
+
+## What's included in the export
+
+Each row (CSV) or object (JSON) in the export represents one decision record:
+
+| Field | Description |
+|---|---|
+| `decision_id` | Unique identifier for this decision |
+| `agent_id` | Agent that made the decision |
+| `connector` | External service targeted |
+| `action` | Specific operation |
+| `decision` | `ALLOW`, `DENY`, `WARN`, `ESCALATE`, or `gap` |
+| `risk_level` | `LOW`, `MEDIUM`, or `HIGH` |
+| `policy_revision_id` | Which policy revision governed this decision |
+| `rule_id` | The stable rule ID that matched |
+| `timestamp` | ISO 8601 timestamp (UTC) |
+| `payload_hash` | SHA-256 of the evidence payload (payload itself is redacted in export) |
+| `reviewer_id` | For escalations: who resolved it |
+| `reviewer_decision` | For escalations: `PROCEED` or `ABORT` |
+| `compliance_seal` | If a seal was generated for this period: the seal ID |
+
+<Callout type="info">
+The evidence payload (the full decision context submitted by the agent) is not included in exports by default — only its hash. If your auditor needs the full payloads, request a **full payload export** from your workspace admin (requires elevated permission).
+</Callout>
+
+## Gap annotations
+
+Rows with `decision = gap` represent provenance gaps. These are included in the export with `policy_revision_id` and `rule_id` set to `null`. Document these for auditors with your remediation plan.
+
+## Attaching to an audit package
+
+A typical audit package for an AI governance review includes:
+1. The compliance report export (CSV or JSON)
+2. A compliance seal (see [Generating a compliance seal](/help-docs/ui-guides/compliance-officer/generating-compliance-seal))
+3. The relevant policy revisions (downloadable from the policy branch detail)
+4. The operations log for the audit period
+
+Provide the `decision_id` values for any decisions an auditor wants to trace — they can be used with the audit trail to retrieve full context.

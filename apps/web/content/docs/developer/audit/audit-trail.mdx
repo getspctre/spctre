@@ -1,0 +1,45 @@
+---
+title: Audit trail
+description: Evidence-to-policy traceability, provenance IDs, and fingerprinting.
+---
+
+Every decision in Spctre is traceable from the raw evidence record back to the exact policy revision that governed it. This end-to-end chain is the audit trail.
+
+## Traceability chain
+
+```
+Evidence record
+  └─ decisionId          (unique per decision)
+  └─ artifactHash        (SHA-256 of the policy bundle)
+  └─ policyContext[]
+       └─ branchId       (policy branch)
+       └─ revisionId     (immutable revision snapshot)
+       └─ artifactHash   (must match bundle hash)
+```
+
+Every link in this chain is cryptographically verifiable: the `artifactHash` in the evidence must match the `source_hash` of the policy revision in the control plane.
+
+## Provenance IDs
+
+A **provenance ID** is a stable identifier that links an evidence record to the specific rule that governed it, via the rule's `stable_rule_id`. Because `stable_rule_id` is immutable across revisions, you can trace any decision back to the exact rule intent, even after the rule has been updated.
+
+## Fingerprinting
+
+Spctre computes a fingerprint for each evidence record using the decision context (agent, connector, action, policy context). Identical decisions from the same agent in the same context produce the same fingerprint, making it easy to detect anomalies — an unexpected change in fingerprint indicates a policy or context change.
+
+## Compliance gaps and provenance gaps
+
+Evidence submitted without a complete `policyContext` is marked `provenance_gap: true`. These records appear in compliance reports as gaps — they cannot be traced to a specific policy revision and do not count toward the compliance score.
+
+To avoid provenance gaps:
+1. Always include `policyRefs`, `artifactHash`, and `policyContext` in evidence submissions
+2. Run `spctre sync` before starting your agent to ensure the local bundle is current
+3. Use `ingestMode: "gateway"` when submitting via the gateway (Spctre looks up revision context automatically)
+
+## Immutable revisions
+
+Policy revisions are immutable after publication. An agent that evaluated a decision against revision `rev-2026-06-08` can always be verified against that exact revision, even if the policy branch has since been updated. This ensures historical decisions remain auditable indefinitely.
+
+## Compliance seals
+
+For external auditors, generate a compliance seal over a report period. The seal is a cryptographic signature that proves the report content has not been altered since generation. See [Compliance reports](/help-docs/developer/audit/compliance) for details.

@@ -1,0 +1,58 @@
+---
+title: Git checkpoint ingestion
+description: Ingest framework-agnostic Git checkpoint and diff evidence.
+---
+
+Spctre accepts normalized Git checkpoints and diffs from any coding agent,
+editor, CI system, or repository hook. The endpoint never reads a local
+repository or runs Git: clients collect Git facts and submit them explicitly.
+
+## Endpoint
+
+```http
+POST /api/v1/evidence/git-checkpoints
+Authorization: Bearer <service-token>
+Content-Type: application/json
+```
+
+The service token requires the `evidence:write` scope. `idempotencyKey` must be
+stable for a checkpoint so retries remain safe.
+
+```json
+{
+  "idempotencyKey": "checkpoint:repo-42:abc123",
+  "environment": "production",
+  "status": "WARN",
+  "reason": "Sensitive configuration path changed.",
+  "agent": { "id": "coding-agent/acme", "adapter": "ci-git-hook" },
+  "checkpoint": {
+    "id": "abc123",
+    "createdAt": "2026-07-20T14:30:00Z",
+    "repository": { "id": "repo-42", "remoteUrl": "https://github.com/acme/service" },
+    "ref": "refs/heads/main",
+    "baseCommit": "2d4c1a7",
+    "headCommit": "8b736f2",
+    "diff": {
+      "format": "name-status",
+      "files": [{ "path": ".env.example", "status": "modified" }]
+    }
+  }
+}
+```
+
+`diff.format` may be `unified`, `name-status`, or `none`. A non-`none` diff
+must provide its text, digest, or changed-file list. Diff text is limited to
+1 MB; submit `sha256` and file metadata when retaining the full patch is not
+appropriate.
+
+The server resolves policy context at `checkpoint.createdAt` and records a
+normal evidence event. Client-provided `policyRefs` are retained as metadata;
+the client does not need to construct a policy context.
+
+## Migration from the Entire CLI command
+
+`spctre ingest entire` is no longer part of the core CLI. Use the optional
+`@spctre/entire-checkpoints` adapter—or build another integration—to read the
+checkpoint representation and call this endpoint. The
+`entire-session-audit-v1` policy pack remains available for adapters that label
+submissions with `connector: "entire-session"`.

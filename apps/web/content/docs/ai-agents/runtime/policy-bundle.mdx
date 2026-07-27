@@ -1,0 +1,120 @@
+---
+title: Policy bundle
+description: Fetching, syncing, and evaluating the policy bundle locally without a network call per decision.
+---
+
+A **policy bundle** is a signed, read-only snapshot of all published policy branches for a workspace. Agents download the bundle once at startup and evaluate decisions against it locally — no round-trip to the control plane per decision.
+
+## Fetch the bundle
+
+```bash
+spctre sync
+```
+
+Writes `spctre-policy.json` by default. Override the output path:
+
+```bash
+spctre sync --output /etc/spctre/policy.json
+```
+
+Specify environment to fetch the bundle scoped to that environment:
+
+```bash
+spctre sync --environment production
+```
+
+## Keep the bundle fresh
+
+```bash
+spctre watch --heartbeat
+```
+
+Runs in the background. Polls the control plane on each heartbeat tick and re-downloads the bundle when a new version is published. Default interval: 60 seconds.
+
+<Callout type="info">
+  Running `watch --heartbeat` is the recommended pattern for long-running agents. It ensures the agent enforces the latest approved policy without a restart.
+</Callout>
+
+## Bundle fields
+
+| Field | Description |
+|---|---|
+| `artifactHash` | SHA-256 of the bundle content — include in every gateway decide call |
+| `revisions[]` | Array of policy revisions included in this bundle |
+| `publishedAt` | ISO 8601 timestamp of bundle generation |
+| `workspaceId` | The workspace this bundle covers |
+| `expiresAt` | When the bundle expires (default: 24h after generation) |
+
+## Outage behaviour
+
+| Condition | Behaviour |
+|---|---|
+| Bundle absent | Agent runs without enforcement (fail-open default) |
+| Bundle expired | Continues using the stale bundle; logs a warning |
+| Bundle absent + `SPCTRE_BUNDLE_REQUIRED=true` | Agent refuses to start |
+| Control plane unreachable during sync | Keeps existing bundle; retries with exponential backoff |
+
+## Bundle hash
+
+Include `artifactHash` in every gateway decide call so the control plane can verify the agent evaluated against the correct bundle version:
+
+```bash
+HASH=$(jq -r '.artifactHash' .spctre/spctre-policy.json)
+```
+
+## Export targets
+
+The default bundle endpoint returns the AGT-compatible JSON bundle:
+
+```text
+GET /api/v1/bundle/latest
+```
+
+Use `format` to request a target export envelope with both artifact and manifest:
+
+```text
+GET /api/v1/bundle/latest?format=opa-bundle
+```
+
+Supported formats:
+
+| Format | Use |
+|---|---|
+| `spctre-json` | Spctre JSON envelope with bundle provenance |
+| `opa-rego` | Rego policy text |
+| `opa-bundle` | OPA data and Rego bundle payload |
+| `cedar` | Cedar policy text where semantics are representable |
+| `mcp-proxy-config` | MCP proxy configuration JSON |
+
+Use preview mode to inspect manifests and blocking warnings without downloading artifacts:
+
+```text
+GET /api/v1/bundle/latest?preview=true
+```
+
+CI jobs can use the same readiness check through the CLI:
+
+```bash
+spctre bundle preview --strict
+```
+
+If a target cannot preserve blocking semantics, the endpoint returns `409` with the manifest and `blockingWarnings` instead of an artifact.
+
+Successful target exports are checked against the manifest before handoff. The response includes `x-spctre-export-verified: true` when the artifact hash matches `manifest.compiledArtifactHash`.
+Each preview, successful export, or blocked export is recorded in the operations log as `BUNDLE_EXPORT`.
+
+For local handoff to a proxy, PDP, or deployment pipeline, use the CLI:
+
+```bash
+spctre bundle export --format opa-bundle --output spctre-opa-bundle.json
+```
+
+This writes the artifact and a `<output>.manifest.json` sidecar. The command fails if the export is blocked.
+
+Before deployment, verify the local handoff files:
+
+```bash
+spctre bundle verify --artifact spctre-opa-bundle.json --manifest spctre-opa-bundle.json.manifest.json
+```
+
+The verifier checks the compiled artifact hash and prints the external verifier targets declared by the manifest.

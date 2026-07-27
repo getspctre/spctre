@@ -1,0 +1,1797 @@
+{
+  "common": {
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "save": "Save"
+  },
+  "shared": {
+    "advisor_decision": {
+      "accept": "Accept",
+      "edit_record": "Edit + record",
+      "edited_summary": "Edited summary",
+      "edited_summary_placeholder": "Optional reviewer edit before recording feedback",
+      "rationale_placeholder": "Why accept, edit, or reject this recommendation?",
+      "reject": "Reject",
+      "reviewer_rationale": "Reviewer rationale"
+    },
+    "recommendation_decision": {
+      "accept": "Record guidance",
+      "edit_record": "Edit + record guidance",
+      "edited_summary": "Edited guidance",
+      "edited_summary_placeholder": "Optional reviewer edit before recording guidance",
+      "rationale_placeholder": "Why record, edit, or dismiss this guidance?",
+      "reject": "Dismiss guidance",
+      "reviewer_rationale": "Reviewer rationale"
+    },
+    "slide_out": {
+      "close": "Close panel"
+    }
+  },
+  "navigation": {
+    "agents": "Agents",
+    "alerting": "Alerting",
+    "account": "Account",
+    "admin": "Admin",
+    "api_docs": "API Docs",
+    "audit": "Audit",
+    "audit_ledger": "Audit Ledger",
+    "audit_log": "Audit Log",
+    "compliance_report": "Compliance Report",
+    "cost": "Cost",
+    "cost_usage": "Cost & Usage",
+    "escalations": "Escalations",
+    "escalation_routing": "Escalation routing",
+    "evidence": "Evidence",
+    "help_docs": "Help Docs",
+    "operations": "Operations",
+    "packs": "Packs",
+    "policies": "Policies",
+    "review": "Review",
+    "rules": "Rules",
+    "siem_export": "SIEM export",
+    "usage_billing": "Usage & Billing"
+  },
+  "sidebar": {
+    "go_to": "Go to...",
+    "open_command_palette": "Open command palette (⌘K)",
+    "opens_new_tab": "Opens in new tab",
+    "primary_nav": "Primary"
+  },
+  "command_palette": {
+    "aria_label": "Command palette",
+    "close": "Close",
+    "close_palette": "Close command palette",
+    "no_results": "No results for “{query}”",
+    "placeholder": "Go to…",
+    "search_aria_label": "Search navigation",
+    "footer": {
+      "close": "close",
+      "navigate": "navigate",
+      "open": "open",
+      "toggle": "toggle"
+    },
+    "items": {
+      "advisors": {
+        "description": "Advisor performance and recommendations",
+        "label": "Advisors"
+      },
+      "agents": {
+        "description": "Agent fleet health and status",
+        "label": "Agents"
+      },
+      "audit_ledger": {
+        "description": "Hash-chained tamper-evident event log",
+        "label": "Audit Ledger"
+      },
+      "audit_log": {
+        "description": "Runtime agent decision records and simulations",
+        "label": "Audit Log"
+      },
+      "billing": {
+        "description": "Subscription plan and billing",
+        "label": "Usage & Billing"
+      },
+      "compliance": {
+        "description": "Curated compliance packet, retention, and export",
+        "label": "Compliance Report"
+      },
+      "cost_usage": {
+        "description": "Spend, usage, budgets, and breach enforcement",
+        "label": "Cost & Usage"
+      },
+      "escalations": {
+        "description": "Human-in-the-loop review queue",
+        "label": "Escalations"
+      },
+      "escalation_routing": {
+        "description": "Route policy violations and reviewer notifications",
+        "label": "Escalation routing"
+      },
+      "packs": {
+        "description": "Browse and install policy packs",
+        "label": "Packs"
+      },
+      "policies": {
+        "description": "Manage policy branches",
+        "label": "Policies"
+      },
+      "review": {
+        "description": "Review diffs and publish",
+        "label": "Review & Publish"
+      },
+      "siem_export": {
+        "description": "Export governed runtime evidence to Splunk or Sentinel",
+        "label": "SIEM export"
+      },
+      "rules": {
+        "description": "Browse the rules inventory",
+        "label": "Rules"
+      }
+    }
+  },
+  "import_policy_panel": {
+    "trigger": "Import",
+    "new_branch": {
+      "description": "Set the policy context, then author rules. Import an existing policy when you already have YAML or JSON.",
+      "eyebrow": "New policy",
+      "title": "Create policy branch"
+    }
+  },
+  "onboarding": {
+    "cli_approve": {
+      "approve": "Approve CLI",
+      "approved_badge": "Approved",
+      "approved_description": "Return to your terminal. The CLI will exchange this approval for a dev token and finish workspace ",
+      "approved_description_suffix": " setup.",
+      "approved_title": "CLI approved",
+      "auth_required": "Authentication required",
+      "default_workspace": "default",
+      "description": "Approve a scoped development token for bundle sync, heartbeat, and runtime evidence.",
+      "eyebrow": "CLI authorization",
+      "missing": "missing",
+      "principal": "Signed-in principal",
+      "request_code": "Request code",
+      "sign_in": "Sign in to approve",
+      "title": "Connect Spctre CLI",
+      "token_scope": "Token scope"
+    }
+  },
+  "policies": {
+    "meta_summary": "{branchesCount} branches · {rulesCount} active rules",
+    "title": "Policies",
+    "workspace_policy": "Workspace policy"
+  },
+  "operations": {
+    "verify_chain": {
+      "api_json": "API JSON",
+      "api_title": "Developer API output",
+      "broken": "Broken",
+      "broken_at": "Broken at {location}",
+      "title": "Verify the audit ledger hash chain in this page",
+      "verified": "Verified",
+      "verified_count": "Verified ({count})",
+      "verify": "Verify chain",
+      "verifying": "Verifying...",
+      "errors": {
+        "unreachable": "Unable to reach the verification service.",
+        "verify": "Unable to verify the audit ledger."
+      }
+    },
+    "title": "Audit Ledger",
+    "hero": {
+      "aria_label": "Operations log overview",
+      "eyebrow": "Audit · Operations ledger",
+      "title": "Audit ledger",
+      "description": "Hash-chained. Covers policy, evidence, identity, agent, simulation, verification, compliance.",
+      "stats": {
+        "loaded": "Loaded events",
+        "event_types": "Event types",
+        "actors": "Actors",
+        "chain_health": "Chain health"
+      }
+    },
+    "filters": {
+      "clear": "Clear filter"
+    },
+    "events": {
+      "eyebrow": "Audit · Events",
+      "title": "Events",
+      "description": "Filter by event type. Chain verified on each page load.",
+      "empty": {
+        "title": "No events in range",
+        "description": "Events appear as policies, evidence, and identity changes are recorded.",
+        "hint": "Operations appear here as policies are imported, published, approved, or when evidence is ingested and processed."
+      }
+    },
+    "bundle_exports": {
+      "eyebrow": "Policy · Bundle exports",
+      "title": "Bundle export history",
+      "description": "Metadata from <table>bundle_export_log</table>. Full artifacts are not stored.",
+      "blocked": "{count, plural, one {# blocked} other {# blocked}}",
+      "empty": {
+        "title": "No bundle exports recorded",
+        "description": "Preview or download a target bundle to populate this history."
+      },
+      "table": {
+        "format": "Format",
+        "outcome": "Outcome",
+        "revision": "Revision",
+        "artifact": "Artifact",
+        "compiled": "Compiled",
+        "verified": "Verified"
+      }
+    },
+    "table": {
+      "time": "Time",
+      "event": "Event",
+      "source": "Source",
+      "actor": "Actor",
+      "hash": "Hash"
+    },
+    "pagination": {
+      "previous": "Previous",
+      "next": "Next"
+    }
+  },
+  "account": {
+    "eyebrow": "Account · Security",
+    "settings_label": "Account settings",
+    "title": "Account & security",
+    "preferences": {
+      "description": "Choose the language used across the control plane. Applies to your account on this and future sessions.",
+      "display_language": "Display language",
+      "eyebrow": "Settings · Preferences",
+      "saving": "Saving…",
+      "title": "Language"
+    },
+    "passkeys": {
+      "badge": "PASSKEY",
+      "cancel": "Cancel",
+      "created": "Created {date}",
+      "description": "Use a platform authenticator or hardware key for passwordless login.",
+      "empty": "No passkeys registered yet.",
+      "eyebrow": "Security · Passkeys",
+      "fallback_name": "Passkey …{suffix}",
+      "last_used": "Last used {date}",
+      "name_placeholder": "e.g. MacBook Touch ID",
+      "never": "Never",
+      "register": "Register new passkey",
+      "registering": "Registering...",
+      "remove": "Remove",
+      "rename": "Rename",
+      "save": "Save",
+      "title": "Registered passkeys",
+      "errors": {
+        "authenticator_no_public_key": "Authenticator did not provide a public key.",
+        "browser_unsupported": "This browser does not support passkey registration.",
+        "cancelled": "Passkey registration was cancelled.",
+        "finish_failed": "Failed to finish passkey registration.",
+        "start_failed": "Failed to start passkey registration.",
+        "unknown": "Unable to register passkey."
+      }
+    },
+    "recovery": {
+      "confirm_replace": "Confirm: replace existing codes",
+      "copy_all": "Copy all",
+      "description": "One-time backup codes for account recovery. Each code can only be used once.",
+      "empty": "No recovery codes generated yet.",
+      "eyebrow": "Security · Recovery",
+      "generate": "Generate recovery codes",
+      "generate_new": "Generate new codes",
+      "generating": "Generating…",
+      "replace_warning": "This will invalidate your existing unused codes. Click again to confirm.",
+      "save_codes": "Save these codes somewhere safe. They will not be shown again.",
+      "title": "Recovery codes",
+      "unused_remaining": "{count, plural, one {# unused code remaining.} other {# unused codes remaining.}}",
+      "errors": {
+        "empty_response": "No codes returned.",
+        "generate": "Failed to generate codes.",
+        "unknown": "Unable to generate codes."
+      }
+    },
+    "sessions": {
+      "browser": "Browser",
+      "description": "Audit and revoke active sessions on your devices.",
+      "device_label": "{browser} on {os}",
+      "empty": "No active sessions found.",
+      "eyebrow": "Settings · Security",
+      "ip_created": "IP: {ip} • Created:",
+      "last_active": "Last Active:",
+      "revoke": "Revoke",
+      "revoking": "Revoking…",
+      "this_device": "This Device",
+      "title": "Active sessions",
+      "unknown": "Unknown",
+      "unknown_device": "Unknown Device",
+      "unknown_os": "Unknown OS",
+      "errors": {
+        "demo_unavailable": "Session management is not available in Demo Mode. Create a free Spctre Cloud account to get started."
+      }
+    },
+    "sms": {
+      "cancel": "Cancel",
+      "channel": "SMS ({phone})",
+      "channel_fallback": "Channel",
+      "code_label": "Enter 6-digit code",
+      "description": "Enroll a phone number to receive 6-digit authentication codes via SMS.",
+      "eyebrow": "Security · MFA",
+      "phone_label": "Enter phone number (E.164 format)",
+      "remove": "Remove",
+      "send": "Send verification SMS",
+      "sending": "Sending verification code SMS...",
+      "sent": "We sent a 6-digit verification code to {phone}.",
+      "title": "SMS verification",
+      "verified": "SMS enrollment is verified.",
+      "verified_at": "Verified {date}",
+      "verified_channels": "Verified SMS channels",
+      "verify": "Verify code",
+      "errors": {
+        "invalid_code": "Enter a valid 6-digit code.",
+        "start": "Unable to start SMS enrollment.",
+        "unexpected": "An unexpected error occurred.",
+        "unexpected_verify": "An unexpected error occurred during verification.",
+        "verify": "Unable to verify SMS code."
+      }
+    },
+    "social": {
+      "cannot_unlink": "You must keep at least one login method connected.",
+      "connect": "Connect",
+      "description": "Link social accounts to use them as first-class login paths.",
+      "disconnect": "Disconnect",
+      "empty": "No social identity providers are configured.",
+      "eyebrow": "Settings · Social Login",
+      "github": "GitHub Account",
+      "google": "Google Account",
+      "linked": "Linked: {value}",
+      "not_linked": "Not linked",
+      "title": "Connected accounts",
+      "yes": "Yes"
+    },
+    "totp": {
+      "code_label": "Enter 6-digit code",
+      "description": "Enroll an authenticator app for 6-digit verification codes.",
+      "empty": "No verified MFA enrollments yet.",
+      "enroll": "Enroll TOTP",
+      "eyebrow": "Security · MFA",
+      "otpauth_url": "otpauth URL",
+      "remove": "Remove",
+      "secret": "Secret (base32)",
+      "title": "TOTP enrollment",
+      "verified": "TOTP enrollment is verified.",
+      "verified_at": "Verified {date}",
+      "verified_badge": "VERIFIED",
+      "verified_enrollments": "Verified enrollments",
+      "verify": "Verify enrollment",
+      "errors": {
+        "invalid_code": "Enter a valid 6-digit code.",
+        "start": "Unable to start TOTP enrollment.",
+        "verify": "Unable to verify MFA enrollment."
+      }
+    }
+  },
+  "admin": {
+    "auth": {
+      "aria_label": "Authentication configuration",
+      "eyebrow": "Organization · Authentication",
+      "mfa_optional": "MFA optional",
+      "mfa_required": "MFA required",
+      "provider_count": "{count, plural, one {# provider} other {# providers}}",
+      "state_aria_label": "Authentication state",
+      "title": "Authentication settings",
+      "access_section": {
+        "eyebrow": "Admin · Tenant controls",
+        "title": "Access policy"
+      },
+      "idp": {
+        "add_provider": "Add provider",
+        "add_title": "Add identity provider",
+        "client_id": "Client ID",
+        "client_secret": "Client secret",
+        "client_secret_keep": "Client secret (leave blank to keep current)",
+        "description": "Connect a sign-in authority for reviewers and admins.",
+        "edit_title": "Edit provider",
+        "issuer": "Issuer",
+        "metadata_url": "Metadata URL",
+        "name": "Name",
+        "provider_type": "Provider type",
+        "saml_cert": "IdP signing certificate",
+        "saml_cert_keep": "IdP signing certificate (leave blank to keep current)",
+        "saml_cert_placeholder": "Paste the base64 certificate or full PEM block",
+        "saml_entity_id": "IdP entity ID",
+        "saml_entry_point": "IdP entry point URL",
+        "saml_help_prefix": "Download SP metadata from",
+        "saml_help_suffix": "to configure your IdP.",
+        "save_provider": "Save provider",
+        "saving": "Saving...",
+        "scope": "Scope",
+        "view_plans": "View plans",
+        "status": {
+          "client_id_required": "Client ID is required for OIDC providers.",
+          "missing_provider": "Identity provider is missing.",
+          "name_issuer_required": "Name and issuer are required.",
+          "removed": "Identity provider removed.",
+          "saml_cert_required": "IdP signing certificate is required for SAML providers.",
+          "saml_entry_point_required": "IdP entry point URL is required for SAML providers.",
+          "saved": "Identity provider saved."
+        }
+      },
+      "mfa": {
+        "description": "Set the baseline authentication posture for every control-plane principal.",
+        "grace_days": "MFA grace period (days)",
+        "require": "Require MFA",
+        "require_description": "Applies to all local control-plane users.",
+        "saving": "Saving...",
+        "submit": "Save tenant settings",
+        "title": "MFA requirements",
+        "status": {
+          "updated": "Tenant MFA settings updated."
+        }
+      },
+      "provider_section": {
+        "eyebrow": "Admin · Identity federation",
+        "title": "Provider connection"
+      },
+      "providers": {
+        "client_id": "Client ID",
+        "empty_description": "Add OIDC to route control-plane sign-in through your identity provider.",
+        "empty_title": "No provider configured",
+        "eyebrow": "Admin · Providers",
+        "issuer": "Issuer",
+        "title": "Identity providers"
+      },
+      "remove_provider": {
+        "confirm": "Remove {providerName} as an identity provider? Users may lose this sign-in path.",
+        "remove": "Remove provider",
+        "removed": "Removed",
+        "removing": "Removing...",
+        "status": {
+          "removed": "Identity provider removed."
+        }
+      },
+      "scim": {
+        "description": "Keep users, groups, and workspace grants synchronized from your identity provider.",
+        "eyebrow": "Admin · SCIM",
+        "plan": "Enterprise",
+        "title": "Directory lifecycle",
+        "tokens": {
+          "eyebrow": "Provisioning tokens",
+          "title": "Per-tenant SCIM tokens",
+          "endpoint_hint": "SCIM base URL:",
+          "empty": "No active provisioning tokens.",
+          "label": "Label",
+          "label_placeholder": "e.g. Okta production",
+          "generate": "Generate token",
+          "generating": "Generating…",
+          "created": "Created",
+          "created_by": "Created by",
+          "last_used": "Last used",
+          "never_used": "Never",
+          "revoke": "Revoke",
+          "copy": "Copy",
+          "copied": "Copied",
+          "copy_warning": "Copy this token now — it is shown only once.",
+          "status": {
+            "auth_required": "Authentication required.",
+            "workspace_unavailable": "Workspace context unavailable.",
+            "admin_required": "Admin permission is required.",
+            "not_entitled": "SCIM provisioning requires an Enterprise subscription.",
+            "write_denied": "Write access is disabled for this demo tenant.",
+            "create_failed": "Failed to create SCIM token.",
+            "revoke_failed": "Token was not found or is already revoked."
+          }
+        }
+      }
+    },
+    "service_keys": {
+      "active_count": "{count, plural, one {# active key} other {# active keys}}",
+      "aria_label": "Service account key management",
+      "description": "Issue scoped automation keys for CLI, CI/CD, and headless runtime access.",
+      "eyebrow": "Administration · Service keys",
+      "generate_aria_label": "Generate new key",
+      "never": "Never",
+      "title": "Service account keys",
+      "active": {
+        "eyebrow": "Service keys · Active",
+        "title": "API keys for this workspace"
+      },
+      "empty": {
+        "description": "Generate a key to enable headless CLI and CI/CD access.",
+        "title": "No active keys"
+      },
+      "form": {
+        "copied": "Copied",
+        "copy": "Copy",
+        "copy_warning": "This token will not be shown again. Copy it now.",
+        "created_eyebrow": "Service keys · Created",
+        "done": "Done",
+        "expires": "Expires in days",
+        "expires_hint": "(optional, 1–365)",
+        "expires_placeholder": "Never (leave blank)",
+        "generate": "Generate key",
+        "generating": "Generating…",
+        "label": "Label",
+        "label_placeholder": "e.g. GitHub Actions — my-repo",
+        "prefix": "Prefix:",
+        "scopes": "Scopes",
+        "status": {
+          "admin_required": "Admin permission is required.",
+          "auth_required": "Authentication required.",
+          "label_required": "A label is required.",
+          "permission_denied": "Permission denied.",
+          "write_denied": "Write access denied.",
+          "workspace_unavailable": "Workspace context unavailable.",
+          "scope_required": "Select at least one scope."
+        }
+      },
+      "new": {
+        "eyebrow": "Service keys · New",
+        "title": "Generate service account key"
+      },
+      "revoke": {
+        "confirm": "Revoke service key {label}? Existing CI, CLI, and automation using this key will stop authenticating.",
+        "revoke": "Revoke",
+        "revoked": "Revoked",
+        "revoking": "Revoking...",
+        "status": {
+          "admin_required": "Admin permission is required.",
+          "auth_required": "Authentication required.",
+          "missing_key": "Service key is missing.",
+          "not_found": "Service key was not found or is already revoked.",
+          "permission_denied": "Permission denied.",
+          "write_denied": "Write access denied.",
+          "workspace_unavailable": "Workspace context unavailable.",
+          "revoked": "Service key revoked."
+        }
+      },
+      "table": {
+        "actions": "Actions",
+        "created": "Created",
+        "expires": "Expires",
+        "label": "Label",
+        "last_used": "Last used",
+        "scopes": "Scopes",
+        "token_prefix": "Token prefix"
+      },
+      "usage": {
+        "code_sample": "# Set as a secret in your CI provider, then reference it:\nSPCTRE_API_TOKEN=spctre_svc_... spctre sync",
+        "description": "Set the key as a repository secret and reference it in your workflow.",
+        "eyebrow": "Service keys · CI/CD",
+        "title": "Using a service account key"
+      }
+    },
+    "webhooks": {
+      "active_count": "{count, plural, one {# active secret} other {# active secrets}}",
+      "aria_label": "Gateway webhook secret management",
+      "description": "Mint per-integration secrets for inbound gateway webhooks (Portkey, Helicone, LiteLLM, Notion). Each secret binds a provider to this workspace, so tenant and workspace are derived from the secret instead of caller-supplied headers. Secrets are shown once.",
+      "eyebrow": "Administration · Webhooks",
+      "generate_aria_label": "Generate new webhook secret",
+      "title": "Gateway webhook secrets",
+      "active": {
+        "eyebrow": "Gateway webhooks · Active",
+        "title": "Webhook secrets for this workspace"
+      },
+      "empty": {
+        "description": "Generate a secret to authenticate inbound gateway webhooks for this workspace.",
+        "title": "No active webhook secrets"
+      },
+      "form": {
+        "configure_generic_prefix": "(the generic",
+        "configure_generic_suffix": "header also works). Tenant and workspace are derived from the secret — no other headers are trusted.",
+        "configure_header_suffix": "header",
+        "configure_prefix": "Configure your {provider} webhook to send this secret in the",
+        "copied": "Copied",
+        "copy": "Copy",
+        "copy_warning": "This secret will not be shown again. Copy it now.",
+        "created_eyebrow": "Gateway webhooks · Created",
+        "done": "Done",
+        "generate": "Generate webhook secret",
+        "generating": "Generating…",
+        "label": "Label",
+        "label_hint": "(optional)",
+        "label_placeholder": "e.g. Portkey — prod gateway",
+        "provider": "Provider",
+        "status": {
+          "admin_required": "Admin permission is required.",
+          "auth_required": "Authentication required.",
+          "permission_denied": "Permission denied.",
+          "unsupported_provider": "Select a supported provider.",
+          "write_denied": "Write access denied.",
+          "workspace_unavailable": "Workspace context unavailable."
+        }
+      },
+      "new": {
+        "eyebrow": "Gateway webhooks · New",
+        "title": "Generate webhook secret"
+      },
+      "revoke": {
+        "confirm": "Revoke webhook secret {label}? Inbound webhooks using this secret will stop authenticating immediately.",
+        "revoke": "Revoke",
+        "revoked": "Revoked",
+        "revoking": "Revoking...",
+        "status": {
+          "admin_required": "Admin permission is required.",
+          "auth_required": "Authentication required.",
+          "missing_registration": "Webhook registration is missing.",
+          "not_found": "Webhook was not found or is already revoked.",
+          "permission_denied": "Permission denied.",
+          "revoked": "Webhook secret revoked.",
+          "write_denied": "Write access denied.",
+          "workspace_unavailable": "Workspace context unavailable."
+        }
+      },
+      "setup": {
+        "code_sample": "# Every inbound gateway webhook carries the secret, e.g. Portkey:\nx-portkey-webhook-secret: gwh_...",
+        "description_prefix": "Paste the secret into your provider's webhook configuration. It is sent on each inbound request in the provider signature header (or the generic",
+        "description_suffix": " header).",
+        "eyebrow": "Gateway webhooks · Setup",
+        "title": "Using a webhook secret"
+      },
+      "table": {
+        "actions": "Actions",
+        "created": "Created",
+        "created_by": "Created by",
+        "label": "Label",
+        "provider": "Provider",
+        "registration": "Registration"
+      }
+    },
+    "members": {
+      "aria_label": "Member management",
+      "description": "Manage built-in roles, workspace overrides, invite state, and RBAC audit history.",
+      "enterprise": "Enterprise",
+      "eyebrow": "Organization · Members",
+      "none": "None",
+      "sidebar_aria_label": "Invites, RBAC audit, and Cloud controls",
+      "title": "Organization members",
+      "view_plans": "View plans",
+      "counts": {
+        "active": "{count, plural, one {# active} other {# active}}",
+        "pending": "{count, plural, one {# pending} other {# pending}}",
+        "seats": "{count, plural, one {# seat} other {# seats}}"
+      },
+      "summary": {
+        "active": "Active",
+        "admins": "Admins",
+        "aria_label": "Member access summary",
+        "mfa_or_passkey": "MFA or passkey",
+        "pending_invites": "{count, plural, one {# pending invite} other {# pending invites}}",
+        "provisioned_users": "provisioned users",
+        "stronger_auth": "with stronger auth",
+        "tenant_level_access": "tenant-level access",
+        "total_seats": "Total seats"
+      },
+      "table_section": {
+        "eyebrow": "Admin · Seat management",
+        "title": "Members and workspace overrides"
+      },
+      "table": {
+        "access_state": "Access state",
+        "actions": "Actions",
+        "member": "Member",
+        "org_role": "Org role",
+        "workspace_access": "Workspace access"
+      },
+      "member_row": {
+        "active": "Active",
+        "inherit_org_role": "All workspaces inherit org role",
+        "last_active": "Last active: {date}",
+        "mfa_enrolled": "MFA enrolled",
+        "mfa_not_enrolled": "MFA not enrolled",
+        "no_reviewer_lanes": "No reviewer lanes",
+        "passkeys": "{count, plural, one {# passkey} other {# passkeys}}",
+        "pending": "Pending",
+        "you": "You"
+      },
+      "role_matrix": {
+        "capabilities": "Capabilities",
+        "eyebrow": "Organization · Roles",
+        "publish_scopes": "Publish scopes",
+        "reviewer_lanes": "Reviewer lanes",
+        "role": "Role",
+        "title": "Permission matrix"
+      },
+      "invite_section": {
+        "eyebrow": "Workflow · User lifecycle",
+        "title": "Invite member"
+      },
+      "invite_form": {
+        "create": "Create invite",
+        "creating": "Creating...",
+        "description": "Assign the baseline org role. Workspace overrides can be added after invite creation.",
+        "display_name": "Display name",
+        "display_name_placeholder": "Avery Reviewer",
+        "email": "Email",
+        "email_placeholder": "avery@example.com",
+        "organization_role": "Organization role",
+        "title": "Invite member"
+      },
+      "granular": {
+        "coming_soon": "Granular role configuration is coming soon.",
+        "description": "Compose custom roles from reviewer lanes, publish scopes, environment bounds, and workspace constraints while keeping every role edit in the RBAC audit log.",
+        "eyebrow": "Admin · Custom roles",
+        "fallback_description": "Advanced reviewer lanes, publish scopes, and environment-level grants are managed through custom roles here instead of invite-time one-off grants.",
+        "title": "Granular grants",
+        "dimensions": {
+          "environment_bounds": {
+            "label": "Environment bounds",
+            "value": "Development, staging, production, or custom tags"
+          },
+          "publish_scopes": {
+            "label": "Publish scopes",
+            "value": "Workspace, connector, environment, organization"
+          },
+          "reviewer_lanes": {
+            "label": "Reviewer lanes",
+            "value": "Security, Platform, Legal, Ops, Admin"
+          }
+        }
+      },
+      "audit": {
+        "badge": "Audit",
+        "empty_description": "Invites, role changes, and workspace overrides will appear here.",
+        "empty_title": "No RBAC changes yet",
+        "eyebrow": "Audit · RBAC",
+        "tenant": "tenant",
+        "title": "Recent changes"
+      },
+      "inspector": {
+        "active": "Active",
+        "all_workspaces_inherit": "All workspaces inherit the organization role.",
+        "applying": "Applying…",
+        "apply_role": "Apply role",
+        "cannot_remove_self": "You cannot remove your own membership from this screen.",
+        "confirm_remove_member": "Remove {name} from the organization? This cannot be undone.",
+        "confirm_revoke_invite": "Revoke the pending invite for {name}? They will no longer be able to accept it.",
+        "current_user": "Current user",
+        "inherit_org_role": "Inherit org role",
+        "inspect": "Inspect",
+        "invite_revoked": "Invite revoked",
+        "last_active": "Last active",
+        "lifecycle": "Lifecycle",
+        "member_actions": "Member actions",
+        "member_removed": "Member removed",
+        "mfa_enrolled": "MFA enrolled",
+        "mfa_not_enrolled": "MFA not enrolled",
+        "no_reviewer_lanes_tenant": "No reviewer lanes assigned by the tenant role.",
+        "no_workspaces": "No workspaces",
+        "organization_role": "Organization role",
+        "override_option": "Override: {role}",
+        "override_role": "Override role",
+        "overrides": "Overrides",
+        "panel_eyebrow": "Admin · Member",
+        "passkeys": "Passkeys",
+        "pending": "Pending",
+        "remove_member": "Remove member",
+        "removing": "Removing...",
+        "revoke_invite": "Revoke invite",
+        "revoking": "Revoking...",
+        "reviewer_lanes": "Reviewer lanes: {lanes}",
+        "role": "Role",
+        "save_override": "Save override",
+        "saving": "Saving...",
+        "status": "Status",
+        "summary_aria_label": "Member access summary",
+        "tenant_access": "Tenant access",
+        "workspace": "Workspace",
+        "workspace_access": "Workspace access",
+        "workspace_override": "workspace override"
+      }
+    },
+    "workflows": {
+      "builder_aria_label": "Approval workflow builder",
+      "cloud": "Cloud",
+      "description": "Configure publish gates by workspace and environment.",
+      "eyebrow": "Administration · Workflows",
+      "sidebar_aria_label": "Workflow audit and managed controls",
+      "title": "Approval workflows",
+      "counts": {
+        "enabled": "{count, plural, one {# enabled} other {# enabled}}",
+        "workflows": "{count, plural, one {# workflow} other {# workflows}}"
+      },
+      "rules": {
+        "eyebrow": "Workflow · Gates",
+        "title": "Active workflow rules"
+      },
+      "enforcement": {
+        "description": "Route high-risk policies automatically, expire stale approvals, and notify reviewers.",
+        "eyebrow": "Workflow · Enforcement",
+        "title": "Risk routing and reminders"
+      },
+      "audit": {
+        "badge": "Audit",
+        "empty_description": "Rule edits and mode changes will appear here.",
+        "empty_title": "No workflow changes yet",
+        "eyebrow": "Audit · Workflows",
+        "title": "Recent changes",
+        "workflow_fallback": "workflow"
+      },
+      "form": {
+        "allow_immediate_publish": "Allow immediate pack publish",
+        "allow_immediate_publish_description": "When enabled, workspace admins can install or upgrade a policy pack and publish it directly without a separate review step.",
+        "approval_role": "Approval role",
+        "create_description": "Set scope and review mode, then define the first required gate.",
+        "create_title": "Create workflow policy",
+        "edit_description": "Adjust scope and review mode, then add the next required gate.",
+        "edit_title": "Edit workflow policy",
+        "environment": "Environment",
+        "environment_placeholder": "production",
+        "name": "Name",
+        "require_verification": "Require AGT verification before publish",
+        "require_verification_description": "Keep this off for teams that do not run AGT verification in their pipeline.",
+        "required_count": "Required count",
+        "required_rule": "Required rule",
+        "review_mode": "Review mode",
+        "save_changes": "Save changes",
+        "save_workflow": "Save workflow",
+        "saving": "Saving...",
+        "tenant_default": "Tenant default",
+        "workspace_scope": "Workspace scope",
+        "review_modes": {
+          "parallel": "Parallel",
+          "sequential": "Sequential"
+        }
+      },
+      "table": {
+        "active_approval_gates": "Active approval gates",
+        "configuration": "Configuration",
+        "confirm_disable": "Disable workflow \"{name}\"?",
+        "confirm_remove_rule": "Remove rule {sequence} ({role}) from \"{name}\"?",
+        "create_panel_description": "Create a workflow with scope, review mode, and initial approval gate.",
+        "current_state": "Current state",
+        "details_aria_label": "Workflow details",
+        "disable_blocked_title": "At least one enabled workflow must remain.",
+        "disable_workflow": "Disable workflow",
+        "disabled": "Disabled",
+        "disabling": "Disabling...",
+        "enabled": "Enabled",
+        "fallback_behavior": "Fallback behavior: Admin-only approval gate (1 required).",
+        "gate_configuration": "Gate configuration",
+        "inspect": "Inspect",
+        "lifecycle_aria_label": "Workflow lifecycle controls",
+        "lifecycle_description": "Edits here can reset approvals for active, unpublished revisions in this scope, so approvers re-review against the latest gate configuration.",
+        "lifecycle_eyebrow": "Workflow · Lifecycle",
+        "mode": "Mode",
+        "new_workflow": "New workflow",
+        "no_rules": "No rules",
+        "no_rules_configured": "No rules are configured for this workflow.",
+        "one_rule": "{role} rule",
+        "panel_description": "{scope} · {mode} review",
+        "panel_eyebrow": "Workflow · Gates",
+        "policy_editor_eyebrow": "Workflow · Policy editor",
+        "rereview_required": "Re-review required",
+        "remove": "Remove",
+        "review_impact_title": "Review impact and lifecycle",
+        "rule_builder_aria_label": "Workflow rule builder",
+        "rule_required_from": "{count} required from {roles}",
+        "rule_set_eyebrow": "Workflow · Rule set",
+        "rules": "Rules",
+        "rules_aria_label": "Workflow rules",
+        "scope": "Scope",
+        "snapshot_eyebrow": "Workflow · Snapshot",
+        "status": "Status",
+        "tenant_default": "Tenant default",
+        "toolbar_description": "Open a workflow to edit policy, tune gates, and manage lifecycle actions in one place.",
+        "updated": "Updated",
+        "workflow": "Workflow"
+      }
+    },
+    "localization": {
+      "aria_label": "Terminology overrides",
+      "description": "Use familiar names for the common product terms available in the selected language.",
+      "eyebrow": "Administration · Localization",
+      "title": "Terminology & branding",
+      "language": {
+        "description": "Overrides are scoped to a single language. Switch languages to manage each set independently.",
+        "eyebrow": "Localization · Language",
+        "field": "Language",
+        "submit": "Switch language",
+        "title": "Language"
+      },
+      "add": {
+        "custom_value": "Custom value",
+        "custom_value_placeholder": "Audit trail",
+        "description": "Pick the label key to replace and supply the term your organization prefers (for example, rename <code>navigation.audit_log</code> to your own wording).",
+        "eyebrow": "Localization · Add override",
+        "submit": "Save override",
+        "title": "Add or update an override",
+        "translation_key": "Translation key",
+        "translation_key_placeholder": "navigation.audit_log"
+      },
+      "manage": {
+        "actions": "Actions",
+        "custom_value": "Custom value",
+        "empty": "No terminology overrides for this language yet.",
+        "eyebrow": "Localization · Manage",
+        "key": "Key",
+        "remove": "Remove",
+        "standard_label": "Standard label",
+        "title": "Active overrides ({locale})"
+      },
+      "status": {
+        "admin_required": "Admin permission is required.",
+        "missing_fields": "A translation key and a custom value are both required.",
+        "missing_key": "A translation key is required to remove an override.",
+        "removed": "Removed override for \"{key}\".",
+        "saved": "Saved override for \"{key}\".",
+        "storage_unavailable": "Localization storage is not available on this database yet.",
+        "unknown_key": "Unknown translation key \"{key}\".",
+        "unsupported_language": "Unsupported language selection."
+      }
+    },
+    "workspace": {
+      "aria_label": "Workspace management",
+      "description": "Create, update, and remove tenant workspaces from one place.",
+      "eyebrow": "Administration · Workspace",
+      "title": "Workspace management",
+      "create": {
+        "eyebrow": "Workspace · Create",
+        "name": "Name",
+        "name_placeholder": "Payments Ops",
+        "slug": "Slug (optional)",
+        "slug_placeholder": "payments-ops",
+        "submit": "Create workspace",
+        "title": "New workspace"
+      },
+      "language": {
+        "description": "The fallback language for members who have not set a personal preference. Individual users can still override it in their account settings.",
+        "eyebrow": "Organization · Language",
+        "field": "Default language",
+        "submit": "Save default language",
+        "title": "Default language"
+      },
+      "manage": {
+        "eyebrow": "Workspace · Manage",
+        "title": "Existing workspaces"
+      },
+      "card": {
+        "active": "ACTIVE",
+        "confirm_label": "Type DELETE to confirm",
+        "created": "Created {createdAt}",
+        "delete": "Delete workspace",
+        "delete_description": "This will permanently remove \"{name}\" and all its data. This action cannot be undone.",
+        "delete_disabled_title": "Switch to a different workspace before deleting this one.",
+        "delete_eyebrow": "Admin · Danger zone",
+        "delete_title": "Delete workspace",
+        "name": "Name",
+        "permanently_delete": "Permanently delete",
+        "save": "Save workspace",
+        "saving": "Saving…",
+        "slug": "Slug"
+      },
+      "status": {
+        "admin_required": "Admin permission is required.",
+        "created": "Created workspace {slug}.",
+        "database_unconfigured": "Database is not configured.",
+        "deleted": "Deleted workspace {slug}.",
+        "delete_confirm": "Type DELETE to confirm workspace removal.",
+        "locale_storage_unavailable": "Localization storage is not available on this database yet.",
+        "locale_updated": "Set organization default language to {locale}.",
+        "unsupported_language": "Unsupported language selection.",
+        "updated": "Updated workspace {slug}."
+      }
+    }
+  },
+  "auth": {
+    "awaiting_access": {
+      "back": "Back to sign in",
+      "description": "An administrator still needs to assign reviewer roles or publish scopes before this account can use the control plane.",
+      "eyebrow": "Access pending",
+      "title": "Your SSO account is connected"
+    },
+    "device": {
+      "approve": "Approve device",
+      "approved_badge": "Approved",
+      "approved_description": "Return to your terminal. The CLI will finish connecting to workspace",
+      "approved_title": "Device approved",
+      "auth_required": "Authentication required",
+      "default_workspace": "default",
+      "description": "Enter the code shown in your terminal to approve a scoped token for bundle sync, heartbeat, and runtime evidence.",
+      "device_code": "Device code",
+      "eyebrow": "Device authorization",
+      "format": "Format: <code>SPCTRE-XXXX-XXXX</code>",
+      "principal": "Signed-in principal",
+      "sign_in": "Sign in to approve",
+      "title": "Connect a CLI or CI agent",
+      "token_scope": "Token scope",
+      "errors": {
+        "missing_code": "Missing device code."
+      }
+    },
+    "login": {
+      "email": {
+        "email": "Email address",
+        "email_placeholder": "you@example.com",
+        "magic_link": "Email magic link",
+        "magic_sent": "If that email has an account, a sign-in link is on its way. Check your inbox.",
+        "sending_link": "Sending link…",
+        "use_passkey": "Use passkey",
+        "verifying": "Verifying…",
+        "errors": {
+          "browser_unsupported": "This browser does not support passkey login.",
+          "cancelled": "Passkey login was cancelled.",
+          "magic_link": "Something went wrong sending the magic link. Try again.",
+          "passkey_failed": "Passkey login failed.",
+          "passkey_unknown": "Unable to sign in with passkey.",
+          "start_passkey": "Unable to start passkey login."
+        }
+      },
+      "sms_mfa": {
+        "retry": "Retry sending code",
+        "send": "Send code via SMS",
+        "sending": "Sending code...",
+        "sent": "Code sent! Check your phone.",
+        "errors": {
+          "send_failed": "Failed to send verification code.",
+          "unknown": "Unable to send SMS."
+        }
+      },
+      "page": {
+        "auth_error": "Authentication error: {error}",
+        "brand_meta": "Control plane access",
+        "create_local": "Create local development user",
+        "description": "Sign in with a magic email link or passkey.",
+        "description_sso": "Sign in with a magic email link, SSO or passkey.",
+        "header_note": "Access your workspace with a magic email link or passkey.",
+        "header_note_sso": "Access your workspace with magic email, SSO or passkey.",
+        "local_signup_created": "Local user created. Select it below to sign in.",
+        "recover": "Lost access? Use a recovery code",
+        "title": "Sign in",
+        "demo": {
+          "default_persona": "Default persona",
+          "description": "Open the seeded demo tenant and workspace with sample policy branches, evidence, and review queues.",
+          "launch": "Launch Demo",
+          "tenant": "Tenant",
+          "title": "Demo Cloud Experience",
+          "warning": "Demo writes are blocked. Create or sign in to a non-demo workspace to save changes.",
+          "workspace": "Workspace"
+        },
+        "local": {
+          "empty": "No local accounts available",
+          "field": "Local account",
+          "hint": "These accounts are pre-seeded in your deployment.",
+          "select": "Select a local account",
+          "submit": "Sign in"
+        },
+        "mfa": {
+          "code": "MFA Code",
+          "description": "This tenant requires MFA before accessing the control plane.",
+          "submit": "Verify and continue"
+        },
+        "sso": {
+          "github": "Continue with GitHub",
+          "google": "Continue with Google",
+          "oidc": "Continue with SSO",
+          "or": "or",
+          "saml": "Continue with SAML SSO"
+        }
+      }
+    },
+    "recover": {
+      "back": "Back to sign in",
+      "brand_meta": "Account recovery",
+      "code": "Recovery code",
+      "description": "Use one of your backup recovery codes. Each code can only be used once.",
+      "email": "Email address",
+      "email_placeholder": "you@example.com",
+      "header_note": "Enter your email and a recovery code to regain access.",
+      "submit": "Verify and sign in",
+      "title": "Recovery code",
+      "verifying": "Verifying…",
+      "errors": {
+        "invalid_code": "Invalid email or recovery code.",
+        "unexpected": "Something went wrong. Try again.",
+        "verify": "Unable to verify. Try again."
+      }
+    },
+    "signup": {
+      "back": "Back to login",
+      "description": "This shortcut is only available when <code>LOCAL_SIGNUP_ENABLED=true</code>.",
+      "display_name": "Display name",
+      "display_name_placeholder": "Local Admin",
+      "email": "Email",
+      "email_placeholder": "you@example.com",
+      "error": "Signup error: {error}",
+      "eyebrow": "Local development",
+      "submit": "Create local user",
+      "title": "Create Local User"
+    }
+  },
+  "errors": {
+    "LIMIT_EXCEEDED": "Limit {limit} exceeded. Current value: {actual}.",
+    "POLICY_FILE_NOT_FOUND": "Policy file not found: {filePath}",
+    "UNKNOWN_CONNECTOR": "Connector \"{connector}\" was not found in the pack catalog.",
+    "UNKNOWN_ACTION": "Action \"{action}\" was not found for connector \"{connector}\".",
+    "AUTH_REQUIRED": "Authentication required.",
+    "INVALID_WORKSPACE": "Invalid workspace context.",
+    "PLAN_REQUIRED": "This feature requires the {plan} plan.",
+    "POLICY_NOT_FOUND": "Policy not found."
+  },
+  "agents": {
+    "title": "Agents",
+    "summary": {
+      "current": "{count} current",
+      "outdated": "{count} outdated",
+      "stale": "{count} stale"
+    },
+    "hero": {
+      "aria_label": "Agent fleet overview",
+      "eyebrow": "Provenance · Fleet",
+      "title": "Connected agents",
+      "meta": "{total} agents · {current} current · {outdated} outdated · {stale} stale (last 1h).",
+      "guidance": "Guidance",
+      "guardrails": "Guardrails",
+      "install_hint": "Installed per agent via <skill>spctre install-skill</skill> and <hook>spctre install-hook</hook>.",
+      "stats": {
+        "total_agents": "Total agents",
+        "current_policy": "On current policy",
+        "deny_rate": "Fleet deny rate"
+      }
+    },
+    "fleet": {
+      "eyebrow": "Provenance · Fleet compliance",
+      "title": "Agents on policy",
+      "description": "Drift, heartbeat, runtime, and connector coverage by agent.",
+      "empty": {
+        "title": "No agents connected",
+        "description": "Connect one agent to see drift, heartbeat, runtime, and connector coverage here."
+      }
+    },
+    "trust": {
+      "eyebrow": "Policy config · Trust calibration",
+      "title": "Trust calibration",
+      "description_prefix": "Trust score and context budget thresholds are policy objects — configure them in",
+      "link": "Cost & Usage → Trust calibration"
+    }
+  },
+  "packs": {
+    "title": "Packs",
+    "hero": {
+      "aria_label": "Maintained policy pack accelerants",
+      "eyebrow": "Policy authoring · maintained vocabulary",
+      "title": "Start with governed actions, then tailor the policy",
+      "description": "Packs provide safe defaults, typed actions and parameters for rule authoring, and regression fixtures.",
+      "stats": {
+        "maintained": "Maintained accelerants",
+        "installed": "Installed",
+        "high_risk": "High risk installed"
+      }
+    },
+    "catalog": {
+      "eyebrow": "Pack catalog · authoring accelerants",
+      "title": "Maintained packs first",
+      "description": "Stripe, GitHub, Kubernetes/deployment, PostgreSQL, and Zendesk/support are maintained. Compatible packs remain available for existing workflows.",
+      "updates": "{count, plural, one {# update} other {# updates}}"
+    },
+    "filters": {
+      "search_aria_label": "Search policy packs",
+      "find_label": "Find a pack",
+      "placeholder": "Search connector, tag, domain, rule, or action",
+      "count": "of {total} packs",
+      "reset": "Reset",
+      "quick_filters_aria_label": "Quick tag filters",
+      "empty_title": "No packs match those filters.",
+      "empty_description": "Clear a tag or search for another connector, domain, or rule."
+    },
+    "tiers": {
+      "catalog_status": "Catalog status",
+      "canonical": {
+        "eyebrow": "Maintained set",
+        "title": "Recommended authoring accelerants",
+        "description": "Safe defaults, typed vocabulary, and regression fixtures maintained by Spctre.",
+        "pill": "Maintained",
+        "status": "Maintained accelerator"
+      },
+      "compatible": {
+        "eyebrow": "Additional supported packs",
+        "title": "More options for your workflow",
+        "description": "Ready to use when they fit your workflow. Missing a connector you need? Tell us what governed actions it should support.",
+        "pill": "Compatible",
+        "status": "Compatible"
+      }
+    }
+  },
+  "evidence": {
+    "header": {
+      "eyebrow_context": "Audit Log",
+      "title": "Audit Log",
+      "policy_replay": "Policy Replay"
+    },
+    "overview": {
+      "aria_label": "Evidence overview",
+      "eyebrow": "Audit · Decisions",
+      "title": "Runtime decisions",
+      "live_ingest": "Live ingest",
+      "demo_ingest": "Demo ingest",
+      "meta": "{mode} · {count} decisions retained (30d) · last {shown} shown.",
+      "stats": {
+        "total": "Total decisions",
+        "matches": "Search matches",
+        "statuses": "Deny / Warn / Allow"
+      }
+    },
+    "stream": {
+      "eyebrow": "Audit · Evidence stream",
+      "title": "Evidence stream",
+      "showing": "Showing {shown} of {total} decisions",
+      "prev_short": "Prev",
+      "next_short": "Next",
+      "previous_page": "Previous page",
+      "next_page": "Next page",
+      "demo": {
+        "eyebrow": "Demo evidence",
+        "description": "These records are seeded. Connect an agent or send a quick-start decision to create real audit records.",
+        "quick_start": "Quick start",
+        "cli_setup": "CLI setup"
+      }
+    },
+    "rule_analysis": {
+      "eyebrow": "Diff · Rule analysis",
+      "title": "Rule analysis",
+      "description": "Top deny drivers and rules with no recent matches."
+    },
+    "intent_patterns": {
+      "eyebrow": "Risk Patterns",
+      "title": "Recurring Intent Patterns",
+      "description": "Top rejected or warned pre-flight intents.",
+      "flags": "{count, plural, one {# flag} other {# flags}}"
+    }
+  },
+  "review": {
+    "empty": {
+      "title": "No policy branch ready for review",
+      "description": "Import a policy or install a pack to create the first reviewable branch."
+    }
+  },
+  "usage_billing": {
+    "header": {
+      "eyebrow": "Workspace · Usage & billing",
+      "title": "Usage & billing",
+      "download_json": "Download JSON",
+      "packs": "Packs",
+      "compliance_packet": "Compliance packet"
+    },
+    "overview": {
+      "aria_label": "Usage and billing",
+      "panel_aria_label": "Usage and billing overview",
+      "eyebrow": "Governed risk",
+      "title": "Workspace usage posture",
+      "description": "Hosted Spctre charges for operational trust: retained evidence volume, retention window depth, simulation fidelity, and compliance access.",
+      "current_plan": "Current plan",
+      "recommended": "Recommended",
+      "governed_agents": "Governed agents",
+      "evidence_retained": "Evidence retained"
+    },
+    "meters": {
+      "eyebrow": "Usage dimensions",
+      "title": "Usage meters",
+      "sample_only": "Sample only"
+    },
+    "anchors": {
+      "eyebrow": "Trust surface",
+      "title": "Paid value anchors",
+      "description": "Hosted value starts where audit history, simulations, managed packs, RBAC, and compliance exports become durable business records.",
+      "count": "{count, plural, one {# anchor} other {# anchors}}",
+      "aria_label": "Hosted value anchors",
+      "group_eyebrow": "Value anchors",
+      "group_title": "Operational trust dimensions"
+    },
+    "posture": {
+      "eyebrow": "Plan fit",
+      "title": "Billing posture",
+      "over_plan": "{count} over plan",
+      "description": "Current included usage compared with recommended hosted plan capacity.",
+      "current_plan": "Current plan",
+      "recommended_plan": "Recommended plan",
+      "dimensions_beyond": "{count} dimensions beyond current included usage",
+      "billing_status": "Billing status",
+      "review_requested": "Review requested",
+      "updated": "Updated {date}",
+      "no_event": "No billing event yet",
+      "primary_dimension": "Primary pricing dimension",
+      "agent_detail": "governed agents reporting runtime evidence",
+      "evidence_retained": "Evidence retained",
+      "evidence_detail": "events available for search, replay, and compliance export",
+      "policy_surface": "Managed policy surface",
+      "policy_detail": "connector packs imported into this workspace"
+    },
+    "events": {
+      "eyebrow": "Usage & billing event log",
+      "title": "Review history",
+      "system": "System",
+      "empty": {
+        "title": "No billing events yet",
+        "description": "Request a review when governed usage starts to look like production risk."
+      }
+    },
+    "proof": {
+      "eyebrow": "Activation path",
+      "title": "Next billing proof points",
+      "evidence": {
+        "title": "Grow evidence history",
+        "description": "Retained event volume and window depth are the primary billing dimensions."
+      },
+      "simulation": {
+        "title": "Simulate against production",
+        "description": "Bulk simulation against the retained event log is a Business-tier feature unlock."
+      },
+      "compliance": {
+        "title": "Export the compliance packet",
+        "description": "Compliance PDF export confirms audit-grade obligation and Business-tier need."
+      }
+    }
+  },
+  "escalations": {
+    "title": "Escalations",
+    "open_count": "{count} open",
+    "refresh": "Refresh",
+    "refreshing": "Refreshing...",
+    "select_prompt": "Select an escalation from the queue to review details.",
+    "empty": {
+      "title": "Queue is clear",
+      "description": "No open escalations. Agents submit decisions here when a policy rule requires human sign-off before a tool call proceeds — use <post>POST /api/escalations</post> with a <decision>decisionId</decision> and <notes>handoffNotes</notes> to route one for review."
+    },
+    "queue": {
+      "eyebrow": "Queue",
+      "title": "Open Escalations",
+      "runtime_decision": "runtime decision",
+      "assigned": "Assigned",
+      "unassigned": "Unassigned"
+    },
+    "detail": {
+      "eyebrow": "Reviewing Decision",
+      "id": "ID: {id}",
+      "policy_revision": "Policy Revision:",
+      "created": "Created:",
+      "assignee": "Assignee:",
+      "unassigned": "Unassigned",
+      "resolve_title": "Resolve Decision"
+    },
+    "context": {
+      "title": "Context & Handoff Notes",
+      "connector": "Connector:",
+      "action": "Action:",
+      "risk_level": "Risk Level:",
+      "handoff_notes": "Handoff Notes",
+      "no_handoff_notes": "No handoff notes provided.",
+      "tool_intent": "Tool Intent",
+      "plan_summary": "Plan Summary"
+    },
+    "triage": {
+      "title": "Queue Management & Triage",
+      "upgrade_description": "Upgrade to manage service SLA tracking, automated routing, and manual agent overrides."
+    }
+  },
+  "compliance": {
+    "hero": {
+      "aria_label": "Compliance overview",
+      "eyebrow": "Audit · Packet",
+      "packet_title": "Audit packet",
+      "packet_meta": "Retained until {date} · {events} lifecycle events · {records} evidence records.",
+      "empty_title": "No audit packet yet",
+      "empty_description": "Publish a policy revision and ingest runtime evidence to generate the first compliance packet.",
+      "sections": "{count, plural, one {# section} other {# sections}}",
+      "stats": {
+        "evidence_records": "Evidence records",
+        "approvals": "Approvals",
+        "retention_records": "Retention records"
+      }
+    }
+  },
+  "author": {
+    "title": "Edit rules",
+    "branch_title": "Edit rules in {branch}",
+    "edit_rules": "Edit rules",
+    "back_to_policies": "Back to Policies",
+    "empty_title": "No policy branch selected for authoring",
+    "empty_body": "Select a policy branch from the Policies page to author rules."
+  },
+  "simulate": {
+    "eyebrow_segment": "Simulation",
+    "title": "Policy Replay",
+    "diff_eyebrow": "Diff · Simulation",
+    "run_heading": "<code>{revision}</code> against {count} events",
+    "sampled_meta": "{count} sampled outcomes · deltas vs. previously published revision.",
+    "summary_aria": "Simulation replay summary",
+    "newly_denied": "Newly denied",
+    "newly_allowed": "Newly allowed",
+    "unchanged": "Unchanged",
+    "deny_by_connector": "Deny rate by connector",
+    "deny_ratio": "{deny} deny / {total}",
+    "cloud_eyebrow": "Cloud simulation",
+    "cloud_title": "Production event replay available",
+    "cloud_body": "Run policy projections across the full retained production event log.",
+    "guidance_eyebrow": "Simulation · Review guidance",
+    "guidance_title": "Review changed outcomes",
+    "guidance_body": "Evidence-led, read-only guidance. Recording feedback does not create a revision."
+  },
+  "advisors": {
+    "title": "Advisors",
+    "empty": {
+      "title": "No advisor data",
+      "body": "Advisors appear here once recommendations have been generated."
+    },
+    "rate": {
+      "awaiting": "Awaiting first recommendation",
+      "no_data": "No data yet"
+    },
+    "boundary": {
+      "eyebrow": "Published policy boundary",
+      "revision": "Revision",
+      "artifact": "Artifact",
+      "environment": "Environment",
+      "pending": "pending",
+      "published": "Published"
+    },
+    "guardrail": {
+      "eyebrow": "Guardrail",
+      "title": "Net deny/warn change",
+      "baseline_pending": "Baseline pending",
+      "pts": "{value} pts",
+      "current_30d": "Current 30d",
+      "previous_30d": "Previous 30d",
+      "current_deny_warn": "Current deny / warn",
+      "triage_median": "Triage median assignee"
+    },
+    "performance": {
+      "eyebrow": "Advisor · Performance",
+      "title": "Advisor performance",
+      "meta": "Accept, edit, reject rates · rationale capture · deny/warn guardrails.",
+      "triage_audit": "Triage audit",
+      "recommendation_audit": "Recommendation audit"
+    },
+    "metrics": {
+      "governance_pack": "Governance pack",
+      "not_installed": "Not installed",
+      "active": "Active",
+      "generated": "Generated",
+      "generated_sub": "advisor recommendations",
+      "dispositions": "Reviewer dispositions",
+      "dispositions_sub": "accept / edit / reject",
+      "rationale": "Rationale capture",
+      "rationale_sub": "accept / edit / reject with rationale"
+    },
+    "table": {
+      "advisor": "Advisor",
+      "generated": "Generated",
+      "accepted": "Accepted",
+      "edited": "Edited",
+      "rejected": "Rejected",
+      "rationale": "Rationale",
+      "precision": "Precision"
+    },
+    "precision": {
+      "eyebrow": "Evidence optimization precision",
+      "empty": "Precision appears after reviewers accept, edit, or reject evidence optimization recommendations."
+    },
+    "scope": {
+      "eyebrow": "Scope",
+      "body": "All advisors are recommendation-only; reviewer decisions are tracked in the audit ledger."
+    }
+  },
+  "economic": {
+    "header": {
+      "title": "Cost & Usage",
+      "manage_budgets": "Manage Budgets"
+    },
+    "advisory": {
+      "eyebrow": "Governance Advisory Note",
+      "title": "Heuristic & Telemetry Estimates",
+      "body": "These figures are <strong>estimated, directionally accurate governance telemetry</strong> captured best-effort from agent gateway integrations. They are not suitable for billing audits, financial accounting, or ledger reconciliation. Provider invoice systems remain the sole source of truth."
+    },
+    "hero": {
+      "aria": "Observability overview",
+      "eyebrow": "Governance posturing",
+      "title": "Token & Economic Governance",
+      "meta": "Tracking LLM token consumption and estimated spend per agent to evaluate economic compliance thresholds.",
+      "est_cost": "Est. Cost (30d)",
+      "tracked_tokens": "Tracked Tokens",
+      "directional_roi": "Directional ROI",
+      "active_budgets": "Active Budgets"
+    },
+    "spend": {
+      "eyebrow": "Telemetry",
+      "title": "30-Day Estimated LLM Spend Trend",
+      "meta": "Daily cost estimates plotted from ingested gateway usage events.",
+      "empty": "No daily telemetry logs recorded in the last 30 days.",
+      "bar_title": "{date}: {cost} ({tokens} tokens)"
+    },
+    "agents": {
+      "eyebrow": "ROI Analysis",
+      "title": "Per-Agent Governance Summary",
+      "meta": "Comparing LLM burn rates with labor savings (valued at $1.00 per allowed action).",
+      "empty": "No active agent telemetry found.",
+      "th_agent_id": "Agent ID",
+      "th_stack": "Stack",
+      "th_environment": "Environment",
+      "th_est_cost": "Est. Cost",
+      "th_tokens": "Tokens",
+      "th_actions": "Actions (A/D/W/E)",
+      "th_roi": "Directional ROI"
+    },
+    "breaches": {
+      "eyebrow": "Audits",
+      "title": "Recent Budget Breaches",
+      "meta": "Economic limits exceeded within the evaluation window.",
+      "ok_title": "All agents within budget",
+      "ok_meta": "No economic breaches logged.",
+      "policy_fallback": "Budget Policy",
+      "agent_label": "Agent:",
+      "reason_fallback": "Budget cap breached."
+    },
+    "budgets": {
+      "eyebrow": "Cost · Budget policies",
+      "title": "Budget Policies",
+      "meta": "Threshold policies enforced per agent, connector, or environment."
+    }
+  },
+  "economic_policies": {
+    "validate": {
+      "name_required": "Please specify a policy name.",
+      "threshold_required": "At least one cost or token threshold limit must be defined."
+    },
+    "scope": {
+      "wildcard": "All events (Wildcard)"
+    },
+    "error": {
+      "save_failed": "Failed to save budget policy",
+      "delete_failed": "Failed to delete budget policy",
+      "status_failed": "Failed to update policy status"
+    },
+    "confirm": {
+      "delete": "Are you sure you want to delete this economic budget policy? This cannot be undone."
+    },
+    "limits": {
+      "cost_title": "Estimated Cost Limits (USD)",
+      "token_title": "Tracked Token Limits",
+      "warn_label": "Warn",
+      "escalate_label": "Escalate",
+      "deny_label": "Deny",
+      "no_cost": "No cost limits configured",
+      "no_token": "No token limits configured"
+    },
+    "card": {
+      "active": "Active",
+      "disabled": "Disabled",
+      "fail_open": "Fail-Open",
+      "fail_closed": "Fail-Closed",
+      "scope": "Scope:",
+      "eval_window": "Evaluation Window:",
+      "hours": "{hours} hours",
+      "edit": "Edit",
+      "delete_title": "Delete Policy"
+    },
+    "fields": {
+      "agent_id": "Agent ID",
+      "agent_id_ph": "e.g. support-agent",
+      "agent_class": "Agent Class",
+      "agent_class_ph": "e.g. customer-service",
+      "environment": "Environment",
+      "environment_ph": "e.g. production",
+      "connector": "Connector",
+      "connector_ph": "e.g. stripe",
+      "warn_cost": "Warn Cost Threshold (USD)",
+      "warn_cost_ph": "e.g. 10.00",
+      "esc_cost": "Escalate Cost Threshold (USD)",
+      "esc_cost_ph": "e.g. 25.00",
+      "deny_cost": "Deny Cost Threshold (USD)",
+      "deny_cost_ph": "e.g. 50.00",
+      "warn_tok": "Warn Tokens Threshold",
+      "warn_tok_ph": "e.g. 500000",
+      "esc_tok": "Escalate Tokens Threshold",
+      "esc_tok_ph": "e.g. 1000000",
+      "deny_tok": "Deny Tokens Threshold",
+      "deny_tok_ph": "e.g. 2000000"
+    },
+    "modal": {
+      "edit_title": "Edit Budget Policy",
+      "create_title": "Create Budget Policy",
+      "name": "Policy Name",
+      "name_ph": "e.g. Critical Customer Support Daily Budget",
+      "breach_action": "Primary Breach Action",
+      "action_warn": "Warn — log violation and continue",
+      "action_escalate": "Escalate — send to human review queue",
+      "action_deny": "Block — hard deny the action",
+      "description": "Description",
+      "description_ph": "Enforces token consumption rules on the customer service agent cluster",
+      "target_scope": "TARGET SCOPE (NULL = WILDCARD MATCH ALL)",
+      "threshold_config": "THRESHOLD BUDGETS & ENFORCEMENT CONFIG",
+      "period": "Rolling Evaluation Window (Hours)",
+      "period_hint": "Spend is measured over the last N hours, recalculated on each request (not a fixed calendar window).",
+      "active_policy": "Active policy",
+      "fail_open": "Fail-Open — allow all spending if service is unreachable",
+      "fail_open_hint": "If the policy engine is down, agents will run without cost limits.",
+      "cancel": "Cancel",
+      "saving": "Saving...",
+      "save_changes": "Save Changes",
+      "create_policy": "Create Policy"
+    },
+    "list": {
+      "title": "Economic Budget Policies",
+      "meta": "Set up warnings, Tenant-wide limits, or hard blocks on agent spending.",
+      "add": "Add Policy",
+      "empty_title": "No economic budget policies configured.",
+      "empty_meta": "Set up warnings, Tenant-wide limits, or hard blocks on agent spending and token consumption."
+    }
+  },
+  "rules": {
+    "title": "Rules",
+    "hero": {
+      "aria": "Managed rule overview",
+      "eyebrow": "Provenance · Published rules",
+      "title": "Active rule catalog",
+      "meta": "Rules from the currently published branch. To author or edit rules, use <review>Review</review>.",
+      "search_label": "Search inventory",
+      "search_ph": "Search rules",
+      "search_btn": "Search",
+      "reset": "Reset",
+      "managed": "Managed rules",
+      "connectors": "Active connectors",
+      "immutable": "Immutable",
+      "deny_warn": "Deny / Warn"
+    },
+    "inv": {
+      "eyebrow": "Provenance · Inventory",
+      "title": "Rules",
+      "filtered": "Filtered by \"{query}\".",
+      "hint": "Select a rule to inspect conditions, source, and history.",
+      "no_match_title": "No rules matched",
+      "no_match_body": "Try a different term or clear filters.",
+      "empty_title": "No managed rules yet",
+      "empty_body": "Import a policy or pack to add rules."
+    },
+    "table": {
+      "rule_title": "Rule title",
+      "effect": "Effect",
+      "connector": "Connector",
+      "actions": "Actions",
+      "source": "Source",
+      "inspect_aria": "Inspect rule {title}",
+      "immutable": "IMMUTABLE",
+      "none": "None"
+    },
+    "panel": {
+      "semantic_title": "Semantic Checks (Natural Language Controls)",
+      "override_effect": "Override Effect:",
+      "managed_rule": "Managed rule",
+      "close": "Close panel",
+      "effect": "Effect",
+      "source_format": "Source format",
+      "immutable": "Immutable",
+      "yes": "Yes",
+      "no": "No",
+      "priority": "Priority",
+      "connectors": "Connectors",
+      "actions": "Actions",
+      "domains": "Domains",
+      "source_path": "Source path",
+      "conditions": "Conditions"
+    }
+  },
+  "alerting": {
+    "header": {
+      "eyebrow": "Workspace · Alerting",
+      "title": "Alerting"
+    },
+    "validate": {
+      "channel_name": "Please specify a channel name.",
+      "pagerduty_key": "Please provide a PagerDuty routing key.",
+      "valid_email": "Please provide a valid recipient email address.",
+      "splunk": "Please provide the Splunk HEC endpoint URL and token.",
+      "sentinel": "Please provide the Sentinel workspace ID and primary key.",
+      "recipient_email": "Please provide a recipient email address.",
+      "endpoint_url": "Please provide an endpoint URL."
+    },
+    "int": {
+      "routing_key": "Integration Key (Routing Key)",
+      "routing_key_ph": "32-character PagerDuty integration key",
+      "hec_url": "HEC Endpoint URL",
+      "hec_token": "HEC Token",
+      "hec_token_ph": "Splunk HEC token",
+      "workspace_id": "Workspace ID",
+      "primary_key": "Primary Key",
+      "primary_key_ph": "Log Analytics workspace primary key",
+      "log_type": "Log Type (optional)",
+      "endpoint_url": "Endpoint URL",
+      "endpoint_url_ph": "https://hooks.slack.com/... or integration URL",
+      "modal_title": "Add Integration",
+      "channel_name": "Channel Name",
+      "channel_name_ph": "e.g. Security Slack Alerts",
+      "platform_type": "Platform Type",
+      "opt_slack": "Slack Webhook",
+      "opt_teams": "Microsoft Teams",
+      "opt_email": "Email",
+      "opt_pagerduty": "PagerDuty Event V2 API",
+      "opt_webhook": "Generic Webhook",
+      "opt_splunk": "Splunk HTTP Event Collector",
+      "opt_sentinel": "Microsoft Sentinel",
+      "adding": "Adding...",
+      "save": "Save Integration",
+      "pane_title": "Integrations",
+      "add_channel": "Add Channel",
+      "empty_title": "No integrations configured.",
+      "empty_body": "Connect Slack, PagerDuty, Teams, or custom webhooks.",
+      "delete_title": "Delete Integration",
+      "saved": "Integration saved.",
+      "add_failed": "Failed to add integration",
+      "remove_confirm": "Are you sure you want to remove this integration? All rules targeting it will be deleted.",
+      "removed": "Integration removed.",
+      "remove_failed": "Failed to remove integration"
+    },
+    "rule": {
+      "modal_title": "Create Alerting Rule",
+      "name": "Rule Name",
+      "name_ph": "e.g. Critical Slack Violation Alerts",
+      "connector": "Connector (Filter)",
+      "connector_ph": "All (or github, aws, slack)",
+      "min_risk": "Min Risk Level",
+      "risk_all": "All Risks",
+      "risk_low": "Low",
+      "risk_medium": "Medium",
+      "risk_high": "High",
+      "risk_critical": "Critical",
+      "min_occurrences": "Min Occurrences",
+      "window": "Window (Minutes)",
+      "window_ph": "e.g. 15 (if min > 1)",
+      "target_channel": "Target Channel",
+      "creating": "Creating...",
+      "save": "Save Rule",
+      "pane_title": "Alerting Rules",
+      "add": "Add Rule",
+      "empty_title": "No custom alerting rules configured.",
+      "empty_body": "Wire system event filters and frequencies to integrations.",
+      "active": "Active",
+      "disabled": "Disabled",
+      "connector_label": "Connector:",
+      "all": "All",
+      "min_risk_label": "Min Risk:",
+      "frequency_label": "Frequency:",
+      "freq_threshold": ">= {count} events in {minutes}m",
+      "freq_every": "Every matching event",
+      "target_label": "Target:",
+      "unknown": "Unknown",
+      "delete_title": "Delete Rule",
+      "name_int_required": "Please specify rule name and integration.",
+      "saved": "Alerting rule saved.",
+      "add_failed": "Failed to add rule",
+      "remove_confirm": "Are you sure you want to remove this alerting rule?",
+      "removed": "Alerting rule removed.",
+      "remove_failed": "Failed to remove rule",
+      "need_integration": "Please add at least one integration before creating alerting rules."
+    },
+    "siem": {
+      "modal_title": "Add SIEM Stream",
+      "stream_name": "Stream Name",
+      "stream_name_ph": "e.g. Production Splunk",
+      "destination": "Destination",
+      "hec_url": "HEC Endpoint URL",
+      "hec_token": "HEC Token",
+      "hec_token_ph": "Splunk HEC token",
+      "workspace_id": "Workspace ID",
+      "primary_key": "Primary Key",
+      "primary_key_ph": "Log Analytics workspace primary key",
+      "log_type": "Log Type (optional)",
+      "saving": "Saving...",
+      "save": "Save Stream",
+      "section_title": "SIEM Event Streaming",
+      "add": "Add Stream",
+      "empty_title": "No SIEM streams configured.",
+      "empty_body": "Forward all evidence events to Splunk or Microsoft Sentinel.",
+      "active": "Active",
+      "paused": "Paused",
+      "last_forwarded": "· last forwarded {time}",
+      "not_forwarded": "· not yet forwarded",
+      "pause": "Pause stream",
+      "resume": "Resume stream",
+      "delete_title": "Delete stream",
+      "name_required": "Please specify a stream name.",
+      "saved": "SIEM stream saved.",
+      "add_failed": "Failed to add SIEM stream",
+      "remove_confirm": "Remove this SIEM stream? Forwarding will stop immediately.",
+      "removed": "SIEM stream removed.",
+      "remove_failed": "Failed to remove SIEM stream",
+      "paused_status": "Stream paused.",
+      "resumed_status": "Stream resumed.",
+      "toggle_failed": "Failed to toggle SIEM stream"
+    }
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "description": "Force-pushing to a feature branch is allowed by default",
+  "action": "branch.push",
+  "domains": ["branches"],
+  "toolParameters": { "ref": "feature/x", "force": true },
+  "expected": { "status": "ALLOW", "matchedRefs": [] }
+}

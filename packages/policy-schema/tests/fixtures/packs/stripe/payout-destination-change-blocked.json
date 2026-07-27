@@ -1,0 +1,7 @@
+{
+  "description": "Stripe payout destination change is always blocked",
+  "action": "payout.update_destination",
+  "domains": ["payouts"],
+  "toolParameters": {},
+  "expected": { "status": "DENY", "matchedRefs": ["stripe.payout.destination_change.block"] }
+}

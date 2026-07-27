@@ -1,0 +1,49 @@
+---
+title: Browsing the pack library
+description: Finding built-in and community packs, reading pack metadata, risk levels, and changelogs.
+---
+
+The pack library lists all governance packs available to your organisation — built-in packs maintained by Spctre, plus any community or private packs your team has published.
+
+## Opening the pack library
+
+1. In the left nav, click **Packs**.
+2. The library opens with an overview of all available packs, grouped by category.
+
+## What you see on a pack card
+
+Each pack card shows:
+- **Pack name and connector** — e.g. "Stripe Payments Governance" for the `stripe` connector
+- **Risk level** — `LOW`, `MEDIUM`, or `HIGH`; colour-coded for quick scanning
+- **Rule count** — number of rules included
+- **Version** — current semver version
+- **Compatibility** — which agent frameworks the pack is designed for (`CrewAI`, `LangChain`, `OpenAI Agents`, etc.)
+
+## Filtering packs
+
+Use the filter bar above the pack list to narrow by:
+- **Connector** — `stripe`, `slack`, `github`, `openai`, `anthropic`, etc.
+- **Risk level** — filter to HIGH packs to prioritise the most sensitive areas
+- **Category** — `financial`, `communication`, `code`, `ai-model`
+- **Framework compatibility** — match packs to your agent's framework
+
+## Reading pack details
+
+Click a pack name to open its detail panel. You'll see:
+
+- **Description** — what governance problem this pack addresses
+- **Included rules** — a table of every rule with its `effect` (`ALLOW`, `DENY`, `WARN`, `ESCALATE`), targeted actions, and connectors
+- **Changelog** — version history with dates and summaries
+- **Review requirements** — minimum approvals and reviewer roles required when this pack is used in a branch
+
+<Callout type="info">
+A `DENY` rule in a pack will block the matched action entirely. A `WARN` rule allows the action but creates an evidence record for review. An `ESCALATE` rule pauses the agent and waits for a human decision.
+</Callout>
+
+## Searching
+
+Use the search bar at the top of the library to find packs by name, connector, or tag.
+
+## Next step
+
+Once you've found a pack you want to use, follow the [Adding a pack to a workspace](/help-docs/ui-guides/policy-creator/adding-a-pack) guide.

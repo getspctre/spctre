@@ -1,0 +1,89 @@
+---
+title: Managing service tokens
+description: Creating scoped service tokens, setting expiry, and revoking a compromised token.
+---
+
+Service tokens let non-human processes (agents, CI pipelines, scripts) authenticate to the Spctre API without a user session. Each token is scoped to specific permissions and can be revoked independently.
+
+## Opening token management
+
+Go to **Admin → Tokens**.
+
+## Creating a token
+
+<Steps>
+<Step>
+
+Click **Create token**.
+
+</Step>
+<Step>
+
+Give the token a **name** that identifies its purpose (e.g. `stripe-agent-prod`, `ci-bundle-sync`, `analytics-read`).
+
+</Step>
+<Step>
+
+Set the **scope** — which operations this token is allowed to perform:
+
+| Scope | Allows |
+|---|---|
+| `bundle:read` | Read and sync policy bundles |
+| `decision:evaluate` | Evaluate runtime policy decisions via the decision API |
+| `evidence:write` | Ingest evidence records via the evidence API |
+| `heartbeat:write` | Send agent heartbeats |
+| `compliance:read` | Export compliance packets |
+| `simulation:run` | Trigger what-if simulations |
+| `approvals:read` | Read pending approval queues |
+| `operations:read` | Read gateway escalation queues |
+| `workflow:read` | Read approval workflow configuration |
+| `members:read` | List organization members and grants |
+| `workspaces:read` | List tenant workspaces |
+
+Principle of least privilege: only grant scopes the token actually needs.
+
+</Step>
+<Step>
+
+Set **expiry**:
+- **Never** — token does not expire (not recommended for production)
+- **Custom** — set an expiry date; the token is automatically revoked after this date
+
+</Step>
+<Step>
+
+Optionally restrict to **allowed source IPs**. When set, the token is rejected if the request comes from an IP not in this list.
+
+</Step>
+<Step>
+
+Click **Create token**. The token value is shown once — copy it immediately. It cannot be retrieved again.
+
+</Step>
+</Steps>
+
+## Token storage
+
+Never store tokens in source code. Use your platform's secret management:
+- **AWS**: Secrets Manager or Parameter Store
+- **GCP**: Secret Manager
+- **Kubernetes**: Secrets (preferably with external-secrets-operator)
+- **CI/CD**: Encrypted environment variables in your CI provider
+
+## Rotating a token
+
+Create a new token with the same scope, update your service's secret, verify the service is working, then revoke the old token.
+
+## Revoking a compromised token
+
+If a token is exposed or suspected compromised:
+
+1. Go to **Admin → Tokens**, find the token by name.
+2. Click **Revoke**.
+3. Confirm.
+
+Revocation takes effect within 60 seconds. The token is immediately marked invalid — any in-flight request using it returns a `401`. A revocation event is logged in the operations log with a timestamp.
+
+<Callout type="warn">
+Revoking a token immediately breaks any service using it. Have a replacement token ready before revoking in production.
+</Callout>

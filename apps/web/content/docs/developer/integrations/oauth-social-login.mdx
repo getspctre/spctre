@@ -1,0 +1,80 @@
+---
+title: OAuth and social login
+description: Configure Google and GitHub login, account linking, and callback behavior.
+---
+
+Spctre supports Google and GitHub as first-class login methods alongside SAML, OIDC, passkeys, and local development login.
+
+Social login is separate from enterprise SAML/OIDC SSO. Use this page for Google and GitHub OAuth apps; use [SSO](/help-docs/developer/integrations/sso) for tenant-managed SAML or OIDC identity providers.
+
+## Environment variables
+
+Set the public app URL first. It is used to build OAuth redirect URIs:
+
+```bash
+NEXT_PUBLIC_APP_URL=https://spctre.example.com
+```
+
+Enable Google:
+
+```bash
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+```
+
+Enable GitHub:
+
+```bash
+GITHUB_CLIENT_ID=...
+GITHUB_CLIENT_SECRET=...
+```
+
+## Redirect URIs
+
+Register these callback URLs in the provider console:
+
+| Provider | Callback URL |
+|---|---|
+| Google | `https://spctre.example.com/api/auth/google/callback` |
+| GitHub | `https://spctre.example.com/api/auth/github/callback` |
+
+The authorize routes are:
+
+| Provider | Authorize route |
+|---|---|
+| Google | `/api/auth/google/authorize` |
+| GitHub | `/api/auth/github/authorize` |
+
+Both authorize routes accept an optional safe relative `next` parameter:
+
+```text
+/api/auth/google/authorize?next=/account
+```
+
+## Provider scopes
+
+| Provider | Scopes |
+|---|---|
+| Google | `openid email profile` |
+| GitHub | `read:user user:email` |
+
+Google sign-in requires a verified email in the ID token. GitHub sign-in requires at least one verified email from the GitHub emails API.
+
+## Account linking
+
+Users can link Google and GitHub accounts from **Account -> Connected accounts**.
+
+When a user is already signed in, the callback links the provider identity to the current principal instead of creating a new account. If the current session requires MFA and has not completed MFA yet, linking is blocked.
+
+When a user is not signed in, the callback creates or updates a social principal for the provider subject and verified email, then starts a Spctre session.
+
+## Unlinking
+
+Users can disconnect a linked Google or GitHub account from **Account -> Connected accounts**.
+
+Spctre prevents unlinking the last available authentication method. Keep at least one login path, such as another social identity or passkey, before disconnecting a provider.
+
+## MFA behavior
+
+If the tenant requires MFA, social login creates the session but redirects the user through the MFA-required login flow before they can continue. If MFA is not required, the session is marked verified immediately.
+

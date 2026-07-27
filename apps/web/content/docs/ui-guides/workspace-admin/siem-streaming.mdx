@@ -1,0 +1,179 @@
+---
+title: Configuring SIEM event streaming
+description: Forwarding every runtime evidence event to Splunk HEC or Microsoft Sentinel, monitoring delivery, and handling failures.
+---
+
+SIEM event streaming sends a complete feed of runtime evidence to your security monitoring system. Unlike escalation routing, streams forward **every evidence event** — `ALLOW`, `DENY`, `WARN`, and `ESCALATE` — whether or not a routing rule matched.
+
+Use SIEM streaming when your security team needs continuous behavioral telemetry for search, detection engineering, incident response, or compliance retention outside Spctre.
+
+<Callout type="info">
+SIEM streaming is available on Cloud plans. Credentials are encrypted at rest and are never shown again after saving.
+</Callout>
+
+## Before you begin
+
+You need:
+
+| Requirement | Details |
+|---|---|
+| Workspace admin access | Required to create, edit, disable, or delete streams |
+| SIEM destination | Splunk HEC or Microsoft Sentinel |
+| Destination credential | Splunk HEC token, or Sentinel workspace ID and primary key |
+| Network allowlist | Allow outbound traffic from Spctre to your SIEM endpoint if your SIEM is restricted |
+
+## Choosing SIEM export vs escalation routing
+
+| Use case | Use |
+|---|---|
+| Send only violations or escalation notifications to Slack, PagerDuty, Teams, email, or a webhook | Escalation routing |
+| Send all evidence records to Splunk or Sentinel for security analytics | SIEM stream |
+| Page an on-call team when an escalation breaches SLA | Escalation routing |
+| Build SIEM detections over all agent allow/deny/warn/escalate behavior | SIEM stream |
+
+You can use both. SIEM export provides the complete evidence feed; escalation routing provides targeted reviewer notifications.
+
+## Opening SIEM streams
+
+Go to **Admin → SIEM export**.
+
+## Adding a Splunk HEC stream
+
+<Steps>
+<Step>
+In Splunk, create an HTTP Event Collector token for Spctre.
+</Step>
+<Step>
+Copy the HEC endpoint URL, for example `https://splunk.example.com:8088/services/collector/event`.
+</Step>
+<Step>
+In Spctre, click **Add stream → Splunk HEC**.
+</Step>
+<Step>
+Enter a stream name, the HEC endpoint URL, and the HEC token.
+</Step>
+<Step>
+Click **Save**.
+</Step>
+</Steps>
+
+Events are sent as Splunk HEC JSON with `sourcetype=spctre:decision`.
+
+## Adding a Microsoft Sentinel stream
+
+<Steps>
+<Step>
+In Azure, open the Log Analytics workspace that receives Spctre events.
+</Step>
+<Step>
+Copy the workspace ID and primary key from the workspace agent settings.
+</Step>
+<Step>
+In Spctre, click **Add stream → Microsoft Sentinel**.
+</Step>
+<Step>
+Enter a stream name, the workspace ID, and the primary key.
+</Step>
+<Step>
+Optionally set the log type. The default is `SpctrePolicyEvent`.
+</Step>
+<Step>
+Click **Save**.
+</Step>
+</Steps>
+
+Events appear in Sentinel under the custom log table for the configured log type.
+
+## What gets forwarded
+
+Each stream forwards evidence records from the workspace, including:
+
+- decision ID
+- tenant and workspace IDs
+- agent ID
+- environment
+- runtime stack
+- connector and action
+- status (`ALLOW`, `DENY`, `WARN`, or `ESCALATE`)
+- policy references and artifact hash
+- timestamp
+- selected raw evidence metadata
+- approver DID when a matching verification or approval record is available
+
+The stream is at-least-once. Your SIEM should treat `decisionId` as the deduplication key.
+
+## Delivery behavior
+
+Forwarding runs as a background job. By default, the worker checks for streamable evidence every 5 minutes (`WORKER_SIEM_FORWARDER_INTERVAL_MINUTES`).
+
+Each stream maintains its own cursor:
+
+- On success, the cursor advances to the last delivered evidence event.
+- On failure, the cursor does not advance.
+- On the next run, Spctre retries from the last successful cursor position.
+
+This means destination outages can produce duplicate events after recovery, but should not create gaps.
+
+## Testing a stream
+
+<Steps>
+<Step>
+Create or choose a low-risk workspace with live evidence ingestion.
+</Step>
+<Step>
+Create the stream and wait for the next forwarding interval.
+</Step>
+<Step>
+Search for `sourcetype=spctre:decision` in Splunk or the configured custom log table in Sentinel.
+</Step>
+<Step>
+Confirm the newest event includes the expected workspace ID, agent ID, connector, action, status, and decision ID.
+</Step>
+</Steps>
+
+## Monitoring delivery
+
+Use **Admin → SIEM export** to review stream health:
+
+| Field | Meaning |
+|---|---|
+| **Enabled** | Whether the stream is active |
+| **Last delivery** | Most recent successful forwarding attempt |
+| **Last error** | Most recent delivery error, if any |
+| **Cursor** | Internal progress marker for the next batch |
+
+If a stream shows repeated errors, Spctre keeps retrying. Disable the stream if the destination credential was revoked or the SIEM endpoint has been decommissioned.
+
+## Rotating credentials
+
+<Steps>
+<Step>
+Create the replacement credential in Splunk or Azure.
+</Step>
+<Step>
+Open the stream in Spctre and click **Edit**.
+</Step>
+<Step>
+Replace the token or primary key and click **Save**.
+</Step>
+<Step>
+Verify new events arrive after the next forwarding interval.
+</Step>
+<Step>
+Revoke the old credential in the SIEM.
+</Step>
+</Steps>
+
+## Troubleshooting
+
+| Symptom | What to check |
+|---|---|
+| No events arrive | Stream is enabled, destination URL/workspace ID is correct, outbound network allowlist permits Spctre |
+| Authentication errors | Splunk HEC token or Sentinel primary key is valid and not expired/revoked |
+| Duplicates after outage | Expected with at-least-once delivery; deduplicate by `decisionId` |
+| Only DENY/WARN events arrive | You may be looking at escalation routing, not SIEM export |
+| Sentinel table missing | Confirm log type and wait for Azure custom log ingestion delay |
+
+<Callout type="warn">
+Do not paste SIEM credentials into support tickets or chat. Rotate the stream credential if it was exposed.
+</Callout>

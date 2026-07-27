@@ -1,0 +1,7 @@
+{
+  "description": "PostgreSQL CREATE statement allows by default",
+  "action": "schema.migrate",
+  "domains": ["schema"],
+  "toolParameters": { "statement_type": "CREATE" },
+  "expected": { "status": "ALLOW", "matchedRefs": [] }
+}

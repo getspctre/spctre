@@ -1,0 +1,55 @@
+---
+title: Compliance reports
+description: Generating, exporting, and verifying compliance reports.
+---
+
+Spctre automatically generates compliance reports by matching accumulated evidence against the active policy branches for your workspace. Reports are available in the **Prove → Compliance** section of the control plane.
+
+## How reports are generated
+
+1. Evidence records are collected from all agents in the workspace
+2. Each record is matched against the policy revision that was active at decision time
+3. Results are aggregated by connector, action, agent, and rule
+4. A compliance score is computed for the reporting period
+
+## Compliance report structure
+
+| Section | Contents |
+|---|---|
+| **Summary** | Total decisions, ALLOW/DENY/WARN/ESCALATE counts, compliance percentage |
+| **By connector** | Per-connector breakdown of decision outcomes |
+| **By agent** | Per-agent decision history |
+| **By rule** | Which rules were matched most frequently |
+| **Gaps** | Evidence records with `provenance_gap: true` (missing policy context) |
+| **Escalations** | Escalated decisions and their resolution outcomes |
+
+## Exporting a report
+
+```
+GET /api/v1/compliance/export
+Authorization: Bearer <token>
+```
+
+The export returns a JSON document containing the full compliance report for the requested period. Accepted query parameters:
+
+| Parameter | Default | Description |
+|---|---|---|
+| `from` | 30 days ago | Start of reporting period (ISO 8601) |
+| `to` | now | End of reporting period |
+| `connector` | all | Filter to a specific connector |
+| `format` | `json` | `json` or `csv` |
+
+## Compliance seals
+
+A **compliance seal** is a cryptographic signature over a compliance report, proving it has not been tampered with after generation. Generate a seal:
+
+```
+POST /api/v1/compliance/seal
+Authorization: Bearer <token>
+```
+
+The response contains a `sealId` and a detached signature. Verifiers can check the seal against the report content at any time.
+
+## Compliance gaps
+
+Evidence records submitted without a valid `policyContext` are stored with `provenance_gap: true`. They appear in the Gaps section and do not count toward the compliance score. Resolve gaps by ensuring agents include `policyRefs`, `artifactHash`, and `policyContext` in every evidence submission.

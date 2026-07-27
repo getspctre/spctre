@@ -1,0 +1,73 @@
+---
+title: Importing policies
+description: Import AGT_YAML policies via the control plane UI or the branch API.
+---
+
+Spctre's native policy format is **AGT_YAML**. Import is done through the control plane UI (**Policies → Import**) or by creating a branch via the API.
+
+In the control plane, use **Create policy**, then choose **Upload or paste existing** to upload a file or paste its contents. Spctre records the uploaded filename or a system-generated UI source for provenance.
+
+## Source format
+
+The `source_format` field is a provenance label — it records what format the policy was originally authored in for AGT runtime compatibility. Spctre does not translate Rego or Cedar syntax: all rules must be expressed in the AGT_YAML rule structure regardless of which `source_format` label is set.
+
+| `source_format` value | When to use |
+|---|---|
+| `AGT_YAML` | Native Spctre rules (default) |
+| `OPA_REGO` | Policies migrated from OPA — rules must already be rewritten in AGT_YAML; this label preserves the origin for audit purposes |
+| `CEDAR` | Policies migrated from AWS Cedar — same caveat; label only |
+
+## Required top-level fields
+
+```yaml
+tenant_id: "your-tenant-uuid"
+workspace_id: "your-workspace-uuid"
+branch_id: "payments-policy"
+revision_id: "rev-2026-06-08"
+source_format: AGT_YAML
+source_hash: "sha256-of-this-file"
+rules:
+  - stable_rule_id: payments.allow_low_risk_charge
+    title: Allow low-risk charge
+    effect: ALLOW
+    domains: [payments]
+    actions: [charge]
+    connectors: [stripe]
+```
+
+<Callout type="info">
+  `source_hash` must be the SHA-256 of the raw source document, not the parsed YAML. The CLI computes this automatically when you run `spctre lint`.
+</Callout>
+
+## Optional fields
+
+```yaml
+scope: CONNECTOR
+environment: production
+target_stacks:
+  - CREWAI
+  - LANGCHAIN
+generated_at: "2026-06-08T00:00:00Z"
+metadata:
+  owner: payments-team
+```
+
+## Common import errors
+
+| Error | Cause | Fix |
+|---|---|---|
+| `source_hash mismatch` | File was modified after hash was computed | Recompute hash with `spctre lint` |
+| `unknown stable_rule_id` | Rule ID already exists in another branch | Use a unique ID or import into the existing branch |
+| `invalid effect` | Effect value is not one of ALLOW/DENY/WARN/ESCALATE | Correct the value in the source file |
+| `missing workspace_id` | Field not present in the document | Add `workspace_id` to the top-level fields |
+| `target_stack not supported` | Stack name is not in the supported enum | Check supported values in [Core concepts](/help-docs/developer/getting-started/core-concepts) |
+
+## Linting before import
+
+Always lint a policy file before importing:
+
+```bash
+spctre lint my-policy.yaml --strict
+```
+
+`--strict` treats WARN-level issues as errors, which is recommended for production policies.

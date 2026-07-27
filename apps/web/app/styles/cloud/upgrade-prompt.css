@@ -1,0 +1,26 @@
+/* Shown to OSS users in place of gated features */
+
+.upgradePrompt {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: oklch(0.972 0.008 250);
+  color: var(--ink);
+  padding: 14px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+}
+
+.upgradePrompt h3 {
+  margin-top: 2px;
+}
+
+.upgradePromptInline {
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding: 10px 12px;
+}
+
+.upgradePromptInline > svg {
+  display: none;
+}

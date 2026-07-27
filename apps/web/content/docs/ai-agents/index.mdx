@@ -1,0 +1,57 @@
+---
+title: Agent Resources
+description: Everything an autonomous agent needs to connect to Spctre, evaluate policy, ingest evidence, and manage its own operation.
+---
+
+This section is written for agents — autonomous systems, long-running workers, and CI processes that connect to Spctre without human assistance. Human steps are called out explicitly when they cannot be avoided.
+
+For human developer integration see the [Developer Guide](/help-docs/developer). For control-plane UI walkthroughs see [UI Guides](/help-docs/ui-guides).
+
+## The agent execution loop
+
+```
+┌─ Agent execution loop ───────────────────────────────────────────────┐
+│                                                                      │
+│  1. Fetch policy bundle        spctre sync / watch --heartbeat       │
+│                                                                      │
+│  2. Evaluate budget            spctre economic-evaluate              │
+│     └─ DENY / ESCALATE → abort before executing                      │
+│                                                                      │
+│  3. Check gateway              POST /api/v1/gateway/decide           │
+│     └─ ABORT → halt · ESCALATE → pause and poll                      │
+│                                                                      │
+│  4. Execute governed action                                          │
+│                                                                      │
+│  5. Ingest evidence            POST /api/v1/evidence                 │
+│                                                                      │
+│  6. Ingest usage               spctre economic-ingest                │
+│                                                                      │
+└──────────────────────────────────────────────────────────────────────┘
+```
+
+Steps 2 and 3 are pre-execution checks that block unsafe actions. Steps 5 and 6 are post-execution records that feed compliance reports and budget tracking.
+
+## What agents do autonomously
+
+| Operation | Command / API |
+|---|---|
+| Install the CLI | `npm install -g @spctre/cli` |
+| Connect (headless) | `spctre init --device` |
+| Sync the policy bundle | `spctre sync` |
+| Keep the bundle fresh | `spctre watch --heartbeat` |
+| Evaluate budget | `spctre economic-evaluate --output json` |
+| Call the gateway | `POST /api/v1/gateway/decide` |
+| Ingest evidence | `POST /api/v1/evidence` |
+| Record usage | `spctre economic-ingest` |
+| Rotate access tokens | Automatic via refresh token |
+| Health checks | `spctre status --check` |
+
+## What requires a human
+
+| Trigger | Human action |
+|---|---|
+| First-time `spctre init --device` | Approve the device code in a browser |
+| Switching from `observe` to `enforce` mode | Explicit human approval |
+| Gateway returns `ESCALATE` | Human reviewer resolves in the control plane |
+| Refresh token expired or revoked | Re-run `spctre init --device` |
+| Trust or TLS validation failure | Investigate the control plane configuration |

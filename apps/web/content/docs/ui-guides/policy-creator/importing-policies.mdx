@@ -1,0 +1,57 @@
+---
+title: Importing an existing policy file
+description: Drag-and-drop import, validation feedback, and resolving import errors in the UI.
+---
+
+If you have a policy written in YAML (the Spctre `AGT_YAML` format), you can import it directly into a branch instead of authoring rules one at a time.
+
+## Supported formats
+
+| Format | Description |
+|---|---|
+| `AGT_YAML` | Spctre's native policy YAML format |
+| `OPA_REGO` | Open Policy Agent Rego files |
+| `CEDAR` | AWS Cedar policy language |
+
+## Opening the import panel
+
+1. Go to **Policies** in the left nav.
+2. Click **Create policy** in the toolbar.
+3. Choose **Upload or paste existing**, then select a policy file or paste its YAML or JSON directly.
+
+## Validation
+
+After upload, the importer runs validation and shows results in three sections:
+
+### Valid rules
+
+Rules that passed all validation checks. They are previewed in the same table format as manually authored rules. Review the effect, actions, and connectors for each.
+
+### Warnings
+
+Rules that imported successfully but have non-blocking issues:
+- Missing `stable_rule_id` — one will be generated from the title; you should rename it
+- Missing `priority` — defaults to `100`
+- Duplicate rule ID — the incoming rule will be added with a `_v2` suffix
+
+### Errors
+
+Rules that could not be imported:
+- Invalid `effect` value
+- Unknown `source_format`
+- Malformed condition syntax
+- Missing required fields (`title`, `effect`, `source_format`)
+
+Errors are shown inline with the failing field highlighted. Fix the source file and re-upload, or click **Edit inline** to fix the rule in the browser before importing.
+
+## Committing the import
+
+Once you've reviewed valid rules and resolved errors, click **Import [N] rules** to add them to your branch. Imported rules enter `DRAFT` status alongside any rules you've authored manually.
+
+<Callout type="info">
+Importing rules does not overwrite existing rules on the branch. Imported rules are appended. If you want to replace all rules, delete the existing ones first or create a new branch.
+</Callout>
+
+## After import
+
+Go to the **Rules** tab to review and reorder the imported rules before submitting the branch for review.

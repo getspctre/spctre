@@ -1,0 +1,68 @@
+---
+title: Rules
+description: Rule anatomy, effects, conditions, and evaluation order.
+---
+
+A rule is a single governance statement that produces an **effect** when matched against a runtime decision. Rules live inside policy branches and are evaluated against every piece of incoming evidence.
+
+## Rule fields
+
+| Field | Required | Description |
+|---|---|---|
+| `stable_rule_id` | Yes | Immutable ID across all revisions — used in audit trails |
+| `title` | Yes | Human-readable name |
+| `effect` | Yes | `ALLOW`, `DENY`, `WARN`, or `ESCALATE` |
+| `source_format` | Yes | `AGT_YAML`, `OPA_REGO`, or `CEDAR` |
+| `domains` | No | Topic domains, e.g. `["payments", "refunds"]` |
+| `actions` | No | Actions this rule applies to, e.g. `["charge", "transfer"]` |
+| `connectors` | No | Connectors this rule applies to, e.g. `["stripe"]` |
+| `conditions` | No | Conditional logic for rule matching |
+| `priority` | No | Integer; higher priority wins on effect conflict |
+| `immutable` | No | If `true`, rule cannot be edited post-publish |
+| `semanticChecks` | No | AI-based validation prompts run at authoring time |
+
+## Effects
+
+| Effect | Behaviour |
+|---|---|
+| `ALLOW` | Decision permitted; evidence stored with status ALLOW |
+| `DENY` | Decision blocked; evidence stored with status DENY |
+| `WARN` | Decision allowed but flagged; evidence stored with status WARN |
+| `ESCALATE` | Decision queued for human approval before the agent proceeds |
+
+When multiple rules match, `DENY` beats `ESCALATE` beats `WARN` beats `ALLOW`.
+
+## Evaluation result
+
+Every decision produces an `EvaluationResult`:
+
+```json
+{
+  "status": "ALLOW",
+  "matchedRefs": ["payments.allow_low_risk_charge"],
+  "reason": "Low-risk charge within approved tier",
+  "trace": [
+    {
+      "stableRuleId": "payments.allow_low_risk_charge",
+      "title": "Allow low-risk charge",
+      "effect": "ALLOW",
+      "matched": true,
+      "matchReason": "amount_usd < 500 and customer_tier = enterprise"
+    }
+  ],
+  "ruleCount": 4,
+  "evaluatedAt": "2026-06-08T10:00:00Z"
+}
+```
+
+The `trace` array shows each rule evaluated, whether it matched, and why — giving a full audit trail for every decision.
+
+## Rule priority and conflicts
+
+Rules are evaluated in descending priority order. When two rules match with different effects, the higher-priority rule wins. `DENY` rules conventionally carry higher priority than `ALLOW` rules for the same connector and action.
+
+## Source formats
+
+- **AGT_YAML** — Spctre's native YAML rule language with built-in connector, action, and condition fields
+- **OPA_REGO** — Open Policy Agent Rego; stored as-is with `source_format: OPA_REGO` for provenance; evaluated via the Rego runtime
+- **Cedar** — AWS Cedar policy language; supported for organisations already using Cedar

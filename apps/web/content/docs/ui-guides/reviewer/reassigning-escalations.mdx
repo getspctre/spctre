@@ -1,0 +1,61 @@
+---
+title: Reassigning an escalation
+description: Moving an escalation to another reviewer and adding handoff notes.
+---
+
+Reassign an escalation when you're not the right person to make the call — for example, when the decision requires domain expertise you don't have, or when you're unavailable before the SLA expires.
+
+<Callout type="warn">
+Reassigning takes time. The new reviewer must read context, form a view, and act — all before the SLA expires. Only reassign when the deadline allows for it. If the SLA is under 5 minutes, make the call yourself or use the **Request advice** feature instead.
+</Callout>
+
+## Steps
+
+<Steps>
+<Step>
+### Open the escalation
+
+From **Review → Escalations**, click the escalation you want to reassign.
+</Step>
+
+<Step>
+### Click "Reassign"
+
+Click the **Reassign** button in the escalation header. A modal opens.
+</Step>
+
+<Step>
+### Choose the new reviewer
+
+Start typing the new reviewer's name or email. Only users with the Reviewer role in this workspace are shown.
+</Step>
+
+<Step>
+### Add a handoff note
+
+Write a note for the new reviewer. Include:
+- Why you're reassigning (not a judgment — just context)
+- Any analysis you've done so far
+- What you'd lean toward if you had the expertise
+
+This note is shown prominently when the new reviewer opens the escalation.
+</Step>
+
+<Step>
+### Confirm
+
+Click **Reassign**. The escalation moves to the new reviewer's queue immediately. They receive a push notification if alerting is configured.
+</Step>
+</Steps>
+
+## What happens to the SLA
+
+The SLA countdown is not reset on reassignment — the clock keeps running from when the escalation was created. The new reviewer sees the same deadline you did.
+
+## Requesting advice (without reassigning)
+
+If you want a second opinion but want to remain the primary reviewer, use **Request advice** instead of **Reassign**. This adds another reviewer in an advisory capacity — they can leave comments but cannot resolve the escalation. You remain on the hook for the decision.
+
+## After reassignment
+
+The escalation shows as `REASSIGNED` in your queue history with the handoff note attached. It moves to the new reviewer's **Escalations** queue.

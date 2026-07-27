@@ -1,0 +1,104 @@
+---
+title: Health checks
+description: Verifying connectivity, bundle freshness, and token validity. Retry patterns and escalation triggers.
+---
+
+Run `spctre status --check` on startup and on a regular interval. A healthy agent should report connected, bundle fresh, and token valid before processing any governed actions.
+
+## Status check
+
+```bash
+spctre status --check --output json
+```
+
+```json
+{
+  "connected": true,
+  "bundleFresh": true,
+  "tokenValid": true,
+  "tokenExpiresAt": "2026-06-09T11:00:00Z",
+  "refreshTokenExpiresAt": "2026-09-07T10:00:00Z",
+  "bundleVersion": "v42",
+  "bundlePublishedAt": "2026-06-09T09:30:00Z",
+  "workspace": "your-workspace",
+  "agent": "your-agent-id",
+  "gatewayReachable": true
+}
+```
+
+## Startup sequence
+
+```bash
+# Verify before first execution
+spctre status --check
+if [ $? -ne 0 ]; then
+  echo "Spctre health check failed — aborting startup." >&2
+  exit 1
+fi
+
+# Sync if bundle is stale
+spctre sync
+
+# Start background heartbeat
+spctre watch --heartbeat &
+```
+
+## Recommended check interval
+
+| Check | Interval |
+|---|---|
+| `spctre status --check` | On startup; every 5 minutes |
+| `spctre sync` | On bundle staleness signal; `watch --heartbeat` handles this automatically |
+| Token expiry check | Hourly (access token); daily (refresh token) |
+
+## Failure conditions and responses
+
+| Condition | `status --check` result | Agent response |
+|---|---|---|
+| Control plane unreachable | `connected: false` | Log; retry with backoff; continue with cached bundle (fail-open default) |
+| Bundle stale or expired | `bundleFresh: false` | Run `spctre sync`; continue with stale bundle (fail-open) or halt (`SPCTRE_BUNDLE_REQUIRED=true`) |
+| Access token expired | `tokenValid: false` | CLI auto-rotates via refresh token |
+| Refresh token expired | `tokenValid: false`, rotation fails | Alert human; halt until re-authenticated |
+| Gateway unreachable | `gatewayReachable: false` | Fall back to local bundle (`HYBRID` mode); switch to blocking if required |
+
+## Retry pattern
+
+```bash
+retry_with_backoff() {
+  local cmd="$*"
+  local max_attempts=3
+  local delay=5
+
+  for attempt in $(seq 1 $max_attempts); do
+    $cmd && return 0
+    echo "Attempt $attempt failed — retrying in ${delay}s..." >&2
+    sleep $delay
+    delay=$((delay * 2))
+  done
+
+  echo "All $max_attempts attempts failed." >&2
+  return 1
+}
+
+retry_with_backoff spctre sync
+```
+
+## Human escalation triggers
+
+Surface these conditions to a human immediately — do not retry indefinitely:
+
+- `tokenValid: false` after access token rotation fails (refresh token expired or revoked)
+- TLS or hostname validation failure connecting to `SPCTRE_URL`
+- Gateway consistently returning `ESCALATE` for routine low-risk actions (indicates a policy misconfiguration)
+- Bundle absent after 3 consecutive sync failures
+- Workspace or tenant mismatch in the stored config
+
+## Telemetry buffer health
+
+Check the local buffer for unflushed records:
+
+```bash
+ls -lh ~/.spctre/telemetry-buffer/
+```
+
+A growing buffer (not shrinking between heartbeats) indicates the ingest endpoint is persistently unreachable. Alert on-call if the buffer exceeds a safe threshold.

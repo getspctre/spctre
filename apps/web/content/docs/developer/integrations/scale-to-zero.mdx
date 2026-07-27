@@ -1,0 +1,80 @@
+---
+title: Scale to zero
+description: Disabling the internal scheduler and using cloud job triggers for GCP, AWS, and Azure.
+---
+
+By default, Spctre's worker processes run on an internal scheduler. For serverless or scale-to-zero deployments, disable the internal scheduler and trigger jobs via HTTP from your cloud scheduler.
+
+## Disabling the internal scheduler
+
+```bash
+SPCTRE_DISABLE_INTERNAL_SCHEDULER=1
+```
+
+With this flag set, the worker process starts up and waits for HTTP triggers — it never initiates work on its own. This allows the container to be shut down between job runs.
+
+## Job HTTP endpoints
+
+Each job type has a dedicated HTTP endpoint. Trigger them from your cloud scheduler (Cloud Scheduler, EventBridge, Azure Logic Apps, etc.):
+
+| Job | Endpoint | Method |
+|---|---|---|
+| Retention sweep | `POST /internal/jobs/retention-sweep` | POST |
+| Verification sweep | `POST /internal/jobs/verification-sweep` | POST |
+| Metrics sweep | `POST /internal/jobs/metrics-sweep` | POST |
+| Escalation SLA check | `POST /internal/jobs/escalation-sla` | POST |
+| Notification sender | `POST /internal/jobs/notification-sender` | POST |
+| Economic budget sweep | `POST /internal/jobs/economic-budget-sweep` | POST |
+| SIEM forwarder | `POST /internal/jobs/siem-forwarder` | POST |
+
+All job endpoints require the worker internal secret:
+
+```
+x-spctre-internal-secret: <SPCTRE_WORKER_INTERNAL_SECRET>
+```
+
+## GCP Cloud Scheduler
+
+```yaml
+# cloud-scheduler-job.yaml
+name: spctre-verification-sweep
+schedule: "0 */6 * * *"   # every six hours
+timeZone: UTC
+httpTarget:
+  uri: https://your-worker/internal/jobs/verification-sweep
+  httpMethod: POST
+  headers:
+    x-spctre-internal-secret: "<SPCTRE_WORKER_INTERNAL_SECRET>"
+```
+
+## AWS EventBridge
+
+```json
+{
+  "Name": "spctre-verification-sweep",
+  "ScheduleExpression": "rate(6 hours)",
+  "Targets": [
+    {
+      "Id": "verification-sweep",
+      "Arn": "arn:aws:lambda:…:function:spctre-job-trigger",
+      "Input": "{\"endpoint\": \"/internal/jobs/verification-sweep\"}"
+    }
+  ]
+}
+```
+
+## Azure Logic Apps
+
+Use an HTTP action in a Logic App with a Recurrence trigger. Set the `x-spctre-internal-secret` header to `<SPCTRE_WORKER_INTERNAL_SECRET>` and POST to the job endpoint URL.
+
+## Health checks
+
+The worker exposes:
+- `GET /health` or `GET /healthz` — liveness check (no auth)
+- `GET /ready` or `GET /readyz` — readiness check (no auth)
+
+Use these for container health checks and load balancer probes.
+
+<Callout type="info">
+  Set `SPCTRE_DISABLE_INTERNAL_SCHEDULER=1` only on worker pods/containers — the web app and API server do not use the internal scheduler.
+</Callout>

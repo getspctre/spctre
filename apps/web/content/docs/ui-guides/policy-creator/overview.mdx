@@ -1,0 +1,57 @@
+---
+title: Policy Creator overview
+description: What the Policy Creator role does and where to start in the Spctre control plane.
+---
+
+As a Policy Creator, you define and maintain the governance policies that control how AI agents behave. You work in the Spctre control plane UI to author rules, organise them into branches, and submit them for review before they take effect.
+
+## Your workflow at a glance
+
+```
+Browse packs → Create a branch → Author rules → Submit for review → Revise → Published
+```
+
+1. **Browse the pack library** — start with built-in packs that cover common connectors (Stripe, Slack, GitHub, OpenAI).
+2. **Create a policy branch** — all authoring happens on a branch; it never affects live policy until approved and published.
+3. **Author or import rules** — create an empty draft and use the rule form, or import an existing YAML or JSON policy.
+4. **Submit for review** — assign reviewers and move the branch to `IN_REVIEW`.
+5. **Revise if needed** — respond to reviewer comments and re-submit.
+6. **Published** — once approved, a publisher releases the bundle from the **Publish** stage; agents pick it up on their next sync.
+
+## What you can do
+
+| Action | Where |
+|---|---|
+| Browse and add packs | **Packs** → Pack Library |
+| Create a policy branch | **Policies** → **Create policy branch** |
+| Author rules | Create a branch → **Start with rules**, or a draft branch → **Author rules** |
+| Import a policy file | **Policies** → **Create policy branch** → Upload or paste existing |
+| Submit for review | Branch detail → **Review & Publish** |
+| View your open branches | **Policies** → Branches |
+
+## How policies apply
+
+The Policies page shows the effective policy chain for each environment:
+
+```
+Organization baseline → Workspace policy → Environment or connector policy → Currently enforced rules
+```
+
+An environment without its own policy still uses the organization baseline and
+workspace policy. Add an environment policy only when that environment needs
+additional controls. The branch inventory is the canonical place to inspect
+the branch, its revision, and its review status.
+
+## What you cannot do
+
+Policy Creators cannot publish branches directly. Approval moves the branch to `APPROVED`, then a user with publish authority must release it from the **Publish** stage. You also cannot delete approved revisions or modify published bundles.
+
+<Callout type="info">
+If you need to make a post-publish change, create a new branch from the published revision and submit it through review again.
+</Callout>
+
+## Where to start
+
+If this is your first time in Spctre, begin with the [quick-start walkthrough](/help-docs/developer/getting-started/quick-start) to understand policies, rules, and packs — then return here for the UI-specific steps.
+
+When you're ready to build, go to **Policies → Create policy branch**, then choose **Start with rules**. This creates an empty draft and opens Rule Authoring, where you add and test the first rule. Choose **Upload or paste existing** only when you already have a YAML or JSON policy to bring in. To send a safe sample decision before connecting an agent, use **Try governance** from the empty Policies state.

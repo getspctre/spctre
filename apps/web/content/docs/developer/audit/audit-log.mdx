@@ -1,0 +1,106 @@
+---
+title: Audit log ingest
+description: Ingesting decision records into the Audit Log via POST /api/v1/evidence.
+---
+
+Audit log entries are the runtime records of every agent decision. Agents submit decision records to `POST /api/v1/evidence` after each governed action.
+
+## Endpoint
+
+```
+POST /api/v1/evidence
+Authorization: Bearer <access-token>
+Content-Type: application/json
+```
+
+## Request body
+
+### Required fields
+
+| Field | Type | Description |
+|---|---|---|
+| `decisionId` | string | Unique identifier for this decision (deduplicated on ingest) |
+| `environment` | string | Runtime environment name, e.g. `production` |
+| `runtimeTarget.stack` | enum | Agent framework — see [Core concepts](/help-docs/developer/getting-started/core-concepts) |
+| `agentId` | string | Agent identifier |
+| `connector` | string | Target connector, e.g. `stripe` |
+| `action` | string | Action performed, e.g. `charge` |
+| `status` | enum | `ALLOW`, `DENY`, `WARN`, or `ESCALATE` |
+| `reason` | string | Human-readable justification |
+
+### Policy context (required for compliance traceability)
+
+| Field | Type | Description |
+|---|---|---|
+| `policyRefs` | string[] | One or more policy branch IDs that governed this decision |
+| `artifactHash` | string | SHA-256 of the policy bundle used |
+| `policyContext` | object[] | Array of `{ scope, branchId, revisionId, artifactHash }` |
+
+### Optional fields
+
+| Field | Type | Description |
+|---|---|---|
+| `latencyMs` | integer | Execution latency in milliseconds |
+| `createdAt` | ISO 8601 | Decision timestamp (defaults to ingest time) |
+| `runtimeTarget.adapter` | string | Adapter identifier |
+| `consequence` | string | Business consequence description |
+| `customerTier` | string | Customer tier for risk context |
+| `confidence` | number | Model confidence score |
+| `amountUsd` | number | Transaction amount in USD |
+| `dataSensitivity` | string | Data sensitivity classification |
+| `trustScore` | number | Agent trust score |
+| `contextBudget` | integer | Remaining context budget |
+| `toolIntent` | string | Pre-flight tool intent (truncated to 1 k chars) |
+| `planSummary` | string | Pre-flight plan summary (truncated to 2 k chars) |
+| `toolParameters` | object | Tool parameters (redacted and bounded) |
+
+### Gateway mode
+
+Set `ingestMode: "gateway"` when submitting decision records through the gateway. In gateway mode, Spctre looks up the policy revision at decision time. If context is missing, the record is stored with `provenance_gap: true` and the status is coerced to `WARN`.
+
+## Example request
+
+```json
+{
+  "decisionId": "dec_01j9xk2f3g4h5j6k7l8m",
+  "environment": "production",
+  "runtimeTarget": { "stack": "CREWAI" },
+  "agentId": "payments-agent",
+  "connector": "stripe",
+  "action": "charge",
+  "status": "ALLOW",
+  "reason": "Amount within approved tier limit",
+  "policyRefs": ["payments-policy"],
+  "artifactHash": "sha256-abc123",
+  "policyContext": [
+    {
+      "scope": "CONNECTOR",
+      "branchId": "payments-policy",
+      "revisionId": "rev-2026-06-08",
+      "artifactHash": "sha256-abc123"
+    }
+  ],
+  "amountUsd": 150,
+  "customerTier": "enterprise"
+}
+```
+
+## Response
+
+```json
+{
+  "decisionId": "dec_01j9xk2f3g4h5j6k7l8m",
+  "stored": true,
+  "meta": {
+    "traceId": "trc_01j9xk…",
+    "version": "1",
+    "ts": "2026-06-08T10:00:00Z"
+  }
+}
+```
+
+## Retry semantics
+
+- Decision records are deduplicated on `decisionId`. Submitting the same `decisionId` twice is safe — the second write is ignored.
+- On network error, retry with exponential backoff. The endpoint is idempotent for the same `decisionId`.
+- If the control plane is unreachable, the CLI buffers records locally and flushes on the next `spctre watch --heartbeat` tick.

@@ -1,0 +1,7 @@
+{
+  "description": "Deleting a protected branch is blocked",
+  "action": "branch.delete",
+  "domains": ["branches"],
+  "toolParameters": { "ref": "master" },
+  "expected": { "status": "DENY", "matchedRefs": ["github.branch.delete_protected.block"] }
+}

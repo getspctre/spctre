@@ -1,0 +1,510 @@
+/* ── Policy packs ────────────────────────────────── */
+
+.packsHero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(380px, 0.95fr);
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+  max-width: 1180px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.packsHeroMain,
+.packsHeroStats {
+  background: var(--panel);
+}
+
+.packsHeroMain {
+  padding: 18px;
+  display: grid;
+  gap: 8px;
+  align-content: center;
+}
+
+.packsHeroMain h2 {
+  font-size: 20px;
+}
+
+.packsHeroMain .meta {
+  max-width: 72ch;
+}
+
+.packsHeroStats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.packsHeroStats > div {
+  padding: 16px;
+  border-right: 1px solid var(--line);
+  display: grid;
+  gap: 5px;
+  align-content: center;
+}
+
+.packsHeroStats > div:last-child {
+  border-right: 0;
+}
+
+.packsHeroStats strong {
+  color: var(--ink);
+  font-size: 17px;
+}
+
+.packsPanel {
+  display: grid;
+  gap: 16px;
+  padding: 18px;
+  max-width: 1180px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.packsPanel > .rowHeader {
+  padding-bottom: 2px;
+}
+
+.packSearchBar {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: oklch(0.992 0.005 236);
+  padding: 12px;
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) auto auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.packSearchField {
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.packSearchField > span:first-child {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: var(--fw-bold);
+}
+
+.packSearchInputWrap {
+  height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--panel);
+  color: var(--muted);
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.packSearchInputWrap:focus-within {
+  border-color: var(--accent);
+  outline: 2px solid oklch(0.87 0.047 184);
+  outline-offset: 1px;
+}
+
+.packSearchInputWrap input {
+  min-width: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--ink);
+}
+
+.packSearchInputWrap input::placeholder {
+  color: oklch(0.62 0.03 256);
+}
+
+.packSearchMeta {
+  min-height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--panel);
+  padding: 7px 10px;
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.packSearchMeta strong {
+  color: var(--ink);
+  font-size: 15px;
+}
+
+.packQuickFilters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.packFilterChip {
+  height: 28px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--panel);
+  color: var(--muted);
+  padding: 0 11px;
+  font-size: 11px;
+  font-weight: var(--fw-semi);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.packFilterChip:hover {
+  border-color: var(--accent);
+  color: var(--ink);
+}
+
+.packFilterChip:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.packFilterChipActive {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.packEmptyState {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: oklch(0.992 0.005 236);
+  padding: 18px;
+  display: grid;
+  gap: 5px;
+}
+
+.packCatalogSections {
+  display: grid;
+  gap: 28px;
+}
+
+.packCatalogSection {
+  display: grid;
+  gap: 14px;
+}
+
+.packCatalogSectionCompatible {
+  border-top: 1px solid var(--line);
+  padding-top: 20px;
+}
+
+.packCatalogSectionCompatible summary {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.packCatalogSectionCompatible summary::-webkit-details-marker {
+  display: none;
+}
+
+.packCatalogSectionCompatible summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+
+.packCatalogSectionCompatible[open] summary {
+  margin-bottom: 2px;
+}
+
+.packCompatibleCount {
+  flex: 0 0 auto;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--panel);
+  color: var(--muted);
+  padding: 5px 9px;
+  font-size: 12px;
+  font-weight: var(--fw-bold);
+}
+
+.packGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+  align-items: stretch;
+}
+
+.packCard {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: oklch(0.988 0.006 236);
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.packCardButton {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.packCard:hover {
+  border-color: oklch(0.78 0.024 250);
+}
+
+.packCardButton:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.packCardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.packCardTitle {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+}
+
+.packConnectorLogo,
+.packConnectorLogoFallback {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.packConnectorLogo {
+  object-fit: contain;
+}
+
+.packConnectorLogoFallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  background: oklch(0.95 0.01 250);
+  color: oklch(0.44 0.03 250);
+  font-size: 9px;
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.03em;
+}
+
+.packCardName {
+  display: block;
+  font-size: 15px;
+  font-weight: var(--fw-bold);
+  line-height: 1.25;
+  margin-bottom: 2px;
+}
+
+.packDescription {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.6;
+  min-height: 4.8em;
+}
+
+.packMeta {
+  display: flex;
+  gap: 20px;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  padding: 10px 0;
+  width: 100%;
+}
+
+.packMeta div,
+.packMeta span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.packMeta strong {
+  font-size: 15px;
+}
+
+.packTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.packCardCta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: var(--fw-bold);
+  margin-top: auto;
+  width: 100%;
+}
+
+.packCardCta svg {
+  flex: 0 0 auto;
+}
+
+.packDrawerSummary {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: oklch(0.992 0.005 236);
+  padding: 12px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: start;
+}
+
+.packDrawerSummary div {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.packDrawerSummary strong {
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.packDrawerTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.packDrawerRules {
+  display: grid;
+  gap: 10px;
+}
+
+.packRuleDetail {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: oklch(0.992 0.005 236);
+  padding: 13px;
+  display: grid;
+  gap: 12px;
+}
+
+.packRuleMeta {
+  display: grid;
+  grid-template-columns: minmax(120px, 0.55fr) minmax(0, 1fr);
+  gap: 10px;
+}
+
+.packRuleMeta div {
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--panel);
+  padding: 10px;
+  display: grid;
+  gap: 4px;
+}
+
+.packRuleMeta strong {
+  font-size: 13px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.branchDangerZone {
+  border: 1px solid var(--block-soft);
+  border-radius: 8px;
+  background: oklch(0.992 0.005 236);
+  padding: 13px;
+  display: grid;
+  gap: 12px;
+}
+
+.packDrawerFooter {
+  position: sticky;
+  bottom: -22px;
+  border-top: 1px solid var(--line);
+  background: var(--panel);
+  padding: 14px 0 0;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.packInstallActions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.packUpgradeSummary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.packUpgradeSummary div {
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--panel);
+  padding: 10px;
+  display: grid;
+  gap: 4px;
+}
+
+.packUpgradeSummary strong {
+  font-size: 14px;
+}
+
+.importSuccess {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--allow);
+}
+
+.importSuccess a {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+.packCard .importError {
+  margin: 0 0 8px;
+}
+
+.packUpgradeOption {
+  margin-bottom: 8px;
+}

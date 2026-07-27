@@ -1,0 +1,96 @@
+---
+title: Agents
+description: Configuring agent adapters and supported frameworks.
+---
+
+An **agent** in Spctre is any autonomous system that submits evidence to the control plane. Spctre ships adapters for Python-based frameworks that patch framework internals transparently — no changes to agent code required.
+
+## Supported frameworks
+
+| Framework | Stack value | Adapter |
+|---|---|---|
+| CrewAI | `CREWAI` | Patches `crewai.tools.BaseTool._run` |
+| OpenAI Agents | `OPENAI_AGENTS` | Patches `agents.FunctionTool.on_invoke_tool` |
+| LangChain | `LANGCHAIN` | Patches tool execution hooks |
+| LangGraph | `LANGGRAPH` | Patches LangGraph node execution |
+| AutoGen | `AUTOGEN` | Patches AutoGen tool invocation |
+| Google ADK | `GOOGLE_ADK` | Patches ADK tool execution |
+| AWS Bedrock | `AWS_BEDROCK` | Patches Bedrock converse API |
+| Azure AI | `AZURE_AI` | Patches Azure AI Inference SDK |
+| Gemini (Python) | `GOOGLE_ADK` | Patches Gemini SDK tool calls |
+| Strands | `CUSTOM` | Patches Strands agent actions |
+| Notion Worker | `CUSTOM` | Wraps Notion API calls |
+| Claude Code | `CLAUDE_CODE` | Harness hook mode |
+| Omnigent | `OMNIGENT` | Native policy module integration |
+
+## Installing a framework adapter
+
+```bash
+spctre watch --framework crewai
+```
+
+The `watch` command:
+1. Syncs the policy bundle
+2. Generates `.spctre/sitecustomize.py` for the specified framework
+3. Keeps the bundle updated as policies change
+
+To verify the adapter is active:
+
+```bash
+spctre verify-env --framework crewai
+```
+
+## Running with the adapter
+
+Use the Spctre Python wrapper instead of calling `python` directly:
+
+```bash
+.spctre/spctre-python my_agent.py
+```
+
+This sets `PYTHONPATH` to include `.spctre/sitecustomize.py`, which patches the framework before your agent code runs.
+
+## How the adapter works
+
+The adapter hooks into framework tool execution at the lowest level:
+
+1. **Pre-call** — captures `toolIntent` and `planSummary` from the agent's plan
+2. **Decision** — evaluates the action against the local policy bundle (no network call)
+3. **Post-call** — submits evidence to `POST /api/v1/evidence` with the decision status and reason
+
+If the policy bundle is absent or the adapter cannot load, the framework runs without enforcement (fail-open by default, configurable with `SPCTRE_GATEWAY_OUTAGE_POLICY`).
+
+## Registering an agent
+
+Agents register themselves at startup via the `AdapterCapabilityDeclaration`:
+
+```json
+{
+  "id": "my-agent-instance-id",
+  "stack": "CREWAI",
+  "adapterId": "crewai-v2",
+  "environment": "production",
+  "supportedConnectors": ["stripe", "github"],
+  "capabilities": {},
+  "registeredAt": "2026-06-08T10:00:00Z",
+  "registeredBy": "my-agent"
+}
+```
+
+Registered agents appear in the **Agents** section of the control plane with their capability declaration and last-seen timestamp.
+`capabilities` is accepted as an opaque JSON object and validated at the API boundary; adapter-specific fields can be nested under that object without changing the core declaration schema.
+
+## Token lifecycle
+
+After `spctre init`, the CLI holds two tokens:
+
+| Token | Scope | Lifetime |
+|---|---|---|
+| Access token | `bundle:read decision:evaluate evidence:write heartbeat:write` | 1 hour |
+| Refresh token | Token refresh only | Configurable (default 90 days) |
+
+Revoke all tokens for an agent at any time:
+
+```bash
+spctre revoke
+```

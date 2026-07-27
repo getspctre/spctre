@@ -1,0 +1,79 @@
+---
+title: Token lifecycle
+description: How access tokens and refresh tokens work, automated rotation, and revocation.
+---
+
+After `spctre init`, the CLI holds two tokens. Agents manage the access token lifecycle automatically — no human interaction required until the refresh token expires.
+
+## Token types
+
+| Token | Scope | Default lifetime | Purpose |
+|---|---|---|---|
+| Access token | `bundle:read decision:evaluate evidence:write heartbeat:write` | 1 hour | Authenticate API calls |
+| Refresh token | Token refresh only | 90 days | Obtain new access tokens |
+
+## Automatic rotation
+
+The CLI rotates the access token silently before it expires. No agent code change is required. The rotation uses the refresh token and writes the new access token to `.spctre/spctre-config.json`.
+
+To verify the token is valid:
+
+```bash
+spctre status --check
+```
+
+## Environment-variable tokens
+
+When `SPCTRE_API_TOKEN` is set, the CLI uses it directly and never writes to disk. Rotation is the caller's responsibility. Use your secret manager (AWS Secrets Manager, GCP Secret Manager, HashiCorp Vault) to rotate `SPCTRE_API_TOKEN` and update the running process.
+
+```bash
+export SPCTRE_API_TOKEN=$(secret-manager get spctre/access-token)
+```
+
+## Token expiry and re-authentication
+
+When the refresh token expires (default: 90 days), the CLI can no longer rotate the access token. `spctre status --check` will report `tokenValid: false`.
+
+**Human step required:** a human must re-run `spctre init --device` to obtain a new refresh token.
+
+Agents should monitor for this condition and surface the re-authentication trigger to the appropriate human:
+
+```bash
+STATUS=$(spctre status --check --output json)
+TOKEN_VALID=$(echo "$STATUS" | jq -r '.tokenValid')
+
+if [ "$TOKEN_VALID" = "false" ]; then
+  echo "ALERT: Spctre token expired — human re-authentication required." >&2
+  # surface to on-call, notify ops channel, etc.
+fi
+```
+
+## Revoking tokens
+
+Revoke all tokens for this agent:
+
+```bash
+spctre revoke
+```
+
+<Callout type="warn">
+  `spctre revoke` is a security-sensitive operation in shared environments. Require human confirmation before running it. After revocation, the agent cannot authenticate until `spctre init --device` is run again.
+</Callout>
+
+## Token scopes
+
+| Scope | Permits |
+|---|---|
+| `bundle:read` | Download policy bundles |
+| `decision:evaluate` | Evaluate runtime policy decisions |
+| `evidence:write` | Submit evidence records |
+| `heartbeat:write` | Send heartbeat and telemetry |
+| `compliance:read` | Read compliance reports |
+| `simulation:run` | Run policy simulations |
+| `approvals:read` | Read escalation approvals |
+| `operations:read` | Read operations log |
+| `workflow:read` | Read workflow state |
+| `members:read` | Read workspace member list |
+| `workspaces:read` | Read workspace metadata |
+
+Tokens issued by `spctre init` include only the scopes required for autonomous operation. Admin-level scopes (policy authoring, user management) are not included.

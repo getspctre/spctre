@@ -1,0 +1,161 @@
+---
+title: Harness hooks
+description: Governing Claude Code, Codex, Gemini, and Antigravity agents via pre-tool-use hooks.
+---
+
+Harness hooks wire Spctre governance into AI coding agents and CLI-based runtimes that support hook extensibility. Unlike Python framework adapters, harness hooks operate at the shell level and don't require `sitecustomize.py`.
+
+## Supported harnesses
+
+| Agent | Runtime stack | Adapter value | Hook type |
+|---|---|---|---|
+| Claude Code | `LOCAL` | `spctre-dev-hook:claude` | `PreToolUse` hook |
+| Codex | `LOCAL` | `spctre-dev-hook:codex` | `PreToolUse` hook |
+| Gemini CLI | `LOCAL` | `spctre-dev-hook:gemini` | `BeforeTool` hook |
+| Antigravity (IDE + `agy` CLI) | `LOCAL` | `spctre-dev-hook:antigravity` | `PreToolUse` plugin hook |
+
+The runtime stack remains one of the public `RuntimeStack` enum values. The
+specific harness is captured in `runtimeTarget.adapter`.
+
+The hook classifies governed actions by each harness's native tool names:
+`Bash`/`WebFetch`/`WebSearch` (Claude Code, and Codex — which canonicalizes its
+shell tool to `Bash`), `run_shell_command`/`web_fetch`/`google_web_search`
+(Gemini CLI), `run_command`/`read_url_content`/`search_web` (Antigravity), and
+`mcp__*` tools on every harness. File edits and other internal tools exit
+immediately without network calls.
+
+## Installing hooks
+
+```bash
+spctre install-skill --claude
+spctre install-skill --codex
+spctre install-skill --gemini
+spctre install-skill --antigravity
+```
+
+Then install the governance hook in observe mode (default):
+
+```bash
+spctre install-hook --claude --mode observe
+spctre install-hook --codex --mode observe
+spctre install-hook --gemini --mode observe
+spctre install-hook --antigravity --mode observe
+```
+
+<Callout type="warn">
+  **Codex trust step:** Codex skips untrusted command hooks. After
+  `install-hook --codex`, open Codex and run `/hooks` to review and trust the
+  Spctre hook — it does not run until trusted. Trust is recorded against the
+  hook definition's hash, so changing the hook (for example switching
+  `--mode observe` to `--enforce`) requires re-trusting.
+</Callout>
+
+### Installation destinations
+
+| Harness | Skill directory | Hook configuration file |
+|---|---|---|
+| Claude Code | `.claude/skills/spctre/` | `.claude/settings.json` |
+| Codex | `.codex/skills/spctre/` | `.codex/hooks.json` |
+| Gemini | `.gemini/skills/spctre/` | `.gemini/settings.json` |
+| Antigravity | `.agents/skills/spctre/` | `.agents/hooks.json` |
+
+Antigravity workspace customizations in `.agents/` (`skills/spctre/SKILL.md`
+and `hooks.json`) are auto-read by both the Antigravity IDE and the agy CLI —
+no plugin staging is required. With `--global`, the hook is written to the
+shared global customization file `~/.gemini/config/hooks.json`, and the skill
+to agy's staged plugin directory `~/.gemini/antigravity-cli/plugins/spctre/`
+(the IDE's global skills directory is `~/.gemini/antigravity/skills/`).
+
+## Switching to enforce mode
+
+Enforce mode blocks tool calls that the policy denies or escalates. Requires explicit human approval before activation.
+
+```bash
+spctre install-hook --claude --enforce
+```
+
+<Callout type="warn">
+  Do not switch to `--enforce` autonomously. This requires a human to review the policy posture and approve the mode change.
+</Callout>
+
+## How the Claude Code hook works
+
+When `pretooluse` fires before a Claude Code tool call:
+
+1. The hook reads the tool name and input, and classifies whether the call is governed (WebFetch/WebSearch, Bash targeting known connectors, MCP tools); ungoverned tools exit immediately with no network calls
+2. Evaluates the governed action against the local policy bundle and posts evidence to `POST /api/evidence`
+3. If a gateway is configured: calls `POST /api/gateway/decide`
+4. Blocks the tool call on gateway `ABORT`, or on local `DENY` in enforce mode
+5. Pauses and polls the escalation status endpoint if the outcome is `ESCALATE`
+
+The hook is the command `npx @spctre/cli pretooluse --harness claude --mode <observe|enforce>`, registered in `.claude/settings.json` by `spctre install-hook --claude`.
+
+## Antigravity (IDE and agy CLI)
+
+Use `install-skill --antigravity` and `install-hook --antigravity` for Google
+Antigravity surfaces — both the Antigravity IDE and the Antigravity CLI
+executable (`agy`) share the same plugin and hook contract. This is a harness
+integration, not a Python framework adapter.
+
+Antigravity's `PreToolUse` hooks differ from the other harnesses: input arrives
+on stdin as `toolCall.name` / `toolCall.args` (tool names such as
+`run_command`, `search_web`, `read_url_content`), and the hook gates execution
+by writing a JSON decision to stdout (`{"decision": "allow" | "deny",
+"reason": …}`) instead of signalling with exit code 2. The Spctre hook handles
+both contracts based on `--harness`.
+
+## Google Antigravity Python SDK
+
+For Python agents built with the separate `google-antigravity` package
+([google-antigravity/antigravity-sdk-python](https://github.com/google-antigravity/antigravity-sdk-python)),
+use the SDK adapter:
+
+```bash
+spctre watch --framework antigravity-sdk
+```
+
+This patches `google.antigravity.tools.tool_runner.ToolRunner.execute` and
+`ToolRunner.process_tool_calls` in the generated Python runtime, emitting
+evidence for every tool call (batch results report per-tool `ALLOW`/`DENY`
+from `ToolResult.error`). It does not govern `agy`; use the harness hook above
+for that.
+
+Two SDK characteristics to be aware of:
+
+- **Token usage** is not visible at the tool layer: `UsageMetadata`
+  (`prompt_token_count`, `candidates_token_count`, `total_token_count`) is
+  attached to turn responses (`response.usage_metadata`) and internal steps,
+  not to `ToolResult`. Tool-call evidence from this adapter therefore carries
+  no token counts; emit turn usage from application code if economic
+  governance budgets need it.
+- The SDK ships a **native policy system**
+  (`google.antigravity.hooks.policy.allow/deny/ask_user` compiled by
+  `policy.enforce()`, plus `LocalAgentConfig(hooks=[...], policies=[...])`
+  with `PreToolCallDecideHook` returning `HookResult(allow, message)`). This
+  is a sanctioned runtime enforcement surface — a future Spctre adapter can
+  compile published policy bundles into SDK policies instead of observing via
+  monkeypatch.
+
+## Verifying hook installation
+
+```bash
+spctre status --check
+```
+
+Expected output:
+
+```
+✓ Hook installed: pretooluse
+✓ Bundle present and fresh
+✓ Token valid
+✓ Mode: observe
+```
+
+## Environment variables for hooks
+
+| Variable | Purpose |
+|---|---|
+| `SPCTRE_HOOK_MODE` | `observe` or `enforce` — overrides installed mode |
+| `SPCTRE_AGENT` | Agent identity label for audit records |
+| `SPCTRE_ENVIRONMENT` | Environment name (default: `production`) |
+| `SPCTRE_CONNECTOR` | Default connector for hook evidence records |

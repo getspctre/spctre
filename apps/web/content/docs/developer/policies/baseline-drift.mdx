@@ -1,0 +1,27 @@
+---
+title: Policy posture and baseline drift
+description: Read governance posture from one bounded view of policy, runtime, and evidence signals.
+---
+
+**Governance posture** is the Compliance view for signals that affect confidence in a workspace's policy operation. It does not create recommendations, modify policy, or discover infrastructure outside the declared Spctre scope.
+
+## Control health
+
+Baseline drift appears in Control health. Spctre compares organization baseline rules with active workspace rules using `title`, `effect`, `domains`, `connectors`, `actions`, and `immutable`.
+
+- `LOCAL_OVERRIDE`: a workspace rule has the same `stableRuleId` but a different signature.
+- `WORKSPACE_ONLY`: a workspace rule has no organization baseline counterpart.
+
+Control health also includes composition conflicts in the built bundle and pack/control maturity, expressed as published-rule control mapping readiness.
+
+## Scope integrity
+
+Scope integrity shows declared runtimes whose artifact differs from the published policy, or which lack published artifact provenance. It is bounded to declared or reporting runtimes and never claims to be a complete infrastructure inventory.
+
+## Operational efficiency
+
+Operational efficiency groups high-friction rules and active rules with no recent evidence matches. These are review prompts, not automatic cleanup recommendations.
+
+## Acting on a finding
+
+Open the linked Review, Agents, Evidence, or Compliance surface for the relevant workflow. Changes still follow the normal policy review and approval process; posture itself creates no policy write and no advisor disposition record.

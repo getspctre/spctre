@@ -1,0 +1,40 @@
+{
+  "name": "spctre",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "pnpm --filter @spctre/web dev",
+    "clean": "node scripts/clean-dev-artifacts.mjs",
+    "clean:force": "node scripts/clean-dev-artifacts.mjs --force",
+    "clean:web": "node scripts/clean-dev-artifacts.mjs --scope web",
+    "clean:web:force": "node scripts/clean-dev-artifacts.mjs --scope web --force",
+    "typecheck": "pnpm -r run typecheck",
+    "typecheck:python": "(cd packages/adapters/hermes && uv run pyrefly check) && (cd packages/adapters/odysseus && uv run pyrefly check)",
+    "lint": "eslint .",
+    "migrate": "tsx db/migrate.ts",
+    "oss:boundary": "node scripts/check-oss-boundary.mjs",
+    "security:raw-sql": "node scripts/check-raw-sql-imports.mjs",
+    "demo:fallbacks": "node scripts/check-demo-fallbacks.mjs",
+    "licenses:check": "node scripts/check-package-licenses.mjs",
+    "oss:check": "node scripts/check-oss-boundary.mjs && node scripts/check-package-licenses.mjs && node scripts/check-raw-sql-imports.mjs && node scripts/check-demo-fallbacks.mjs",
+    "test": "pnpm -r --if-present test && pnpm --filter @spctre/web test:integration",
+    "generate": "pnpm --filter @spctre/api-contracts emit && pnpm --filter @spctre/sdk generate",
+    "generate:python-sdk": "bash scripts/generate-python-sdk.sh",
+    "postinstall": "pnpm --filter @spctre/policy-schema --filter @spctre/cli build",
+    "lint:deadcode": "knip",
+    "lint:security": "gitleaks detect --redact --no-git && osv-scanner -r .",
+    "lint:all": "pnpm lint && pnpm lint:deadcode && pnpm lint:security"
+  },
+  "engines": {
+    "node": ">=25.0.0"
+  },
+  "packageManager": "pnpm@11.13.0",
+  "devDependencies": {
+    "@openapitools/openapi-generator-cli": "^2.38.0",
+    "eslint": "^10.6.0",
+    "knip": "^6.24.0",
+    "postgres": "^3.4.9",
+    "tsx": "^4.22.4",
+    "typescript-eslint": "^8.62.0"
+  }
+}

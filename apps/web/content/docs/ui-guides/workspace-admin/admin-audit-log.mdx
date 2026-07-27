@@ -1,0 +1,60 @@
+---
+title: Audit log for admins
+description: Reading the full platform operations log, filtering admin actions, and exporting for compliance.
+---
+
+The Audit Ledger (accessible to Admins and Reviewers) records every platform event. As an admin, you have additional responsibilities: your own actions are logged here, and you can export the full log for compliance purposes.
+
+## What admin actions look like in the log
+
+All admin actions appear in the operations log with your user ID, a timestamp, and the affected resource:
+
+| Your action | Log event type |
+|---|---|
+| Inviting a user | `user.invited` |
+| Changing a user's role | `user.role_changed` |
+| Revoking a user | `user.removed` |
+| Configuring SSO | `sso.configured` |
+| Enabling MFA enforcement | `mfa.enforcement_enabled` |
+| Creating a service token | `auth.token_created` |
+| Revoking a service token | `auth.token_revoked` |
+| Archiving a workspace | `workspace.archived` |
+| Changing workspace settings | `workspace.settings_changed` |
+| Generating a SCIM token | `scim.token_generated` |
+
+## Filtering admin actions
+
+1. Go to **Audit Ledger**.
+2. In the **Event type** filter, select the admin event types you want.
+3. Set a date range.
+4. Optionally filter by **User** to see only your own actions.
+
+## Typical admin audit queries
+
+**"Who changed access controls last quarter?"**
+Filter: event types `user.invited`, `user.role_changed`, `user.removed`; date = last 90 days
+
+**"What SSO or MFA changes were made before the incident?"**
+Filter: event types `sso.configured`, `mfa.enforcement_enabled`; date = 30 days before incident
+
+**"Which service tokens were created or revoked this year?"**
+Filter: event types `auth.token_created`, `auth.token_revoked`; date = last 12 months
+
+## Exporting for compliance
+
+Click **Export** on the log page to download the current filtered view as CSV or JSON.
+
+For access-control audits (SOC 2 CC6.2–CC6.3, ISO 27001 A.9):
+- Export `user.invited`, `user.role_changed`, `user.removed` for the audit period
+- Export `auth.token_created`, `auth.token_revoked`
+- Export `sso.configured`, `mfa.enforcement_enabled`
+
+Include these alongside the compliance report and audit trail in your audit package.
+
+## Immutability
+
+The operations log is append-only. Admin actions cannot be edited or removed — not even by Organisation Admins. If you need to annotate a log entry (e.g. to record a remediation action), use the **Add note** feature on the entry, which appends a timestamped note without modifying the original record.
+
+<Callout type="info">
+If you are asked to delete log entries by anyone — including a manager or executive — decline and escalate to your legal or compliance team. Modifying audit logs is not possible in Spctre by design, and attempting to circumvent it would constitute a control failure.
+</Callout>

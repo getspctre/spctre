@@ -1,0 +1,49 @@
+---
+title: Understanding provenance gaps
+description: What provenance gaps are, why they appear, and how to work with engineering to eliminate them.
+---
+
+A **provenance gap** is a decision made by an agent that has no policy coverage. The action happened, but Spctre had no rule that evaluated it — so there is no governance record.
+
+Provenance gaps lower the compliance score and represent risk: if an agent acts without policy coverage, there is no audit trail entry for that action.
+
+## Why gaps occur
+
+| Root cause | How to identify it |
+|---|---|
+| **Agent not initialised with the SDK** | Decisions appear in logs but not in Spctre evidence; no agent ID on the record |
+| **Policy bundle not synced** | Agent is using an outdated bundle that doesn't cover new connectors |
+| **Connector not covered by any rule** | Agent uses a connector that no policy rule targets |
+| **Agent calling the connector outside the governed path** | Direct API calls that bypass the SDK's decision wrapper |
+| **Bundle generation failure** | A bundle publish succeeded in UI but the generated file is malformed |
+
+## Finding gaps in the report
+
+In **Compliance → Reports**, gaps appear in two places:
+
+1. **Summary metric** — the compliance rate. A rate below 100% means gaps exist.
+2. **By-connector breakdown** — connectors with a compliance rate below 100% are highlighted. These connectors have decisions not covered by any rule.
+
+Click a highlighted connector to see the specific decision IDs with no policy match.
+
+## Investigating a specific gap
+
+1. Click a decision with no policy match to open the decision record.
+2. Check the **Policy match** field — it will show `none`.
+3. Note the connector, action, and agent ID.
+4. Share these three values with your engineering team. They need to:
+   - Check whether the agent is initialised with the Spctre SDK correctly
+   - Verify that the agent's policy bundle includes a rule for this connector+action combination
+   - Confirm the agent is not making direct API calls that bypass the SDK
+
+## Eliminating gaps
+
+Gaps are eliminated by either:
+- **Adding a rule** that covers the unmatched connector+action (done by a Policy Creator)
+- **Fixing the agent** to route all decisions through the SDK (done by engineering)
+
+After a fix is deployed, the compliance rate will rise on the next report refresh. Gaps for historical decisions are not retroactively filled — they are permanent in the audit record, which is why it's important to close them quickly.
+
+## Communicating gaps to auditors
+
+Auditors expect gaps to be documented and tracked. Use the **Export** feature to download a gap report, and document the remediation timeline and root cause in your audit package. Spctre's export format includes gap annotations that auditors can reference.

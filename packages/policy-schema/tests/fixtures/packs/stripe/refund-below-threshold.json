@@ -1,0 +1,7 @@
+{
+  "description": "Stripe refund below the review threshold allows by default",
+  "action": "refund.create",
+  "domains": ["refunds"],
+  "toolParameters": { "amount_cents": 1500 },
+  "expected": { "status": "ALLOW", "matchedRefs": [] }
+}

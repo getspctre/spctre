@@ -1,0 +1,7 @@
+{
+  "description": "Granting cluster-admin RBAC is blocked",
+  "action": "rbac.create_binding",
+  "domains": ["rbac"],
+  "toolParameters": { "role": "cluster-admin" },
+  "expected": { "status": "DENY", "matchedRefs": ["kubernetes.rbac.cluster_admin_grant.block"] }
+}

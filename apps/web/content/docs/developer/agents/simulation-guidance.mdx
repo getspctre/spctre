@@ -1,0 +1,58 @@
+---
+title: Simulation guidance
+description: Evidence-led, inline policy-review guidance for policy replay outcomes.
+---
+
+**Simulation guidance** is shown directly beside replay outcomes. It highlights
+the policy references most associated with changed sampled outcomes, while
+people retain decision authority. It is governed by the
+`spctre-agent-governance-v1` policy pack.
+
+## Agents vs. simulation guidance
+
+| | Agents | Guidance |
+|---|---|---|
+| Origin | Your code / external frameworks | Spctre |
+| Purpose | Take actions (charge, transfer, call APIs) | Highlight simulation evidence for review (never act) |
+| Governance pack | Your custom policies | `spctre-agent-governance-v1` |
+| Operations attribution | Standard evidence | `SIMULATION_GUIDANCE` |
+| Can approve reviews | Yes (with policy ALLOW) | **No** — a reviewer must decide |
+| Can publish policies | Yes (with policy ALLOW) | **No** — a reviewer must publish |
+
+## What simulation guidance does
+
+- Interprets simulation outcome changes before a policy is published
+- Highlights the policy references connected to newly denied or allowed events
+- Records a reviewer’s disposition and rationale in the audit ledger
+
+Governance posture, escalation claiming, and pending-approval status are shown
+in their relevant workflow pages. They are not simulation guidance.
+
+## What simulation guidance cannot do
+
+The **Simulation Guidance Governance Pack** (`spctre-agent-governance-v1`, connector: `spctre-agent`) preserves human decision authority for:
+
+- Cannot approve or reject review queue items
+- Cannot publish or mutate policy branches
+- Cannot resolve escalations
+- Cannot issue credentials or tokens
+
+All recorded guidance requires a named human reviewer. The reviewer's rationale is stored in the audit trail.
+
+## Governance rules
+
+The governance pack includes rules that enforce:
+
+- Named system principal on every recorded guidance action
+- `SIMULATION_GUIDANCE` attribution in the operations log
+- Human reviewer rationale required when recording, editing, or dismissing guidance
+- Blocks on self-approval, self-publish, and self-resolution
+
+The `spctre-agent.*` stable-rule-ID namespace is reserved for Spctre-managed
+guidance controls. Customer policy must use its own namespace, such as
+`acme.advisor.*`.
+
+## Guidance and audit
+
+Simulation guidance operates within the **Policy Replay** page. Recorded reviewer
+decisions are appended to the workspace's **Audit Ledger**.

@@ -1,0 +1,69 @@
+---
+title: Policies
+description: What a policy branch is, how scoping works, and how to publish.
+---
+
+A **policy branch** is the primary governance artefact in Spctre. It contains a set of rules that govern agent behaviour for a specific scope, and it tracks through a review lifecycle before agents can enforce it.
+
+## Branch lifecycle
+
+```
+DRAFT → IN_REVIEW → PUBLISHED
+```
+
+- **DRAFT** — editable; not yet enforced by any agent
+- **IN_REVIEW** — locked for editing; reviewers can approve or reject
+- **PUBLISHED** — included in the next policy bundle; enforced by agents that sync
+
+## Scope levels
+
+Every branch is assigned a scope that determines which agent decisions it governs:
+
+| Scope | Applies to |
+|---|---|
+| `ORGANIZATION` | All workspaces, connectors, and actions in the tenant |
+| `WORKSPACE` | All connectors and actions in a specific workspace |
+| `ENVIRONMENT` | A specific named environment (e.g. `production`, `staging`) |
+| `CONNECTOR` | A specific connector (e.g. `stripe`, `github`) |
+
+Scopes are hierarchical. A `CONNECTOR`-scoped rule overrides a `WORKSPACE`-scoped rule for the same connector and action.
+
+## Policy fields
+
+| Field | Required | Description |
+|---|---|---|
+| `tenant_id` | Yes | Tenant UUID |
+| `workspace_id` | Yes | Workspace UUID |
+| `branch_id` | Yes | Branch identifier |
+| `revision_id` | Yes | Immutable revision snapshot ID |
+| `source_format` | Yes | `AGT_YAML`, `OPA_REGO`, or `CEDAR` |
+| `source_hash` | Yes | SHA-256 of the source document |
+| `rules` | Yes | Array of rule summaries |
+| `scope` | No | One of the scope levels above |
+| `environment` | No | Environment name (if scope = ENVIRONMENT) |
+| `target_stacks` | No | Runtime targets this policy applies to |
+| `generated_at` | No | ISO 8601 timestamp |
+| `approvals` | No | Approval records |
+
+## Environments and targets
+
+Use `target_stacks` to restrict a policy to specific agent frameworks. For example, a policy with `target_stacks: ["CREWAI", "LANGCHAIN"]` is only enforced by CrewAI and LangChain adapters.
+
+## Importing existing policies
+
+Spctre accepts policies written in AGT_YAML, OPA Rego, or Cedar. See [Importing policies](/help-docs/developer/policies/importing) for schema details and common import errors.
+
+## Linting and testing
+
+Validate a policy file before pushing:
+
+```bash
+spctre lint my-policy.yaml
+spctre test my-policy.yaml --tests my-policy.tests.yaml
+```
+
+The `check` command combines both and emits SARIF output for CI:
+
+```bash
+spctre check my-policy.yaml --output sarif
+```

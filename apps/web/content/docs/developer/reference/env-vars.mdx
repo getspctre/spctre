@@ -1,0 +1,132 @@
+---
+title: Environment variables
+description: Full table of SPCTRE_* and platform env vars with types and defaults.
+---
+
+## Core
+
+| Variable | Type | Default | Description |
+|---|---|---|---|
+| `DATABASE_URL` | string | — | PostgreSQL connection string (required) |
+| `DATABASE_OWNER_URL` | string | — | Owner connection for multi-tenant schemas |
+| `NODE_ENV` | `production` \| `development` | `development` | Runtime environment |
+| `SPCTRE_APP_URL` | string | — | Public URL of the control plane web app |
+| `SPCTRE_ENV` | string | `development` | Deployment environment name |
+| `SPCTRE_DEFAULT_TENANT_ID` | string | — | Default tenant for single-tenant deployments |
+| `SPCTRE_PLAN` | `oss` \| `cloud` \| `business` \| `enterprise` | `oss` | Plan tier; controls feature gating for SAML, SCIM, simulation, HITL, archival, and SIEM features. See [Plan tiers](/help-docs/developer/reference/plan-tiers). |
+
+## Authentication
+
+| Variable | Type | Default | Description |
+|---|---|---|---|
+| `SPCTRE_SESSION_GUARD_SECRET` | string | — | JWT signing secret for session guard tokens |
+| `SPCTRE_SESSION_TTL_HOURS` | integer | `24` | Session lifetime in hours |
+| `SPCTRE_ENVELOPE_SECRET` | string | — | Request envelope signing secret |
+| `SPCTRE_ADMIN_SECRET` | string | — | Admin API credentials |
+| `LOCAL_SIGNUP_ENABLED` | boolean | `false` | Allow local email/password signup |
+| `SPCTRE_ENABLE_CONFIGURED_USER_LOGIN` | boolean | `false` | Enable configured user login mode |
+| `NEXT_PUBLIC_APP_URL` | string | request origin | Public app URL used for OAuth callback construction |
+| `GOOGLE_CLIENT_ID` | string | — | Google OAuth client ID |
+| `GOOGLE_CLIENT_SECRET` | string | — | Google OAuth client secret |
+| `GITHUB_CLIENT_ID` | string | — | GitHub OAuth client ID |
+| `GITHUB_CLIENT_SECRET` | string | — | GitHub OAuth client secret |
+
+## Firebase (authentication provider)
+
+| Variable | Description |
+|---|---|
+| `NEXT_PUBLIC_FIREBASE_API_KEY` | Firebase API key |
+| `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN` | Firebase auth domain |
+| `NEXT_PUBLIC_FIREBASE_PROJECT_ID` | Firebase project ID |
+| `NEXT_PUBLIC_FIREBASE_APP_ID` | Firebase app ID |
+
+## SSO
+
+| Variable | Type | Default | Description |
+|---|---|---|---|
+| `OIDC_ENABLED` | boolean | `false` | Enable OIDC SSO |
+| `OIDC_DEFAULT_TENANT_ID` | string | — | Default tenant for OIDC sign-ins |
+| `SAML_ENABLED` | boolean | `false` | Enable SAML 2.0 SSO |
+| `SCIM_BEARER_TOKEN` | string | — | SCIM provisioning auth token |
+| `SCIM_TENANT_ID` | string | — | Tenant that SCIM provisioning is scoped to. Required on multi-tenant installs; single-tenant installs auto-resolve. Falls back to `OIDC_DEFAULT_TENANT_ID`. |
+| `PASSKEY_RP_ID` | string | `localhost` | WebAuthn relying party ID |
+| `PASSKEY_RP_NAME` | string | `Spctre Control Plane` | WebAuthn relying party name |
+
+## Gateway
+
+| Variable | Type | Default | Description |
+|---|---|---|---|
+| `GATEWAY_ENABLED` | boolean | `false` | Enable the gateway |
+| `GATEWAY_MODE` | `HYBRID` \| `PASSTHROUGH` \| `BLOCKING` | `HYBRID` | Gateway enforcement mode |
+| `SPCTRE_GATEWAY_URL` | string | — | Gateway endpoint URL |
+| `SPCTRE_GATEWAY_WEBHOOK_SECRET` | string | — | Webhook payload signing secret |
+| `SPCTRE_GATEWAY_OUTAGE_POLICY` | `fail-open` \| `fail-closed` | `fail-open` | Fallback on gateway outage (`fail-open` continues without enforcement; `fail-closed` blocks the action) |
+| `SPCTRE_GATEWAY_TIMEOUT` | integer | — | Gateway request timeout in ms |
+| `SPCTRE_GATEWAY_POLL_INTERVAL` | integer | — | Escalation polling interval in ms |
+
+## Worker / scheduler
+
+| Variable | Type | Default | Description |
+|---|---|---|---|
+| `SPCTRE_WORKER_INTERNAL_SECRET` | string | — | Auth secret for job HTTP endpoints |
+| `SPCTRE_DISABLE_INTERNAL_SCHEDULER` | boolean | `false` | Disable internal cron; use HTTP triggers instead |
+| `WORKER_SIEM_FORWARDER_INTERVAL_MINUTES` | integer | `5` | SIEM event forwarding job interval in minutes |
+
+## Rate limiting
+
+| Variable | Type | Default | Description |
+|---|---|---|---|
+| `SPCTRE_RATE_LIMIT_MAX_REQUESTS` | integer | `100` | Max requests per window |
+| `SPCTRE_RATE_LIMIT_WINDOW_SECONDS` | integer | `60` | Rate limit window in seconds |
+| `UPSTASH_REDIS_REST_URL` | string | — | Upstash Redis endpoint (optional; uses in-memory fallback) |
+| `UPSTASH_REDIS_REST_TOKEN` | string | — | Upstash Redis auth token |
+
+## Security
+
+| Variable | Type | Default | Description |
+|---|---|---|---|
+| `SPCTRE_ALLOWED_SOURCE_IPS` | comma-separated | — | IP allowlist for all requests |
+| `SPCTRE_ALLOWED_CONNECTORS` | comma-separated | — | Permitted connector IDs |
+| `SPCTRE_ALLOWED_TOOLS` | comma-separated | — | Permitted tool names |
+| `SPCTRE_CREDENTIAL_ENCRYPTION_KEY` | string | — | Passphrase for `pgp_sym_encrypt`/`pgp_sym_decrypt`; encrypts alerting integration credentials and SIEM stream secrets at rest. Required when alerting integrations or SIEM streams are configured. |
+
+## Agent / CLI
+
+| Variable | Type | Default | Description |
+|---|---|---|---|
+| `SPCTRE_API_TOKEN` | string | — | API access token |
+| `SPCTRE_API_TOKEN_FILE` | string | — | Path to token file |
+| `SPCTRE_API_URL` | string | — | Control plane API URL |
+| `SPCTRE_WORKSPACE` | string | — | Workspace slug |
+| `SPCTRE_WORKSPACE_ID` | string | — | Workspace UUID |
+| `SPCTRE_AGENT` | string | — | Agent identifier |
+| `SPCTRE_ENVIRONMENT` | string | — | Environment name |
+| `SPCTRE_BUNDLE_PATH` | string | `spctre-policy.json` | Path to local policy bundle |
+| `SPCTRE_SYNC_PATH` | string | — | Output path for `spctre sync` |
+| `SPCTRE_CONFIG_DIR` | string | `.spctre` | Config directory |
+| `SPCTRE_NON_INTERACTIVE` | boolean | `false` | CI/automation mode (no prompts) |
+| `SPCTRE_HOOK_MODE` | `observe` \| `enforce` | `observe` | Harness hook mode |
+| `SPCTRE_HARNESS` | string | — | Harness type: `claude`, `codex`, `gemini`, `agy` |
+
+## MCP server
+
+| Variable | Type | Default | Description |
+|---|---|---|---|
+| `SPCTRE_API_TOKEN` | string | — | MCP server: access token for control plane authentication |
+| `SPCTRE_API_REFRESH_TOKEN` | string | — | MCP server: refresh token; enables automatic access token rotation |
+| `SPCTRE_MCP_TRANSPORT` | string | `stdio` | MCP transport type (`stdio` or `http`) |
+| `SPCTRE_MCP_HTTP_PORT` | integer | `8090` | MCP HTTP server port |
+| `SPCTRE_MCP_HTTP_MESSAGE_PATH` | string | — | MCP message path |
+| `SPCTRE_MCP_HTTP_SSE_PATH` | string | — | MCP SSE path |
+| `SPCTRE_MCP_REQUIRE_BEARER_AUTH` | boolean | `true` | Require bearer auth on MCP HTTP endpoints |
+| `SPCTRE_MCP_AUDIT_SEAL_SECRET` | string | — | Signing secret for MCP audit seals |
+
+## Observability
+
+| Variable | Type | Default | Description |
+|---|---|---|---|
+| `OTEL_SERVICE_NAME` | string | — | OpenTelemetry service name |
+| `SPCTRE_PROMETHEUS_ENABLED` | boolean | `false` | Enable Prometheus metrics |
+| `SPCTRE_PROMETHEUS_PORT` | integer | — | Metrics server port |
+| `SPCTRE_PROMETHEUS_HOST` | string | — | Metrics server host |
+| `SPCTRE_PROMETHEUS_ENDPOINT` | string | — | Metrics scrape path |

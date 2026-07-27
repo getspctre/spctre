@@ -1,0 +1,14 @@
+{
+  "title": "Developer",
+  "root": true,
+  "pages": [
+    "index",
+    "getting-started",
+    "policies",
+    "audit",
+    "agents",
+    "cost",
+    "integrations",
+    "reference"
+  ]
+}

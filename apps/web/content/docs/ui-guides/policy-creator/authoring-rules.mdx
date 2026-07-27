@@ -1,0 +1,84 @@
+---
+title: Authoring rules in the UI
+description: Rule form walkthrough — stable ID, effect, domains, actions, connectors, conditions, and priority.
+---
+
+Rules are the building blocks of a policy branch. Each rule defines what an agent can do (`ALLOW`), what it cannot do (`DENY`), what should be flagged (`WARN`), or what should pause and wait for a human (`ESCALATE`).
+
+## Opening the rule form
+
+1. Open **Policies** in the control plane.
+2. In the **Branches** table, click your draft branch row to open the branch inspector slideout panel.
+3. Click the primary **Author rules** button. This takes you to the dedicated **Rule Authoring** page.
+4. On the authoring page, click the **Add rule** button at the bottom of the rules list.
+
+## Rule form fields
+
+### Stable rule ID
+
+A permanent, immutable identifier for this rule. Once published, this ID is used to trace evidence and audit records back to the rule. Use a consistent naming convention:
+
+```
+<connector>.<description>
+```
+
+For example: `stripe.deny_high_value_charge`, `slack.warn_external_message`, `openai.escalate_pii_prompt`.
+
+<Callout type="warn">
+Changing a stable rule ID after publishing creates a new rule — the old ID's history is preserved separately. Don't change IDs unless you intend to retire the old rule.
+</Callout>
+
+### Title
+
+A short, human-readable name shown in the review queue and compliance reports. Should describe the outcome: "Deny charges above $10,000" not "High charge rule".
+
+### Effect
+
+What happens when this rule matches:
+
+| Effect | Behaviour |
+|---|---|
+| `ALLOW` | Permit the action — evidence record created with status `ALLOW` |
+| `DENY` | Block the action — agent receives a deny response |
+| `WARN` | Permit the action but create a flagged evidence record for review |
+| `ESCALATE` | Pause the agent and wait for a human decision in the escalation queue |
+
+### Domains
+
+Optional. Categorise the rule under one or more governance domains (e.g. `payments`, `pii`, `communication`). Used for filtering in compliance reports.
+
+### Actions
+
+The agent actions this rule applies to. Examples: `charge`, `refund`, `send_message`, `create_issue`, `complete`. Leave empty to match all actions on the targeted connector.
+
+### Connectors
+
+The connectors this rule applies to. Examples: `stripe`, `slack`, `github`. Leave empty to apply to all connectors.
+
+The editor suggests customer connectors from installed packs and retained runtime evidence, but you can enter other connector values manually. Spctre's internal `spctre-agent` baseline and the `sample` onboarding connector are intentionally omitted from suggestions; enter either manually only when you have a deliberate advanced use case.
+
+### Priority
+
+An integer (default `100`). When multiple rules match the same decision, the rule with the **highest** priority number wins. Use priority to express intent explicitly rather than relying on declaration order.
+
+### Conditions
+
+Optional field-based conditions. When set, the rule only matches decisions where all conditions are satisfied. See [Setting rule conditions](/help-docs/ui-guides/policy-creator/setting-conditions) for a full walkthrough.
+
+Field and pack-setting suggestions appear after you enter a recognized connector. You can still type a field or setting manually when no suggestion is available.
+
+### Mark as immutable
+
+Check this to prevent the rule from being edited after publishing. Use for rules that auditors or legal have signed off on.
+
+### Semantic checks (optional)
+
+Free-text instructions for Spctre's AI semantic checker, which runs during the review process. Example: "Verify this rule does not allow charges above the tier limit for enterprise accounts."
+
+## Saving
+
+Click **Save rule**. The rule is added to your branch in `DRAFT` status. You can add as many rules as needed before submitting the branch for review.
+
+## Reordering rules
+
+Drag rules in the list to reorder them. This affects the display order in reviews and reports, but does not override priority — priority always wins for conflict resolution.

@@ -1,0 +1,36 @@
+{
+  "name": "@spctre/mcp-server",
+  "version": "0.1.0",
+  "description": "MCP server for Spctre policy governance",
+  "license": "Apache-2.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "spctre-mcp-server": "dist/index.js"
+  },
+  "scripts": {
+    "clean": "rm -rf dist",
+    "build": "pnpm run clean && tsc && chmod +x dist/index.js",
+    "test": "vitest run",
+    "dev": "tsc -w",
+    "start": "node dist/index.js",
+    "start:http": "SPCTRE_MCP_TRANSPORT=http node dist/index.js",
+    "example": "node dist/example.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "@spctre/platform": "workspace:*",
+    "ajv": "^8.20.0",
+    "axios": "^1.18.0",
+    "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.0.0",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.8"
+  }
+}

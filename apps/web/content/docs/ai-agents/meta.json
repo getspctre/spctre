@@ -1,0 +1,11 @@
+{
+  "title": "AI Agents",
+  "root": true,
+  "pages": [
+    "index",
+    "getting-started",
+    "runtime",
+    "adapters",
+    "operations"
+  ]
+}

@@ -1,0 +1,89 @@
+---
+title: SSO (SAML & OIDC)
+description: IdP configuration, attribute mapping, and just-in-time provisioning.
+---
+
+Spctre supports SAML 2.0 and OIDC for single sign-on. Configure SSO in **Admin → Authentication**.
+
+## OIDC setup
+
+Set the following environment variables:
+
+```bash
+OIDC_ENABLED=true
+OIDC_DEFAULT_TENANT_ID=your-tenant-uuid
+```
+
+Your IdP must be configured with:
+- **Redirect URI**: `https://<your-control-plane>/api/auth/oidc/callback`
+- **Scopes**: `openid email profile`
+
+The OIDC discovery document is fetched from your IdP automatically. No additional certificate configuration is required.
+
+## SAML setup
+
+Set the following environment variables:
+
+```bash
+SAML_ENABLED=true
+```
+
+Configure your IdP with:
+- **ACS URL**: `https://<your-control-plane>/api/auth/saml/callback`
+- **Entity ID**: `https://<your-control-plane>`
+- **NameID format**: `emailAddress`
+
+## Attribute mapping
+
+Spctre maps IdP attributes to user fields:
+
+| IdP attribute | Spctre field |
+|---|---|
+| `email` | User email (required) |
+| `name` / `displayName` | Display name |
+| `given_name` | First name |
+| `family_name` | Last name |
+| `groups` | Role assignment (optional) |
+
+## Just-in-time provisioning
+
+When a user authenticates via SSO for the first time, Spctre creates their account automatically using the IdP attributes. No pre-provisioning is required.
+
+## SCIM provisioning
+
+SCIM 2.0 supports user create, update, deactivate, and group membership sync.
+
+SCIM endpoint: `https://<your-control-plane>/api/scim/v2`
+
+Two credential modes are supported:
+
+### Per-tenant tokens (recommended; required on hosted)
+
+Mint a provisioning token in **Admin → Authentication → Per-tenant SCIM tokens**
+and configure it as the bearer token in your identity provider. The token
+itself identifies your tenant, so no further configuration is needed. Tokens
+can be revoked and reissued at any time; each mint and revoke is recorded in
+the operations log. On hosted deployments this mode requires an Enterprise
+subscription for the tenant.
+
+### Deployment-wide env token (self-hosted Enterprise only)
+
+```bash
+SCIM_BEARER_TOKEN=your-scim-secret
+# or
+SCIM_SECRET=your-scim-secret
+
+# Required on multi-tenant installs; single-tenant installs auto-resolve.
+SCIM_TENANT_ID=your-tenant-id
+```
+
+## Passkey / WebAuthn
+
+Spctre supports passkeys as an MFA method. Configure the relying party:
+
+```bash
+PASSKEY_RP_ID=your-domain.com
+PASSKEY_RP_NAME=Your Company Control Plane
+```
+
+Users can register a passkey from **Account → Security**.

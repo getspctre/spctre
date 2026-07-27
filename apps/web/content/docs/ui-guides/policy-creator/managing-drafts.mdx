@@ -1,0 +1,47 @@
+---
+title: Managing draft branches
+description: Dashboard view of your open branches, discarding a draft, and reverting to a previous revision.
+---
+
+Your active branches live in the **Branches** section of the **Policies** page. This view shows every branch in all states.
+
+## Branch states
+
+| State | Meaning |
+|---|---|
+| `DRAFT` | You're still authoring; not yet submitted |
+| `IN_REVIEW` | Submitted and awaiting reviewer action |
+| `APPROVED` | All reviews passed; bundle being generated |
+| `PUBLISHED` | Live — rules are in agents' bundles |
+| `REJECTED` | Reviewer returned the branch for revision |
+| `ABANDONED` | You discarded this branch |
+
+## Filtering the list
+
+Use the workspace page dropdowns to switch contexts. Sort the branches table to locate recently active branches.
+
+## Viewing a branch
+
+Click any branch row in the table to open the **Branch Inspector** slideout panel. This panel displays the branch status, scope, author, active revision, and provides quick navigation actions to author rules or review changes.
+
+## Discarding a draft
+
+To permanently delete a branch you no longer need:
+
+1. Open the branch inspector slideout panel by clicking its row.
+2. Scroll to the **Danger zone** section at the bottom.
+3. Type the branch name in the confirmation text box.
+4. Click the **Delete branch permanently** button.
+
+## Duplicating a branch
+
+To start a new branch based on an existing one, you can import or duplicate the policy rules via the workspace Policy Import panel.
+
+## Reverting to a previous revision
+
+Published branches track every revision. To see a branch's history:
+
+1. Click the branch row to open the inspector, then click **Review & Publish**.
+2. Scroll down on the approvals page to view the **Revisions** history list.
+
+Each revision shows the date, who submitted it, and which rules changed. You can perform rollbacks to earlier revisions directly. Connected agents pick up the rollbacks on their next sync interval.

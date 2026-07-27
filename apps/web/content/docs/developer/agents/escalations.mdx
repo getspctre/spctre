@@ -1,0 +1,68 @@
+---
+title: Escalations
+description: Escalation triggers, status polling, and resolving an escalation.
+---
+
+An **escalation** is created when a gateway decision produces `outcome: ESCALATE`. The agent's action is queued — it does not proceed until a human reviewer resolves the escalation.
+
+## Escalation lifecycle
+
+```
+PENDING → IN_REVIEW → RESOLVED
+                    → EXPIRED (if SLA passes without resolution)
+```
+
+## How an escalation is created
+
+1. An agent calls `POST /api/v1/gateway/decide` with a high-risk context
+2. The gateway evaluates the policy and returns `{ "decision": { "outcome": "ESCALATE", "slaHours": 4 } }`
+3. The gateway creates an escalation record and returns a queue entry ID to the agent
+4. The agent holds the action and polls `GET /api/v1/gateway/escalations/status?id=<id>` until resolved
+
+## Escalation record fields
+
+| Field | Description |
+|---|---|
+| `id` | Escalation UUID |
+| `decisionId` | The gateway decision ID |
+| `status` | `PENDING`, `IN_REVIEW`, `RESOLVED`, or `EXPIRED` |
+| `slaDueAt` | ISO 8601 deadline (computed from rule SLA config) |
+| `assignedTo` | Reviewer principal ID |
+| `resolutionOutcome` | `PROCEED`, `ESCALATE`, or `ABORT` (set on resolution) |
+| `resolutionNote` | Reviewer's rationale |
+| `connector` | Connector the action targets |
+| `action` | Action being escalated |
+| `riskLevel` | `LOW`, `MEDIUM`, `HIGH`, or `CRITICAL` |
+
+## Polling for resolution
+
+```bash
+GET /api/v1/gateway/escalations/status?id=<escalation-id>
+Authorization: Bearer <token>
+```
+
+Poll at the interval returned by the gateway (default 30 seconds). When `status` is `RESOLVED`, check `resolutionOutcome`:
+
+- `PROCEED` — agent may continue with the action
+- `ABORT` — agent must halt the action
+- `ESCALATE` — escalated further (rare; used for multi-level approval)
+
+## Resolving an escalation
+
+Reviewers resolve escalations from the **Review** queue in the control plane or via API:
+
+```
+POST /api/v1/gateway/escalations/<id>/resolve
+{
+  "outcome": "PROCEED",
+  "note": "Amount verified against contract; approved."
+}
+```
+
+## SLA expiry
+
+If an escalation reaches `slaDueAt` without resolution, it transitions to `EXPIRED` and the gateway returns `outcome: ABORT` to the polling agent. Configure SLA hours per rule in the policy branch.
+
+## Alerting on escalations
+
+Connect an alerting integration (Slack, PagerDuty, Teams, or Webhook) in **Account → Alerting** to receive notifications when escalations are created or approaching SLA.

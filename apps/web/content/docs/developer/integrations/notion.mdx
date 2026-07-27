@@ -1,0 +1,145 @@
+---
+title: Notion integration
+description: Govern Notion Workers and Notion orchestration events with packs, gateway ingest, and the CLI adapter.
+---
+
+Spctre supports Notion governance through two policy packs, a gateway ingest endpoint, and a generated Notion Worker template.
+
+## What is covered
+
+| Surface | Spctre component | Purpose |
+|---|---|---|
+| Notion orchestration | `notion-orchestration-v1` | Enterprise orchestration pack for External Agents API, Workers, Agent SDK, webhook, and provenance-gap rules |
+| Gateway webhook events | `gateway-notion-v1` | Connector-scoped pack for normalized Notion gateway evidence |
+| Worker runtime | `spctre watch --framework notion-worker` | Generates a deployable Worker wrapper that evaluates policy before tool execution and emits evidence after execution |
+
+## Install the packs
+
+Install `gateway-notion-v1` when you send Notion Worker or webhook events through Spctre's gateway ingest endpoint.
+
+Install `notion-orchestration-v1` when you govern higher-risk Notion orchestration behavior, including agent routing, Worker writes, Agent SDK dispatches, and downstream webhook-triggered actions.
+
+Both packs follow the normal branch review and publish workflow: add the pack, compose the policy bundle, collect approvals, then publish from the **Publish** stage.
+
+## Generate a governed Notion Worker
+
+Run the CLI from the project that owns the Worker:
+
+```bash
+spctre init --workspace <workspace-slug> --agent notion-worker-prod
+spctre watch --framework notion-worker
+```
+
+The adapter writes:
+
+| File | Purpose |
+|---|---|
+| `.spctre/notion-worker.js` | Worker template with `spctreGoverned()` around tool calls |
+| `.spctre/governance-manifest-notion-worker.json` | Manifest with file hash, workspace, agent, artifact hash, and verification command |
+| `.spctre/GOVERNANCE-NOTION-WORKER.md` | Local audit note explaining the generated governance layer |
+
+Deploy the generated Worker:
+
+```bash
+notion worker deploy .spctre/notion-worker.js
+```
+
+Verify the generated files before deployment:
+
+```bash
+spctre verify-env --framework notion-worker
+```
+
+## Worker behavior
+
+The generated Worker wraps each tool call with `spctreGoverned()`:
+
+1. It calls `/api/evaluate` before execution.
+2. `DENY` blocks the tool call.
+3. `ESCALATE` returns the Notion approval loop URL and defers execution to a human reviewer.
+4. `ALLOW` continues to the tool function.
+5. After execution, it emits `spctre.gateway.event.v1` evidence to `/api/gateway-ingest/notion`.
+
+Edit the generated handler to replace the placeholder tool call with your Worker logic.
+
+## Webhook ingest
+
+Send Notion Worker evidence to:
+
+```http
+POST /api/gateway-ingest/notion
+```
+
+The legacy versioned alias also exists:
+
+```http
+POST /api/v1/gateway-ingest/notion
+```
+
+Authentication can use either a per-integration webhook secret or a service token. Service tokens are recommended for new integrations.
+
+### Per-integration webhook secret (recommended)
+
+Each gateway integration has its own webhook secret (`gwh_...`) generated when you register it. The secret encodes the tenant and workspace, so no additional headers are required:
+
+```bash
+curl -X POST "$SPCTRE_URL/api/gateway-ingest/notion" \
+  -H "content-type: application/json" \
+  -H "x-notion-signature: $GWH_SECRET" \
+  -d @notion-event.json
+```
+
+### Service token
+
+Use a token with `evidence:write` scope:
+
+```bash
+curl -X POST "$SPCTRE_URL/api/gateway-ingest/notion" \
+  -H "content-type: application/json" \
+  -H "authorization: Bearer $SPCTRE_API_TOKEN" \
+  -d @notion-event.json
+```
+
+## Event requirements
+
+The receiver expects JSON with an event identifier. It accepts `id` or `execution_id`, rejects invalid JSON, rejects stale timestamps older than five minutes when a timestamp is present, and deduplicates replayed event IDs for one hour.
+
+The endpoint is rate-limited to 100 requests per minute per tenant.
+
+Normalized Notion events are stored as `spctre.gateway.event.v1` evidence with connector `gateway-notion`. Evidence carries `provenance_gap: true` when Notion did not provide enough native policy context to prove the exact bundle used at execution time.
+
+## notion-orchestration-v1 pack reference
+
+`notion-orchestration-v1` governs higher-risk Notion orchestration behavior. It requires **Security and Compliance approval** before publishing and has `riskLevel: HIGH`.
+
+| Field | Value |
+|---|---|
+| ID | `notion-orchestration-v1` |
+| Connector | `notion-orchestration` |
+| Risk level | `HIGH` |
+| Minimum approvals | 1 (Security + Compliance roles) |
+| Compatibility | All major frameworks |
+
+### Rules
+
+| Rule ID | Effect | Immutable | Trigger |
+|---|---|---|---|
+| `notion-orchestration.cost.block_high_spend` | `DENY` | Yes | Agent routing decision exceeds the per-call spend cap |
+| `notion-orchestration.routing.warn_unverified_agent` | `WARN` | No | External Agents API routes to an agent not in the workspace-approved agent list |
+| `notion-orchestration.worker.warn_write_without_approval` | `WARN` | Yes | Notion Worker executes a write, delete, or send action without a recorded human approval checkpoint |
+| `notion-orchestration.agent-sdk.warn_cross_surface_embed` | `WARN` | Yes | Agent SDK embed dispatches an agent action from an external surface |
+| `notion-orchestration.webhook.warn_unapproved_downstream` | `WARN` | No | Incoming webhook triggers a Worker that calls a downstream connector not in the workspace allowlist |
+| `notion-orchestration.provenance.warn_gap` | `WARN` | No | Notion orchestration event where Spctre policy context could not be resolved (`provenance_gap: true`) |
+
+Immutable rules cannot have their effect changed from the UI. Mutable `WARN` rules can be tuned per workspace.
+
+### When to use notion-orchestration-v1 vs gateway-notion-v1
+
+Use **`gateway-notion-v1`** when you only need to govern the raw webhook event stream from a Notion Worker — it is connector-scoped to `gateway-notion` and covers the ingest surface.
+
+Use **`notion-orchestration-v1`** when you need broader orchestration governance: agent routing decisions, Worker writes requiring an approval checkpoint, cross-surface Agent SDK embeds, and downstream connector allowlisting. The two packs are complementary and can be attached to the same workspace.
+
+## Cross-surface agent identity
+
+When the same Notion agent runs across multiple embedded surfaces (Teams, CRM, Discord), you can link those surface identities to a single canonical agent ID and aggregate trust signals across all of them. See [Cross-surface agent identity](/help-docs/developer/agents/cross-surface-identity).
+

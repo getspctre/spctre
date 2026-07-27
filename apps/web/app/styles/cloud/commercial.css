@@ -1,0 +1,231 @@
+/* usage-billing page — minimum plan: cloud */
+
+.usageBillingHero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(420px, 1fr);
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+  max-width: 1180px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.usageBillingHeroMain,
+.usageBillingHeroStats {
+  background: var(--panel);
+}
+
+.usageBillingHeroMain {
+  padding: 18px;
+  display: grid;
+  gap: 8px;
+  align-content: center;
+}
+
+.usageBillingHeroMain h2 {
+  font-size: 20px;
+}
+
+.usageBillingHeroMain .meta {
+  max-width: 72ch;
+}
+
+.usageBillingHeroActions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.usageBillingHeroStats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.usageBillingHeroStats > div {
+  padding: 16px;
+  border-right: 1px solid var(--line);
+  display: grid;
+  gap: 5px;
+  align-content: center;
+}
+
+.usageBillingHeroStats > div:last-child {
+  border-right: 0;
+}
+
+.usageBillingHeroStats strong {
+  color: var(--ink);
+  font-size: 17px;
+  overflow-wrap: anywhere;
+}
+
+.usageBillingPanel {
+  display: grid;
+  gap: 16px;
+  padding: 18px;
+  max-width: 1180px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.usageBillingPanel > .rowHeader {
+  padding-bottom: 2px;
+}
+
+.usageBillingGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.95fr) minmax(360px, 1.05fr);
+  gap: 18px;
+  align-items: start;
+  max-width: 1180px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.commercialHero {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.commercialPlanStrip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.commercialPlanStrip > div {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  padding: 12px;
+}
+
+.commercialPlanStrip strong {
+  display: block;
+  margin-top: 5px;
+  font-size: 17px;
+}
+
+.commercialHero > div {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: oklch(0.988 0.006 236);
+  padding: 14px;
+}
+
+.commercialHero strong {
+  display: block;
+  margin: 7px 0 4px;
+  font-size: 28px;
+  line-height: 1;
+}
+
+.commercialMeterList,
+.commercialLeverList,
+.commercialEventList {
+  display: grid;
+  gap: 10px;
+}
+
+.commercialAnchorGroup {
+  display: grid;
+  gap: 10px;
+}
+
+.commercialAnchorGroupHeader {
+  display: grid;
+  gap: 3px;
+}
+
+.commercialMeter {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  padding: 13px;
+  display: grid;
+  gap: 10px;
+}
+
+.commercialMeterTrack {
+  height: 8px;
+  border-radius: 999px;
+  background: oklch(0.93 0.01 250);
+  overflow: hidden;
+}
+
+.commercialMeterTrack span {
+  display: block;
+  height: 100%;
+  min-width: 6px;
+  border-radius: inherit;
+  background: var(--accent);
+}
+
+.commercialMeterFill {
+  display: block;
+  height: 100%;
+  min-width: 6px;
+  border-radius: inherit;
+  background: var(--accent);
+}
+
+.commercialActionBand {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--accent-soft);
+  padding: 13px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+}
+
+.commercialActionBand svg,
+.commercialProof svg {
+  color: var(--accent);
+  margin-top: 1px;
+}
+
+.commercialProofGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.commercialProof {
+  grid-template-columns: auto minmax(0, 1fr);
+  color: inherit;
+  text-decoration: none;
+}
+
+.commercialReviewForm {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 13px;
+  display: grid;
+  grid-template-columns: minmax(130px, 0.4fr) minmax(220px, 1fr) auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.commercialReviewForm label {
+  display: grid;
+  gap: 6px;
+}
+
+.commercialReviewForm input,
+.commercialReviewForm select {
+  width: 100%;
+  min-height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--panel);
+  color: var(--ink);
+  padding: 0 10px;
+  font: inherit;
+}

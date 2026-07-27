@@ -1,0 +1,48 @@
+{
+  "name": "@spctre/web",
+  "version": "0.1.0",
+  "private": true,
+  "license": "Apache-2.0",
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "NODE_OPTIONS=--max-old-space-size=4096 next build",
+    "typecheck": "fumadocs-mdx && tsc --noEmit",
+    "test:integration": "vitest run"
+  },
+  "dependencies": {
+    "@scalar/nextjs-api-reference": "^0.11.3",
+    "@spctre/api-contracts": "workspace:*",
+    "@spctre/design-tokens": "workspace:*",
+    "@spctre/platform": "workspace:*",
+    "@spctre/policy-schema": "workspace:*",
+    "@spctre/ui": "workspace:*",
+    "@upstash/ratelimit": "^2.0.8",
+    "@upstash/redis": "^1.38.0",
+    "firebase": "^12.14.0",
+    "fumadocs-core": "^16.10.5",
+    "fumadocs-ui": "^16.10.5",
+    "jose": "^6.2.3",
+    "lucide-react": "^1.17.0",
+    "next": "^16.2.9",
+    "next-intl": "^4.13.1",
+    "postgres": "^3.4.9",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "undici": "^6.21.0",
+    "zod": "^4.4.3"
+  },
+  "optionalDependencies": {
+    "@google-cloud/firestore": "^8.6.0",
+    "@google-cloud/storage": "^7.21.0",
+    "@node-saml/node-saml": "5.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.0.0",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "fumadocs-mdx": "^15.0.12",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.8"
+  }
+}

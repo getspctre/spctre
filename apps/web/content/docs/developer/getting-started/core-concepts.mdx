@@ -1,0 +1,75 @@
+---
+title: Core concepts
+description: Key terms and mental models for the Spctre platform.
+---
+
+## Workspace
+
+A workspace is the primary organisational unit in Spctre. It contains policies, rules, packs, agents, and evidence. Most resources are scoped to a workspace. A tenant can have multiple workspaces — for example one per product team or environment cluster.
+
+## Policy branch
+
+A **policy branch** is a versioned, scoped set of governance rules. Every branch has:
+
+| Field | Values |
+|---|---|
+| `scope` | `ORGANIZATION` · `WORKSPACE` · `ENVIRONMENT` · `CONNECTOR` |
+| `status` | `DRAFT` → `IN_REVIEW` → `PUBLISHED` |
+| `source_format` | `AGT_YAML` · `OPA_REGO` · `CEDAR` |
+
+Branches have **revisions** — immutable snapshots created each time a branch is updated. An agent always evaluates against a specific `revision_id`.
+
+Scope hierarchy: `ORGANIZATION > WORKSPACE > ENVIRONMENT > CONNECTOR`. A more specific scope overrides a broader one for the same connector/action.
+
+## Rule
+
+A rule is a single governance statement inside a policy branch. Every rule has:
+
+- **`stable_rule_id`** — immutable across revisions, used in audit trails
+- **`effect`** — `ALLOW`, `DENY`, `WARN`, or `ESCALATE`
+- **`domains`** — e.g. `["payments", "refunds"]`
+- **`actions`** — e.g. `["charge", "transfer"]`
+- **`connectors`** — e.g. `["stripe", "github"]`
+- **`conditions`** — optional conditional logic for rule matching
+- **`priority`** — integer; higher wins when effects conflict
+
+## Pack
+
+A **pack** is a curated bundle of rules for a specific connector or use case. Packs have a semantic version, a risk level (`LOW`/`MEDIUM`/`HIGH`), and a `minimumApprovals` threshold for publishing. Spctre ships several built-in packs:
+
+- `spctre-agent-governance-v1` — the Spctre-managed simulation-guidance baseline for human decision boundaries and audit requirements
+- `trust-governance-v1` — trust score and context budget governance
+- Gateway packs (Portkey, Helicone, LiteLLM, Notion)
+
+## Policy bundle
+
+A **bundle** is a signed, read-only snapshot of all published policy branches for a workspace at a point in time. Agents download the bundle at startup via `spctre sync` or `spctre watch` and evaluate decisions against it locally — no network call per decision.
+
+## Evidence
+
+**Evidence** is a structured record of a runtime decision submitted by an agent. Each evidence record captures:
+
+- Which agent made the decision (`agentId`)
+- What connector and action were involved
+- What the decision status was (`ALLOW`, `DENY`, `WARN`, `ESCALATE`)
+- The policy context used (`revisionId`, `artifactHash`)
+- Optional pre-flight intent: `toolIntent`, `planSummary`
+
+Evidence is the raw material for compliance reports and audit trails.
+
+## Decision statuses
+
+| Status | Meaning |
+|---|---|
+| `ALLOW` | Action permitted by policy |
+| `DENY` | Action blocked by policy |
+| `WARN` | Action allowed but flagged for review |
+| `ESCALATE` | Action queued for human approval before proceeding |
+
+## Connector
+
+A connector identifies an external system or service that an agent interacts with — for example `stripe`, `github`, `notion`, or `openai`. Rules and evidence are scoped to connectors, enabling per-system governance.
+
+## Runtime target (stack)
+
+The `runtimeTarget.stack` field identifies the agent framework in use. Supported values: `AWS_BEDROCK`, `GOOGLE_ADK`, `AZURE_AI`, `LANGCHAIN`, `LANGGRAPH`, `CREWAI`, `AUTOGEN`, `OPENAI_AGENTS`, `OMNIGENT`, `OPENCODE`, `CLAUDE_CODE`, `LOCAL`, `CUSTOM`.

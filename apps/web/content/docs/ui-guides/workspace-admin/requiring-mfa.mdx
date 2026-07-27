@@ -1,0 +1,63 @@
+---
+title: Requiring MFA
+description: Enforcing MFA org-wide, supported methods, and the grace period.
+---
+
+Multi-factor authentication (MFA) adds a second layer of security to every user login. You can require it for the entire organisation or for specific roles.
+
+## Supported MFA methods
+
+| Method | Description |
+|---|---|
+| **TOTP** | Time-based one-time password via an authenticator app (Google Authenticator, 1Password, Authy, etc.) |
+| **Passkey** | WebAuthn/FIDO2 hardware or platform passkey (YubiKey, Face ID, Touch ID) |
+| **SMS** | One-time code via SMS — less secure; use TOTP or passkey where possible |
+
+<Callout type="warn">
+SMS-based MFA is vulnerable to SIM-swapping attacks. Prefer TOTP or passkeys for users with admin or reviewer roles.
+</Callout>
+
+## Opening MFA settings
+
+Go to **Admin → Authentication → MFA**.
+
+## Enforcing MFA org-wide
+
+1. Toggle **Require MFA for all users** to **On**.
+2. Choose which methods are allowed (you can restrict to TOTP + passkey only by deselecting SMS).
+3. Set the **grace period** — the number of days users have to enrol before they're locked out. Default is 7 days.
+4. Click **Save**.
+
+During the grace period, users see a banner prompting them to enrol. After the grace period expires, unenrolled users are redirected to the MFA enrolment page on every login until they complete it.
+
+## Enforcing MFA by role
+
+To require MFA only for elevated roles (Admins and Reviewers):
+
+1. Under **MFA settings → Scope**, select **By role**.
+2. Check **Admin** and **Reviewer**.
+3. Set a grace period.
+4. Click **Save**.
+
+Policy Creators and Viewers can still sign in without MFA unless you later extend the requirement.
+
+## MFA enrolment for users
+
+When MFA is required, users see the enrolment prompt on their next login:
+
+1. They choose their preferred method.
+2. For TOTP: scan the QR code with an authenticator app and enter a code to verify.
+3. For passkeys: follow the browser prompt to register their device.
+4. For SMS: enter and verify their phone number.
+
+Admins can see each user's MFA status in **Admin → Users** (the **MFA** column).
+
+## Resetting MFA for a user
+
+If a user loses their MFA device:
+
+1. Go to **Admin → Users**, click the user.
+2. Click **Reset MFA**.
+3. Confirm.
+
+The user's MFA factors are cleared. On next login, they'll be prompted to enrol a new factor. Until they do, a grace period of 24 hours applies (configurable).

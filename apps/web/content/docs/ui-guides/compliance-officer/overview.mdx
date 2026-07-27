@@ -1,0 +1,43 @@
+---
+title: Compliance Officer overview
+description: The compliance officer's view of Spctre — key screens and their purpose.
+---
+
+As a Compliance Officer, you use Spctre to read, verify, and export evidence of AI agent governance. You don't author policies or handle live escalations — your focus is on compliance posture, audit evidence, and providing attestation to external auditors.
+
+## Your key screens
+
+| Screen | Purpose |
+|---|---|
+| **Compliance → Reports** | Aggregated compliance scores by connector, agent, and time period |
+| **Compliance → Audit trail** | Immutable record of every decision, policy revision, and approval |
+| **Audit → Audit Ledger** | Platform event log — logins, config changes, bundle publishes |
+| **Cost → Cost & Usage** | Token and cost summaries for budget compliance |
+
+## What you can do
+
+| Action | Where |
+|---|---|
+| Read compliance reports | **Compliance → Reports** |
+| Filter reports by date, connector, agent | Report filters |
+| Export compliance data | **Export** button on any report |
+| Generate a compliance seal | Report header → **Generate seal** |
+| Trace a specific decision | **Compliance → Audit trail** → search by decision ID |
+| Read the audit ledger | **Audit → Audit Ledger** |
+| Interpret the cost & usage dashboard | **Cost → Cost & Usage** |
+
+## What you cannot do
+
+Compliance Officers have read-only access to all governance data. You cannot author policies, approve branches, or resolve escalations. If you find a compliance gap that needs a policy fix, raise it with your Policy Creator or workspace admin.
+
+## Understanding the compliance score
+
+The compliance score on the Reports page represents the percentage of agent decisions that were governed by an active policy and produced an evidence record — regardless of whether that decision was `ALLOW`, `DENY`, or `WARN`. A 100% score means every decision was covered. A score below 100% means some decisions happened without policy coverage (provenance gaps).
+
+<Callout type="info">
+A high WARN or DENY rate is not a compliance failure — it means your policies are catching risk. A provenance gap is the concern: decisions where no policy evaluated the action at all.
+</Callout>
+
+## Where to start
+
+If you're preparing for an audit, begin with [Reading a compliance report](/help-docs/ui-guides/compliance-officer/reading-compliance-reports) and [Exporting a compliance report](/help-docs/ui-guides/compliance-officer/exporting-reports).

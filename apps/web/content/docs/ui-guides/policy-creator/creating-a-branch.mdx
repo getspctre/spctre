@@ -1,0 +1,45 @@
+---
+title: Creating a policy branch
+description: How to create a new policy branch — choosing scope, naming, and describing it.
+---
+
+All policy authoring in Spctre happens on a **branch**. A branch is an isolated draft of your policy changes. Nothing you do on a branch affects live agent behaviour until it's reviewed and published.
+
+## Opening the new branch form
+
+1. In the left nav, click **Policies**.
+2. Click **Create policy** in the toolbar.
+3. Choose **Start with rules** to create an empty draft and continue to Rule Authoring, or choose **Upload or paste existing** to import YAML or JSON.
+
+## Branch settings
+
+### Name
+
+Give the branch a short, descriptive name — e.g. `stripe-high-value-transfers`, `openai-pii-guardrails`, `quarterly-review-q3`. The name becomes the `branch_id` in the policy record and cannot be changed after creation.
+
+### Scope
+
+Choose where these rules apply:
+
+| Scope | What it covers |
+|---|---|
+| **Organisation** | All workspaces — least specific, lowest precedence |
+| **Workspace** | A single workspace only |
+| **Environment** | A specific environment (`production`, `staging`, etc.) |
+| **Connector** | A specific connector — most specific, highest precedence |
+
+<Callout type="info">
+A `DENY` at `CONNECTOR` scope overrides an `ALLOW` at `ORGANISATION` scope for the same connector and action. Start with the most specific scope that covers your use case.
+</Callout>
+
+### Environment (optional)
+
+If scope is `ENVIRONMENT`, select or type the environment name. Must match the environment string your agents report in their evidence.
+
+### Target frameworks (optional)
+
+If your rules are only meaningful for agents using a specific framework (`CrewAI`, `LangChain`, `OpenAI Agents`), select them here. Rules will only be included in bundles for those frameworks.
+
+## Creating the branch
+
+Click **Create draft and add rules**. The branch opens in `DRAFT` status and the Rule Authoring page opens immediately. Add and test the first rule there; the draft cannot affect agents until it is reviewed and published.

@@ -1,0 +1,92 @@
+---
+title: Setting up alerting for your queue
+description: Connecting Slack or PagerDuty so new escalations and reviews notify you immediately.
+---
+
+By default, queue items appear in the Spctre control plane UI. Configure alerting so that new escalations page you immediately — especially important for escalations with short SLA windows.
+
+## Opening alerting settings
+
+1. Click your avatar in the top-right corner.
+2. Select **Settings → Alerting**.
+
+## Available channels
+
+| Channel | Best for |
+|---|---|
+| **Email** | Non-urgent reviews; lower volume |
+| **Slack** | Team channels; quick collaborative triage |
+| **PagerDuty** | On-call rotations; escalation SLA alerting |
+| **Generic webhook** | Custom integrations (Teams, Opsgenie, etc.) |
+| **Splunk HEC** | Rule-triggered DENY/violation forwarding to Splunk |
+| **Microsoft Sentinel** | Rule-triggered DENY/violation forwarding to Sentinel |
+
+## Configuring Slack
+
+<Steps>
+<Step>
+
+Click **Add channel → Slack**.
+
+</Step>
+<Step>
+
+Click **Connect to Slack**. You'll be redirected to Slack to authorise the Spctre app for your workspace.
+
+</Step>
+<Step>
+
+After authorising, return to Spctre and choose the Slack channel (or DM) to send alerts to.
+
+</Step>
+<Step>
+
+Under **Alert rules**, choose which events trigger a Slack message:
+- New branch assigned to me
+- Branch re-submitted after rejection
+- New escalation assigned to me
+- Escalation SLA warning (configurable threshold, e.g. 50% of SLA remaining)
+
+</Step>
+<Step>
+
+Click **Save**. Send a test alert to confirm delivery.
+
+</Step>
+</Steps>
+
+## Configuring PagerDuty
+
+<Steps>
+<Step>
+Click **Add channel → PagerDuty**.
+</Step>
+<Step>
+Enter your PagerDuty **Integration Key** (from a PagerDuty Events API v2 integration).
+</Step>
+<Step>
+Set **Severity mapping**:
+- HIGH risk escalation → `critical`
+- MEDIUM risk escalation → `error`
+- LOW risk escalation → `warning`
+</Step>
+<Step>
+Enable **Escalation SLA alert** and set the threshold (e.g. alert when 30 minutes remain).
+</Step>
+<Step>
+Click **Save**.
+</Step>
+</Steps>
+
+## Alert rules
+
+Each alert rule has:
+- **Trigger** — what event fires it
+- **Filter** — optional scope (e.g. only HIGH risk, only connector `stripe`)
+- **Channel** — where to send it
+
+Add multiple rules to route different alert types to different channels — for example, branch reviews to a Slack channel and escalations to PagerDuty.
+
+## Testing
+
+After saving, click **Send test alert** next to any channel. A synthetic alert is sent using the same format as a real alert.

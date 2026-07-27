@@ -1,0 +1,111 @@
+---
+title: Evidence ingest
+description: Submitting decision records to the Spctre evidence ledger, and how offline buffering works during outages.
+---
+
+Evidence is the record of every runtime decision — what the agent did, which policy governed it, and what the outcome was. Ingest evidence after every governed action, including denials.
+
+## POST /api/v1/evidence
+
+```http
+POST /api/v1/evidence
+Authorization: Bearer <token>
+Content-Type: application/json
+```
+
+### Minimal payload
+
+```json
+{
+  "decisionId": "dec_xyz789",
+  "agentId": "customer-support",
+  "connector": "stripe",
+  "action": "charge",
+  "environment": "production",
+  "status": "ALLOW",
+  "reason": "Amount within approved tier",
+  "runtimeTarget": { "stack": "LANGCHAIN" }
+}
+```
+
+### Full payload
+
+```json
+{
+  "agentId": "customer-support",
+  "connector": "stripe",
+  "action": "charge",
+  "environment": "production",
+  "status": "ALLOW",
+  "reason": "Amount within approved tier",
+  "runtimeTarget": { "stack": "LANGCHAIN" },
+  "policyContext": [
+    {
+      "scope": "CONNECTOR",
+      "branchId": "br_01j9xk",
+      "revisionId": "rev_99",
+      "artifactHash": "sha256:abc123…"
+    }
+  ],
+  "toolIntent": "charge customer for subscription renewal",
+  "planSummary": "Billing agent: monthly renewal for customer cust_001",
+  "sessionId": "sess_abc123",
+  "decisionId": "dec_xyz789"
+}
+```
+
+`sessionId` and `decisionId` are optional but strongly recommended — they enable deduplication and link evidence to gateway decision records.
+
+### Response
+
+```json
+{
+  "id": "ev_01j9xk…",
+  "status": "ALLOW",
+  "createdAt": "2026-06-09T10:00:00Z"
+}
+```
+
+## CLI shorthand
+
+```bash
+spctre ingest \
+  --agent customer-support \
+  --environment production \
+  --connector stripe \
+  --action charge \
+  --status ALLOW \
+  --session sess_abc123 \
+  --decision dec_xyz789
+```
+
+## Offline buffering
+
+If the ingest endpoint is unreachable, the CLI writes the record to a local FIFO queue:
+
+```
+~/.spctre/telemetry-buffer/
+```
+
+The buffer is flushed automatically on the next `spctre watch --heartbeat` tick. Flush behaviour:
+
+| Response | Action |
+|---|---|
+| `2xx` | Record removed from queue |
+| `5xx` | Flush stops; order preserved; retried next tick |
+| `4xx` | Record discarded (malformed or expired); queue unblocked |
+
+Records do not expire and survive process restarts. FIFO order is strictly preserved.
+
+## Idempotency
+
+Submit the same `decisionId` + `sessionId` pair multiple times safely — duplicates are silently discarded. Use this to handle retry logic without creating duplicate audit records.
+
+## What to ingest
+
+| Decision outcome | Ingest? | Reason |
+|---|---|---|
+| `ALLOW` | Yes | Confirms action was governed |
+| `DENY` | Yes | Proves the policy blocked the action |
+| `WARN` | Yes | Records the flagged-but-allowed action |
+| `ESCALATE` | Yes (after resolution) | Links the escalation resolution to the evidence record |

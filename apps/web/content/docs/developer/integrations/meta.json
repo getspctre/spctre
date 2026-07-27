@@ -1,0 +1,6 @@
+{
+  "title": "Integrations",
+  "description": "CLI, framework adapters, identity, webhooks, SSO, and scale-to-zero integrations.",
+  "icon": "Plug",
+  "pages": ["cli", "mcp-server", "gateway", "llm-gateways", "notion", "siem-streaming", "git-checkpoints", "python-sdk", "typescript-sdk", "webhooks", "oauth-social-login", "sso", "scale-to-zero"]
+}

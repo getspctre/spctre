@@ -1,0 +1,17 @@
+{
+  "title": "Policy Creator",
+  "description": "Browse packs, author rules, manage branches, and submit for review.",
+  "icon": "Pencil",
+  "pages": [
+    "overview",
+    "browsing-packs",
+    "adding-a-pack",
+    "creating-a-branch",
+    "authoring-rules",
+    "setting-conditions",
+    "importing-policies",
+    "submitting-for-review",
+    "editing-after-feedback",
+    "managing-drafts"
+  ]
+}

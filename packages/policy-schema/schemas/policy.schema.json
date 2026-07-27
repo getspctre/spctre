@@ -1,0 +1,168 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://spctre.local/schemas/policy-bundle.schema.json",
+  "title": "Spctre Managed Governance Policy Bundle",
+  "type": "object",
+  "required": [
+    "tenant_id",
+    "workspace_id",
+    "branch_id",
+    "revision_id",
+    "source_format",
+    "source_hash",
+    "rules"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "tenant_id": { "type": "string", "minLength": 1 },
+    "workspace_id": { "type": "string", "minLength": 1 },
+    "environment": { "type": "string", "minLength": 1 },
+    "branch_id": { "type": "string", "minLength": 1 },
+    "revision_id": { "type": "string", "minLength": 1 },
+    "scope": {
+      "enum": ["ORGANIZATION", "WORKSPACE", "ENVIRONMENT", "CONNECTOR"]
+    },
+    "source_format": {
+      "enum": ["AGT_YAML", "OPA_REGO", "CEDAR"]
+    },
+    "source_path": { "type": "string" },
+    "source_hash": { "type": "string", "minLength": 1 },
+    "artifact_hash": { "type": "string" },
+    "generated_at": { "type": "string" },
+    "target_stacks": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/runtimeTarget" }
+    },
+    "approvals": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/approval" }
+    },
+    "rules": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/ruleSummary" }
+    },
+    "metadata": { "type": "object" }
+    ,
+    "source_document": { "type": "object" },
+    "compatibility": { "$ref": "#/$defs/agtCompatibility" }
+  },
+  "$defs": {
+    "runtimeTarget": {
+      "type": "object",
+      "required": ["stack"],
+      "additionalProperties": false,
+      "properties": {
+        "stack": {
+          "enum": [
+            "AWS_BEDROCK",
+            "GOOGLE_ADK",
+            "AZURE_AI",
+            "LANGCHAIN",
+            "LANGGRAPH",
+            "CREWAI",
+            "AUTOGEN",
+            "OPENAI_AGENTS",
+            "OPENCODE",
+            "CLAUDE_CODE",
+            "LOCAL",
+            "CUSTOM"
+          ]
+        },
+        "adapter": { "type": "string" },
+        "environment": { "type": "string" }
+      }
+    },
+    "approval": {
+      "type": "object",
+      "required": ["reviewer", "role", "status"],
+      "additionalProperties": false,
+      "properties": {
+        "reviewer": { "type": "string", "minLength": 1 },
+        "role": { "type": "string", "minLength": 1 },
+        "status": {
+          "enum": ["PENDING", "APPROVED", "CHANGES_REQUESTED"]
+        },
+        "reviewed_at": { "type": "string" }
+      }
+    },
+    "ruleSummary": {
+      "type": "object",
+      "required": ["stable_rule_id", "title", "effect", "source_format"],
+      "additionalProperties": false,
+      "properties": {
+        "stable_rule_id": { "type": "string", "minLength": 1 },
+        "title": { "type": "string", "minLength": 1 },
+        "effect": { "enum": ["ALLOW", "DENY", "WARN", "ESCALATE"] },
+        "source_format": {
+          "enum": ["AGT_YAML", "OPA_REGO", "CEDAR"]
+        },
+        "source_path": { "type": "string" },
+        "domains": { "type": "array", "items": { "type": "string" } },
+        "connectors": { "type": "array", "items": { "type": "string" } },
+        "actions": { "type": "array", "items": { "type": "string" } },
+        "immutable": { "type": "boolean" },
+        "priority": { "type": "number" },
+        "conditions": {
+          "type": "array",
+          "items": { "type": "object" }
+        },
+        "semantic_checks": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {
+                "type": "object",
+                "required": ["id", "prompt"],
+                "additionalProperties": false,
+                "properties": {
+                  "id": { "type": "string", "minLength": 1 },
+                  "prompt": { "type": "string", "minLength": 1 },
+                  "effect": { "enum": ["ALLOW", "DENY", "WARN", "ESCALATE"] }
+                }
+              },
+              {
+                "type": "string",
+                "minLength": 1
+              }
+            ]
+          }
+        },
+        "original_rule": { "type": "object" },
+        "preserved_fields": { "type": "object" }
+      }
+    },
+    "agtCompatibility": {
+      "type": "object",
+      "required": [
+        "dialect",
+        "compatibility_level",
+        "preserved_top_level_keys",
+        "preserved_rule_field_count",
+        "semantic_warnings",
+        "verification_targets"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "dialect": {
+          "enum": ["AGT_YAML", "OPA_REGO", "CEDAR", "SPCTRE_MANAGED"]
+        },
+        "compatibility_level": {
+          "enum": ["NATIVE", "LOSSLESS_PRESERVED", "PARTIAL_SEMANTIC_MAP"]
+        },
+        "preserved_top_level_keys": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "preserved_rule_field_count": { "type": "number" },
+        "semantic_warnings": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "verification_targets": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    }
+  }
+}

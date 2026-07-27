@@ -1,0 +1,103 @@
+/*
+ * Spctre docs theme.
+ * Fumadocs exposes CSS variables for color and layout, but the docs grid also
+ * ships an inline template. Keep local overrides scoped to this route's layout
+ * hook so the rest of the app shell is unaffected.
+ */
+
+.spctre-docs-layout {
+  /* Spctre design tokens mapped onto Fumadocs variables. */
+  --color-fd-background: oklch(0.973 0.006 236);
+  --color-fd-foreground: oklch(0.23 0.037 257);
+  --color-fd-muted: oklch(0.94 0.039 184);
+  --color-fd-muted-foreground: oklch(0.515 0.035 256);
+  --color-fd-popover: oklch(0.996 0.004 236);
+  --color-fd-popover-foreground: oklch(0.23 0.037 257);
+  --color-fd-card: oklch(0.996 0.004 236);
+  --color-fd-card-foreground: oklch(0.23 0.037 257);
+  --color-fd-border: oklch(0.88 0.014 250);
+  --color-fd-primary: oklch(0.48 0.095 184);
+  --color-fd-primary-foreground: oklch(0.996 0.004 236);
+  --color-fd-secondary: oklch(0.94 0.039 184);
+  --color-fd-secondary-foreground: oklch(0.23 0.037 257);
+  --color-fd-accent: oklch(0.88 0.014 250);
+  --color-fd-accent-foreground: oklch(0.23 0.037 257);
+  --color-fd-ring: oklch(0.48 0.095 184);
+
+  background: var(--color-fd-background);
+  color: var(--color-fd-foreground);
+}
+
+.dark .spctre-docs-layout {
+  --color-fd-background: oklch(0.18 0.026 257);
+  --color-fd-foreground: oklch(0.93 0.011 250);
+  --color-fd-muted: oklch(0.27 0.026 257);
+  --color-fd-muted-foreground: oklch(0.71 0.021 252);
+  --color-fd-popover: oklch(0.205 0.027 257);
+  --color-fd-popover-foreground: oklch(0.93 0.011 250);
+  --color-fd-card: oklch(0.205 0.027 257);
+  --color-fd-card-foreground: oklch(0.93 0.011 250);
+  --color-fd-border: oklch(0.34 0.024 255);
+  --color-fd-primary: oklch(0.66 0.095 184);
+  --color-fd-primary-foreground: oklch(0.16 0.026 257);
+  --color-fd-secondary: oklch(0.25 0.029 257);
+  --color-fd-secondary-foreground: oklch(0.9 0.012 250);
+  --color-fd-accent: oklch(0.31 0.028 255);
+  --color-fd-accent-foreground: oklch(0.94 0.011 250);
+  --color-fd-ring: oklch(0.66 0.095 184);
+}
+
+.spctre-docs-layout [data-docs-sep] {
+  border-top: 1px solid var(--color-fd-border);
+  margin-bottom: 1.5rem;
+}
+
+.spctre-docs-layout article {
+  color: var(--color-fd-foreground);
+}
+
+.spctre-docs-layout article h2:not(.not-prose) {
+  margin-top: 3rem;
+}
+
+.spctre-docs-layout article h3:not(.not-prose) {
+  margin-top: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.spctre-docs-layout article h4:not(.not-prose) {
+  margin-top: 1.5rem;
+}
+
+.spctre-docs-layout article p,
+.spctre-docs-layout article li {
+  color: color-mix(in oklch, var(--color-fd-foreground) 90%, transparent);
+}
+
+.spctre-docs-layout article code {
+  background: oklch(0.91 0.025 184);
+  border: 1px solid var(--color-fd-border);
+  border-radius: 5px;
+  color: oklch(0.35 0.09 184);
+  font-size: 0.875em;
+  padding: 0.15em 0.35em;
+}
+
+.dark .spctre-docs-layout article code {
+  background: oklch(0.26 0.03 257);
+  border-color: oklch(0.38 0.028 255);
+  color: oklch(0.82 0.09 184);
+}
+
+.spctre-docs-layout article pre code {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  color: inherit;
+  font-size: inherit;
+  padding: 0;
+}
+
+.spctre-docs-layout article table {
+  border-color: var(--color-fd-border);
+}

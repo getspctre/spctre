@@ -1,0 +1,6 @@
+{
+  "title": "Reference",
+  "description": "Environment variables, schema specifications, error codes, and rate limits.",
+  "icon": "BookOpen",
+  "pages": ["env-vars", "plan-tiers", "policy-schema", "pack-schema", "error-codes", "rate-limits"]
+}

@@ -1,0 +1,66 @@
+---
+title: Reading a compliance report
+description: Summary metrics, by-connector breakdown, by-agent breakdown, and understanding the compliance score.
+---
+
+The compliance report is the primary view of your organisation's governance posture over a period. It answers: "What did our AI agents do, and was every action governed?"
+
+## Opening a report
+
+1. In the left nav, click **Compliance → Reports**.
+2. The report loads for the default time period (last 30 days). Change this with the date picker in the top-right.
+
+## Summary metrics
+
+The top row of the report shows four headline numbers:
+
+| Metric | What it means |
+|---|---|
+| **Total decisions** | Every agent decision recorded in the period |
+| **Compliance rate** | Percentage of decisions covered by a policy |
+| **WARN rate** | Percentage of decisions that matched a WARN rule |
+| **Escalation rate** | Percentage of decisions that triggered an escalation |
+
+The compliance rate is the most important figure. A 100% compliance rate means every decision had policy coverage. Anything below 100% means some decisions were made without any policy evaluating them — see [Understanding provenance gaps](/help-docs/ui-guides/compliance-officer/understanding-provenance-gaps).
+
+## By-connector breakdown
+
+Below the summary, a table lists every connector that received agent traffic, with per-connector metrics:
+
+- **Decision count** — how many decisions hit this connector
+- **Compliance rate** — coverage rate for this connector
+- **ALLOW / DENY / WARN / ESCALATE** — decision distribution
+- **Unique agents** — how many distinct agents used this connector
+
+Click a connector row to drill into decisions for that connector only.
+
+## By-agent breakdown
+
+Click the **Agents** tab to switch from a connector view to an agent-centric view. For each agent:
+
+- **Agent ID and name**
+- **Total decisions**
+- **Compliance rate**
+- **Last decision timestamp**
+
+This view is useful for spotting agents with persistently low compliance rates — a signal that their policy bundle may be stale or missing connectors.
+
+## Decision distribution chart
+
+The timeline chart at the bottom shows decision volume and distribution over the selected period. Use it to:
+- Spot anomalies (sudden spikes in DENY or WARN)
+- Identify quiet periods that may indicate agent outages
+- Correlate policy publish dates with decision rate changes
+
+## Compliance timeline
+
+Hover over any point on the timeline to see the compliance rate at that moment and any policy events (branch published, bundle updated) that occurred around that time.
+
+## Control mappings
+
+Click the **Control mappings** tab to see every rule-to-control mapping (e.g. SOC 2, HIPAA, ISO 27001, EU AI Act) declared by your published policy, alongside a live evidence rollup for each mapped control:
+
+- **Decision count** — how many decisions in the period matched a rule mapped to this control, with a breakdown of how many were denied or warned
+- **Latest evidence** — the timestamp of the most recent decision that matched the control
+
+A control with zero decisions has a mapping but no evidence yet proving it operated in the selected period. On the Evidence ledger, a decision's policy-ref chip links back to the control the matched rule satisfies.

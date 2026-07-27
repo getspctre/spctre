@@ -1,0 +1,7 @@
+{
+  "description": "Stripe refund at or above the review threshold escalates",
+  "action": "refund.create",
+  "domains": ["refunds"],
+  "toolParameters": { "amount_cents": 75000 },
+  "expected": { "status": "ESCALATE", "matchedRefs": ["stripe.refund.high_value_review"] }
+}

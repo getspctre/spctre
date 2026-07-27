@@ -1,0 +1,300 @@
+/* Alerting Dashboard CSS - Evidence Ledger Style */
+
+.alertingContainer {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+.pane {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.paneHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 12px;
+}
+
+.paneHeader h2 {
+  font-size: 16px;
+  font-weight: var(--fw-bold);
+  color: var(--ink);
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.addButton {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: var(--fw-medium);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: background 0.1s ease;
+}
+
+.addButton:hover {
+  background: var(--accent);
+  color: var(--panel);
+}
+
+.denseList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.denseItem {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 12px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.itemInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.itemTitle {
+  font-size: 14px;
+  font-weight: var(--fw-semi);
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.itemMeta {
+  font-size: 11px;
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.itemActions {
+  display: flex;
+  gap: 8px;
+}
+
+.deleteButton {
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid transparent;
+  border-radius: 4px;
+  padding: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.1s ease;
+}
+
+.deleteButton:hover {
+  color: var(--block);
+  border-color: var(--block-soft);
+  background: var(--block-soft);
+}
+
+/* Badge/Pill style */
+.badge {
+  font-size: 10px;
+  font-weight: var(--fw-bold);
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.badgeSlack {
+  background: oklch(0.92 0.04 310);
+  color: oklch(0.4 0.12 310);
+  border: 1px solid oklch(0.8 0.1 310);
+}
+
+.badgeTeams {
+  background: oklch(0.92 0.04 250);
+  color: oklch(0.4 0.12 250);
+  border: 1px solid oklch(0.8 0.1 250);
+}
+
+.badgePagerduty {
+  background: var(--allow-soft);
+  color: var(--allow);
+  border: 1px solid var(--allow);
+}
+
+.badgeWebhook {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border: 1px solid var(--accent);
+}
+
+/* Overlay / Form styling */
+.alertingModal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 24px;
+  width: 100%;
+  max-width: 480px;
+  z-index: 1000;
+}
+
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 999;
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 10px;
+}
+
+.modalHeader h3 {
+  font-size: 15px;
+  font-weight: var(--fw-bold);
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.closeButton {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.formGroup label {
+  font-size: 12px;
+  font-weight: var(--fw-semi);
+  color: var(--ink);
+}
+
+.formInput,
+.formSelect {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--ink);
+  outline: none;
+  height: 38px;
+}
+
+.formInput:focus,
+.formSelect:focus {
+  border-color: var(--accent);
+}
+
+.formRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.submitButton {
+  background: var(--accent);
+  color: var(--panel);
+  border: none;
+  border-radius: 6px;
+  padding: 10px;
+  font-size: 13px;
+  font-weight: var(--fw-bold);
+  cursor: pointer;
+  width: 100%;
+  text-transform: uppercase;
+  margin-top: 8px;
+}
+
+.submitButton:hover {
+  background: oklch(0.42 0.08 184);
+}
+
+.emptyState {
+  padding: 32px 0;
+  text-align: center;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.emptyState p {
+  margin: 0;
+}
+
+/* SIEM Event Streaming section */
+.siemSection {
+  margin-top: 24px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.siemSection .paneHeader {
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 12px;
+  margin-bottom: 18px;
+}
+
+.toggleButton {
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid transparent;
+  border-radius: 4px;
+  padding: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.1s ease;
+}
+
+.toggleButton:hover {
+  color: var(--accent);
+  border-color: var(--accent-soft);
+  background: var(--accent-soft);
+}
+
+.badgeSiem {
+  background: oklch(0.92 0.04 200);
+  color: oklch(0.4 0.12 200);
+  border: 1px solid oklch(0.8 0.1 200);
+}

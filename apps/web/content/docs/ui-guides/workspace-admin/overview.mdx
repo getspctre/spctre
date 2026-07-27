@@ -1,0 +1,41 @@
+---
+title: Workspace Admin overview
+description: The Admin role — what only admins can do and where to find admin tools.
+---
+
+Workspace Admins own the Spctre deployment and control who has access, how they authenticate, and how the platform is configured. This is a privileged role — actions you take here affect everyone in the organisation.
+
+## What only admins can do
+
+| Capability | Where |
+|---|---|
+| Create and archive workspaces | **Admin → Workspaces** |
+| Invite users and assign roles | **Admin → Users** |
+| Change user roles | **Admin → Users** → user detail |
+| Configure SSO (OIDC / SAML) | **Admin → Authentication → SSO** |
+| Set up SCIM provisioning | **Admin → Authentication → SCIM** |
+| Enforce MFA org-wide | **Admin → Authentication → MFA** |
+| Create and revoke service tokens | **Admin → Tokens** |
+| Configure alerting integrations | **Admin → Alerting** |
+| Manage workspace settings | **Admin → Workspace settings** |
+| Read the full platform operations log | **Audit Ledger** |
+| Export all operations log data | **Audit Ledger → Export** |
+
+## Admin panel
+
+All admin tools are under **Admin** in the left nav. This section is only visible to users with the Admin role.
+
+## Roles overview
+
+| Role | Can do |
+|---|---|
+| **Admin** | Everything |
+| **Reviewer** | Review and approve policy branches; handle escalations |
+| **Policy Creator** | Author and submit policy branches |
+| **Viewer** | Read-only access to reports, audit trail, and evidence |
+
+Roles are workspace-scoped unless otherwise specified. An Admin in Workspace A has no elevated access in Workspace B unless also assigned Admin there — unless they are an **Organisation Admin**, which grants Admin across all workspaces.
+
+## Audit your own actions
+
+Your actions as an admin appear in the operations log under event types like `user.role_changed`, `workspace.settings_changed`, and `sso.configured`. Treat the operations log as the accountability layer for your own admin actions.

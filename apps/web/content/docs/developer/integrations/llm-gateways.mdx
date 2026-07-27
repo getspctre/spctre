@@ -1,0 +1,189 @@
+---
+title: LLM gateway providers
+description: Route Portkey, Helicone, and LiteLLM webhook events into Spctre evidence without changing agent code.
+---
+
+If your agents already route LLM calls through Portkey, Helicone, or LiteLLM, you can forward those call logs to Spctre as evidence with no changes to agent code. Spctre normalises each provider's payload format into its internal `spctre.gateway.event.v1` evidence schema.
+
+## How it works
+
+```
+Agent → LLM gateway (Portkey / Helicone / LiteLLM)
+                  ↓
+         Outgoing webhook → POST /api/gateway-ingest/<provider>
+                  ↓
+         Spctre normalises payload → stores as evidence
+         (connector + action inferred from tool names)
+```
+
+No Spctre SDK is required in the agent. Governance evidence is captured passively via the gateway's existing webhook infrastructure.
+
+## Endpoints
+
+| Provider | Endpoint |
+|---|---|
+| Portkey | `POST /api/gateway-ingest/portkey` |
+| Helicone | `POST /api/gateway-ingest/helicone` |
+| LiteLLM | `POST /api/gateway-ingest/litellm` |
+
+## Authentication
+
+Each endpoint accepts either a provider webhook secret or a Spctre service token.
+
+### Per-integration webhook secret (recommended)
+
+Each gateway integration has its own webhook secret (`gwh_...`) generated when you register it. The secret encodes tenant and workspace context, so no additional headers are required. Pass it in the provider-specific header:
+
+| Provider | Header |
+|---|---|
+| Portkey | `x-portkey-webhook-secret` |
+| Helicone | `x-helicone-signature` |
+| LiteLLM | `x-litellm-signature` |
+
+### Service token
+
+Use a token with `evidence:write` scope instead:
+
+```
+Authorization: Bearer <SPCTRE_API_TOKEN>
+```
+
+## Portkey
+
+### Webhook configuration
+
+In Portkey's dashboard, go to **Integrations → Webhooks** and add a new webhook pointing to:
+
+```
+https://app.spctre.dev/api/gateway-ingest/portkey
+```
+
+Select the `completion` event type (or `*` to capture all call types).
+
+### Payload fields used
+
+| Portkey field | Maps to |
+|---|---|
+| `id` | `gatewayEventId` (required — event rejected without it) |
+| `model` | `model` |
+| `metadata.agentId` | `agentId` (falls back to `virtual_key`) |
+| `metadata.environment` | environment scope |
+| `request.tools` | connector + action inference |
+| `response.usage.prompt_tokens` | `promptTokens` |
+| `response.usage.completion_tokens` | `completionTokens` |
+| `latency` | `latencyMs` |
+| `cost` | `costUsd` |
+
+### Agent ID tagging
+
+To ensure evidence is attributed to the correct agent, add `agentId` to your Portkey virtual key metadata or include it in the `metadata` block of the request:
+
+```python
+portkey.completions.create(
+    messages=[...],
+    metadata={"agentId": "payments-agent", "environment": "production"},
+)
+```
+
+## Helicone
+
+### Webhook configuration
+
+In Helicone's dashboard, go to **Webhooks** and create a new endpoint:
+
+```
+https://app.spctre.dev/api/gateway-ingest/helicone
+```
+
+### Payload fields used
+
+| Helicone field | Maps to |
+|---|---|
+| `data.id` | `gatewayEventId` (required) |
+| `data.model` | `model` |
+| `data.properties.agentId` | `agentId` (falls back to `Helicone-Session-Id`) |
+| `data.request.tools` | connector + action inference |
+| `data.response.usage.prompt_tokens` | `promptTokens` |
+| `data.response.usage.completion_tokens` | `completionTokens` |
+| `data.latency` | `latencyMs` |
+| `data.cost.total` | `costUsd` |
+
+### Agent ID tagging
+
+Pass `agentId` as a Helicone custom property:
+
+```python
+openai.chat.completions.create(
+    messages=[...],
+    extra_headers={
+        "Helicone-Property-agentId": "payments-agent",
+        "Helicone-Session-Id": "sess_abc123",
+    },
+)
+```
+
+## LiteLLM
+
+### Webhook configuration
+
+In LiteLLM's `config.yaml`, add a success callback pointing to Spctre:
+
+```yaml
+general_settings:
+  callbacks: ["generic"]
+  generic_logger_settings:
+    url: "https://app.spctre.dev/api/gateway-ingest/litellm"
+    headers:
+      x-litellm-signature: "<GWH_SECRET>"
+```
+
+### Payload fields used
+
+| LiteLLM field | Maps to |
+|---|---|
+| `id` or `call_id` | `gatewayEventId` (required) |
+| `model` | `model` |
+| `metadata.user_api_key_alias` | `agentId` (falls back to `user_api_key`) |
+| `messages[].tool_calls` | connector + action inference |
+| `usage.prompt_tokens` | `promptTokens` |
+| `usage.completion_tokens` | `completionTokens` |
+| `startTime` / `endTime` | `latencyMs` |
+| `metadata.spend` | `costUsd` |
+
+### Agent ID tagging
+
+Tag requests using the LiteLLM API key alias or by passing a custom header:
+
+```python
+litellm.completion(
+    model="gpt-4o",
+    messages=[...],
+    metadata={"user_api_key_alias": "payments-agent"},
+)
+```
+
+## Connector and action inference
+
+Spctre infers the target connector from tool names declared in the LLM call. It matches tool name fragments against known connector patterns (e.g. `stripe_charge` → connector `stripe`, action `stripe_charge`).
+
+When no connector can be inferred, the evidence is stored with connector `llm-gateway` and `provenance_gap: true`. This is normal for general LLM calls with no tool use.
+
+## Provenance gap
+
+All LLM gateway events may carry `provenance_gap: true`. This means Spctre could not verify which exact policy bundle governed the call — the gateway did not include AGT-compatible policy context. Evidence is still stored and auditable; it just cannot be cryptographically linked to a specific bundle revision.
+
+Use the `gateway-<provider>-v1` pack to add governance rules that account for this gap.
+
+## Attaching a pack
+
+| Provider | Pack ID |
+|---|---|
+| Portkey | `gateway-portkey-v1` |
+| Helicone | `gateway-helicone-v1` |
+| LiteLLM | `gateway-litellm-v1` |
+
+Install a pack from **Packs** in the control plane, attach it to a policy branch, and publish. The pack rules evaluate against normalised gateway evidence.
+
+## Rate limits
+
+All three endpoints share the same rate limit: **100 requests per minute per tenant**. For high-throughput deployments, batch or debounce events upstream or use LiteLLM's built-in callback buffering.

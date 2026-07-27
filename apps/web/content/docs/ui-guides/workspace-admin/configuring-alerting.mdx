@@ -1,0 +1,110 @@
+---
+title: Configuring escalation routing
+description: Route escalation and policy-review notifications to Slack, PagerDuty, Teams, email, or a webhook, then configure SIEM export separately.
+---
+
+Escalation routing sends policy-review and escalation notifications from a workspace to your team's communication and on-call tools. Users can configure personal queue alerts in their own settings; here you configure shared, workspace-level routes.
+
+## Opening escalation routing
+
+Go to **Admin → Escalation routing**.
+
+## Available channels
+
+| Channel | Best for |
+|---|---|
+| **Slack** | Team channels; shared awareness |
+| **PagerDuty** | On-call rotations; escalation SLA alerting |
+| **Microsoft Teams** | Teams-first organisations |
+| **Generic webhook** | Opsgenie, custom integrations, internal routing |
+| **Email** | Lower-urgency notifications; audit trail summaries |
+
+## Adding a Slack channel
+
+<Steps>
+<Step>
+Click **Add channel → Slack**.
+</Step>
+<Step>
+Click **Connect Slack** and authorise the Spctre app for your Slack workspace.
+</Step>
+<Step>
+Choose the Slack channel (public or private). For escalation alerts, use a dedicated `#ai-governance-escalations` channel.
+</Step>
+<Step>
+Configure **alert rules** (see below) and click **Save**.
+</Step>
+</Steps>
+
+## Adding PagerDuty
+
+<Steps>
+<Step>
+In PagerDuty, create a new Events API v2 integration. Copy the integration key.
+</Step>
+<Step>
+In Spctre, click **Add channel → PagerDuty** and paste the integration key.
+</Step>
+<Step>
+Set severity mapping (e.g. HIGH risk → `critical`, MEDIUM → `error`).
+</Step>
+<Step>
+Enable **SLA warning alerts** with a threshold (e.g. 30 minutes before SLA expiry).
+</Step>
+<Step>
+Click **Save**.
+</Step>
+</Steps>
+
+## Routing rules
+
+Each channel can have multiple alert rules. A rule specifies:
+
+| Field | Description |
+|---|---|
+| **Trigger** | What event fires the alert |
+| **Risk level filter** | Only alert for `HIGH`, `MEDIUM`, or all |
+| **Connector filter** | Only alert for specific connectors |
+| **Workspace** | Which workspace's events to route |
+
+### Available triggers
+
+- `escalation.new` — a new escalation is created
+- `escalation.sla_warning` — SLA threshold reached
+- `escalation.timeout` — escalation auto-resolved due to SLA expiry
+- `branch.submitted` — a policy branch is submitted for review
+- `bundle.published` — a new bundle is published to agents
+- `bundle.sync_failed` — an agent failed to sync a bundle
+- `evidence.high_risk_warn` — a HIGH-risk WARN evidence record created
+
+## SIEM event streaming (Cloud)
+
+Escalation routing forwards targeted reviewer notifications. SIEM export forwards **every evidence event** — ALLOW, DENY, WARN, and ESCALATE — regardless of routing rules. Use it when your security team needs a complete behavioral feed in their SIEM, not just escalation notifications.
+
+SIEM export requires a Cloud plan and is configured separately from escalation routing.
+
+### Adding a SIEM stream
+
+<Steps>
+<Step>
+Go to **Admin → SIEM export** and click **Add stream**.
+</Step>
+<Step>
+Choose **Splunk HEC** or **Microsoft Sentinel** and give the stream a name.
+</Step>
+<Step>
+For **Splunk HEC**: enter the HEC collector endpoint URL and the HEC token.
+</Step>
+<Step>
+For **Microsoft Sentinel**: enter the workspace ID as the endpoint and the primary key (base64).
+</Step>
+<Step>
+Click **Save**. The stream is enabled immediately.
+</Step>
+</Steps>
+
+Forwarding runs as a background job on a 5-minute interval by default (`WORKER_SIEM_FORWARDER_INTERVAL_MINUTES`). Each stream maintains a cursor so no events are missed between runs. Credentials are encrypted at rest and are never returned to the UI.
+
+## Testing
+
+After saving a channel, click **Send test alert** to verify delivery.

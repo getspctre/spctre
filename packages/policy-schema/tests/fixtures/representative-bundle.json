@@ -1,0 +1,46 @@
+{
+  "tenantId": "tenant-fixture",
+  "workspaceId": "workspace-fixture",
+  "branchId": "branch-fixture",
+  "revisionId": "rev-fixture-001",
+  "sourceFormat": "SPCTRE_MANAGED",
+  "sourcePath": "policies/github-access.yaml",
+  "sourceHash": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+  "artifactHash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+  "targetStacks": [{"stack": "LOCAL", "adapter": "spctre-cli", "environment": "production"}],
+  "approvals": [{"reviewer": "security@example.com", "role": "security", "status": "APPROVED"}],
+  "rules": [
+    {
+      "stableRuleId": "github.repo.block_delete",
+      "title": "Block repository deletion",
+      "effect": "DENY",
+      "sourceFormat": "SPCTRE_MANAGED",
+      "domains": ["source-control"],
+      "connectors": ["github"],
+      "actions": ["repo.delete"],
+      "immutable": false
+    },
+    {
+      "stableRuleId": "github.repo.allow_read",
+      "title": "Allow repository reads",
+      "effect": "ALLOW",
+      "sourceFormat": "SPCTRE_MANAGED",
+      "domains": ["source-control"],
+      "connectors": ["github"],
+      "actions": ["repo.read"],
+      "immutable": false
+    },
+    {
+      "stableRuleId": "slack.message.warn_send",
+      "title": "Warn on Slack message sends",
+      "effect": "WARN",
+      "sourceFormat": "SPCTRE_MANAGED",
+      "domains": ["messaging"],
+      "connectors": ["slack"],
+      "actions": ["message.send"],
+      "immutable": false
+    }
+  ],
+  "generatedAt": "2026-07-06T00:00:00.000Z",
+  "metadata": {}
+}

@@ -1,0 +1,60 @@
+---
+title: Reviewing a WARN record
+description: What WARN means, adding a note, and marking as acknowledged.
+---
+
+A `WARN` decision means the agent's action was permitted by policy, but a rule flagged it as worth reviewing. The action already happened — you're doing a post-hoc review, not approving or blocking.
+
+## Opening a WARN record
+
+From **Audit Log**, click any row with a `WARN` decision to open the full record.
+
+## What the record contains
+
+### Decision summary
+
+- **Agent** — name and ID of the agent instance
+- **Connector** — the external service called
+- **Action** — the specific operation (e.g. `charge`, `send_message`, `create_issue`)
+- **Timestamp** — when the decision was made
+- **Decision ID** — immutable identifier, useful for support escalation
+
+### Matched rule
+
+The rule that triggered the `WARN`:
+- Rule title and stable rule ID
+- The conditions that matched
+- The policy branch and revision that contained the rule
+
+### Decision payload
+
+The full JSON evidence payload the agent submitted. Expand individual fields to read values. Use this to assess whether the flagged action was appropriate in context.
+
+### Agent context
+
+If the agent included additional context fields (e.g. `conversation_id`, `user_id`, `session_start`), they appear here.
+
+## Assessing the record
+
+Ask yourself:
+1. Given the payload, was this action appropriate?
+2. Is this a one-off, or do I see this pattern repeatedly?
+3. Should the policy rule be tightened to prevent or escalate this instead of warning?
+
+## Adding a note
+
+Click **Add note** to record your assessment. Notes appear in the audit trail and compliance reports. Good notes explain why you made the call you made — not just "looks fine."
+
+## Acknowledging the record
+
+Click **Acknowledge** to mark the record as reviewed. The status changes from `PENDING` to `ACKNOWLEDGED`. This is the normal close action — it means "I've seen this and it's acceptable."
+
+Acknowledged records are still visible in the queue (filter by status) and are included in compliance exports.
+
+## Escalating manually
+
+If the action looks like a policy failure or a risk you want a second opinion on, click **Escalate**. This creates a formal escalation record in **Review → Escalations** and notifies the escalation reviewers for the workspace.
+
+## Seeing patterns
+
+If you're acknowledging many similar WARN records, that's a signal that the triggering rule may need revision. Click **View rule** from within the record to go directly to the rule in the policy branch — then work with a Policy Creator to tighten or escalate the condition.

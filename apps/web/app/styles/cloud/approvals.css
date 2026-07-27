@@ -1,0 +1,46 @@
+/* Approval grid — slaTrackedHitlQueue (minimum plan: cloud) */
+
+/* Approval grid */
+.approvalGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.approvalCard {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: oklch(0.992 0.005 236);
+  padding: 14px;
+  display: grid;
+  gap: 10px;
+}
+
+.approvalCardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.approvalCardHeader h3 {
+  margin-bottom: 2px;
+}
+
+.approvalRequired {
+  font-size: 11px;
+  font-weight: var(--fw-heavy);
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.approvalActions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.approvalActions form {
+  display: contents;
+}

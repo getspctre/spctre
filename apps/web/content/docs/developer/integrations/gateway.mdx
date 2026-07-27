@@ -1,0 +1,125 @@
+---
+title: Gateway
+description: Deploying the gateway, the decide and escalations endpoints, and webhook configuration.
+---
+
+The Spctre gateway is an inline decision layer for high-stakes agent actions. Instead of the agent evaluating policy locally and submitting evidence after the fact, the gateway intercepts the action, evaluates it centrally, and returns a proceed/escalate/abort decision before the agent continues.
+
+## Modes
+
+| Mode | Behaviour |
+|---|---|
+| `HYBRID` | Gateway enforces when available; falls back to local bundle on outage |
+| `PASSTHROUGH` | Gateway records the decision but always returns PROCEED (audit-only) |
+| `BLOCKING` | Gateway must respond before the agent can proceed; no fallback |
+
+Set via `GATEWAY_MODE` environment variable or the workspace gateway settings.
+
+## POST /api/v1/gateway/decide
+
+Evaluate a pending action and receive a proceed/escalate/abort decision.
+
+### Required fields
+
+| Field | Type | Description |
+|---|---|---|
+| `decisionId` | string | Unique ID for this decision (used for deduplication and escalation polling) |
+| `artifactHash` | string | SHA-256 of the policy bundle the agent has loaded |
+| `policyContext` | object[] | Array of `{ scope, branchId, revisionId, artifactHash }` |
+
+### Optional fields
+
+| Field | Type | Description |
+|---|---|---|
+| `connector` | string | Target connector |
+| `action` | string | Action being performed |
+| `riskLevel` | enum | `LOW`, `MEDIUM`, `HIGH`, `CRITICAL` |
+| `consequence` | string | Business consequence description |
+| `customerTier` | string | Customer tier for risk context |
+| `confidence` | number | Model confidence score |
+| `amountUsd` | number | Transaction amount |
+| `trustScore` | number | Agent trust score |
+| `contextBudget` | integer | Remaining context budget |
+| `toolIntent` | string | Pre-flight tool intent |
+| `planSummary` | string | Pre-flight plan summary |
+
+### Response
+
+```json
+{
+  "gatewayEnabled": true,
+  "mode": "HYBRID",
+  "persisted": true,
+  "queued": false,
+  "decision": {
+    "outcome": "PROCEED",
+    "reason": "Amount within approved tier; low risk",
+    "riskLevel": "LOW",
+    "shouldQueue": false
+  },
+  "meta": {
+    "traceId": "trc_01j9xk…",
+    "version": "1",
+    "ts": "2026-06-08T10:00:00Z"
+  }
+}
+```
+
+`outcome` values:
+- `PROCEED` — agent may continue
+- `ESCALATE` — action queued; poll `/api/gateway/escalations/status?decisionId=<decisionId>` for resolution
+
+When a human resolves an escalation to `PROCEED`, the status response may also
+include `approvedToolParameters`: the immutable, redacted decision arguments
+that were reviewed. It is absent for pending, expired, and non-proceeding
+decisions. Consumers must still require `status: RESOLVED` and
+`resolutionOutcome: PROCEED`; the payload alone grants no authority.
+- `ABORT` — action must be halted
+
+## GET /api/v1/gateway/escalations
+
+Fetch the escalation queue.
+
+```
+GET /api/v1/gateway/escalations?limit=50
+Authorization: Bearer <token>
+```
+
+Returns a paginated list of escalation records with `status`, `slaDueAt`, `connector`, `action`, and `riskLevel`.
+
+## Outage policy
+
+When the gateway is unreachable and `GATEWAY_MODE=HYBRID`, the agent falls back to local bundle evaluation and submits evidence with `ingestMode: "gateway"`. This is the recommended mode for production — it ensures agents continue to operate during control plane maintenance windows.
+
+Configure the fallback behaviour:
+
+```bash
+SPCTRE_GATEWAY_OUTAGE_POLICY=fail-open   # continue without enforcement on outage (default)
+SPCTRE_GATEWAY_OUTAGE_POLICY=fail-closed  # block the action if gateway is unreachable
+```
+
+## Webhook configuration
+
+Configure a webhook to receive gateway events (escalation created, escalation resolved, decision recorded):
+
+1. Go to **Account → Webhooks** in the control plane
+2. Enter your endpoint URL
+3. Select the events you want to receive
+4. Copy the signing secret (`SPCTRE_GATEWAY_WEBHOOK_SECRET`)
+
+Webhook payloads are signed with HMAC-SHA256 using the signing secret. Verify the signature in your endpoint handler.
+
+## sitecustomize.py (Python adapter)
+
+For Python-based agent frameworks, the `spctre watch --framework crewai` command generates `.spctre/sitecustomize.py`. This file:
+
+1. Patches the framework's tool execution hooks at the lowest level
+2. Calls `POST /api/v1/gateway/decide` before every tool call (in enforce mode)
+3. Submits evidence after every tool call
+4. Handles escalation polling automatically when `outcome: ESCALATE`
+
+Run your agent through the Spctre wrapper to activate it:
+
+```bash
+.spctre/spctre-python my_agent.py
+```

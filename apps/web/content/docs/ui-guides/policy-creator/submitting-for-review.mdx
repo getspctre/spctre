@@ -1,0 +1,45 @@
+---
+title: Submitting a branch for review
+description: Moving a DRAFT branch to IN_REVIEW, selecting reviewers, and adding a submission note.
+---
+
+Once you're satisfied with your rules, submit the branch to move it from `DRAFT` to `IN_REVIEW`. Reviewers are notified and can begin evaluating.
+
+## Prerequisites
+
+Before submitting, make sure:
+- Your branch has at least one rule
+- All rules have a `stable_rule_id`, `title`, and `effect`
+- You've tested any conditions using the condition tester
+
+<Callout type="warn">
+You cannot add, edit, or delete rules while a branch is `IN_REVIEW`. If you need to make changes, ask a reviewer to reject the branch first.
+</Callout>
+
+## Steps
+
+<Steps>
+<Step>
+### Open the branch review page
+
+Go to **Policies**, select your branch in the table to open the inspector, and click the secondary **Review & Publish** action.
+</Step>
+
+<Step>
+### Review changes
+
+Select the **Review changes** stage. Review the specific rule additions/removals and the historical impact analysis. Then click **Compose** in the Effective Policy header to stack your branch layers and compile the bundle.
+</Step>
+
+<Step>
+### Request approvals
+
+The approvals panel is also in **Review changes**. It details the required approval seats for your branch's environment scope. Reviewers can log in, inspect your changes, and provide their approval. The separate **Publish** stage shows readiness, verification, export, and the publish action.
+</Step>
+</Steps>
+
+## What happens next
+
+Reviewers can approve or reject the branch. Once the minimum approval threshold is reached and no one has rejected, the branch moves to `APPROVED`. The bundle does not go live until a publisher opens the **Publish** stage, clicks **Publish bundle**, and confirms the release; agents pick up the new bundle on their next sync after that publish.
+
+If the branch is rejected, you'll receive a notification with the reviewer's feedback. See [Editing a branch after feedback](/help-docs/ui-guides/policy-creator/editing-after-feedback) for next steps.

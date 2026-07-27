@@ -1,0 +1,79 @@
+---
+title: Handling an escalation
+description: Reading the escalation context, SLA countdown, and the proceed vs. abort decision.
+---
+
+An escalation is a live agent decision that policy has paused. The agent is waiting for your response. Until you act, the agent is blocked on that operation.
+
+<Callout type="warn">
+Escalations are time-sensitive. Each escalation has an SLA countdown. If the timer reaches zero, the escalation auto-resolves — typically with `DENY` for safety. Prioritise escalations over branch reviews.
+</Callout>
+
+## Opening the escalation queue
+
+In the left nav, click **Review → Escalations**.
+
+Escalations assigned to you are shown first, ordered by SLA deadline ascending (most urgent at the top).
+
+## The escalation record
+
+Click an escalation to open the full detail view.
+
+### Context panel
+
+- **Agent** — which agent is paused and waiting
+- **Connector and action** — what the agent was trying to do
+- **SLA deadline** — a live countdown to the auto-resolve time
+- **Escalation reason** — the matched rule's title and the condition that triggered it
+
+### Decision payload
+
+The full JSON evidence the agent submitted. This is the same payload you'd see in a WARN record, but here the agent is blocked. Read every field — you're making a real-time governance call.
+
+### Agent trace
+
+The agent's conversation or task trace leading up to this decision, if your agent sends it. Use this to understand what the agent was trying to accomplish and whether the escalated action is part of a coherent task.
+
+### Policy context
+
+The rule that triggered the escalation, including its semantic check results (if any) and the policy branch and revision it belongs to.
+
+## Making the decision
+
+You have two choices:
+
+### Proceed
+
+The agent is unblocked and continues with the action. A `PROCEED` decision is recorded in evidence. Use this when the escalated action is appropriate given the context.
+
+### Abort
+
+The agent is told to abort the action. An `ABORT` decision is recorded. The agent receives a deny response and typically falls back or terminates the task.
+
+## Adding a note
+
+Both decisions require a note. Explain why you made the call — this note appears in compliance reports and is visible to the agent operator.
+
+## Steps
+
+<Steps>
+<Step>
+Read the full decision payload and agent trace.
+</Step>
+<Step>
+Check the SLA countdown — if under 2 minutes, decide now.
+</Step>
+<Step>
+Click **Proceed** or **Abort**.
+</Step>
+<Step>
+Write a note explaining your decision.
+</Step>
+<Step>
+Click **Confirm**. The agent is immediately unblocked (or aborted) and the record is closed.
+</Step>
+</Steps>
+
+## After the decision
+
+The escalation moves to `RESOLVED` status. The full record — including your note, the SLA at time of decision, and the payload — is stored in the audit trail and included in compliance reports.

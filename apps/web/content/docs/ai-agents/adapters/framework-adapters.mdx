@@ -1,0 +1,121 @@
+---
+title: Framework adapters
+description: Zero-code governance for Python agent frameworks via sitecustomize.py patching.
+---
+
+Framework adapters instrument Python-based agent frameworks at the lowest level without requiring changes to agent code. The adapter patches framework internals so every tool call is evaluated against policy before execution and evidence is submitted after.
+
+## How it works
+
+```
+spctre watch --framework crewai
+  → Syncs the policy bundle
+  → Generates .spctre/sitecustomize.py
+  → Patches crewai.tools.BaseTool._run at import time
+  → Keeps the bundle updated on each tick
+
+.spctre/spctre-python my_agent.py
+  → Sets PYTHONPATH=.spctre/
+  → sitecustomize.py runs before any agent code
+  → Every tool call: pre-check → execute → ingest evidence
+```
+
+No changes to agent code. The adapter intercepts at the framework level.
+
+## Supported frameworks
+
+| Framework | Stack value | Patched hook |
+|---|---|---|
+| CrewAI | `CREWAI` | `crewai.tools.BaseTool._run` |
+| OpenAI Agents | `OPENAI_AGENTS` | `agents.FunctionTool.on_invoke_tool` |
+| LangChain | `LANGCHAIN` | Tool execution hooks |
+| LangGraph | `LANGGRAPH` | Node execution hooks |
+| AutoGen | `AUTOGEN` | Tool invocation hooks |
+| Google ADK | `GOOGLE_ADK` | ADK tool execution |
+| AWS Bedrock | `AWS_BEDROCK` | Bedrock converse API hooks |
+| Azure AI | `AZURE_AI` | Azure AI Inference SDK hooks |
+| Gemini (Python) | `GOOGLE_ADK` | Gemini SDK tool call hooks |
+| Strands | `CUSTOM` | Agent action hooks |
+| Notion Worker | `CUSTOM` | Notion API call wrapper |
+| Omnigent | `OMNIGENT` | Native Omnigent policy module |
+
+## Installing an adapter
+
+```bash
+spctre watch --framework crewai
+```
+
+Verify the adapter is active:
+
+```bash
+spctre verify-env --framework crewai
+```
+
+## Running with the adapter
+
+```bash
+.spctre/spctre-python my_agent.py
+```
+
+This sets `PYTHONPATH` to include `.spctre/sitecustomize.py` and starts your agent with the adapter in place.
+
+For containerised environments, set `PYTHONPATH` directly:
+
+```bash
+PYTHONPATH=.spctre:$PYTHONPATH python my_agent.py
+```
+
+## OpenCode, Claude Code, and Codex
+
+These harnesses run as local development tools rather than Python agent processes, so they do not use the `sitecustomize.py` adapter. Instead, use harness hooks:
+
+```bash
+spctre install-hook --harness claude    # Claude Code
+spctre install-hook --harness codex     # Codex
+```
+
+`OPENCODE` is a valid `RuntimeStack` value for evidence submitted from OpenCode sessions — pass it in the `stack` field when submitting evidence manually or via `spctre ingest`.
+
+## Omnigent
+
+Omnigent uses its native policy module system instead of `sitecustomize.py`
+patching:
+
+```bash
+spctre watch --framework omnigent
+PYTHONPATH=./.spctre:$PYTHONPATH SPCTRE_API_TOKEN=... omnigent server --config server_config.yaml
+```
+
+Register `spctre_policy.spctre_policy` in `server_config.yaml`. The generated
+policy returns `None` for non-tool or unrecognized Omnigent events, delegates
+governed tool-call decisions to Spctre, maps `ESCALATE` to Omnigent `ASK`, and
+records evidence through `/api/evidence`.
+
+## What the adapter does per tool call
+
+1. **Pre-call** — captures `toolIntent` and `planSummary` from the agent plan
+2. **Gateway check** — calls `POST /api/v1/gateway/decide` (if `--enforce` mode)
+3. **Execute** — calls the original tool only if all pre-checks pass
+4. **Evidence** — submits `POST /api/v1/evidence` with the decision status and policy context
+
+## Observe vs enforce mode
+
+| Mode | Behaviour |
+|---|---|
+| `observe` (default) | Adapter instruments and ingests evidence; does not block execution |
+| `enforce` | Adapter calls the gateway; blocks `ABORT` outcomes; pauses on `ESCALATE` |
+
+```bash
+spctre watch --framework crewai --mode observe   # default
+spctre watch --framework crewai --mode enforce   # requires human approval
+```
+
+Switching to `enforce` mode requires explicit human approval. See [Operating model](/help-docs/ai-agents/getting-started/operating-model).
+
+## Fail-open on adapter load failure
+
+If `sitecustomize.py` cannot load the policy bundle or fails to import, the framework runs without enforcement and a warning is logged. To require the adapter before execution:
+
+```bash
+SPCTRE_BUNDLE_REQUIRED=true .spctre/spctre-python my_agent.py
+```

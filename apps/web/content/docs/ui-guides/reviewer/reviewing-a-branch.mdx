@@ -1,0 +1,57 @@
+---
+title: Reviewing a policy branch
+description: Reading the diff view, checking rule intent, and understanding semantic checks.
+---
+
+When a Policy Creator submits a branch, it enters your review queue. Your job is to verify that the rules are correct, safe, and match the stated intent before approving publication.
+
+## Opening a branch for review
+
+1. Go to **Policies** in the left nav.
+2. Under the **Branches** table, click the branch to open the inspector slideout panel.
+3. Click the secondary **Review & Publish** button.
+
+## What you see
+
+### Header
+
+- **Branch name** — what the creator intended to govern
+- **Publish Button** — Direct header button to release the approved policy bundle to production when approvals are satisfied
+- **Workspace, scope, and active revision**
+- **Required approvals** — how many are needed; how many are complete
+
+### Review changes stage
+
+This stage contains:
+- **Diff view** — compares rules in the branch against the parent baseline (added, modified, removed rules).
+- **Impact Analysis** — maps the rule changes to historical logs to assess risk.
+- **Compose (Build)** — stacks branch layers (organization, workspace, environment, connector) to output a compiled bundle artifact with a unique `artifactHash`.
+- **Approvals Panel** — where reviewers submit their role-based approvals.
+
+### Publish stage
+
+This stage contains:
+- **Publish readiness** — shows blockers and the publish action for eligible publishers.
+- **Compatibility Report** — lists validation checks against active agents.
+- **Verification** — shows AGT verification results when available.
+- **Export** — provides the bundle artifact.
+
+### History stage
+
+This stage contains the revision log for auditing and rollbacks.
+
+## Checking rule intent
+
+For each rule, ask:
+1. Does the effect match the stated business requirement?
+2. Do the conditions scope the rule appropriately, or could it match unintended decisions?
+3. Is the priority correctly set relative to other rules in this workspace?
+4. If `ESCALATE` — is there a reviewer configured and available for this connector?
+
+## Leaving comments
+
+Click **Comment** on any rule to leave structured feedback. Comments are visible to the creator and other reviewers. Use the optional **Suggest action** dropdown to indicate what you want changed.
+
+## Next step
+
+After reviewing, you [approve](/help-docs/ui-guides/reviewer/approving-a-branch) or [reject](/help-docs/ui-guides/reviewer/rejecting-a-branch) the branch.

@@ -1,0 +1,44 @@
+---
+title: Policy simulation
+description: Replaying historical decisions against draft policies to test changes before publishing.
+---
+
+Policy simulation allows you to test policy changes against real, historical decision logs before publishing them to production. This helps verify that a new rule behaves as expected and prevents accidental denials or security gaps.
+
+## Run a simulation
+
+To start a simulation:
+
+1. Go to **Policies** and open the branch inspector slideout panel for your draft branch.
+2. Click **Review & Publish** to go to the review surface.
+3. In the page header actions, click **Simulate changes**.
+4. Spctre automatically loads the **Policy Replay** dashboard with your branch and active revision pre-selected.
+5. Click **Run Simulation**.
+
+## Simulation parameters
+
+* **Lookback window** — The historical window of decision logs to replay (default: 30 days).
+* **Sample size** — The maximum number of historical decision records to evaluate.
+* **Target branch & revision** — The workspace draft policies to be tested.
+
+<Callout type="info">
+  **Bulk production simulation** (replaying against the full retained event log beyond the default 30-day window) requires the **Business** plan or higher. On OSS and Cloud plans, simulation is limited to the default lookback window and sample size.
+</Callout>
+
+## Understanding results
+
+Once complete, the simulation provides a side-by-side impact report:
+
+### Impact metrics
+
+* **Agents affected** — The number of unique runtime agents whose decision outcomes would change under the new policy.
+* **Connectors affected** — The external integrations impacted by the change (e.g. `openai`, `stripe`).
+* **Historical decisions** — The total number of logs replayed during the run.
+* **Historical deny rate** — The difference in deny percentage between the currently active policy and the draft policy.
+
+### Simulation diff
+
+A list of every decision whose outcome differs between the active policy and draft policy. For each discrepancy:
+* **Historical outcome** — The actual result (e.g. `ALLOW`).
+* **Simulated outcome** — The predicted result under the draft policy (e.g. `DENY`).
+* **Triggered rule** — The specific new rule that caused the change.

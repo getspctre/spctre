@@ -1,0 +1,41 @@
+---
+title: Review & Publish
+description: Replaying rules, resolving layer compositions, collecting approvals, and releasing policy bundles.
+---
+
+The **Review & Publish** page is the gateway for promoting policy changes to production. When a policy branch is submitted for review, it is locked for editing, and its lifecycle state changes to `IN_REVIEW`. Reviewers use this page to inspect changes, compose layers, run impact analyses, verify readiness, and publish the bundle.
+
+## Review dashboard structure
+
+The page stays unified as the policy promotion gateway, with three in-page stages:
+
+### 1. Review changes
+
+This stage combines the reviewer workflow with the compiled assembly steps:
+
+* **Rules Diff** — Lists all rules added, modified, or removed between the parent baseline and the current branch revision.
+* **Impact Analysis** — Cross-references changed rules against historical decision logs to predict the transaction-level impact (affected agents, connectors, and predicted deny rate changes).
+* **Compose (Build) Step** — Integrates composition layer stacking. It merges the workspace branch rules with organization baselines and environment overlays, resolving conflicts using order-of-precedence rules (e.g., organization overrides workspace). Click **Compose** to build the final policy bundle and generate the unique `artifactHash`.
+* **Approvals Panel** — Lists required approval seats based on the active workflow configuration. Reviewers can approve, request changes, or withdraw previous approvals.
+
+### 2. Publish
+
+This stage handles release readiness:
+
+* **Publish Readiness** — Shows blocking reasons and the publish action for eligible publishers.
+* **Compatibility Report** — Verifies that the composed bundle is fully compatible with the schemas of active agents.
+* **AGT Verification** — Shows the latest verification result and stale or failing checks.
+* **Export** — Provides the bundle artifact and AGT-compatible policy export.
+
+### 3. History
+
+This stage provides a chronological view of past branch revisions and rollback triggers.
+
+## Publishing the bundle
+
+Once all readiness checks are satisfied (all required approvals are complete, verification checks pass, and no blocking gateway escalations remain), the **Publish bundle** button in the header actions becomes active.
+
+1. Open the **Publish** stage.
+2. Click **Publish bundle**.
+3. Confirm the action in the prompt.
+4. The bundle is immediately registered as active. Connected agents will sync the new policy bundle automatically within their next heartbeat poll (default: 30 seconds).

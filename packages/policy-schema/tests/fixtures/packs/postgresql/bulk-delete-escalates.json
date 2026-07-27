@@ -1,0 +1,7 @@
+{
+  "description": "PostgreSQL bulk delete above the row-count threshold escalates",
+  "action": "data.bulk_delete",
+  "domains": ["data"],
+  "toolParameters": { "affected_row_count": 50000 },
+  "expected": { "status": "ESCALATE", "matchedRefs": ["postgresql.data.bulk_delete_review"] }
+}

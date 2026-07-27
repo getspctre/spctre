@@ -1,0 +1,86 @@
+---
+title: Workspace settings and limits
+description: Retention period, rate limit overrides, gateway mode, and bundle sync interval.
+---
+
+Each workspace has settings that control data retention, API limits, how agents fetch policy bundles, and gateway behaviour.
+
+## Opening workspace settings
+
+1. Switch to the workspace using the workspace selector in the top nav.
+2. Go to **Admin → Workspace settings**.
+
+## General
+
+| Setting | Description |
+|---|---|
+| **Display name** | Human-readable workspace label |
+| **Description** | Internal description for admins |
+| **Slug** | URL-safe workspace identifier — cannot be changed after creation |
+
+## Data retention
+
+| Setting | Default | Description |
+|---|---|---|
+| **Evidence retention** | 12 months | How long decision records are kept |
+| **Operations log retention** | 12 months | How long platform events are kept |
+| **Bundle archive retention** | 24 months | How long old signed bundles are stored |
+
+Increasing retention costs more storage. Decreasing it purges older records on the next scheduled cleanup — this is irreversible.
+
+<Callout type="warn">
+If you're under a regulatory compliance obligation (e.g. SOC 2, ISO 27001), check your retention requirements before lowering these values. Records deleted due to retention purge cannot be recovered.
+</Callout>
+
+## Rate limit overrides
+
+The default rate limit is 100 requests per 60 seconds per IP. For high-throughput workspaces (e.g. a workspace with many agents ingest evidence at high volume), override the defaults:
+
+| Setting | Default | Max |
+|---|---|---|
+| **Max requests per window** | `100` | `10000` |
+| **Window duration (seconds)** | `60` | `3600` |
+
+Overrides apply only to this workspace. The global default is set via environment variable (`SPCTRE_RATE_LIMIT_MAX_REQUESTS`) by the platform team.
+
+## Bundle sync interval
+
+How often agents check for a new bundle:
+
+| Setting | Default | Description |
+|---|---|---|
+| **Sync interval (seconds)** | `30` | Minimum time between bundle fetch attempts |
+
+Shorter intervals mean agents pick up new policies faster after a publish. Longer intervals reduce control plane load for large agent fleets.
+
+## Gateway mode
+
+If your workspace uses the Spctre gateway (a reverse proxy that intercepts and evaluates all outbound agent calls):
+
+| Setting | Options | Description |
+|---|---|---|
+| **Gateway mode** | `off` / `shadow` / `enforce` | `off` = disabled; `shadow` = evaluate but don't block; `enforce` = block DENY decisions at the gateway |
+
+Use `shadow` mode when first deploying the gateway — it gives you visibility without affecting agent behaviour.
+
+## Minimum approvals override
+
+Override the minimum approvals requirement for branches in this workspace:
+
+- **Use pack default** — each pack's `minimumApprovals` metadata applies
+- **Override to N** — all branches require N approvals, regardless of pack setting
+
+The override is useful for high-security workspaces where you want a minimum of 2 approvals on everything.
+
+## Approval workflow options
+
+Approval workflows are configured under **Admin → Workflows**. In addition to review mode and required roles, each workflow has two governance flags:
+
+| Option | Description |
+|---|---|
+| **Require AGT verification before publish** | Blocks publish until a successful AGT verification run is recorded against the revision. Keep off if you do not run AGT verification in your pipeline. |
+| **Allow immediate pack publish** | When enabled, workspace admins can install or upgrade a policy pack and publish it directly without a separate review step. Disabled by default. |
+
+<Callout type="warn">
+**Allow immediate pack publish** bypasses the standard approval workflow for pack installs. Only enable it for workspaces where pack content is pre-vetted — for example, internal sandbox environments. Do not enable on workspaces subject to change-management requirements.
+</Callout>

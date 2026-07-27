@@ -1,0 +1,71 @@
+---
+title: Adding a pack to a workspace
+description: Attaching a pack to a workspace, choosing a version, and reviewing included rules before committing.
+---
+
+Attaching a pack makes its rules available when you create policy branches in a workspace. The rules are not live until a branch using the pack is reviewed and published.
+
+## Steps
+
+<Steps>
+<Step>
+### Open the pack
+
+In **Packs → Pack Library**, find the pack you want to add and click its name to open the detail panel.
+</Step>
+
+<Step>
+### Click "Add to workspace"
+
+In the detail panel header, click **Add to workspace**. A modal opens.
+</Step>
+
+<Step>
+### Choose your workspace
+
+If you belong to multiple workspaces, select the target workspace from the dropdown. The pack will be scoped to that workspace only.
+</Step>
+
+<Step>
+### Choose a version
+
+Select the pack version from the **Version** dropdown. The default is the latest stable release.
+
+<Callout type="warn">
+Pinning to an older version means you won't automatically receive new rules added in newer MINOR versions. If the pack has a recent MAJOR version bump, review the changelog before upgrading — MAJOR versions may remove or change existing rules.
+</Callout>
+</Step>
+
+<Step>
+### Review included rules
+
+Expand the **Included rules** section to see every rule that will be pulled in. For each rule, check:
+- **Effect** — what the rule does when triggered
+- **Actions** — which agent actions it applies to
+- **Conditions** — any field conditions that scope the rule
+
+If a rule has an `ESCALATE` effect, make sure your workspace has at least one configured reviewer for that connector.
+</Step>
+
+<Step>
+### Confirm
+
+Click **Add pack**. The pack now appears in your workspace's **Attached packs** list under **Packs → Workspace packs**.
+</Step>
+</Steps>
+
+## What happens next
+
+When you add a pack to a workspace:
+* **Install with Review (default)** — Creates a draft policy branch. The branch goes through the standard compose, approval, and publish steps before rules go live.
+* **Confirm & Publish** — Available only when the workspace's approval workflow has **Allow immediate pack publish** enabled (configured under **Admin → Workflows**). Clicking this bypasses the review step and publishes the pack's rules immediately. A workspace admin must explicitly enable this option.
+
+<Callout type="warn">
+Immediate publish skips the normal approval workflow. Only enable it for workspaces where pack installs are pre-vetted and a review step would add no value — for example, a non-production sandbox.
+</Callout>
+
+Once published, agents will automatically pick up the new policy rules on their next heartbeat interval (default: 30 seconds).
+
+## Removing a pack from a workspace
+
+Go to **Packs → Workspace packs**, find the pack, and click **Remove**. This only removes the attachment — it does not affect any published bundles already in use. To stop agents from using the pack's rules, create and publish a new branch that excludes it.

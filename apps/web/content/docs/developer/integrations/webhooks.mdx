@@ -1,0 +1,89 @@
+---
+title: Webhooks
+description: Registering webhooks, payload signing, and retry policy.
+---
+
+Spctre can push events to your endpoints via webhook. Configure webhooks in **Account → Webhooks**.
+
+## Registering a webhook
+
+1. Go to **Account → Webhooks → Add endpoint**
+2. Enter your HTTPS endpoint URL
+3. Select the event types you want to receive
+4. Save — Spctre generates a signing secret
+
+## Event types
+
+| Event | Triggered when |
+|---|---|
+| `evidence.created` | A new evidence record is stored |
+| `escalation.created` | A gateway decision is queued for approval |
+| `escalation.resolved` | A reviewer resolves an escalation |
+| `escalation.expired` | An escalation passes its SLA without resolution |
+| `policy.published` | A policy branch is published |
+| `bundle.updated` | A new policy bundle is available for sync |
+
+## Payload structure
+
+```json
+{
+  "id": "evt_01j9xk…",
+  "type": "escalation.created",
+  "createdAt": "2026-06-08T10:00:00Z",
+  "data": {
+    "escalationId": "esc_01j9xk…",
+    "decisionId": "dec_01j9xk…",
+    "connector": "stripe",
+    "action": "charge",
+    "riskLevel": "HIGH",
+    "slaDueAt": "2026-06-08T14:00:00Z"
+  }
+}
+```
+
+## Verifying signatures
+
+Every webhook request includes a `X-Spctre-Signature` header. Verify it using the signing secret:
+
+```python
+import hmac
+import hashlib
+
+def verify_signature(payload: bytes, signature: str, secret: str) -> bool:
+    expected = hmac.new(
+        secret.encode(),
+        payload,
+        hashlib.sha256,
+    ).hexdigest()
+    return hmac.compare_digest(f"sha256={expected}", signature)
+```
+
+```typescript
+import { createHmac, timingSafeEqual } from "crypto";
+
+function verifySignature(payload: Buffer, signature: string, secret: string): boolean {
+  const expected = createHmac("sha256", secret).update(payload).digest("hex");
+  const expectedBuf = Buffer.from(`sha256=${expected}`);
+  const actualBuf = Buffer.from(signature);
+  if (expectedBuf.length !== actualBuf.length) return false;
+  return timingSafeEqual(expectedBuf, actualBuf);
+}
+```
+
+## Retry policy
+
+Spctre retries failed webhook deliveries with exponential backoff:
+
+| Attempt | Delay |
+|---|---|
+| 1 | Immediate |
+| 2 | 30 seconds |
+| 3 | 5 minutes |
+| 4 | 30 minutes |
+| 5 | 2 hours |
+
+A delivery is considered failed if your endpoint returns a non-2xx status or times out (30-second timeout). After 5 failed attempts, the delivery is marked as permanently failed.
+
+## Responding to webhooks
+
+Return `200 OK` as quickly as possible — do any heavy processing asynchronously. If your handler takes longer than 30 seconds, Spctre will retry.

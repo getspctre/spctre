@@ -1,0 +1,32 @@
+{
+  "name": "@spctre/cli",
+  "version": "0.1.0",
+  "description": "Control plane CLI for governed agent systems",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "main": "dist/index.js",
+  "bin": {
+    "spctre": "dist/index.js"
+  },
+  "scripts": {
+    "clean": "rm -rf dist",
+    "build": "pnpm run clean && tsc && chmod +x dist/index.js && cp -r skill dist/skill && cp -r src/frameworks/templates dist/frameworks/templates",
+    "dev": "tsc -w",
+    "test": "vitest run"
+  },
+  "files": [
+    "dist",
+    "skill"
+  ],
+  "dependencies": {
+    "@spctre/policy-schema": "workspace:*",
+    "commander": "^15.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.0.0",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.8"
+  }
+}

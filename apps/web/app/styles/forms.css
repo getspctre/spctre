@@ -1,0 +1,881 @@
+.settingsTileGrid {
+  display: grid;
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+  max-width: 896px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.settingsTileGridAuto {
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+}
+
+.settingsTileGrid > * {
+  border: 0;
+  border-radius: 0;
+  background: var(--panel);
+}
+
+.adminAuthLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 420px);
+  gap: var(--space-section-rhythm);
+  align-items: start;
+  max-width: 1180px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.adminMembersLayout {
+  grid-template-columns: minmax(680px, 1fr) minmax(300px, 360px);
+}
+
+.adminAuthStack,
+.adminAuthSidebar {
+  display: grid;
+  gap: var(--space-section-rhythm);
+  min-width: 0;
+}
+
+.accountSettingsStack {
+  padding-bottom: 96px;
+}
+
+.accountAction {
+  justify-self: start;
+}
+
+.adminWorkspacePanelCompact {
+  gap: 10px;
+}
+
+.adminWorkspaceForm {
+  display: grid;
+  gap: 10px;
+}
+
+.adminWorkspaceForm .button {
+  justify-self: start;
+}
+
+.adminInlineSelectActionForm {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+}
+
+.adminAuthSectionHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--ink);
+  padding: 4px 2px 0;
+}
+
+.adminAuthSectionHeader svg,
+.adminAuthPanelHeader svg {
+  color: var(--muted);
+  flex: 0 0 auto;
+}
+
+.adminAuthForm,
+.adminAuthPanel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.adminAuthForm {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+}
+
+.adminAuthFormIntro {
+  display: grid;
+  gap: 4px;
+  max-width: 68ch;
+}
+
+.adminAuthForm .buttonPrimary {
+  justify-self: start;
+}
+
+.adminAuthHelpText {
+  margin-top: 4px;
+}
+
+.field {
+  display: grid;
+  gap: 6px;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: var(--fw-semi);
+}
+
+.field > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.adminAuthTwoColumn {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.adminAuthCheck {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: oklch(0.982 0.006 236);
+  cursor: pointer;
+}
+
+.adminAuthCheck input {
+  margin-top: 2px;
+}
+
+.adminAuthCheck > span {
+  display: grid;
+  gap: 2px;
+}
+
+.adminAuthFieldset {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+  display: grid;
+  gap: 10px;
+}
+
+.adminAuthFieldset legend {
+  padding: 0 6px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: var(--fw-semi);
+}
+
+.adminAuthChipGrid {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.adminAuthOption {
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: oklch(0.982 0.006 236);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: var(--fw-bold);
+  cursor: pointer;
+}
+
+.adminAuthOption:has(input:checked) {
+  background: var(--accent-soft);
+  border-color: oklch(0.78 0.06 184);
+  color: oklch(0.36 0.095 184);
+}
+
+.adminAuthPanel {
+  overflow: hidden;
+}
+
+.adminMembersSummary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--line);
+}
+
+.adminMembersSummary > div {
+  min-width: 0;
+  padding: 13px 14px;
+  background: var(--panel);
+  display: grid;
+  gap: 3px;
+}
+
+.adminMembersSummary strong {
+  color: var(--ink);
+  font-size: 24px;
+  font-weight: var(--fw-bold);
+  line-height: 1.1;
+}
+
+.adminMembersPanel,
+.adminMembersRoleMatrix {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.adminMembersTableWrapper {
+  width: 100%;
+}
+
+.adminMembersTable {
+  table-layout: fixed;
+}
+
+.adminMembersTable .auditRow {
+  cursor: default;
+}
+
+.adminMembersTable th,
+.adminMembersTable td {
+  overflow-wrap: anywhere;
+}
+
+.adminMembersTable .buttonSmall {
+  white-space: nowrap;
+}
+
+.adminMembersTable th:nth-child(1) {
+  width: 26%;
+}
+
+.adminMembersTable th:nth-child(2),
+.adminMembersTable th:nth-child(3),
+.adminMembersTable th:nth-child(4) {
+  width: 20%;
+}
+
+.adminMembersTable th:nth-child(5) {
+  width: 14%;
+}
+
+.adminMembersIdentity {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+
+.adminMembersIdentity code {
+  width: max-content;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.adminMembersInlinePills,
+.adminMembersState,
+.adminMembersOverrideList,
+.adminMembersActions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.adminMembersOverrideList {
+  max-width: 100%;
+}
+
+.adminMembersActions {
+  min-width: 124px;
+}
+
+.adminMembersActions form {
+  display: inline-flex;
+}
+
+.adminMembersRoleMatrix summary {
+  min-height: 58px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.adminMembersRoleMatrix summary::-webkit-details-marker {
+  display: none;
+}
+
+.adminMembersRoleMatrix summary > span {
+  display: grid;
+  gap: 3px;
+}
+
+.adminMembersRoleMatrix[open] summary {
+  border-bottom: 1px solid var(--line);
+}
+
+.adminMembersRoleMatrix .matrixDisclosure {
+  color: var(--muted);
+  flex: 0 0 auto;
+  transition: transform 0.15s ease;
+}
+
+.adminMembersRoleMatrix[open] summary .matrixDisclosure {
+  transform: rotate(180deg);
+}
+
+.adminMembersInspectorSection {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 14px;
+  display: grid;
+  gap: 14px;
+  align-content: start;
+}
+
+.adminMembersInspectorGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.adminMembersInspectorGrid > div {
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+  align-content: start;
+}
+
+.adminMembersInspectorGrid strong {
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: var(--fw-heavy);
+}
+
+.adminMembersInspectorHeader,
+.adminMembersInspectorItem {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.adminMembersInspectorForm {
+  display: grid;
+  gap: 12px;
+}
+
+.adminMutationForm {
+  display: grid;
+  gap: 6px;
+  justify-items: start;
+}
+
+.adminMutationSuccess {
+  color: var(--allow);
+}
+
+.adminMembersInspectorForm .buttonPrimary {
+  justify-self: start;
+}
+
+.adminMembersInspectorList,
+.adminMembersInspectorActions {
+  display: grid;
+  gap: 8px;
+}
+
+.adminMembersInspectorItem {
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+}
+
+.adminMembersInspectorActions {
+  justify-items: start;
+}
+
+.adminMembersCustomRoles {
+  border-style: dashed;
+}
+
+.adminMembersGrantGrid {
+  padding: 0 16px 14px;
+  display: grid;
+  gap: 8px;
+}
+
+.adminMembersGrantGrid > div {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 11px;
+  background: oklch(0.982 0.006 236);
+  display: grid;
+  gap: 4px;
+}
+
+.adminMembersGrantGrid strong {
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: var(--fw-semi-plus);
+  line-height: 1.35;
+}
+
+.adminAuthPanelHeader {
+  min-height: 58px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.adminAuthPanel > .meta {
+  padding: 14px 16px 16px;
+}
+
+.adminAuthPanelActions {
+  padding: 0 16px 16px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.adminAuthList {
+  display: grid;
+}
+
+.adminAuthRecord,
+.adminAuthUser,
+.adminAuthEmpty {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.adminAuthRecord:last-child,
+.adminAuthUser:last-child,
+.adminAuthEmpty:last-child {
+  border-bottom: 0;
+}
+
+.adminAuthRecord {
+  display: grid;
+  gap: 12px;
+}
+
+.adminAuthDetails {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.adminAuthDetails div {
+  display: grid;
+  gap: 3px;
+}
+
+.adminAuthDetails dt {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: var(--fw-heavy);
+  text-transform: uppercase;
+}
+
+.adminAuthDetails dd {
+  margin: 0;
+  color: var(--ink);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.adminAuthUser {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.adminAuthUserMeta {
+  display: grid;
+  gap: 6px;
+  justify-items: end;
+  text-align: right;
+  flex: 0 0 auto;
+}
+
+.adminAuthEmpty {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  background: oklch(0.982 0.006 236);
+}
+
+.adminAuthEmpty svg {
+  color: var(--muted);
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
+
+.workflowRulesTableFrame {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  overflow: hidden;
+}
+
+.workflowRulesToolbar {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+  background: oklch(0.985 0.006 236);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.adminMembersInspectorSection .adminAuthForm {
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+}
+
+.workflowRulesTable .auditRow td {
+  background: var(--panel);
+}
+
+.workflowRulesTable .auditRow:hover td {
+  background: oklch(0.985 0.006 236);
+}
+
+.workflowRowStatus {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.workflowActionToast {
+  justify-self: end;
+  max-width: min(440px, 100%);
+  border: 1px solid oklch(0.84 0.09 152);
+  border-radius: 999px;
+  background: oklch(0.97 0.04 152);
+  color: oklch(0.38 0.09 152);
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: var(--fw-semi);
+}
+
+.input {
+  width: 100%;
+  height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--panel);
+  color: var(--ink);
+  padding: 0 10px;
+  font-size: 13px;
+}
+
+.input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+select.input {
+  cursor: pointer;
+}
+
+.codearea {
+  height: auto;
+  padding: 10px;
+  resize: vertical;
+  font-family: ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.importFormGrid {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.importFormFields {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+}
+
+.policySourceChoice {
+  display: grid;
+  gap: 6px;
+}
+
+.policySourceOption {
+  min-height: 58px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--panel);
+  color: var(--ink);
+  padding: 9px 10px;
+  display: grid;
+  gap: 2px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.policySourceOption:hover {
+  border-color: oklch(0.78 0.024 250);
+  background: oklch(0.95 0.01 250);
+}
+
+.policySourceOptionSelected {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.policySourceOption span {
+  font-size: 13px;
+  font-weight: var(--fw-semi-plus);
+}
+
+.policySourceOption small {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.advancedOptionsToggle {
+  width: fit-content;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  padding: 6px 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+}
+
+.advancedOptionsToggle:hover {
+  color: var(--ink);
+}
+
+.advancedOptionsToggle:focus-visible,
+.policySourceOption:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.advancedOptionsChevronOpen {
+  transform: rotate(180deg);
+}
+
+.importFormSource {
+  display: grid;
+  gap: 6px;
+}
+
+.policyDraftSummary {
+  align-content: start;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--panel);
+  padding: 16px;
+}
+
+.policyDraftSummary h3 {
+  margin: 2px 0 0;
+  font-size: 16px;
+}
+
+.policyDraftSummary p {
+  max-width: 48ch;
+  margin: 2px 0 0;
+}
+
+.importFormFooter {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.importError {
+  border: 1px solid var(--block-soft);
+  border-radius: 8px;
+  background: var(--block-soft);
+  padding: 12px 14px;
+  color: var(--block);
+  font-size: 13px;
+}
+
+.searchFilters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.panel#search {
+  display: none;
+}
+
+.searchForm {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+  background: oklch(0.992 0.005 236);
+  display: grid;
+  grid-template-columns: minmax(180px, 1.2fr) repeat(3, minmax(128px, 0.8fr));
+  gap: 10px;
+  align-items: end;
+}
+
+.searchForm label {
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.searchForm label span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: var(--fw-bold);
+}
+
+.searchForm input,
+.searchForm select {
+  width: 100%;
+  height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--panel);
+  color: var(--ink);
+  padding: 0 10px;
+}
+
+.searchActions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.paginationFooter {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  margin-top: 4px;
+}
+
+.checkboxGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  padding: 6px 0;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.searchSummary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.searchSummary div,
+.searchResult {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: oklch(0.992 0.005 236);
+}
+
+.searchSummary div {
+  padding: 12px;
+}
+
+.searchSummary strong {
+  display: block;
+  margin-top: 5px;
+  font-size: 22px;
+  font-weight: var(--fw-bold);
+}
+
+.searchResults {
+  display: grid;
+  gap: 10px;
+}
+
+.searchResult {
+  padding: 13px;
+  display: grid;
+  gap: 10px;
+}
+
+.serviceKeyTokenReveal {
+  padding: 14px 16px;
+  display: grid;
+  gap: 10px;
+}
+
+.serviceKeyTokenRevealWarn {
+  color: var(--warn);
+  font-size: 13px;
+}
+
+.serviceKeyTokenDisplay {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.serviceKeyTokenCode {
+  flex: 1;
+  min-width: 0;
+  word-break: break-all;
+  font-family: var(--font-mono, monospace);
+  font-size: 12px;
+  background: oklch(0.982 0.006 236);
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+}
+
+.serviceKeyScopeList {
+  padding: 0 16px 16px;
+  display: grid;
+  gap: 6px;
+}
+
+.serviceKeyCodeSample {
+  font-family: var(--font-mono, monospace);
+  font-size: 12px;
+  line-height: 1.6;
+  background: oklch(0.982 0.006 236);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 12px 14px;
+  overflow-x: auto;
+  white-space: pre;
+  margin: 0 16px 16px;
+}

@@ -1,0 +1,64 @@
+---
+title: Approving a branch
+description: The approval action, minimum approvals threshold, and what happens before publish.
+---
+
+When you're satisfied that a branch is correct and safe, you approve it. Once all required approvals are collected, the branch moves to `APPROVED`; it is not live until a publisher manually publishes it from the **Publish** stage.
+
+## Steps
+
+<Steps>
+<Step>
+### Review the branch
+
+Make sure you've read every rule and the submission note. See [Reviewing a policy branch](/help-docs/ui-guides/reviewer/reviewing-a-branch).
+</Step>
+
+<Step>
+### Click "Approve"
+
+Click the **Approve** button in the branch header. A confirmation dialog opens.
+</Step>
+
+<Step>
+### Add an approval note (optional)
+
+You can add a note that explains what you verified. This is recorded in the audit trail and useful for compliance packages.
+</Step>
+
+<Step>
+### Confirm
+
+Click **Confirm approval**. Your approval is recorded.
+</Step>
+</Steps>
+
+## What happens next
+
+### If more approvals are needed
+
+The branch remains `IN_REVIEW`. The creator and any remaining reviewers see your approval in the header. Other reviewers continue their independent evaluation.
+
+### When the threshold is met
+
+Once the minimum approvals requirement is satisfied and no reviewer has rejected:
+1. Branch status changes to `APPROVED`
+2. The **Publish** stage shows the bundle readiness checks and enables the publish action for users with publish authority
+3. A publisher clicks **Publish bundle** and confirms the release
+4. Spctre registers the bundle as active, and agents polling the control plane receive it on their next sync interval (default: 30 seconds)
+5. The branch status changes to `PUBLISHED`
+
+You'll receive a notification when the bundle is published.
+
+## Approving your own branch
+
+If you also authored the branch, you cannot approve it yourself — self-approval is blocked. You must have at least one other reviewer approve it.
+
+## Revoking an approval
+
+If you approved but then notice an issue before the threshold is met:
+
+1. Open the branch.
+2. Click **Revoke approval** in the reviewers panel.
+
+Once a branch reaches the approval threshold, it waits in `APPROVED` until a publisher releases it. If you spot an issue before publish, ask a publisher to hold the release or request changes through the review workflow. If you spot an issue in a published branch, create a new corrective branch.

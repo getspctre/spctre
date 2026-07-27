@@ -1,0 +1,7 @@
+{
+  "description": "Deleting a workload in a production namespace is blocked",
+  "action": "workload.delete",
+  "domains": ["namespaces", "workloads"],
+  "toolParameters": { "namespace": "production" },
+  "expected": { "status": "DENY", "matchedRefs": ["kubernetes.namespace.production_delete.block"] }
+}

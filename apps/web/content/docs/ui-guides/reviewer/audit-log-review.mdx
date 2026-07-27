@@ -1,0 +1,53 @@
+---
+title: Reviewing the Audit Log
+description: Filtering the Audit Log by connector, agent, risk level, and status; bulk actions.
+---
+
+The Audit Log contains `WARN` decisions — actions that agents were allowed to take but that your policies flagged as worth human attention. These are not blocking: the action already happened. Your job is to acknowledge, note, and optionally escalate patterns you see.
+
+## Opening the queue
+
+In the left nav under **Audit**, click **Audit Log**.
+
+## What you see
+
+Each row in the Audit Log represents a single decision record with:
+- **Decision ID** — unique identifier for this record
+- **Agent** — the agent instance that made the decision
+- **Connector** — which connector was called (e.g. `stripe`, `slack`)
+- **Action** — what the agent did (e.g. `charge`, `send_message`)
+- **Decision** — `WARN` (always in this queue)
+- **Risk level** — `LOW`, `MEDIUM`, or `HIGH` (derived from the matched rule's pack)
+- **Timestamp** — when the decision was made
+- **Status** — `PENDING`, `ACKNOWLEDGED`, or `ESCALATED`
+
+## Filtering
+
+Use the filter bar to narrow the queue:
+
+| Filter | Options |
+|---|---|
+| **Connector** | `stripe`, `slack`, `github`, `openai`, etc. |
+| **Agent** | Filter to a specific agent ID or name |
+| **Risk level** | `LOW`, `MEDIUM`, `HIGH` |
+| **Status** | `PENDING`, `ACKNOWLEDGED`, `ESCALATED` |
+| **Date range** | Last 24h, 7d, 30d, or custom range |
+
+## Bulk actions
+
+Check the checkbox on multiple rows to enable bulk actions:
+- **Bulk acknowledge** — mark all selected items as acknowledged
+- **Bulk add note** — add the same note to all selected items
+- **Export selected** — download as CSV or JSON
+
+## Opening a record
+
+Click any row to open the full record detail. You'll see:
+- The full decision payload the agent submitted
+- Which rule matched and triggered the `WARN`
+- The agent's trace ID for cross-referencing with your agent's own logs
+- The policy revision that was in effect at the time
+
+## Next step
+
+From within a record, you can [acknowledge a WARN](/help-docs/ui-guides/reviewer/reviewing-warn-records) or manually escalate it to the escalation queue.

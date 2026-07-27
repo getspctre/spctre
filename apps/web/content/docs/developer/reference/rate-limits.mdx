@@ -1,0 +1,67 @@
+---
+title: Rate limits
+description: Default limits, Retry-After behaviour, and Upstash Redis configuration.
+---
+
+Spctre applies rate limiting to all API and auth endpoints to protect against abuse.
+
+## Default limits
+
+| Setting | Default |
+|---|---|
+| `SPCTRE_RATE_LIMIT_MAX_REQUESTS` | `100` requests |
+| `SPCTRE_RATE_LIMIT_WINDOW_SECONDS` | `60` seconds |
+
+This means up to 100 requests per minute per source IP address.
+
+## Paths subject to rate limiting
+
+Rate limits apply to all `/api/*` and `/api/auth/*` paths. Static assets, `/_next/*`, and service health endpoints (`/api/health`, `/api/ready`) are exempt.
+
+## Retry-After header
+
+When a request is rate-limited, the response includes:
+
+```
+HTTP/1.1 429 Too Many Requests
+Retry-After: 42
+Content-Type: application/json
+
+{ "error": "Too many requests." }
+```
+
+`Retry-After` is the number of seconds until the rate limit window resets. Respect this value in your client — retrying immediately will extend the backoff.
+
+## Configuring limits
+
+Adjust limits via environment variables:
+
+```bash
+SPCTRE_RATE_LIMIT_MAX_REQUESTS=500
+SPCTRE_RATE_LIMIT_WINDOW_SECONDS=60
+```
+
+## Upstash Redis (distributed rate limiting)
+
+The default in-memory rate limiter is per-process — in multi-instance deployments, each instance has its own counter. For accurate distributed rate limiting, configure Upstash Redis:
+
+```bash
+UPSTASH_REDIS_REST_URL=https://your-redis.upstash.io
+UPSTASH_REDIS_REST_TOKEN=your-token
+```
+
+When both variables are set, Spctre uses a sliding window algorithm backed by Redis, counting requests across all instances.
+
+## Rate limiting by path
+
+Service API paths that authenticate via bearer token (evidence ingest, gateway decide, etc.) share the same per-IP limit. If your agent submits evidence at high volume, consider:
+
+1. Batching multiple decisions into fewer requests
+2. Increasing `SPCTRE_RATE_LIMIT_MAX_REQUESTS`
+3. Using a dedicated egress IP for your agent so limits don't affect other users
+
+## Client best practices
+
+- Implement exponential backoff when you receive a `429`
+- Cache the `Retry-After` value and wait before the next request
+- Use `decisionId` deduplication — submitting the same evidence record twice costs an extra request but does not create a duplicate record

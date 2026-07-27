@@ -1,0 +1,104 @@
+---
+title: Policy schema
+description: JSON schema reference for policy YAML with annotated examples.
+---
+
+## Top-level fields
+
+```yaml
+tenant_id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"  # Required
+workspace_id: "w1b2c3d4-e5f6-7890-abcd-ef1234567890"  # Required
+branch_id: "payments-policy"  # Required
+revision_id: "rev-2026-06-08-001"  # Required
+source_format: AGT_YAML  # Required: AGT_YAML | OPA_REGO | CEDAR
+source_hash: "sha256-abc123…"  # Required: SHA-256 of this document
+
+# Optional
+scope: CONNECTOR  # ORGANIZATION | WORKSPACE | ENVIRONMENT | CONNECTOR
+environment: production
+target_stacks: [CREWAI, LANGCHAIN]
+generated_at: "2026-06-08T00:00:00Z"
+source_path: "./policies/payments.yaml"
+artifact_hash: "sha256-bundle-hash"
+metadata:
+  owner: payments-team
+  review_required: true
+
+rules:
+  - …  # See rule schema below
+```
+
+## Rule schema
+
+```yaml
+rules:
+  - stable_rule_id: "payments.allow_low_risk_charge"  # Required: immutable
+    title: "Allow low-risk charge"  # Required
+    effect: ALLOW  # Required: ALLOW | DENY | WARN | ESCALATE
+    source_format: AGT_YAML  # Required
+
+    # Targeting (all optional, omit to match everything)
+    domains: [payments]
+    actions: [charge, authorize]
+    connectors: [stripe]
+    priority: 100  # Higher wins on conflict
+
+    # Conditions
+    conditions:
+      - field: amount_usd
+        operator: lt
+        value: 500
+      - field: customer_tier
+        operator: in
+        value: [enterprise, premium]
+
+    # Governance
+    immutable: false  # Prevent editing post-publish
+    semanticChecks:
+      - "Verify this rule does not allow charges above the tier limit"
+
+    # Preserved source fields
+    originalRule:
+      id: "allow-low-risk-charge"
+      version: "1.0"
+```
+
+## Supported condition operators
+
+| Operator | Description | Example |
+|---|---|---|
+| `eq` | Equal | `amount_usd eq 100` |
+| `ne` | Not equal | `status ne DENY` |
+| `lt` | Less than | `amount_usd lt 500` |
+| `lte` | Less than or equal | `amount_usd lte 500` |
+| `gt` | Greater than | `confidence gt 0.9` |
+| `gte` | Greater than or equal | `amount_usd gte 0` |
+| `in` | Value in list | `customer_tier in [enterprise, premium]` |
+| `not_in` | Value not in list | `connector not_in [blocked-svc]` |
+| `contains` | String contains | `plan_summary contains "transfer"` |
+| `exists` | Field is present | `amount_usd exists` |
+
+## Scope inheritance
+
+Scopes are evaluated from most specific to least specific:
+
+```
+CONNECTOR (most specific, highest precedence)
+  → ENVIRONMENT
+  → WORKSPACE
+  → ORGANIZATION (least specific, lowest precedence)
+```
+
+A `DENY` at `CONNECTOR` scope overrides an `ALLOW` at `ORGANIZATION` scope for the same connector and action.
+
+## Pack reference
+
+Instead of inline rules, a policy branch can reference a pack:
+
+```yaml
+pack_id: "economic-governance-v1"
+pack_version: "1.0.0"
+pack_owner: "spctre"
+```
+
+The pack's rules are resolved at bundle generation time and inlined into the bundle.

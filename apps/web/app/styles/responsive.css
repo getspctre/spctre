@@ -1,0 +1,430 @@
+@media (max-width: 900px) {
+  .shell {
+    grid-template-columns: 1fr;
+  }
+
+  .mainFrame {
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .topNav {
+    position: static;
+    padding: 10px 16px;
+  }
+
+  .topNavContext {
+    min-width: 0;
+  }
+
+  .topNavContext strong {
+    overflow-wrap: anywhere;
+  }
+
+  .sidebar {
+    position: static;
+    height: auto;
+    flex-direction: row;
+    padding: 10px 14px;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .brand {
+    border-bottom: 0;
+    padding: 0 6px;
+    flex-shrink: 0;
+  }
+
+  .brandName {
+    display: none;
+  }
+
+  .nav {
+    flex-direction: row;
+    display: flex;
+    gap: 8px;
+    padding: 0;
+    overflow-x: auto;
+  }
+
+  .navGroup {
+    display: flex;
+    gap: 2px;
+    margin-top: 0;
+  }
+
+  .navGroup + .navGroup {
+    margin-left: 4px;
+    padding-left: 8px;
+    border-left: 1px solid oklch(0.28 0.03 257);
+  }
+
+  .navLabel {
+    display: none;
+  }
+
+  .topbar {
+    margin: 0;
+    padding: 0 0 4px;
+  }
+
+  .main {
+    padding: 16px;
+  }
+
+  .grid:not(.spctre-docs-layout .grid),
+  .agentGrid,
+  .agentHero,
+  .blueprintsHero,
+  .blueprintsHeroStats,
+  .blueprintFormGrid,
+  .blueprintBudgetGrid,
+  .agentPilotGrid,
+  .adminAuthLayout,
+  .adminAuthTwoColumn,
+  .packsHero,
+  .packsHeroStats,
+  .policiesHero,
+  .policiesHeroStats,
+  .policiesSupportGrid,
+  .operationsHero,
+  .operationsHeroStats,
+  .rulesHero,
+  .rulesHeroStats,
+  .reviewHero,
+  .reviewHeroStats,
+  .evidenceHero,
+  .evidenceHeroStats,
+  .complianceHero,
+  .complianceHeroStats,
+  .packetReadinessGates,
+  .blastRadiusDetail,
+  .commercialHero,
+  .usageBillingHero,
+  .usageBillingHeroStats,
+  .usageBillingGrid,
+  .commercialPlanStrip,
+  .commercialProofGrid,
+  .commercialReviewForm,
+  .packGrid,
+  .policyOverviewSummary,
+  .packSearchBar,
+  .packDrawerSummary,
+  .packRuleMeta,
+  .quickStartCodeGrid,
+  .ruleIntelLayout,
+  .complianceLayout,
+  .complianceSummary,
+  .contextChain,
+  .compositionLayout,
+  .diffSummary,
+  .beforeAfter,
+  .bundleDocument,
+  .exportLayout,
+  .gateLayout,
+  .importLayout,
+  .importFormGrid,
+  .adminMembersSummary,
+  .retentionLayout,
+  .retentionSummary,
+  .searchForm,
+  .searchSummary,
+  .simulationSummary,
+  .simulationRegressionChecks,
+  .simulationRegressionReadiness,
+  .split {
+    grid-template-columns: 1fr;
+  }
+
+  .importCard,
+  .artifactCard,
+  .complianceCard,
+  .agentStats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .rowHeader,
+  .packCatalogSectionCompatible summary,
+  .requirement,
+  .approval,
+  .layer {
+    align-items: flex-start;
+  }
+
+  .ruleAuthoringMeta,
+  .ruleAuthoringGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .layer {
+    flex-wrap: wrap;
+  }
+
+  .packCatalogSectionCompatible summary {
+    flex-direction: column;
+  }
+
+  .approval {
+    flex-wrap: wrap;
+  }
+
+  .adminAuthUser,
+  .adminAuthPanelHeader {
+    align-items: flex-start;
+  }
+
+  .adminAuthUser {
+    flex-direction: column;
+  }
+
+  .adminAuthUserMeta {
+    justify-items: start;
+    text-align: left;
+  }
+
+  .reviewHeroStats > div {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .reviewHeroStats > div:last-child {
+    border-bottom: 0;
+  }
+
+  .evidenceHeroStats > div {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .evidenceHeroStats > div:last-child {
+    border-bottom: 0;
+  }
+
+  .quickStartCodeBlock pre {
+    min-height: 140px;
+  }
+
+  .rulesHeroStats > div {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .rulesHeroStats > div:last-child {
+    border-bottom: 0;
+  }
+
+  .policiesHeroStats > div {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .policiesHeroStats > div:last-child {
+    border-bottom: 0;
+  }
+
+  .policiesAttention,
+  .effectivePolicyRow {
+    align-items: start;
+    grid-template-columns: 1fr;
+  }
+
+  .policiesAttention {
+    flex-direction: column;
+  }
+
+  .policiesAttention .toolbar,
+  .effectivePolicyAction {
+    justify-self: start;
+  }
+
+  .operationsHeroStats > div {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .operationsHeroStats > div:last-child {
+    border-bottom: 0;
+  }
+
+  .usageBillingHeroStats > div {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .usageBillingHeroStats > div:last-child {
+    border-bottom: 0;
+  }
+
+  .packsHeroStats > div {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .packsHeroStats > div:last-child {
+    border-bottom: 0;
+  }
+
+  .complianceHeroStats > div {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .complianceHeroStats > div:last-child {
+    border-bottom: 0;
+  }
+
+  .reviewDiffStrip,
+  .reviewHeroHeader {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .reviewNextStep {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+/* Additional mobile optimizations for small screens */
+@media (max-width: 640px) {
+  .topBar,
+  .topNav {
+    padding: 10px 12px;
+  }
+
+  .main {
+    padding: 0 12px 12px;
+  }
+
+  .panel {
+    border-radius: 6px;
+  }
+
+  .adminAuthForm,
+  .adminAuthPanel {
+    border-radius: 6px;
+  }
+
+  .reviewHero,
+  .reviewPanel,
+  .reviewDiffStrip,
+  .policiesHero,
+  .policiesPanel,
+  .operationsHero,
+  .operationsPanel,
+  .usageBillingHero,
+  .usageBillingPanel,
+  .packsHero,
+  .packsPanel,
+  .rulesHero,
+  .rulesPanel,
+  .evidenceHero,
+  .evidencePanel,
+  .complianceHero,
+  .compliancePanel,
+  .blueprintsHero,
+  .blueprintsPanel,
+  .agentHero,
+  .agentPanel {
+    border-radius: 6px;
+  }
+
+  .reviewHeroMain,
+  .reviewPanel,
+  .policiesHeroMain,
+  .policiesPanel,
+  .operationsHeroMain,
+  .operationsPanel,
+  .usageBillingHeroMain,
+  .usageBillingPanel,
+  .packsHeroMain,
+  .packsPanel,
+  .rulesHeroMain,
+  .rulesPanel,
+  .evidenceHeroMain,
+  .evidencePanel,
+  .complianceHeroMain,
+  .compliancePanel,
+  .blueprintsHeroMain,
+  .blueprintsPanel,
+  .agentHeroMain,
+  .agentPanel {
+    padding: 14px;
+  }
+
+  .connectorImpactRow {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+
+  .connectorImpactRow .meta {
+    min-width: 0;
+    text-align: left;
+  }
+
+  .adminAuthForm,
+  .adminAuthRecord,
+  .adminAuthUser,
+  .adminAuthEmpty,
+  .adminAuthPanelHeader {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .button {
+    height: 36px;
+    font-size: 13px;
+    padding: 0 10px;
+  }
+
+  h1 {
+    font-size: 20px;
+  }
+
+  h2 {
+    font-size: 15px;
+  }
+
+  .topNavCrumbButton {
+    font-size: 12px;
+    padding: 3px 8px;
+  }
+
+  .emptyState {
+    min-height: 200px;
+    padding: 32px 16px;
+  }
+
+  .split,
+  .policyOverviewSummary,
+  .diffSummary,
+  .complianceSummary,
+  .commercialHero {
+    grid-template-columns: 1fr;
+  }
+
+  .auditTable {
+    font-size: 12px;
+  }
+
+  .auditTable thead th,
+  .auditTable td {
+    padding: 8px 12px;
+  }
+
+
+  .adminMembersIdentity code {
+    max-width: 160px;
+  }
+
+  .adminMembersInspectorGrid,
+  .adminMembersInspectorForm .adminAuthTwoColumn {
+    grid-template-columns: 1fr;
+  }
+
+  /* Make tooltips work better on mobile */
+  [data-tooltip]:hover::after {
+    display: none;
+  }
+}

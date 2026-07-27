@@ -1,0 +1,60 @@
+---
+title: Filtering reports
+description: Narrowing compliance reports by date range, connector, agent, and decision status.
+---
+
+Use report filters to focus on the data relevant to your audit, investigation, or reporting period.
+
+## Accessing filters
+
+Filters appear in the toolbar above the compliance report. Click any filter chip to open its options.
+
+## Date range
+
+The date picker controls the time window for all report metrics.
+
+| Preset | Description |
+|---|---|
+| Last 24 hours | Real-time view for active monitoring |
+| Last 7 days | Short-term trend |
+| Last 30 days | Default; good for monthly reporting |
+| Last 90 days | Quarter view |
+| Last 12 months | Annual compliance summary |
+| Custom range | Specific start and end dates |
+
+<Callout type="info">
+Evidence records are retained for the period configured by your workspace admin. The default retention period is 12 months. Records older than the retention period are not included in reports.
+</Callout>
+
+## Connector filter
+
+Click **Connector** to filter the report to one or more connectors. Useful when preparing connector-specific compliance evidence (e.g. "Show me only Stripe decisions for Q3").
+
+## Agent filter
+
+Click **Agent** to filter to one or more agent IDs. Useful when a specific agent is under scrutiny or when you want to audit a single deployment.
+
+## Decision status filter
+
+Click **Decision** to filter by decision outcome:
+
+| Option | Shows |
+|---|---|
+| All | All decisions |
+| ALLOW | Permitted decisions only |
+| DENY | Blocked decisions only |
+| WARN | Flagged decisions only |
+| ESCALATE | Decisions that triggered human review |
+| Provenance gap | Decisions with no policy match |
+
+## Risk level filter
+
+Click **Risk** to filter by risk level (`LOW`, `MEDIUM`, `HIGH`). Risk level is derived from the matched rule's parent pack.
+
+## Combining filters
+
+Filters stack — they all apply simultaneously with `AND` logic. Example: Connector = `stripe` AND Decision = `DENY` AND Date = last 30 days gives you all blocked Stripe decisions this month.
+
+## Saving a filter view
+
+Click **Save view** to bookmark the current filter combination. Saved views appear in the **Views** dropdown at the top of the report page. Share a view URL with a colleague to give them the same filtered context.

@@ -1,0 +1,8 @@
+{
+  "description": "A reply drafted with the customer's SSN warns for PII exposure",
+  "action": "ticket.reply",
+  "domains": ["tickets"],
+  "planSummary": "Draft a reply confirming the refund and include the customer's ssn for verification",
+  "toolParameters": {},
+  "expected": { "status": "WARN", "matchedRefs": ["zendesk.reply.pii_exposure.warn"] }
+}

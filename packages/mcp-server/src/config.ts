@@ -1,0 +1,59 @@
+import { parseCsv } from "./util.js";
+
+// Server configuration types and environment loading. Extracted from index.ts
+// (maintainability audit Hotspot 1) so the class, transport, and composition
+// root all depend on one config source rather than a shared monolith.
+
+export type TransportMode = "stdio" | "http";
+
+export interface SpctreConfig {
+  apiBaseUrl: string;
+  apiToken?: string;
+  apiRefreshToken?: string;
+  workspaceId: string;
+  agentId: string;
+  transport: TransportMode;
+  httpPort: number;
+  ssePath: string;
+  messagePath: string;
+  requireBearerAuth: boolean;
+  oauthIssuer?: string;
+  oauthResource?: string;
+  oauthScopes?: string[];
+  allowedTools?: string[];
+  allowedConnectors?: string[];
+  auditSealSecret?: string;
+}
+
+export interface SessionConfigOverrides {
+  apiToken?: string;
+  workspaceId?: string;
+  agentId?: string;
+}
+
+export function getBaseConfigFromEnv(): SpctreConfig {
+  const transport = ((process.env.SPCTRE_MCP_TRANSPORT || "stdio").toLowerCase() === "http"
+    ? "http"
+    : "stdio") as TransportMode;
+
+  const messagePath = process.env.SPCTRE_MCP_HTTP_MESSAGE_PATH || "/message";
+
+  return {
+    apiBaseUrl: process.env.SPCTRE_API_URL || "http://localhost:3000",
+    apiToken: process.env.SPCTRE_API_TOKEN || undefined,
+    apiRefreshToken: process.env.SPCTRE_API_REFRESH_TOKEN || undefined,
+    workspaceId: process.env.SPCTRE_WORKSPACE_ID || "ws-dev",
+    agentId: process.env.SPCTRE_AGENT_ID || "mcp-client-default",
+    transport,
+    httpPort: Number(process.env.SPCTRE_MCP_HTTP_PORT || 8090),
+    ssePath: process.env.SPCTRE_MCP_HTTP_SSE_PATH || "/sse",
+    messagePath,
+    requireBearerAuth: (process.env.SPCTRE_MCP_REQUIRE_BEARER_AUTH || "true").toLowerCase() !== "false",
+    oauthIssuer: process.env.SPCTRE_MCP_OAUTH_ISSUER || process.env.SPCTRE_API_URL || undefined,
+    oauthResource: process.env.SPCTRE_MCP_OAUTH_RESOURCE || undefined,
+    oauthScopes: parseCsv(process.env.SPCTRE_MCP_OAUTH_SCOPES) ?? ["mcp:read", "mcp:write"],
+    allowedTools: parseCsv(process.env.SPCTRE_ALLOWED_TOOLS),
+    allowedConnectors: parseCsv(process.env.SPCTRE_ALLOWED_CONNECTORS),
+    auditSealSecret: process.env.SPCTRE_MCP_AUDIT_SEAL_SECRET || undefined,
+  };
+}

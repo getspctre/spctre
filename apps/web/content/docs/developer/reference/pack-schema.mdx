@@ -1,0 +1,89 @@
+---
+title: Pack schema
+description: Pack manifest format and meta.json fields.
+---
+
+## Pack manifest
+
+```yaml
+id: "stripe-payments-v1"                 # Unique identifier
+name: "Stripe Payments Governance"
+connector: "stripe"                      # Target connector
+description: "Governance rules for Stripe payment operations"
+riskLevel: MEDIUM                        # LOW | MEDIUM | HIGH
+
+tags: [payments, refunds, stripe]
+domains: [payments, financial]
+
+metadata:
+  version: "1.2.0"                       # Semver
+  author: "payments-team"
+  owner: "platform"
+  generated: false
+  category: "financial"
+  compatibilityTargets: [CREWAI, LANGCHAIN, OPENAI_AGENTS]
+  reviewRoles: [payments-reviewer, platform-lead]
+  minimumApprovals: 2
+  changelog:
+    - version: "1.2.0"
+      date: "2026-06-08"
+      summary: "Added high-risk transfer escalation rule"
+    - version: "1.1.0"
+      date: "2026-05-01"
+      summary: "Lowered charge DENY threshold to $10k"
+
+rules:
+  - stable_rule_id: "stripe.allow_low_risk_charge"
+    title: "Allow low-risk charge"
+    effect: ALLOW
+    source_format: AGT_YAML
+    domains: [payments]
+    actions: [charge, authorize]
+    connectors: [stripe]
+    priority: 100
+```
+
+## metadata fields
+
+| Field | Type | Description |
+|---|---|---|
+| `version` | semver string | Pack version, e.g. `1.2.0` |
+| `author` | string | Pack author name or email |
+| `owner` | string | Owning team or organisation |
+| `generated` | boolean | `true` if auto-generated from a source schema |
+| `category` | string | Pack category for discovery |
+| `compatibilityTargets` | string[] | Framework stacks this pack is designed for |
+| `reviewRoles` | string[] | Role names allowed to approve this pack |
+| `minimumApprovals` | integer | Reviews required before publish |
+| `changelog` | object[] | Version history entries |
+
+## Sidebar meta.json
+
+Each directory in `content/docs/` can have a `meta.json` to control sidebar ordering and labels:
+
+```json
+{
+  "title": "Payments Governance",
+  "pages": [
+    "overview",
+    "rules",
+    "pack-schema",
+    "---",
+    "changelog"
+  ]
+}
+```
+
+- `"---"` inserts a divider in the sidebar
+- Pages not listed in `pages` appear at the end in alphabetical order
+- Omit `meta.json` to use alphabetical ordering with the MDX `title` frontmatter as the label
+
+## Pack versioning
+
+Pack versions follow semver (`MAJOR.MINOR.PATCH`):
+
+- **PATCH** — bug fixes to existing rules; no behaviour change
+- **MINOR** — new rules added; existing rules unchanged
+- **MAJOR** — breaking change: rules removed or effects changed
+
+Agents that synced a bundle before a MAJOR version bump continue to use the previous pack revision. Update the `minimumApprovals` policy to require re-review on MAJOR bumps.

@@ -1,0 +1,7 @@
+{
+  "description": "PostgreSQL DROP statement is blocked",
+  "action": "schema.migrate",
+  "domains": ["schema"],
+  "toolParameters": { "statement_type": "DROP" },
+  "expected": { "status": "DENY", "matchedRefs": ["postgresql.statement.destructive_ddl.block"] }
+}

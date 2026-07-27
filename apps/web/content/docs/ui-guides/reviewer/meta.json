@@ -1,0 +1,16 @@
+{
+  "title": "Reviewer / Approver",
+  "description": "Work the review queue, evaluate branches, and handle escalations.",
+  "icon": "Eye",
+  "pages": [
+    "overview",
+    "reviewing-a-branch",
+    "approving-a-branch",
+    "rejecting-a-branch",
+    "audit-log-review",
+    "reviewing-warn-records",
+    "handling-escalations",
+    "reassigning-escalations",
+    "alerting-setup"
+  ]
+}

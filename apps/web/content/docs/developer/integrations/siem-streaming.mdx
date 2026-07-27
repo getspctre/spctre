@@ -1,0 +1,114 @@
+---
+title: SIEM event streaming
+description: Stream all policy evidence events to Splunk HEC or Microsoft Sentinel in real time.
+---
+
+<Callout type="info">
+  SIEM event streaming is a **Cloud** feature. It requires `SPCTRE_PLAN=cloud` (or higher) and `SPCTRE_CREDENTIAL_ENCRYPTION_KEY` set on the worker.
+</Callout>
+
+SIEM streaming forwards every production policy decision event from the `runtime_evidence_event` table to an external SIEM in near-real-time. The worker runs a `siem-forwarder` job on a periodic sweep, batching up to 100 events per stream per pass. Two destinations are supported: **Splunk HEC** and **Microsoft Sentinel**.
+
+## How it works
+
+1. You create a stream configuration in the control plane (UI or server action). Credentials are encrypted at rest using `pgp_sym_encrypt` with `SPCTRE_CREDENTIAL_ENCRYPTION_KEY`.
+2. The worker `siem-forwarder` job runs on each sweep, reads enabled streams, and queries `runtime_evidence_event` for events newer than the stream's cursor (`last_forwarded_at` / `last_forwarded_id`).
+3. Events are batched (up to 100) and POSTed to the destination.
+4. On success the cursor advances to the last forwarded event. On failure the cursor does not advance, so the same events retry on the next sweep (at-least-once delivery).
+5. A circuit breaker wraps each outbound batch. When the breaker is open the stream is skipped for that sweep.
+
+Only `production` environment events are forwarded. Events are held for 5 seconds before becoming eligible for forwarding to allow late-arriving writes to settle.
+
+## Event payload
+
+Each forwarded event has this shape:
+
+| Field | Type | Description |
+|---|---|---|
+| `decisionId` | string | UUID of the gateway decision |
+| `agentId` | string | Agent that generated the event |
+| `tenantId` | string | Tenant |
+| `workspaceId` | string | Workspace |
+| `connector` | string | Connector the action targeted |
+| `action` | string | Action name |
+| `decision` | string | `ALLOW`, `DENY`, `WARN`, or `ESCALATE` |
+| `reason` | string | Human-readable policy reason |
+| `riskLevel` | string | `LOW`, `MEDIUM`, `HIGH`, or `CRITICAL` |
+| `policyRefs` | string[] | IDs of matched policy rules |
+| `agtBundleHash` | string | SHA-256 hash of the policy bundle at decision time |
+| `runtimeTarget` | string | Runtime stack (e.g. `CREWAI`, `LANGCHAIN`) |
+| `approverDid` | string \| null | DID of the human approver for escalated decisions |
+| `createdAt` | string | RFC 3339 timestamp |
+
+## Splunk HEC
+
+The worker sends newline-delimited JSON to the Splunk HTTP Event Collector endpoint. Each event is wrapped in a Splunk envelope:
+
+```json
+{
+  "time": 1751800000.123,
+  "sourcetype": "spctre:decision",
+  "source": "spctre-control-plane",
+  "index": "<optional-index>",
+  "event": { ...payload fields... }
+}
+```
+
+**Required credentials:**
+
+| Field | Where |
+|---|---|
+| `token` | Credentials object — the HEC token (`credentials.token`) |
+
+**Optional config:**
+
+| Field | Description |
+|---|---|
+| `index` | Splunk index name. If omitted, the HEC token's default index is used. |
+
+**Stream URL:** the full Splunk HEC endpoint, e.g. `https://splunk.example.com:8088/services/collector/event`.
+
+## Microsoft Sentinel
+
+The worker signs and POSTs events to the Sentinel Log Analytics Data Collector API using HMAC-SHA256.
+
+**Required fields:**
+
+| Field | Where |
+|---|---|
+| `workspaceId` | Stream URL field — the Log Analytics workspace ID |
+| `primaryKey` | Credentials object — the primary or secondary key (`credentials.primaryKey`) |
+
+**Optional config:**
+
+| Field | Description |
+|---|---|
+| `logType` | Custom log table name in Sentinel. Defaults to `SpctrePolicyDecision`. |
+
+Sentinel appends `_CL` to the log type automatically. Events appear under `SpctrePolicyDecision_CL` (or your custom name with `_CL`) in Log Analytics.
+
+## Creating a stream
+
+Streams are currently created through the **Compliance → SIEM Streams** section of the control plane UI, or via the `addSiemStreamDecision` server action. There is no public REST API endpoint for stream management at this time; use the UI or the server action directly if calling from a Next.js server component.
+
+## Enabling and disabling
+
+Toggle a stream on or off from the UI. The `siem-forwarder` job only queries enabled streams.
+
+## Required environment variables
+
+| Variable | Purpose |
+|---|---|
+| `SPCTRE_CREDENTIAL_ENCRYPTION_KEY` | AES-256 key used to encrypt/decrypt SIEM credentials at rest. Must be identical on the web process and the worker. |
+| `SPCTRE_PLAN` | Must be `cloud`, `business`, or `enterprise`. |
+
+## Triggering the forwarder manually (scale-to-zero)
+
+When `SPCTRE_DISABLE_INTERNAL_SCHEDULER=1` is set on the worker, the `siem-forwarder` job does not run on a timer. Trigger it via the worker's internal HTTP endpoint:
+
+```http
+POST /internal/jobs/siem-forwarder
+X-Spctre-Internal-Secret: <SPCTRE_WORKER_INTERNAL_SECRET>
+```
+
+See [Scale-to-zero architecture](/help-docs/developer/integrations/scale-to-zero) for the full scheduler setup.

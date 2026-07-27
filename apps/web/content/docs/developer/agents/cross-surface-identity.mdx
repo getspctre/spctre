@@ -1,0 +1,116 @@
+---
+title: Cross-surface agent identity
+description: Link a single logical agent across multiple runtime surfaces and aggregate trust signals across all of them.
+---
+
+<Callout type="info">
+  Cross-surface agent identity is a **Cloud** feature. The API endpoints and the Surface bindings section in the Agents UI are only active when `SPCTRE_PLAN=cloud` (or higher).
+</Callout>
+
+Some agents operate on more than one surface at once. A customer-support agent might run as a Zendesk integration, a web chat widget, and an internal Slack bot — three distinct runtime identities, one logical agent. Without linking them, trust signals from each surface accumulate independently, making it impossible to evaluate behavioral patterns across the full picture.
+
+Cross-surface agent identity lets you nominate one **canonical agent ID** and attach any number of **surface bindings** to it. Trust score history, lifecycle events, and the Agents UI all aggregate across the full set.
+
+## Concepts
+
+| Term | Meaning |
+|---|---|
+| **Canonical agent ID** | The primary agent ID used in evidence, policy packs, and trust calibration policies — the "source of truth" identity |
+| **Surface binding** | A pairing of a `surfaceType` label and a `surfaceAgentId` (the agent ID used on that surface) linked to the canonical agent |
+| **Cross-surface trust history** | The union of all trust score observations from the canonical agent ID and every bound surface agent ID, ordered by time |
+
+## Linking a surface
+
+```http
+POST /api/agents/{canonicalAgentId}/surfaces
+Authorization: Bearer <token with evidence:write scope>
+Content-Type: application/json
+
+{
+  "surfaceType": "zendesk",
+  "surfaceAgentId": "cs-agent-zendesk-7"
+}
+```
+
+`surfaceType` is a free-form string — use whatever label makes sense for your stack (`zendesk`, `intercom`, `slack-internal`, `notion-teams`, `web-chat`, etc.). The API imposes no enum.
+
+A successful response returns the created binding:
+
+```json
+{
+  "binding": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "canonicalAgentId": "cs-agent-main",
+    "surfaceType": "zendesk",
+    "surfaceAgentId": "cs-agent-zendesk-7",
+    "createdBy": "principal_01abc",
+    "createdAt": "2026-07-06T12:00:00Z"
+  }
+}
+```
+
+Linking a surface also emits a `SURFACE_LINKED` identity lifecycle event for the canonical agent.
+
+## Listing surfaces for an agent
+
+```http
+GET /api/agents/{canonicalAgentId}/surfaces
+Authorization: Bearer <token with operations:read scope>
+```
+
+## Removing a surface binding
+
+```http
+DELETE /api/agents/{canonicalAgentId}/surfaces/{bindingId}
+Authorization: Bearer <token with evidence:write scope>
+```
+
+Emits a `SURFACE_UNLINKED` identity lifecycle event.
+
+## Reading cross-surface trust history
+
+Once surfaces are linked, fetch aggregated trust history across all of them:
+
+```http
+GET /api/agents/{canonicalAgentId}/trust-history?limit=100
+Authorization: Bearer <token with operations:read scope>
+```
+
+Response shape:
+
+```json
+{
+  "canonicalAgentId": "cs-agent-main",
+  "surfaceCount": 2,
+  "surfaces": [...],
+  "latestScore": 0.81,
+  "history": [
+    {
+      "agentId": "cs-agent-zendesk-7",
+      "trustScore": 0.81,
+      "source": "EVIDENCE_INGEST",
+      "createdAt": "2026-07-06T11:55:00Z"
+    },
+    {
+      "agentId": "cs-agent-main",
+      "trustScore": 0.79,
+      "source": "POLICY_EVALUATION",
+      "createdAt": "2026-07-06T11:50:00Z"
+    }
+  ]
+}
+```
+
+The `agentId` field in each history entry tells you which surface produced the observation. `latestScore` is the most recent score across all surfaces.
+
+## Trust calibration policies
+
+Trust calibration policies evaluate against `agentId` — set them up against the **canonical agent ID** to get policy coverage over the full cross-surface signal. The `listCrossSurfaceTrustHistory` result feeds the same policy evaluation path as single-surface trust history.
+
+## Agents UI
+
+When surfaces are linked, the agent's detail panel in **Agents** shows a **Surface bindings** section listing each bound surface type and its surface-specific agent ID.
+
+## Identity lifecycle events
+
+Both `SURFACE_LINKED` and `SURFACE_UNLINKED` appear in the identity event log (`GET /api/identity/events?principalId={canonicalAgentId}`). The `detail` field on each event includes `surfaceType`, `surfaceAgentId`, and `bindingId`.

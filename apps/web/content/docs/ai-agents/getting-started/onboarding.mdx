@@ -1,0 +1,89 @@
+---
+title: Agent onboarding
+description: Connect an agent to Spctre without a browser, using device-code authentication and environment variables.
+---
+
+This guide is for agents and CI processes that cannot complete an interactive browser flow. All steps are automatable except the initial device-code approval, which requires a human once.
+
+## Prerequisites
+
+Pre-provision these before the agent runs:
+
+| Input | Description |
+|---|---|
+| `SPCTRE_URL` | Control plane base URL (e.g. `https://app.spctre.dev`) |
+| Agent identity label | Stable string used in audit trails |
+| Target workspace slug | The workspace this agent governs |
+| Target tenant ID | The tenant containing the workspace |
+
+## Step 1 — Install the CLI
+
+```bash
+npm install -g @spctre/cli
+```
+
+## Step 2 — Authenticate (device code)
+
+Use `--device` to avoid a browser redirect. The CLI prints a short code and a URL.
+
+```bash
+spctre init \
+  --url "$SPCTRE_URL" \
+  --agent "$SPCTRE_AGENT" \
+  --device
+```
+
+Output:
+
+```
+Visit https://app.spctre.dev/activate and enter code: WXYZ-1234
+Waiting for approval...
+```
+
+**Human step:** a human visits the URL and approves the code. The CLI then writes `.spctre/spctre-config.json` with the workspace ID, agent ID, and a scoped access token.
+
+After this one-time approval, the agent operates autonomously. The refresh token (default 90-day lifetime) keeps the access token current without further human interaction.
+
+## Step 3 — Sync the policy bundle
+
+```bash
+spctre sync
+```
+
+This writes `spctre-policy.json` (or the path set by `--output`). Your agent loads this file for local policy evaluation — no network call per decision.
+
+## Step 4 — Verify connectivity
+
+```bash
+spctre status --check
+```
+
+Expected output:
+
+```json
+{
+  "connected": true,
+  "bundleFresh": true,
+  "tokenValid": true,
+  "workspace": "your-workspace",
+  "agent": "your-agent-id"
+}
+```
+
+## Environment-variable provisioning
+
+For containerised or CI environments, skip `spctre init` and inject credentials directly:
+
+```bash
+SPCTRE_URL=https://app.spctre.dev
+SPCTRE_API_TOKEN=<access-token>           # managed externally
+SPCTRE_WORKSPACE=your-workspace-slug
+SPCTRE_AGENT=your-agent-id
+SPCTRE_TENANT=your-tenant-id
+```
+
+`SPCTRE_API_TOKEN` overrides the locally stored token. The CLI never writes tokens to disk when this variable is set. Use your secret manager to rotate it.
+
+<Callout type="warn">
+  Never write `SPCTRE_API_TOKEN` to disk or include it in logs. Treat it as a short-lived credential (default 1-hour lifetime).
+</Callout>

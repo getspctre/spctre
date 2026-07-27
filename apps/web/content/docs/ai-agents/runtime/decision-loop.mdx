@@ -1,0 +1,116 @@
+---
+title: Decision loop
+description: The canonical pre-execution and post-execution pattern for a governed agent action.
+---
+
+Every governed action follows the same loop. Pre-execution checks run before the action. Post-execution records run after. Both phases are required for a complete audit trail.
+
+## Full loop
+
+```
+┌─ Before each governed action ────────────────────────────────────────┐
+│                                                                      │
+│  1. spctre economic-evaluate                                         │
+│     exit 2 (DENY)     → abort, log budget exceeded                   │
+│     exit 3 (ESCALATE) → abort, route to human review                 │
+│     exit 0 (ALLOW/WARN) → continue                                   │
+│                                                                      │
+│  2. POST /api/v1/gateway/decide    (high-stakes actions only)        │
+│     ABORT    → halt execution                                        │
+│     ESCALATE → pause, poll for resolution                            │
+│     PROCEED  → continue                                              │
+│                                                                      │
+│  3. Execute the governed action                                      │
+│                                                                      │
+│  4. POST /api/v1/evidence          (always, even on DENY)            │
+│                                                                      │
+│  5. spctre economic-ingest         (record actual tokens + cost)     │
+│                                                                      │
+└──────────────────────────────────────────────────────────────────────┘
+```
+
+Step 1 (economic) and step 2 (gateway) are both pre-execution guards. Use the gateway for high-stakes or high-risk actions. Use economic evaluation for every action that consumes model tokens or incurs cost.
+
+## Shell implementation
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+
+AGENT_ID="customer-support"
+ENVIRONMENT="production"
+STACK="LANGCHAIN"
+CONNECTOR="stripe"
+ESTIMATED_COST="0.04"
+
+# 1. Economic pre-check
+spctre economic-evaluate \
+  --agent "$AGENT_ID" \
+  --environment "$ENVIRONMENT" \
+  --stack "$STACK" \
+  --connector "$CONNECTOR" \
+  --cost "$ESTIMATED_COST"
+ECON_EXIT=$?
+
+if [ $ECON_EXIT -eq 2 ]; then
+  echo "Budget exceeded — aborting." >&2
+  exit 1
+elif [ $ECON_EXIT -eq 3 ]; then
+  echo "Budget escalation required — pausing for human review." >&2
+  exit 1
+fi
+
+# 2. Gateway pre-check (high-stakes actions)
+DECISION_ID=$(uuidgen)
+GATEWAY_RESPONSE=$(curl -sf -X POST "$SPCTRE_URL/api/v1/gateway/decide" \
+  -H "Authorization: Bearer $SPCTRE_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"decisionId\": \"$DECISION_ID\",
+    \"connector\": \"$CONNECTOR\",
+    \"action\": \"charge\",
+    \"riskLevel\": \"HIGH\",
+    \"artifactHash\": \"$ARTIFACT_HASH\"
+  }")
+
+OUTCOME=$(echo "$GATEWAY_RESPONSE" | jq -r '.decision.outcome')
+case "$OUTCOME" in
+  ABORT)    echo "Gateway: ABORT — halting." >&2; exit 1 ;;
+  ESCALATE) echo "Gateway: ESCALATE — waiting for review." >&2; ./poll-escalation.sh "$DECISION_ID" ;;
+esac
+
+# 3. Execute action
+run_governed_action
+
+# 4. Ingest evidence
+spctre ingest \
+  --agent "$AGENT_ID" \
+  --environment "$ENVIRONMENT" \
+  --connector "$CONNECTOR" \
+  --action charge \
+  --status ALLOW
+
+# 5. Ingest usage
+spctre economic-ingest \
+  --agent "$AGENT_ID" \
+  --environment "$ENVIRONMENT" \
+  --stack "$STACK" \
+  --connector "$CONNECTOR" \
+  --prompt-tokens 1187 \
+  --completion-tokens 412 \
+  --cost 0.038 \
+  --decision "$DECISION_ID"
+```
+
+## Decision statuses
+
+| Status | Meaning | Agent behaviour |
+|---|---|---|
+| `ALLOW` | Action permitted by policy | Proceed |
+| `WARN` | Permitted but flagged | Proceed; log the warning reason |
+| `DENY` | Blocked by policy | Abort; ingest evidence with `DENY` status |
+| `ESCALATE` | Queued for human approval | Pause; poll for resolution |
+
+## Ingest even on denial
+
+Always call `POST /api/v1/evidence` regardless of the decision outcome. A `DENY` record is as important to the audit trail as an `ALLOW` — it proves the policy was evaluated and the action was blocked.

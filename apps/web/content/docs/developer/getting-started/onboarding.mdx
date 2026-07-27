@@ -1,0 +1,77 @@
+---
+title: Onboarding
+description: How the CLI device-approval flow works and what it sets up.
+---
+
+The `spctre init` command runs a device-approval flow to connect your agent to the control plane without storing long-lived credentials in your repo.
+
+## The approval flow
+
+<Steps>
+  <Step>
+    **Start the flow**
+
+    ```bash
+    spctre init \
+      --agent my-agent \
+      --environment production \
+      --workspace my-workspace
+    ```
+
+    The CLI calls `POST /api/onboarding/cli/start` and receives a short-lived device code.
+  </Step>
+  <Step>
+    **Approve in the browser**
+
+    The CLI opens `https://<your-control-plane>/onboarding/cli/approve?code=<code>` in your browser. Review the requested token scope (`bundle:read`, `decision:evaluate`, `evidence:write`, `heartbeat:write`) and click **Approve CLI**.
+  </Step>
+  <Step>
+    **Token exchange**
+
+    The CLI polls `POST /api/onboarding/cli/exchange` until the browser approval completes, then receives:
+
+    ```json
+    {
+      "accessToken": "…",
+      "accessTokenExpiresAt": "2026-06-15T12:00:00Z",
+      "refreshToken": "…",
+      "refreshTokenExpiresAt": "2026-09-15T12:00:00Z",
+      "workspaceId": "uuid",
+      "workspaceSlug": "my-workspace"
+    }
+    ```
+  </Step>
+  <Step>
+    **Config written**
+
+    The CLI writes `.spctre/spctre-config.json` with your workspace, agent, and environment details. All subsequent CLI commands read this file automatically.
+  </Step>
+</Steps>
+
+## Headless / CI environments
+
+Use `--device` to get a code you can approve from a separate browser session:
+
+```bash
+spctre init --agent ci-agent --environment staging --device
+```
+
+The CLI prints a URL and code. Open the URL in any browser, approve, and the CLI picks up the token automatically.
+
+## Service account tokens
+
+If your organisation provisions service accounts, pass the token directly — no browser approval needed:
+
+```bash
+spctre init --token $SPCTRE_SERVICE_TOKEN
+```
+
+Or set `SPCTRE_API_TOKEN` in your environment and omit the flag.
+
+## What gets created
+
+| File | Purpose |
+|---|---|
+| `.spctre/spctre-config.json` | Workspace, agent ID, environment, token |
+| `spctre-policy.json` | Downloaded policy bundle (via `sync`) |
+| `.spctre/sitecustomize.py` | Python framework adapter (via `watch --framework`) |

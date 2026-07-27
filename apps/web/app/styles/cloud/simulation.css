@@ -1,0 +1,170 @@
+/* Bulk production simulation — bulkProductionSimulation (minimum plan: cloud) */
+
+.simulationSupport {
+  display: grid;
+  gap: 12px;
+}
+
+.simulationCloudNotice {
+  margin-bottom: 0;
+}
+
+.simulationSummary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.simulationSummary div,
+.simulationResult {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: oklch(0.992 0.005 236);
+}
+
+.simulationRunForm {
+  display: grid;
+  gap: 12px;
+}
+
+.simulationRunControls {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.simulationRunControls label {
+  display: grid;
+  gap: 5px;
+}
+
+.simulationRunControls label span {
+  font-size: 12px;
+  font-weight: var(--fw-semi);
+  color: var(--muted);
+}
+
+.simulationRunControls select {
+  height: 38px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--panel);
+  color: var(--ink);
+  min-width: 180px;
+}
+
+.simulationRunResult {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 10px 12px;
+  border: 1px solid var(--allow-soft);
+  border-radius: 7px;
+  background: var(--allow-soft);
+}
+
+.simulationRunResult .allowIcon {
+  color: var(--allow);
+  flex: 0 0 auto;
+}
+
+.simulationSummary div {
+  padding: 12px;
+}
+
+.simulationSummary strong {
+  display: block;
+  margin-top: 5px;
+  font-size: 22px;
+}
+
+.simulationRegressionReadiness {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px 18px;
+  align-items: start;
+  padding: 16px 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.simulationRegressionIntro h3 {
+  margin: 2px 0 4px;
+  font-size: 17px;
+  line-height: 1.25;
+}
+
+.simulationRegressionChecks {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  overflow: hidden;
+}
+
+.simulationRegressionCheck {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  padding: 11px 12px;
+  background: var(--panel);
+}
+
+.simulationRegressionCheck + .simulationRegressionCheck {
+  border-left: 1px solid var(--line);
+}
+
+.simulationRegressionCheck dt,
+.simulationRegressionCheck dd {
+  margin: 0;
+}
+
+.simulationRegressionCheck dt {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: var(--fw-semi);
+}
+
+.simulationRegressionCheck dt svg {
+  color: var(--allow);
+  flex: 0 0 auto;
+}
+
+.simulationRegressionCheckBlocked dt svg,
+.simulationRegressionCheckBlocked dd {
+  color: var(--block);
+}
+
+.simulationRegressionCheck dd {
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: var(--fw-semi);
+}
+
+.simulationList,
+.simulationHistoryList {
+  display: grid;
+  gap: 10px;
+}
+
+.simulationHistoryList .rowActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.simulationResult {
+  padding: 13px;
+  display: grid;
+  gap: 10px;
+}

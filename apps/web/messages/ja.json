@@ -1,0 +1,1797 @@
+{
+  "common": {
+    "cancel": "キャンセル",
+    "delete": "削除",
+    "save": "保存"
+  },
+  "shared": {
+    "advisor_decision": {
+      "accept": "承認",
+      "edit_record": "編集して記録",
+      "edited_summary": "編集済み要約",
+      "edited_summary_placeholder": "フィードバック記録前の任意のレビュアー編集",
+      "rationale_placeholder": "この推奨を承認、編集、または却下する理由",
+      "reject": "却下",
+      "reviewer_rationale": "レビュアーの理由"
+    },
+    "recommendation_decision": {
+      "accept": "ガイダンスを記録",
+      "edit_record": "編集してガイダンスを記録",
+      "edited_summary": "編集済みガイダンス",
+      "edited_summary_placeholder": "ガイダンスを記録する前の任意の編集",
+      "rationale_placeholder": "このガイダンスを記録、編集、または却下する理由",
+      "reject": "ガイダンスを却下",
+      "reviewer_rationale": "レビュアーの理由"
+    },
+    "slide_out": {
+      "close": "パネルを閉じる"
+    }
+  },
+  "navigation": {
+    "agents": "エージェント",
+    "alerting": "アラート",
+    "account": "アカウント",
+    "admin": "管理",
+    "api_docs": "API ドキュメント",
+    "audit": "監査",
+    "audit_ledger": "監査台帳",
+    "audit_log": "監査ログ",
+    "compliance_report": "コンプライアンスレポート",
+    "cost": "コスト",
+    "cost_usage": "コストと使用量",
+    "escalations": "エスカレーション",
+    "escalation_routing": "エスカレーションルーティング",
+    "evidence": "証跡",
+    "help_docs": "ヘルプドキュメント",
+    "operations": "オペレーション",
+    "packs": "パック",
+    "policies": "ポリシー",
+    "review": "レビュー",
+    "rules": "ルール",
+    "siem_export": "SIEM エクスポート",
+    "usage_billing": "使用量と請求"
+  },
+  "sidebar": {
+    "go_to": "移動...",
+    "open_command_palette": "コマンドパレットを開く (⌘K)",
+    "opens_new_tab": "新しいタブで開きます",
+    "primary_nav": "主要ナビゲーション"
+  },
+  "command_palette": {
+    "aria_label": "コマンドパレット",
+    "close": "閉じる",
+    "close_palette": "コマンドパレットを閉じる",
+    "no_results": "「{query}」の結果はありません",
+    "placeholder": "移動…",
+    "search_aria_label": "ナビゲーションを検索",
+    "footer": {
+      "close": "閉じる",
+      "navigate": "移動",
+      "open": "開く",
+      "toggle": "切り替え"
+    },
+    "items": {
+      "advisors": {
+        "description": "Advisor のパフォーマンスと推奨",
+        "label": "アドバイザー"
+      },
+      "agents": {
+        "description": "エージェントフリートの健全性と状態",
+        "label": "エージェント"
+      },
+      "audit_ledger": {
+        "description": "ハッシュチェーン化された改ざん耐性イベントログ",
+        "label": "監査台帳"
+      },
+      "audit_log": {
+        "description": "ランタイムエージェントの意思決定記録とシミュレーション",
+        "label": "監査ログ"
+      },
+      "billing": {
+        "description": "サブスクリプションプランと請求",
+        "label": "使用量と請求"
+      },
+      "compliance": {
+        "description": "コンプライアンスパケット、保持、エクスポート",
+        "label": "コンプライアンスレポート"
+      },
+      "cost_usage": {
+        "description": "支出、使用量、予算、違反制御",
+        "label": "コストと使用量"
+      },
+      "escalations": {
+        "description": "Human-in-the-loop レビューキュー",
+        "label": "エスカレーション"
+      },
+      "escalation_routing": {
+        "description": "ポリシー違反とレビュアー通知をルーティング",
+        "label": "エスカレーションルーティング"
+      },
+      "packs": {
+        "description": "ポリシーパックを参照してインストール",
+        "label": "パック"
+      },
+      "policies": {
+        "description": "ポリシーブランチを管理",
+        "label": "ポリシー"
+      },
+      "review": {
+        "description": "差分をレビューして公開",
+        "label": "レビューと公開"
+      },
+      "siem_export": {
+        "description": "ガバナンス対象ランタイムの証跡を Splunk または Sentinel にエクスポート",
+        "label": "SIEM エクスポート"
+      },
+      "rules": {
+        "description": "ルール一覧を参照",
+        "label": "ルール"
+      }
+    }
+  },
+  "import_policy_panel": {
+    "trigger": "インポート",
+    "new_branch": {
+      "description": "スキャフォールドテンプレートから新しいワークスペースポリシーブランチを開始し、ルールとスコープを調整します。",
+      "eyebrow": "ブランチスキャフォールド",
+      "title": "ポリシーブランチを作成"
+    }
+  },
+  "onboarding": {
+    "cli_approve": {
+      "approve": "CLI を承認",
+      "approved_badge": "承認済み",
+      "approved_description": "ターミナルに戻ってください。CLI はこの承認を開発トークンと交換し、ワークスペース ",
+      "approved_description_suffix": " のセットアップを完了します。",
+      "approved_title": "CLI を承認しました",
+      "auth_required": "認証が必要です",
+      "default_workspace": "default",
+      "description": "バンドル同期、ハートビート、ランタイム証跡用のスコープ付き開発トークンを承認します。",
+      "eyebrow": "CLI 認可",
+      "missing": "なし",
+      "principal": "サインイン中のプリンシパル",
+      "request_code": "リクエストコード",
+      "sign_in": "サインインして承認",
+      "title": "Spctre CLI を接続",
+      "token_scope": "トークンスコープ"
+    }
+  },
+  "policies": {
+    "meta_summary": "{branchesCount} ブランチ · {rulesCount} 件の有効なルール",
+    "title": "ポリシー",
+    "workspace_policy": "ワークスペースポリシー"
+  },
+  "operations": {
+    "verify_chain": {
+      "api_json": "API JSON",
+      "api_title": "開発者 API 出力",
+      "broken": "破損",
+      "broken_at": "{location} で破損",
+      "title": "このページの監査台帳ハッシュチェーンを検証",
+      "verified": "検証済み",
+      "verified_count": "検証済み ({count})",
+      "verify": "チェーンを検証",
+      "verifying": "検証中...",
+      "errors": {
+        "unreachable": "検証サービスに到達できません。",
+        "verify": "監査台帳を検証できません。"
+      }
+    },
+    "title": "監査台帳",
+    "hero": {
+      "aria_label": "オペレーションログの概要",
+      "eyebrow": "監査 · オペレーション台帳",
+      "title": "監査台帳",
+      "description": "ハッシュチェーン化。ポリシー、証跡、アイデンティティ、エージェント、シミュレーション、検証、コンプライアンスを対象とします。",
+      "stats": {
+        "loaded": "読み込まれたイベント",
+        "event_types": "イベントタイプ",
+        "actors": "アクター",
+        "chain_health": "チェーンの健全性"
+      }
+    },
+    "filters": {
+      "clear": "フィルターをクリア"
+    },
+    "events": {
+      "eyebrow": "監査 · イベント",
+      "title": "イベント",
+      "description": "イベントタイプで絞り込みます。チェーンはページ読み込みごとに検証されます。",
+      "empty": {
+        "title": "範囲内にイベントがありません",
+        "description": "ポリシー、証跡、アイデンティティの変更が記録されると、イベントが表示されます。",
+        "hint": "ポリシーがインポート・公開・承認されたとき、または証跡が取り込まれ処理されたときに、オペレーションがここに表示されます。"
+      }
+    },
+    "bundle_exports": {
+      "eyebrow": "ポリシー · バンドルエクスポート",
+      "title": "バンドルエクスポート履歴",
+      "description": "<table>bundle_export_log</table> のメタデータ。完全なアーティファクトは保存されません。",
+      "blocked": "{count, plural, other {#件ブロック}}",
+      "empty": {
+        "title": "記録されたバンドルエクスポートはありません",
+        "description": "対象バンドルをプレビューまたはダウンロードすると、この履歴に反映されます。"
+      },
+      "table": {
+        "format": "フォーマット",
+        "outcome": "結果",
+        "revision": "リビジョン",
+        "artifact": "アーティファクト",
+        "compiled": "コンパイル済み",
+        "verified": "検証済み"
+      }
+    },
+    "table": {
+      "time": "時刻",
+      "event": "イベント",
+      "source": "ソース",
+      "actor": "アクター",
+      "hash": "ハッシュ"
+    },
+    "pagination": {
+      "previous": "前へ",
+      "next": "次へ"
+    }
+  },
+  "account": {
+    "eyebrow": "アカウント · セキュリティ",
+    "settings_label": "アカウント設定",
+    "title": "アカウントとセキュリティ",
+    "preferences": {
+      "description": "コントロールプレーンで使用する言語を選択します。この設定は現在および今後のセッションでアカウントに適用されます。",
+      "display_language": "表示言語",
+      "eyebrow": "設定 · 環境設定",
+      "saving": "保存中…",
+      "title": "言語"
+    },
+    "passkeys": {
+      "badge": "PASSKEY",
+      "cancel": "キャンセル",
+      "created": "作成日時 {date}",
+      "description": "プラットフォーム認証器またはハードウェアキーを使用して、パスワードなしでログインします。",
+      "empty": "登録済みのパスキーはまだありません。",
+      "eyebrow": "セキュリティ · パスキー",
+      "fallback_name": "パスキー …{suffix}",
+      "last_used": "最終使用 {date}",
+      "name_placeholder": "例: MacBook Touch ID",
+      "never": "未使用",
+      "register": "新しいパスキーを登録",
+      "registering": "登録中...",
+      "remove": "削除",
+      "rename": "名前を変更",
+      "save": "保存",
+      "title": "登録済みパスキー",
+      "errors": {
+        "authenticator_no_public_key": "認証器から公開鍵が提供されませんでした。",
+        "browser_unsupported": "このブラウザはパスキー登録をサポートしていません。",
+        "cancelled": "パスキー登録がキャンセルされました。",
+        "finish_failed": "パスキー登録を完了できませんでした。",
+        "start_failed": "パスキー登録を開始できませんでした。",
+        "unknown": "パスキーを登録できません。"
+      }
+    },
+    "recovery": {
+      "confirm_replace": "確認: 既存のコードを置き換え",
+      "copy_all": "すべてコピー",
+      "description": "アカウント復旧用の一回限りのバックアップコードです。各コードは一度だけ使用できます。",
+      "empty": "復旧コードはまだ生成されていません。",
+      "eyebrow": "セキュリティ · 復旧",
+      "generate": "復旧コードを生成",
+      "generate_new": "新しいコードを生成",
+      "generating": "生成中…",
+      "replace_warning": "既存の未使用コードは無効になります。もう一度クリックして確認してください。",
+      "save_codes": "これらのコードを安全な場所に保存してください。再表示されません。",
+      "title": "復旧コード",
+      "unused_remaining": "未使用コードが {count} 件残っています。",
+      "errors": {
+        "empty_response": "コードが返されませんでした。",
+        "generate": "コードを生成できませんでした。",
+        "unknown": "コードを生成できません。"
+      }
+    },
+    "sessions": {
+      "browser": "ブラウザ",
+      "description": "デバイス上のアクティブなセッションを確認し、取り消します。",
+      "device_label": "{os} の {browser}",
+      "empty": "アクティブなセッションは見つかりません。",
+      "eyebrow": "設定 · セキュリティ",
+      "ip_created": "IP: {ip} • 作成日時:",
+      "last_active": "最終アクティブ:",
+      "revoke": "取り消し",
+      "revoking": "取り消し中…",
+      "this_device": "このデバイス",
+      "title": "アクティブなセッション",
+      "unknown": "不明",
+      "unknown_device": "不明なデバイス",
+      "unknown_os": "不明な OS",
+      "errors": {
+        "demo_unavailable": "デモモードではセッション管理を利用できません。無料の Spctre Cloud アカウントを作成して開始してください。"
+      }
+    },
+    "sms": {
+      "cancel": "キャンセル",
+      "channel": "SMS（{phone}）",
+      "channel_fallback": "チャネル",
+      "code_label": "6桁のコードを入力",
+      "description": "SMS で6桁の認証コードを受け取る電話番号を登録します。",
+      "eyebrow": "セキュリティ · MFA",
+      "phone_label": "電話番号を入力（E.164 形式）",
+      "remove": "削除",
+      "send": "確認 SMS を送信",
+      "sending": "確認コード SMS を送信中...",
+      "sent": "{phone} に6桁の確認コードを送信しました。",
+      "title": "SMS 確認",
+      "verified": "SMS 登録が検証されました。",
+      "verified_at": "検証日時 {date}",
+      "verified_channels": "検証済み SMS チャネル",
+      "verify": "コードを検証",
+      "errors": {
+        "invalid_code": "有効な6桁のコードを入力してください。",
+        "start": "SMS 登録を開始できません。",
+        "unexpected": "予期しないエラーが発生しました。",
+        "unexpected_verify": "検証中に予期しないエラーが発生しました。",
+        "verify": "SMS コードを検証できません。"
+      }
+    },
+    "social": {
+      "cannot_unlink": "少なくとも1つのログイン方法を接続したままにする必要があります。",
+      "connect": "接続",
+      "description": "ソーシャルアカウントをリンクして、正式なログイン方法として使用します。",
+      "disconnect": "切断",
+      "empty": "ソーシャル ID プロバイダーは設定されていません。",
+      "eyebrow": "設定 · ソーシャルログイン",
+      "github": "GitHub アカウント",
+      "google": "Google アカウント",
+      "linked": "リンク済み: {value}",
+      "not_linked": "未リンク",
+      "title": "接続済みアカウント",
+      "yes": "はい"
+    },
+    "totp": {
+      "code_label": "6桁のコードを入力",
+      "description": "6桁の確認コード用に認証アプリを登録します。",
+      "empty": "検証済みの MFA 登録はまだありません。",
+      "enroll": "TOTP を登録",
+      "eyebrow": "セキュリティ · MFA",
+      "otpauth_url": "otpauth URL",
+      "remove": "削除",
+      "secret": "シークレット（base32）",
+      "title": "TOTP 登録",
+      "verified": "TOTP 登録が検証されました。",
+      "verified_at": "検証日時 {date}",
+      "verified_badge": "検証済み",
+      "verified_enrollments": "検証済み登録",
+      "verify": "登録を検証",
+      "errors": {
+        "invalid_code": "有効な6桁のコードを入力してください。",
+        "start": "TOTP 登録を開始できません。",
+        "verify": "MFA 登録を検証できません。"
+      }
+    }
+  },
+  "admin": {
+    "auth": {
+      "aria_label": "認証設定",
+      "eyebrow": "組織 · 認証",
+      "mfa_optional": "MFA 任意",
+      "mfa_required": "MFA 必須",
+      "provider_count": "{count} 件のプロバイダー",
+      "state_aria_label": "認証状態",
+      "title": "認証設定",
+      "access_section": {
+        "eyebrow": "管理 · テナント制御",
+        "title": "アクセスポリシー"
+      },
+      "idp": {
+        "add_provider": "プロバイダーを追加",
+        "add_title": "ID プロバイダーを追加",
+        "client_id": "クライアント ID",
+        "client_secret": "クライアントシークレット",
+        "client_secret_keep": "クライアントシークレット（現在の値を保持する場合は空欄）",
+        "description": "レビュアーと管理者用のサインイン機関を接続します。",
+        "edit_title": "プロバイダーを編集",
+        "issuer": "発行者",
+        "metadata_url": "メタデータ URL",
+        "name": "名前",
+        "provider_type": "プロバイダー種別",
+        "saml_cert": "IdP 署名証明書",
+        "saml_cert_keep": "IdP 署名証明書（現在の値を保持する場合は空欄）",
+        "saml_cert_placeholder": "base64 証明書または完全な PEM ブロックを貼り付け",
+        "saml_entity_id": "IdP エンティティ ID",
+        "saml_entry_point": "IdP エントリーポイント URL",
+        "saml_help_prefix": "IdP を設定するには SP メタデータを",
+        "saml_help_suffix": "からダウンロードします。",
+        "save_provider": "プロバイダーを保存",
+        "saving": "保存中...",
+        "scope": "スコープ",
+        "view_plans": "プランを見る",
+        "status": {
+          "client_id_required": "OIDC プロバイダーにはクライアント ID が必要です。",
+          "missing_provider": "ID プロバイダーがありません。",
+          "name_issuer_required": "名前と発行者が必要です。",
+          "removed": "ID プロバイダーを削除しました。",
+          "saml_cert_required": "SAML プロバイダーには IdP 署名証明書が必要です。",
+          "saml_entry_point_required": "SAML プロバイダーには IdP エントリーポイント URL が必要です。",
+          "saved": "ID プロバイダーを保存しました。"
+        }
+      },
+      "mfa": {
+        "description": "すべてのコントロールプレーンプリンシパルの基本認証姿勢を設定します。",
+        "grace_days": "MFA 猶予期間（日）",
+        "require": "MFA を必須にする",
+        "require_description": "すべてのローカルコントロールプレーンユーザーに適用されます。",
+        "saving": "保存中...",
+        "submit": "テナント設定を保存",
+        "title": "MFA 要件",
+        "status": {
+          "updated": "テナント MFA 設定を更新しました。"
+        }
+      },
+      "provider_section": {
+        "eyebrow": "管理 · ID フェデレーション",
+        "title": "プロバイダー接続"
+      },
+      "providers": {
+        "client_id": "クライアント ID",
+        "empty_description": "OIDC を追加して、コントロールプレーンのサインインを ID プロバイダー経由にします。",
+        "empty_title": "プロバイダーは未設定です",
+        "eyebrow": "管理 · プロバイダー",
+        "issuer": "発行者",
+        "title": "ID プロバイダー"
+      },
+      "remove_provider": {
+        "confirm": "{providerName} を ID プロバイダーから削除しますか？ユーザーはこのサインイン経路を失う可能性があります。",
+        "remove": "プロバイダーを削除",
+        "removed": "削除済み",
+        "removing": "削除中...",
+        "status": {
+          "removed": "ID プロバイダーを削除しました。"
+        }
+      },
+      "scim": {
+        "description": "ID プロバイダーからユーザー、グループ、ワークスペース権限を同期します。",
+        "eyebrow": "管理 · SCIM",
+        "plan": "Enterprise",
+        "title": "ディレクトリライフサイクル",
+        "tokens": {
+          "eyebrow": "プロビジョニングトークン",
+          "title": "テナント別 SCIM トークン",
+          "endpoint_hint": "SCIM ベース URL:",
+          "empty": "アクティブなプロビジョニングトークンはありません。",
+          "label": "ラベル",
+          "label_placeholder": "例: Okta 本番環境",
+          "generate": "トークンを生成",
+          "generating": "生成中…",
+          "created": "作成日",
+          "created_by": "作成者",
+          "last_used": "最終使用",
+          "never_used": "未使用",
+          "revoke": "取り消す",
+          "copy": "コピー",
+          "copied": "コピーしました",
+          "copy_warning": "このトークンは一度しか表示されません。今すぐコピーしてください。",
+          "status": {
+            "auth_required": "認証が必要です。",
+            "workspace_unavailable": "ワークスペースコンテキストを利用できません。",
+            "admin_required": "管理者権限が必要です。",
+            "not_entitled": "SCIM プロビジョニングには Enterprise サブスクリプションが必要です。",
+            "write_denied": "このデモテナントでは書き込みアクセスが無効です。",
+            "create_failed": "SCIM トークンの作成に失敗しました。",
+            "revoke_failed": "トークンが見つからないか、すでに取り消されています。"
+          }
+        }
+      }
+    },
+    "service_keys": {
+      "active_count": "{count} 件の有効なキー",
+      "aria_label": "サービスアカウントキー管理",
+      "description": "CLI、CI/CD、ヘッドレスランタイムアクセス用のスコープ付き自動化キーを発行します。",
+      "eyebrow": "管理 · サービスキー",
+      "generate_aria_label": "新しいキーを生成",
+      "never": "なし",
+      "title": "サービスアカウントキー",
+      "active": {
+        "eyebrow": "サービスキー · 有効",
+        "title": "このワークスペースの API キー"
+      },
+      "empty": {
+        "description": "キーを生成して、ヘッドレス CLI と CI/CD アクセスを有効にします。",
+        "title": "有効なキーはありません"
+      },
+      "form": {
+        "copied": "コピー済み",
+        "copy": "コピー",
+        "copy_warning": "このトークンは再表示されません。今すぐコピーしてください。",
+        "created_eyebrow": "サービスキー · 作成済み",
+        "done": "完了",
+        "expires": "有効期限（日数）",
+        "expires_hint": "（任意、1～365）",
+        "expires_placeholder": "なし（空欄のまま）",
+        "generate": "キーを生成",
+        "generating": "生成中…",
+        "label": "ラベル",
+        "label_placeholder": "例: GitHub Actions — my-repo",
+        "prefix": "プレフィックス:",
+        "scopes": "スコープ",
+        "status": {
+          "admin_required": "管理者権限が必要です。",
+          "auth_required": "認証が必要です。",
+          "label_required": "ラベルが必要です。",
+          "permission_denied": "権限がありません。",
+          "write_denied": "書き込みアクセスが拒否されました。",
+          "workspace_unavailable": "ワークスペースコンテキストを利用できません。",
+          "scope_required": "少なくとも 1 つのスコープを選択してください。"
+        }
+      },
+      "new": {
+        "eyebrow": "サービスキー · 新規",
+        "title": "サービスアカウントキーを生成"
+      },
+      "revoke": {
+        "confirm": "サービスキー {label} を取り消しますか？このキーを使用している既存の CI、CLI、自動化は認証できなくなります。",
+        "revoke": "取り消し",
+        "revoked": "取り消し済み",
+        "revoking": "取り消し中...",
+        "status": {
+          "admin_required": "管理者権限が必要です。",
+          "auth_required": "認証が必要です。",
+          "missing_key": "サービスキーがありません。",
+          "not_found": "サービスキーが見つからないか、すでに取り消されています。",
+          "permission_denied": "権限がありません。",
+          "write_denied": "書き込みアクセスが拒否されました。",
+          "workspace_unavailable": "ワークスペースコンテキストを利用できません。",
+          "revoked": "サービスキーを取り消しました。"
+        }
+      },
+      "table": {
+        "actions": "操作",
+        "created": "作成日時",
+        "expires": "有効期限",
+        "label": "ラベル",
+        "last_used": "最終使用",
+        "scopes": "スコープ",
+        "token_prefix": "トークンプレフィックス"
+      },
+      "usage": {
+        "code_sample": "# CI プロバイダーのシークレットとして保存し、次のように参照します:\nSPCTRE_API_TOKEN=spctre_svc_... spctre sync",
+        "description": "キーをリポジトリシークレットとして保存し、ワークフローから参照します。",
+        "eyebrow": "サービスキー · CI/CD",
+        "title": "サービスアカウントキーの使用"
+      }
+    },
+    "webhooks": {
+      "active_count": "{count} 件の有効なシークレット",
+      "aria_label": "ゲートウェイ Webhook シークレット管理",
+      "description": "受信ゲートウェイ Webhook（Portkey、Helicone、LiteLLM、Notion）用に、連携ごとのシークレットを発行します。各シークレットはプロバイダーをこのワークスペースに関連付けるため、テナントとワークスペースは呼び出し元指定のヘッダーではなくシークレットから導出されます。シークレットは一度だけ表示されます。",
+      "eyebrow": "管理 · Webhook",
+      "generate_aria_label": "新しい Webhook シークレットを生成",
+      "title": "ゲートウェイ Webhook シークレット",
+      "active": {
+        "eyebrow": "ゲートウェイ Webhook · 有効",
+        "title": "このワークスペースの Webhook シークレット"
+      },
+      "empty": {
+        "description": "このワークスペースの受信ゲートウェイ Webhook を認証するシークレットを生成します。",
+        "title": "有効な Webhook シークレットはありません"
+      },
+      "form": {
+        "configure_generic_prefix": "（汎用",
+        "configure_generic_suffix": "ヘッダーも使用できます）。テナントとワークスペースはシークレットから導出されます。他のヘッダーは信頼されません。",
+        "configure_header_suffix": "ヘッダー",
+        "configure_prefix": "{provider} Webhook がこのシークレットを送信するように設定してください。使用するヘッダー:",
+        "copied": "コピー済み",
+        "copy": "コピー",
+        "copy_warning": "このシークレットは再表示されません。今すぐコピーしてください。",
+        "created_eyebrow": "ゲートウェイ Webhook · 作成済み",
+        "done": "完了",
+        "generate": "Webhook シークレットを生成",
+        "generating": "生成中…",
+        "label": "ラベル",
+        "label_hint": "（任意）",
+        "label_placeholder": "例: Portkey — prod gateway",
+        "provider": "プロバイダー",
+        "status": {
+          "admin_required": "管理者権限が必要です。",
+          "auth_required": "認証が必要です。",
+          "permission_denied": "権限がありません。",
+          "unsupported_provider": "サポートされているプロバイダーを選択してください。",
+          "write_denied": "書き込みアクセスが拒否されました。",
+          "workspace_unavailable": "ワークスペースコンテキストを利用できません。"
+        }
+      },
+      "new": {
+        "eyebrow": "ゲートウェイ Webhook · 新規",
+        "title": "Webhook シークレットを生成"
+      },
+      "revoke": {
+        "confirm": "Webhook シークレット {label} を取り消しますか？このシークレットを使用する受信 Webhook はすぐに認証できなくなります。",
+        "revoke": "取り消し",
+        "revoked": "取り消し済み",
+        "revoking": "取り消し中...",
+        "status": {
+          "admin_required": "管理者権限が必要です。",
+          "auth_required": "認証が必要です。",
+          "missing_registration": "Webhook 登録がありません。",
+          "not_found": "Webhook が見つからないか、すでに取り消されています。",
+          "permission_denied": "権限がありません。",
+          "revoked": "Webhook シークレットを取り消しました。",
+          "write_denied": "書き込みアクセスが拒否されました。",
+          "workspace_unavailable": "ワークスペースコンテキストを利用できません。"
+        }
+      },
+      "setup": {
+        "code_sample": "# すべての受信ゲートウェイ Webhook はシークレットを送信します（例: Portkey）:\nx-portkey-webhook-secret: gwh_...",
+        "description_prefix": "シークレットをプロバイダーの Webhook 設定に貼り付けます。各受信リクエストでプロバイダーの署名ヘッダーに送信されます（または汎用",
+        "description_suffix": " ヘッダー）。",
+        "eyebrow": "ゲートウェイ Webhook · セットアップ",
+        "title": "Webhook シークレットの使用"
+      },
+      "table": {
+        "actions": "操作",
+        "created": "作成日時",
+        "created_by": "作成者",
+        "label": "ラベル",
+        "provider": "プロバイダー",
+        "registration": "登録"
+      }
+    },
+    "members": {
+      "aria_label": "メンバー管理",
+      "description": "組み込みロール、ワークスペース上書き、招待状態、RBAC 監査履歴を管理します。",
+      "enterprise": "Enterprise",
+      "eyebrow": "組織 · メンバー",
+      "none": "なし",
+      "sidebar_aria_label": "招待、RBAC 監査、Cloud 制御",
+      "title": "組織メンバー",
+      "view_plans": "プランを見る",
+      "counts": {
+        "active": "{count} 件がアクティブ",
+        "pending": "{count} 件が保留中",
+        "seats": "{count} 件のシート"
+      },
+      "summary": {
+        "active": "アクティブ",
+        "admins": "管理者",
+        "aria_label": "メンバーアクセス概要",
+        "mfa_or_passkey": "MFA またはパスキー",
+        "pending_invites": "{count} 件の保留中の招待",
+        "provisioned_users": "プロビジョニング済みユーザー",
+        "stronger_auth": "強力な認証あり",
+        "tenant_level_access": "テナントレベルアクセス",
+        "total_seats": "合計シート"
+      },
+      "table_section": {
+        "eyebrow": "管理 · シート管理",
+        "title": "メンバーとワークスペース上書き"
+      },
+      "table": {
+        "access_state": "アクセス状態",
+        "actions": "操作",
+        "member": "メンバー",
+        "org_role": "組織ロール",
+        "workspace_access": "ワークスペースアクセス"
+      },
+      "member_row": {
+        "active": "アクティブ",
+        "inherit_org_role": "すべてのワークスペースは組織ロールを継承します",
+        "last_active": "最終アクティブ: {date}",
+        "mfa_enrolled": "MFA 登録済み",
+        "mfa_not_enrolled": "MFA 未登録",
+        "no_reviewer_lanes": "レビュアーレーンなし",
+        "passkeys": "{count} 件のパスキー",
+        "pending": "保留中",
+        "you": "自分"
+      },
+      "role_matrix": {
+        "capabilities": "機能",
+        "eyebrow": "組織 · ロール",
+        "publish_scopes": "公開スコープ",
+        "reviewer_lanes": "レビュアーレーン",
+        "role": "ロール",
+        "title": "権限マトリクス"
+      },
+      "invite_section": {
+        "eyebrow": "ワークフロー · ユーザーライフサイクル",
+        "title": "メンバーを招待"
+      },
+      "invite_form": {
+        "create": "招待を作成",
+        "creating": "作成中...",
+        "description": "基本の組織ロールを割り当てます。ワークスペース上書きは招待作成後に追加できます。",
+        "display_name": "表示名",
+        "display_name_placeholder": "Avery Reviewer",
+        "email": "メール",
+        "email_placeholder": "avery@example.com",
+        "organization_role": "組織ロール",
+        "title": "メンバーを招待"
+      },
+      "granular": {
+        "coming_soon": "詳細なロール設定は近日提供予定です。",
+        "description": "レビュアーレーン、公開スコープ、環境境界、ワークスペース制約からカスタムロールを構成し、すべてのロール変更を RBAC 監査ログに残します。",
+        "eyebrow": "管理 · カスタムロール",
+        "fallback_description": "高度なレビュアーレーン、公開スコープ、環境レベルの権限は、招待時の一回限りの権限ではなく、ここでカスタムロールとして管理されます。",
+        "title": "詳細な権限",
+        "dimensions": {
+          "environment_bounds": {
+            "label": "環境境界",
+            "value": "開発、ステージング、本番、またはカスタムタグ"
+          },
+          "publish_scopes": {
+            "label": "公開スコープ",
+            "value": "ワークスペース、コネクター、環境、組織"
+          },
+          "reviewer_lanes": {
+            "label": "レビュアーレーン",
+            "value": "Security、Platform、Legal、Ops、Admin"
+          }
+        }
+      },
+      "audit": {
+        "badge": "監査",
+        "empty_description": "招待、ロール変更、ワークスペース上書きがここに表示されます。",
+        "empty_title": "RBAC 変更はまだありません",
+        "eyebrow": "監査 · RBAC",
+        "tenant": "テナント",
+        "title": "最近の変更"
+      },
+      "inspector": {
+        "active": "アクティブ",
+        "all_workspaces_inherit": "すべてのワークスペースは組織ロールを継承します。",
+        "applying": "適用中…",
+        "apply_role": "ロールを適用",
+        "cannot_remove_self": "この画面から自分自身のメンバーシップを削除することはできません。",
+        "confirm_remove_member": "{name} を組織から削除しますか？この操作は元に戻せません。",
+        "confirm_revoke_invite": "{name} への保留中の招待を取り消しますか？招待は受諾できなくなります。",
+        "current_user": "現在のユーザー",
+        "inherit_org_role": "組織ロールを継承",
+        "inspect": "詳細",
+        "invite_revoked": "招待を取り消しました",
+        "last_active": "最終アクティブ",
+        "lifecycle": "ライフサイクル",
+        "member_actions": "メンバー操作",
+        "member_removed": "メンバーを削除しました",
+        "mfa_enrolled": "MFA 登録済み",
+        "mfa_not_enrolled": "MFA 未登録",
+        "no_reviewer_lanes_tenant": "テナントロールから割り当てられたレビュアーレーンはありません。",
+        "no_workspaces": "ワークスペースなし",
+        "organization_role": "組織ロール",
+        "override_option": "上書き: {role}",
+        "override_role": "上書きロール",
+        "overrides": "上書き",
+        "panel_eyebrow": "管理 · メンバー",
+        "passkeys": "パスキー",
+        "pending": "保留中",
+        "remove_member": "メンバーを削除",
+        "removing": "削除中...",
+        "revoke_invite": "招待を取り消し",
+        "revoking": "取り消し中...",
+        "reviewer_lanes": "レビュアーレーン: {lanes}",
+        "role": "ロール",
+        "save_override": "上書きを保存",
+        "saving": "保存中...",
+        "status": "状態",
+        "summary_aria_label": "メンバーアクセス概要",
+        "tenant_access": "テナントアクセス",
+        "workspace": "ワークスペース",
+        "workspace_access": "ワークスペースアクセス",
+        "workspace_override": "ワークスペース上書き"
+      }
+    },
+    "workflows": {
+      "builder_aria_label": "承認ワークフロービルダー",
+      "cloud": "Cloud",
+      "description": "ワークスペースと環境ごとに公開ゲートを設定します。",
+      "eyebrow": "管理 · ワークフロー",
+      "sidebar_aria_label": "ワークフロー監査と管理コントロール",
+      "title": "承認ワークフロー",
+      "counts": {
+        "enabled": "{count} 件が有効",
+        "workflows": "{count} 件のワークフロー"
+      },
+      "rules": {
+        "eyebrow": "ワークフロー · ゲート",
+        "title": "有効なワークフロールール"
+      },
+      "enforcement": {
+        "description": "高リスクポリシーを自動的にルーティングし、古い承認を期限切れにし、レビュアーへ通知します。",
+        "eyebrow": "ワークフロー · Enforcement",
+        "title": "リスクルーティングとリマインダー"
+      },
+      "audit": {
+        "badge": "監査",
+        "empty_description": "ルール編集とモード変更がここに表示されます。",
+        "empty_title": "ワークフロー変更はまだありません",
+        "eyebrow": "監査 · ワークフロー",
+        "title": "最近の変更",
+        "workflow_fallback": "ワークフロー"
+      },
+      "form": {
+        "allow_immediate_publish": "即時パック公開を許可",
+        "allow_immediate_publish_description": "有効にすると、ワークスペース管理者は別のレビュー手順なしでポリシーパックをインストールまたはアップグレードし、直接公開できます。",
+        "approval_role": "承認ロール",
+        "create_description": "スコープとレビューモードを設定し、最初の必須ゲートを定義します。",
+        "create_title": "ワークフローポリシーを作成",
+        "edit_description": "スコープとレビューモードを調整し、次の必須ゲートを追加します。",
+        "edit_title": "ワークフローポリシーを編集",
+        "environment": "環境",
+        "environment_placeholder": "production",
+        "name": "名前",
+        "require_verification": "公開前に AGT 検証を必須にする",
+        "require_verification_description": "パイプラインで AGT 検証を実行しないチームではオフのままにします。",
+        "required_count": "必須人数",
+        "required_rule": "必須ルール",
+        "review_mode": "レビューモード",
+        "save_changes": "変更を保存",
+        "save_workflow": "ワークフローを保存",
+        "saving": "保存中...",
+        "tenant_default": "テナントデフォルト",
+        "workspace_scope": "ワークスペーススコープ",
+        "review_modes": {
+          "parallel": "並列",
+          "sequential": "順次"
+        }
+      },
+      "table": {
+        "active_approval_gates": "有効な承認ゲート",
+        "configuration": "設定",
+        "confirm_disable": "ワークフロー \"{name}\" を無効にしますか？",
+        "confirm_remove_rule": "\"{name}\" からルール {sequence} ({role}) を削除しますか？",
+        "create_panel_description": "スコープ、レビューモード、初期承認ゲートを持つワークフローを作成します。",
+        "current_state": "現在の状態",
+        "details_aria_label": "ワークフロー詳細",
+        "disable_blocked_title": "少なくとも 1 つの有効なワークフローを残す必要があります。",
+        "disable_workflow": "ワークフローを無効化",
+        "disabled": "無効",
+        "disabling": "無効化中...",
+        "enabled": "有効",
+        "fallback_behavior": "フォールバック動作: 管理者のみの承認ゲート（1 件必須）。",
+        "gate_configuration": "ゲート設定",
+        "inspect": "詳細",
+        "lifecycle_aria_label": "ワークフローライフサイクル制御",
+        "lifecycle_description": "ここでの編集により、このスコープ内の有効で未公開のリビジョンの承認がリセットされ、承認者は最新のゲート設定で再レビューします。",
+        "lifecycle_eyebrow": "ワークフロー · ライフサイクル",
+        "mode": "モード",
+        "new_workflow": "新しいワークフロー",
+        "no_rules": "ルールなし",
+        "no_rules_configured": "このワークフローにはルールが設定されていません。",
+        "one_rule": "{role} ルール",
+        "panel_description": "{scope} · {mode} レビュー",
+        "panel_eyebrow": "ワークフロー · ゲート",
+        "policy_editor_eyebrow": "ワークフロー · ポリシーエディター",
+        "rereview_required": "再レビューが必要",
+        "remove": "削除",
+        "review_impact_title": "レビュー影響とライフサイクル",
+        "rule_builder_aria_label": "ワークフロールールビルダー",
+        "rule_required_from": "{roles} から {count} 件必須",
+        "rule_set_eyebrow": "ワークフロー · ルールセット",
+        "rules": "ルール",
+        "rules_aria_label": "ワークフロールール",
+        "scope": "スコープ",
+        "snapshot_eyebrow": "ワークフロー · スナップショット",
+        "status": "状態",
+        "tenant_default": "テナントデフォルト",
+        "toolbar_description": "ワークフローを開いてポリシー編集、ゲート調整、ライフサイクル操作を一か所で管理します。",
+        "updated": "更新日時",
+        "workflow": "ワークフロー"
+      }
+    },
+    "localization": {
+      "aria_label": "用語の上書き",
+      "description": "選択した言語で利用できる一般的な製品用語に、チームで使い慣れた名前を設定します。",
+      "eyebrow": "管理 · ローカリゼーション",
+      "title": "用語とブランディング",
+      "language": {
+        "description": "上書きは言語ごとに管理されます。言語を切り替えて、それぞれのセットを個別に管理します。",
+        "eyebrow": "ローカリゼーション · 言語",
+        "field": "言語",
+        "submit": "言語を切り替え",
+        "title": "言語"
+      },
+      "add": {
+        "custom_value": "カスタム値",
+        "custom_value_placeholder": "監査証跡",
+        "description": "置き換えるラベルキーを選び、組織で使用する用語を入力します（例: <code>navigation.audit_log</code> を独自の表記に変更）。",
+        "eyebrow": "ローカリゼーション · 上書きを追加",
+        "submit": "上書きを保存",
+        "title": "上書きを追加または更新",
+        "translation_key": "翻訳キー",
+        "translation_key_placeholder": "navigation.audit_log"
+      },
+      "manage": {
+        "actions": "操作",
+        "custom_value": "カスタム値",
+        "empty": "この言語の用語上書きはまだありません。",
+        "eyebrow": "ローカリゼーション · 管理",
+        "key": "キー",
+        "remove": "削除",
+        "standard_label": "標準ラベル",
+        "title": "有効な上書き（{locale}）"
+      },
+      "status": {
+        "admin_required": "管理者権限が必要です。",
+        "missing_fields": "翻訳キーとカスタム値の両方が必要です。",
+        "missing_key": "上書きを削除するには翻訳キーが必要です。",
+        "removed": "\"{key}\" の上書きを削除しました。",
+        "saved": "\"{key}\" の上書きを保存しました。",
+        "storage_unavailable": "このデータベースではローカリゼーションストレージをまだ利用できません。",
+        "unknown_key": "不明な翻訳キー \"{key}\"。",
+        "unsupported_language": "サポートされていない言語選択です。"
+      }
+    },
+    "workspace": {
+      "aria_label": "ワークスペース管理",
+      "description": "テナントのワークスペースを一か所で作成、更新、削除します。",
+      "eyebrow": "管理 · ワークスペース",
+      "title": "ワークスペース管理",
+      "create": {
+        "eyebrow": "ワークスペース · 作成",
+        "name": "名前",
+        "name_placeholder": "Payments Ops",
+        "slug": "スラッグ（任意）",
+        "slug_placeholder": "payments-ops",
+        "submit": "ワークスペースを作成",
+        "title": "新しいワークスペース"
+      },
+      "language": {
+        "description": "個人設定をまだ選んでいないメンバーに使われるフォールバック言語です。各ユーザーはアカウント設定で個別に上書きできます。",
+        "eyebrow": "組織 · 言語",
+        "field": "デフォルト言語",
+        "submit": "デフォルト言語を保存",
+        "title": "デフォルト言語"
+      },
+      "manage": {
+        "eyebrow": "ワークスペース · 管理",
+        "title": "既存のワークスペース"
+      },
+      "card": {
+        "active": "アクティブ",
+        "confirm_label": "確認のため DELETE と入力",
+        "created": "作成日時 {createdAt}",
+        "delete": "ワークスペースを削除",
+        "delete_description": "\"{name}\" とそのすべてのデータを完全に削除します。この操作は元に戻せません。",
+        "delete_disabled_title": "このワークスペースを削除する前に、別のワークスペースへ切り替えてください。",
+        "delete_eyebrow": "管理 · 危険ゾーン",
+        "delete_title": "ワークスペースを削除",
+        "name": "名前",
+        "permanently_delete": "完全に削除",
+        "save": "ワークスペースを保存",
+        "saving": "保存中…",
+        "slug": "スラッグ"
+      },
+      "status": {
+        "admin_required": "管理者権限が必要です。",
+        "created": "ワークスペース {slug} を作成しました。",
+        "database_unconfigured": "データベースが構成されていません。",
+        "deleted": "ワークスペース {slug} を削除しました。",
+        "delete_confirm": "ワークスペースを削除するには DELETE と入力してください。",
+        "locale_storage_unavailable": "このデータベースではローカリゼーションストレージをまだ利用できません。",
+        "locale_updated": "組織のデフォルト言語を {locale} に設定しました。",
+        "unsupported_language": "サポートされていない言語選択です。",
+        "updated": "ワークスペース {slug} を更新しました。"
+      }
+    }
+  },
+  "auth": {
+    "awaiting_access": {
+      "back": "サインインに戻る",
+      "description": "このアカウントでコントロールプレーンを使用するには、管理者がレビュアーロールまたは公開スコープを割り当てる必要があります。",
+      "eyebrow": "アクセス保留中",
+      "title": "SSO アカウントは接続されています"
+    },
+    "device": {
+      "approve": "デバイスを承認",
+      "approved_badge": "承認済み",
+      "approved_description": "ターミナルに戻ってください。CLI がワークスペースへの接続を完了します",
+      "approved_title": "デバイスを承認しました",
+      "auth_required": "認証が必要です",
+      "default_workspace": "default",
+      "description": "ターミナルに表示されたコードを入力し、バンドル同期、ハートビート、ランタイム証跡用のスコープ付きトークンを承認します。",
+      "device_code": "デバイスコード",
+      "eyebrow": "デバイス認可",
+      "format": "形式: <code>SPCTRE-XXXX-XXXX</code>",
+      "principal": "サインイン中のプリンシパル",
+      "sign_in": "サインインして承認",
+      "title": "CLI または CI エージェントを接続",
+      "token_scope": "トークンスコープ",
+      "errors": {
+        "missing_code": "デバイスコードがありません。"
+      }
+    },
+    "login": {
+      "email": {
+        "email": "メールアドレス",
+        "email_placeholder": "you@example.com",
+        "magic_link": "マジックリンクをメール送信",
+        "magic_sent": "そのメールアドレスにアカウントがある場合、サインインリンクを送信しました。受信トレイを確認してください。",
+        "sending_link": "リンクを送信中…",
+        "use_passkey": "パスキーを使用",
+        "verifying": "検証中…",
+        "errors": {
+          "browser_unsupported": "このブラウザはパスキーログインをサポートしていません。",
+          "cancelled": "パスキーログインがキャンセルされました。",
+          "magic_link": "マジックリンクの送信中に問題が発生しました。もう一度お試しください。",
+          "passkey_failed": "パスキーログインに失敗しました。",
+          "passkey_unknown": "パスキーでサインインできません。",
+          "start_passkey": "パスキーログインを開始できません。"
+        }
+      },
+      "sms_mfa": {
+        "retry": "コード送信を再試行",
+        "send": "SMS でコードを送信",
+        "sending": "コードを送信中...",
+        "sent": "コードを送信しました。電話を確認してください。",
+        "errors": {
+          "send_failed": "確認コードを送信できませんでした。",
+          "unknown": "SMS を送信できません。"
+        }
+      },
+      "page": {
+        "auth_error": "認証エラー: {error}",
+        "brand_meta": "コントロールプレーンアクセス",
+        "create_local": "ローカル開発ユーザーを作成",
+        "description": "メールのマジックリンクまたはパスキーでサインインします。",
+        "description_sso": "メールのマジックリンク、SSO、またはパスキーでサインインします。",
+        "header_note": "メールのマジックリンクまたはパスキーでワークスペースにアクセスします。",
+        "header_note_sso": "マジックメール、SSO、またはパスキーでワークスペースにアクセスします。",
+        "local_signup_created": "ローカルユーザーを作成しました。下から選択してサインインしてください。",
+        "recover": "アクセスできませんか？復旧コードを使用",
+        "title": "サインイン",
+        "demo": {
+          "default_persona": "デフォルトペルソナ",
+          "description": "サンプルのポリシーブランチ、証跡、レビューキューを含むシード済みデモテナントとワークスペースを開きます。",
+          "launch": "デモを起動",
+          "tenant": "テナント",
+          "title": "Demo Cloud 体験",
+          "warning": "デモでの書き込みはブロックされます。変更を保存するには、非デモのワークスペースを作成するかサインインしてください。",
+          "workspace": "ワークスペース"
+        },
+        "local": {
+          "empty": "利用可能なローカルアカウントはありません",
+          "field": "ローカルアカウント",
+          "hint": "これらのアカウントはデプロイに事前シードされています。",
+          "select": "ローカルアカウントを選択",
+          "submit": "サインイン"
+        },
+        "mfa": {
+          "code": "MFA コード",
+          "description": "このテナントでは、コントロールプレーンにアクセスする前に MFA が必要です。",
+          "submit": "検証して続行"
+        },
+        "sso": {
+          "github": "GitHub で続行",
+          "google": "Google で続行",
+          "oidc": "SSO で続行",
+          "or": "または",
+          "saml": "SAML SSO で続行"
+        }
+      }
+    },
+    "recover": {
+      "back": "サインインに戻る",
+      "brand_meta": "アカウント復旧",
+      "code": "復旧コード",
+      "description": "バックアップ復旧コードのいずれかを使用します。各コードは一度だけ使用できます。",
+      "email": "メールアドレス",
+      "email_placeholder": "you@example.com",
+      "header_note": "アクセスを復旧するには、メールアドレスと復旧コードを入力してください。",
+      "submit": "検証してサインイン",
+      "title": "復旧コード",
+      "verifying": "検証中…",
+      "errors": {
+        "invalid_code": "メールアドレスまたは復旧コードが無効です。",
+        "unexpected": "問題が発生しました。もう一度お試しください。",
+        "verify": "検証できません。もう一度お試しください。"
+      }
+    },
+    "signup": {
+      "back": "ログインに戻る",
+      "description": "このショートカットは <code>LOCAL_SIGNUP_ENABLED=true</code> の場合のみ利用できます。",
+      "display_name": "表示名",
+      "display_name_placeholder": "Local Admin",
+      "email": "メール",
+      "email_placeholder": "you@example.com",
+      "error": "サインアップエラー: {error}",
+      "eyebrow": "ローカル開発",
+      "submit": "ローカルユーザーを作成",
+      "title": "ローカルユーザーを作成"
+    }
+  },
+  "errors": {
+    "LIMIT_EXCEEDED": "上限 {limit} を超過しました。現在の値: {actual}。",
+    "POLICY_FILE_NOT_FOUND": "ポリシーファイルが見つかりません: {filePath}",
+    "UNKNOWN_CONNECTOR": "コネクタ \"{connector}\" はパックカタログにありません。",
+    "UNKNOWN_ACTION": "アクション \"{action}\" はコネクタ \"{connector}\" にありません。",
+    "AUTH_REQUIRED": "認証が必要です。",
+    "INVALID_WORKSPACE": "ワークスペースのコンテキストが無効です。",
+    "PLAN_REQUIRED": "この機能には {plan} プランが必要です。",
+    "POLICY_NOT_FOUND": "ポリシーが見つかりません。"
+  },
+  "agents": {
+    "title": "エージェント",
+    "summary": {
+      "current": "{count} 件が最新",
+      "outdated": "{count} 件が古い",
+      "stale": "{count} 件が停止"
+    },
+    "hero": {
+      "aria_label": "エージェントフリートの概要",
+      "eyebrow": "来歴 · フリート",
+      "title": "接続済みエージェント",
+      "meta": "{total} 件のエージェント · {current} 件が最新 · {outdated} 件が古い · {stale} 件が停止 (直近1時間)。",
+      "guidance": "ガイダンス",
+      "guardrails": "ガードレール",
+      "install_hint": "<skill>spctre install-skill</skill> と <hook>spctre install-hook</hook> を使ってエージェントごとにインストールします。",
+      "stats": {
+        "total_agents": "エージェント合計",
+        "current_policy": "現在のポリシーに準拠",
+        "deny_rate": "フリートの拒否率"
+      }
+    },
+    "fleet": {
+      "eyebrow": "来歴 · フリートコンプライアンス",
+      "title": "ポリシーに準拠したエージェント",
+      "description": "エージェントごとのドリフト、ハートビート、ランタイム、コネクタのカバレッジ。",
+      "empty": {
+        "title": "接続済みのエージェントがありません",
+        "description": "エージェントを1つ接続すると、ドリフト、ハートビート、ランタイム、コネクタのカバレッジがここに表示されます。"
+      }
+    },
+    "trust": {
+      "eyebrow": "ポリシー構成 · トラストキャリブレーション",
+      "title": "トラストキャリブレーション",
+      "description_prefix": "トラストスコアとコンテキスト予算のしきい値はポリシーオブジェクトです。次で構成します:",
+      "link": "コストと使用量 → トラストキャリブレーション"
+    }
+  },
+  "packs": {
+    "title": "パック",
+    "hero": {
+      "aria_label": "保守対象のポリシーパック作成支援",
+      "eyebrow": "ポリシー作成 · 保守対象の語彙",
+      "title": "統制されたアクションから始め、ポリシーを調整する",
+      "description": "パックは、安全なデフォルト、ルール作成用の型付きアクションとパラメーター、期待する決定を検証する回帰フィクスチャを提供します。",
+      "stats": {
+        "maintained": "保守対象の作成支援",
+        "installed": "インストール済み",
+        "high_risk": "高リスクのインストール済み"
+      }
+    },
+    "catalog": {
+      "eyebrow": "パックカタログ · 作成支援",
+      "title": "保守対象のパックを優先",
+      "description": "Stripe、GitHub、Kubernetes/デプロイ、PostgreSQL、Zendesk/サポートが保守対象です。互換パックは既存のワークフロー向けに引き続き利用できます。",
+      "updates": "{count, plural, other {#件の更新}}"
+    },
+    "filters": {
+      "search_aria_label": "ポリシーパックを検索",
+      "find_label": "パックを探す",
+      "placeholder": "コネクタ、タグ、ドメイン、ルール、またはアクションを検索",
+      "count": "全 {total} パック中",
+      "reset": "リセット",
+      "quick_filters_aria_label": "タグのクイックフィルター",
+      "empty_title": "これらのフィルターに一致するパックはありません。",
+      "empty_description": "タグを解除するか、別のコネクタ、ドメイン、ルール、アクションを検索してください。"
+    },
+    "tiers": {
+      "catalog_status": "カタログの状態",
+      "canonical": {
+        "eyebrow": "保守対象セット",
+        "title": "推奨される作成支援",
+        "description": "Spctre が保守する安全なデフォルト、型付き語彙、回帰フィクスチャです。",
+        "pill": "保守対象",
+        "status": "保守対象の作成支援"
+      },
+      "compatible": {
+        "eyebrow": "追加のサポート対象パック",
+        "title": "ワークフロー向けのその他の選択肢",
+        "description": "ワークフローに合う場合はすぐに利用できます。必要なコネクタが見つかりませんか？対応してほしいガバナンス対象アクションをお知らせください。",
+        "pill": "互換",
+        "status": "互換"
+      }
+    }
+  },
+  "evidence": {
+    "header": {
+      "eyebrow_context": "監査ログ",
+      "title": "監査ログ",
+      "policy_replay": "ポリシーリプレイ"
+    },
+    "overview": {
+      "aria_label": "証跡の概要",
+      "eyebrow": "監査 · 決定",
+      "title": "ランタイム決定",
+      "live_ingest": "ライブ取り込み",
+      "demo_ingest": "デモ取り込み",
+      "meta": "{mode} · {count} 件の決定を保持 (30日) · 直近 {shown} 件を表示。",
+      "stats": {
+        "total": "決定の合計",
+        "matches": "検索一致",
+        "statuses": "拒否 / 警告 / 許可"
+      }
+    },
+    "stream": {
+      "eyebrow": "監査 · 証跡ストリーム",
+      "title": "証跡ストリーム",
+      "showing": "{total} 件中 {shown} 件の決定を表示",
+      "prev_short": "前",
+      "next_short": "次",
+      "previous_page": "前のページ",
+      "next_page": "次のページ",
+      "demo": {
+        "eyebrow": "デモ証跡",
+        "description": "これらのレコードはシード済みです。エージェントを接続するか、クイックスタート決定を送信して、実際の監査レコードを作成してください。",
+        "quick_start": "クイックスタート",
+        "cli_setup": "CLI セットアップ"
+      }
+    },
+    "rule_analysis": {
+      "eyebrow": "差分 · ルール分析",
+      "title": "ルール分析",
+      "description": "上位の拒否要因と、最近一致のないルール。"
+    },
+    "intent_patterns": {
+      "eyebrow": "リスクパターン",
+      "title": "繰り返し発生するインテントパターン",
+      "description": "拒否または警告された上位のプレフライトインテント。",
+      "flags": "{count, plural, other {#件のフラグ}}"
+    }
+  },
+  "review": {
+    "empty": {
+      "title": "レビュー可能なポリシーブランチがありません",
+      "description": "ポリシーをインポートするか、パックをインストールして、最初のレビュー可能なブランチを作成してください。"
+    }
+  },
+  "usage_billing": {
+    "header": {
+      "eyebrow": "ワークスペース · 使用量と請求",
+      "title": "使用量と請求",
+      "download_json": "JSON をダウンロード",
+      "packs": "パック",
+      "compliance_packet": "コンプライアンスパケット"
+    },
+    "overview": {
+      "aria_label": "使用量と請求",
+      "panel_aria_label": "使用量と請求の概要",
+      "eyebrow": "ガバナンス対象リスク",
+      "title": "ワークスペースの使用状況ポスチャ",
+      "description": "ホスト版 Spctre は運用上の信頼に対して課金します。保持された証跡の量、保持期間の長さ、シミュレーションの忠実度、コンプライアンスへのアクセスが対象です。",
+      "current_plan": "現在のプラン",
+      "recommended": "推奨",
+      "governed_agents": "ガバナンス対象エージェント",
+      "evidence_retained": "保持された証跡"
+    },
+    "meters": {
+      "eyebrow": "使用量ディメンション",
+      "title": "使用量メーター",
+      "sample_only": "サンプルのみ"
+    },
+    "anchors": {
+      "eyebrow": "信頼サーフェス",
+      "title": "有料価値のアンカー",
+      "description": "ホスト版の価値は、監査履歴、シミュレーション、マネージドパック、RBAC、コンプライアンスエクスポートが永続的な業務記録になる地点から始まります。",
+      "count": "{count, plural, other {#件のアンカー}}",
+      "aria_label": "ホスト版価値のアンカー",
+      "group_eyebrow": "価値のアンカー",
+      "group_title": "運用上の信頼ディメンション"
+    },
+    "posture": {
+      "eyebrow": "プラン適合",
+      "title": "請求ポスチャ",
+      "over_plan": "{count} 件がプラン超過",
+      "description": "現在の含有使用量を推奨ホストプランの容量と比較します。",
+      "current_plan": "現在のプラン",
+      "recommended_plan": "推奨プラン",
+      "dimensions_beyond": "{count} 件のディメンションが現在の含有使用量を超過しています",
+      "billing_status": "請求ステータス",
+      "review_requested": "レビュー要求済み",
+      "updated": "更新: {date}",
+      "no_event": "請求イベントはまだありません",
+      "primary_dimension": "主要な料金ディメンション",
+      "agent_detail": "ランタイム証跡を報告しているガバナンス対象エージェント",
+      "evidence_retained": "保持された証跡",
+      "evidence_detail": "検索・リプレイ・コンプライアンスエクスポートに利用できるイベント",
+      "policy_surface": "マネージドポリシーサーフェス",
+      "policy_detail": "このワークスペースにインポートされたコネクタパック"
+    },
+    "events": {
+      "eyebrow": "使用量と請求のイベントログ",
+      "title": "レビュー履歴",
+      "system": "システム",
+      "empty": {
+        "title": "請求イベントはまだありません",
+        "description": "ガバナンス対象の使用量が本番リスクのように見え始めたら、レビューを要求してください。"
+      }
+    },
+    "proof": {
+      "eyebrow": "アクティベーションパス",
+      "title": "次の請求プルーフポイント",
+      "evidence": {
+        "title": "証跡履歴を拡充する",
+        "description": "保持イベント量と保持期間の長さが主要な請求ディメンションです。"
+      },
+      "simulation": {
+        "title": "本番に対してシミュレートする",
+        "description": "保持イベントログに対する一括シミュレーションは Business ティアの機能アンロックです。"
+      },
+      "compliance": {
+        "title": "コンプライアンスパケットをエクスポートする",
+        "description": "コンプライアンス PDF エクスポートは、監査グレードの義務と Business ティアの必要性を裏付けます。"
+      }
+    }
+  },
+  "escalations": {
+    "title": "エスカレーション",
+    "open_count": "{count} 件オープン",
+    "refresh": "更新",
+    "refreshing": "更新中...",
+    "select_prompt": "詳細を確認するには、キューからエスカレーションを選択してください。",
+    "empty": {
+      "title": "キューはクリアです",
+      "description": "オープンなエスカレーションはありません。ツール呼び出しの前にポリシールールが人間による承認を要求すると、エージェントはここに決定を送信します。<post>POST /api/escalations</post> を <decision>decisionId</decision> と <notes>handoffNotes</notes> とともに使用して、レビューに回してください。"
+    },
+    "queue": {
+      "eyebrow": "キュー",
+      "title": "オープンなエスカレーション",
+      "runtime_decision": "ランタイム決定",
+      "assigned": "割り当て済み",
+      "unassigned": "未割り当て"
+    },
+    "detail": {
+      "eyebrow": "決定をレビュー中",
+      "id": "ID: {id}",
+      "policy_revision": "ポリシーリビジョン:",
+      "created": "作成:",
+      "assignee": "担当者:",
+      "unassigned": "未割り当て",
+      "resolve_title": "決定を解決"
+    },
+    "context": {
+      "title": "コンテキストとハンドオフノート",
+      "connector": "コネクタ:",
+      "action": "アクション:",
+      "risk_level": "リスクレベル:",
+      "handoff_notes": "ハンドオフノート",
+      "no_handoff_notes": "ハンドオフノートはありません。",
+      "tool_intent": "ツールインテント",
+      "plan_summary": "プランサマリー"
+    },
+    "triage": {
+      "title": "キュー管理とトリアージ",
+      "upgrade_description": "アップグレードすると、サービス SLA トラッキング、自動ルーティング、手動のエージェントオーバーライドを管理できます。"
+    }
+  },
+  "compliance": {
+    "hero": {
+      "aria_label": "コンプライアンスの概要",
+      "eyebrow": "監査 · パケット",
+      "packet_title": "監査パケット",
+      "packet_meta": "{date} まで保持 · {events} 件のライフサイクルイベント · {records} 件の証跡レコード。",
+      "empty_title": "監査パケットはまだありません",
+      "empty_description": "ポリシーリビジョンを公開し、ランタイム証跡を取り込むと、最初のコンプライアンスパケットが生成されます。",
+      "sections": "{count, plural, other {#個のセクション}}",
+      "stats": {
+        "evidence_records": "証跡レコード",
+        "approvals": "承認",
+        "retention_records": "保持レコード"
+      }
+    }
+  },
+  "author": {
+    "title": "ルールを編集",
+    "branch_title": "{branch} のルールを編集",
+    "edit_rules": "ルールを編集",
+    "back_to_policies": "ポリシーに戻る",
+    "empty_title": "作成対象のポリシーブランチが選択されていません",
+    "empty_body": "ルールを作成するには、ポリシーページからポリシーブランチを選択してください。"
+  },
+  "simulate": {
+    "eyebrow_segment": "シミュレーション",
+    "title": "ポリシーリプレイ",
+    "diff_eyebrow": "差分 · シミュレーション",
+    "run_heading": "<code>{revision}</code> を {count} 件のイベントに対して実行",
+    "sampled_meta": "{count} 件のサンプリングされた結果 · 直前に公開されたリビジョンとの差分。",
+    "summary_aria": "シミュレーションリプレイの概要",
+    "newly_denied": "新たに拒否",
+    "newly_allowed": "新たに許可",
+    "unchanged": "変更なし",
+    "deny_by_connector": "コネクタ別の拒否率",
+    "deny_ratio": "{deny} 件拒否 / {total}",
+    "cloud_eyebrow": "クラウドシミュレーション",
+    "cloud_title": "本番イベントのリプレイが利用可能",
+    "cloud_body": "保持されている本番イベントログ全体に対してポリシー予測を実行します。",
+    "guidance_eyebrow": "シミュレーション · レビューガイダンス",
+    "guidance_title": "変更された結果を確認",
+    "guidance_body": "証跡に基づく読み取り専用のガイダンスです。フィードバックを記録してもリビジョンは作成されません。"
+  },
+  "advisors": {
+    "title": "アドバイザー",
+    "empty": {
+      "title": "アドバイザーデータがありません",
+      "body": "推奨が生成されると、アドバイザーがここに表示されます。"
+    },
+    "rate": {
+      "awaiting": "最初の推奨を待機中",
+      "no_data": "データがまだありません"
+    },
+    "boundary": {
+      "eyebrow": "公開済みポリシー境界",
+      "revision": "リビジョン",
+      "artifact": "アーティファクト",
+      "environment": "環境",
+      "pending": "保留中",
+      "published": "公開日"
+    },
+    "guardrail": {
+      "eyebrow": "ガードレール",
+      "title": "拒否/警告の正味変化",
+      "baseline_pending": "ベースライン保留中",
+      "pts": "{value} ポイント",
+      "current_30d": "現在 30日",
+      "previous_30d": "前回 30日",
+      "current_deny_warn": "現在の拒否 / 警告",
+      "triage_median": "トリアージの担当者割り当て中央値"
+    },
+    "performance": {
+      "eyebrow": "アドバイザー · パフォーマンス",
+      "title": "アドバイザーのパフォーマンス",
+      "meta": "承認・編集・却下率 · 根拠の記録 · 拒否/警告ガードレール。",
+      "triage_audit": "トリアージ監査",
+      "recommendation_audit": "推奨の監査"
+    },
+    "metrics": {
+      "governance_pack": "ガバナンスパック",
+      "not_installed": "未インストール",
+      "active": "有効",
+      "generated": "生成済み",
+      "generated_sub": "アドバイザーの推奨",
+      "dispositions": "レビュアーの判定",
+      "dispositions_sub": "承認 / 編集 / 却下",
+      "rationale": "根拠の記録",
+      "rationale_sub": "根拠付きの承認 / 編集 / 却下"
+    },
+    "table": {
+      "advisor": "アドバイザー",
+      "generated": "生成済み",
+      "accepted": "承認済み",
+      "edited": "編集済み",
+      "rejected": "却下済み",
+      "rationale": "根拠",
+      "precision": "精度"
+    },
+    "precision": {
+      "eyebrow": "証跡最適化の精度",
+      "empty": "レビュアーが証跡最適化の推奨を承認・編集・却下すると、精度が表示されます。"
+    },
+    "scope": {
+      "eyebrow": "スコープ",
+      "body": "すべてのアドバイザーは推奨のみで、レビュアーの決定は監査台帳に記録されます。"
+    }
+  },
+  "economic": {
+    "header": {
+      "title": "コストと使用量",
+      "manage_budgets": "予算を管理"
+    },
+    "advisory": {
+      "eyebrow": "ガバナンスに関する注意事項",
+      "title": "ヒューリスティックおよびテレメトリの推定値",
+      "body": "これらの数値は、エージェントゲートウェイ統合からベストエフォートで取得した<strong>推定値であり、方向性としては正確なガバナンステレメトリ</strong>です。請求監査、財務会計、台帳照合には適していません。プロバイダーの請求書システムが唯一の信頼できる情報源です。"
+    },
+    "hero": {
+      "aria": "オブザーバビリティの概要",
+      "eyebrow": "ガバナンスポスチャ",
+      "title": "トークンおよび経済的ガバナンス",
+      "meta": "エージェントごとの LLM トークン消費と推定支出を追跡し、経済的コンプライアンスのしきい値を評価します。",
+      "est_cost": "推定コスト (30日)",
+      "tracked_tokens": "追跡トークン",
+      "directional_roi": "方向性 ROI",
+      "active_budgets": "有効な予算"
+    },
+    "spend": {
+      "eyebrow": "テレメトリ",
+      "title": "30日間の推定 LLM 支出トレンド",
+      "meta": "取り込まれたゲートウェイ使用イベントからプロットされた日次コスト推定値。",
+      "empty": "過去30日間に日次テレメトリログは記録されていません。",
+      "bar_title": "{date}: {cost} ({tokens} トークン)"
+    },
+    "agents": {
+      "eyebrow": "ROI 分析",
+      "title": "エージェント別ガバナンスサマリー",
+      "meta": "LLM の消費率を労働節約（許可されたアクションあたり $1.00 と評価）と比較します。",
+      "empty": "アクティブなエージェントテレメトリが見つかりません。",
+      "th_agent_id": "エージェント ID",
+      "th_stack": "スタック",
+      "th_environment": "環境",
+      "th_est_cost": "推定コスト",
+      "th_tokens": "トークン",
+      "th_actions": "アクション (A/D/W/E)",
+      "th_roi": "方向性 ROI"
+    },
+    "breaches": {
+      "eyebrow": "監査",
+      "title": "最近の予算超過",
+      "meta": "評価ウィンドウ内で経済的上限を超過しました。",
+      "ok_title": "すべてのエージェントが予算内",
+      "ok_meta": "経済的な超過は記録されていません。",
+      "policy_fallback": "予算ポリシー",
+      "agent_label": "エージェント:",
+      "reason_fallback": "予算上限を超過しました。"
+    },
+    "budgets": {
+      "eyebrow": "コスト · 予算ポリシー",
+      "title": "予算ポリシー",
+      "meta": "エージェント、コネクタ、環境ごとに適用されるしきい値ポリシー。"
+    }
+  },
+  "economic_policies": {
+    "validate": {
+      "name_required": "ポリシー名を指定してください。",
+      "threshold_required": "コストまたはトークンのしきい値を少なくとも1つ定義する必要があります。"
+    },
+    "scope": {
+      "wildcard": "すべてのイベント（ワイルドカード）"
+    },
+    "error": {
+      "save_failed": "予算ポリシーの保存に失敗しました",
+      "delete_failed": "予算ポリシーの削除に失敗しました",
+      "status_failed": "ポリシーステータスの更新に失敗しました"
+    },
+    "confirm": {
+      "delete": "この経済的予算ポリシーを削除してもよろしいですか？この操作は取り消せません。"
+    },
+    "limits": {
+      "cost_title": "推定コスト上限（USD）",
+      "token_title": "追跡トークン上限",
+      "warn_label": "警告",
+      "escalate_label": "エスカレート",
+      "deny_label": "拒否",
+      "no_cost": "コスト上限が設定されていません",
+      "no_token": "トークン上限が設定されていません"
+    },
+    "card": {
+      "active": "有効",
+      "disabled": "無効",
+      "fail_open": "フェイルオープン",
+      "fail_closed": "フェイルクローズ",
+      "scope": "スコープ:",
+      "eval_window": "評価ウィンドウ:",
+      "hours": "{hours} 時間",
+      "edit": "編集",
+      "delete_title": "ポリシーを削除"
+    },
+    "fields": {
+      "agent_id": "エージェント ID",
+      "agent_id_ph": "例: support-agent",
+      "agent_class": "エージェントクラス",
+      "agent_class_ph": "例: customer-service",
+      "environment": "環境",
+      "environment_ph": "例: production",
+      "connector": "コネクタ",
+      "connector_ph": "例: stripe",
+      "warn_cost": "警告コストしきい値（USD）",
+      "warn_cost_ph": "例: 10.00",
+      "esc_cost": "エスカレートコストしきい値（USD）",
+      "esc_cost_ph": "例: 25.00",
+      "deny_cost": "拒否コストしきい値（USD）",
+      "deny_cost_ph": "例: 50.00",
+      "warn_tok": "警告トークンしきい値",
+      "warn_tok_ph": "例: 500000",
+      "esc_tok": "エスカレートトークンしきい値",
+      "esc_tok_ph": "例: 1000000",
+      "deny_tok": "拒否トークンしきい値",
+      "deny_tok_ph": "例: 2000000"
+    },
+    "modal": {
+      "edit_title": "予算ポリシーを編集",
+      "create_title": "予算ポリシーを作成",
+      "name": "ポリシー名",
+      "name_ph": "例: 重要な顧客サポートの日次予算",
+      "breach_action": "主要な違反アクション",
+      "action_warn": "警告 — 違反を記録して続行",
+      "action_escalate": "エスカレート — 人間のレビューキューに送信",
+      "action_deny": "ブロック — アクションを完全に拒否",
+      "description": "説明",
+      "description_ph": "顧客サービスエージェントクラスタにトークン消費ルールを適用します",
+      "target_scope": "対象スコープ（NULL = すべてにワイルドカード一致）",
+      "threshold_config": "しきい値予算と適用設定",
+      "period": "ローリング評価ウィンドウ（時間）",
+      "period_hint": "支出は直近 N 時間で測定され、リクエストごとに再計算されます（固定のカレンダーウィンドウではありません）。",
+      "active_policy": "有効なポリシー",
+      "fail_open": "フェイルオープン — サービスに到達できない場合はすべての支出を許可",
+      "fail_open_hint": "ポリシーエンジンが停止している場合、エージェントはコスト上限なしで実行されます。",
+      "cancel": "キャンセル",
+      "saving": "保存中...",
+      "save_changes": "変更を保存",
+      "create_policy": "ポリシーを作成"
+    },
+    "list": {
+      "title": "経済的予算ポリシー",
+      "meta": "エージェントの支出に対する警告、テナント全体の上限、またはハードブロックを設定します。",
+      "add": "ポリシーを追加",
+      "empty_title": "経済的予算ポリシーが設定されていません。",
+      "empty_meta": "エージェントの支出とトークン消費に対する警告、テナント全体の上限、またはハードブロックを設定します。"
+    }
+  },
+  "rules": {
+    "title": "ルール",
+    "hero": {
+      "aria": "管理対象ルールの概要",
+      "eyebrow": "来歴 · 公開済みルール",
+      "title": "有効なルールカタログ",
+      "meta": "現在公開されているブランチのルールです。ルールの作成や編集には<review>レビュー</review>を使用してください。",
+      "search_label": "インベントリを検索",
+      "search_ph": "ルールを検索",
+      "search_btn": "検索",
+      "reset": "リセット",
+      "managed": "管理対象ルール",
+      "connectors": "有効なコネクタ",
+      "immutable": "不変",
+      "deny_warn": "拒否 / 警告"
+    },
+    "inv": {
+      "eyebrow": "来歴 · インベントリ",
+      "title": "ルール",
+      "filtered": "「{query}」でフィルタリング。",
+      "hint": "ルールを選択して、条件、ソース、履歴を確認します。",
+      "no_match_title": "一致するルールがありません",
+      "no_match_body": "別の用語を試すか、フィルターをクリアしてください。",
+      "empty_title": "管理対象ルールはまだありません",
+      "empty_body": "ポリシーまたはパックをインポートしてルールを追加してください。"
+    },
+    "table": {
+      "rule_title": "ルールタイトル",
+      "effect": "効果",
+      "connector": "コネクタ",
+      "actions": "アクション",
+      "source": "ソース",
+      "inspect_aria": "ルール {title} を検査",
+      "immutable": "不変",
+      "none": "なし"
+    },
+    "panel": {
+      "semantic_title": "セマンティックチェック（自然言語コントロール）",
+      "override_effect": "オーバーライド効果:",
+      "managed_rule": "管理対象ルール",
+      "close": "パネルを閉じる",
+      "effect": "効果",
+      "source_format": "ソース形式",
+      "immutable": "不変",
+      "yes": "はい",
+      "no": "いいえ",
+      "priority": "優先度",
+      "connectors": "コネクタ",
+      "actions": "アクション",
+      "domains": "ドメイン",
+      "source_path": "ソースパス",
+      "conditions": "条件"
+    }
+  },
+  "alerting": {
+    "header": {
+      "eyebrow": "ワークスペース · アラート",
+      "title": "アラート"
+    },
+    "validate": {
+      "channel_name": "チャネル名を指定してください。",
+      "pagerduty_key": "PagerDuty のルーティングキーを指定してください。",
+      "valid_email": "有効な受信者メールアドレスを指定してください。",
+      "splunk": "Splunk HEC のエンドポイント URL とトークンを指定してください。",
+      "sentinel": "Sentinel のワークスペース ID とプライマリキーを指定してください。",
+      "recipient_email": "受信者メールアドレスを指定してください。",
+      "endpoint_url": "エンドポイント URL を指定してください。"
+    },
+    "int": {
+      "routing_key": "統合キー（ルーティングキー）",
+      "routing_key_ph": "32文字の PagerDuty 統合キー",
+      "hec_url": "HEC エンドポイント URL",
+      "hec_token": "HEC トークン",
+      "hec_token_ph": "Splunk HEC トークン",
+      "workspace_id": "ワークスペース ID",
+      "primary_key": "プライマリキー",
+      "primary_key_ph": "Log Analytics ワークスペースのプライマリキー",
+      "log_type": "ログタイプ（任意）",
+      "endpoint_url": "エンドポイント URL",
+      "endpoint_url_ph": "https://hooks.slack.com/... または統合 URL",
+      "modal_title": "統合を追加",
+      "channel_name": "チャネル名",
+      "channel_name_ph": "例: セキュリティ Slack アラート",
+      "platform_type": "プラットフォームタイプ",
+      "opt_slack": "Slack Webhook",
+      "opt_teams": "Microsoft Teams",
+      "opt_email": "メール",
+      "opt_pagerduty": "PagerDuty Event V2 API",
+      "opt_webhook": "汎用 Webhook",
+      "opt_splunk": "Splunk HTTP Event Collector",
+      "opt_sentinel": "Microsoft Sentinel",
+      "adding": "追加中...",
+      "save": "統合を保存",
+      "pane_title": "統合",
+      "add_channel": "チャネルを追加",
+      "empty_title": "統合が設定されていません。",
+      "empty_body": "Slack、PagerDuty、Teams、またはカスタム Webhook を接続します。",
+      "delete_title": "統合を削除",
+      "saved": "統合を保存しました。",
+      "add_failed": "統合の追加に失敗しました",
+      "remove_confirm": "この統合を削除してもよろしいですか？これを対象とするすべてのルールが削除されます。",
+      "removed": "統合を削除しました。",
+      "remove_failed": "統合の削除に失敗しました"
+    },
+    "rule": {
+      "modal_title": "アラートルールを作成",
+      "name": "ルール名",
+      "name_ph": "例: 重大な Slack 違反アラート",
+      "connector": "コネクタ（フィルター）",
+      "connector_ph": "すべて（または github、aws、slack）",
+      "min_risk": "最小リスクレベル",
+      "risk_all": "すべてのリスク",
+      "risk_low": "低",
+      "risk_medium": "中",
+      "risk_high": "高",
+      "risk_critical": "重大",
+      "min_occurrences": "最小発生回数",
+      "window": "ウィンドウ（分）",
+      "window_ph": "例: 15（最小 > 1 の場合）",
+      "target_channel": "対象チャネル",
+      "creating": "作成中...",
+      "save": "ルールを保存",
+      "pane_title": "アラートルール",
+      "add": "ルールを追加",
+      "empty_title": "カスタムアラートルールが設定されていません。",
+      "empty_body": "システムイベントのフィルターと頻度を統合に接続します。",
+      "active": "有効",
+      "disabled": "無効",
+      "connector_label": "コネクタ:",
+      "all": "すべて",
+      "min_risk_label": "最小リスク:",
+      "frequency_label": "頻度:",
+      "freq_threshold": "{minutes}分間に{count}件以上のイベント",
+      "freq_every": "一致するすべてのイベント",
+      "target_label": "対象:",
+      "unknown": "不明",
+      "delete_title": "ルールを削除",
+      "name_int_required": "ルール名と統合を指定してください。",
+      "saved": "アラートルールを保存しました。",
+      "add_failed": "ルールの追加に失敗しました",
+      "remove_confirm": "このアラートルールを削除してもよろしいですか？",
+      "removed": "アラートルールを削除しました。",
+      "remove_failed": "ルールの削除に失敗しました",
+      "need_integration": "アラートルールを作成する前に、少なくとも1つの統合を追加してください。"
+    },
+    "siem": {
+      "modal_title": "SIEM ストリームを追加",
+      "stream_name": "ストリーム名",
+      "stream_name_ph": "例: 本番 Splunk",
+      "destination": "宛先",
+      "hec_url": "HEC エンドポイント URL",
+      "hec_token": "HEC トークン",
+      "hec_token_ph": "Splunk HEC トークン",
+      "workspace_id": "ワークスペース ID",
+      "primary_key": "プライマリキー",
+      "primary_key_ph": "Log Analytics ワークスペースのプライマリキー",
+      "log_type": "ログタイプ（任意）",
+      "saving": "保存中...",
+      "save": "ストリームを保存",
+      "section_title": "SIEM イベントストリーミング",
+      "add": "ストリームを追加",
+      "empty_title": "SIEM ストリームが設定されていません。",
+      "empty_body": "すべての証跡イベントを Splunk または Microsoft Sentinel に転送します。",
+      "active": "有効",
+      "paused": "一時停止",
+      "last_forwarded": "· 最終転送 {time}",
+      "not_forwarded": "· 未転送",
+      "pause": "ストリームを一時停止",
+      "resume": "ストリームを再開",
+      "delete_title": "ストリームを削除",
+      "name_required": "ストリーム名を指定してください。",
+      "saved": "SIEM ストリームを保存しました。",
+      "add_failed": "SIEM ストリームの追加に失敗しました",
+      "remove_confirm": "この SIEM ストリームを削除しますか？転送は直ちに停止します。",
+      "removed": "SIEM ストリームを削除しました。",
+      "remove_failed": "SIEM ストリームの削除に失敗しました",
+      "paused_status": "ストリームを一時停止しました。",
+      "resumed_status": "ストリームを再開しました。",
+      "toggle_failed": "SIEM ストリームの切り替えに失敗しました"
+    }
+  }
+}

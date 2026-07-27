@@ -1,0 +1,468 @@
+/* ── Agent fleet ─────────────────────────────────── */
+
+/* ── Agent Blueprints ─────────────────────────────── */
+
+.blueprintsHero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 0.72fr);
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+  max-width: 1180px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.blueprintsHeroMain,
+.blueprintsHeroStats {
+  background: var(--panel);
+}
+
+.blueprintsHeroMain {
+  padding: 18px;
+  display: grid;
+  gap: 8px;
+  align-content: center;
+}
+
+.blueprintsHeroMain h2 {
+  font-size: 20px;
+}
+
+.blueprintsHeroMain .meta {
+  max-width: 72ch;
+}
+
+.blueprintsHeroStats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.blueprintsHeroStats > div {
+  padding: 16px;
+  border-right: 1px solid var(--line);
+  display: grid;
+  gap: 5px;
+  align-content: center;
+}
+
+.blueprintsHeroStats > div:last-child {
+  border-right: 0;
+}
+
+.blueprintsHeroStats strong {
+  color: var(--ink);
+  font-size: 17px;
+}
+
+.blueprintsPanel {
+  max-width: 1180px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.blueprintsPanel > .rowHeader {
+  padding-bottom: 2px;
+}
+
+.blueprintCreateForm {
+  display: grid;
+  gap: var(--space-section-rhythm);
+  max-width: 980px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.blueprintCreatePanel {
+  gap: 16px;
+}
+
+.blueprintFormGrid,
+.blueprintBudgetGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.blueprintBudgetGrid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  padding-top: 2px;
+}
+
+.blueprintFormWide {
+  grid-column: 1 / -1;
+}
+
+.blueprintChipField {
+  align-content: start;
+}
+
+.blueprintChipControl {
+  min-height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--panel);
+  padding: 6px 8px;
+  display: grid;
+  gap: 5px;
+}
+
+.blueprintChipControl:focus-within {
+  border-color: var(--accent);
+  outline: 2px solid oklch(0.87 0.047 184);
+  outline-offset: 1px;
+}
+
+.blueprintChip {
+  min-height: 24px;
+  padding: 2px 6px 2px 8px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--ink);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 12px;
+  font-weight: var(--fw-semi);
+}
+
+.blueprintChipList {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+}
+
+.blueprintChipCustom {
+  background: oklch(0.95 0.012 250);
+}
+
+.blueprintChip button {
+  color: var(--muted);
+  border: 0;
+  background: transparent;
+  padding: 1px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.blueprintChip button:hover {
+  color: var(--ink);
+}
+
+.blueprintChipInput {
+  width: 100%;
+  height: 25px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--ink);
+  padding: 0 2px;
+  font-size: 13px;
+}
+
+.blueprintChipInput::placeholder {
+  color: oklch(0.62 0.03 256);
+}
+
+.blueprintEnvironmentField {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.blueprintEnvironmentField legend {
+  padding: 0;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: var(--fw-semi);
+}
+
+.blueprintCreateActions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.blueprintCreateError {
+  color: var(--block);
+  background: var(--block-soft);
+  border: 1px solid oklch(0.78 0.05 25);
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-size: 13px;
+}
+
+.agentHero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 0.32fr);
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+  max-width: 1180px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.agentHeroMain,
+.agentHeroContext {
+  background: var(--panel);
+}
+
+.agentHeroMain {
+  padding: 18px;
+  display: grid;
+  gap: 7px;
+  align-content: center;
+}
+
+.agentHeroMain h2 {
+  font-size: 20px;
+}
+
+.agentHeroMain .meta {
+  max-width: 72ch;
+}
+
+.agentSummary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.agentHeroContext {
+  padding: 16px;
+  display: grid;
+  gap: 5px;
+  align-content: center;
+}
+
+.agentHeroContext strong {
+  color: var(--ink);
+  font-size: 17px;
+}
+
+.agentPanel {
+  display: grid;
+  gap: 16px;
+  padding: 18px;
+  max-width: 1180px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.agentPanel > .rowHeader {
+  padding-bottom: 2px;
+}
+
+.agentGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 14px;
+  align-items: start;
+}
+
+.sectionIconGroup {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.iconLink {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  padding: 6px;
+  border-radius: 6px;
+  transition: color 0.12s, background 0.12s;
+}
+
+.iconLink:hover {
+  color: var(--ink);
+  background: var(--bg);
+}
+
+.agentPilotGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.agentPilotBlock {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: oklch(0.992 0.005 236);
+  padding: 13px;
+  display: grid;
+  gap: 10px;
+}
+
+.agentCard {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: oklch(0.988 0.006 236);
+  padding: 14px;
+  display: grid;
+  gap: 12px;
+}
+
+.agentCardAttention {
+  background: var(--warn-soft);
+}
+
+.agentCard .rowButton {
+  padding: 0;
+}
+
+.agentCardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.agentCardHeader .pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.agentCardTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--accent);
+  min-width: 0;
+}
+
+.agentId {
+  background: none;
+  padding: 0;
+  font-size: 13px;
+  font-weight: var(--fw-bold);
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.agentMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.agentConnectors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.agentStats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  padding: 10px 0;
+}
+
+.agentStatsCompact {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.agentStatItem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-left: 8px;
+  border-left: 1px solid var(--line);
+}
+
+.agentStatItem strong {
+  font-size: 15px;
+}
+
+.agentStatAllow {
+  border-left-color: var(--allow);
+}
+
+.agentStatWarn {
+  border-left-color: var(--warn);
+}
+
+.agentStatDeny {
+  border-left-color: var(--block);
+}
+
+.agentHashRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.agentHashRow > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.agentHashRow code {
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+
+.agentFooter {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+}
+
+.agentInspectLabel {
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: var(--fw-semi);
+  margin-left: auto;
+}
+
+.agentHealthInfo {
+  opacity: 0.7;
+  flex-shrink: 0;
+}
+
+.agentMetricPill {
+  margin-top: 8px;
+}
+
+.agentTagBlock {
+  margin-top: 10px;
+}
+
+.agentMutedBlock {
+  margin-top: 8px;
+}
+
+.agentSyncCommand {
+  margin-top: 10px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 8px 12px;
+  display: grid;
+  gap: 4px;
+}

@@ -1,0 +1,74 @@
+---
+title: Operating model
+description: What an agent handles autonomously, what requires human input, and when to escalate.
+---
+
+Spctre is designed for agents to operate without continuous human oversight. The model is: maximise autonomous operation; require humans only for identity, trust, and exception decisions.
+
+## Autonomous operations
+
+An agent can perform all of the following without human input after the initial device-code approval:
+
+| Operation | Notes |
+|---|---|
+| Fetch and cache the policy bundle | `spctre sync` or `spctre watch --heartbeat` |
+| Evaluate actions against local policy | No network call per decision |
+| Submit evidence records | `POST /api/v1/evidence` |
+| Call the gateway for high-stakes decisions | `POST /api/v1/gateway/decide` |
+| Poll for escalation resolution | `GET /api/v1/gateway/escalations/status?id=<id>` |
+| Rotate access tokens | Automatic via refresh token |
+| Run health checks | `spctre status --check` |
+| Buffer and flush telemetry during outages | Automatic via local FIFO queue |
+
+## Required human steps
+
+| Trigger | Human action required |
+|---|---|
+| First `spctre init --device` | Approve device code in a browser |
+| Switching from `observe` to `enforce` mode | Explicit human approval in the control plane |
+| Gateway returns `ESCALATE` | Reviewer resolves in the escalation queue |
+| Refresh token expired or revoked | Re-run `spctre init --device` |
+| TLS or trust validation failure | Human investigates the control plane endpoint |
+| Any security-sensitive action (e.g. `spctre revoke`) in a shared environment | Human confirmation |
+
+## Recommended startup sequence
+
+```bash
+# 1. Verify connection and bundle freshness
+spctre status --check
+
+# 2. If bundle is stale, sync before first execution
+spctre sync
+
+# 3. Start background heartbeat to keep bundle fresh
+spctre watch --heartbeat &
+
+# 4. Run agent workload
+```
+
+## Failure handling
+
+| Failure | Default behaviour | Override |
+|---|---|---|
+| Control plane unreachable (gateway) | Fail-open: synthetic `ALLOW`, warning logged | `SPCTRE_GATEWAY_OUTAGE_POLICY=fail-closed` |
+| Bundle absent or expired | Agent runs without enforcement | Fail-closed: set `SPCTRE_BUNDLE_REQUIRED=true` |
+| Ingest endpoint unreachable | Records buffered to `~/.spctre/telemetry-buffer/` | Flushed on next heartbeat |
+| Economic evaluate endpoint down | Fail-open by default | `SPCTRE_GATEWAY_OUTAGE_POLICY=fail-closed` |
+| Access token expired | CLI auto-refreshes via refresh token | — |
+
+## Escalation posture
+
+When the gateway returns `ESCALATE`, the agent must pause and wait for a human reviewer. Do not proceed with execution.
+
+```
+ESCALATE received
+  → Pause the action
+  → Log the decision ID and escalation reason
+  → Poll GET /api/v1/gateway/escalations/status?id=<decisionId>
+  → On resolution:
+      APPROVED → proceed
+      REJECTED → abort
+  → SLA breach → escalate to on-call human
+```
+
+See [Escalation handling](/help-docs/ai-agents/operations/escalation-handling) for the full polling and webhook pattern.

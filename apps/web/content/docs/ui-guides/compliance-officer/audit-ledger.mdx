@@ -1,0 +1,53 @@
+---
+title: Reading the audit ledger
+description: Understanding entry types, filtering by event type, and spotting anomalies in the Audit Ledger.
+---
+
+The Audit Ledger captures platform-level events — things that happened to Spctre itself rather than decisions made by agents. It complements the audit trail, which covers governance events.
+
+## Opening the audit ledger
+
+In the left nav under **Audit**, click **Audit Ledger**.
+
+## Entry types
+
+| Entry type | Description |
+|---|---|
+| `auth.login` | A user logged in to the control plane |
+| `auth.logout` | A user logged out |
+| `auth.mfa_challenge` | MFA was prompted |
+| `auth.mfa_passed` | MFA completed successfully |
+| `auth.token_created` | A service token was created |
+| `auth.token_revoked` | A service token was revoked |
+| `workspace.created` | A workspace was created |
+| `workspace.settings_changed` | Workspace configuration was modified |
+| `user.invited` | A user invitation was sent |
+| `user.role_changed` | A user's role was changed |
+| `bundle.generated` | A new policy bundle was generated |
+| `bundle.sync_failed` | An agent failed to sync a bundle |
+| `scim.user_provisioned` | A user was provisioned via SCIM |
+| `scim.user_deprovisioned` | A user was deprovisioned via SCIM |
+| `sso.configured` | SSO configuration was updated |
+| `rate_limit.exceeded` | A source IP hit the API rate limit |
+
+## Filtering by event type
+
+Click **Event type** in the filter bar and select one or more entry types. Combine with a date range to answer specific questions:
+
+- "Who logged in during the audit period?" → filter by `auth.login`, set date range
+- "Were any service tokens revoked last month?" → filter by `auth.token_revoked`
+- "Did workspace settings change before the incident?" → filter by `workspace.settings_changed`
+
+## Spotting anomalies
+
+Look for:
+- `auth.login` entries at unusual hours or from unfamiliar IPs
+- Multiple `auth.mfa_challenge` entries without a following `auth.mfa_passed` (failed MFA attempts)
+- `bundle.sync_failed` entries — agents not receiving policy updates
+- `rate_limit.exceeded` from an unexpected source IP
+
+## Exporting the audit ledger
+
+Click **Export** at the top of the ledger. The export includes all entries matching the current filters in CSV or JSON format, with the same field structure as the compliance export.
+
+For compliance audits covering access controls and platform governance (SOC 2 CC6.x, ISO 27001 A.9), export the audit ledger for the audit period and attach it alongside the compliance report.

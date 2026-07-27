@@ -1,0 +1,124 @@
+---
+title: Escalation handling
+description: What to do when the gateway returns ESCALATE — polling, webhook listening, and resolution branches.
+---
+
+When the gateway returns `ESCALATE`, the action is queued for human review. The agent must pause and wait — proceeding without resolution is a policy violation.
+
+## Escalation flow
+
+```
+Gateway returns ESCALATE
+  ↓
+Agent pauses execution
+  ↓
+Agent polls or listens for resolution
+  ↓
+  ├─ APPROVED → proceed with execution
+  ├─ REJECTED → abort; ingest DENY evidence
+  └─ SLA breach → alert on-call; do not proceed
+```
+
+## Polling
+
+```bash
+# Poll until resolved (with timeout)
+MAX_POLLS=60
+INTERVAL=30
+DECISION_ID="dec_01j9xk…"
+
+for i in $(seq 1 $MAX_POLLS); do
+  STATUS=$(curl -sf \
+    -H "Authorization: Bearer $SPCTRE_API_TOKEN" \
+    "$SPCTRE_URL/api/gateway/escalations/status?decisionId=$DECISION_ID" \
+    | jq -r '.status')
+
+  case "$STATUS" in
+    APPROVED) echo "Escalation approved — proceeding."; break ;;
+    REJECTED) echo "Escalation rejected — aborting." >&2; exit 1 ;;
+    PENDING)  sleep $INTERVAL ;;
+    *)        echo "Unknown status: $STATUS" >&2; exit 1 ;;
+  esac
+done
+
+# Timeout: SLA breach
+echo "Escalation unresolved after $(($MAX_POLLS * $INTERVAL))s — alerting on-call." >&2
+exit 1
+```
+
+## GET /api/gateway/escalations/status
+
+```http
+GET /api/gateway/escalations/status?decisionId=<decisionId>
+Authorization: Bearer <token>
+```
+
+Response:
+
+```json
+{
+  "decisionId": "dec_01j9xk…",
+  "status": "PENDING",
+  "slaDueAt": "2026-06-09T11:00:00Z",
+  "reviewerNote": null,
+  "resolvedAt": null
+}
+```
+
+`status` values: `PENDING`, `APPROVED`, `REJECTED`, `SLA_BREACHED`.
+
+## Webhook-driven resolution
+
+For long-running agents, polling is fragile. Configure a webhook to receive escalation events instead:
+
+1. In the control plane go to **Account → Webhooks**
+2. Add your endpoint URL
+3. Subscribe to `escalation.resolved`
+
+Payload:
+
+```json
+{
+  "event": "escalation.resolved",
+  "decisionId": "dec_01j9xk…",
+  "status": "APPROVED",
+  "reviewerNote": "Approved — within policy for this customer tier.",
+  "resolvedAt": "2026-06-09T10:45:00Z"
+}
+```
+
+Verify the signature with `SPCTRE_GATEWAY_WEBHOOK_SECRET` (HMAC-SHA256).
+
+## GET /api/v1/gateway/escalations
+
+Fetch the full escalation queue (for agents that monitor on behalf of a workspace):
+
+```http
+GET /api/v1/gateway/escalations?limit=50
+Authorization: Bearer <token>
+```
+
+Returns paginated escalation records with `status`, `slaDueAt`, `connector`, `action`, and `riskLevel`.
+
+## What to do on SLA breach
+
+An SLA breach means a human reviewer did not act within the configured window. The agent must not proceed unilaterally.
+
+1. Log the breach with the `decisionId`, action, and `slaDueAt`
+2. Surface the alert to the on-call channel or escalation path
+3. Abort the pending action and ingest evidence with `DENY` status
+4. Do not retry without a human reset
+
+## Ingest after escalation
+
+After resolution, always ingest evidence to close the audit trail:
+
+```bash
+spctre ingest \
+  --agent my-agent \
+  --environment production \
+  --connector stripe \
+  --action refund \
+  --status ALLOW \        # or DENY if rejected
+  --decision dec_01j9xk…
+```

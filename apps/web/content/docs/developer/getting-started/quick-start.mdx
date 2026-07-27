@@ -1,0 +1,72 @@
+---
+title: Quick start
+description: Get a governed agent running in under 5 minutes.
+---
+
+This guide takes you from a fresh Spctre workspace to a running, policy-governed agent.
+
+## Prerequisites
+
+- A Spctre account (sign up at the control plane URL your team uses)
+- Node.js ≥ 25 or Python ≥ 3.10 for your agent
+- The Spctre CLI installed:
+
+```bash
+npm install -g @spctre/cli
+```
+
+## Step 1 — Connect your agent
+
+Run `spctre init` from your project directory. This opens a browser approval flow and writes a local config file.
+
+```bash
+spctre init --agent my-agent --environment production
+```
+
+After you approve in the browser, the CLI writes `.spctre/spctre-config.json` with your workspace ID, agent ID, and a scoped access token.
+
+<Callout type="info">
+  Use `--device` for headless or remote environments — it prints a code you approve from any browser without a redirect.
+</Callout>
+
+## Step 2 — Sync the policy bundle
+
+Pull the latest published policy bundle for your workspace:
+
+```bash
+spctre sync
+```
+
+This writes `spctre-policy.json` (or the path set by `--output`). Your agent loads this file at startup to evaluate decisions offline — no round-trip to the control plane per decision.
+
+## Step 3 — Author your first policy
+
+In the control plane, go to **Policies → Create policy → Start with rules**. This creates an empty draft and opens Rule Authoring for the branch. A policy branch defines:
+
+- **Scope** — `ORGANIZATION`, `WORKSPACE`, `ENVIRONMENT`, or `CONNECTOR`
+- **Rules** — one or more ALLOW/DENY/WARN/ESCALATE rules
+- **Source format** — in-app authored rules, or an imported AGT YAML / JSON document
+
+Publish the branch to make it available in the next bundle sync.
+
+## Step 4 — Ingest evidence
+
+After your agent runs, push a decision record:
+
+```bash
+spctre ingest \
+  --agent my-agent \
+  --environment production \
+  --connector stripe \
+  --action charge
+```
+
+Or from your agent code, call `POST /api/v1/evidence` directly (see the [Audit log ingest](/help-docs/developer/audit/audit-log) page).
+
+## Step 5 — View compliance
+
+Open **Audit → Compliance Report** in the control plane. Your records are automatically matched against the active policy branch and rolled up into a compliance report.
+
+<Callout type="tip">
+  Run `spctre watch` instead of `spctre sync` to keep the bundle updated continuously as policies change.
+</Callout>

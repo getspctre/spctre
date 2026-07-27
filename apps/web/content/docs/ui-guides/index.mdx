@@ -1,0 +1,27 @@
+---
+title: UI References
+description: Step-by-step guides for every role in the Spctre control plane. No CLI or API knowledge required.
+---
+
+## The create–review–comply cycle
+
+```
+┌──────────────────┐   submits branch   ┌──────────────────┐
+│  Policy Creator  │ ─────────────────► │   Reviewer /     │
+│                  │                    │   Approver       │
+│                  │ ◄───────────────── │                  │
+└──────────────────┘  approve / reject  └──────────────────┘
+         │
+         │ approved bundle
+         ▼
+┌──────────────────┐
+│   Compliance     │
+│    Officer       │
+│  reports & audit │
+└──────────────────┘
+```
+
+1. **Policy Creator** — browses packs, authors rules, and organises them into branches. When ready, submits the branch for review.
+2. **Reviewer / Approver** — evaluates the branch, leaves feedback, and approves or rejects. Escalations route to a senior reviewer when needed.
+3. **Compliance Officer** — once a branch is approved and the bundle is live, reads the compliance reports, operations logs, and audit trails generated from accumulated agent evidence.
+4. **Workspace Admin** — manages the platform foundation: user accounts, roles, SSO, SCIM provisioning, and workspace settings that all other roles depend on.

@@ -1,0 +1,34 @@
+---
+title: Trusted devices
+description: Audit active account sessions and revoke devices that should no longer have access.
+---
+
+Cloud workspaces expose trusted-device management through the active sessions list on the Account page.
+
+## View active sessions
+
+1. Open **Account**.
+2. Find **Settings -> Security -> Active sessions**.
+3. Review each device, IP address, creation time, and last active time.
+
+Spctre derives the device label from the session user agent, for example `Chrome on macOS` or `Safari on iOS`.
+
+The current browser is marked **This Device**.
+
+## Revoke a device
+
+Click **Revoke** next to any session that should no longer have access.
+
+Revocation ends that session and records the operation in the durable auth operations log. The current active session cannot revoke itself from this list; sign out to end the current session.
+
+## When to use this
+
+Revoke old or unfamiliar sessions when:
+
+- A laptop or phone is lost.
+- A browser profile was shared accidentally.
+- A user signs in from a temporary machine.
+- Security review finds an unfamiliar IP or device label.
+
+Session lifetime is controlled by `SPCTRE_SESSION_TTL_HOURS`.
+

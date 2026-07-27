@@ -1,0 +1,86 @@
+name: "Spctre Policy Check"
+description: "Sync, lint, and test your Spctre policy bundle; upload SARIF results to GitHub Code Scanning"
+author: "Spctre"
+
+branding:
+  icon: "shield"
+  color: "blue"
+
+inputs:
+  token:
+    description: "Spctre service account API key (SPCTRE_API_TOKEN)"
+    required: true
+  workspace:
+    description: "Workspace slug (SPCTRE_WORKSPACE)"
+    required: true
+  url:
+    description: "Control plane URL"
+    required: false
+    default: "https://app.spctre.dev"
+  policy:
+    description: "Path to policy file (default: spctre-policy.json)"
+    required: false
+    default: ""
+  tests:
+    description: "Path to fixtures JSON file for policy tests"
+    required: false
+    default: ""
+  sarif-output:
+    description: "Path to write SARIF output"
+    required: false
+    default: "spctre-results.sarif"
+  upload-sarif:
+    description: "Upload SARIF to GitHub Code Scanning (requires security-events: write)"
+    required: false
+    default: "true"
+
+outputs:
+  check-status:
+    description: "'pass' or 'fail'"
+    value: ${{ steps.check.outputs.check-status }}
+  rule-count:
+    description: "Number of policy rules evaluated"
+    value: ${{ steps.check.outputs.rule-count }}
+  sarif-path:
+    description: "Path to the SARIF output file"
+    value: ${{ inputs.sarif-output }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install Spctre CLI
+      shell: bash
+      run: npm install -g @spctre/cli@latest
+
+    - name: Run policy check
+      id: check
+      shell: bash
+      env:
+        SPCTRE_API_TOKEN: ${{ inputs.token }}
+        SPCTRE_WORKSPACE: ${{ inputs.workspace }}
+      run: |
+        ARGS="--output sarif"
+        if [ -n "${{ inputs.policy }}" ]; then ARGS="$ARGS ${{ inputs.policy }}"; fi
+        if [ -n "${{ inputs.tests }}" ]; then ARGS="$ARGS --tests ${{ inputs.tests }}"; fi
+
+        EXIT_CODE=0
+        spctre init --token "$SPCTRE_API_TOKEN" --workspace "$SPCTRE_WORKSPACE" --url "${{ inputs.url }}" || true
+        spctre check $ARGS --url "${{ inputs.url }}" > "${{ inputs.sarif-output }}" 2>/dev/null || EXIT_CODE=$?
+
+        if [ $EXIT_CODE -eq 0 ]; then
+          echo "check-status=pass" >> "$GITHUB_OUTPUT"
+        else
+          echo "check-status=fail" >> "$GITHUB_OUTPUT"
+        fi
+
+        RULE_COUNT=$(jq '[.runs[].results[]] | length' "${{ inputs.sarif-output }}" 2>/dev/null || echo "0")
+        echo "rule-count=$RULE_COUNT" >> "$GITHUB_OUTPUT"
+
+        exit $EXIT_CODE
+
+    - name: Upload SARIF to GitHub Code Scanning
+      if: ${{ always() && inputs.upload-sarif == 'true' }}
+      uses: github/codeql-action/upload-sarif@v4
+      with:
+        sarif_file: ${{ inputs.sarif-output }}
+        category: "spctre-policy"

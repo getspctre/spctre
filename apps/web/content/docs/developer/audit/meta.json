@@ -1,0 +1,6 @@
+{
+  "title": "Audit",
+  "description": "Inspect decision logs, operations ledger events, and export compliance packets.",
+  "icon": "Activity",
+  "pages": ["audit-log", "audit-ledger", "compliance", "audit-trail"]
+}

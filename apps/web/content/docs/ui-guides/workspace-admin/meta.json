@@ -1,0 +1,21 @@
+{
+  "title": "Workspace Admin",
+  "description": "Manage workspaces, users, SSO, SCIM, and platform settings.",
+  "icon": "Settings",
+  "pages": [
+    "overview",
+    "managing-workspaces",
+    "inviting-users",
+    "managing-roles",
+    "configuring-sso",
+    "scim-provisioning",
+    "requiring-mfa",
+    "recovery-codes",
+    "trusted-devices",
+    "managing-service-tokens",
+    "configuring-alerting",
+    "siem-streaming",
+    "workspace-settings",
+    "admin-audit-log"
+  ]
+}

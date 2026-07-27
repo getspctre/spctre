@@ -1,0 +1,445 @@
+---
+title: CLI
+description: Every spctre command, flag, and option.
+---
+
+Install the Spctre CLI:
+
+```bash
+npm install -g @spctre/cli
+```
+
+---
+
+## Global options
+
+| Flag | Description |
+|---|---|
+| `--non-interactive` | Disable all prompts; fail fast on missing inputs (auto-set when `CI=true`) |
+
+---
+
+## spctre init
+
+Connect an agent to Spctre and write `.spctre/config.json`.
+
+```bash
+spctre init [options]
+```
+
+| Flag | Description |
+|---|---|
+| `-w`, `--workspace` | Workspace slug (default: `default`) |
+| `-a`, `--agent` | Agent ID (default: `solo-agent`) |
+| `-e`, `--environment` | Environment name (default: `production`) |
+| `-o`, `--output` | Output path for config file (default: `spctre-policy.json`) |
+| `-u`, `--url` | Control plane URL (default: `http://localhost:3000`) |
+| `-t`, `--timeout` | Approval timeout in seconds (default: `60`) |
+| `--token` | Skip browser flow; use this service token |
+| `--device` | Use RFC 8628 device code flow (headless) |
+| `--no-open` | Don't open the browser automatically |
+
+---
+
+## spctre sync
+
+Fetch the latest published policy bundle.
+
+```bash
+spctre sync [options]
+```
+
+| Flag | Description |
+|---|---|
+| `-w`, `--workspace` | Workspace ID |
+| `-k`, `--key` | Control plane API key |
+| `-o`, `--output` | Bundle output path (default: `spctre-policy.json`) |
+| `-u`, `--url` | Control plane URL (default: `http://localhost:3000`) |
+
+---
+
+## spctre bundle export
+
+Export the latest published bundle to a non-AGT target artifact and manifest sidecar.
+
+```bash
+spctre bundle export --format opa-bundle --output spctre-opa-bundle.json
+```
+
+| Flag | Description |
+|---|---|
+| `--format` | Export target: `spctre-json`, `opa-rego`, `opa-bundle`, `cedar`, or `mcp-proxy-config` |
+| `-w`, `--workspace` | Workspace ID |
+| `-k`, `--key` | Control plane API key |
+| `-o`, `--output` | Artifact output path |
+| `--manifest-output` | Manifest output path (default: `<output>.manifest.json`) |
+| `-u`, `--url` | Control plane URL |
+| `-q`, `--quiet` | Suppress output except errors |
+
+The command exits non-zero when the target export is blocked by semantic warnings that would weaken enforcement.
+
+---
+
+## spctre bundle preview
+
+Preview supported export targets and blocking warnings without downloading artifacts.
+
+```bash
+spctre bundle preview --strict
+```
+
+| Flag | Description |
+|---|---|
+| `-w`, `--workspace` | Workspace ID |
+| `-k`, `--key` | Control plane API key |
+| `-u`, `--url` | Control plane URL |
+| `--output` | Output format: `text` (default) or `json` |
+| `--strict` | Exit non-zero when any target is blocked |
+
+---
+
+## spctre bundle run-verifiers
+
+Run target-native verifier tools (`opa check`, `cedar validate`, etc.) against a local export artifact. Requires the relevant tool to be on `PATH`.
+
+```bash
+spctre bundle run-verifiers --artifact spctre-opa-bundle.json --manifest spctre-opa-bundle.json.manifest.json
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--artifact` | Yes | Export artifact path |
+| `--manifest` | Yes | Manifest sidecar path |
+| `--output` | No | Output format: `text` (default) or `json` |
+| `--allow-missing-tools` | No | Treat missing verifier tools as skipped instead of failing (useful in local dev where not all tools are installed) |
+
+Exits non-zero if any verifier tool reports an error. Use `--allow-missing-tools` in CI environments where only a subset of target verifiers are installed.
+
+---
+
+## spctre bundle verify
+
+Verify a local export artifact against its manifest sidecar before deployment.
+
+```bash
+spctre bundle verify --artifact spctre-opa-bundle.json --manifest spctre-opa-bundle.json.manifest.json
+```
+
+| Flag | Description |
+|---|---|
+| `--artifact` | Export artifact path |
+| `--manifest` | Manifest sidecar path |
+| `--output` | Output format: `text` (default) or `json` |
+
+The command checks the compiled artifact hash and prints the external verifier targets declared by the manifest.
+
+---
+
+## spctre watch
+
+Continuously sync the policy bundle and optionally install a framework adapter.
+
+```bash
+spctre watch [options]
+```
+
+| Flag | Description |
+|---|---|
+| `--framework` | Framework adapter: `crewai`, `langchain`, `openai-agents`, `autogen`, `google-adk`, `strands`, `notion-worker`, `antigravity-sdk`, `omnigent` |
+| `-w`, `--workspace` | Workspace ID |
+| `-k`, `--key` | Control plane API key |
+| `-o`, `--output` | Bundle output path |
+| `-u`, `--url` | Control plane URL |
+| `-i`, `--interval` | Sync interval in seconds (default: `30`) |
+| `--heartbeat` | Also send a heartbeat on each sync cycle |
+| `--heartbeat-interval` | Heartbeat interval in seconds (default: same as `--interval`) |
+| `--shadow` | Observe-only mode: evaluate but never block; log to `.spctre/shadow-log.jsonl` |
+| `-q`, `--quiet` | Suppress output except on changes and errors |
+
+For Notion Workers, see [Notion integration](/help-docs/developer/integrations/notion).
+
+---
+
+## spctre verify-env
+
+Verify that a generated framework adapter is active in the current Python environment.
+
+```bash
+spctre verify-env --framework <name> [options]
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--framework` | Yes | Adapter to verify: `crewai`, `langchain`, `openai-agents`, `autogen`, `google-adk`, `strands`, `notion-worker`, `antigravity-sdk`, `omnigent` |
+| `--python` | No | Python executable to use (default: `python`) |
+
+---
+
+## spctre ingest
+
+Submit runtime evidence to the control plane.
+
+```bash
+spctre ingest [options]
+```
+
+Use `-p` / `--payload` with raw JSON to submit standard evidence. For Git checkpoints and diffs, integrate directly with the [Git checkpoint ingestion API](/help-docs/developer/integrations/git-checkpoints).
+
+| Flag | Description |
+|---|---|
+| `-a`, `--agent` | Agent ID |
+| `-w`, `--workspace` | Workspace ID |
+| `-k`, `--key` | Control plane API key |
+| `-e`, `--environment` | Environment |
+| `-p`, `--payload` | Raw AGT-compatible evidence payload (JSON string) |
+| `-u`, `--url` | Control plane URL |
+| `--hash` | Artifact hash for heartbeat evidence |
+| `--heartbeat` | Send heartbeat evidence |
+| `--output` | Output format: `text` (default) or `json` |
+
+---
+
+## spctre economic-ingest
+
+Submit token usage telemetry.
+
+```bash
+spctre economic-ingest [options]
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `-a`, `--agent` | Yes | Agent ID |
+| `-e`, `--environment` | Yes | Environment |
+| `-s`, `--stack` | Yes | Runtime stack (`AWS_BEDROCK`, `GOOGLE_ADK`, `AZURE_AI`, `LANGCHAIN`, `LANGGRAPH`, `CREWAI`, `AUTOGEN`, `OPENAI_AGENTS`, `OMNIGENT`, `OPENCODE`, `CLAUDE_CODE`, `LOCAL`, `CUSTOM`) |
+| `--prompt-tokens` | Yes | Input token count |
+| `--completion-tokens` | Yes | Output token count |
+| `-c`, `--connector` | No | Target connector |
+| `-m`, `--model` | No | Model ID |
+| `--session` | No | Session ID |
+| `--decision` | No | Linked decision ID |
+| `--cost` | No | Estimated USD cost |
+| `--action` | No | Governance action (`ALLOW`, `WARN`, `ESCALATE`, `DENY`) |
+| `--policy` | No | Matched policy ID |
+| `-k`, `--key` | No | Control plane API key |
+| `-u`, `--url` | No | Control plane URL |
+| `--output` | No | Output format: `text` or `json` |
+| `-q`, `--quiet` | No | Suppress output |
+
+---
+
+## spctre economic-evaluate
+
+Check the current budget position before acting.
+
+```bash
+spctre economic-evaluate [options]
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `-a`, `--agent` | Yes | Agent ID |
+| `-e`, `--environment` | No | Environment filter |
+| `-c`, `--connector` | No | Connector filter |
+| `--class` | No | Agent class |
+| `--prompt-tokens` | No | Estimated prompt tokens |
+| `--completion-tokens` | No | Estimated completion tokens |
+| `--cost` | No | Estimated USD cost |
+| `-k`, `--key` | No | Control plane API key |
+| `-u`, `--url` | No | Control plane URL |
+| `--output` | No | Output format: `text` or `json` |
+
+---
+
+## spctre lint
+
+Validate a policy file.
+
+```bash
+spctre lint [policy] [options]
+```
+
+| Flag | Description |
+|---|---|
+| `--offline` | Skip catalog-aware checks; run syntax and shadow-conflict checks only |
+| `--strict` | Treat WARN-level issues as errors |
+| `--format` | Output format: `text` (default) or `json` |
+| `-u`, `--url` | Control plane URL |
+
+---
+
+## spctre test
+
+Run a policy against test fixtures.
+
+```bash
+spctre test [policy] --tests <fixtures.json>
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `-t`, `--tests` | Yes | Path to fixtures JSON file |
+| `--format` | No | Output format: `text` or `json` |
+
+---
+
+## spctre check
+
+Sync, lint, and test in one step. Emits SARIF for CI.
+
+```bash
+spctre check [policy] [options]
+```
+
+| Flag | Description |
+|---|---|
+| `--output` | Output format: `text`, `json`, or `sarif` |
+| `-t`, `--tests` | Path to fixtures JSON file |
+| `--no-sync` | Skip bundle sync; use local policy file as-is |
+| `-w`, `--workspace` | Workspace ID override |
+
+---
+
+## spctre pack scaffold
+
+Generate a connector pack template.
+
+```bash
+spctre pack scaffold [name] [options]
+```
+
+| Flag | Description |
+|---|---|
+| `-c`, `--connector` | Connector identifier |
+| `-v`, `--version` | Initial version (default: `1.0.0`) |
+| `-o`, `--output` | Output directory |
+
+---
+
+## spctre install-skill
+
+Install the Spctre `SKILL.md` into an AI harness.
+
+```bash
+spctre install-skill [options]
+```
+
+| Flag | Description |
+|---|---|
+| `--harness` | Harness type: `claude`, `codex`, `gemini`, `antigravity` (agy) |
+| `--claude` | Install for Claude Code |
+| `--codex` | Install for Codex |
+| `--gemini` | Install for Gemini CLI |
+| `--antigravity` | Install for Antigravity CLI (agy) |
+| `-g`, `--global` | Install to the harness global skills directory |
+| `-f`, `--force` | Overwrite existing installation |
+
+---
+
+## spctre install-hook
+
+Install a local harness adapter hook for observe/enforce mode.
+
+```bash
+spctre install-hook [options]
+```
+
+| Flag | Description |
+|---|---|
+| `--harness` | Harness type: `claude`, `codex`, `gemini`, `antigravity` (agy) |
+| `--claude` | Install for Claude Code |
+| `--codex` | Install for Codex |
+| `--gemini` | Install for Gemini CLI |
+| `--antigravity` | Install for Antigravity CLI (agy) |
+| `-g`, `--global` | Install to the harness global config |
+| `--mode` | Hook mode: `observe` (default) or `enforce` |
+| `--enforce` | Shorthand for `--mode enforce` |
+| `--uninstall` | Remove the hook instead of installing it |
+
+---
+
+## spctre pretooluse
+
+Local harness hook handler invoked by the installed hook before each tool call. Called automatically by the harness — not intended for direct use.
+
+```bash
+spctre pretooluse [options]
+```
+
+| Flag | Description |
+|---|---|
+| `--harness` | Harness that invoked the hook: `claude`, `codex`, `gemini`, `antigravity` (agy) (default: `claude`) |
+| `--mode` | Hook mode: `observe` (default) or `enforce` |
+| `--enforce` | Run in enforce mode, blocking locally on DENY |
+
+---
+
+## spctre status
+
+Show current CLI configuration and agent connection state.
+
+```bash
+spctre status [--check] [--output <format>]
+```
+
+| Flag | Description |
+|---|---|
+| `--check` | Ping the control plane to verify token and connectivity; exits non-zero if not connected |
+| `--output` | Output format: `text` (default) or `json` |
+
+Without `--check`, `status` prints the local config (workspace, agent ID, environment, token expiry) and exits zero even if the token is expired or the control plane is unreachable.
+
+With `--check`, it performs a live ping and exits:
+
+| Exit code | Meaning |
+|---|---|
+| `0` | Token valid, control plane reachable, bundle in sync |
+| `1` | Token expired or invalid |
+| `2` | Control plane unreachable |
+| `3` | Bundle out of date (heartbeat reports stale artifact hash) |
+
+**CI health-check step:**
+
+```yaml
+- name: Verify Spctre agent connectivity
+  run: spctre status --check
+  env:
+    SPCTRE_API_TOKEN: ${{ secrets.SPCTRE_API_TOKEN }}
+```
+
+Add `--output json` to parse results in a script:
+
+```bash
+spctre status --check --output json | jq '.connected'
+```
+
+---
+
+## spctre revoke
+
+Revoke the current agent's access and refresh tokens.
+
+```bash
+spctre revoke [--output <format>]
+```
+
+---
+
+## spctre cloud login
+
+Connect this agent to Spctre Cloud without a self-hosted control plane.
+
+```bash
+spctre cloud login [options]
+```
+
+| Flag | Description |
+|---|---|
+| `--trial` | Request a time-limited free trial token (no credit card required) |
+| `-w`, `--workspace` | Workspace slug (default: `default`) |
+| `-a`, `--agent` | Agent ID (default: `solo-agent`) |
+| `-e`, `--environment` | Runtime environment (default: `production`) |
+| `-o`, `--output` | Output path for config file (default: `spctre-policy.json`) |
+| `-u`, `--url` | Control plane URL (default: `http://localhost:3000`) |
+| `-t`, `--timeout` | Approval timeout in seconds (default: `60`) |
+| `--no-open` | Don't open the browser automatically |

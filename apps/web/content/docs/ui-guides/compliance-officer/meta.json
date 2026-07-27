@@ -1,0 +1,15 @@
+{
+  "title": "Compliance Officer",
+  "description": "Read compliance reports, export audit packages, and verify seals.",
+  "icon": "ClipboardCheck",
+  "pages": [
+    "overview",
+    "reading-compliance-reports",
+    "understanding-provenance-gaps",
+    "filtering-reports",
+    "exporting-reports",
+    "generating-compliance-seal",
+    "audit-trail",
+    "audit-ledger"
+  ]
+}

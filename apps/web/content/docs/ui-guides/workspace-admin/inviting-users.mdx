@@ -1,0 +1,66 @@
+---
+title: Inviting users
+description: Sending invitations, role assignment, and bulk import.
+---
+
+Users must be invited before they can access Spctre. An invitation sends an email with a sign-in link; if SSO is configured, users authenticate via your IdP.
+
+## Inviting a single user
+
+<Steps>
+<Step>
+
+Go to **Admin → Users**.
+
+</Step>
+<Step>
+
+Click **Invite user**.
+
+</Step>
+<Step>
+
+Enter the user's **email address**.
+
+</Step>
+<Step>
+
+Select a **role**:
+- **Admin** — full platform control
+- **Reviewer** — review queue, escalations
+- **Policy Creator** — policy authoring and submission
+- **Viewer** — read-only
+
+</Step>
+<Step>
+
+Select one or more **workspaces** the user should have access to. Each workspace assignment can have a different role (e.g. Admin in `sandbox`, Reviewer in `production`).
+
+</Step>
+<Step>
+
+Click **Send invitation**. The user receives an email with a sign-in link valid for 48 hours. If the link expires, re-send from the user's detail page.
+
+</Step>
+</Steps>
+
+## Bulk import
+
+To invite many users at once:
+
+1. Go to **Admin → Users → Invite** → **Bulk import**.
+2. Download the CSV template.
+3. Fill in `email`, `role`, and `workspaces` columns.
+4. Upload the completed CSV.
+5. Review the preview — any rows with errors are highlighted.
+6. Click **Send invitations**.
+
+## Resending an invitation
+
+Users who haven't accepted appear with a `Pending` badge. Click the user row and then **Resend invitation** to generate a new link.
+
+## Invitation restrictions
+
+- You cannot invite users to workspaces you don't have Admin access to.
+- An email address can only have one pending invitation at a time. Re-sending cancels the previous link.
+- If SCIM is configured, invited users provisioned through SCIM will have their invitations automatically accepted on first login.

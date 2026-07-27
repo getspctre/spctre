@@ -1,0 +1,67 @@
+---
+title: Error codes
+description: HTTP status meanings, common 401/403/429 causes, and traceId usage.
+---
+
+All Spctre API errors return a JSON body with an `error` field and a `meta.traceId` for support escalation.
+
+```json
+{
+  "error": "Authentication required.",
+  "meta": {
+    "traceId": "trc_01j9xk…",
+    "version": "1",
+    "ts": "2026-06-08T10:00:00Z"
+  }
+}
+```
+
+## HTTP status codes
+
+| Status | Meaning | Common causes |
+|---|---|---|
+| `200` | OK | Request succeeded |
+| `201` | Created | Resource created (e.g. evidence ingested) |
+| `202` | Accepted | Async operation in progress (e.g. CLI polling for approval) |
+| `400` | Bad Request | Validation error — check the `error` field for the failing field |
+| `401` | Unauthorized | Missing or expired token |
+| `403` | Forbidden | Valid token but insufficient permissions, CSRF violation, or MFA required |
+| `404` | Not Found | Resource does not exist |
+| `409` | Conflict | Duplicate resource (e.g. `decisionId` already exists) |
+| `422` | Unprocessable | Request shape is valid but semantics are wrong |
+| `429` | Too Many Requests | Rate limit exceeded — see `Retry-After` header |
+| `500` | Internal Server Error | Unexpected server error — include `traceId` when reporting |
+
+## Common 401 causes
+
+- Access token expired — refresh using the refresh token or run `spctre init` again
+- Token revoked — token was revoked via `spctre revoke` or the control plane
+- Missing `Authorization` header — all authenticated endpoints require `Authorization: Bearer <token>`
+
+## Common 403 causes
+
+- **MFA required** — session exists but MFA has not been verified; complete MFA at `/login?mfa=required`
+- **Invalid request origin** — CSRF check failed on a mutation request from a cross-origin caller; ensure `Origin` or `Referer` matches the control plane URL
+- **IP not allowlisted** — `SPCTRE_ALLOWED_SOURCE_IPS` is set and the request IP is not in the list
+- **Insufficient scope** — token does not have the required scope (e.g. trying to publish a policy with a `bundle:read`-only token)
+
+## Common 429 causes
+
+Rate limits apply to all API and auth paths. Default: 100 requests per 60 seconds per IP.
+
+The `Retry-After` response header gives the number of seconds to wait before retrying:
+
+```
+HTTP/1.1 429 Too Many Requests
+Retry-After: 42
+```
+
+Increase limits by setting `SPCTRE_RATE_LIMIT_MAX_REQUESTS` and `SPCTRE_RATE_LIMIT_WINDOW_SECONDS`, or use Upstash Redis (`UPSTASH_REDIS_REST_URL`) for distributed rate limiting in multi-instance deployments.
+
+## Reporting errors
+
+When contacting support, always include:
+1. The `traceId` from the error response `meta` object
+2. The HTTP status code
+3. The request path and method
+4. The timestamp of the failure

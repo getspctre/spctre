@@ -1,0 +1,78 @@
+---
+title: Generating a compliance seal
+description: What the seal proves, how to share it with an auditor, and verification steps.
+---
+
+A **compliance seal** is a cryptographically signed attestation that all agent decisions in a specified period were governed by a published policy. It's a compact, verifiable proof you can give to auditors without sharing raw evidence data.
+
+## What the seal proves
+
+A seal certifies that:
+- All decisions in the specified time window had policy coverage (compliance rate = 100%)
+- The policy revisions in effect during the period were reviewed and approved
+- The evidence records have not been tampered with (the seal includes a Merkle root of the evidence dataset)
+
+A seal cannot be generated if the compliance rate for the period is below 100% — provenance gaps must be resolved first.
+
+## Generating a seal
+
+<Steps>
+<Step>
+
+Apply date and filter settings to match the period you want to attest. The compliance rate must show 100% — if it doesn't, resolve gaps before proceeding.
+
+</Step>
+<Step>
+
+Click **Generate seal** in the report header.
+
+</Step>
+<Step>
+
+The seal dialog shows:
+- **Period** — start and end timestamps
+- **Decision count** — number of decisions covered
+- **Policy revisions** — the revision IDs in effect during the period
+- **Compliance rate** — must be 100%
+
+Review these carefully before signing.
+
+</Step>
+<Step>
+
+Click **Sign and generate**. Spctre generates the seal. This may take a few seconds for large periods.
+
+</Step>
+<Step>
+
+The seal is created with a unique **Seal ID** (e.g. `seal_01j9xk…`) and a **seal package** containing:
+- A JWT-signed seal document
+- The Merkle root of evidence for the period
+- The public key used for signing
+
+</Step>
+</Steps>
+
+## Sharing with an auditor
+
+Download the seal package as a JSON file and provide it to your auditor. Include:
+- The seal package JSON
+- Instructions to verify using the Spctre public key (shown on the seal detail page)
+
+## Verifying a seal
+
+Auditors can verify a seal without accessing your Spctre instance:
+
+1. Decode the JWT using the Spctre public key (available at your control plane's `/.well-known/spctre-seal.json`)
+2. Verify the Merkle root against the exported evidence dataset
+3. Confirm the period, decision count, and compliance rate in the decoded payload
+
+Spctre also provides a self-contained **seal verifier CLI** for auditors:
+
+```bash
+npx @spctre/verify-seal --seal seal_package.json --pubkey spctre-seal.json
+```
+
+## Seal storage
+
+All generated seals are stored in **Compliance → Seals**. Seals cannot be deleted or modified after creation. They are included in compliance exports when the relevant period is exported.

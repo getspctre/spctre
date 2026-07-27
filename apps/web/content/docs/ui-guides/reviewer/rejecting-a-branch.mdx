@@ -1,0 +1,60 @@
+---
+title: Rejecting a branch
+description: Leaving structured feedback and routing a branch back to the author.
+---
+
+Reject a branch when you find rules that are incorrect, too broad, missing conditions, or inconsistent with the stated intent. A rejection routes the branch back to the creator with your feedback.
+
+## When to reject
+
+Reject rather than comment-and-wait when:
+- A rule's effect is wrong (e.g. `ALLOW` where it should be `DENY`)
+- A condition is missing and the rule would match unintended decisions in production
+- The branch scope is wrong (targeting the wrong workspace or connector)
+- The submission note contradicts what the rules actually do
+
+## Steps
+
+<Steps>
+<Step>
+### Open the branch
+
+From **Review → Branches**, click the branch you're reviewing.
+</Step>
+
+<Step>
+### Click "Reject"
+
+Click the **Reject** button in the branch header.
+</Step>
+
+<Step>
+### Write rejection feedback
+
+The feedback form has two fields:
+
+**Summary** — one or two sentences on why the branch is being rejected overall. This shows in the branch list view and notifications.
+
+**Detailed feedback** — explain each specific issue. Reference rule IDs where relevant. Be concrete: "The condition on `stripe.allow_charge` allows any amount when `customer_tier` is `enterprise` — this should be `amount_usd lte 50000` for tier compliance."
+</Step>
+
+<Step>
+### Attach rule-level comments
+
+In addition to the overall feedback, you can pin a comment directly to a rule using the **Comment** button on the rule row. Rule-level comments persist across re-submissions so the creator can see your note in context when editing.
+</Step>
+
+<Step>
+### Confirm
+
+Click **Submit rejection**. The branch moves back to `DRAFT`. The creator receives a notification.
+</Step>
+</Steps>
+
+## After rejection
+
+Any approvals you or other reviewers gave are reset. When the creator re-submits, all reviewers start fresh. The review tab shows a diff view so you can see exactly what changed.
+
+<Callout type="info">
+A rejection is not a permanent block — it's a request for revision. If the creator disagrees with your feedback, they can reply to your comments before re-submitting.
+</Callout>

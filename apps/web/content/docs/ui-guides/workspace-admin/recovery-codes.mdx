@@ -1,0 +1,47 @@
+---
+title: Recovery codes
+description: Generate and use one-time backup codes for account recovery.
+---
+
+Recovery codes are one-time backup codes users can use when they lose access to their normal MFA method.
+
+## Generate codes
+
+1. Open **Account**.
+2. Find **Security -> Recovery**.
+3. Click **Generate recovery codes**.
+4. Save the eight codes somewhere safe. They are shown once.
+
+If unused codes already exist, generating a new set invalidates the old unused codes.
+
+Recovery code generation is disabled in Demo Mode.
+
+## Storage model
+
+Spctre never stores plaintext recovery codes. Each code is uppercased, salted with a unique random salt, and stored as an scrypt-derived hash.
+
+Each generated set contains eight 10-character uppercase hex codes. Each code can be used once.
+
+## Use a code
+
+From the login page, click **Lost access? Use a recovery code**, or open:
+
+```text
+/login/recover
+```
+
+Enter the account email address and one unused recovery code.
+
+When the code is accepted:
+
+1. The code is marked used.
+2. Existing MFA enrollments for that user are removed.
+3. A new verified session is created.
+4. The user can re-enroll MFA from Account settings.
+
+## Abuse protection
+
+Recovery verification is rate-limited to five attempts per email per 10 minutes. Invalid email and invalid code failures return the same user-facing error to avoid email enumeration.
+
+Recovery code failures and successful recovery events are recorded by the security logger.
+

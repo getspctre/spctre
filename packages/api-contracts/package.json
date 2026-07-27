@@ -1,0 +1,24 @@
+{
+  "name": "@spctre/api-contracts",
+  "version": "0.1.0",
+  "description": "Shared API schema contracts, envelope conventions, and validation helpers for Spctre clients",
+  "license": "Apache-2.0",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "emit": "node --import tsx scripts/emit.ts"
+  },
+  "dependencies": {
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^26.0.0",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.8"
+  }
+}

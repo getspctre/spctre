@@ -1,0 +1,96 @@
+---
+title: Configuring SSO
+description: OIDC and SAML setup walkthrough in the UI, testing the login flow, and JIT provisioning.
+---
+
+Spctre supports OIDC and SAML 2.0 for single sign-on. Once configured, users sign in through your identity provider (IdP) instead of Spctre-managed credentials.
+
+## Before you start
+
+You'll need:
+- Admin access in Spctre and in your IdP
+- Your IdP's metadata URL (SAML) or discovery endpoint (OIDC)
+- Permission to create an application in your IdP
+
+## Opening SSO settings
+
+Go to **Admin → Authentication → SSO**.
+
+## OIDC setup
+
+<Steps>
+<Step>
+
+Click **Add provider → OIDC**.
+
+</Step>
+<Step>
+
+In your IdP, create a new OIDC application. Set:
+- **Redirect URI**: shown in the Spctre OIDC setup form (typically `https://your-control-plane.example.com/api/auth/callback/oidc`)
+- **Scopes**: `openid`, `email`, `profile`
+
+</Step>
+<Step>
+
+Back in Spctre, fill in:
+- **Discovery URL** — your IdP's OIDC discovery endpoint (e.g. `https://your-idp.example.com/.well-known/openid-configuration`)
+- **Client ID** — from your IdP application
+- **Client secret** — from your IdP application
+
+</Step>
+<Step>
+
+Click **Save and test**. Spctre opens a test login flow in a new tab. Sign in with your IdP credentials. If the test passes, the SSO configuration is active.
+
+</Step>
+</Steps>
+
+## SAML setup
+
+<Steps>
+<Step>
+
+Click **Add provider → SAML**.
+
+</Step>
+<Step>
+
+Spctre shows:
+- **SP Entity ID** — the service provider identifier to register in your IdP
+- **ACS URL** — the assertion consumer service URL your IdP posts to
+
+Register these in your IdP's SAML application configuration.
+
+</Step>
+<Step>
+
+From your IdP, copy:
+- **IdP metadata URL** (preferred) or paste the metadata XML directly
+
+</Step>
+<Step>
+
+Paste the metadata URL into Spctre and click **Import metadata**. Spctre reads the certificate and endpoint URLs.
+
+</Step>
+<Step>
+
+Click **Save and test**. Complete a test login to verify.
+
+</Step>
+</Steps>
+
+## JIT provisioning
+
+Just-in-time provisioning creates a Spctre account automatically when a user successfully authenticates via SSO for the first time — no invitation required.
+
+Enable it under **SSO settings → Just-in-time provisioning**. JIT-provisioned users are assigned the **Viewer** role by default. Change the default role and workspace assignment using the JIT settings fields.
+
+<Callout type="info">
+If you use SCIM for authoritative provisioning, disable JIT to avoid conflicts between SCIM-managed and JIT-provisioned accounts.
+</Callout>
+
+## Enforcing SSO
+
+Once SSO is configured and tested, click **Enforce SSO** to require all users to sign in via the IdP. Email/password login is disabled for all non-admin users. Admins retain email/password access as a break-glass option.

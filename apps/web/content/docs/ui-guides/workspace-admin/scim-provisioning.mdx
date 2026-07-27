@@ -1,0 +1,62 @@
+---
+title: Setting up SCIM provisioning
+description: Connecting your IdP directory, group-to-role mapping, and deprovisioning.
+---
+
+SCIM (System for Cross-domain Identity Management) automates user provisioning and deprovisioning by syncing your IdP directory with Spctre. When you add someone to a group in your IdP, they appear in Spctre. When you remove them, their access is revoked immediately.
+
+## Before you start
+
+- SSO must be configured before enabling SCIM.
+- You need admin access in your IdP to create a SCIM integration.
+
+## Generating a SCIM token
+
+1. Go to **Admin → Authentication → SCIM**.
+2. Click **Generate SCIM token**. Copy the token — it's only shown once.
+
+This token authenticates your IdP's SCIM requests to Spctre. Store it in your IdP's credential store.
+
+## Configuring your IdP
+
+The SCIM endpoint URL and token are shown in the SCIM settings panel. In your IdP:
+
+1. Create a new SCIM application or enable SCIM on your existing SSO application.
+2. Set the SCIM base URL to the value shown in Spctre.
+3. Set the authentication method to Bearer token and paste the token.
+4. Enable the SCIM features: `Create`, `Update`, `Deactivate`.
+
+Common IdP-specific guides:
+- **Okta** — Apps → Your app → Provisioning → SCIM
+- **Entra ID** — Enterprise applications → Provisioning
+- **Google Workspace** — Requires a third-party SCIM proxy
+
+## Group-to-role mapping
+
+SCIM syncs users but not roles directly. Use **Group-to-role mapping** in Spctre to assign roles based on IdP group membership:
+
+1. In **Admin → Authentication → SCIM → Group mapping**, click **Add mapping**.
+2. Enter the IdP group name exactly as it appears in your IdP directory.
+3. Choose the Spctre role and workspace.
+4. Click **Save**.
+
+When a user is added to the IdP group, Spctre assigns them the mapped role on next SCIM sync. When removed from the group, the role is revoked.
+
+<Callout type="info">
+Group mapping uses exact string matching on the IdP group name. "Payments-Reviewers" and "payments-reviewers" are different groups.
+</Callout>
+
+## Deprovisioning
+
+When a user is removed from your IdP (or deactivated), SCIM sends a `DELETE` or `active: false` update to Spctre. Spctre:
+1. Revokes all active sessions for the user immediately
+2. Removes all workspace role assignments
+3. Marks the user account as `deprovisioned` in the user list
+
+Deprovisioned users are not deleted — their policy authorship and review history is preserved in the audit trail.
+
+## Testing SCIM
+
+After setup, trigger a manual SCIM sync from your IdP and verify that:
+- A test user appears in **Admin → Users** with the correct role
+- Removing the test user from your IdP removes their access in Spctre within the sync interval (typically 5–10 minutes)

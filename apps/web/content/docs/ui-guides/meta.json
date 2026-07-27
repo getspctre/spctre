@@ -1,0 +1,11 @@
+{
+  "title": "UI Guides",
+  "root": true,
+  "pages": [
+    "index",
+    "policy-creator",
+    "reviewer",
+    "compliance-officer",
+    "workspace-admin"
+  ]
+}

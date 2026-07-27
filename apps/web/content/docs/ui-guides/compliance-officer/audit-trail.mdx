@@ -1,0 +1,60 @@
+---
+title: Using the audit trail
+description: Tracing a specific decision back to its policy revision and reading the evaluation trace.
+---
+
+The audit trail is an immutable, append-only log of every governance event in Spctre — every agent decision, policy revision, review approval, and escalation resolution. It's the source of truth for compliance investigations and auditor queries.
+
+## Opening the audit trail
+
+In the left nav, click **Compliance → Audit trail**.
+
+## Searching
+
+Use the search bar to find a specific record:
+
+| Search field | Example |
+|---|---|
+| Decision ID | `dec_01j9xk…` |
+| Agent ID | `agt_stripe-worker-01` |
+| Policy branch name | `stripe-high-value` |
+| Reviewer name or email | `jane@example.com` |
+| Rule ID | `stripe.deny_high_value_charge` |
+
+Results are ordered by timestamp descending. Use the date filter to narrow to a specific period before searching.
+
+## Event types
+
+| Event type | Description |
+|---|---|
+| `decision.allow` | Agent decision permitted by policy |
+| `decision.deny` | Agent decision blocked by policy |
+| `decision.warn` | Agent decision permitted but flagged |
+| `decision.escalate` | Agent decision paused for human review |
+| `decision.gap` | Agent decision with no policy coverage |
+| `escalation.resolved` | Human resolved a live escalation |
+| `policy.published` | Policy branch approved and bundle generated |
+| `policy.branch_submitted` | Branch submitted for review |
+| `policy.branch_approved` | Reviewer approved a branch |
+| `policy.branch_rejected` | Reviewer rejected a branch |
+
+## Tracing a decision
+
+Click any decision event to open the full trace. The trace shows:
+
+1. **Decision context** — agent, connector, action, payload hash, timestamp
+2. **Policy evaluation** — which bundle revision was loaded; which rules were evaluated in order
+3. **Matched rule** — the rule that produced the final decision, with its conditions and their evaluation results
+4. **Policy provenance** — the branch, revision, review approvals, and publish timestamp for the matched rule
+
+This gives you an unbroken chain from a single agent action back to the human review that approved the governing rule.
+
+## Sharing a trace with an auditor
+
+Click **Copy link** on any audit trail entry to get a permanent link to that record. The link includes the record ID — share it directly with an auditor.
+
+Alternatively, use the decision ID in a compliance export and let the auditor cross-reference with the audit trail.
+
+## Immutability guarantee
+
+Audit trail records cannot be edited or deleted by any user — including admins. The trail is append-only. If a record needs annotation, use the **Add note** feature which appends a timestamped note without modifying the original record.
