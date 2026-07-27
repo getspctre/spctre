@@ -42,7 +42,7 @@
     "@mastra/core": "1.50.1",
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^26.0.0",
-    "ai": "7.0.22",
+    "ai": "7.0.37",
     "genkit": "1.39.0",
     "governance-sdk": "0.18.1",
     "typescript": "^6.0.3",
