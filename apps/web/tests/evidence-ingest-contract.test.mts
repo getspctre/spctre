@@ -51,6 +51,17 @@ vi.mock("@/lib/repositories/gateway", () => ({
   persistGatewayDecision: persistGatewayDecisionSpy,
 }));
 
+// Keep this contract test independent of the database-backed agent identity
+// and blueprint lookups. The integration suite also runs repository tests
+// against Postgres, so this test should exercise only ingest orchestration.
+vi.mock("@/lib/repositories/agent-blueprints", () => ({
+  getPublishedBlueprintContext: vi.fn(async () => null),
+}));
+
+vi.mock("@/lib/repositories/identity", () => ({
+  resolveCanonicalAgentId: vi.fn(async ({ agentId }: { agentId: string }) => agentId),
+}));
+
 const { ingestRuntimeEvidence } = await import("../lib/domains/evidence/ingest-service");
 
 const baseParsed: EvidenceIngestInput = {

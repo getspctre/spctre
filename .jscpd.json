@@ -1,0 +1,20 @@
+{
+  "threshold": 5,
+  "reporters": ["consoleFull"],
+  "gitignore": true,
+  "absolute": true,
+  "pattern": "**/*.{ts,tsx,mts,go,rs}",
+  "ignore": [
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/.next/**",
+    "**/target/**",
+    "**/*.test.*",
+    "**/*.spec.*",
+    "**/*_test.go",
+    "**/*.d.ts",
+    "apps/worker/internal/worker/types_gen.go",
+    "packages/sdk/src/schema.ts",
+    "packages/api-contracts/openapi.json"
+  ]
+}

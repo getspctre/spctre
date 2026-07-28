@@ -4,5 +4,5 @@ DO $$ BEGIN
   IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'spctre_app') THEN
     CREATE ROLE spctre_app LOGIN PASSWORD 'spctre_app_dev' NOSUPERUSER NOCREATEDB NOCREATEROLE;
   END IF;
+  EXECUTE format('GRANT CONNECT ON DATABASE %I TO spctre_app', current_database());
 END $$;
-GRANT CONNECT ON DATABASE spctre TO spctre_app;

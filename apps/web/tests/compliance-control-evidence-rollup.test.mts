@@ -71,6 +71,13 @@ vi.mock("@/lib/repositories/policy", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/repositories/policy")>();
   return { ...actual, getApprovals: getApprovalsMock };
 });
+vi.mock("@/lib/repositories/approval-workflow", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/repositories/approval-workflow")>();
+  return {
+    ...actual,
+    getApprovalWorkflowForContext: vi.fn(async (params) => actual.defaultApprovalWorkflowSnapshot(params)),
+  };
+});
 vi.mock("@/lib/repositories/evidence/runtime", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/repositories/evidence/runtime")>();
   return { ...actual, listRuntimeEvidence: listRuntimeEvidenceMock };
