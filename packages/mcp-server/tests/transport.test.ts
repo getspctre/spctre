@@ -1,8 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { IncomingMessage, Server, ServerResponse } from "node:http";
-import type { Response } from "express";
+import type { Server } from "node:http";
 import type { SpctreConfig } from "../src/config.js";
-import { MAX_HTTP_MESSAGES_PER_SECOND } from "../src/metrics.js";
+import { SpctreMcpServer } from "../src/server.js";
 import { createHttpApp } from "../src/transport.js";
 
 const baseConfig: SpctreConfig = {
@@ -12,22 +11,17 @@ const baseConfig: SpctreConfig = {
   agentId: "agent-default",
   transport: "http",
   httpPort: 0,
-  ssePath: "/sse",
-  messagePath: "/message",
+  httpPath: "/mcp",
   requireBearerAuth: true,
   oauthIssuer: "https://auth.spctre.example",
-  oauthResource: "https://mcp.spctre.example/sse",
+  oauthResource: "https://mcp.spctre.example/mcp",
   oauthScopes: ["mcp:read", "mcp:write"],
 };
 
 const handles: Server[] = [];
 
 afterEach(async () => {
-  await Promise.all(
-    handles.splice(0).map(
-      (handle) => new Promise<void>((resolve) => handle.close(() => resolve())),
-    ),
-  );
+  await Promise.all(handles.splice(0).map((handle) => new Promise<void>((resolve) => handle.close(() => resolve()))));
   vi.restoreAllMocks();
 });
 
@@ -42,126 +36,86 @@ async function listen(app: ReturnType<typeof createHttpApp>["app"]): Promise<str
 
 function makeApp(config: SpctreConfig = baseConfig) {
   const createdServers: SpctreConfig[] = [];
-  const postMessages: string[] = [];
-  let nextSession = 1;
   const app = createHttpApp(config, {
-    createServer: (sessionConfig) => {
-      createdServers.push(sessionConfig);
-      return {
-        connectTransport: async () => {},
-        close: async () => {},
-      };
-    },
-    createTransport: (_messagePath: string, res: Response) => {
-      const sessionId = `session-${nextSession++}`;
-      queueMicrotask(() => {
-        if (!res.headersSent) res.status(200).json({ sessionId });
-      });
-      return {
-        sessionId,
-        start: async () => {},
-        send: async () => {},
-        close: async () => {},
-        handlePostMessage: async (_req: IncomingMessage, messageRes: ServerResponse) => {
-          postMessages.push(sessionId);
-          messageRes.statusCode = 202;
-          messageRes.end(JSON.stringify({ ok: true, sessionId }));
-        },
-      };
+    createServer: (requestConfig) => {
+      createdServers.push(requestConfig);
+      return new SpctreMcpServer(requestConfig);
     },
     allowedSourceIps: new Set(),
   });
-  return { ...app, createdServers, postMessages };
+  return { ...app, createdServers };
 }
 
-describe("HTTP/SSE transport", () => {
-  it("requires bearer auth for SSE sessions when configured", async () => {
-    const { app } = makeApp();
+function discoverRequest(): RequestInit {
+  return {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "mcp-protocol-version": "2026-07-28",
+      "mcp-method": "server/discover",
+      "mcp-name": "spctre-test",
+    },
+    body: JSON.stringify({
+      jsonrpc: "2.0",
+      id: 1,
+      method: "server/discover",
+      params: {
+        _meta: {
+          "io.modelcontextprotocol/protocolVersion": "2026-07-28",
+          "io.modelcontextprotocol/clientCapabilities": {},
+        },
+      },
+    }),
+  };
+}
+
+describe("stateless HTTP transport", () => {
+  it("requires bearer auth before creating a protocol server", async () => {
+    const { app, createdServers } = makeApp();
     const baseUrl = await listen(app);
 
-    const response = await fetch(`${baseUrl}/sse`);
+    const response = await fetch(`${baseUrl}/mcp`, discoverRequest());
 
     expect(response.status).toBe(401);
     expect(response.headers.get("www-authenticate")).toContain("resource_metadata");
     expect(await response.json()).toEqual({ error: "Missing bearer token." });
+    expect(createdServers).toEqual([]);
   });
 
   it("serves OAuth protected-resource metadata for remote clients", async () => {
     const { app } = makeApp();
     const baseUrl = await listen(app);
-
     const response = await fetch(`${baseUrl}/.well-known/oauth-protected-resource`);
-    const body = await response.json();
 
     expect(response.status).toBe(200);
-    expect(body).toEqual(expect.objectContaining({
-      resource: "https://mcp.spctre.example/sse",
+    expect(await response.json()).toEqual(expect.objectContaining({
+      resource: "https://mcp.spctre.example/mcp",
       authorization_servers: ["https://auth.spctre.example"],
       scopes_supported: ["mcp:read", "mcp:write"],
       bearer_methods_supported: ["header"],
     }));
   });
 
-  it("creates isolated sessions with per-client token, workspace, and agent scope", async () => {
-    const { app, createdServers, sessions } = makeApp();
+  it("creates an isolated protocol server for each stateless request", async () => {
+    const { app, createdServers } = makeApp();
     const baseUrl = await listen(app);
 
-    const first = await fetch(`${baseUrl}/sse`, {
-      headers: {
-        authorization: "Bearer token-a",
-        "x-spctre-workspace-id": "ws-a",
-        "x-spctre-agent-id": "agent-a",
-      },
-    });
-    const second = await fetch(`${baseUrl}/sse`, {
-      headers: {
-        authorization: "Bearer token-b",
-        "x-spctre-workspace-id": "ws-b",
-        "x-spctre-agent-id": "agent-b",
-      },
-    });
+    const first = await fetch(`${baseUrl}/mcp`, { ...discoverRequest(), headers: { ...discoverRequest().headers, authorization: "Bearer token-a", "x-spctre-workspace-id": "ws-a", "x-spctre-agent-id": "agent-a" } });
+    const second = await fetch(`${baseUrl}/mcp`, { ...discoverRequest(), headers: { ...discoverRequest().headers, authorization: "Bearer token-b", "x-spctre-workspace-id": "ws-b", "x-spctre-agent-id": "agent-b" } });
 
-    expect(first.status).toBe(200);
-    expect(second.status).toBe(200);
-    expect(await first.json()).toEqual({ sessionId: "session-1" });
-    expect(await second.json()).toEqual({ sessionId: "session-2" });
-    expect(sessions.size).toBe(2);
+    expect(first.status, await first.text()).toBe(200);
+    expect(second.status, await second.text()).toBe(200);
     expect(createdServers.map((config) => [config.apiToken, config.workspaceId, config.agentId])).toEqual([
       ["token-a", "ws-a", "agent-a"],
       ["token-b", "ws-b", "agent-b"],
     ]);
   });
 
-  it("requires the same bearer token on message POSTs", async () => {
+  it("does not expose the legacy SSE or session-message endpoints", async () => {
     const { app } = makeApp();
     const baseUrl = await listen(app);
-    await fetch(`${baseUrl}/sse`, { headers: { authorization: "Bearer session-token" } });
 
-    const response = await fetch(`${baseUrl}/message?sessionId=session-1`, {
-      method: "POST",
-      headers: { authorization: "Bearer wrong-token" },
-    });
-
-    expect(response.status).toBe(401);
-    expect(response.headers.get("www-authenticate")).toContain("invalid_token");
-    expect(await response.json()).toEqual({ error: "Missing or invalid bearer token." });
-  });
-
-  it("applies per-session message backpressure", async () => {
-    const { app, postMessages } = makeApp();
-    const baseUrl = await listen(app);
-    await fetch(`${baseUrl}/sse`, { headers: { authorization: "Bearer session-token" } });
-
-    const responses = [];
-    for (let i = 0; i < MAX_HTTP_MESSAGES_PER_SECOND + 1; i++) {
-      responses.push(await fetch(`${baseUrl}/message?sessionId=session-1`, {
-        method: "POST",
-        headers: { authorization: "Bearer session-token" },
-      }));
-    }
-
-    expect(responses.slice(0, MAX_HTTP_MESSAGES_PER_SECOND).every((response) => response.status === 202)).toBe(true);
-    expect(responses[MAX_HTTP_MESSAGES_PER_SECOND].status).toBe(429);
-    expect(postMessages).toHaveLength(MAX_HTTP_MESSAGES_PER_SECOND);
+    expect((await fetch(`${baseUrl}/sse`)).status).toBe(404);
+    expect((await fetch(`${baseUrl}/message?sessionId=legacy`, { method: "POST" })).status).toBe(404);
   });
 });

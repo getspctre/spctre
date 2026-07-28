@@ -36,7 +36,7 @@ apps/worker       Go ingest & runtime operations service
 packages/
   policy-schema   Shared TS schema/types + Rust native addon
   cli             TypeScript CLI (init, watch, install-hook, ...)
-  mcp-server      MCP transport server (STDIO + HTTP/SSE)
+  mcp-server      MCP transport server (STDIO + stateless Streamable HTTP)
   api-contracts   OpenAPI 3.1 spec source (src/openapi.ts)
   sdk             Generated TypeScript SDK (openapi-fetch)
   platform        Shared observability / metrics / classification

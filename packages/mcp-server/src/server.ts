@@ -3,16 +3,7 @@
 // audit Hotspot 1); the transport bootstrap and composition root live in
 // transport.ts and index.ts respectively.
 
-import { Server } from "@modelcontextprotocol/sdk/server/index.js";
-import {
-  ListToolsRequestSchema,
-  CallToolRequestSchema,
-  ListResourcesRequestSchema,
-  ReadResourceRequestSchema,
-  ListPromptsRequestSchema,
-  GetPromptRequestSchema,
-} from "@modelcontextprotocol/sdk/types.js";
-import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
+import { Server, type Transport } from "@modelcontextprotocol/server";
 import axios, { AxiosInstance, AxiosResponse } from "axios";
 import { withSpan } from "./observability.js";
 import {
@@ -189,12 +180,21 @@ export class SpctreMcpServer {
     await this.server.close();
   }
 
+  /**
+   * The 2026-07-28 HTTP entry creates one protocol server per request. Keep
+   * the wrapper responsible for Spctre configuration, while exposing only the
+   * protocol object required by createMcpHandler.
+   */
+  protocolServer(): Server {
+    return this.server;
+  }
+
   private setupToolHandlers(): void {
-    this.server.setRequestHandler(ListToolsRequestSchema, async () => {
-      return { tools: TOOL_SCHEMAS };
+    this.server.setRequestHandler("tools/list", async () => {
+      return { tools: TOOL_SCHEMAS } as never;
     });
 
-    this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
+    this.server.setRequestHandler("tools/call", async (request) => {
       const { name, arguments: args } = request.params;
       return await withSpan("mcp.tool.call", {
         "mcp.tool.name": name,
@@ -211,7 +211,7 @@ export class SpctreMcpServer {
           if (!handler) {
             throw new Error(`Unknown tool: ${name}`);
           }
-          return await handler(args ?? {});
+          return await handler(args ?? {}) as never;
         } catch (err) {
           isError = true;
           span.setAttribute("error.type", err instanceof Error ? err.name : "Error");
@@ -224,7 +224,7 @@ export class SpctreMcpServer {
   }
 
   private setupResourceHandlers(): void {
-    this.server.setRequestHandler(ListResourcesRequestSchema, async () => withSpan("mcp.resources.list", {
+    this.server.setRequestHandler("resources/list", async () => withSpan("mcp.resources.list", {
       "mcp.transport": this.config.transport,
       "spctre.workspace_id": this.config.workspaceId,
     }, async () => {
@@ -300,7 +300,7 @@ export class SpctreMcpServer {
       };
     }));
 
-    this.server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
+    this.server.setRequestHandler("resources/read", async (request) => {
       const { uri } = request.params;
       const resourceType = uri.split("/").slice(2, 4).join("/") || "unknown";
       return await withSpan("mcp.resource.read", {
@@ -349,7 +349,7 @@ export class SpctreMcpServer {
   }
 
   private setupPromptHandlers(): void {
-    this.server.setRequestHandler(ListPromptsRequestSchema, async () => withSpan("mcp.prompts.list", {
+    this.server.setRequestHandler("prompts/list", async () => withSpan("mcp.prompts.list", {
       "mcp.transport": this.config.transport,
       "spctre.workspace_id": this.config.workspaceId,
     }, async () => {
@@ -358,7 +358,7 @@ export class SpctreMcpServer {
       };
     }));
 
-    this.server.setRequestHandler(GetPromptRequestSchema, async (request) => {
+    this.server.setRequestHandler("prompts/get", async (request) => {
       const { name, arguments: args } = request.params;
       return await withSpan("mcp.prompt.get", {
         "mcp.prompt.name": name,

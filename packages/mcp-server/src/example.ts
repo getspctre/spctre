@@ -5,8 +5,8 @@
  * and use its tools and resources.
  */
 
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
+import { Client } from "@modelcontextprotocol/client";
+import { StdioClientTransport } from "@modelcontextprotocol/client/stdio";
 import { spawn } from "child_process";
 
 /**
@@ -42,8 +42,6 @@ async function initializeMcpClient(): Promise<Client> {
   const client = new Client({
     name: "spctre-example-client",
     version: "0.1.0",
-  }, {
-    capabilities: {},
   });
 
   await client.connect(transport);

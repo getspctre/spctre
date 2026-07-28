@@ -24,8 +24,7 @@ function liveContext(): McpServerContext {
     agentId: process.env.SPCTRE_AGENT_ID || "mcp-live-test-agent",
     transport: "stdio",
     httpPort: 8090,
-    ssePath: "/sse",
-    messagePath: "/message",
+    httpPath: "/mcp",
     requireBearerAuth: true,
   };
 

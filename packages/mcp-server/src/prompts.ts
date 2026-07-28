@@ -1,4 +1,4 @@
-import type { Prompt } from "@modelcontextprotocol/sdk/types.js";
+import type { Prompt } from "@modelcontextprotocol/server";
 
 interface McpPromptTemplate {
   name: string;
@@ -108,7 +108,7 @@ const PROMPT_TEMPLATES: McpPromptTemplate[] = [
       return [
         `Harden ${clientName} against governance transport failures.`,
         "Verify bearer or refresh-token auth, workspace scoping, connector allowlists, retry behavior, and evidence deduplication.",
-        "For HTTP/SSE, confirm readiness, session capacity, message authorization, and graceful recovery after dropped sessions.",
+        "For stateless HTTP, confirm readiness, bearer authorization, and safe recovery after dropped requests.",
       ].join(" ");
     },
   },

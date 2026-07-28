@@ -10,8 +10,7 @@ const baseConfig: SpctreConfig = {
   agentId: "agent-test",
   transport: "stdio",
   httpPort: 8090,
-  ssePath: "/sse",
-  messagePath: "/message",
+  httpPath: "/mcp",
   requireBearerAuth: false,
 };
 

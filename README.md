@@ -111,7 +111,7 @@ operations-log integrity run in the Rust native addon.
   including `init`, `watch`, `status`, `refresh`, `revoke`, `install-skill`,
   `install-hook`, `check`, and policy/evidence helpers. Maintains local
   runtime state and supports short-lived access tokens with automatic refresh.
-- `packages/mcp-server`: MCP transport server (stdio and optional HTTP/SSE)
+- `packages/mcp-server`: MCP transport server (stdio and optional stateless Streamable HTTP)
   that authenticates to the control plane and scopes tool calls by
   workspace/agent identity with optional tool/connector allowlists.
 - `packages/api-contracts` and `packages/sdk`: OpenAPI 3.1 contract source plus
@@ -133,7 +133,7 @@ operations-log integrity run in the Rust native addon.
 | TypeScript SDK | `packages/sdk` (`@spctre/sdk`) | Typed `openapi-fetch` client generated from the spec |
 | Python SDK | `pnpm generate:python-sdk` | Generates `target/sdk-python/` via `openapi-generator-cli` |
 | CLI | `packages/cli` (`@spctre/cli`) | `spctre init`, `watch`, `status`, `install-skill`, `install-hook` |
-| MCP server | `packages/mcp-server` | STDIO + HTTP/SSE governance server for AI agent runtimes |
+| MCP server | `packages/mcp-server` | STDIO + stateless Streamable HTTP governance server for AI agent runtimes |
 
 See the CLI, SDK, and MCP package documentation for integration guidance.
 
@@ -283,8 +283,7 @@ into your IdP (Okta, Azure AD, PingOne, etc.) to complete the trust setup.
 |---|---|---|
 | `SPCTRE_MCP_TRANSPORT` | No | Transport mode: `stdio` (default) or `http` |
 | `SPCTRE_MCP_HTTP_PORT` | If `http` | HTTP port for the MCP server (default: `3100`) |
-| `SPCTRE_MCP_HTTP_SSE_PATH` | No | SSE endpoint path (default: `/sse`) |
-| `SPCTRE_MCP_HTTP_MESSAGE_PATH` | No | Message endpoint path (default: `/message`) |
+| `SPCTRE_MCP_HTTP_PATH` | No | Stateless Streamable HTTP endpoint path (default: `/mcp`) |
 | `SPCTRE_MCP_REQUIRE_BEARER_AUTH` | No | Require bearer token auth for HTTP transport (default: `true`) |
 | `SPCTRE_API_URL` | Yes | Control plane URL the MCP server calls (e.g. `http://localhost:3000`) |
 | `SPCTRE_WORKSPACE_ID` | Yes | Workspace to scope all MCP tool calls |

@@ -5,7 +5,7 @@
  *
  * Dual transport support:
  * - STDIO (default) for local clients
- * - HTTP/SSE for remote clients
+ * - Stateless Streamable HTTP for remote clients
  *
  * OAuth support:
  * - Static access token via SPCTRE_API_TOKEN
