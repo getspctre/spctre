@@ -151,6 +151,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Initialize database roles
+        env:
+          PGPASSWORD: spctre
+        run: psql --host localhost --port 5432 --username spctre --dbname spctre_test --set ON_ERROR_STOP=1 --file docker/init-roles.sql
+
       - name: Apply migrations
         run: pnpm migrate
 
@@ -196,6 +201,11 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Initialize database roles
+        env:
+          PGPASSWORD: spctre
+        run: psql --host localhost --port 5432 --username spctre --dbname spctre_test --set ON_ERROR_STOP=1 --file docker/init-roles.sql
 
       - name: Apply migrations
         run: pnpm migrate
