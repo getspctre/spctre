@@ -18,8 +18,12 @@
     "example": "node dist/example.js"
   },
   "files": [
-    "dist"
+    "dist",
+    "NOTICE"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "dependencies": {
     "@modelcontextprotocol/core": "^2.0.0",
     "@modelcontextprotocol/client": "^2.0.0",
