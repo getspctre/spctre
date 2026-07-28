@@ -111,7 +111,7 @@ operations-log integrity run in the Rust native addon.
   including `init`, `watch`, `status`, `refresh`, `revoke`, `install-skill`,
   `install-hook`, `check`, and policy/evidence helpers. Maintains local
   runtime state and supports short-lived access tokens with automatic refresh.
-- `packages/mcp-server`: MCP transport server (stdio and optional stateless Streamable HTTP)
+- `packages/mcp-server`: MCP transport server (modern stdio and optional stateless Streamable HTTP)
   that authenticates to the control plane and scopes tool calls by
   workspace/agent identity with optional tool/connector allowlists.
 - `packages/api-contracts` and `packages/sdk`: OpenAPI 3.1 contract source plus
@@ -133,7 +133,7 @@ operations-log integrity run in the Rust native addon.
 | TypeScript SDK | `packages/sdk` (`@spctre/sdk`) | Typed `openapi-fetch` client generated from the spec |
 | Python SDK | `pnpm generate:python-sdk` | Generates `target/sdk-python/` via `openapi-generator-cli` |
 | CLI | `packages/cli` (`@spctre/cli`) | `spctre init`, `watch`, `status`, `install-skill`, `install-hook` |
-| MCP server | `packages/mcp-server` | STDIO + stateless Streamable HTTP governance server for AI agent runtimes |
+| MCP server | `packages/mcp-server` | Modern STDIO + stateless Streamable HTTP governance server for AI agent runtimes |
 
 See the CLI, SDK, and MCP package documentation for integration guidance.
 

@@ -2,7 +2,11 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Server } from "node:http";
 import type { SpctreConfig } from "../src/config.js";
 import { SpctreMcpServer } from "../src/server.js";
-import { createHttpApp } from "../src/transport.js";
+import { createHttpApp, startStdio } from "../src/transport.js";
+
+const serveStdio = vi.hoisted(() => vi.fn());
+
+vi.mock("@modelcontextprotocol/server/stdio", () => ({ serveStdio }));
 
 const baseConfig: SpctreConfig = {
   apiBaseUrl: "http://localhost:3000",
@@ -22,6 +26,7 @@ const handles: Server[] = [];
 
 afterEach(async () => {
   await Promise.all(handles.splice(0).map((handle) => new Promise<void>((resolve) => handle.close(() => resolve()))));
+  serveStdio.mockReset();
   vi.restoreAllMocks();
 });
 
@@ -117,5 +122,20 @@ describe("stateless HTTP transport", () => {
 
     expect((await fetch(`${baseUrl}/sse`)).status).toBe(404);
     expect((await fetch(`${baseUrl}/message?sessionId=legacy`, { method: "POST" })).status).toBe(404);
+  });
+});
+
+describe("modern STDIO transport", () => {
+  it("uses the v2 stdio entry point with legacy negotiation enabled", async () => {
+    serveStdio.mockReturnValue({ close: vi.fn() });
+    vi.spyOn(process, "on").mockImplementation(() => process);
+
+    await startStdio({ ...baseConfig, transport: "stdio" });
+
+    expect(serveStdio).toHaveBeenCalledWith(expect.any(Function), expect.objectContaining({ legacy: "serve" }));
+    const factory = serveStdio.mock.calls[0]?.[0];
+    const protocolServer = factory({ era: "modern" });
+    expect(protocolServer.constructor.name).toBe("Server");
+    await protocolServer.close();
   });
 });

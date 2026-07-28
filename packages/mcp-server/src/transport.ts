@@ -1,9 +1,9 @@
-// HTTP and STDIO transport bootstrap. HTTP uses the MCP 2026-07-28 stateless
-// handler: every request receives a freshly configured protocol server, so no
-// in-memory session map or load-balancer affinity is required.
+// HTTP and STDIO transport bootstrap. Both use MCP's 2026-07-28 entry points:
+// HTTP creates a protocol server per request, and STDIO negotiates the modern
+// protocol before pinning one server for the connection lifetime.
 
 import express, { type Application, type Request, type Response } from "express";
-import { StdioServerTransport } from "@modelcontextprotocol/server/stdio";
+import { serveStdio } from "@modelcontextprotocol/server/stdio";
 import { createMcpHandler } from "@modelcontextprotocol/server";
 import { toNodeHandler } from "@modelcontextprotocol/node";
 import axios from "axios";
@@ -28,13 +28,31 @@ export async function startStdio(config: SpctreConfig): Promise<void> {
     throw new Error("STDIO mode requires SPCTRE_API_TOKEN or SPCTRE_API_REFRESH_TOKEN.");
   }
 
-  const transport = new StdioServerTransport();
-  const server = new SpctreMcpServer(config);
-  await server.connectTransport(transport);
-  logger.info("MCP server running in STDIO mode", { transport: "stdio" });
+  // serveStdio owns the opening exchange for the 2026 protocol. It creates
+  // and pins one instance only after the client chooses the protocol era.
+  // Keep legacy negotiation enabled so existing 2025 clients continue to
+  // work while modern clients use server/discover and envelope claims.
+  const instances = new Set<SpctreMcpServer>();
+  const handle = serveStdio(() => {
+    const server = new SpctreMcpServer(config);
+    instances.add(server);
+    return server.protocolServer();
+  }, {
+    legacy: "serve",
+    onerror: (error) => logger.error("STDIO MCP transport failed", { error: errorMessage(error) }),
+  });
+  logger.info("MCP server running in modern STDIO mode", {
+    transport: "stdio",
+    protocol: "2026-07-28",
+    legacy_compatibility: true,
+  });
 
   const shutdown = async () => {
-    await server.close();
+    // serveStdio closes the protocol servers it owns. Revoke credentials from
+    // every wrapper first, including a short-lived probe created during
+    // protocol-era negotiation.
+    await Promise.all([...instances].map((server) => server.revokeTokensBestEffort()));
+    await handle.close();
     await shutdownTelemetry().catch(() => {});
     process.exit(0);
   };

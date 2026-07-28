@@ -22,8 +22,15 @@ import { startStdio, startHttp } from "./transport.js";
 import { SpctreMcpServer } from "./server.js";
 
 async function main(): Promise<void> {
-  initTelemetry(process.env.OTEL_SERVICE_NAME?.trim() || "spctre-mcp-server");
   const config = getBaseConfigFromEnv();
+
+  // stdout is the MCP wire in stdio mode; operational logs must never be
+  // interleaved with JSON-RPC frames. Configure this before telemetry starts.
+  if (config.transport === "stdio") {
+    process.env.SPCTRE_LOG_STDERR = "true";
+  }
+
+  initTelemetry(process.env.OTEL_SERVICE_NAME?.trim() || "spctre-mcp-server");
 
   if (config.transport === "http") {
     await startHttp(config);

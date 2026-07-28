@@ -33,7 +33,7 @@ export SPCTRE_API_TOKEN=your-service-token
 export SPCTRE_WORKSPACE_ID=ws-your-workspace
 export SPCTRE_AGENT_ID=your-agent-id
 
-# Start server (listens on STDIO)
+# Start server (modern MCP 2026-07-28 STDIO)
 node dist/index.js
 ```
 
@@ -77,7 +77,10 @@ map or sticky load-balancer affinity.
 
 ### Using with a Client
 
-The server communicates via STDIO using the MCP protocol. Example clients:
+The server communicates via modern MCP STDIO (the 2026-07-28 opening flow).
+It also negotiates legacy 2025-era STDIO for existing clients during the
+upgrade window. In STDIO mode, operational logs go to stderr, keeping stdout
+reserved for MCP frames. Example clients:
 
 **Published package:**
 ```json

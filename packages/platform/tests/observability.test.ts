@@ -86,4 +86,21 @@ describe("observability helpers", () => {
       spy.mockRestore();
     }
   });
+
+  it("can direct informational logs to stderr for stdio protocol processes", () => {
+    const previous = process.env.SPCTRE_LOG_STDERR;
+    const stdout = vi.spyOn(console, "log").mockImplementation(() => {});
+    const stderr = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      process.env.SPCTRE_LOG_STDERR = "true";
+      logger.info("stdio-safe");
+      expect(stdout).not.toHaveBeenCalled();
+      expect(stderr).toHaveBeenCalledOnce();
+    } finally {
+      if (previous === undefined) delete process.env.SPCTRE_LOG_STDERR;
+      else process.env.SPCTRE_LOG_STDERR = previous;
+      stdout.mockRestore();
+      stderr.mockRestore();
+    }
+  });
 });

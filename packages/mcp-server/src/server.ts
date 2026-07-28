@@ -3,7 +3,7 @@
 // audit Hotspot 1); the transport bootstrap and composition root live in
 // transport.ts and index.ts respectively.
 
-import { Server, type Transport } from "@modelcontextprotocol/server";
+import { Server } from "@modelcontextprotocol/server";
 import axios, { AxiosInstance, AxiosResponse } from "axios";
 import { withSpan } from "./observability.js";
 import {
@@ -171,13 +171,13 @@ export class SpctreMcpServer {
     }
   }
 
-  async connectTransport(transport: Transport): Promise<void> {
-    await this.server.connect(transport);
+  async close(): Promise<void> {
+    await this.revokeTokensBestEffort();
+    await this.server.close();
   }
 
-  async close(): Promise<void> {
+  async revokeTokensBestEffort(): Promise<void> {
     await this.tokenManager.revokeBestEffort();
-    await this.server.close();
   }
 
   /**
