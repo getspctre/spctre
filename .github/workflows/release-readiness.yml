@@ -11,9 +11,49 @@ permissions:
   id-token: write
 
 jobs:
+  build-native:
+    name: Build native addon (${{ matrix.target }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: darwin-arm64
+            runner: macos-14
+            node_file: spctre_policy_core.darwin-arm64.node
+          - target: darwin-x64
+            runner: macos-13
+            node_file: spctre_policy_core.darwin-x64.node
+          - target: linux-x64-gnu
+            runner: ubuntu-latest
+            node_file: spctre_policy_core.linux-x64-gnu.node
+          - target: linux-arm64-gnu
+            runner: ubuntu-24.04-arm
+            node_file: spctre_policy_core.linux-arm64-gnu.node
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 25
+
+      # build-native.mjs shells out to `cargo build --release` and copies the
+      # host-target artifact to native/<node_file>. It uses only Node builtins,
+      # so no dependency install is required.
+      - name: Build ${{ matrix.target }} binary
+        run: node packages/policy-schema/scripts/build-native.mjs
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: native-${{ matrix.target }}
+          path: packages/policy-schema/native/${{ matrix.node_file }}
+          if-no-files-found: error
+          retention-days: 1
+
   verify:
     name: Build and verify release artifacts
     runs-on: ubuntu-latest
+    needs: build-native
     steps:
       - uses: actions/checkout@v7
         with:
@@ -28,6 +68,15 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # Collect every platform binary built by the matrix so the packed
+      # @spctre/policy-schema tarball ships native support for all targets.
+      - name: Download native binaries
+        uses: actions/download-artifact@v8
+        with:
+          path: packages/policy-schema/native
+          pattern: native-*
+          merge-multiple: true
+
       - name: Generate API clients
         run: pnpm generate
 
@@ -36,6 +85,17 @@ jobs:
           pnpm --filter @spctre/policy-schema build
           pnpm --filter @spctre/cli build
           pnpm --filter @spctre/sdk build
+
+      - name: Confirm all native binaries are present
+        run: |
+          cd packages/policy-schema/native
+          for f in spctre_policy_core.darwin-arm64.node \
+                   spctre_policy_core.darwin-x64.node \
+                   spctre_policy_core.linux-x64-gnu.node \
+                   spctre_policy_core.linux-arm64-gnu.node; do
+            test -f "$f" || { echo "missing native binary: $f"; exit 1; }
+          done
+          echo "All native binaries present."
 
       - name: Verify Changesets state
         run: pnpm changeset status
@@ -53,13 +113,21 @@ jobs:
           cd release-smoke-test
           npm init --yes
           npm install ../release-artifacts/*.tgz
+          # CLI resolves and prints help.
           npx --no-install spctre --help
+          # SDK exports the client factory.
           node --input-type=module -e "import('@spctre/sdk').then(({ createSpctreClient }) => { if (typeof createSpctreClient !== 'function') process.exit(1) })"
+          # policy-schema imports cleanly and its native path runs on this host
+          # (linux-x64-gnu binary is included in the tarball).
+          node -e "const m = require('@spctre/policy-schema'); if (Object.keys(m).length === 0) process.exit(1)"
+          node -e "const { validateOperationsLogChain } = require('@spctre/policy-schema'); if (validateOperationsLogChain([]).verified !== true) process.exit(1)"
 
-      - name: Verify npm publication dry run
+      - name: Verify publish dry run
+        # Use pnpm so the workspace: protocol and publishConfig overrides are
+        # resolved exactly as they will be at real (Changesets) publish time.
         run: |
-          for package in packages/policy-schema packages/cli packages/sdk; do
-            (cd "$package" && npm publish --dry-run --access public --ignore-scripts)
+          for package in policy-schema cli sdk; do
+            pnpm --filter "@spctre/$package" publish --dry-run --no-git-checks
           done
 
       - name: Generate SBOM

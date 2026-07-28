@@ -3,6 +3,18 @@
   "version": "0.1.0",
   "description": "Official TypeScript SDK for the Spctre API",
   "license": "Apache-2.0",
+  "homepage": "https://github.com/getspctre/spctre/tree/main/packages/sdk#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/getspctre/spctre.git",
+    "directory": "packages/sdk"
+  },
+  "bugs": {
+    "url": "https://github.com/getspctre/spctre/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -13,7 +25,8 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "NOTICE"
   ],
   "scripts": {
     "build": "tsc",

@@ -3,6 +3,18 @@
   "version": "0.1.0",
   "description": "Control plane CLI for governed agent systems",
   "license": "Apache-2.0",
+  "homepage": "https://github.com/getspctre/spctre/tree/main/packages/cli#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/getspctre/spctre.git",
+    "directory": "packages/cli"
+  },
+  "bugs": {
+    "url": "https://github.com/getspctre/spctre/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "engines": {
     "node": ">=22.5.0"
   },
@@ -12,13 +24,14 @@
   },
   "scripts": {
     "clean": "rm -rf dist",
-    "build": "pnpm run clean && tsc && chmod +x dist/index.js && cp -r skill dist/skill && cp -r src/frameworks/templates dist/frameworks/templates",
+    "build": "pnpm run clean && tsc && chmod +x dist/index.js && cp -r src/frameworks/templates dist/frameworks/templates",
     "dev": "tsc -w",
     "test": "vitest run"
   },
   "files": [
     "dist",
-    "skill"
+    "skill",
+    "NOTICE"
   ],
   "dependencies": {
     "@spctre/policy-schema": "workspace:*",
