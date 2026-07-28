@@ -16,6 +16,10 @@ export interface SpctreConfig {
   httpPort: number;
   httpPath: string;
   requireBearerAuth: boolean;
+  // Per-caller HTTP throttle. perSecond <= 0 disables the in-process limiter
+  // (e.g. when an edge WAF/rate-limiter fronts the service).
+  httpRateLimitPerSecond: number;
+  httpRateLimitBurst: number;
   oauthIssuer?: string;
   oauthResource?: string;
   oauthScopes?: string[];
@@ -28,6 +32,14 @@ export interface SessionConfigOverrides {
   apiToken?: string;
   workspaceId?: string;
   agentId?: string;
+}
+
+// Parse a finite numeric env var, falling back to a default for unset or
+// malformed values so misconfiguration never yields NaN thresholds.
+function numberFromEnv(value: string | undefined, fallback: number): number {
+  if (value === undefined || value.trim() === "") return fallback;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
 }
 
 export function getBaseConfigFromEnv(): SpctreConfig {
@@ -45,6 +57,8 @@ export function getBaseConfigFromEnv(): SpctreConfig {
     httpPort: Number(process.env.SPCTRE_MCP_HTTP_PORT || 8090),
     httpPath: process.env.SPCTRE_MCP_HTTP_PATH || "/mcp",
     requireBearerAuth: (process.env.SPCTRE_MCP_REQUIRE_BEARER_AUTH || "true").toLowerCase() !== "false",
+    httpRateLimitPerSecond: numberFromEnv(process.env.SPCTRE_MCP_HTTP_RATE_LIMIT_PER_SECOND, 25),
+    httpRateLimitBurst: numberFromEnv(process.env.SPCTRE_MCP_HTTP_RATE_LIMIT_BURST, 50),
     oauthIssuer: process.env.SPCTRE_MCP_OAUTH_ISSUER || process.env.SPCTRE_API_URL || undefined,
     oauthResource: process.env.SPCTRE_MCP_OAUTH_RESOURCE || undefined,
     oauthScopes: parseCsv(process.env.SPCTRE_MCP_OAUTH_SCOPES) ?? ["mcp:read", "mcp:write"],

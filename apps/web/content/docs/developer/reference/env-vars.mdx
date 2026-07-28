@@ -116,9 +116,10 @@ description: Full table of SPCTRE_* and platform env vars with types and default
 | `SPCTRE_API_REFRESH_TOKEN` | string | — | MCP server: refresh token; enables automatic access token rotation |
 | `SPCTRE_MCP_TRANSPORT` | string | `stdio` | MCP transport type (`stdio` or `http`) |
 | `SPCTRE_MCP_HTTP_PORT` | integer | `8090` | MCP HTTP server port |
-| `SPCTRE_MCP_HTTP_MESSAGE_PATH` | string | — | MCP message path |
-| `SPCTRE_MCP_HTTP_SSE_PATH` | string | — | MCP SSE path |
+| `SPCTRE_MCP_HTTP_PATH` | string | `/mcp` | MCP stateless HTTP endpoint path |
 | `SPCTRE_MCP_REQUIRE_BEARER_AUTH` | boolean | `true` | Require bearer auth on MCP HTTP endpoints |
+| `SPCTRE_MCP_HTTP_RATE_LIMIT_PER_SECOND` | integer | `25` | Per-caller HTTP request rate (per bearer token); `0` disables the in-process limiter |
+| `SPCTRE_MCP_HTTP_RATE_LIMIT_BURST` | integer | `50` | Per-caller burst allowance for the HTTP rate limiter |
 | `SPCTRE_MCP_AUDIT_SEAL_SECRET` | string | — | Signing secret for MCP audit seals |
 
 ## Observability

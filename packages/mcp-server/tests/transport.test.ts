@@ -3,6 +3,7 @@ import type { Server } from "node:http";
 import type { SpctreConfig } from "../src/config.js";
 import { SpctreMcpServer } from "../src/server.js";
 import { createHttpApp, startStdio } from "../src/transport.js";
+import { TokenBucketRateLimiter } from "../src/rate-limit.js";
 
 const serveStdio = vi.hoisted(() => vi.fn());
 
@@ -17,6 +18,8 @@ const baseConfig: SpctreConfig = {
   httpPort: 0,
   httpPath: "/mcp",
   requireBearerAuth: true,
+  httpRateLimitPerSecond: 25,
+  httpRateLimitBurst: 50,
   oauthIssuer: "https://auth.spctre.example",
   oauthResource: "https://mcp.spctre.example/mcp",
   oauthScopes: ["mcp:read", "mcp:write"],
@@ -123,6 +126,55 @@ describe("stateless HTTP transport", () => {
 
     expect((await fetch(`${baseUrl}/sse`)).status).toBe(404);
     expect((await fetch(`${baseUrl}/message?sessionId=legacy`, { method: "POST" })).status).toBe(404);
+  });
+
+  it("throttles a caller past its burst and advertises Retry-After", async () => {
+    const now = 1_000;
+    const createdServers: SpctreConfig[] = [];
+    const { app } = createHttpApp(baseConfig, {
+      createServer: (requestConfig) => {
+        createdServers.push(requestConfig);
+        return new SpctreMcpServer(requestConfig);
+      },
+      allowedSourceIps: new Set(),
+      rateLimiter: new TokenBucketRateLimiter({ perSecond: 1, burst: 2, now: () => now }),
+    });
+    const baseUrl = await listen(app);
+    const send = () => fetch(`${baseUrl}/mcp`, {
+      ...discoverRequest(),
+      headers: { ...discoverRequest().headers, authorization: "Bearer flooder" },
+    });
+
+    const first = await send();
+    const second = await send();
+    const third = await send();
+
+    expect(first.status, await first.text()).toBe(200);
+    expect(second.status).toBe(200);
+    expect(third.status).toBe(429);
+    expect(Number(third.headers.get("retry-after"))).toBeGreaterThanOrEqual(1);
+    expect(await third.json()).toEqual(expect.objectContaining({ error: expect.stringContaining("Rate limit") }));
+    // The throttled request is rejected before the expensive server construction.
+    expect(createdServers).toHaveLength(2);
+  });
+
+  it("meters each bearer token on its own bucket", async () => {
+    const now = 1_000;
+    const { app } = createHttpApp(baseConfig, {
+      createServer: (requestConfig) => new SpctreMcpServer(requestConfig),
+      allowedSourceIps: new Set(),
+      rateLimiter: new TokenBucketRateLimiter({ perSecond: 1, burst: 1, now: () => now }),
+    });
+    const baseUrl = await listen(app);
+    const call = (token: string) => fetch(`${baseUrl}/mcp`, {
+      ...discoverRequest(),
+      headers: { ...discoverRequest().headers, authorization: `Bearer ${token}` },
+    });
+
+    expect((await call("alice")).status).toBe(200);
+    expect((await call("alice")).status).toBe(429);
+    // A different token has its own budget and is unaffected.
+    expect((await call("bob")).status).toBe(200);
   });
 });
 

@@ -7,7 +7,6 @@ import {
   type Attributes,
   type Counter,
   type Histogram,
-  type ObservableGauge,
   type Span,
 } from "@opentelemetry/api";
 import { getNodeAutoInstrumentations } from "@opentelemetry/auto-instrumentations-node";
@@ -28,7 +27,6 @@ let serviceName = SERVICE_NAME;
 let telemetry: NodeSDK | undefined;
 const counters = new Map<string, Counter>();
 const histograms = new Map<string, Histogram>();
-const gauges = new Map<string, { instrument: ObservableGauge; series: Map<string, { value: number; attrs: Attributes }> }>();
 
 function redact(value: unknown, key = "", depth = 0): unknown {
   if (key && SENSITIVE_KEY.test(key)) return "[REDACTED]";
@@ -54,7 +52,12 @@ function writeLog(level: LogLevel, message: string, fields: Record<string, unkno
   const span = trace.getActiveSpan()?.spanContext();
   const payload = { ts: new Date().toISOString(), level, message, "service.name": serviceName, ...(span ? { trace_id: span.traceId, span_id: span.spanId } : {}), ...attributes(fields) };
   const line = JSON.stringify(payload);
-  if (level === "error") console.error(line);
+  // In stdio mode stdout is the MCP JSON-RPC wire, so the composition root sets
+  // SPCTRE_LOG_STDERR to divert every operational log (info included) to stderr
+  // and keep the wire clean. Read at call time — the flag is set before the
+  // first log is emitted.
+  const logToStderr = process.env.SPCTRE_LOG_STDERR?.trim().toLowerCase() === "true";
+  if (level === "error" || logToStderr) console.error(line);
   else if (level === "warn") console.warn(line);
   else console.log(line);
 }
@@ -81,19 +84,6 @@ export function recordDuration(name: string, valueMs: number, attrs: Record<stri
     histograms.set(name, histogram);
   }
   histogram.record(valueMs, attributes(attrs));
-}
-
-export function setGauge(name: string, value: number, attrs: Record<string, unknown> = {}): void {
-  let gauge = gauges.get(name);
-  if (!gauge) {
-    const series = new Map<string, { value: number; attrs: Attributes }>();
-    const instrument = metrics.getMeter(serviceName).createObservableGauge(name);
-    instrument.addCallback((result) => { for (const entry of series.values()) result.observe(entry.value, entry.attrs); });
-    gauge = { instrument, series };
-    gauges.set(name, gauge);
-  }
-  const safeAttrs = attributes(attrs);
-  gauge.series.set(JSON.stringify(safeAttrs), { value, attrs: safeAttrs });
 }
 
 export async function withSpan<T>(name: string, attrs: Record<string, unknown>, fn: (span: Span) => Promise<T> | T): Promise<T> {

@@ -26,6 +26,8 @@ function liveContext(): McpServerContext {
     httpPort: 8090,
     httpPath: "/mcp",
     requireBearerAuth: true,
+    httpRateLimitPerSecond: 25,
+    httpRateLimitBurst: 50,
   };
 
   const client = axios.create({

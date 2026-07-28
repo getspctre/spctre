@@ -10,8 +10,6 @@ const SLO_P95_MS = 100;
 const SLO_P99_MS = 250;
 const SLO_ERROR_RATE_WINDOW = 100; // rolling window of last N calls per tool
 const SLO_ERROR_RATE_THRESHOLD = 0.05; // 5% error rate triggers alert
-export const MAX_HTTP_SESSIONS = 50; // backpressure ceiling for SSE connections
-export const MAX_HTTP_MESSAGES_PER_SECOND = 25; // per-session message backpressure
 
 interface ToolWindow {
   latencies: number[];
