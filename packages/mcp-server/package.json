@@ -3,6 +3,15 @@
   "version": "0.1.0",
   "description": "MCP server for Spctre policy governance",
   "license": "Apache-2.0",
+  "homepage": "https://github.com/getspctre/spctre/tree/main/packages/mcp-server#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/getspctre/spctre.git",
+    "directory": "packages/mcp-server"
+  },
+  "bugs": {
+    "url": "https://github.com/getspctre/spctre/issues"
+  },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
