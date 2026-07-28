@@ -9,6 +9,7 @@ not part of this process.
 - `@spctre/policy-schema`
 - `@spctre/cli`
 - `@spctre/sdk`
+- `@spctre/mcp-server`
 
 Use [Changesets](https://github.com/changesets/changesets) for consumer-facing
 changes to these packages. Run `pnpm changeset` and commit the generated file

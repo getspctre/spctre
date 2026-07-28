@@ -11,7 +11,6 @@
     "@spctre/api-contracts",
     "@spctre/design-tokens",
     "@spctre/entire-checkpoints",
-    "@spctre/mcp-server",
     "@spctre/openclaw",
     "@spctre/paperclip",
     "@spctre/platform",

@@ -85,6 +85,7 @@ jobs:
           pnpm --filter @spctre/policy-schema build
           pnpm --filter @spctre/cli build
           pnpm --filter @spctre/sdk build
+          pnpm --filter @spctre/mcp-server build
 
       - name: Confirm all native binaries are present
         run: |
@@ -106,6 +107,7 @@ jobs:
           pnpm --filter @spctre/policy-schema pack --pack-destination release-artifacts
           pnpm --filter @spctre/cli pack --pack-destination release-artifacts
           pnpm --filter @spctre/sdk pack --pack-destination release-artifacts
+          pnpm --filter @spctre/mcp-server pack --pack-destination release-artifacts
 
       - name: Smoke-test packed packages
         run: |
@@ -121,12 +123,14 @@ jobs:
           # (linux-x64-gnu binary is included in the tarball).
           node -e "const m = require('@spctre/policy-schema'); if (Object.keys(m).length === 0) process.exit(1)"
           node -e "const { validateOperationsLogChain } = require('@spctre/policy-schema'); if (validateOperationsLogChain([]).verified !== true) process.exit(1)"
+          # MCP imports as a standalone package with no internal workspace dependency.
+          node --input-type=module -e "import('@spctre/mcp-server/dist/server.js').then(({ SpctreMcpServer }) => { if (typeof SpctreMcpServer !== 'function') process.exit(1) })"
 
       - name: Verify publish dry run
         # Use pnpm so the workspace: protocol and publishConfig overrides are
         # resolved exactly as they will be at real (Changesets) publish time.
         run: |
-          for package in policy-schema cli sdk; do
+          for package in policy-schema cli sdk mcp-server; do
             pnpm --filter "@spctre/$package" publish --dry-run --no-git-checks
           done
 
