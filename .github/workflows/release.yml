@@ -9,9 +9,14 @@ name: Release
 #   - publishes to npm when versions are already bumped and ahead of the
 #     registry (running `changeset publish`).
 #
-# Publishing uses npm Trusted Publishing (OIDC) — no long-lived NPM_TOKEN.
-# The `@spctre` org must register this workflow as a trusted publisher on
-# npmjs.com for each package before the first real publish will succeed.
+# `changeset publish` detects the workspace package manager and runs
+# `pnpm publish` (not `npm publish`) — required so `cli`'s `workspace:*`
+# dependency on `policy-schema` is rewritten to a real version at pack time.
+# pnpm 11 (the pinned `packageManager`) performs the npm Trusted Publishing
+# OIDC token exchange itself (POST /-/npm/v1/oidc/token/exchange/package/...),
+# so publishing is tokenless — no long-lived NPM_TOKEN. The `@spctre` org must
+# register this workflow as a trusted publisher on npmjs.com for each package
+# before the first real publish will succeed.
 on:
   push:
     branches: [main]
@@ -84,11 +89,6 @@ jobs:
           node-version: 25
           cache: pnpm
           registry-url: https://registry.npmjs.org
-
-      # Trusted Publishing requires a recent npm (>= 11.5.1). Node 25 ships a
-      # compatible npm, but pin to latest so the OIDC handshake is guaranteed.
-      - name: Ensure Trusted-Publishing-capable npm
-        run: npm install --global npm@latest
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
