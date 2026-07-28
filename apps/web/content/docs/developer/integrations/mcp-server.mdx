@@ -1,6 +1,6 @@
 ---
 title: MCP server
-description: Connecting AI harnesses to Spctre via the Model Context Protocol (STDIO and HTTP/SSE transports).
+description: Connecting AI harnesses to Spctre via the Model Context Protocol (STDIO and stateless HTTP transports).
 ---
 
 The Spctre MCP server (`@spctre/mcp-server`) exposes control plane operations as MCP tools. AI harnesses — Claude Code, Codex, Gemini CLI — can call these tools to read policy state, submit evidence, and check escalations without direct API integration.
@@ -10,9 +10,9 @@ The Spctre MCP server (`@spctre/mcp-server`) exposes control plane operations as
 | Transport | Default | How to enable |
 |---|---|---|
 | STDIO | Yes | `npx @spctre/mcp-server` |
-| HTTP/SSE | No | `SPCTRE_MCP_TRANSPORT=http npx @spctre/mcp-server` |
+| HTTP | No | `SPCTRE_MCP_TRANSPORT=http npx @spctre/mcp-server` |
 
-STDIO is the standard transport for local harness integrations. HTTP/SSE is suitable for remote or multi-client deployments.
+STDIO is the standard transport for local harness integrations. The stateless HTTP transport is suitable for remote or multi-client deployments.
 
 ## Starting the server
 
@@ -24,7 +24,7 @@ SPCTRE_API_TOKEN=<your-access-token> npx @spctre/mcp-server
 
 The server reads from stdin and writes to stdout. Your harness manages the process.
 
-### HTTP/SSE
+### HTTP
 
 ```bash
 SPCTRE_MCP_TRANSPORT=http \
@@ -33,13 +33,13 @@ SPCTRE_API_TOKEN=<your-access-token> \
 npx @spctre/mcp-server
 ```
 
-The server listens on `SPCTRE_MCP_HTTP_PORT` (default: `8090`). The SSE endpoint is at `SPCTRE_MCP_HTTP_SSE_PATH` (default: `/sse`) and the message endpoint at `SPCTRE_MCP_HTTP_MESSAGE_PATH` (default: `/message`).
+The server listens on `SPCTRE_MCP_HTTP_PORT` (default: `8090`) and serves the stateless MCP endpoint at `SPCTRE_MCP_HTTP_PATH` (default: `/mcp`) — each request is handled independently, with no session pinned to a replica. Requests are throttled per bearer token via `SPCTRE_MCP_HTTP_RATE_LIMIT_PER_SECOND` (default `25`, burst `SPCTRE_MCP_HTTP_RATE_LIMIT_BURST`, default `50`); callers over budget get `429` with a `Retry-After` header. Set the per-second limit to `0` to disable the in-process limiter when an edge rate-limiter fronts the service.
 
 ## Authentication
 
 The MCP server authenticates to the control plane using `SPCTRE_API_TOKEN`. Set this to a service token with the scopes required by the tools your harness will call. For long-running processes, set `SPCTRE_API_REFRESH_TOKEN` instead and the server will rotate the access token automatically.
 
-Bearer auth on the MCP HTTP endpoints is **enabled by default** — unauthenticated SSE connections are rejected with 401. To disable it (e.g. in a trusted private network):
+Bearer auth on the MCP HTTP endpoint is **enabled by default** — unauthenticated requests are rejected with 401. To disable it (e.g. in a trusted private network):
 
 ```bash
 SPCTRE_MCP_REQUIRE_BEARER_AUTH=false
@@ -87,10 +87,11 @@ This is useful when a harness is directly orchestrating LLM calls and you want t
 | Variable | Default | Description |
 |---|---|---|
 | `SPCTRE_MCP_TRANSPORT` | `stdio` | Transport type: `stdio` or `http` |
-| `SPCTRE_MCP_HTTP_PORT` | `8090` | HTTP server port (HTTP/SSE only) |
-| `SPCTRE_MCP_HTTP_MESSAGE_PATH` | `/message` | MCP message endpoint path |
-| `SPCTRE_MCP_HTTP_SSE_PATH` | `/sse` | MCP SSE endpoint path |
-| `SPCTRE_MCP_REQUIRE_BEARER_AUTH` | `true` | Require bearer token on MCP HTTP endpoints (set to `false` to disable) |
+| `SPCTRE_MCP_HTTP_PORT` | `8090` | HTTP server port (HTTP transport only) |
+| `SPCTRE_MCP_HTTP_PATH` | `/mcp` | Stateless MCP HTTP endpoint path |
+| `SPCTRE_MCP_REQUIRE_BEARER_AUTH` | `true` | Require bearer token on the MCP HTTP endpoint (set to `false` to disable) |
+| `SPCTRE_MCP_HTTP_RATE_LIMIT_PER_SECOND` | `25` | Per-bearer-token request rate; `0` disables the in-process limiter |
+| `SPCTRE_MCP_HTTP_RATE_LIMIT_BURST` | `50` | Per-caller burst allowance for the HTTP rate limiter |
 | `SPCTRE_MCP_AUDIT_SEAL_SECRET` | — | Signing secret for MCP audit seals |
 | `SPCTRE_API_TOKEN` | — | Access token for control plane authentication |
 | `SPCTRE_API_REFRESH_TOKEN` | — | Refresh token; enables automatic access token rotation |

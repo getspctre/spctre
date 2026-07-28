@@ -13,6 +13,7 @@ import type { SpctreConfig } from "./config.js";
 import { buildToolMetricsSnapshot } from "./metrics.js";
 import { errorMessage } from "./handlers/context.js";
 import { parseBearerFromAuthHeader, parseAllowedSourceIps, getClientIp } from "./util.js";
+import { TokenBucketRateLimiter, rateLimitKey, type RateLimiter } from "./rate-limit.js";
 
 // Serve legacy stdio clients through 2026-12-31. Beginning 2027-01-01, the
 // server rejects claim-less 2025-era openings and accepts only modern MCP.
@@ -29,6 +30,8 @@ export interface HttpTransportApp {
 interface HttpTransportDeps {
   createServer?: (config: SpctreConfig) => SpctreMcpServer;
   allowedSourceIps?: Set<string>;
+  // Pass null to force-disable the limiter (tests); omit to derive from config.
+  rateLimiter?: RateLimiter | null;
 }
 
 export async function startStdio(config: SpctreConfig): Promise<void> {
@@ -95,6 +98,11 @@ export function createHttpApp(config: SpctreConfig, deps: HttpTransportDeps = {}
   const app = express();
   const allowedSourceIps = deps.allowedSourceIps ?? parseAllowedSourceIps();
   const createServer = deps.createServer ?? ((requestConfig: SpctreConfig) => new SpctreMcpServer(requestConfig));
+  const rateLimiter = deps.rateLimiter === undefined
+    ? (config.httpRateLimitPerSecond > 0
+        ? new TokenBucketRateLimiter({ perSecond: config.httpRateLimitPerSecond, burst: config.httpRateLimitBurst })
+        : null)
+    : deps.rateLimiter;
   const oauthResource = config.oauthResource ?? `${config.apiBaseUrl.replace(/\/$/, "")}${config.httpPath}`;
   const oauthMetadataPath = "/.well-known/oauth-protected-resource";
 
@@ -149,6 +157,19 @@ export function createHttpApp(config: SpctreConfig, deps: HttpTransportDeps = {}
       res.setHeader("WWW-Authenticate", challenge("invalid_token"));
       res.status(401).json({ error: "Missing bearer token." });
       return;
+    }
+
+    // Per-caller throttle before the expensive path (server construction plus
+    // control-plane fan-out). Keyed on the bearer token so one caller cannot
+    // starve others sharing an egress IP.
+    if (rateLimiter) {
+      const decision = rateLimiter.check(rateLimitKey(bearer, getClientIp(req)));
+      if (!decision.allowed) {
+        incrementCounter("spctre.mcp.request.rejected", 1, { reason: "rate_limit" });
+        res.setHeader("Retry-After", String(Math.max(1, Math.ceil(decision.retryAfterMs / 1000))));
+        res.status(429).json({ error: "Rate limit exceeded. Slow down and retry.", retryAfterMs: decision.retryAfterMs });
+        return;
+      }
     }
 
     const requestConfig: SpctreConfig = {

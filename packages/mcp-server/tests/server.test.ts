@@ -12,6 +12,8 @@ const baseConfig: SpctreConfig = {
   httpPort: 8090,
   httpPath: "/mcp",
   requireBearerAuth: false,
+  httpRateLimitPerSecond: 25,
+  httpRateLimitBurst: 50,
 };
 
 describe("SpctreMcpServer tool catalog", () => {

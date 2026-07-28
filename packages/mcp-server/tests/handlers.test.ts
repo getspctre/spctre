@@ -22,6 +22,8 @@ const baseConfig: SpctreConfig = {
   httpPort: 8090,
   httpPath: "/mcp",
   requireBearerAuth: false,
+  httpRateLimitPerSecond: 25,
+  httpRateLimitBurst: 50,
 };
 
 function axiosResponse(data: unknown, headers: Record<string, unknown> = {}): AxiosResponse {
