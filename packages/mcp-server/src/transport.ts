@@ -14,6 +14,14 @@ import { buildToolMetricsSnapshot } from "./metrics.js";
 import { errorMessage } from "./handlers/context.js";
 import { parseBearerFromAuthHeader, parseAllowedSourceIps, getClientIp } from "./util.js";
 
+// Serve legacy stdio clients through 2026-12-31. Beginning 2027-01-01, the
+// server rejects claim-less 2025-era openings and accepts only modern MCP.
+const LEGACY_STDIO_SUNSET_AT = Date.UTC(2027, 0, 1);
+
+function stdioLegacyMode(): "serve" | "reject" {
+  return Date.now() < LEGACY_STDIO_SUNSET_AT ? "serve" : "reject";
+}
+
 export interface HttpTransportApp {
   app: Application;
 }
@@ -30,21 +38,24 @@ export async function startStdio(config: SpctreConfig): Promise<void> {
 
   // serveStdio owns the opening exchange for the 2026 protocol. It creates
   // and pins one instance only after the client chooses the protocol era.
-  // Keep legacy negotiation enabled so existing 2025 clients continue to
-  // work while modern clients use server/discover and envelope claims.
+  // Keep legacy negotiation enabled through 2026-12-31 so existing 2025
+  // clients can upgrade while modern clients use server/discover and envelope
+  // claims. The deadline is enforced by stdioLegacyMode, not a manual task.
   const instances = new Set<SpctreMcpServer>();
+  const legacyMode = stdioLegacyMode();
   const handle = serveStdio(() => {
     const server = new SpctreMcpServer(config);
     instances.add(server);
     return server.protocolServer();
   }, {
-    legacy: "serve",
+    legacy: legacyMode,
     onerror: (error) => logger.error("STDIO MCP transport failed", { error: errorMessage(error) }),
   });
   logger.info("MCP server running in modern STDIO mode", {
     transport: "stdio",
     protocol: "2026-07-28",
-    legacy_compatibility: true,
+    legacy_compatibility: legacyMode === "serve",
+    legacy_compatibility_expires_on: "2026-12-31",
   });
 
   const shutdown = async () => {

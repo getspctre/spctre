@@ -79,8 +79,9 @@ map or sticky load-balancer affinity.
 
 The server communicates via modern MCP STDIO (the 2026-07-28 opening flow).
 It also negotiates legacy 2025-era STDIO for existing clients during the
-upgrade window. In STDIO mode, operational logs go to stderr, keeping stdout
-reserved for MCP frames. Example clients:
+upgrade window, which ends on **2026-12-31**. From 2027-01-01, claim-less
+legacy openings are rejected. In STDIO mode, operational logs go to stderr,
+keeping stdout reserved for MCP frames. Example clients:
 
 **Published package:**
 ```json

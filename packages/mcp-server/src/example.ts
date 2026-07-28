@@ -7,26 +7,12 @@
 
 import { Client } from "@modelcontextprotocol/client";
 import { StdioClientTransport } from "@modelcontextprotocol/client/stdio";
-import { spawn } from "child_process";
 
 /**
  * Initialize MCP client connected to Spctre server
  */
 async function initializeMcpClient(): Promise<Client> {
-  // Start the MCP server as a subprocess
-  const serverProcess = spawn("node", [
-    "dist/index.js"
-  ], {
-    env: {
-      ...process.env,
-      SPCTRE_API_URL: "http://localhost:3000",
-      SPCTRE_API_TOKEN: process.env.SPCTRE_API_TOKEN || "test-token",
-      SPCTRE_WORKSPACE_ID: "ws-example",
-      SPCTRE_AGENT_ID: "example-agent",
-    },
-  });
-
-  // Create transport from server's STDIO
+  // StdioClientTransport owns the one MCP server child process.
   const transport = new StdioClientTransport({
     command: "node",
     args: ["dist/index.js"],

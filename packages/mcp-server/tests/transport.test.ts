@@ -27,6 +27,7 @@ const handles: Server[] = [];
 afterEach(async () => {
   await Promise.all(handles.splice(0).map((handle) => new Promise<void>((resolve) => handle.close(() => resolve()))));
   serveStdio.mockReset();
+  vi.useRealTimers();
   vi.restoreAllMocks();
 });
 
@@ -126,7 +127,7 @@ describe("stateless HTTP transport", () => {
 });
 
 describe("modern STDIO transport", () => {
-  it("uses the v2 stdio entry point with legacy negotiation enabled", async () => {
+  it("uses the v2 stdio entry point with legacy negotiation through 2026", async () => {
     serveStdio.mockReturnValue({ close: vi.fn() });
     vi.spyOn(process, "on").mockImplementation(() => process);
 
@@ -137,5 +138,15 @@ describe("modern STDIO transport", () => {
     const protocolServer = factory({ era: "modern" });
     expect(protocolServer.constructor.name).toBe("Server");
     await protocolServer.close();
+  });
+
+  it("rejects legacy stdio openings from 2027-01-01", async () => {
+    vi.setSystemTime(new Date("2027-01-01T00:00:00.000Z"));
+    serveStdio.mockReturnValue({ close: vi.fn() });
+    vi.spyOn(process, "on").mockImplementation(() => process);
+
+    await startStdio({ ...baseConfig, transport: "stdio" });
+
+    expect(serveStdio).toHaveBeenCalledWith(expect.any(Function), expect.objectContaining({ legacy: "reject" }));
   });
 });
