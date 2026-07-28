@@ -120,7 +120,10 @@ export function writeLog(level: LogLevel, message: string, attrs: Record<string,
     ...logFields(attrs),
   };
   const line = safeStringify(payload);
-  if (level === "error") console.error(line);
+  // A stdio MCP server reserves stdout exclusively for protocol frames. Let
+  // such entry points opt into stderr for their informational logs too.
+  const logToStderr = process.env.SPCTRE_LOG_STDERR?.trim().toLowerCase() === "true";
+  if (level === "error" || logToStderr) console.error(line);
   else if (level === "warn") console.warn(line);
   else console.log(line);
 }

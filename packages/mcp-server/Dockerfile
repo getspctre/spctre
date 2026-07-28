@@ -50,7 +50,7 @@ USER mcpserver
 
 WORKDIR /app/packages/mcp-server
 
-# HTTP/SSE transport port (STDIO mode exposes no port)
+# Stateless Streamable HTTP port (STDIO mode exposes no port)
 EXPOSE 3100
 
 ENV SPCTRE_MCP_TRANSPORT=http

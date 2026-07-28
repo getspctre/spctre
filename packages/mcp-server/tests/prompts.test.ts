@@ -27,12 +27,12 @@ describe("MCP prompt templates", () => {
     expect(text).toContain("decision-123");
   });
 
-  it("renders client hardening guidance for HTTP/SSE operations", () => {
+  it("renders client hardening guidance for stateless HTTP operations", () => {
     const text = renderPromptTemplate("mcp-client-hardening", { client_name: "LangChain" });
 
     expect(text).toContain("LangChain");
     expect(text).toContain("workspace scoping");
-    expect(text).toContain("session capacity");
+    expect(text).toContain("stateless HTTP");
   });
 
   it("throws for unknown prompts", () => {

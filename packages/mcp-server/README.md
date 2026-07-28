@@ -33,20 +33,19 @@ export SPCTRE_API_TOKEN=your-service-token
 export SPCTRE_WORKSPACE_ID=ws-your-workspace
 export SPCTRE_AGENT_ID=your-agent-id
 
-# Start server (listens on STDIO)
+# Start server (modern MCP 2026-07-28 STDIO)
 node dist/index.js
 ```
 
-### Running in HTTP/SSE Mode (Phase 2.3)
+### Running in Stateless Streamable HTTP Mode
 
 ```bash
 # Remote transport mode
 export SPCTRE_MCP_TRANSPORT=http
 export SPCTRE_MCP_HTTP_PORT=8090
-export SPCTRE_MCP_HTTP_SSE_PATH=/sse
-export SPCTRE_MCP_HTTP_MESSAGE_PATH=/message
+export SPCTRE_MCP_HTTP_PATH=/mcp
 export SPCTRE_MCP_OAUTH_ISSUER=https://app.spctre.dev
-export SPCTRE_MCP_OAUTH_RESOURCE=https://mcp.example.com/sse
+export SPCTRE_MCP_OAUTH_RESOURCE=https://mcp.example.com/mcp
 export SPCTRE_MCP_OAUTH_SCOPES=mcp:read,mcp:write
 
 # OAuth-compatible auth options:
@@ -60,25 +59,29 @@ node dist/index.js
 ```
 
 HTTP endpoints:
-- `GET /sse` - establish MCP SSE session
-- `POST /message?sessionId=...` - send MCP client messages
-- `GET /healthz` - health and active-session info
-- `GET /readyz` - capacity and upstream readiness checks
-- `GET /metricsz` - active-session and rolling tool latency/error metrics
+- `POST /mcp` - stateless Streamable HTTP MCP requests
+- `GET /healthz` - health and stateless transport info
+- `GET /readyz` - upstream readiness checks
+- `GET /metricsz` - rolling tool latency/error metrics
 - `GET /.well-known/oauth-protected-resource` - OAuth 2.1 protected-resource metadata
 
-Optional session headers:
+Optional request headers:
 - `Authorization: Bearer <token>`
 - `x-spctre-workspace-id: <workspace-id>`
 - `x-spctre-agent-id: <agent-id>`
 
-HTTP/SSE mode enforces bearer auth by default, returns `WWW-Authenticate`
-challenges with protected-resource metadata, caps active SSE sessions, and
-rate-limits message POSTs per session for backpressure.
+HTTP mode enforces bearer auth by default and returns `WWW-Authenticate`
+challenges with protected-resource metadata. The MCP 2026-07-28 handler is
+stateless: each request can be routed to any server replica without a session
+map or sticky load-balancer affinity.
 
 ### Using with a Client
 
-The server communicates via STDIO using the MCP protocol. Example clients:
+The server communicates via modern MCP STDIO (the 2026-07-28 opening flow).
+It also negotiates legacy 2025-era STDIO for existing clients during the
+upgrade window, which ends on **2026-12-31**. From 2027-01-01, claim-less
+legacy openings are rejected. In STDIO mode, operational logs go to stderr,
+keeping stdout reserved for MCP frames. Example clients:
 
 **Published package:**
 ```json
@@ -135,7 +138,7 @@ mcp = MCP(
 
 ```
 MCP Client (Claude, LangChain, etc.)
-  ↓ JSON-RPC 2.0 over STDIO or HTTP/SSE
+  ↓ JSON-RPC 2.0 over STDIO or stateless Streamable HTTP
 Spctre MCP Server (this package)
   ├─ Tools (policy evaluation, evidence management)
   ├─ Resources (policies, evidence, audit trails)
@@ -495,9 +498,9 @@ pnpm run example
 
 ## Performance
 
-- **Tool call latency:** < 5ms STDIO (local), < 50-100ms HTTP/SSE (remote)
-- **Resource fetch latency:** < 50ms STDIO, < 200ms HTTP/SSE
-- **Concurrent connections:** Tested up to 100+ clients
+- **Tool call latency:** < 5ms STDIO (local), < 50-100ms HTTP (remote)
+- **Resource fetch latency:** < 50ms STDIO, < 200ms HTTP
+- **Concurrent requests:** horizontally scalable without sticky sessions
 - **Memory footprint:** ~50MB per server instance
 
 ## Deployment
@@ -532,7 +535,7 @@ MCP server typically runs as a sidecar or init container on client agents (Claud
 
 Contributions welcome! Areas for enhancement:
 
-- [x] HTTP/SSE transport support (Phase 2.3)
+- [x] Stateless Streamable HTTP transport (MCP 2026-07-28)
 - [x] OAuth 2.1 bearer auth and protected-resource metadata (Phase 2.3)
 - [x] Rate limiting and backpressure
 - [x] Enhanced error recovery for token refresh, upstream 401 retry, and degraded tool envelopes

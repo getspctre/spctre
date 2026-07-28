@@ -14,8 +14,7 @@ export interface SpctreConfig {
   agentId: string;
   transport: TransportMode;
   httpPort: number;
-  ssePath: string;
-  messagePath: string;
+  httpPath: string;
   requireBearerAuth: boolean;
   oauthIssuer?: string;
   oauthResource?: string;
@@ -36,8 +35,6 @@ export function getBaseConfigFromEnv(): SpctreConfig {
     ? "http"
     : "stdio") as TransportMode;
 
-  const messagePath = process.env.SPCTRE_MCP_HTTP_MESSAGE_PATH || "/message";
-
   return {
     apiBaseUrl: process.env.SPCTRE_API_URL || "http://localhost:3000",
     apiToken: process.env.SPCTRE_API_TOKEN || undefined,
@@ -46,8 +43,7 @@ export function getBaseConfigFromEnv(): SpctreConfig {
     agentId: process.env.SPCTRE_AGENT_ID || "mcp-client-default",
     transport,
     httpPort: Number(process.env.SPCTRE_MCP_HTTP_PORT || 8090),
-    ssePath: process.env.SPCTRE_MCP_HTTP_SSE_PATH || "/sse",
-    messagePath,
+    httpPath: process.env.SPCTRE_MCP_HTTP_PATH || "/mcp",
     requireBearerAuth: (process.env.SPCTRE_MCP_REQUIRE_BEARER_AUTH || "true").toLowerCase() !== "false",
     oauthIssuer: process.env.SPCTRE_MCP_OAUTH_ISSUER || process.env.SPCTRE_API_URL || undefined,
     oauthResource: process.env.SPCTRE_MCP_OAUTH_RESOURCE || undefined,

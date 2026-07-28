@@ -29,6 +29,11 @@ overrides:
 # This gives the ecosystem time to detect and yank compromised releases.
 minimumReleaseAge: 4320
 
+# MCP SDK v2 is required for the stateless 2026-07-28 protocol GA. Keep the
+# maturity hold for all other dependencies while permitting this reviewed scope.
+minimumReleaseAgeExclude:
+  - '@modelcontextprotocol/*'
+
 # Packages allowed to run lifecycle build scripts during install. Keep this
 # list small and review any additions as supply-chain risk exceptions.
 allowBuilds:
