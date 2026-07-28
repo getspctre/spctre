@@ -24,6 +24,7 @@
     "generate:python-sdk": "bash scripts/generate-python-sdk.sh",
     "changeset": "changeset",
     "version-packages": "changeset version",
+    "release": "changeset publish",
     "postinstall": "pnpm --filter @spctre/policy-schema --filter @spctre/cli build",
     "lint:deadcode": "knip",
     "lint:duplication": "jscpd .",
