@@ -18,6 +18,8 @@
     "licenses:check": "node scripts/check-package-licenses.mjs",
     "oss:check": "node scripts/check-oss-boundary.mjs && node scripts/check-package-licenses.mjs && node scripts/check-raw-sql-imports.mjs && node scripts/check-demo-fallbacks.mjs",
     "test": "pnpm -r --if-present test && pnpm --filter @spctre/web test:integration",
+    "test:coverage": "vitest run --config vitest.coverage.config.ts --coverage",
+    "test:coverage:web": "pnpm --filter @spctre/web exec vitest run --coverage",
     "generate": "pnpm --filter @spctre/api-contracts emit && pnpm --filter @spctre/sdk generate",
     "generate:python-sdk": "bash scripts/generate-python-sdk.sh",
     "changeset": "changeset",
@@ -35,6 +37,7 @@
   "devDependencies": {
     "@changesets/cli": "2.31.1",
     "@openapitools/openapi-generator-cli": "^2.38.0",
+    "@vitest/coverage-v8": "^4.1.8",
     "eslint": "^10.6.0",
     "jscpd": "^4.0.5",
     "knip": "^6.24.0",
