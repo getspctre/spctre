@@ -1,5 +1,4 @@
-import { incrementCounter, recordDuration } from "@spctre/platform/metrics";
-import { logger } from "@spctre/platform/logging";
+import { incrementCounter, logger, recordDuration } from "./observability.js";
 import type { TransportMode } from "./config.js";
 
 // Per-tool rolling SLO metrics for the MCP server. Extracted from index.ts

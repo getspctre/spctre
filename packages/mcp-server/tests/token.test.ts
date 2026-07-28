@@ -4,17 +4,11 @@ vi.mock("axios", () => ({
   default: { post: vi.fn() },
 }));
 
-vi.mock("@spctre/platform/metrics", () => ({
+vi.mock("../src/observability.js", () => ({
   incrementCounter: vi.fn(),
   recordDuration: vi.fn(),
   setGauge: vi.fn(),
-}));
-
-vi.mock("@spctre/platform/logging", () => ({
   logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
-}));
-
-vi.mock("@spctre/platform/tracing", () => ({
   withSpan: vi.fn(async (_name: string, _attrs: unknown, fn: () => Promise<void>) => fn()),
 }));
 

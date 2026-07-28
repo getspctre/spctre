@@ -1,8 +1,6 @@
 import axios from "axios";
 import { errorMessage } from "./handlers/context.js";
-import { incrementCounter } from "@spctre/platform/metrics";
-import { logger } from "@spctre/platform/logging";
-import { withSpan } from "@spctre/platform/tracing";
+import { incrementCounter, logger, withSpan } from "./observability.js";
 
 export const REFRESH_MAX_ATTEMPTS = 3;
 export const REFRESH_BACKOFF_BASE_MS = 1_000;
