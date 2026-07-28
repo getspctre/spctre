@@ -14,7 +14,7 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 import axios, { AxiosInstance, AxiosResponse } from "axios";
-import { withSpan } from "@spctre/platform/tracing";
+import { withSpan } from "./observability.js";
 import {
   AccessTokenManager,
   emitTokenEvent,

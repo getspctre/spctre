@@ -14,10 +14,8 @@ WORKDIR /app
 
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY packages/mcp-server/package.json ./packages/mcp-server/
-COPY packages/platform/package.json ./packages/platform/
-COPY packages/policy-schema/package.json ./packages/policy-schema/
 
-RUN pnpm install --frozen-lockfile --ignore-scripts --filter @spctre/mcp-server... --filter @spctre/policy-schema
+RUN pnpm install --frozen-lockfile --ignore-scripts --filter @spctre/mcp-server...
 
 # ── Stage 3: build ────────────────────────────────────────────────────────────
 FROM base AS builder
@@ -25,11 +23,8 @@ WORKDIR /app
 
 COPY --from=deps /app ./
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
-COPY packages/platform ./packages/platform
-COPY packages/policy-schema ./packages/policy-schema
 COPY packages/mcp-server ./packages/mcp-server
 
-RUN cd packages/policy-schema && node_modules/.bin/tsc -p tsconfig.build.json
 RUN cd packages/mcp-server && rm -rf dist && node_modules/.bin/tsc
 
 # ── Stage 4: runner ───────────────────────────────────────────────────────────
@@ -50,15 +45,6 @@ COPY --from=deps --chown=mcpserver:nodejs /app/node_modules ./node_modules
 
 # Package-level node_modules holds scoped symlinks used by runtime resolution.
 COPY --from=deps --chown=mcpserver:nodejs /app/packages/mcp-server/node_modules ./packages/mcp-server/node_modules
-
-# policy-schema is a workspace package; node_modules/@spctre/policy-schema is a
-# symlink to ../../packages/policy-schema. Copy the compiled dist so the symlink
-# resolves at runtime.
-COPY --from=builder --chown=mcpserver:nodejs /app/packages/policy-schema/package.json ./packages/policy-schema/package.json
-COPY --from=builder --chown=mcpserver:nodejs /app/packages/policy-schema/dist ./packages/policy-schema/dist
-
-# platform is a workspace dependency referenced directly by @spctre/mcp-server.
-COPY --from=builder --chown=mcpserver:nodejs /app/packages/platform ./packages/platform
 
 USER mcpserver
 

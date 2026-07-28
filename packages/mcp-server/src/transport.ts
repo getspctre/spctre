@@ -8,9 +8,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
 import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 import axios from "axios";
-import { incrementCounter, setGauge } from "@spctre/platform/metrics";
-import { logger } from "@spctre/platform/logging";
-import { shutdownTelemetry } from "@spctre/platform/telemetry";
+import { incrementCounter, logger, setGauge, shutdownTelemetry } from "./observability.js";
 import { SpctreMcpServer } from "./server.js";
 import type { SpctreConfig } from "./config.js";
 import { MAX_HTTP_MESSAGES_PER_SECOND, MAX_HTTP_SESSIONS, buildToolMetricsSnapshot } from "./metrics.js";

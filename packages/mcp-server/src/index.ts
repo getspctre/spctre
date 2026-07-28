@@ -16,8 +16,7 @@
  * transport.ts.
  */
 
-import { logger } from "@spctre/platform/logging";
-import { initTelemetry } from "@spctre/platform/telemetry";
+import { initTelemetry, logger } from "./observability.js";
 import { getBaseConfigFromEnv } from "./config.js";
 import { startStdio, startHttp } from "./transport.js";
 import { SpctreMcpServer } from "./server.js";
