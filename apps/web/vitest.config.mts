@@ -6,7 +6,16 @@ const fromHere = (path: string) => fileURLToPath(new URL(path, import.meta.url))
 export default defineConfig({
   test: {
     environment: "node",
-    include: ["tests/**/*.test.mts", "../../ee/web/**/*.test.mts"]
+    include: ["tests/**/*.test.mts", "../../ee/web/**/*.test.mts"],
+    // Report-only coverage baseline (`pnpm test:coverage:web`). No thresholds.
+    coverage: {
+      provider: "v8",
+      reporter: ["text-summary", "json-summary"],
+      reportsDirectory: "./coverage",
+      all: true,
+      include: ["app/**", "components/**", "lib/**", "i18n/**"],
+      exclude: ["**/*.d.ts", "**/*.test.mts", "**/*.config.*"],
+    },
   },
   resolve: {
     // Array form so the policy-schema entries can be exact-match regexes:

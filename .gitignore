@@ -23,6 +23,7 @@ packages/ui/storybook-static/
 .turbo/
 .cache/
 coverage/
+cover.out
 .nyc_output/
 .pytest_cache/
 __pycache__/
