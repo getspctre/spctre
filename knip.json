@@ -1,7 +1,6 @@
 {
   "$schema": "https://unpkg.com/knip@5/schema.json",
   "ignore": [
-    "ee/**/*",
     "apps/web/lib/ee-adapters/**/*",
     "apps/web/lib/next-server.ts",
     "apps/web/lib/node-saml.ts",

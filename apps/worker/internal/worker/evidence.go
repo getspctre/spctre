@@ -130,68 +130,7 @@ func (s *Server) handleEvidence(w http.ResponseWriter, r *http.Request) {
 	}
 
 	source := resolveIngestionSource(r, payload)
-	if payload.RawEvidence == nil {
-		payload.RawEvidence = map[string]any{}
-	}
-	payload.RawEvidence["_source"] = source
-	payload.RawEvidence["runtimeTarget"] = payload.RuntimeTarget
-	if payload.ToolIntent != nil {
-		payload.RawEvidence["toolIntent"] = *payload.ToolIntent
-	}
-	if payload.PlanSummary != nil {
-		payload.RawEvidence["planSummary"] = *payload.PlanSummary
-	}
-	if payload.ToolParameters != nil {
-		payload.RawEvidence["toolParameters"] = payload.ToolParameters
-	}
-	if payload.PromptTokens != nil {
-		payload.RawEvidence["promptTokens"] = *payload.PromptTokens
-	}
-	if payload.CompletionTokens != nil {
-		payload.RawEvidence["completionTokens"] = *payload.CompletionTokens
-	}
-	if payload.TotalTokens != nil {
-		payload.RawEvidence["totalTokens"] = *payload.TotalTokens
-	} else if payload.PromptTokens != nil && payload.CompletionTokens != nil {
-		total := *payload.PromptTokens + *payload.CompletionTokens
-		payload.RawEvidence["totalTokens"] = total
-	}
-	if payload.EstimatedCostUsd != nil {
-		payload.RawEvidence["estimatedCostUsd"] = *payload.EstimatedCostUsd
-	}
-	if payload.TriggerKind != "" {
-		payload.RawEvidence["triggerKind"] = payload.TriggerKind
-	}
-	if payload.Layer != "" {
-		payload.RawEvidence["layer"] = payload.Layer
-	}
-	if payload.ExecutionContext != nil {
-		payload.RawEvidence["executionContext"] = payload.ExecutionContext
-	}
-	if payload.ParentAgentID != "" {
-		payload.RawEvidence["parentAgentId"] = payload.ParentAgentID
-	}
-	if payload.TraceID != "" {
-		payload.RawEvidence["traceId"] = payload.TraceID
-	}
-	if payload.OrchestratorRef != nil {
-		payload.RawEvidence["orchestratorRef"] = payload.OrchestratorRef
-	}
-	if payload.PluginSource != "" {
-		payload.RawEvidence["pluginSource"] = payload.PluginSource
-	}
-	if payload.SkillContext != nil {
-		payload.RawEvidence["skillContext"] = payload.SkillContext
-	}
-	if payload.WebhookSource != "" {
-		payload.RawEvidence["webhookSource"] = payload.WebhookSource
-	}
-	if payload.TrustLevel != "" {
-		payload.RawEvidence["trustLevel"] = payload.TrustLevel
-	}
-	if payload.CatalogProvider != "" {
-		payload.RawEvidence["catalogProvider"] = payload.CatalogProvider
-	}
+	payload.enrichRawEvidence(source)
 
 	inserted, err := s.insertEvidence(r.Context(), payload)
 	if err != nil {
@@ -209,8 +148,6 @@ func (s *Server) handleEvidence(w http.ResponseWriter, r *http.Request) {
 	if payload.TrustScore != nil {
 		s.spawn(func(ctx context.Context) { s.ingestTrustScore(ctx, payload) })
 	}
-	if payload.PromptTokens != nil || payload.CompletionTokens != nil {
-	}
 
 	lag := time.Since(parseCreatedAt(payload.CreatedAt))
 	if lag > time.Minute {
@@ -220,12 +157,105 @@ func (s *Server) handleEvidence(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, evidenceResponse{Evidence: payload, Meta: makeMeta(traceID)})
 }
 
+// enrichRawEvidence folds the optional, denormalized fields of the request into
+// the RawEvidence map that is persisted alongside the decision. Only fields that
+// are set are written, preserving the previous behavior exactly.
+func (p *EvidenceRequest) enrichRawEvidence(source string) {
+	if p.RawEvidence == nil {
+		p.RawEvidence = map[string]any{}
+	}
+	p.RawEvidence["_source"] = source
+	p.RawEvidence["runtimeTarget"] = p.RuntimeTarget
+	p.enrichRawEvidenceUsage()
+	p.enrichRawEvidenceContext()
+}
+
+// enrichRawEvidenceUsage records the request's I/O payload and model-usage
+// fields when present.
+func (p *EvidenceRequest) enrichRawEvidenceUsage() {
+	if p.ToolIntent != nil {
+		p.RawEvidence["toolIntent"] = *p.ToolIntent
+	}
+	if p.PlanSummary != nil {
+		p.RawEvidence["planSummary"] = *p.PlanSummary
+	}
+	if p.ToolParameters != nil {
+		p.RawEvidence["toolParameters"] = p.ToolParameters
+	}
+	if p.PromptTokens != nil {
+		p.RawEvidence["promptTokens"] = *p.PromptTokens
+	}
+	if p.CompletionTokens != nil {
+		p.RawEvidence["completionTokens"] = *p.CompletionTokens
+	}
+	if p.TotalTokens != nil {
+		p.RawEvidence["totalTokens"] = *p.TotalTokens
+	} else if p.PromptTokens != nil && p.CompletionTokens != nil {
+		total := *p.PromptTokens + *p.CompletionTokens
+		p.RawEvidence["totalTokens"] = total
+	}
+	if p.EstimatedCostUsd != nil {
+		p.RawEvidence["estimatedCostUsd"] = *p.EstimatedCostUsd
+	}
+}
+
+// enrichRawEvidenceContext records the routing, provenance, and trust context
+// fields when present.
+func (p *EvidenceRequest) enrichRawEvidenceContext() {
+	if p.TriggerKind != "" {
+		p.RawEvidence["triggerKind"] = p.TriggerKind
+	}
+	if p.Layer != "" {
+		p.RawEvidence["layer"] = p.Layer
+	}
+	if p.ExecutionContext != nil {
+		p.RawEvidence["executionContext"] = p.ExecutionContext
+	}
+	if p.ParentAgentID != "" {
+		p.RawEvidence["parentAgentId"] = p.ParentAgentID
+	}
+	if p.TraceID != "" {
+		p.RawEvidence["traceId"] = p.TraceID
+	}
+	if p.OrchestratorRef != nil {
+		p.RawEvidence["orchestratorRef"] = p.OrchestratorRef
+	}
+	if p.PluginSource != "" {
+		p.RawEvidence["pluginSource"] = p.PluginSource
+	}
+	if p.SkillContext != nil {
+		p.RawEvidence["skillContext"] = p.SkillContext
+	}
+	if p.WebhookSource != "" {
+		p.RawEvidence["webhookSource"] = p.WebhookSource
+	}
+	if p.TrustLevel != "" {
+		p.RawEvidence["trustLevel"] = p.TrustLevel
+	}
+	if p.CatalogProvider != "" {
+		p.RawEvidence["catalogProvider"] = p.CatalogProvider
+	}
+}
+
 type validationIssue struct {
 	Path    string `json:"path"`
 	Message string `json:"message"`
 }
 
+// validate runs the field validators in a fixed order and concatenates their
+// issues. Each validator owns one concern to keep this path readable and its
+// cyclomatic complexity bounded.
 func (p EvidenceRequest) validate() []validationIssue {
+	var issues []validationIssue
+	issues = append(issues, p.validateRequiredFields()...)
+	issues = append(issues, p.validateFieldFormats()...)
+	issues = append(issues, p.validateNonGatewayRequirements()...)
+	issues = append(issues, p.validatePolicyContextNodes()...)
+	issues = append(issues, p.validateNumericBounds()...)
+	return issues
+}
+
+func (p EvidenceRequest) validateRequiredFields() []validationIssue {
 	var issues []validationIssue
 	required := map[string]string{
 		"decisionId":          p.DecisionID,
@@ -242,6 +272,11 @@ func (p EvidenceRequest) validate() []validationIssue {
 			issues = append(issues, validationIssue{Path: path, Message: path + " is required."})
 		}
 	}
+	return issues
+}
+
+func (p EvidenceRequest) validateFieldFormats() []validationIssue {
+	var issues []validationIssue
 	if p.RuntimeTarget.Stack != "" && !validStacks[string(p.RuntimeTarget.Stack)] {
 		issues = append(issues, validationIssue{Path: "runtimeTarget.stack", Message: "runtimeTarget.stack is not supported."})
 	}
@@ -268,17 +303,28 @@ func (p EvidenceRequest) validate() []validationIssue {
 	if p.PluginSource != "" && !validPluginSources[p.PluginSource] {
 		issues = append(issues, validationIssue{Path: "pluginSource", Message: "pluginSource is not supported."})
 	}
-	if p.IngestMode != "gateway" {
-		if len(p.PolicyRefs) == 0 {
-			issues = append(issues, validationIssue{Path: "policyRefs", Message: "policyRefs must include at least one policy reference."})
-		}
-		if strings.TrimSpace(p.ArtifactHash) == "" {
-			issues = append(issues, validationIssue{Path: "artifactHash", Message: "artifactHash is required."})
-		}
-		if len(p.PolicyContext) == 0 {
-			issues = append(issues, validationIssue{Path: "policyContext", Message: "policyContext must include at least one valid context node."})
-		}
+	return issues
+}
+
+func (p EvidenceRequest) validateNonGatewayRequirements() []validationIssue {
+	if p.IngestMode == "gateway" {
+		return nil
 	}
+	var issues []validationIssue
+	if len(p.PolicyRefs) == 0 {
+		issues = append(issues, validationIssue{Path: "policyRefs", Message: "policyRefs must include at least one policy reference."})
+	}
+	if strings.TrimSpace(p.ArtifactHash) == "" {
+		issues = append(issues, validationIssue{Path: "artifactHash", Message: "artifactHash is required."})
+	}
+	if len(p.PolicyContext) == 0 {
+		issues = append(issues, validationIssue{Path: "policyContext", Message: "policyContext must include at least one valid context node."})
+	}
+	return issues
+}
+
+func (p EvidenceRequest) validatePolicyContextNodes() []validationIssue {
+	var issues []validationIssue
 	for i, ctx := range p.PolicyContext {
 		prefix := fmt.Sprintf("policyContext.%d", i)
 		if !validScopes[string(ctx.Scope)] {
@@ -294,6 +340,11 @@ func (p EvidenceRequest) validate() []validationIssue {
 			issues = append(issues, validationIssue{Path: prefix + ".artifactHash", Message: "artifactHash is required."})
 		}
 	}
+	return issues
+}
+
+func (p EvidenceRequest) validateNumericBounds() []validationIssue {
+	var issues []validationIssue
 	if p.ToolIntent != nil && len(*p.ToolIntent) > 100000 {
 		issues = append(issues, validationIssue{Path: "toolIntent", Message: "toolIntent must be at most 100000 characters."})
 	}
