@@ -1,9 +1,7 @@
 import { listCrossSurfaceHistory } from "@/lib/domains/identity/service";
-import { getAuthSession } from "@/lib/auth-session";
-import { getActiveScope } from "@/lib/workspace";
 import { isFeatureEnabled } from "@/lib/feature-flags-server";
-import { authenticateServiceToken, hasBearerToken } from "@/lib/service-tokens";
 import { extractTraceId, makeMeta, withTraceId } from "@spctre/api-contracts";
+import { resolveRouteScope } from "../../../_route-scope";
 
 export const dynamic = "force-dynamic";
 
@@ -13,37 +11,9 @@ async function handleGetAgentIdentityHistory(
 ) {
   const traceId = extractTraceId(request);
 
-  let workspaceId: string;
-  let tenantId: string;
-
-  if (hasBearerToken(request)) {
-    const tokenAuth = await authenticateServiceToken(request, "operations:read");
-    if (!tokenAuth.ok) {
-      return withTraceId(
-        Response.json({ error: "Invalid or expired service token.", meta: makeMeta(traceId) }, { status: 401 }),
-        traceId
-      );
-    }
-    workspaceId = tokenAuth.auth.workspaceId;
-    tenantId = tokenAuth.auth.tenantId;
-  } else {
-    const session = await getAuthSession().catch(() => null);
-    if (!session) {
-      return withTraceId(
-        Response.json({ error: "Authentication required.", meta: makeMeta(traceId) }, { status: 401 }),
-        traceId
-      );
-    }
-    const ctx = await getActiveScope().catch(() => null);
-    if (!ctx) {
-      return withTraceId(
-        Response.json({ error: "Workspace context unavailable.", meta: makeMeta(traceId) }, { status: 400 }),
-        traceId
-      );
-    }
-    workspaceId = ctx.workspaceId;
-    tenantId = ctx.tenantId;
-  }
+  const scope = await resolveRouteScope(request, { serviceTokenScope: "operations:read", traceId });
+  if (scope instanceof Response) return scope;
+  const { workspaceId, tenantId } = scope;
 
   if (!isFeatureEnabled("crossSurfaceAgentIdentity")) {
     return withTraceId(

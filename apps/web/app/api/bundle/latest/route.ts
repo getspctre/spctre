@@ -1,9 +1,7 @@
 import { getLatestPublishedPolicyBundle } from "@/lib/domains/policy/service";
 
-import { getAuthSession } from "@/lib/auth-session";
-import { getActiveScope } from "@/lib/workspace";
-import { authenticateServiceToken, hasBearerToken } from "@/lib/service-tokens";
 import { extractTraceId, makeMeta, withTraceId } from "@spctre/api-contracts";
+import { resolveRouteScope } from "../../_route-scope";
 import { getSpctrePlan } from "@/lib/feature-flags-server";
 import { buildPolicyBundleExport, buildPolicyBundleExports, verifyPolicyBundleExport } from "@spctre/policy-schema";
 import type { PolicyBundleExportFormat } from "@spctre/policy-schema";
@@ -45,32 +43,16 @@ async function handleGetApiBundleLatest(request: Request) {
     }, { status: 400 }), traceId);
   }
 
-  let published;
-  let workspaceContext: { workspaceId: string; tenantId: string; principalId: string } | null = null;
+  const scope = await resolveRouteScope(request, { serviceTokenScope: "bundle:read", traceId });
+  if (scope instanceof Response) return scope;
+  const workspaceContext: { workspaceId: string; tenantId: string; principalId: string } = {
+    workspaceId: scope.workspaceId,
+    tenantId: scope.tenantId,
+    principalId: scope.actorId,
+  };
 
+  let published;
   try {
-    if (hasBearerToken(request)) {
-      const tokenAuth = await authenticateServiceToken(request, "bundle:read");
-      if (!tokenAuth.ok) return withTraceId(Response.json({ error: "Invalid or expired service token.", meta: makeMeta(traceId) }, { status: 401 }), traceId);
-      workspaceContext = {
-        workspaceId: tokenAuth.auth.workspaceId,
-        tenantId: tokenAuth.auth.tenantId,
-        principalId: tokenAuth.auth.principalId,
-      };
-    } else {
-      const session = await getAuthSession().catch(() => null);
-      if (!session) {
-        return withTraceId(Response.json({ error: "Authentication required.", meta: makeMeta(traceId) }, { status: 401 }), traceId);
-      }
-      const scope = await getActiveScope();
-      workspaceContext = {
-        ...scope,
-        principalId: session.principalId,
-      };
-    }
-    if (!workspaceContext.workspaceId || !workspaceContext.tenantId) {
-      return withTraceId(Response.json({ error: "Workspace context unavailable.", meta: makeMeta(traceId) }, { status: 400 }), traceId);
-    }
     published = await getLatestPublishedPolicyBundle({
       workspaceId: workspaceContext.workspaceId,
       tenantId: workspaceContext.tenantId

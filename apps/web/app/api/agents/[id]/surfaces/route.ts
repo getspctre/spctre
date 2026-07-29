@@ -1,65 +1,19 @@
 import { linkAgentSurface, listAgentSurfaces } from "@/lib/domains/identity/service";
-import { getAuthSession } from "@/lib/auth-session";
-import { getActiveScope } from "@/lib/workspace";
 import { isFeatureEnabled } from "@/lib/feature-flags-server";
-import { authenticateServiceToken, hasBearerToken } from "@/lib/service-tokens";
 import type { AgentSurfaceType } from "@spctre/policy-schema";
 import { extractTraceId, makeMeta, withTraceId } from "@spctre/api-contracts";
 import { asString } from "../../../_shared";
+import { resolveRouteScope } from "../../../_route-scope";
 
 export const dynamic = "force-dynamic";
-
-async function resolveWorkspaceContext(
-  request: Request,
-  scope: "operations:read" | "evidence:write"
-): Promise<
-  | { ok: true; workspaceId: string; tenantId: string; actorId: string }
-  | { ok: false; response: Response }
-> {
-  const traceId = extractTraceId(request);
-  if (hasBearerToken(request)) {
-    const tokenAuth = await authenticateServiceToken(request, scope);
-    if (!tokenAuth.ok) {
-      return {
-        ok: false,
-        response: withTraceId(
-          Response.json({ error: "Invalid or expired service token.", meta: makeMeta(traceId) }, { status: 401 }),
-          traceId
-        ),
-      };
-    }
-    return { ok: true, workspaceId: tokenAuth.auth.workspaceId, tenantId: tokenAuth.auth.tenantId, actorId: tokenAuth.auth.principalId };
-  }
-  const session = await getAuthSession().catch(() => null);
-  if (!session) {
-    return {
-      ok: false,
-      response: withTraceId(
-        Response.json({ error: "Authentication required.", meta: makeMeta(traceId) }, { status: 401 }),
-        traceId
-      ),
-    };
-  }
-  const ctx = await getActiveScope().catch(() => null);
-  if (!ctx) {
-    return {
-      ok: false,
-      response: withTraceId(
-        Response.json({ error: "Workspace context unavailable.", meta: makeMeta(traceId) }, { status: 400 }),
-        traceId
-      ),
-    };
-  }
-  return { ok: true, workspaceId: ctx.workspaceId, tenantId: ctx.tenantId, actorId: session.principalId };
-}
 
 async function handleGetAgentSurfaces(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const traceId = extractTraceId(request);
-  const auth = await resolveWorkspaceContext(request, "operations:read");
-  if (!auth.ok) return auth.response;
+  const scope = await resolveRouteScope(request, { serviceTokenScope: "operations:read", traceId });
+  if (scope instanceof Response) return scope;
 
   if (!isFeatureEnabled("crossSurfaceAgentIdentity")) {
     return withTraceId(
@@ -70,8 +24,8 @@ async function handleGetAgentSurfaces(
 
   const { id: canonicalAgentId } = await params;
   const surfaces = await listAgentSurfaces({
-    tenantId: auth.tenantId,
-    workspaceId: auth.workspaceId,
+    tenantId: scope.tenantId,
+    workspaceId: scope.workspaceId,
     canonicalAgentId,
   });
 
@@ -86,8 +40,8 @@ async function handlePostAgentSurface(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const traceId = extractTraceId(request);
-  const auth = await resolveWorkspaceContext(request, "evidence:write");
-  if (!auth.ok) return auth.response;
+  const scope = await resolveRouteScope(request, { serviceTokenScope: "evidence:write", traceId });
+  if (scope instanceof Response) return scope;
 
   if (!isFeatureEnabled("crossSurfaceAgentIdentity")) {
     return withTraceId(
@@ -123,12 +77,12 @@ async function handlePostAgentSurface(
   }
 
   const binding = await linkAgentSurface({
-    tenantId: auth.tenantId,
-    workspaceId: auth.workspaceId,
+    tenantId: scope.tenantId,
+    workspaceId: scope.workspaceId,
     canonicalAgentId,
     surfaceType,
     surfaceAgentId,
-    actorId: auth.actorId,
+    actorId: scope.actorId,
   });
 
   if (!binding) {

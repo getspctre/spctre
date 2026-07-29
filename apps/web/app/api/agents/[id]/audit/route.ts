@@ -1,28 +1,15 @@
 import { listAgentAuditDecisions } from "@/lib/domains/agents/service";
-import { getAuthSession } from "@/lib/auth-session";
-import { getActiveScope } from "@/lib/workspace";
 import { extractTraceId, makeMeta, withTraceId } from "@spctre/api-contracts";
-import { authenticateServiceToken, hasBearerToken } from "@/lib/service-tokens";
+import { resolveRouteScope } from "../../../_route-scope";
 
 export const dynamic = "force-dynamic";
 
 async function handleGetApiAgentsByidAudit(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const traceId = extractTraceId(request);
-  let workspaceContext: { workspaceId: string; tenantId: string };
 
-  if (hasBearerToken(request)) {
-    const tokenAuth = await authenticateServiceToken(request, "operations:read");
-    if (!tokenAuth.ok) {
-      return withTraceId(Response.json({ error: "Invalid or expired service token.", meta: makeMeta(traceId) }, { status: 401 }), traceId);
-    }
-    workspaceContext = { workspaceId: tokenAuth.auth.workspaceId, tenantId: tokenAuth.auth.tenantId };
-  } else {
-    const session = await getAuthSession().catch(() => null);
-    if (!session) return withTraceId(Response.json({ error: "Authentication required.", meta: makeMeta(traceId) }, { status: 401 }), traceId);
-    const ctx = await getActiveScope().catch(() => null);
-    if (!ctx) return withTraceId(Response.json({ error: "Workspace context unavailable.", meta: makeMeta(traceId) }, { status: 400 }), traceId);
-    workspaceContext = ctx;
-  }
+  const scope = await resolveRouteScope(request, { serviceTokenScope: "operations:read", traceId });
+  if (scope instanceof Response) return scope;
+  const { workspaceId, tenantId } = scope;
 
   const { id: agentId } = await params;
   const url = new URL(request.url);
@@ -30,7 +17,7 @@ async function handleGetApiAgentsByidAudit(request: Request, { params }: { param
 
   let decisions;
   try {
-    decisions = await listAgentAuditDecisions({ agentId, workspaceId: workspaceContext.workspaceId, tenantId: workspaceContext.tenantId, limit });
+    decisions = await listAgentAuditDecisions({ agentId, workspaceId, tenantId, limit });
   } catch (err) {
     console.error("[agents/[id]/audit] listAgentEvidenceDecisions failed", err);
     return withTraceId(Response.json({ error: "Service temporarily unavailable.", meta: makeMeta(traceId) }, { status: 503 }), traceId);

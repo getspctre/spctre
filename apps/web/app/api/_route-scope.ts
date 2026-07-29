@@ -11,8 +11,19 @@ export interface RouteScope {
 
 export async function resolveRouteScope(
   request: Request,
-  params: { serviceTokenScope: ServiceTokenScope; traceId: string }
+  params: {
+    serviceTokenScope: ServiceTokenScope;
+    traceId: string;
+    /**
+     * Status returned when a request authenticates but no workspace context can
+     * be resolved ("Workspace context unavailable."). Defaults to 400. Routes
+     * that historically mapped every auth failure to 401 (e.g. POST
+     * /api/verification) pass 401 to preserve their public contract.
+     */
+    contextUnavailableStatus?: number;
+  }
 ): Promise<RouteScope | Response> {
+  const contextUnavailableStatus = params.contextUnavailableStatus ?? 400;
   let workspaceId: string;
   let tenantId: string;
   let actorId = "";
@@ -20,7 +31,9 @@ export async function resolveRouteScope(
   if (hasBearerToken(request)) {
     const tokenAuth = await authenticateServiceToken(request, params.serviceTokenScope);
     if (!tokenAuth.ok) {
-      return routeScopeError("Invalid or expired service token.", 401, params.traceId);
+      // Surface the granular reason (e.g. "Token is missing bundle:read scope.")
+      // so callers learn which scope is required, matching the pre-helper routes.
+      return routeScopeError(tokenAuth.error, 401, params.traceId);
     }
     workspaceId = tokenAuth.auth.workspaceId;
     tenantId = tokenAuth.auth.tenantId;
@@ -32,7 +45,7 @@ export async function resolveRouteScope(
     }
     const ctx = await getActiveScope().catch(() => null);
     if (!ctx) {
-      return routeScopeError("Workspace context unavailable.", 400, params.traceId);
+      return routeScopeError("Workspace context unavailable.", contextUnavailableStatus, params.traceId);
     }
     workspaceId = ctx.workspaceId;
     tenantId = ctx.tenantId;
@@ -40,7 +53,7 @@ export async function resolveRouteScope(
   }
 
   if (!workspaceId || !tenantId) {
-    return routeScopeError("Workspace context unavailable.", 400, params.traceId);
+    return routeScopeError("Workspace context unavailable.", contextUnavailableStatus, params.traceId);
   }
 
   return { tenantId, workspaceId, actorId };
