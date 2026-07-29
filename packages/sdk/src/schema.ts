@@ -184,6 +184,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/gateway-ingest/notion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ingest a Notion gateway webhook
+         * @description Accepts a raw Notion Worker webhook payload and stores it as Spctre runtime evidence with revision-at-time provenance. Authenticate with a bearer service token or a registered gateway webhook secret in `x-notion-signature` or `x-spctre-gateway-secret`.
+         */
+        post: operations["ingestNotionGatewayEvent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/token/refresh": {
         parameters: {
             query?: never;
@@ -428,26 +448,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/evaluate/bulk": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Bulk simulation against the full tenant event log
-         * @description Runs a policy simulation against the tenant's complete historical evidence log. Useful for impact analysis before publishing a new policy revision.
-         */
-        post: operations["bulkSimulate"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/scim/v2/Users": {
         parameters: {
             query?: never;
@@ -645,7 +645,9 @@ export interface components {
         };
         EvidenceIngestResponse: {
             /** @description The persisted evidence record (canonical shape). */
-            evidence: Record<string, never>;
+            evidence: {
+                [key: string]: unknown;
+            };
             /** @description Gateway evaluation result, if the gateway is enabled. */
             gateway?: {
                 /** @enum {string} */
@@ -825,7 +827,9 @@ export interface components {
             eventType: "TOKEN_GROWTH" | "SUMMARIZATION_EVENT" | "CONTEXT_SOURCE_MIX" | "BUDGET_BREACH";
             tokenCount: number;
             tokenDelta?: number;
-            contextSourceMix?: Record<string, never>;
+            contextSourceMix?: {
+                [key: string]: unknown;
+            };
             budgetLimit?: number;
             budgetUtilization?: number;
             /** @enum {string} */
@@ -867,7 +871,9 @@ export interface components {
             meta: components["schemas"]["ApiMeta"];
         };
         /** @description The latest published policy bundle for the workspace. Response headers carry `x-spctre-branch-id`, `x-spctre-revision-id`, `x-spctre-artifact-hash`, and `x-spctre-published-at`. */
-        BundleResponse: Record<string, never>;
+        BundleResponse: {
+            [key: string]: unknown;
+        };
         /** @enum {string} */
         BundleExportFormat: "spctre-json" | "opa-rego" | "opa-bundle" | "cedar" | "mcp-proxy-config";
         BundleExportManifest: {
@@ -890,13 +896,17 @@ export interface components {
                 sourceHash: string;
                 sourceFormat: string;
                 sourcePath?: string;
-                targetStacks: Record<string, never>[];
+                targetStacks: {
+                    [key: string]: unknown;
+                }[];
             };
             ruleCount: number;
         };
         BundleExportEnvelope: {
             /** @description Target artifact. String for text formats, object for JSON/bundle formats. */
-            artifact: string | Record<string, never>;
+            artifact: string | {
+                [key: string]: unknown;
+            };
             manifest: components["schemas"]["BundleExportManifest"];
             meta: components["schemas"]["ApiMeta"];
         };
@@ -926,9 +936,15 @@ export interface components {
             schemaVersion: string;
             /** Format: date-time */
             exportedAt: string;
-            artifact: Record<string, never>;
-            approvals?: Record<string, never>[];
-            timeline?: Record<string, never>[];
+            artifact: {
+                [key: string]: unknown;
+            };
+            approvals?: {
+                [key: string]: unknown;
+            }[];
+            timeline?: {
+                [key: string]: unknown;
+            }[];
             summary: {
                 evidenceCount?: number;
                 approvalCount?: number;
@@ -939,10 +955,18 @@ export interface components {
                 packageSections?: string[];
                 resolvedEscalationCount?: number;
             };
-            escalations: Record<string, never>[];
-            verificationResults: Record<string, never> | null;
-            frameworkAnnotation: Record<string, never> | null;
-            retentionPlan: Record<string, never> | null;
+            escalations: {
+                [key: string]: unknown;
+            }[];
+            verificationResults: {
+                [key: string]: unknown;
+            } | null;
+            frameworkAnnotation: {
+                [key: string]: unknown;
+            } | null;
+            retentionPlan: {
+                [key: string]: unknown;
+            } | null;
         };
         EvaluateRequest: {
             connector: string;
@@ -968,7 +992,9 @@ export interface components {
             /** Format: date-time */
             publishedAt?: string;
             /** @description Policy evaluation result from the published bundle. */
-            result: Record<string, never>;
+            result: {
+                [key: string]: unknown;
+            };
             meta: components["schemas"]["ApiMeta"];
         };
         VerificationIngestRequest: {
@@ -1003,7 +1029,9 @@ export interface components {
             /** Format: date-time */
             escrowVerifiedAt?: string;
             /** @description Arbitrary verification summary payload. */
-            summary?: Record<string, never>;
+            summary?: {
+                [key: string]: unknown;
+            };
         };
         VerificationIngestResponse: {
             ok: boolean;
@@ -1014,7 +1042,9 @@ export interface components {
         };
         ApprovalResponse: {
             /** @description The approval record for the requested revision. */
-            approval: Record<string, never>;
+            approval: {
+                [key: string]: unknown;
+            };
             meta: components["schemas"]["ApiMeta"];
         };
     };
@@ -1349,6 +1379,42 @@ export interface operations {
         };
     };
     ingestLiteLLMGatewayEvent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GatewayWebhookRequest"];
+            };
+        };
+        responses: {
+            /** @description Duplicate gateway event. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GatewayIngestResponse"];
+                };
+            };
+            /** @description Gateway event ingested. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GatewayIngestResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            422: components["responses"]["BadRequest"];
+            503: components["responses"]["ServiceUnavailable"];
+        };
+    };
+    ingestNotionGatewayEvent: {
         parameters: {
             query?: never;
             header?: never;
@@ -1754,42 +1820,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": Record<string, never>;
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            402: components["responses"]["CloudOnly"];
-        };
-    };
-    bulkSimulate: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    /** @description The policy revision to simulate against the historical log. */
-                    revisionId: string;
-                    /** Format: date-time */
-                    fromDate?: string;
-                    /** Format: date-time */
-                    toDate?: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Simulation job accepted. Poll the returned jobId for results. */
-            202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        jobId?: string;
-                        meta?: components["schemas"]["ApiMeta"];
-                    };
                 };
             };
             401: components["responses"]["Unauthorized"];

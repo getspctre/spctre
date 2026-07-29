@@ -305,6 +305,29 @@ describe("SPCTRE_OPENAPI_SPEC", () => {
     expect(paths["/evidence/git-checkpoints"]).toBeTruthy();
     expect(schemas.GitCheckpointIngestRequest).toBeTruthy();
   });
+
+  it("only advertises implemented public routes and webhook authentication", () => {
+    const paths = SPCTRE_OPENAPI_SPEC.paths as Record<string, unknown>;
+    const schemes = SPCTRE_OPENAPI_SPEC.components.securitySchemes as Record<string, unknown>;
+    const notion = paths["/gateway-ingest/notion"] as { post?: { security?: unknown } };
+
+    expect(paths["/gateway/escalations/status"]).toBeTruthy();
+    expect(paths["/gateway-ingest/notion"]).toBeTruthy();
+    expect(paths["/evaluate/bulk"]).toBeUndefined();
+    expect(schemes.gatewayWebhookSecret).toBeTruthy();
+    expect(notion.post?.security).toEqual(expect.arrayContaining([{ gatewayWebhookSecret: [] }]));
+  });
+
+  it("keeps extensible response objects usable from generated SDKs", () => {
+    const schemas = SPCTRE_OPENAPI_SPEC.components.schemas as Record<string, {
+      properties?: Record<string, { additionalProperties?: boolean }>;
+      additionalProperties?: boolean;
+    }>;
+
+    expect(schemas.EvidenceIngestResponse.properties?.evidence?.additionalProperties).toBe(true);
+    expect(schemas.EvaluateResponse.properties?.result?.additionalProperties).toBe(true);
+    expect(schemas.BundleResponse.additionalProperties).toBe(true);
+  });
 });
 
 // ---------------------------------------------------------------------------
