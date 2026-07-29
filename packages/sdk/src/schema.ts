@@ -569,7 +569,9 @@ export interface components {
              */
             createdAt?: string;
             /** @description Arbitrary key-value metadata attached to the evidence record. */
-            rawEvidence?: Record<string, never>;
+            rawEvidence?: {
+                [key: string]: unknown;
+            };
             consequence?: string;
             customerTier?: string;
             confidence?: number;
