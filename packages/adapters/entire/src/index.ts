@@ -25,6 +25,20 @@ export interface EntireCheckpointAdapterOptions {
   branch?: string;
   agentId?: string;
   fetch?: typeof globalThis.fetch;
+  /**
+   * Called for each checkpoint that cannot be read or validated, instead of
+   * dropping it silently. Defaults to a `console.warn`. Accumulate these in your
+   * own callback if you need a skipped count or partial-ingestion report.
+   */
+  onSkip?: (skip: EntireCheckpointSkip) => void;
+}
+
+export interface EntireCheckpointSkip {
+  /** Repo-relative path of the checkpoint's metadata.json. */
+  path: string;
+  /** `unreadable`: Git object read failed. `invalid-json`: metadata.json did not parse. `missing-fields`: required fields absent. */
+  reason: "unreadable" | "invalid-json" | "missing-fields";
+  detail: string;
 }
 
 export interface EntireIngestResult {
@@ -46,8 +60,9 @@ export async function ingestEntireCheckpoints(options: EntireCheckpointAdapterOp
   const branch = options.branch ?? "entire/checkpoints/v1";
   if (!SAFE_REF.test(branch) || branch.startsWith("-")) throw new Error(`Unsafe Git ref: ${branch}`);
 
+  const onSkip = options.onSkip ?? ((skip: EntireCheckpointSkip) => console.warn(`[entire-checkpoints] skipped ${skip.path}: ${skip.reason} — ${skip.detail}`));
   const headCommit = git(["rev-parse", branch]).trim();
-  const checkpoints = readCheckpoints(branch);
+  const checkpoints = readCheckpoints(branch, onSkip);
   const fetchImpl = options.fetch ?? globalThis.fetch;
   const endpoint = `${options.baseUrl.replace(/\/+$/, "")}/evidence/git-checkpoints`;
   const results: EntireIngestResult[] = [];
@@ -86,21 +101,38 @@ export async function ingestEntireCheckpoints(options: EntireCheckpointAdapterOp
 }
 
 function git(args: string[]): string {
-  return execFileSync("git", args, { encoding: "utf8", stdio: ["pipe", "pipe", "pipe"] });
+  return execFileSync("git", args, { encoding: "utf8", stdio: ["pipe", "pipe", "pipe"], timeout: 10_000 });
 }
 
-function readCheckpoints(branch: string): EntireSessionMetadata[] {
+function readCheckpoints(branch: string, onSkip: (skip: EntireCheckpointSkip) => void): EntireSessionMetadata[] {
   const paths = git(["ls-tree", "-r", "--name-only", branch]).trim().split("\n");
   return paths
     .filter((path) => path.endsWith("/metadata.json") && path.split("/").length === 4)
     .flatMap((path) => {
+      let raw: string;
       try {
-        const metadata = JSON.parse(git(["show", `${branch}:${path}`])) as EntireSessionMetadata;
-        return metadata.checkpoint_id && metadata.created_at ? [metadata] : [];
-      } catch {
+        raw = git(["show", `${branch}:${path}`]);
+      } catch (error) {
+        onSkip({ path, reason: "unreadable", detail: errorMessage(error) });
         return [];
       }
+      let metadata: EntireSessionMetadata;
+      try {
+        metadata = JSON.parse(raw) as EntireSessionMetadata;
+      } catch (error) {
+        onSkip({ path, reason: "invalid-json", detail: errorMessage(error) });
+        return [];
+      }
+      if (!metadata.checkpoint_id || !metadata.created_at) {
+        onSkip({ path, reason: "missing-fields", detail: "checkpoint_id and created_at are required" });
+        return [];
+      }
+      return [metadata];
     });
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
 }
 
 function statusFor(metadata: EntireSessionMetadata): CheckpointStatus {
