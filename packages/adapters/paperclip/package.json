@@ -1,4 +1,5 @@
 {
+  "private": true,
   "name": "@spctre/paperclip",
   "version": "0.1.0",
   "description": "Spctre plugin for Paperclip agent orchestration platform",

@@ -1,4 +1,5 @@
 {
+  "private": true,
   "name": "@spctre/api-contracts",
   "version": "0.1.0",
   "description": "Shared API schema contracts, envelope conventions, and validation helpers for Spctre clients",
