@@ -8,10 +8,11 @@ const meta = {
   component: Drawer,
   args: {
     open: true,
+    onClose: () => undefined,
     eyebrow: "Workflow · Rule builder",
     title: "Edit approval workflow",
-    actions: <Button tone="primary">Save changes</Button>,
-    body: (
+    headerActions: <Button tone="primary">Save changes</Button>,
+    children: (
       <div style={{ display: "grid", gap: 12 }}>
         <FormField label="Workflow name" hint="Shown in review and policy pages.">
           <TextInput value="Payments high-risk" readOnly />

@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { X, ChevronUp, ChevronDown as ChevronDownIcon } from "lucide-react";
+import { ChevronUp, ChevronDown as ChevronDownIcon } from "lucide-react";
+import { Drawer } from "@spctre/ui";
 import type { PolicyRuleSummary } from "@spctre/policy-schema";
 
 type SortKey = "title" | "effect" | "connectors" | "actions" | "sourceFormat";
@@ -168,76 +169,10 @@ function SemanticChecksSection({ rule }: { rule: PolicyRuleSummary }) {
 
 function RuleInspectorPanel({ rule, onClose }: PanelProps) {
   const t = useTranslations("rules");
-  const panelRef = useRef<HTMLElement>(null);
-  const previousFocusRef = useRef<HTMLElement | null>(null);
-
-  useEffect(() => {
-    previousFocusRef.current =
-      document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    document.body.style.overflow = "hidden";
-    panelRef.current?.focus();
-
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-      if (e.key !== "Tab" || !panelRef.current) return;
-      const focusable = panelRef.current.querySelectorAll<HTMLElement>(
-        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
-      );
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (!first || !last) return;
-      if (e.shiftKey && document.activeElement === first) {
-        e.preventDefault();
-        last.focus();
-      } else if (!e.shiftKey && document.activeElement === last) {
-        e.preventDefault();
-        first.focus();
-      }
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.body.style.overflow = "";
-      window.removeEventListener("keydown", onKeyDown);
-      previousFocusRef.current?.focus();
-    };
-  }, [onClose]);
-
   const hasConditions = rule.conditions && rule.conditions.length > 0;
 
   return (
-    <div className="slideOutLayer" role="presentation">
-      <button
-        aria-label={t("panel.close")}
-        className="slideOutOverlay"
-        onClick={onClose}
-        type="button"
-      />
-      <section
-        aria-labelledby="rule-panel-title"
-        aria-modal="true"
-        className="slideOutPanel"
-        data-width="wide"
-        ref={panelRef}
-        role="dialog"
-        tabIndex={-1}
-      >
-        <header className="slideOutHeader">
-          <div>
-            <p className="eyebrow">{t("panel.managed_rule")}</p>
-            <h2 id="rule-panel-title">{rule.title}</h2>
-            <p className="meta">{rule.stableRuleId}</p>
-          </div>
-          <button
-            aria-label={t("panel.close")}
-            className="iconButton"
-            onClick={onClose}
-            type="button"
-          >
-            <X size={17} />
-          </button>
-        </header>
-
-        <div className="slideOutBody">
+    <Drawer open onClose={onClose} closeLabel={t("panel.close")} width="wide" eyebrow={t("panel.managed_rule")} title={rule.title} description={rule.stableRuleId}>
           <div className="packDrawerSummary">
             <div>
               <span className="meta">{t("panel.effect")}</span>
@@ -292,8 +227,6 @@ function RuleInspectorPanel({ rule, onClose }: PanelProps) {
           ) : null}
 
           <SemanticChecksSection rule={rule} />
-        </div>
-      </section>
-    </div>
+    </Drawer>
   );
 }
