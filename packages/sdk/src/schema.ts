@@ -1028,6 +1028,10 @@ export interface components {
             escrowVerificationOutcome?: "PASS" | "FAIL" | "WARN";
             /** Format: date-time */
             escrowVerifiedAt?: string;
+            /** @description Arbitrary verification summary payload. */
+            summary?: {
+                [key: string]: unknown;
+            };
         };
         VerificationIngestResponse: {
             ok: boolean;

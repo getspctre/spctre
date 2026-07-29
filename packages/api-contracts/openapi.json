@@ -1761,6 +1761,11 @@
           "escrowVerifiedAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "summary": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Arbitrary verification summary payload."
           }
         }
       },

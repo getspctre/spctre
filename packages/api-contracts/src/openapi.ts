@@ -837,6 +837,7 @@ export const SPCTRE_OPENAPI_SPEC = {
           escrowSignature: { type: "string" },
           escrowVerificationOutcome: { type: "string", enum: ["PASS", "FAIL", "WARN"] },
           escrowVerifiedAt: { type: "string", format: "date-time" },
+          summary: { type: "object", additionalProperties: true, description: "Arbitrary verification summary payload." },
         },
       },
 
