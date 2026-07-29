@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Link2, X } from "lucide-react";
+import { Link2 } from "lucide-react";
 import type { RuntimeDecisionEvidenceRecord } from "@spctre/policy-schema";
 import { runtimeLabels } from "@/lib/constants";
-import { StatusPill, statusToneFromDecision } from "@spctre/ui";
+import { Drawer, StatusPill, statusToneFromDecision } from "@spctre/ui";
 import { formatArtifactHash, formatProvenanceId, type AppViewMode } from "@/lib/app-view-mode";
 import { hashToFingerprint } from "@/lib/fingerprint";
 import { redactAndBoundParameters } from "@spctre/api-contracts";
@@ -37,8 +37,6 @@ interface Props {
 
 export function EvidenceTable({ evidence, viewMode, highlightId, workspaceSlug, controlMappingIndex = [] }: Props) {
   const [selected, setSelected] = useState<RuntimeDecisionEvidenceRecord | null>(null);
-  const panelRef = useRef<HTMLElement>(null);
-  const previousFocusRef = useRef<HTMLElement | null>(null);
   const highlightRowRef = useRef<HTMLTableRowElement>(null);
 
   // Auto-open the inspector and scroll to a highlighted row on first render.
@@ -53,26 +51,6 @@ export function EvidenceTable({ evidence, viewMode, highlightId, workspaceSlug, 
       }, 100);
     }
   }, [highlightId]);
-
-  useEffect(() => {
-    if (!selected) return;
-
-    previousFocusRef.current =
-      document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    document.body.style.overflow = "hidden";
-    panelRef.current?.focus();
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setSelected(null);
-    };
-    window.addEventListener("keydown", onKeyDown);
-
-    return () => {
-      document.body.style.overflow = "";
-      window.removeEventListener("keydown", onKeyDown);
-      previousFocusRef.current?.focus();
-    };
-  }, [selected]);
 
   return (
     <>
@@ -146,47 +124,16 @@ export function EvidenceTable({ evidence, viewMode, highlightId, workspaceSlug, 
       </div>
 
       {selected ? (
-        <div className="slideOutLayer" role="presentation">
-          <button
-            aria-label="Close panel"
-            className="slideOutOverlay"
-            onClick={() => setSelected(null)}
-            type="button"
-          />
-          <section
-            aria-labelledby="evidence-panel-title"
-            aria-modal="true"
-            className="slideOutPanel"
-            data-width="wide"
-            ref={panelRef}
-            role="dialog"
-            tabIndex={-1}
-          >
-            <header className="slideOutHeader">
-              <div>
-                <p className="eyebrow">
-                  {selected.connector === "system" && selected.action === "heartbeat"
-                    ? "Runtime heartbeat"
-                    : `${selected.connector}.${selected.action}`}
-                </p>
-                <h2 id="evidence-panel-title">{selected.decisionId}</h2>
-                <p className="meta">{selected.reason}</p>
-              </div>
-              <button
-                aria-label="Close panel"
-                className="iconButton"
-                onClick={() => setSelected(null)}
-                type="button"
-              >
-                <X size={17} />
-              </button>
-            </header>
-
-            <div className="slideOutBody">
-              <EvidencePanelBody audit={selected} viewMode={viewMode} workspaceSlug={workspaceSlug} controlMappingIndex={controlMappingIndex} />
-            </div>
-          </section>
-        </div>
+        <Drawer
+          open
+          onClose={() => setSelected(null)}
+          width="wide"
+          eyebrow={selected.connector === "system" && selected.action === "heartbeat" ? "Runtime heartbeat" : `${selected.connector}.${selected.action}`}
+          title={selected.decisionId}
+          description={selected.reason}
+        >
+          <EvidencePanelBody audit={selected} viewMode={viewMode} workspaceSlug={workspaceSlug} controlMappingIndex={controlMappingIndex} />
+        </Drawer>
       ) : null}
     </>
   );

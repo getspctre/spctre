@@ -1,8 +1,9 @@
 "use client";
 
-import { useActionState, useEffect, useMemo, useRef, useState } from "react";
+import { useActionState, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Activity, FilePlus2, Lock, Loader, Play, Plus, RotateCcw, Save, Trash2, X } from "lucide-react";
+import { Activity, FilePlus2, Lock, Loader, Play, Plus, RotateCcw, Save, Trash2 } from "lucide-react";
+import { Drawer } from "@spctre/ui";
 import type { PolicyRuleSummary, PolicyParameterConstraint, PolicyPackParameterDefinition, EvaluationResult } from "@spctre/policy-schema";
 import type { AuthoringVocabularyEntry } from "@/lib/domains/packs/service";
 import type { DraftSimulationSummary } from "@/lib/domains/review/draft-simulation";
@@ -1215,12 +1216,10 @@ function RuleEditModeToggle({
   mode,
   onForm,
   onRaw,
-  onClose,
 }: {
   mode: "form" | "raw";
   onForm: () => void;
   onRaw: () => void;
-  onClose: () => void;
 }) {
   return (
     <div className="ruleEditModeToggle" role="tablist" aria-label="Editor mode">
@@ -1229,9 +1228,6 @@ function RuleEditModeToggle({
       </button>
       <button className={`button${mode === "raw" ? " buttonPrimary" : ""}`} type="button" role="tab" aria-selected={mode === "raw"} onClick={onRaw}>
         Raw JSON
-      </button>
-      <button aria-label="Close panel" className="iconButton" onClick={onClose} type="button" style={{ marginLeft: "auto" }}>
-        <X size={17} />
       </button>
     </div>
   );
@@ -1295,8 +1291,6 @@ function RuleEditPanel({ rule: initialRule, isNew, vocabulary, onApply, onRemove
   const [mode, setMode] = useState<"form" | "raw">("form");
   const [rawText, setRawText] = useState("");
   const [rawError, setRawError] = useState<string | null>(null);
-  const panelRef = useRef<HTMLElement>(null);
-  const previousFocusRef = useRef<HTMLElement | null>(null);
 
   const update = (patch: Partial<EditableRule>) => setDraft((prev) => ({ ...prev, ...patch }));
 
@@ -1332,51 +1326,16 @@ function RuleEditPanel({ rule: initialRule, isNew, vocabulary, onApply, onRemove
     onApply(draft);
   };
 
-  useEffect(() => {
-    previousFocusRef.current =
-      document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    document.body.style.overflow = "hidden";
-    panelRef.current?.focus();
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.body.style.overflow = "";
-      window.removeEventListener("keydown", onKeyDown);
-      previousFocusRef.current?.focus();
-    };
-  }, [onClose]);
-
   return (
-    <div className="slideOutLayer" role="presentation">
-      <button
-        aria-label="Close panel"
-        className="slideOutOverlay"
-        onClick={onClose}
-        type="button"
-      />
-      <section
-        aria-labelledby="rule-edit-panel-title"
-        aria-modal="true"
-        className="slideOutPanel"
-        data-width="wide"
-        ref={panelRef}
-        role="dialog"
-        tabIndex={-1}
-      >
-        <header className="slideOutHeader">
-          <div>
-            <p className="eyebrow">{isNew ? "New rule" : "Edit rule"}</p>
-            <h2 id="rule-edit-panel-title">
-              {draft.title || <span style={{ color: "var(--muted)" }}>Untitled rule</span>}
-            </h2>
-            {!isNew ? <p className="meta">{draft.stableRuleId}</p> : null}
-          </div>
-          <RuleEditModeToggle mode={mode} onForm={switchToForm} onRaw={enterRawMode} onClose={onClose} />
-        </header>
-
-        <div className="slideOutBody">
+    <Drawer
+      open
+      onClose={onClose}
+      width="wide"
+      eyebrow={isNew ? "New rule" : "Edit rule"}
+      title={draft.title || <span style={{ color: "var(--muted)" }}>Untitled rule</span>}
+      description={isNew ? undefined : draft.stableRuleId}
+      headerActions={<RuleEditModeToggle mode={mode} onForm={switchToForm} onRaw={enterRawMode} />}
+    >
           {mode === "raw" ? (
             <RawRuleEditor
               rawText={rawText}
@@ -1410,8 +1369,6 @@ function RuleEditPanel({ rule: initialRule, isNew, vocabulary, onApply, onRemove
               </button>
             </div>
           </div>
-        </div>
-      </section>
-    </div>
+    </Drawer>
   );
 }
