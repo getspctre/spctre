@@ -1,36 +1,15 @@
-import { getAuthSession } from "@/lib/auth-session";
-import { getActiveScope } from "@/lib/workspace";
-import { authenticateServiceToken, hasBearerToken } from "@/lib/service-tokens";
 import { listOrganizationMembersForApi } from "@/lib/domains/members/service";
 import { extractTraceId, makeMeta, withTraceId } from "@spctre/api-contracts";
+import { resolveRouteScope } from "../_route-scope";
 
 export const dynamic = "force-dynamic";
 
 async function handleGetApiMembers(request: Request) {
   const traceId = extractTraceId(request);
-  let tenantId: string;
 
-  if (hasBearerToken(request)) {
-    const tokenAuth = await authenticateServiceToken(request, "members:read");
-    if (!tokenAuth.ok) {
-      return withTraceId(Response.json({ error: "Invalid or expired service token.", meta: makeMeta(traceId) }, { status: 401 }), traceId);
-    }
-    tenantId = tokenAuth.auth.tenantId;
-  } else {
-    const session = await getAuthSession().catch(() => null);
-    if (!session) {
-      return withTraceId(Response.json({ error: "Authentication required.", meta: makeMeta(traceId) }, { status: 401 }), traceId);
-    }
-    const ctx = await getActiveScope().catch(() => null);
-    if (!ctx) {
-      return withTraceId(Response.json({ error: "Workspace context unavailable.", meta: makeMeta(traceId) }, { status: 400 }), traceId);
-    }
-    tenantId = ctx.tenantId;
-  }
-
-  if (!tenantId) {
-    return withTraceId(Response.json({ error: "Workspace context unavailable.", meta: makeMeta(traceId) }, { status: 400 }), traceId);
-  }
+  const scope = await resolveRouteScope(request, { serviceTokenScope: "members:read", traceId });
+  if (scope instanceof Response) return scope;
+  const { tenantId } = scope;
 
   let members;
   try {

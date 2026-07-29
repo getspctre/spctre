@@ -1,13 +1,11 @@
 import { ingestVerification, listVerificationRuns, recordVerificationOperation } from "@/lib/domains/verification/service";
 
-import { authenticateServiceToken, hasBearerToken } from "@/lib/service-tokens";
-import { getAuthSession } from "@/lib/auth-session";
-import { getActiveScope } from "@/lib/workspace";
 import type { AgtVerificationType, AgtVerificationOutcome } from "@spctre/policy-schema";
 import { extractTraceId, makeMeta, withTraceId } from "@spctre/api-contracts";
 import { incrementCounter, recordDuration } from "@spctre/platform/metrics";
 import { withSpan } from "@spctre/platform/tracing";
 import { asString } from "../_shared";
+import { resolveRouteScope } from "../_route-scope";
 
 export const dynamic = "force-dynamic";
 
@@ -59,10 +57,16 @@ async function handlePostApiVerification(request: Request) {
   const traceId = extractTraceId(request);
   const started = Date.now();
   return await withSpan("api.verification.ingest", { "spctre.request_id": traceId, "http.route": "/api/verification" }, async (span) => {
-  const auth = await resolveAuth(request);
-  if (!auth.ok) {
-    incrementCounter("spctre.api.errors", 1, { "http.route": "/api/verification", "http.response.status_code": 401 });
-    return withTraceId(Response.json({ error: auth.error, meta: makeMeta(traceId) }, { status: 401 }), traceId);
+  // This endpoint historically returned 401 for every auth failure, including
+  // "Workspace context unavailable." Preserve that contract (status + metric).
+  const auth = await resolveRouteScope(request, {
+    serviceTokenScope: "evidence:write",
+    traceId,
+    contextUnavailableStatus: 401,
+  });
+  if (auth instanceof Response) {
+    incrementCounter("spctre.api.errors", 1, { "http.route": "/api/verification", "http.response.status_code": auth.status });
+    return auth;
   }
 
   const body = await request.json().catch(() => null);
@@ -168,22 +172,8 @@ async function handlePostApiVerification(request: Request) {
 async function handleGetApiVerification(request: Request) {
   const traceId = extractTraceId(request);
   return await withSpan("api.verification.list", { "spctre.request_id": traceId, "http.route": "/api/verification" }, async () => {
-  let ctx: { tenantId: string; workspaceId: string };
-  if (hasBearerToken(request)) {
-    const tokenAuth = await authenticateServiceToken(request, "compliance:read");
-    if (!tokenAuth.ok) return withTraceId(Response.json({ error: tokenAuth.error, meta: makeMeta(traceId) }, { status: 401 }), traceId);
-    ctx = {
-      tenantId: tokenAuth.auth.tenantId,
-      workspaceId: tokenAuth.auth.workspaceId,
-    };
-  } else {
-    const session = await getAuthSession().catch(() => null);
-    if (!session) return withTraceId(Response.json({ error: "Authentication required.", meta: makeMeta(traceId) }, { status: 401 }), traceId);
-
-    const activeScope = await getActiveScope().catch(() => null);
-    if (!activeScope) return withTraceId(Response.json({ error: "Workspace context unavailable.", meta: makeMeta(traceId) }, { status: 400 }), traceId);
-    ctx = activeScope;
-  }
+  const ctx = await resolveRouteScope(request, { serviceTokenScope: "compliance:read", traceId });
+  if (ctx instanceof Response) return ctx;
 
   const url = new URL(request.url);
   const revisionId = url.searchParams.get("revisionId")?.trim() || undefined;
@@ -204,22 +194,6 @@ async function handleGetApiVerification(request: Request) {
     meta: makeMeta(traceId),
   }), traceId);
   });
-}
-
-async function resolveAuth(request: Request): Promise<
-  | { ok: true; tenantId: string; workspaceId: string; actorId: string }
-  | { ok: false; error: string }
-> {
-  if (hasBearerToken(request)) {
-    const tokenAuth = await authenticateServiceToken(request, "evidence:write");
-    if (!tokenAuth.ok) return { ok: false, error: tokenAuth.error };
-    return { ok: true, tenantId: tokenAuth.auth.tenantId, workspaceId: tokenAuth.auth.workspaceId, actorId: tokenAuth.auth.principalId };
-  }
-  const session = await getAuthSession().catch(() => null);
-  if (!session) return { ok: false, error: "Authentication required." };
-  const ctx = await getActiveScope().catch(() => null);
-  if (!ctx) return { ok: false, error: "Workspace context unavailable." };
-  return { ok: true, tenantId: ctx.tenantId, workspaceId: ctx.workspaceId, actorId: session.principalId };
 }
 
 export { handleGetApiVerification as GET };

@@ -1,13 +1,11 @@
 import { evaluatePublishReadiness } from "@spctre/policy-schema";
-import { authenticateServiceToken, hasBearerToken } from "@/lib/service-tokens";
-import { getAuthSession } from "@/lib/auth-session";
-import { getActiveScope } from "@/lib/workspace";
 import { getBooleanEnv } from "@/lib/platform/config";
 import { getApprovals, getPublishBranchScope } from "@/lib/repositories/policy";
 import { getApprovalWorkflowForContext, approvalRulesFromWorkflow } from "@/lib/repositories/approval-workflow";
 import { getOpenEscalationSummaryForRevision } from "@/lib/repositories/gateway";
 import { getLatestVerificationStatus } from "@/lib/repositories/verification";
 import { extractTraceId, makeMeta, withTraceId } from "@spctre/api-contracts";
+import { resolveRouteScope } from "../../../_route-scope";
 
 export const dynamic = "force-dynamic";
 
@@ -21,39 +19,14 @@ export const dynamic = "force-dynamic";
  * Returns: { status, approvals, blockingReasons, requiredRoles,
  *            verificationRequired, escalationsBlocking }
  */
-// Accepts bearer token (bundle:read) or session cookie; resolves the scope.
-async function resolveE2eReadScope(
-  request: Request
-): Promise<{ tenantId: string; workspaceId: string } | { error: string; status: number }> {
-  if (hasBearerToken(request)) {
-    const tokenAuth = await authenticateServiceToken(request, "bundle:read");
-    if (!tokenAuth.ok) {
-      return { error: tokenAuth.error, status: 401 };
-    }
-    return { tenantId: tokenAuth.auth.tenantId, workspaceId: tokenAuth.auth.workspaceId };
-  }
-
-  const session = await getAuthSession().catch(() => null);
-  if (!session) {
-    return { error: "Authentication required.", status: 401 };
-  }
-  const ctx = await getActiveScope().catch(() => null);
-  if (!ctx) {
-    return { error: "Workspace context unavailable.", status: 400 };
-  }
-  return { tenantId: ctx.tenantId, workspaceId: ctx.workspaceId };
-}
-
 async function handleGetApiE2ePolicyReadiness(request: Request) {
   const traceId = extractTraceId(request);
   if (!getBooleanEnv("SPCTRE_E2E_API_ENABLED", false)) {
     return withTraceId(Response.json({ error: "E2E support API is disabled.", meta: makeMeta(traceId) }, { status: 404 }), traceId);
   }
 
-  const scope = await resolveE2eReadScope(request);
-  if ("error" in scope) {
-    return withTraceId(Response.json({ error: scope.error, meta: makeMeta(traceId) }, { status: scope.status }), traceId);
-  }
+  const scope = await resolveRouteScope(request, { serviceTokenScope: "bundle:read", traceId });
+  if (scope instanceof Response) return scope;
   const { tenantId, workspaceId } = scope;
 
   const url = new URL(request.url);
