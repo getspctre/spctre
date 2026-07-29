@@ -46,6 +46,13 @@ export const SPCTRE_OPENAPI_SPEC = {
         description:
           "Service account API key. Generate one from the Spctre web UI under Settings → API Keys, then pass it as `Authorization: Bearer <key>`. Keys carry declared permission scopes such as `decision:evaluate`, `evidence:write`, `bundle:read`, `compliance:read`, `approvals:read`, `operations:read`, `workflow:read`, `members:read`, and `workspaces:read` that are enforced at the API layer.",
       },
+      gatewayWebhookSecret: {
+        type: "apiKey",
+        in: "header",
+        name: "x-spctre-gateway-secret",
+        description:
+          "Gateway webhook secret. Per-provider signature headers are also accepted; see the endpoint description.",
+      },
     },
 
     schemas: {
@@ -317,6 +324,7 @@ export const SPCTRE_OPENAPI_SPEC = {
         properties: {
           evidence: {
             type: "object",
+            additionalProperties: true,
             description: "The persisted evidence record (canonical shape).",
           },
           gateway: {
@@ -570,7 +578,7 @@ export const SPCTRE_OPENAPI_SPEC = {
           eventType: { type: "string", enum: ["TOKEN_GROWTH", "SUMMARIZATION_EVENT", "CONTEXT_SOURCE_MIX", "BUDGET_BREACH"] },
           tokenCount: { type: "integer", minimum: 0 },
           tokenDelta: { type: "integer" },
-          contextSourceMix: { type: "object" },
+          contextSourceMix: { type: "object", additionalProperties: true },
           budgetLimit: { type: "integer", minimum: 1 },
           budgetUtilization: { type: "number" },
           governanceAction: { type: "string", enum: ["ALLOW", "WARN", "ESCALATE", "REVIEW"] },
@@ -618,6 +626,7 @@ export const SPCTRE_OPENAPI_SPEC = {
       // ── Bundle ────────────────────────────────────────────
       BundleResponse: {
         type: "object",
+        additionalProperties: true,
         description:
           "The latest published policy bundle for the workspace. Response headers carry `x-spctre-branch-id`, `x-spctre-revision-id`, `x-spctre-artifact-hash`, and `x-spctre-published-at`.",
       },
@@ -666,7 +675,7 @@ export const SPCTRE_OPENAPI_SPEC = {
               sourceHash: { type: "string" },
               sourceFormat: { type: "string" },
               sourcePath: { type: "string" },
-              targetStacks: { type: "array", items: { type: "object" } },
+              targetStacks: { type: "array", items: { type: "object", additionalProperties: true } },
             },
           },
           ruleCount: { type: "integer" },
@@ -679,7 +688,7 @@ export const SPCTRE_OPENAPI_SPEC = {
         properties: {
           artifact: {
             description: "Target artifact. String for text formats, object for JSON/bundle formats.",
-            oneOf: [{ type: "string" }, { type: "object" }],
+            oneOf: [{ type: "string" }, { type: "object", additionalProperties: true }],
           },
           manifest: { $ref: "#/components/schemas/BundleExportManifest" },
           meta: { $ref: "#/components/schemas/ApiMeta" },
@@ -737,9 +746,9 @@ export const SPCTRE_OPENAPI_SPEC = {
         properties: {
           schemaVersion: { type: "string", examples: ["spctre/v1"] },
           exportedAt: { type: "string", format: "date-time" },
-          artifact: { type: "object" },
-          approvals: { type: "array", items: { type: "object" } },
-          timeline: { type: "array", items: { type: "object" } },
+          artifact: { type: "object", additionalProperties: true },
+          approvals: { type: "array", items: { type: "object", additionalProperties: true } },
+          timeline: { type: "array", items: { type: "object", additionalProperties: true } },
           summary: {
             type: "object",
             properties: {
@@ -753,10 +762,10 @@ export const SPCTRE_OPENAPI_SPEC = {
               resolvedEscalationCount: { type: "integer" },
             },
           },
-          escalations: { type: "array", items: { type: "object" } },
-          verificationResults: { type: "object", nullable: true },
-          frameworkAnnotation: { type: "object", nullable: true },
-          retentionPlan: { type: "object", nullable: true },
+          escalations: { type: "array", items: { type: "object", additionalProperties: true } },
+          verificationResults: { type: "object", additionalProperties: true, nullable: true },
+          frameworkAnnotation: { type: "object", additionalProperties: true, nullable: true },
+          retentionPlan: { type: "object", additionalProperties: true, nullable: true },
         },
       },
 
@@ -791,6 +800,7 @@ export const SPCTRE_OPENAPI_SPEC = {
           publishedAt: { type: "string", format: "date-time" },
           result: {
             type: "object",
+            additionalProperties: true,
             description: "Policy evaluation result from the published bundle.",
           },
           meta: { $ref: "#/components/schemas/ApiMeta" },
@@ -827,7 +837,6 @@ export const SPCTRE_OPENAPI_SPEC = {
           escrowSignature: { type: "string" },
           escrowVerificationOutcome: { type: "string", enum: ["PASS", "FAIL", "WARN"] },
           escrowVerifiedAt: { type: "string", format: "date-time" },
-          summary: { type: "object", description: "Arbitrary verification summary payload." },
         },
       },
 
@@ -849,6 +858,7 @@ export const SPCTRE_OPENAPI_SPEC = {
         properties: {
           approval: {
             type: "object",
+            additionalProperties: true,
             description: "The approval record for the requested revision.",
           },
           meta: { $ref: "#/components/schemas/ApiMeta" },
@@ -1135,7 +1145,7 @@ export const SPCTRE_OPENAPI_SPEC = {
           "Accepts a raw Portkey webhook payload, normalizes it into Spctre runtime evidence, resolves policy context at event time, and records provenance-gap metadata when context cannot be fully resolved.",
         "x-spctre-plan": "oss",
         tags: ["Gateway", "Evidence"],
-        security: [{ bearerAuth: [] }],
+        security: [{ bearerAuth: [] }, { gatewayWebhookSecret: [] }],
         requestBody: {
           required: true,
           content: {
@@ -1162,7 +1172,7 @@ export const SPCTRE_OPENAPI_SPEC = {
           "Accepts a raw Helicone webhook payload and stores it as Spctre runtime evidence with provider metadata and revision-at-time provenance.",
         "x-spctre-plan": "oss",
         tags: ["Gateway", "Evidence"],
-        security: [{ bearerAuth: [] }],
+        security: [{ bearerAuth: [] }, { gatewayWebhookSecret: [] }],
         requestBody: {
           required: true,
           content: {
@@ -1189,7 +1199,34 @@ export const SPCTRE_OPENAPI_SPEC = {
           "Accepts a raw LiteLLM webhook payload and stores it as Spctre runtime evidence with provider metadata and revision-at-time provenance.",
         "x-spctre-plan": "oss",
         tags: ["Gateway", "Evidence"],
-        security: [{ bearerAuth: [] }],
+        security: [{ bearerAuth: [] }, { gatewayWebhookSecret: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/GatewayWebhookRequest" },
+            },
+          },
+        },
+        responses: {
+          "201": { description: "Gateway event ingested.", content: { "application/json": { schema: { $ref: "#/components/schemas/GatewayIngestResponse" } } } },
+          "200": { description: "Duplicate gateway event.", content: { "application/json": { schema: { $ref: "#/components/schemas/GatewayIngestResponse" } } } },
+          "401": { $ref: "#/components/responses/Unauthorized" },
+          "422": { $ref: "#/components/responses/BadRequest" },
+          "503": { $ref: "#/components/responses/ServiceUnavailable" },
+        },
+      },
+    },
+
+    "/gateway-ingest/notion": {
+      post: {
+        operationId: "ingestNotionGatewayEvent",
+        summary: "Ingest a Notion gateway webhook",
+        description:
+          "Accepts a raw Notion Worker webhook payload and stores it as Spctre runtime evidence with revision-at-time provenance. Authenticate with a bearer service token or a registered gateway webhook secret in `x-notion-signature` or `x-spctre-gateway-secret`.",
+        "x-spctre-plan": "oss",
+        tags: ["Gateway", "Evidence"],
+        security: [{ bearerAuth: [] }, { gatewayWebhookSecret: [] }],
         requestBody: {
           required: true,
           content: {
@@ -1653,52 +1690,6 @@ export const SPCTRE_OPENAPI_SPEC = {
           "200": {
             description: "Forensic evidence page.",
             content: { "application/json": { schema: { type: "object" } } },
-          },
-          "401": { $ref: "#/components/responses/Unauthorized" },
-          "402": { $ref: "#/components/responses/CloudOnly" },
-        },
-      },
-    },
-
-    "/evaluate/bulk": {
-      post: {
-        operationId: "bulkSimulate",
-        summary: "Bulk simulation against the full tenant event log",
-        description:
-          "Runs a policy simulation against the tenant's complete historical evidence log. Useful for impact analysis before publishing a new policy revision.",
-        "x-spctre-plan": "cloud",
-        tags: ["Simulation", "Cloud"],
-        security: [{ bearerAuth: [] }],
-        requestBody: {
-          required: true,
-          content: {
-            "application/json": {
-              schema: {
-                type: "object",
-                required: ["revisionId"],
-                properties: {
-                  revisionId: {
-                    type: "string",
-                    description: "The policy revision to simulate against the historical log.",
-                  },
-                  fromDate: { type: "string", format: "date-time" },
-                  toDate: { type: "string", format: "date-time" },
-                },
-              },
-            },
-          },
-        },
-        responses: {
-          "202": {
-            description: "Simulation job accepted. Poll the returned jobId for results.",
-            content: {
-              "application/json": {
-                schema: {
-                  type: "object",
-                  properties: { jobId: { type: "string" }, meta: { $ref: "#/components/schemas/ApiMeta" } },
-                },
-              },
-            },
           },
           "401": { $ref: "#/components/responses/Unauthorized" },
           "402": { $ref: "#/components/responses/CloudOnly" },

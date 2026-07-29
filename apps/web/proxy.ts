@@ -42,6 +42,8 @@ const SERVICE_API_PATHS = new Set([
 ]);
 const SERVICE_API_PATH_PREFIXES = [
   "/api/e2e/",
+  "/api/scim/v2/",
+  "/api/v1/scim/v2/",
   "/api/gateway-ingest/",
   "/api/agents/",
   "/api/onboarding/cli/",

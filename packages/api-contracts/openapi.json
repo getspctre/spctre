@@ -30,6 +30,12 @@
         "type": "http",
         "scheme": "bearer",
         "description": "Service account API key. Generate one from the Spctre web UI under Settings → API Keys, then pass it as `Authorization: Bearer <key>`. Keys carry declared permission scopes such as `decision:evaluate`, `evidence:write`, `bundle:read`, `compliance:read`, `approvals:read`, `operations:read`, `workflow:read`, `members:read`, and `workspaces:read` that are enforced at the API layer."
+      },
+      "gatewayWebhookSecret": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-spctre-gateway-secret",
+        "description": "Gateway webhook secret. Per-provider signature headers are also accepted; see the endpoint description."
       }
     },
     "schemas": {
@@ -495,6 +501,7 @@
         "properties": {
           "evidence": {
             "type": "object",
+            "additionalProperties": true,
             "description": "The persisted evidence record (canonical shape)."
           },
           "gateway": {
@@ -1116,7 +1123,8 @@
             "type": "integer"
           },
           "contextSourceMix": {
-            "type": "object"
+            "type": "object",
+            "additionalProperties": true
           },
           "budgetLimit": {
             "type": "integer",
@@ -1240,6 +1248,7 @@
       },
       "BundleResponse": {
         "type": "object",
+        "additionalProperties": true,
         "description": "The latest published policy bundle for the workspace. Response headers carry `x-spctre-branch-id`, `x-spctre-revision-id`, `x-spctre-artifact-hash`, and `x-spctre-published-at`."
       },
       "BundleExportFormat": {
@@ -1347,7 +1356,8 @@
               "targetStacks": {
                 "type": "array",
                 "items": {
-                  "type": "object"
+                  "type": "object",
+                  "additionalProperties": true
                 }
               }
             }
@@ -1372,7 +1382,8 @@
                 "type": "string"
               },
               {
-                "type": "object"
+                "type": "object",
+                "additionalProperties": true
               }
             ]
           },
@@ -1495,18 +1506,21 @@
             "format": "date-time"
           },
           "artifact": {
-            "type": "object"
+            "type": "object",
+            "additionalProperties": true
           },
           "approvals": {
             "type": "array",
             "items": {
-              "type": "object"
+              "type": "object",
+              "additionalProperties": true
             }
           },
           "timeline": {
             "type": "array",
             "items": {
-              "type": "object"
+              "type": "object",
+              "additionalProperties": true
             }
           },
           "summary": {
@@ -1544,19 +1558,23 @@
           "escalations": {
             "type": "array",
             "items": {
-              "type": "object"
+              "type": "object",
+              "additionalProperties": true
             }
           },
           "verificationResults": {
             "type": "object",
+            "additionalProperties": true,
             "nullable": true
           },
           "frameworkAnnotation": {
             "type": "object",
+            "additionalProperties": true,
             "nullable": true
           },
           "retentionPlan": {
             "type": "object",
+            "additionalProperties": true,
             "nullable": true
           }
         }
@@ -1634,6 +1652,7 @@
           },
           "result": {
             "type": "object",
+            "additionalProperties": true,
             "description": "Policy evaluation result from the published bundle."
           },
           "meta": {
@@ -1742,10 +1761,6 @@
           "escrowVerifiedAt": {
             "type": "string",
             "format": "date-time"
-          },
-          "summary": {
-            "type": "object",
-            "description": "Arbitrary verification summary payload."
           }
         }
       },
@@ -1785,6 +1800,7 @@
         "properties": {
           "approval": {
             "type": "object",
+            "additionalProperties": true,
             "description": "The approval record for the requested revision."
           },
           "meta": {
@@ -2208,6 +2224,9 @@
         "security": [
           {
             "bearerAuth": []
+          },
+          {
+            "gatewayWebhookSecret": []
           }
         ],
         "requestBody": {
@@ -2266,6 +2285,9 @@
         "security": [
           {
             "bearerAuth": []
+          },
+          {
+            "gatewayWebhookSecret": []
           }
         ],
         "requestBody": {
@@ -2324,6 +2346,70 @@
         "security": [
           {
             "bearerAuth": []
+          },
+          {
+            "gatewayWebhookSecret": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GatewayWebhookRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Duplicate gateway event.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GatewayIngestResponse"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Gateway event ingested.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GatewayIngestResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "422": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceUnavailable"
+          }
+        }
+      }
+    },
+    "/gateway-ingest/notion": {
+      "post": {
+        "operationId": "ingestNotionGatewayEvent",
+        "summary": "Ingest a Notion gateway webhook",
+        "description": "Accepts a raw Notion Worker webhook payload and stores it as Spctre runtime evidence with revision-at-time provenance. Authenticate with a bearer service token or a registered gateway webhook secret in `x-notion-signature` or `x-spctre-gateway-secret`.",
+        "x-spctre-plan": "oss",
+        "tags": [
+          "Gateway",
+          "Evidence"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "gatewayWebhookSecret": []
           }
         ],
         "requestBody": {
@@ -3092,76 +3178,6 @@
               "application/json": {
                 "schema": {
                   "type": "object"
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "402": {
-            "$ref": "#/components/responses/CloudOnly"
-          }
-        }
-      }
-    },
-    "/evaluate/bulk": {
-      "post": {
-        "operationId": "bulkSimulate",
-        "summary": "Bulk simulation against the full tenant event log",
-        "description": "Runs a policy simulation against the tenant's complete historical evidence log. Useful for impact analysis before publishing a new policy revision.",
-        "x-spctre-plan": "cloud",
-        "tags": [
-          "Simulation",
-          "Cloud"
-        ],
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "required": [
-                  "revisionId"
-                ],
-                "properties": {
-                  "revisionId": {
-                    "type": "string",
-                    "description": "The policy revision to simulate against the historical log."
-                  },
-                  "fromDate": {
-                    "type": "string",
-                    "format": "date-time"
-                  },
-                  "toDate": {
-                    "type": "string",
-                    "format": "date-time"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "202": {
-            "description": "Simulation job accepted. Poll the returned jobId for results.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "jobId": {
-                      "type": "string"
-                    },
-                    "meta": {
-                      "$ref": "#/components/schemas/ApiMeta"
-                    }
-                  }
                 }
               }
             }
