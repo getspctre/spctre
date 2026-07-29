@@ -1,4 +1,5 @@
 {
+  "private": true,
   "name": "@spctre/entire-checkpoints",
   "version": "0.1.0",
   "description": "Entire checkpoint adapter for Spctre Git checkpoint ingestion",
