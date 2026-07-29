@@ -44,4 +44,39 @@ describe("Entire checkpoint adapter", () => {
       checkpoint: { headCommit: "head-sha", diff: { files: [{ path: "src/index.ts", status: "modified" }] } },
     });
   });
+
+  it("reports skipped checkpoints instead of dropping them silently", async () => {
+    execFileSync.mockImplementation((_command: string, args: string[]) => {
+      if (args[0] === "rev-parse") return "head-sha\n";
+      if (args[0] === "ls-tree") return "aa/checkpoint/0/metadata.json\nbb/checkpoint/0/metadata.json\ncc/checkpoint/0/metadata.json\n";
+      if (args[0] === "show") {
+        const ref = args[1];
+        if (ref.includes("aa/")) throw new Error("fatal: bad object");
+        if (ref.includes("bb/")) return "{ not json";
+        return JSON.stringify({ created_at: "2026-07-20T14:30:00Z" }); // missing checkpoint_id
+      }
+      throw new Error(`Unexpected git command: ${args.join(" ")}`);
+    });
+
+    const fetchMock = vi.fn().mockResolvedValue(new Response("{}", { status: 201 }));
+    const onSkip = vi.fn();
+    const result = await ingestEntireCheckpoints({
+      apiKey: "key",
+      baseUrl: "https://spctre.example/api/v1",
+      repositoryId: "repo-1",
+      environment: "production",
+      fetch: fetchMock,
+      onSkip,
+    });
+
+    expect(result).toEqual([]);
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(onSkip).toHaveBeenCalledTimes(3);
+    expect(onSkip.mock.calls.map(([skip]) => skip.reason)).toEqual(["unreadable", "invalid-json", "missing-fields"]);
+    expect(onSkip.mock.calls.map(([skip]) => skip.path)).toEqual([
+      "aa/checkpoint/0/metadata.json",
+      "bb/checkpoint/0/metadata.json",
+      "cc/checkpoint/0/metadata.json",
+    ]);
+  });
 });
