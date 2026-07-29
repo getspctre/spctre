@@ -1,0 +1,159 @@
+name: Release
+
+# Changesets-driven publish for the public npm packages
+# (@spctre/policy-schema, @spctre/cli, @spctre/sdk, @spctre/mcp-server).
+#
+# On every push to main this either:
+#   - opens/updates a "Version Packages" PR when unreleased changesets exist
+#     (running `changeset version`), or
+#   - publishes to npm when versions are already bumped and ahead of the
+#     registry (running `changeset publish`).
+#
+# `changeset publish` detects the workspace package manager and runs
+# `pnpm publish` (not `npm publish`) — required so `cli`'s `workspace:*`
+# dependency on `policy-schema` is rewritten to a real version at pack time.
+# pnpm 11 (the pinned `packageManager`) performs the npm Trusted Publishing
+# OIDC token exchange itself (POST /-/npm/v1/oidc/token/exchange/package/...),
+# so steady-state publishing is tokenless — no long-lived NPM_TOKEN.
+#
+# FIRST PUBLISH OF A NEW PACKAGE NEEDS A ONE-TIME TOKEN BOOTSTRAP.
+# npm trusted publishing is configured per package and only AFTER the package
+# already exists on the registry (there is no "pending publisher" flow). All
+# four packages are currently unpublished, so the initial release cannot use
+# OIDC. To bootstrap:
+#   1. Add a repo secret NODE_AUTH_TOKEN (npm automation or granular token with
+#      write on the @spctre scope). setup-node's registry-url wires it into
+#      .npmrc and the publish step below passes it through, so `pnpm publish`
+#      authenticates with the token. Run this workflow once to create all four
+#      packages on npm.
+#   2. For each package: npmjs.com > <package> > Settings > Trusted publishing >
+#      GitHub Actions — org `getspctre`, repo `spctre`, workflow `release.yml`,
+#      environment blank, action `npm publish`.
+#   3. Delete the NODE_AUTH_TOKEN secret. Every later release then authenticates
+#      tokenlessly via OIDC (the secret expands to empty and pnpm falls back to
+#      the OIDC exchange).
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  # Never cancel an in-flight publish; serialize releases on main.
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write # changesets creates the Version PR and pushes release tags
+  pull-requests: write # changesets opens/updates the Version PR
+  id-token: write # npm Trusted Publishing (OIDC) + provenance attestations
+  attestations: write # build-provenance attestations for the tarballs
+
+jobs:
+  # Cross-platform native binaries for @spctre/policy-schema. Mirrors the
+  # matrix in release-readiness.yml so the published tarball ships native
+  # support for every supported target. Built unconditionally because the
+  # publish decision is made at runtime by the changesets action below.
+  build-native:
+    name: Build native addon (${{ matrix.target }})
+    if: github.repository == 'getspctre/spctre'
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: darwin-arm64
+            runner: macos-14
+            node_file: spctre_policy_core.darwin-arm64.node
+          - target: darwin-x64
+            runner: macos-13
+            node_file: spctre_policy_core.darwin-x64.node
+          - target: linux-x64-gnu
+            runner: ubuntu-latest
+            node_file: spctre_policy_core.linux-x64-gnu.node
+          - target: linux-arm64-gnu
+            runner: ubuntu-24.04-arm
+            node_file: spctre_policy_core.linux-arm64-gnu.node
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 25
+
+      - name: Build ${{ matrix.target }} binary
+        run: node packages/policy-schema/scripts/build-native.mjs
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: native-${{ matrix.target }}
+          path: packages/policy-schema/native/${{ matrix.node_file }}
+          if-no-files-found: error
+          retention-days: 1
+
+  release:
+    name: Version or publish
+    if: github.repository == 'getspctre/spctre'
+    runs-on: ubuntu-latest
+    needs: build-native
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 25
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Collect every platform binary from the matrix so the packed
+      # @spctre/policy-schema tarball ships native support for all targets.
+      - name: Download native binaries
+        uses: actions/download-artifact@v8
+        with:
+          path: packages/policy-schema/native
+          pattern: native-*
+          merge-multiple: true
+
+      - name: Generate API clients
+        run: pnpm generate
+
+      - name: Build release-managed packages
+        run: |
+          pnpm --filter @spctre/policy-schema build
+          pnpm --filter @spctre/cli build
+          pnpm --filter @spctre/sdk build
+          pnpm --filter @spctre/mcp-server build
+
+      # Guard: a publish must never ship a policy-schema tarball missing a
+      # platform binary (the loader would fail on that platform at runtime).
+      - name: Confirm all native binaries are present
+        run: |
+          cd packages/policy-schema/native
+          for f in spctre_policy_core.darwin-arm64.node \
+                   spctre_policy_core.darwin-x64.node \
+                   spctre_policy_core.linux-x64-gnu.node \
+                   spctre_policy_core.linux-arm64-gnu.node; do
+            test -f "$f" || { echo "missing native binary: $f"; exit 1; }
+          done
+          echo "All native binaries present."
+
+      # Opens/updates the Version Packages PR when changesets are pending;
+      # runs `pnpm release` (changeset publish) once versions are ahead of npm.
+      - name: Create Version PR or publish
+        uses: changesets/action@v1
+        with:
+          version: pnpm version-packages
+          publish: pnpm release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # One-time bootstrap only: set the NODE_AUTH_TOKEN secret to token-auth
+          # the first publish of a not-yet-existing package (trusted publishing
+          # can't be configured until the package exists). Empty in steady state,
+          # where pnpm falls back to the OIDC exchange. See the header comment.
+          NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
+          # Redundant once fully on trusted publishing (provenance is automatic
+          # there); still emits provenance during the token bootstrap run.
+          NPM_CONFIG_PROVENANCE: "true"
