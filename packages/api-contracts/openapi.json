@@ -314,6 +314,7 @@
           },
           "rawEvidence": {
             "type": "object",
+            "additionalProperties": true,
             "description": "Arbitrary key-value metadata attached to the evidence record."
           },
           "consequence": {

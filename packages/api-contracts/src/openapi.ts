@@ -238,6 +238,7 @@ export const SPCTRE_OPENAPI_SPEC = {
           },
           rawEvidence: {
             type: "object",
+            additionalProperties: true,
             description: "Arbitrary key-value metadata attached to the evidence record.",
           },
           consequence: { type: "string" },
