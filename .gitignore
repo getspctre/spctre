@@ -2,6 +2,10 @@
 node_modules/
 .pnpm-store/
 
+# pnpm is the sole package manager; reject stray npm/yarn lockfiles
+package-lock.json
+yarn.lock
+
 # Environment and local secrets
 .env
 .env.*
