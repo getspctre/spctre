@@ -169,10 +169,11 @@ describe("passkey login finish (assertion verification)", () => {
     expect(verifyArgs.credential.id).toBe("cred-abc");
     expect(verifyArgs.credential.counter).toBe(3);
 
-    // New counter persisted for clone/replay defense.
+    // New counter persisted via compare-and-swap against the verified value.
     expect(recordPasskeyAuthenticationSpy).toHaveBeenCalledWith({
       credentialId: "cred-abc",
-      counter: 9,
+      expectedCounter: 3,
+      newCounter: 9,
     });
 
     // Tenant/principal came from the stored credential, never the client.
@@ -190,6 +191,20 @@ describe("passkey login finish (assertion verification)", () => {
     expect(res.status).toBe(400);
     expect(verifyAuthenticationResponseSpy).not.toHaveBeenCalled();
     expect(createAuthSessionSpy).not.toHaveBeenCalled();
+  });
+
+  it("fails closed when the counter advanced concurrently (CAS lost)", async () => {
+    verifyAuthenticationResponseSpy.mockResolvedValue({
+      verified: true,
+      authenticationInfo: { newCounter: 9, credentialID: "cred-abc" },
+    });
+    // Another concurrent assertion already advanced the stored counter.
+    recordPasskeyAuthenticationSpy.mockResolvedValue("counter-conflict");
+
+    const res = await loginFinish.POST(loginRequest({ response: { id: "cred-abc" } }));
+    expect(res.status).toBe(403);
+    expect(createAuthSessionSpy).not.toHaveBeenCalled();
+    expect(setControlPlaneSessionCookiesSpy).not.toHaveBeenCalled();
   });
 });
 

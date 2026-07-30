@@ -327,22 +327,33 @@ export async function getPasskeyByCredentialId(params: {
 
 // Persists the post-authentication signature counter and touches used_at.
 // Keyed globally by credential ID via rawSql because login runs before a tenant
-// context is bound. A regressing/duplicate counter must be rejected by the
-// caller (verifyAuthenticationResponse) before this is called.
+// context is bound.
+//
+// The write is a compare-and-swap on the counter the assertion was verified
+// against: it only commits if the stored counter is still `expectedCounter`, so
+// two concurrent assertions cannot both verify against the same value and then
+// both advance it (which would defeat clone/replay detection). If the stored
+// counter has moved on, no row is written and this returns "counter-conflict"
+// and the caller must fail authentication. Authenticators that don't implement a
+// counter report 0 every time; there 0 == 0 always matches, which is expected —
+// the spec provides no counter-based replay signal for them.
 export async function recordPasskeyAuthentication(params: {
   credentialId: string;
-  counter: number;
-}): Promise<"ok" | "db-unavailable"> {
+  expectedCounter: number;
+  newCounter: number;
+}): Promise<"ok" | "counter-conflict" | "db-unavailable"> {
   if (!rawSql) return "db-unavailable";
 
-  await rawSql`
+  const rows = await rawSql<{ id: string }[]>`
     UPDATE passkey
-    SET counter = ${params.counter},
+    SET counter = ${params.newCounter},
         used_at = now()
     WHERE credential_id_b64 = ${params.credentialId}
+      AND counter = ${params.expectedCounter}
+    RETURNING id
   `;
 
-  return "ok";
+  return rows.length > 0 ? "ok" : "counter-conflict";
 }
 
 export async function createTotpEnrollment(params: {

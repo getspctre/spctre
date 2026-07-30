@@ -88,13 +88,19 @@ async function handlePostApiAuthPasskeyLoginFinish(request: Request) {
 
   const { tenantId, principalId } = credential;
 
-  // Persist the new signature counter (replay/cloning defense) globally.
+  // Advance the signature counter with a compare-and-swap against the value the
+  // assertion was verified against (replay/cloning defense). If a concurrent
+  // assertion already advanced it, fail closed instead of minting a session.
   const touchResult = await recordPasskeyAuthentication({
     credentialId: credential.credentialIdB64,
-    counter: verification.authenticationInfo.newCounter
+    expectedCounter: credential.counter,
+    newCounter: verification.authenticationInfo.newCounter
   });
   if (touchResult === "db-unavailable") {
     return jsonError(traceId, "Database not configured.", 503, true);
+  }
+  if (touchResult === "counter-conflict") {
+    return jsonError(traceId, "Passkey assertion could not be verified.", 403, true);
   }
 
   // Tenant is now trusted; bind context for the principal/workspace/session reads.
