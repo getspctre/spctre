@@ -228,9 +228,12 @@ export async function deletePrincipalMfaEnrollment(params: {
 }
 
 // Stores the verified COSE public key and initial signature counter from a
-// completed registration ceremony. credential_id_b64 is globally unique, so the
-// same authenticator cannot be enrolled to two principals; a re-registration of
-// the same credential re-points it (verified) to the current principal/tenant.
+// completed registration ceremony. credential_id_b64 is globally unique and a
+// credential maps to exactly one principal for life: a first registration
+// inserts, and re-registering the *same* credential by its owning principal is
+// an idempotent refresh (key material / counter / transports). Re-registering a
+// credential already bound to a *different* principal is rejected ("conflict") —
+// it must never be silently reassigned to another account.
 export async function upsertPasskeyCredential(params: {
   tenantId: string;
   principalId: string;
@@ -238,10 +241,14 @@ export async function upsertPasskeyCredential(params: {
   publicKey: string;
   counter: number;
   transports: string[];
-}): Promise<"ok" | "db-unavailable"> {
+}): Promise<"ok" | "conflict" | "db-unavailable"> {
   if (!sql) return "db-unavailable";
 
-  await sql`
+  // The DO UPDATE ... WHERE guard only fires for the owning principal. When the
+  // credential belongs to someone else the conflict matches but the WHERE is
+  // false, so no row is written and RETURNING yields nothing — surfaced as a
+  // conflict rather than a reassignment.
+  const rows = await sql<{ id: string }[]>`
     INSERT INTO passkey (
       tenant_id,
       principal_id,
@@ -261,15 +268,15 @@ export async function upsertPasskeyCredential(params: {
     )
     ON CONFLICT (credential_id_b64) DO UPDATE
     SET
-      tenant_id = EXCLUDED.tenant_id,
-      principal_id = EXCLUDED.principal_id,
       public_key_b64 = EXCLUDED.public_key_b64,
       counter = EXCLUDED.counter,
       transports = EXCLUDED.transports,
       used_at = now()
+    WHERE passkey.principal_id = EXCLUDED.principal_id
+    RETURNING id
   `;
 
-  return "ok";
+  return rows.length > 0 ? "ok" : "conflict";
 }
 
 export interface StoredPasskeyCredential {

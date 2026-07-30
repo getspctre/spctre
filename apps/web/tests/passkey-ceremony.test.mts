@@ -256,4 +256,21 @@ describe("passkey register finish (attestation verification)", () => {
     expect(res.status).toBe(400);
     expect(upsertPasskeyCredentialSpy).not.toHaveBeenCalled();
   });
+
+  it("refuses to reassign a credential already bound to another account", async () => {
+    verifyRegistrationResponseSpy.mockResolvedValue({
+      verified: true,
+      registrationInfo: {
+        credential: { id: "someone-elses-cred", publicKey: new Uint8Array([9]), counter: 0, transports: [] },
+      },
+    });
+    // The store reports the credential belongs to a different principal.
+    upsertPasskeyCredentialSpy.mockResolvedValue("conflict");
+
+    const res = await registerFinish.POST(registerRequest({ response: { id: "someone-elses-cred" } }));
+    expect(res.status).toBe(409);
+    await expect(res.json()).resolves.toMatchObject({
+      error: "This passkey is already registered to another account.",
+    });
+  });
 });
