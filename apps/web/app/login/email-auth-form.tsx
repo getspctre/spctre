@@ -2,12 +2,11 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { toBase64Url, fromBase64Url } from "@/lib/crypto-utils";
+import { startAuthentication } from "@simplewebauthn/browser";
+import type { PublicKeyCredentialRequestOptionsJSON } from "@simplewebauthn/browser";
 
 interface PasskeyLoginStartResponse {
-  challenge: string;
-  allowCredentials: string[];
-  rpId: string;
+  options: PublicKeyCredentialRequestOptionsJSON;
 }
 
 export function EmailAuthForm() {
@@ -41,7 +40,6 @@ export function EmailAuthForm() {
 
   async function handlePasskey(event: React.MouseEvent<HTMLButtonElement>) {
     event.preventDefault();
-    if (!email.trim()) return;
     setPasskeyBusy(true);
     setPasskeyError(null);
     setMagicStatus("idle");
@@ -51,48 +49,32 @@ export function EmailAuthForm() {
         throw new Error(t("errors.browser_unsupported"));
       }
 
+      // Usernameless: no email is sent. The authenticator selects a resident
+      // passkey and the server derives the account from the verified assertion.
       const startRes = await fetch("/api/auth/passkey/login/start", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ identifier: email.trim() }),
       });
       const startData = (await startRes.json().catch(() => null)) as
         | PasskeyLoginStartResponse
         | { error?: string }
         | null;
 
-      if (!startRes.ok || !startData || !("challenge" in startData)) {
+      if (!startRes.ok || !startData || !("options" in startData)) {
         throw new Error((startData && "error" in startData && startData.error) || t("errors.start_passkey"));
       }
 
-      const controller = new AbortController();
-      const timeoutId = window.setTimeout(() => controller.abort(), 30_000);
-      const credential = (await navigator.credentials.get({
-        publicKey: {
-          challenge: fromBase64Url(startData.challenge),
-          allowCredentials: startData.allowCredentials.map((credentialId) => ({
-            id: fromBase64Url(credentialId),
-            type: "public-key" as const,
-          })),
-          rpId: startData.rpId,
-          userVerification: "preferred",
-          timeout: 30_000,
-        },
-        signal: controller.signal,
-      }).finally(() => window.clearTimeout(timeoutId))) as PublicKeyCredential | null;
-
-      if (!credential) {
+      let authResponse;
+      try {
+        authResponse = await startAuthentication({ optionsJSON: startData.options });
+      } catch {
         throw new Error(t("errors.cancelled"));
       }
 
-      const credentialId = toBase64Url(new Uint8Array(credential.rawId));
       const finishRes = await fetch("/api/auth/passkey/login/finish", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          challenge: startData.challenge,
-          credentialId,
-        }),
+        body: JSON.stringify({ response: authResponse }),
       });
       const finishData = (await finishRes.json().catch(() => null)) as { ok?: boolean; error?: string } | null;
       if (!finishRes.ok || !finishData?.ok) {
@@ -149,7 +131,7 @@ export function EmailAuthForm() {
           className="button"
           type="button"
           onClick={handlePasskey}
-          disabled={isBusy || !email.trim()}
+          disabled={isBusy}
         >
           {passkeyBusy ? t("verifying") : t("use_passkey")}
         </button>

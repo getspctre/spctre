@@ -136,16 +136,21 @@ export {
   getSmsEnrollment,
   getVerifiedMfaEnrollments,
   getVerifiedSmsEnrollment,
-  isPasskeyCredentialEnrolled,
+  getPasskeyByCredentialId,
   isSmsCooldownActive,
-  listPasskeyCredentialIdsForPrincipal,
-  markPasskeyUsed,
   markSmsEnrollmentVerified,
   markSessionMfaVerified,
   markTotpEnrollmentVerified,
+  recordPasskeyAuthentication,
   updateSmsEnrollmentSecret,
   upsertPasskeyCredential,
 } from "@/lib/repositories/mfa";
+export type { StoredPasskeyCredential } from "@/lib/repositories/mfa";
+export {
+  consumeWebauthnChallenge,
+  saveWebauthnChallenge,
+} from "@/lib/repositories/auth/webauthn-challenge";
+export type { WebauthnChallengePurpose } from "@/lib/repositories/auth/webauthn-challenge";
 export {
   ensureAuthDemoTenant,
   getPrincipalForLogin,

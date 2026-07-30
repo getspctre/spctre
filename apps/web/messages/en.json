@@ -262,7 +262,6 @@
       "save": "Save",
       "title": "Registered passkeys",
       "errors": {
-        "authenticator_no_public_key": "Authenticator did not provide a public key.",
         "browser_unsupported": "This browser does not support passkey registration.",
         "cancelled": "Passkey registration was cancelled.",
         "finish_failed": "Failed to finish passkey registration.",

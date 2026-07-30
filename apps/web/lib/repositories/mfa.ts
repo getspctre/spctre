@@ -1,4 +1,4 @@
-import { sql } from "@/lib/db";
+import { sql, rawSql } from "@/lib/db";
 
 export interface PrincipalPasskey {
   id: string;
@@ -227,11 +227,16 @@ export async function deletePrincipalMfaEnrollment(params: {
   return rows.length > 0;
 }
 
+// Stores the verified COSE public key and initial signature counter from a
+// completed registration ceremony. credential_id_b64 is globally unique, so the
+// same authenticator cannot be enrolled to two principals; a re-registration of
+// the same credential re-points it (verified) to the current principal/tenant.
 export async function upsertPasskeyCredential(params: {
   tenantId: string;
   principalId: string;
   credentialId: string;
   publicKey: string;
+  counter: number;
   transports: string[];
 }): Promise<"ok" | "db-unavailable"> {
   if (!sql) return "db-unavailable";
@@ -242,6 +247,7 @@ export async function upsertPasskeyCredential(params: {
       principal_id,
       credential_id_b64,
       public_key_b64,
+      counter,
       transports,
       used_at
     ) VALUES (
@@ -249,13 +255,16 @@ export async function upsertPasskeyCredential(params: {
       ${params.principalId},
       ${params.credentialId},
       ${params.publicKey},
+      ${params.counter},
       ${params.transports},
       now()
     )
-    ON CONFLICT (tenant_id, credential_id_b64) DO UPDATE
+    ON CONFLICT (credential_id_b64) DO UPDATE
     SET
+      tenant_id = EXCLUDED.tenant_id,
       principal_id = EXCLUDED.principal_id,
       public_key_b64 = EXCLUDED.public_key_b64,
+      counter = EXCLUDED.counter,
       transports = EXCLUDED.transports,
       used_at = now()
   `;
@@ -263,55 +272,67 @@ export async function upsertPasskeyCredential(params: {
   return "ok";
 }
 
-export async function listPasskeyCredentialIdsForPrincipal(params: {
+export interface StoredPasskeyCredential {
   tenantId: string;
   principalId: string;
-}): Promise<string[]> {
-  if (!sql) return [];
-
-  const rows = await sql<{ credential_id_b64: string }[]>`
-    SELECT credential_id_b64
-    FROM passkey
-    WHERE tenant_id = ${params.tenantId}
-      AND principal_id = ${params.principalId}
-    ORDER BY created_at ASC
-  `;
-
-  return rows.map((row) => row.credential_id_b64);
+  credentialIdB64: string;
+  publicKeyB64: string;
+  counter: number;
+  transports: string[];
 }
 
-export async function isPasskeyCredentialEnrolled(params: {
-  tenantId: string;
-  principalId: string;
+// Global lookup by credential ID for usernameless (discoverable) login, before
+// any tenant is known. Uses rawSql to bypass RLS (the passkey table is
+// tenant-isolated) — the same cross-tenant pre-auth path as upsertSocialPrincipal.
+// Tenant and principal are then derived from the verified record, never the client.
+export async function getPasskeyByCredentialId(params: {
   credentialId: string;
-}): Promise<boolean | null> {
-  if (!sql) return null;
+}): Promise<StoredPasskeyCredential | null> {
+  if (!rawSql || !params.credentialId) return null;
 
-  const rows = await sql<{ credential_id_b64: string }[]>`
-    SELECT credential_id_b64
+  const rows = await rawSql<
+    {
+      tenant_id: string;
+      principal_id: string;
+      credential_id_b64: string;
+      public_key_b64: string;
+      counter: string;
+      transports: string[];
+    }[]
+  >`
+    SELECT tenant_id, principal_id, credential_id_b64, public_key_b64, counter, transports
     FROM passkey
-    WHERE tenant_id = ${params.tenantId}
-      AND principal_id = ${params.principalId}
-      AND credential_id_b64 = ${params.credentialId}
+    WHERE credential_id_b64 = ${params.credentialId}
     LIMIT 1
   `;
 
-  return rows.length > 0;
+  const row = rows[0];
+  if (!row) return null;
+  return {
+    tenantId: row.tenant_id,
+    principalId: row.principal_id,
+    credentialIdB64: row.credential_id_b64,
+    publicKeyB64: row.public_key_b64,
+    counter: Number(row.counter),
+    transports: row.transports ?? [],
+  };
 }
 
-export async function markPasskeyUsed(params: {
-  tenantId: string;
-  principalId: string;
+// Persists the post-authentication signature counter and touches used_at.
+// Keyed globally by credential ID via rawSql because login runs before a tenant
+// context is bound. A regressing/duplicate counter must be rejected by the
+// caller (verifyAuthenticationResponse) before this is called.
+export async function recordPasskeyAuthentication(params: {
   credentialId: string;
+  counter: number;
 }): Promise<"ok" | "db-unavailable"> {
-  if (!sql) return "db-unavailable";
+  if (!rawSql) return "db-unavailable";
 
-  await sql`
+  await rawSql`
     UPDATE passkey
-    SET used_at = now()
-    WHERE tenant_id = ${params.tenantId}
-      AND principal_id = ${params.principalId}
-      AND credential_id_b64 = ${params.credentialId}
+    SET counter = ${params.counter},
+        used_at = now()
+    WHERE credential_id_b64 = ${params.credentialId}
   `;
 
   return "ok";

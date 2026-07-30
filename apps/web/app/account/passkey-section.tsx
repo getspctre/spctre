@@ -3,17 +3,16 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { startRegistration } from "@simplewebauthn/browser";
+import type { PublicKeyCredentialCreationOptionsJSON } from "@simplewebauthn/browser";
 import { deletePasskeyForm, renamePasskeyForm } from "./account-actions";
 import type { PrincipalPasskey } from "@/lib/domains/auth/service";
-import { toBase64Url, fromBase64Url, randomBytes } from "@/lib/crypto-utils";
 
 interface PasskeySectionProps {
   passkeys: PrincipalPasskey[];
-  identifier: string;
 }
 
 interface PasskeyMessages {
-  authenticator_no_public_key: string;
   browser_unsupported: string;
   cancelled: string;
   finish_failed: string;
@@ -82,14 +81,13 @@ function PasskeyRow({ passkey }: { passkey: PrincipalPasskey }) {
 }
 
 interface PasskeyRegisterStartResponse {
-  challenge: string;
-  rpId: string;
-  rpName: string;
+  options: PublicKeyCredentialCreationOptionsJSON;
 }
 
 // Start the server ceremony, create the credential, and finish registration.
-// Throws with a user-facing message on any failure.
-async function performPasskeyRegistration(identifier: string, messages: PasskeyMessages): Promise<void> {
+// The server verifies the attestation and stores the authenticator's public key;
+// the browser never supplies the key. Throws with a user-facing message on any failure.
+async function performPasskeyRegistration(messages: PasskeyMessages): Promise<void> {
   if (!window.PublicKeyCredential || !navigator.credentials?.create) {
     throw new Error(messages.browser_unsupported);
   }
@@ -103,63 +101,21 @@ async function performPasskeyRegistration(identifier: string, messages: PasskeyM
     | { error?: string }
     | null;
 
-  if (!startRes.ok || !startData || !("challenge" in startData)) {
+  if (!startRes.ok || !startData || !("options" in startData)) {
     throw new Error((startData && "error" in startData && startData.error) || messages.start_failed);
   }
 
-  const controller = new AbortController();
-  const timeoutId = window.setTimeout(() => controller.abort(), 30_000);
-  const creation = (await navigator.credentials.create({
-    publicKey: {
-      challenge: fromBase64Url(startData.challenge),
-      rp: {
-        id: startData.rpId,
-        name: startData.rpName
-      },
-      user: {
-        id: randomBytes(16),
-        name: identifier,
-        displayName: identifier
-      },
-      pubKeyCredParams: [
-        { type: "public-key", alg: -7 },
-        { type: "public-key", alg: -257 }
-      ],
-      authenticatorSelection: {
-        residentKey: "required",
-        userVerification: "preferred"
-      },
-      timeout: 30_000
-    },
-    signal: controller.signal
-  }).finally(() => window.clearTimeout(timeoutId))) as PublicKeyCredential | null;
-
-  if (!creation) {
+  let registrationResponse;
+  try {
+    registrationResponse = await startRegistration({ optionsJSON: startData.options });
+  } catch {
     throw new Error(messages.cancelled);
   }
-
-  const response = creation.response as AuthenticatorAttestationResponse & {
-    getPublicKey?: () => ArrayBuffer | null;
-    getTransports?: () => AuthenticatorTransport[];
-  };
-
-  const credentialId = toBase64Url(new Uint8Array(creation.rawId));
-  const publicKeyBuffer = response.getPublicKey?.();
-  if (!publicKeyBuffer) {
-    throw new Error(messages.authenticator_no_public_key);
-  }
-  const publicKey = toBase64Url(new Uint8Array(publicKeyBuffer));
-  const transports = response.getTransports?.() ?? [];
 
   const finishRes = await fetch("/api/auth/passkey/register/finish", {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({
-      challenge: startData.challenge,
-      credentialId,
-      publicKey,
-      transports
-    })
+    body: JSON.stringify({ response: registrationResponse })
   });
   const finishData = (await finishRes.json().catch(() => null)) as { ok?: boolean; error?: string } | null;
 
@@ -168,7 +124,7 @@ async function performPasskeyRegistration(identifier: string, messages: PasskeyM
   }
 }
 
-export function PasskeySection({ passkeys, identifier }: PasskeySectionProps) {
+export function PasskeySection({ passkeys }: PasskeySectionProps) {
   const t = useTranslations("account.passkeys");
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -179,8 +135,7 @@ export function PasskeySection({ passkeys, identifier }: PasskeySectionProps) {
     setError(null);
 
     try {
-      await performPasskeyRegistration(identifier, {
-        authenticator_no_public_key: t("errors.authenticator_no_public_key"),
+      await performPasskeyRegistration({
         browser_unsupported: t("errors.browser_unsupported"),
         cancelled: t("errors.cancelled"),
         finish_failed: t("errors.finish_failed"),

@@ -12,6 +12,8 @@
   },
   "dependencies": {
     "@scalar/nextjs-api-reference": "^0.11.3",
+    "@simplewebauthn/browser": "^13.1.0",
+    "@simplewebauthn/server": "^13.1.1",
     "@spctre/api-contracts": "workspace:*",
     "@spctre/design-tokens": "workspace:*",
     "@spctre/platform": "workspace:*",

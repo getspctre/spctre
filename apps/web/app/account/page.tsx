@@ -52,7 +52,7 @@ export default async function AccountPage() {
         {/* Sign-in & MFA factors, grouped */}
         <TotpSection existingEnrollments={enrollments} />
         {plan !== "oss" && <SmsSection existingEnrollments={enrollments} />}
-        <PasskeySection passkeys={passkeys} identifier={session.email ?? session.subject} />
+        <PasskeySection passkeys={passkeys} />
         <RecoveryCodesSection unusedCount={unusedRecoveryCodes} />
 
         {/* Variable-height lists that grow with entries last */}

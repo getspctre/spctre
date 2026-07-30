@@ -262,7 +262,6 @@
       "save": "Enregistrer",
       "title": "Passkeys enregistrés",
       "errors": {
-        "authenticator_no_public_key": "L'authentificateur n'a pas fourni de clé publique.",
         "browser_unsupported": "Ce navigateur ne prend pas en charge l'enregistrement de passkey.",
         "cancelled": "L'enregistrement du passkey a été annulé.",
         "finish_failed": "Impossible de terminer l'enregistrement du passkey.",

@@ -262,7 +262,6 @@
       "save": "保存",
       "title": "登録済みパスキー",
       "errors": {
-        "authenticator_no_public_key": "認証器から公開鍵が提供されませんでした。",
         "browser_unsupported": "このブラウザはパスキー登録をサポートしていません。",
         "cancelled": "パスキー登録がキャンセルされました。",
         "finish_failed": "パスキー登録を完了できませんでした。",
