@@ -262,7 +262,6 @@
       "save": "Speichern",
       "title": "Registrierte Passkeys",
       "errors": {
-        "authenticator_no_public_key": "Der Authenticator hat keinen öffentlichen Schlüssel bereitgestellt.",
         "browser_unsupported": "Dieser Browser unterstützt keine Passkey-Registrierung.",
         "cancelled": "Die Passkey-Registrierung wurde abgebrochen.",
         "finish_failed": "Passkey-Registrierung konnte nicht abgeschlossen werden.",

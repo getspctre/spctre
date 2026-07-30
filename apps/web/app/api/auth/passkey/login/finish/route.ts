@@ -1,118 +1,132 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { verifyAuthenticationResponse } from "@simplewebauthn/server";
+import type { AuthenticationResponseJSON, AuthenticatorTransportFuture } from "@simplewebauthn/server";
 import { createAuthSession } from "@/lib/auth-session";
-import {
-  PASSKEY_LOGIN_CHALLENGE_COOKIE,
-  PASSKEY_LOGIN_PRINCIPAL_COOKIE,
-  PASSKEY_LOGIN_TENANT_COOKIE
-} from "@/lib/auth-challenge";
+import { PASSKEY_LOGIN_CHALLENGE_COOKIE } from "@/lib/auth-challenge";
 import { setControlPlaneSessionCookies } from "@/lib/auth-session-cookies";
-import { getPrincipalSubject } from "@/lib/domains/auth/service";
-import { getPrimaryWorkspaceIdForTenant, isAuthDatabaseConfigured } from "@/lib/domains/auth/service";
-import { isPasskeyCredentialEnrolled, markPasskeyUsed } from "@/lib/domains/auth/service";
+import { runWithTenantContext } from "@/lib/tenant-context";
+import {
+  consumeWebauthnChallenge,
+  getPasskeyByCredentialId,
+  getPrimaryWorkspaceIdForTenant,
+  getPrincipalSubject,
+  isAuthDatabaseConfigured,
+  recordPasskeyAuthentication
+} from "@/lib/domains/auth/service";
+import { getPasskeyExpectedOrigins, getPasskeyRpId } from "@/lib/webauthn-config";
+import { fromBase64Url } from "@/lib/crypto-utils";
 import { extractTraceId, makeMeta } from "@spctre/api-contracts";
 
 interface PasskeyLoginFinishPayload {
-  challenge?: unknown;
-  credentialId?: unknown;
+  response?: unknown;
 }
 
-// Parse the finish payload and match it against the login-challenge cookies.
-async function parsePasskeyFinishRequest(request: Request): Promise<
-  | { credentialId: string; principalId: string; tenantId: string }
-  | { error: string }
-> {
-  let payload: PasskeyLoginFinishPayload;
-  try {
-    payload = (await request.json()) as PasskeyLoginFinishPayload;
-  } catch {
-    return { error: "Request body must be JSON." };
-  }
-
-  const challenge = typeof payload.challenge === "string" ? payload.challenge.trim() : "";
-  const credentialId = typeof payload.credentialId === "string" ? payload.credentialId.trim() : "";
-  if (!challenge || !credentialId) {
-    return { error: "challenge and credentialId are required." };
-  }
-
-  const cookieStore = await cookies();
-  const expectedChallenge = cookieStore.get(PASSKEY_LOGIN_CHALLENGE_COOKIE)?.value ?? "";
-  const principalId = cookieStore.get(PASSKEY_LOGIN_PRINCIPAL_COOKIE)?.value ?? "";
-  const tenantId = cookieStore.get(PASSKEY_LOGIN_TENANT_COOKIE)?.value ?? "";
-
-  if (!expectedChallenge || challenge !== expectedChallenge || !principalId || !tenantId) {
-    return { error: "Invalid passkey login challenge." };
-  }
-
-  return { credentialId, principalId, tenantId };
+function jsonError(traceId: string, error: string, status: number, clearCookie = false) {
+  const response = NextResponse.json({ error, meta: makeMeta(traceId) }, { status });
+  response.headers.set("x-request-id", traceId);
+  if (clearCookie) response.cookies.delete(PASSKEY_LOGIN_CHALLENGE_COOKIE);
+  return response;
 }
 
 async function handlePostApiAuthPasskeyLoginFinish(request: Request) {
   const traceId = extractTraceId(request);
   if (!isAuthDatabaseConfigured()) {
-    const response = NextResponse.json({ error: "Database not configured.", meta: makeMeta(traceId) }, { status: 503 });
-    response.headers.set("x-request-id", traceId);
-    return response;
+    return jsonError(traceId, "Database not configured.", 503);
   }
 
-  const parsed = await parsePasskeyFinishRequest(request);
-  if ("error" in parsed) {
-    const response = NextResponse.json({ error: parsed.error, meta: makeMeta(traceId) }, { status: 400 });
-    response.headers.set("x-request-id", traceId);
-    return response;
+  let payload: PasskeyLoginFinishPayload;
+  try {
+    payload = (await request.json()) as PasskeyLoginFinishPayload;
+  } catch {
+    return jsonError(traceId, "Request body must be JSON.", 400);
   }
-  const { credentialId, principalId, tenantId } = parsed;
+  if (!payload.response || typeof payload.response !== "object") {
+    return jsonError(traceId, "An authentication response is required.", 400);
+  }
+  const authResponse = payload.response as AuthenticationResponseJSON;
 
-  const enrolled = await isPasskeyCredentialEnrolled({ tenantId, principalId, credentialId });
-  if (enrolled === null) {
-    const response = NextResponse.json({ error: "Database not configured.", meta: makeMeta(traceId) }, { status: 503 });
-    response.headers.set("x-request-id", traceId);
-    return response;
-  }
-  if (!enrolled) {
-    const response = NextResponse.json({ error: "Passkey credential is not enrolled for this account.", meta: makeMeta(traceId) }, { status: 403 });
-    response.headers.set("x-request-id", traceId);
-    return response;
+  // Consume the one-time login challenge bound to this browser.
+  const cookieStore = await cookies();
+  const challengeId = cookieStore.get(PASSKEY_LOGIN_CHALLENGE_COOKIE)?.value ?? "";
+  const stored = challengeId
+    ? await consumeWebauthnChallenge({ id: challengeId, purpose: "AUTHENTICATION" })
+    : null;
+  if (!stored) {
+    return jsonError(traceId, "Invalid or expired passkey login challenge.", 400, true);
   }
 
-  const subject = await getPrincipalSubject({ tenantId, principalId });
-  if (!subject) {
-    const response = NextResponse.json({ error: "Principal is not available.", meta: makeMeta(traceId) }, { status: 403 });
-    response.headers.set("x-request-id", traceId);
-    return response;
+  // Discoverable login: resolve the credential globally by its ID, then derive
+  // the principal and tenant from that verified record — never from the client.
+  const credential = await getPasskeyByCredentialId({ credentialId: authResponse.id });
+  if (!credential) {
+    return jsonError(traceId, "Passkey is not recognized.", 403, true);
   }
-  const workspaceId = await getPrimaryWorkspaceIdForTenant(tenantId);
 
-  const sessionId = await createAuthSession({
-    principalId,
-    tenantId,
-    authMethod: "SESSION",
-    mfaVerifiedAt: new Date().toISOString()
+  let verification;
+  try {
+    verification = await verifyAuthenticationResponse({
+      response: authResponse,
+      expectedChallenge: stored.challenge,
+      expectedOrigin: getPasskeyExpectedOrigins(),
+      expectedRPID: getPasskeyRpId(),
+      credential: {
+        id: credential.credentialIdB64,
+        publicKey: fromBase64Url(credential.publicKeyB64),
+        counter: credential.counter,
+        transports: credential.transports as AuthenticatorTransportFuture[]
+      },
+      requireUserVerification: false
+    });
+  } catch {
+    return jsonError(traceId, "Passkey assertion could not be verified.", 403, true);
+  }
+
+  if (!verification.verified) {
+    return jsonError(traceId, "Passkey assertion could not be verified.", 403, true);
+  }
+
+  const { tenantId, principalId } = credential;
+
+  // Persist the new signature counter (replay/cloning defense) globally.
+  const touchResult = await recordPasskeyAuthentication({
+    credentialId: credential.credentialIdB64,
+    counter: verification.authenticationInfo.newCounter
+  });
+  if (touchResult === "db-unavailable") {
+    return jsonError(traceId, "Database not configured.", 503, true);
+  }
+
+  // Tenant is now trusted; bind context for the principal/workspace/session reads.
+  const sessionResult = await runWithTenantContext(tenantId, async () => {
+    const subject = await getPrincipalSubject({ tenantId, principalId });
+    if (!subject) return null;
+    const workspaceId = await getPrimaryWorkspaceIdForTenant(tenantId);
+    const sessionId = await createAuthSession({
+      principalId,
+      tenantId,
+      authMethod: "SESSION",
+      mfaVerifiedAt: new Date().toISOString()
+    });
+    return { subject, workspaceId, sessionId };
   });
 
-  const touchResult = await markPasskeyUsed({ tenantId, principalId, credentialId });
-  if (touchResult === "db-unavailable") {
-    const response = NextResponse.json({ error: "Database not configured.", meta: makeMeta(traceId) }, { status: 503 });
-    response.headers.set("x-request-id", traceId);
-    return response;
+  if (!sessionResult) {
+    return jsonError(traceId, "Principal is not available.", 403, true);
   }
 
   const response = NextResponse.json({ ok: true, meta: makeMeta(traceId) });
   response.headers.set("x-request-id", traceId);
   await setControlPlaneSessionCookies({
     response,
-    sessionId,
+    sessionId: sessionResult.sessionId,
     tenantId,
-    workspaceId: workspaceId ?? "",
-
+    workspaceId: sessionResult.workspaceId ?? "",
     principalId,
-    subject,
+    subject: sessionResult.subject,
     mfaVerified: true
   });
-
   response.cookies.delete(PASSKEY_LOGIN_CHALLENGE_COOKIE);
-  response.cookies.delete(PASSKEY_LOGIN_PRINCIPAL_COOKIE);
-  response.cookies.delete(PASSKEY_LOGIN_TENANT_COOKIE);
 
   return response;
 }
