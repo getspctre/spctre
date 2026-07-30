@@ -21,9 +21,16 @@
 --      that the verification library cannot consume. Delete them so principals
 --      re-enroll through the verified registration ceremony.
 --
--- Idempotent: guards every statement so the runner can re-apply it.
+-- The runner (db/migrate.ts) applies each file exactly once, tracked in
+-- schema_migrations, inside a transaction that rolls back on failure. The DDL
+-- below is guarded (IF [NOT] EXISTS) so a rolled-back attempt retries cleanly.
+--
+-- The DELETE is NOT idempotent and is a deliberate one-time cleanup: it purges
+-- the pre-ceremony rows exactly once as part of this migration. It must never be
+-- replayed manually against a live database — doing so would wipe passkeys that
+-- users have since re-enrolled through the verified ceremony.
 
--- 1. Existing credentials hold unverified public keys — remove them.
+-- 1. Existing credentials hold unverified public keys — remove them (one-time).
 DELETE FROM public.passkey;
 
 -- 2. Swap tenant-scoped uniqueness for global uniqueness on credential_id_b64.

@@ -108,6 +108,13 @@ async function handlePostApiAuthPasskeyRegisterFinish(request: Request) {
     response.headers.set("x-request-id", traceId);
     return response;
   }
+  if (result === "conflict") {
+    // The credential is already registered to a different account; never reassign it.
+    const response = NextResponse.json({ error: "This passkey is already registered to another account.", meta: makeMeta(traceId) }, { status: 409 });
+    response.headers.set("x-request-id", traceId);
+    response.cookies.delete(PASSKEY_REG_CHALLENGE_COOKIE);
+    return response;
+  }
 
   const response = NextResponse.json({ ok: true, meta: makeMeta(traceId) }, { status: 201 });
   response.headers.set("x-request-id", traceId);

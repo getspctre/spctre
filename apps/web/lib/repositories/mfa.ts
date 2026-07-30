@@ -228,9 +228,12 @@ export async function deletePrincipalMfaEnrollment(params: {
 }
 
 // Stores the verified COSE public key and initial signature counter from a
-// completed registration ceremony. credential_id_b64 is globally unique, so the
-// same authenticator cannot be enrolled to two principals; a re-registration of
-// the same credential re-points it (verified) to the current principal/tenant.
+// completed registration ceremony. credential_id_b64 is globally unique and a
+// credential maps to exactly one principal for life: a first registration
+// inserts, and re-registering the *same* credential by its owning principal is
+// an idempotent refresh (key material / counter / transports). Re-registering a
+// credential already bound to a *different* principal is rejected ("conflict") —
+// it must never be silently reassigned to another account.
 export async function upsertPasskeyCredential(params: {
   tenantId: string;
   principalId: string;
@@ -238,10 +241,14 @@ export async function upsertPasskeyCredential(params: {
   publicKey: string;
   counter: number;
   transports: string[];
-}): Promise<"ok" | "db-unavailable"> {
+}): Promise<"ok" | "conflict" | "db-unavailable"> {
   if (!sql) return "db-unavailable";
 
-  await sql`
+  // The DO UPDATE ... WHERE guard only fires for the owning principal. When the
+  // credential belongs to someone else the conflict matches but the WHERE is
+  // false, so no row is written and RETURNING yields nothing — surfaced as a
+  // conflict rather than a reassignment.
+  const rows = await sql<{ id: string }[]>`
     INSERT INTO passkey (
       tenant_id,
       principal_id,
@@ -261,15 +268,15 @@ export async function upsertPasskeyCredential(params: {
     )
     ON CONFLICT (credential_id_b64) DO UPDATE
     SET
-      tenant_id = EXCLUDED.tenant_id,
-      principal_id = EXCLUDED.principal_id,
       public_key_b64 = EXCLUDED.public_key_b64,
       counter = EXCLUDED.counter,
       transports = EXCLUDED.transports,
       used_at = now()
+    WHERE passkey.principal_id = EXCLUDED.principal_id
+    RETURNING id
   `;
 
-  return "ok";
+  return rows.length > 0 ? "ok" : "conflict";
 }
 
 export interface StoredPasskeyCredential {
@@ -320,22 +327,33 @@ export async function getPasskeyByCredentialId(params: {
 
 // Persists the post-authentication signature counter and touches used_at.
 // Keyed globally by credential ID via rawSql because login runs before a tenant
-// context is bound. A regressing/duplicate counter must be rejected by the
-// caller (verifyAuthenticationResponse) before this is called.
+// context is bound.
+//
+// The write is a compare-and-swap on the counter the assertion was verified
+// against: it only commits if the stored counter is still `expectedCounter`, so
+// two concurrent assertions cannot both verify against the same value and then
+// both advance it (which would defeat clone/replay detection). If the stored
+// counter has moved on, no row is written and this returns "counter-conflict"
+// and the caller must fail authentication. Authenticators that don't implement a
+// counter report 0 every time; there 0 == 0 always matches, which is expected —
+// the spec provides no counter-based replay signal for them.
 export async function recordPasskeyAuthentication(params: {
   credentialId: string;
-  counter: number;
-}): Promise<"ok" | "db-unavailable"> {
+  expectedCounter: number;
+  newCounter: number;
+}): Promise<"ok" | "counter-conflict" | "db-unavailable"> {
   if (!rawSql) return "db-unavailable";
 
-  await rawSql`
+  const rows = await rawSql<{ id: string }[]>`
     UPDATE passkey
-    SET counter = ${params.counter},
+    SET counter = ${params.newCounter},
         used_at = now()
     WHERE credential_id_b64 = ${params.credentialId}
+      AND counter = ${params.expectedCounter}
+    RETURNING id
   `;
 
-  return "ok";
+  return rows.length > 0 ? "ok" : "counter-conflict";
 }
 
 export async function createTotpEnrollment(params: {
