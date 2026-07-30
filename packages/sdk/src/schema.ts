@@ -1066,11 +1066,10 @@ export interface components {
             /** @description Target branch name. Lowercase letters, digits, hyphens, and slashes; cannot start or end with a hyphen or slash. */
             branchName: string;
             /**
-             * @description Branch scope. Defaults to WORKSPACE.
-             * @default WORKSPACE
+             * @description Branch scope. Optional; the server defaults to WORKSPACE when omitted.
              * @enum {string}
              */
-            scope: "WORKSPACE" | "CONNECTOR" | "ENVIRONMENT" | "ORGANIZATION";
+            scope?: "WORKSPACE" | "CONNECTOR" | "ENVIRONMENT" | "ORGANIZATION";
             /** @description Connector id. Required when scope is CONNECTOR. */
             connector?: string;
             /** @description Environment. Required when scope is ENVIRONMENT. */

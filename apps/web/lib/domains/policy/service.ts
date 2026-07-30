@@ -56,6 +56,15 @@ function validateAndParseImport(input: {
   if (input.scope === "CONNECTOR" && !input.connector) {
     return { error: "Connector is required for CONNECTOR-scoped branches." };
   }
+  // connector / environment are part of the branch identity, so they are only
+  // meaningful for their own scope. Rejecting them elsewhere prevents, e.g., a
+  // WORKSPACE import with a connector silently creating a connector-keyed branch.
+  if (input.scope !== "CONNECTOR" && input.connector) {
+    return { error: "Connector is only valid for CONNECTOR-scoped branches." };
+  }
+  if (input.scope !== "ENVIRONMENT" && input.environment) {
+    return { error: "Environment is only valid for ENVIRONMENT-scoped branches." };
+  }
 
   const parsed = parseAgtPolicyDocument({ document: input.source, sourcePath: input.sourcePath });
   if (parsed.diagnostics.some((d) => d.severity === "ERROR")) {
@@ -225,6 +234,14 @@ export async function importPolicyForToken(input: {
   sourcePath: string;
   targetStacks: string[];
 }): Promise<ImportPolicyForTokenResult> {
+  // Service tokens are workspace-bound (service_token.workspace_id is NOT NULL).
+  // An ORGANIZATION-scoped import would produce a workspace_id = NULL branch,
+  // letting a workspace-scoped credential draft organization-wide policy — a
+  // tenant/privilege-boundary surprise. Reject it on the token path.
+  if (input.scope === "ORGANIZATION") {
+    return { error: "Service tokens are workspace-bound; ORGANIZATION-scoped import is not supported.", status: 400 };
+  }
+
   const validation = validateAndParseImport(input);
   if ("error" in validation) return { error: validation.error, status: 400 };
   const parsed = validation.parsed;

@@ -1820,8 +1820,7 @@
               "ENVIRONMENT",
               "ORGANIZATION"
             ],
-            "default": "WORKSPACE",
-            "description": "Branch scope. Defaults to WORKSPACE."
+            "description": "Branch scope. Optional; the server defaults to WORKSPACE when omitted."
           },
           "connector": {
             "type": "string",

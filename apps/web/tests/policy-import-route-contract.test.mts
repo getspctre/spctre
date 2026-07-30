@@ -183,6 +183,33 @@ describe.skipIf(!databaseAvailable)("POST /api/v1/policy/imports contract", () =
     expect(await revisionCount(branchId)).toBe(1);
   });
 
+  it("rejects a connector on a non-CONNECTOR scope as 400", async () => {
+    const fixture = await createFixture();
+    const operatorToken = await mintToken(fixture, ["policy:import"]);
+
+    const response = await POST(importRequest(operatorToken, {
+      source: pack("research.fetch"),
+      branchName: "acquisition-scout",
+      scope: "WORKSPACE",
+      connector: "acquisition-scout",
+    }));
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toMatchObject({ error: expect.stringContaining("Connector is only valid") });
+  });
+
+  it("rejects ORGANIZATION scope from a workspace-bound token as 400", async () => {
+    const fixture = await createFixture();
+    const operatorToken = await mintToken(fixture, ["policy:import"]);
+
+    const response = await POST(importRequest(operatorToken, {
+      source: pack("research.fetch"),
+      branchName: "acquisition-scout",
+      scope: "ORGANIZATION",
+    }));
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toMatchObject({ error: expect.stringContaining("workspace-bound") });
+  });
+
   it("rejects a rules-empty (default-allow) document as 400", async () => {
     const fixture = await createFixture();
     const operatorToken = await mintToken(fixture, ["policy:import"]);

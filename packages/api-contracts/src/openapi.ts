@@ -865,8 +865,10 @@ export const SPCTRE_OPENAPI_SPEC = {
           scope: {
             type: "string",
             enum: ["WORKSPACE", "CONNECTOR", "ENVIRONMENT", "ORGANIZATION"],
-            default: "WORKSPACE",
-            description: "Branch scope. Defaults to WORKSPACE.",
+            // No schema `default`: openapi-typescript treats a defaulted property
+            // as required in the generated SDK, but this request field is
+            // optional (the server defaults it to WORKSPACE when omitted).
+            description: "Branch scope. Optional; the server defaults to WORKSPACE when omitted.",
           },
           connector: { type: "string", description: "Connector id. Required when scope is CONNECTOR." },
           environment: { type: "string", description: "Environment. Required when scope is ENVIRONMENT." },
