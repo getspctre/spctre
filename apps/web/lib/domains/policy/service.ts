@@ -14,6 +14,7 @@ import {
   getBranchForRollback,
   getBranchWithPublishStatus,
   getLatestPublishedBundle,
+  importPolicyBranchIdempotent,
   persistImportedBranch,
   publishRollbackAndActivate,
   revisionExistsOnBranch,
@@ -21,11 +22,59 @@ import {
   listRules,
   deletePolicyBranch,
 } from "@/lib/repositories/policy";
+import type { ImportPolicyBranchResult } from "@/lib/repositories/policy";
 import { insertAuthorizationDenialEvent, resolveWorkspaceForAction } from "@/lib/repositories/workspace";
 import { isDatabaseConfigured } from "@/lib/repositories/shared/database";
 import { reservedStableRuleIdError } from "@/lib/policy/reserved-rule-ids";
 
 const VALID_SCOPES = new Set(["ORGANIZATION", "WORKSPACE", "ENVIRONMENT", "CONNECTOR"]);
+
+type ParsedPolicyDocument = ReturnType<typeof parseAgtPolicyDocument>;
+
+/**
+ * Shared input validation + parse for both the browser-session import
+ * (importPolicyDecision) and the token-authenticated automation import
+ * (importPolicyForToken). Returns a parse-error string or the parsed document.
+ */
+function validateAndParseImport(input: {
+  source: string;
+  branchName: string;
+  scope: string;
+  environment: string;
+  connector: string;
+  sourcePath: string;
+}): { error: string } | { parsed: ParsedPolicyDocument } {
+  if (!input.source.trim()) return { error: "Policy source is required." };
+  if (!input.branchName) return { error: "Branch name is required." };
+  if (!/^[a-z0-9][a-z0-9/-]*[a-z0-9]$|^[a-z0-9]$/.test(input.branchName)) {
+    return { error: "Branch name must use only lowercase letters, digits, hyphens, and slashes, and cannot start or end with a hyphen or slash." };
+  }
+  if (!VALID_SCOPES.has(input.scope)) return { error: "Invalid scope value." };
+  if (input.scope === "ENVIRONMENT" && !input.environment) {
+    return { error: "Environment is required for ENVIRONMENT-scoped branches." };
+  }
+  if (input.scope === "CONNECTOR" && !input.connector) {
+    return { error: "Connector is required for CONNECTOR-scoped branches." };
+  }
+
+  const parsed = parseAgtPolicyDocument({ document: input.source, sourcePath: input.sourcePath });
+  if (parsed.diagnostics.some((d) => d.severity === "ERROR")) {
+    return { error: `Parse error: ${parsed.diagnostics.filter((d) => d.severity === "ERROR").map((d) => d.message).join("; ")}` };
+  }
+
+  const seenRuleIds = new Set<string>();
+  for (const rule of parsed.rules) {
+    if (seenRuleIds.has(rule.stableRuleId)) {
+      return { error: `Duplicate stable rule ID in policy document: ${rule.stableRuleId}` };
+    }
+    seenRuleIds.add(rule.stableRuleId);
+  }
+
+  const reservedRuleIdError = reservedStableRuleIdError(seenRuleIds);
+  if (reservedRuleIdError) return { error: reservedRuleIdError };
+
+  return { parsed };
+}
 
 export type ImportPolicyResult =
   | { result: PolicyImportResult }
@@ -62,35 +111,9 @@ export async function importPolicyDecision(input: {
   sourcePath: string;
   targetStacks: string[];
 }): Promise<ImportPolicyResult> {
-  if (!input.source.trim()) return { error: "Policy source is required." };
-  if (!input.branchName) return { error: "Branch name is required." };
-  if (!/^[a-z0-9][a-z0-9/-]*[a-z0-9]$|^[a-z0-9]$/.test(input.branchName)) {
-    return { error: "Branch name must use only lowercase letters, digits, hyphens, and slashes, and cannot start or end with a hyphen or slash." };
-  }
-  if (!VALID_SCOPES.has(input.scope)) return { error: "Invalid scope value." };
-  if (input.scope === "ENVIRONMENT" && !input.environment) {
-    return { error: "Environment is required for ENVIRONMENT-scoped branches." };
-  }
-  if (input.scope === "CONNECTOR" && !input.connector) {
-    return { error: "Connector is required for CONNECTOR-scoped branches." };
-  }
-
-  const parsed = parseAgtPolicyDocument({ document: input.source, sourcePath: input.sourcePath });
-  const hasErrors = parsed.diagnostics.some((d) => d.severity === "ERROR");
-  if (hasErrors) {
-    return { error: `Parse error: ${parsed.diagnostics.filter((d) => d.severity === "ERROR").map((d) => d.message).join("; ")}` };
-  }
-
-  const seenRuleIds = new Set<string>();
-  for (const rule of parsed.rules) {
-    if (seenRuleIds.has(rule.stableRuleId)) {
-      return { error: `Duplicate stable rule ID in policy document: ${rule.stableRuleId}` };
-    }
-    seenRuleIds.add(rule.stableRuleId);
-  }
-
-  const reservedRuleIdError = reservedStableRuleIdError(seenRuleIds);
-  if (reservedRuleIdError) return { error: reservedRuleIdError };
+  const validation = validateAndParseImport(input);
+  if ("error" in validation) return validation;
+  const parsed = validation.parsed;
 
   if (!isDatabaseConfigured()) {
     return {
@@ -173,6 +196,89 @@ export async function importPolicyDecision(input: {
   } catch (error) {
     logger.error("[importPolicyDecision] database error:", { error: error instanceof Error ? error.message : String(error) });
     return { error: "An unexpected error occurred. Please try again." };
+  }
+}
+
+export type ImportPolicyForTokenResult =
+  | { result: ImportPolicyBranchResult & { ruleCount: number } }
+  | { error: string; status?: number };
+
+/**
+ * Token-authenticated, idempotent policy import for automation/CI. The caller
+ * has already been authenticated against the `policy:import` scope and carries
+ * its own tenant/workspace/principal from the service token, so authorization
+ * is the scope itself — there is no browser session or Admin-actor lookup here.
+ *
+ * Never approves or publishes: it only drafts a branch/revision. Re-importing
+ * unchanged source is a no-op (alreadyCurrent); changed source appends a new
+ * unapproved draft revision to the same branch.
+ */
+export async function importPolicyForToken(input: {
+  tenantId: string;
+  workspaceId: string;
+  principalId: string;
+  source: string;
+  branchName: string;
+  scope: string;
+  environment: string;
+  connector: string;
+  sourcePath: string;
+  targetStacks: string[];
+}): Promise<ImportPolicyForTokenResult> {
+  const validation = validateAndParseImport(input);
+  if ("error" in validation) return { error: validation.error, status: 400 };
+  const parsed = validation.parsed;
+
+  // A rules-empty document parses with only a WARNING, but an empty revision
+  // that reaches publication becomes a default-allow policy. The automation
+  // path must never import one. (The browser importer keeps a human in the
+  // loop; this guard covers the unattended operator/CI path.)
+  if (parsed.rules.length === 0) {
+    return { error: "Policy document contains no rules; refusing to import an empty policy.", status: 400 };
+  }
+  // Reject match-all rules: a rule with no connector, action, or domain target
+  // matches every request, which is a default-allow/deny footgun on import.
+  const untargeted = parsed.rules.find(
+    (rule) =>
+      (rule.connectors?.length ?? 0) === 0 &&
+      (rule.actions?.length ?? 0) === 0 &&
+      (rule.domains?.length ?? 0) === 0
+  );
+  if (untargeted) {
+    return {
+      error: `Rule "${untargeted.stableRuleId}" has no connector, action, or domain target; refusing to import a match-all rule.`,
+      status: 400,
+    };
+  }
+
+  try {
+    const imported = await runWithTenantContext(input.tenantId, () =>
+      importPolicyBranchIdempotent({
+        tenantId: input.tenantId,
+        authorId: input.principalId,
+        branchName: input.branchName,
+        scope: input.scope,
+        workspaceId: input.workspaceId,
+        environment: input.environment || undefined,
+        connector: input.connector || undefined,
+        sourcePath: input.sourcePath,
+        source: input.source,
+        rules: parsed.rules,
+        metadata: parsed.metadata,
+        sourceDocument: parsed.sourceDocument,
+        compatibility: parsed.compatibility,
+        message: "Import via policy:import token",
+        targetStacks: input.targetStacks,
+      })
+    );
+    return { result: { ...imported, ruleCount: parsed.rules.length } };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (message.includes("Workspace is not available")) {
+      return { error: "Workspace not found.", status: 404 };
+    }
+    logger.error("[importPolicyForToken] import failed:", { error: message });
+    return { error: "An unexpected error occurred. Please try again.", status: 500 };
   }
 }
 

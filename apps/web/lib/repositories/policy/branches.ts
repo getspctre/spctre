@@ -512,6 +512,201 @@ export async function persistImportedBranch(params: {
   return { branchId, revisionId, sourceHash, importedAt };
 }
 
+export interface ImportPolicyBranchResult {
+  branchId: string;
+  revisionId: string;
+  sourceHash: string;
+  importedAt: string;
+  /** True when a brand-new branch was created (HTTP 201). */
+  created: boolean;
+  /** True when the branch head already carried this exact source (no write). */
+  alreadyCurrent: boolean;
+}
+
+/**
+ * Idempotent import for automation/CI. Unlike persistImportedBranch (which
+ * always creates a fresh branch), this reuses a branch identified by
+ * (tenant, workspace, scope, environment, connector, name):
+ *
+ *   - no such branch                          → create branch + revision
+ *   - branch head source_hash == new hash     → no-op (alreadyCurrent)
+ *   - branch head source_hash differs         → append a new draft revision
+ *
+ * Concurrency-safe: the lookup and the write run in ONE transaction guarded by
+ * a per-identity advisory lock, so concurrent CI runs for the same branch
+ * serialize — a racing importer blocks, then observes the committed branch and
+ * appends (or no-ops) instead of creating a duplicate or appending from a stale
+ * parent. The advisory lock is the authority here; the table's UNIQUE
+ * constraint is NULLS-DISTINCT and so does not catch duplicate CONNECTOR /
+ * WORKSPACE branches (environment/connector NULL). A bounded retry on a unique
+ * violation covers the ENVIRONMENT-scoped case where the constraint does bite.
+ *
+ * An appended revision is an unapproved draft that becomes the branch head; it
+ * never touches approval/publish state, so the currently published bundle is
+ * unchanged until someone re-publishes. Never auto-approves or auto-publishes.
+ */
+export async function importPolicyBranchIdempotent(params: {
+  tenantId: string;
+  authorId: string;
+  branchName: string;
+  scope: string;
+  workspaceId: string;
+  environment?: string;
+  connector?: string;
+  sourcePath: string;
+  source: string;
+  rules: PolicyRuleSummary[];
+  metadata: Record<string, unknown>;
+  sourceDocument?: Record<string, unknown>;
+  compatibility?: AgtCompatibilityReport;
+  message: string;
+  targetStacks?: string[];
+}): Promise<ImportPolicyBranchResult> {
+  if (!sql) throw new Error("Database not configured.");
+  const db = sql;
+  assertCustomerRulesDoNotUseReservedIds(params.rules);
+
+  const sourceHash = `sha256:${createHash("sha256").update(params.source).digest("hex").slice(0, 16)}`;
+  const workspaceId = params.scope === "ORGANIZATION" ? null : params.workspaceId;
+  const targetStacksJson = JSON.stringify((params.targetStacks ?? []).map((stack) => ({ stack })));
+  const sourceDocumentJson = JSON.stringify({
+    ...(params.sourceDocument ?? { rules: params.rules, metadata: params.metadata }),
+    metadata: params.metadata,
+    spctre_agt_compatibility: params.compatibility,
+  });
+  // Stable identity string matching the branch uniqueness columns; used to key
+  // the advisory lock (0x1f unit separator keeps components unambiguous).
+  const identity = [
+    params.tenantId,
+    workspaceId ?? "",
+    params.scope,
+    params.environment ?? "",
+    params.connector ?? "",
+    params.branchName,
+  ].join("");
+
+  await ensureDemoTenant();
+
+  if (params.scope !== "ORGANIZATION") {
+    const workspaceRows = await db<{ id: string }[]>`
+      SELECT id FROM workspace
+      WHERE id = ${params.workspaceId} AND tenant_id = ${params.tenantId}
+      LIMIT 1
+    `;
+    if (!workspaceRows.length) throw new Error("Workspace is not available in the selected tenant.");
+  }
+
+  const runOnce = () =>
+    db.begin(async (tx): Promise<ImportPolicyBranchResult> => {
+      // Serialize concurrent imports of the same branch identity. Held for the
+      // life of the transaction; released on commit/rollback.
+      await tx`SELECT pg_advisory_xact_lock(hashtextextended(${identity}, 0))`;
+
+      const existing = await tx<{ branch_id: string; active_revision_id: string | null; head_source_hash: string | null }[]>`
+        SELECT
+          pb.id AS branch_id,
+          pb.active_revision_id,
+          pr.source_hash AS head_source_hash
+        FROM policy_branch pb
+        LEFT JOIN policy_revision pr
+          ON pr.id = pb.active_revision_id AND pr.tenant_id = pb.tenant_id
+        WHERE pb.tenant_id = ${params.tenantId}
+          AND pb.name = ${params.branchName}
+          AND pb.scope = ${params.scope}
+          AND pb.workspace_id IS NOT DISTINCT FROM ${workspaceId}
+          AND pb.connector IS NOT DISTINCT FROM ${params.connector ?? null}
+          AND pb.environment IS NOT DISTINCT FROM ${params.environment ?? null}
+        LIMIT 1
+        FOR UPDATE OF pb
+      `;
+
+      const insertRevisionAndRules = async (branchId: string, revisionId: string, parentRevisionId: string | null) => {
+        await tx`
+          INSERT INTO policy_revision (
+            id, tenant_id, workspace_id, branch_id, parent_revision_id,
+            source_format, source_path, source_document, source_hash,
+            author_id, message, target_stacks
+          ) VALUES (
+            ${revisionId}, ${params.tenantId}, ${workspaceId}, ${branchId}, ${parentRevisionId},
+            'AGT_YAML', ${params.sourcePath}, ${sourceDocumentJson},
+            ${sourceHash}, ${params.authorId}, ${params.message}, ${targetStacksJson}::jsonb
+          )
+        `;
+        if (params.rules.length > 0) {
+          const ruleRows = params.rules.map((rule) => ({
+            tenant_id: params.tenantId,
+            workspace_id: workspaceId,
+            branch_id: branchId,
+            revision_id: revisionId,
+            stable_rule_id: rule.stableRuleId,
+            title: rule.title,
+            effect: rule.effect,
+            source_path: rule.sourcePath ?? params.sourcePath,
+            domains: rule.domains ?? [],
+            connectors: rule.connectors ?? [],
+            actions: rule.actions ?? [],
+            immutable: rule.immutable ?? false,
+          }));
+          await tx`INSERT INTO policy_rule ${tx(ruleRows, "tenant_id", "workspace_id", "branch_id", "revision_id", "stable_rule_id", "title", "effect", "source_path", "domains", "connectors", "actions", "immutable")}`;
+        }
+        await tx`
+          UPDATE policy_branch SET active_revision_id = ${revisionId}
+          WHERE id = ${branchId} AND tenant_id = ${params.tenantId}
+        `;
+      };
+
+      const importedAt = new Date().toISOString();
+
+      // No existing branch: create branch + first revision.
+      if (!existing.length) {
+        const branchId = crypto.randomUUID();
+        const revisionId = crypto.randomUUID();
+        await tx`
+          INSERT INTO policy_branch (
+            id, tenant_id, workspace_id, scope, environment, connector, name, created_by
+          ) VALUES (
+            ${branchId}, ${params.tenantId}, ${workspaceId},
+            ${params.scope}, ${params.environment ?? null}, ${params.connector ?? null},
+            ${params.branchName}, ${params.authorId}
+          )
+        `;
+        await insertRevisionAndRules(branchId, revisionId, null);
+        return { branchId, revisionId, sourceHash, importedAt, created: true, alreadyCurrent: false };
+      }
+
+      const branchId = existing[0].branch_id;
+      const currentRevisionId = existing[0].active_revision_id;
+
+      // Head already carries this exact source: no write.
+      if (existing[0].head_source_hash === sourceHash) {
+        return { branchId, revisionId: currentRevisionId ?? "", sourceHash, importedAt, created: false, alreadyCurrent: true };
+      }
+
+      // Source changed: append a new draft revision and move the branch head.
+      const revisionId = crypto.randomUUID();
+      await insertRevisionAndRules(branchId, revisionId, currentRevisionId);
+      return { branchId, revisionId, sourceHash, importedAt, created: false, alreadyCurrent: false };
+    });
+
+  // The advisory lock serializes same-identity imports, so a unique violation
+  // is not expected — but retry a bounded number of times as defense in depth
+  // (e.g. an ENVIRONMENT-scoped identity racing a non-idempotent creator).
+  let lastError: unknown;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      return await runOnce();
+    } catch (error) {
+      const code = (error as { code?: string } | null)?.code;
+      if (code === "23505" && attempt < 2) {
+        lastError = error;
+        continue;
+      }
+      throw error;
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error("Policy import failed after contention retries.");
+}
+
 export async function createDraftRevision(params: {
   tenantId: string;
   draftRevisionId: string;

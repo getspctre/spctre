@@ -262,6 +262,27 @@ packCommand
     await packScaffold(name, options);
   });
 
+const policyCommand = program
+  .command("policy")
+  .description("Author and import policy sources with an operator/CI identity");
+
+policyCommand
+  .command("import [file]")
+  .description("Import a local policy file into the control plane (operator/CI only; drafts a branch — never approves or publishes)")
+  .option("-b, --branch <name>", "branch name (defaults to the connector, then the file name)")
+  .option("-c, --connector <id>", "connector id; sets scope to CONNECTOR unless --scope is given")
+  .option("--scope <scope>", "branch scope: WORKSPACE, CONNECTOR, ENVIRONMENT, or ORGANIZATION")
+  .option("-e, --environment <environment>", "environment (required for ENVIRONMENT scope)")
+  .option("-w, --workspace <workspace>", "advisory target workspace (the token's workspace is authoritative)")
+  .option("--source-path <path>", "provenance source path recorded with the revision")
+  .option("-k, --key <key>", "operator/CI service key carrying the policy:import scope")
+  .option("-u, --url <url>", "control plane URL")
+  .option("--format <format>", "output format: text (default) or json")
+  .action(async (file: string | undefined, options) => {
+    const { policyImport } = await import("./policy-import.js");
+    await policyImport(file, options);
+  });
+
 const cloudCommand = program
   .command("cloud")
   .description("Manage Spctre Cloud connectivity");
