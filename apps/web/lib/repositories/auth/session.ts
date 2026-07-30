@@ -24,14 +24,14 @@ export function canBootstrapDemoTenant(): boolean {
   return process.env.NODE_ENV !== "production" || process.env.SPCTRE_ENABLE_DEMO_TENANT === "true";
 }
 
-export async function getPrimaryWorkspaceIdForTenant(tenantId: string): Promise<string | null> {
-  if (!sql) return null;
+export async function getPrimaryWorkspaceIdForTenant(tenantId: string, db = sql): Promise<string | null> {
+  if (!db) return null;
 
   await ensureDemoTenant().catch(() => {
     // non-fatal for lookup below
   });
 
-  const rows = await sql<{ id: string }[]>`
+  const rows = await db<{ id: string }[]>`
     SELECT id
     FROM workspace
     WHERE tenant_id = ${tenantId}
@@ -55,15 +55,18 @@ export async function getTenantRequireMfa(tenantId: string): Promise<boolean | n
   return rows[0]?.require_mfa ?? false;
 }
 
-export async function getPrincipalForLogin(principalId: string): Promise<{
+export async function getPrincipalForLogin(
+  principalId: string,
+  db = sql
+): Promise<{
   id: string;
   tenant_id: string;
   subject: string;
   require_mfa: boolean;
   disabled_at: Date | null;
 } | null> {
-  if (!sql || !principalId) return null;
-  const rows = await sql<{ id: string; tenant_id: string; subject: string; require_mfa: boolean; disabled_at: Date | null }[]>`
+  if (!db || !principalId) return null;
+  const rows = await db<{ id: string; tenant_id: string; subject: string; require_mfa: boolean; disabled_at: Date | null }[]>`
     SELECT p.id, p.tenant_id, p.subject, p.disabled_at, t.require_mfa
     FROM app_principal p
     JOIN tenant t ON t.id = p.tenant_id
