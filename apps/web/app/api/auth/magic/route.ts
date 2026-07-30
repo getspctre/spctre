@@ -151,7 +151,15 @@ async function handleGetApiAuthMagic(request: Request) {
     return NextResponse.redirect(new URL(`/login?error=${payload.error}`, base));
   }
 
-  const principal = await getPrincipalForLogin(payload.principalId);
+  // A magic link is validated before the browser has a tenant-bound session.
+  // Use the audited owner connection for these bootstrap reads so RLS cannot
+  // hide the signed principal or its initial workspace.
+  const { rawSql } = await import("@/lib/db");
+  if (!rawSql) {
+    return NextResponse.redirect(new URL("/login?error=database_required", base));
+  }
+
+  const principal = await getPrincipalForLogin(payload.principalId, rawSql);
   if (!principal) {
     return NextResponse.redirect(new URL("/login?error=principal_not_found", base));
   }
@@ -162,10 +170,6 @@ async function handleGetApiAuthMagic(request: Request) {
 
   // Enforce single use: the first request to present this jti wins; any replay
   // (including concurrent requests) hits the primary-key conflict and is refused.
-  const { rawSql } = await import("@/lib/db");
-  if (!rawSql) {
-    return NextResponse.redirect(new URL("/login?error=database_required", base));
-  }
   const consumed = await rawSql<{ jti: string }[]>`
     INSERT INTO consumed_magic_link (jti, principal_id, expires_at)
     VALUES (${payload.jti}, ${principal.id}, to_timestamp(${payload.exp}))
@@ -183,7 +187,7 @@ async function handleGetApiAuthMagic(request: Request) {
     mfaVerifiedAt: principal.require_mfa ? null : new Date().toISOString()
   });
 
-  const workspaceId = await getPrimaryWorkspaceIdForTenant(principal.tenant_id);
+  const workspaceId = await getPrimaryWorkspaceIdForTenant(principal.tenant_id, rawSql);
 
   const response = NextResponse.redirect(new URL(safeNext, base));
   await setControlPlaneSessionCookies({
