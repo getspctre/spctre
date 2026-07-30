@@ -184,7 +184,8 @@ async function handleGetApiAuthMagic(request: Request) {
     principalId: principal.id,
     tenantId: principal.tenant_id,
     authMethod: "SESSION",
-    mfaVerifiedAt: principal.require_mfa ? null : new Date().toISOString()
+    mfaVerifiedAt: principal.require_mfa ? null : new Date().toISOString(),
+    db: rawSql,
   });
 
   const workspaceId = await getPrimaryWorkspaceIdForTenant(principal.tenant_id, rawSql);

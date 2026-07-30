@@ -9,7 +9,7 @@ vi.mock("@/lib/db", () => ({
   sql: tenantSqlMock,
 }));
 
-const { getPrincipalForLogin } = await import("../lib/repositories/auth/session");
+const { createSessionRow, getPrincipalForLogin } = await import("../lib/repositories/auth/session");
 
 describe("magic-link principal lookup", () => {
   beforeEach(() => {
@@ -34,6 +34,22 @@ describe("magic-link principal lookup", () => {
     });
 
     expect(ownerSqlMock).toHaveBeenCalledOnce();
+    expect(tenantSqlMock).not.toHaveBeenCalled();
+  });
+
+  it("creates the bootstrap session through the supplied owner connection", async () => {
+    ownerSqlMock
+      .mockResolvedValueOnce([{ id: "principal-1" }])
+      .mockResolvedValueOnce([{ id: "session-1" }]);
+
+    await expect(createSessionRow({
+      principalId: "principal-1",
+      tenantId: "tenant-1",
+      expiresAt: "2026-07-31T00:00:00.000Z",
+      authMethod: "SESSION",
+    }, ownerSqlMock as never)).resolves.toBe("session-1");
+
+    expect(ownerSqlMock).toHaveBeenCalledTimes(2);
     expect(tenantSqlMock).not.toHaveBeenCalled();
   });
 });
