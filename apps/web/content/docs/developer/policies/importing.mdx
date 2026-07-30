@@ -93,7 +93,7 @@ curl -sS -X POST https://app.spctre.dev/api/v1/policy/imports \
   The `policy:import` scope is **admin-issuable only** (mint a key under **Settings → API Keys**) and is **never** granted to a runtime agent token from `spctre init`. A governed agent therefore cannot import — or approve or publish — its own policy.
 </Callout>
 
-Import is **idempotent** on the branch identity `(workspace, branchName, scope, connector)` and the source hash:
+Import is **idempotent** on the branch identity `(workspace, scope, environment, connector, branchName)` and the source hash:
 
 | Situation | Result |
 |---|---|

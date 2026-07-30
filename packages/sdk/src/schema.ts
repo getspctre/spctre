@@ -375,7 +375,7 @@ export interface paths {
         put?: never;
         /**
          * Import a local policy source (idempotent)
-         * @description Imports a local AGT-compatible policy document into the control plane as an unapproved draft branch/revision, for automation/CI. Requires the `policy:import` scope, which is admin-issuable only and never granted to runtime agent tokens. Idempotent on the branch identity `(workspace, branchName, scope, connector)` and the source hash: a new branch returns 201; an unchanged re-import returns 200 with `alreadyCurrent: true` and writes nothing; changed source appends a new draft revision. Never approves or publishes — review and publication remain manual.
+         * @description Imports a local AGT-compatible policy document into the control plane as an unapproved draft branch/revision, for automation/CI. Requires the `policy:import` scope, which is admin-issuable only and never granted to runtime agent tokens. Idempotent on the branch identity `(workspace, scope, environment, connector, branchName)` and the source hash: a new branch returns 201; an unchanged re-import returns 200 with `alreadyCurrent: true` and writes nothing; changed source appends a new draft revision. Never approves or publishes — review and publication remain manual.
          */
         post: operations["importPolicy"];
         delete?: never;
