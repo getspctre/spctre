@@ -153,6 +153,13 @@ function isHealthPath(pathname: string): boolean {
   return pathname === "/api/health" || pathname === "/api/ready";
 }
 
+// Paddle delivers webhooks from its own fleet, whose source IPs are not a
+// stable customer-controlled allowlist. This one endpoint authenticates every
+// request with Paddle's HMAC signature before doing any billing work.
+function isPaddleWebhookRequest(request: NextRequest): boolean {
+  return request.method === "POST" && request.nextUrl.pathname === "/api/billing/paddle/webhook";
+}
+
 function generateNonce(): string {
   const bytes = new Uint8Array(16);
   crypto.getRandomValues(bytes);
@@ -279,7 +286,12 @@ export async function proxy(request: NextRequest) {
   const ip = getClientIp(request);
   const allowedSourceIps = parseAllowedSourceIps();
 
-  if (allowedSourceIps.size > 0 && !isHealthPath(pathname) && !allowedSourceIps.has(ip)) {
+  if (
+    allowedSourceIps.size > 0 &&
+    !isHealthPath(pathname) &&
+    !isPaddleWebhookRequest(request) &&
+    !allowedSourceIps.has(ip)
+  ) {
     return NextResponse.json({ error: "Forbidden." }, { status: 403 });
   }
 
