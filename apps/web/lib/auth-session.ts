@@ -77,6 +77,7 @@ export async function createAuthSession(params: {
   mfaVerifiedAt?: string | null;
   userAgent?: string;
   ipAddress?: string;
+  db?: Parameters<typeof createSessionRow>[1];
 }): Promise<string> {
   await ensureAuthDemoTenant();
 
@@ -90,7 +91,7 @@ export async function createAuthSession(params: {
     ipAddress: params.ipAddress,
     authMethod: params.authMethod ?? "SESSION",
     mfaVerifiedAt: params.mfaVerifiedAt,
-  });
+  }, params.db);
 }
 
 export async function revokeAuthSession(sessionId: string, tenantId: string): Promise<void> {

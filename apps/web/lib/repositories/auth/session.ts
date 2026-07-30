@@ -320,10 +320,10 @@ export async function createSessionRow(params: {
   ipAddress?: string | null;
   authMethod: string;
   mfaVerifiedAt?: string | null;
-}): Promise<string> {
-  if (!sql) throw new Error("Database not configured.");
+}, db = sql): Promise<string> {
+  if (!db) throw new Error("Database not configured.");
 
-  const principalRows = await sql<{ id: string }[]>`
+  const principalRows = await db<{ id: string }[]>`
     SELECT id
     FROM app_principal
     WHERE id = ${params.principalId}
@@ -336,7 +336,7 @@ export async function createSessionRow(params: {
     throw new Error("Principal is not available in the selected tenant.");
   }
 
-  const rows = await sql<{ id: string }[]>`
+  const rows = await db<{ id: string }[]>`
     INSERT INTO app_session (
       tenant_id,
       principal_id,
