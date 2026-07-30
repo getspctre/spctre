@@ -364,6 +364,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/policy/imports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import a local policy source (idempotent)
+         * @description Imports a local AGT-compatible policy document into the control plane as an unapproved draft branch/revision, for automation/CI. Requires the `policy:import` scope, which is admin-issuable only and never granted to runtime agent tokens. Idempotent on the branch identity `(workspace, scope, environment, connector, branchName)` and the source hash: a new branch returns 201; an unchanged re-import returns 200 with `alreadyCurrent: true` and writes nothing; changed source appends a new draft revision. Never approves or publishes — review and publication remain manual.
+         */
+        post: operations["importPolicy"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/verification": {
         parameters: {
             query?: never;
@@ -1040,6 +1060,37 @@ export interface components {
             outcome: "PASS" | "FAIL" | "WARN";
             meta: components["schemas"]["ApiMeta"];
         };
+        PolicyImportRequest: {
+            /** @description The raw AGT-compatible policy document (YAML or JSON). */
+            source: string;
+            /** @description Target branch name. Lowercase letters, digits, hyphens, and slashes; cannot start or end with a hyphen or slash. */
+            branchName: string;
+            /**
+             * @description Branch scope. Optional; the server defaults to WORKSPACE when omitted.
+             * @enum {string}
+             */
+            scope?: "WORKSPACE" | "CONNECTOR" | "ENVIRONMENT" | "ORGANIZATION";
+            /** @description Connector id. Required when scope is CONNECTOR. */
+            connector?: string;
+            /** @description Environment. Required when scope is ENVIRONMENT. */
+            environment?: string;
+            /** @description Provenance path recorded with the revision. */
+            sourcePath?: string;
+            /** @description Optional AGT-compatible export target stacks recorded with the revision. */
+            targetStacks?: string[];
+        };
+        PolicyImportResponse: {
+            branchId: string;
+            revisionId: string;
+            /** @description SHA-256 (truncated) of the imported source. */
+            sourceHash: string;
+            /** @description True when a brand-new branch was created (HTTP 201). */
+            created: boolean;
+            /** @description True when the branch head already carried this exact source; no write was performed. */
+            alreadyCurrent: boolean;
+            ruleCount: number;
+            meta: components["schemas"]["ApiMeta"];
+        };
         ApprovalResponse: {
             /** @description The approval record for the requested revision. */
             approval: {
@@ -1691,6 +1742,42 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
             503: components["responses"]["ServiceUnavailable"];
+        };
+    };
+    importPolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PolicyImportRequest"];
+            };
+        };
+        responses: {
+            /** @description Existing branch updated, or already current (no write). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PolicyImportResponse"];
+                };
+            };
+            /** @description New draft branch created. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PolicyImportResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
         };
     };
     listVerifications: {

@@ -44,7 +44,7 @@ export const SPCTRE_OPENAPI_SPEC = {
         type: "http",
         scheme: "bearer",
         description:
-          "Service account API key. Generate one from the Spctre web UI under Settings → API Keys, then pass it as `Authorization: Bearer <key>`. Keys carry declared permission scopes such as `decision:evaluate`, `evidence:write`, `bundle:read`, `compliance:read`, `approvals:read`, `operations:read`, `workflow:read`, `members:read`, and `workspaces:read` that are enforced at the API layer.",
+          "Service account API key. Generate one from the Spctre web UI under Settings → API Keys, then pass it as `Authorization: Bearer <key>`. Keys carry declared permission scopes such as `decision:evaluate`, `evidence:write`, `bundle:read`, `policy:import`, `compliance:read`, `approvals:read`, `operations:read`, `workflow:read`, `members:read`, and `workspaces:read` that are enforced at the API layer. `policy:import` is admin-issuable only and is never granted to runtime agent tokens, so a governed agent cannot import its own policy.",
       },
       gatewayWebhookSecret: {
         type: "apiKey",
@@ -852,6 +852,49 @@ export const SPCTRE_OPENAPI_SPEC = {
         },
       },
 
+      // ── Policy import ─────────────────────────────────────
+      PolicyImportRequest: {
+        type: "object",
+        required: ["source", "branchName"],
+        properties: {
+          source: { type: "string", minLength: 1, description: "The raw AGT-compatible policy document (YAML or JSON)." },
+          branchName: {
+            type: "string",
+            description: "Target branch name. Lowercase letters, digits, hyphens, and slashes; cannot start or end with a hyphen or slash.",
+          },
+          scope: {
+            type: "string",
+            enum: ["WORKSPACE", "CONNECTOR", "ENVIRONMENT", "ORGANIZATION"],
+            // No schema `default`: openapi-typescript treats a defaulted property
+            // as required in the generated SDK, but this request field is
+            // optional (the server defaults it to WORKSPACE when omitted).
+            description: "Branch scope. Optional; the server defaults to WORKSPACE when omitted.",
+          },
+          connector: { type: "string", description: "Connector id. Required when scope is CONNECTOR." },
+          environment: { type: "string", description: "Environment. Required when scope is ENVIRONMENT." },
+          sourcePath: { type: "string", description: "Provenance path recorded with the revision." },
+          targetStacks: {
+            type: "array",
+            items: { type: "string" },
+            description: "Optional AGT-compatible export target stacks recorded with the revision.",
+          },
+        },
+      },
+
+      PolicyImportResponse: {
+        type: "object",
+        required: ["branchId", "revisionId", "sourceHash", "created", "alreadyCurrent", "ruleCount", "meta"],
+        properties: {
+          branchId: { type: "string" },
+          revisionId: { type: "string" },
+          sourceHash: { type: "string", description: "SHA-256 (truncated) of the imported source." },
+          created: { type: "boolean", description: "True when a brand-new branch was created (HTTP 201)." },
+          alreadyCurrent: { type: "boolean", description: "True when the branch head already carried this exact source; no write was performed." },
+          ruleCount: { type: "integer" },
+          meta: { $ref: "#/components/schemas/ApiMeta" },
+        },
+      },
+
       // ── Approvals ─────────────────────────────────────────
       ApprovalResponse: {
         type: "object",
@@ -1524,6 +1567,48 @@ export const SPCTRE_OPENAPI_SPEC = {
     },
 
     // ── Verification ──────────────────────────────────────────
+    // ── Policy ────────────────────────────────────────────────
+    "/policy/imports": {
+      post: {
+        operationId: "importPolicy",
+        summary: "Import a local policy source (idempotent)",
+        description:
+          "Imports a local AGT-compatible policy document into the control plane as an unapproved draft branch/revision, for automation/CI. Requires the `policy:import` scope, which is admin-issuable only and never granted to runtime agent tokens. Idempotent on the branch identity `(workspace, scope, environment, connector, branchName)` and the source hash: a new branch returns 201; an unchanged re-import returns 200 with `alreadyCurrent: true` and writes nothing; changed source appends a new draft revision. Never approves or publishes — review and publication remain manual.",
+        "x-spctre-plan": "oss",
+        tags: ["Policy"],
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/PolicyImportRequest" },
+            },
+          },
+        },
+        responses: {
+          "200": {
+            description: "Existing branch updated, or already current (no write).",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/PolicyImportResponse" },
+              },
+            },
+          },
+          "201": {
+            description: "New draft branch created.",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/PolicyImportResponse" },
+              },
+            },
+          },
+          "400": { $ref: "#/components/responses/BadRequest" },
+          "401": { $ref: "#/components/responses/Unauthorized" },
+          "404": { $ref: "#/components/responses/NotFound" },
+        },
+      },
+    },
+
     "/verification": {
       post: {
         operationId: "ingestVerification",
@@ -1742,6 +1827,7 @@ export const SPCTRE_OPENAPI_SPEC = {
     { name: "Evidence", description: "Agent runtime governance decision ingestion." },
     { name: "Gateway", description: "Policy enforcement gateway — decide, escalate, and resolve." },
     { name: "Bundle", description: "Published policy bundle download." },
+    { name: "Policy", description: "Policy authoring — idempotent import of local policy sources (operator/CI identity)." },
     { name: "Compliance", description: "Compliance packet export and framework annotation." },
     { name: "Simulation", description: "Policy simulation and evaluation." },
     { name: "Verification", description: "Policy verification result ingestion and query." },
