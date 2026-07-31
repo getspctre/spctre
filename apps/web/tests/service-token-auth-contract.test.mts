@@ -98,4 +98,21 @@ describe.skipIf(!databaseAvailable)("service token authentication contract", () 
       SELECT last_used_at FROM service_token WHERE token_hash = ${hashServiceToken("active-token")}
     `).resolves.toEqual([{ last_used_at: expect.any(Date) }]);
   });
+
+  it("authenticates a valid token before a tenant context is available", async () => {
+    const fixture = await createFixture();
+    await issueToken(fixture, "pre-auth-token", ["bundle:read"]);
+
+    await expect(authenticateServiceToken(requestWithAuth("Bearer pre-auth-token"), "bundle:read"))
+      .resolves.toEqual({
+        ok: true,
+        auth: {
+          tokenId: expect.any(String),
+          tenantId: fixture.tenantId,
+          workspaceId: fixture.workspaceId,
+          principalId: fixture.principalId,
+          scopes: ["bundle:read"],
+        },
+      });
+  });
 });

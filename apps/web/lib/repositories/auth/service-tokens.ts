@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from "crypto";
-import { rawSql, sql, type TxClient } from "@/lib/db";
+import { rawSql, runWithTransientReadRetry, sql, type TxClient } from "@/lib/db";
 
 export type ServiceTokenScope =
   | "bundle:read"
@@ -77,12 +77,18 @@ export async function authenticateServiceToken(
   requiredScope: ServiceTokenScope
 ): Promise<{ ok: true; auth: ServiceTokenAuth } | { ok: false; error: string }> {
   if (!sql) return { ok: false, error: "Database not configured." };
+  // Authentication starts without a tenant context. Use the owner connection
+  // for the hash lookup, then derive the tenant exclusively from that trusted
+  // row. The raw token is unguessable and is never used as a tenant selector.
+  // Production requires DATABASE_OWNER_URL to use an RLS-bypassing owner role;
+  // without it this fallback cannot see tenant-isolated token rows.
+  const db = rawSql ?? sql;
 
   const authHeader = request.headers.get("authorization") ?? "";
   const bearer = authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : "";
   if (!bearer) return { ok: false, error: "Missing bearer token." };
 
-  const rows = await sql<
+  const rows = await runWithTransientReadRetry(() => db<
     {
       id: string;
       tenant_id: string;
@@ -97,7 +103,7 @@ export async function authenticateServiceToken(
       AND revoked_at IS NULL
       AND (expires_at IS NULL OR expires_at > now())
     LIMIT 1
-  `;
+  `);
 
   const row = rows[0];
   if (!row) return { ok: false, error: "Missing or invalid bearer token." };
@@ -107,7 +113,7 @@ export async function authenticateServiceToken(
     return { ok: false, error: `Token is missing ${requiredScope} scope.` };
   }
 
-  await sql`
+  await db`
     UPDATE service_token
     SET last_used_at = now()
     WHERE id = ${row.id}
