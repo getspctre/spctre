@@ -11,6 +11,7 @@ import { SettingsHeader } from "@/components/settings-header";
 import { createTenantTerminologyStore } from "@/lib/repositories/i18n/terminology";
 import { TerminologyOverrideInput, TerminologyResetButton } from "./terminology-row-controls";
 import { sourceTermForLocale, terminologyOptions } from "./terminology-options";
+import { swallow } from "@/lib/platform/swallow";
 
 export const dynamic = "force-dynamic";
 
@@ -75,7 +76,7 @@ export default async function AdminLocalizationPage({
   const localeParam = typeof params.locale === "string" ? params.locale : "en";
   const locale = normalizeLocale(localeParam);
   const { tenantId } = await getActiveScope();
-  const overrides = await createTenantTerminologyStore().listOverrides(tenantId, locale).catch(() => []);
+  const overrides = await createTenantTerminologyStore().listOverrides(tenantId, locale).catch(swallow("listOverrides", []));
   const baseMessages = flattenMessages(getStaticMessages(locale));
   const overrideValues = new Map(overrides.map((override) => [override.translationKey, override.customValue]));
 

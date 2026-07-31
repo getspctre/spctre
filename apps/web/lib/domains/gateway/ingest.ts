@@ -7,6 +7,7 @@ import type { RevisionAtTime } from "@/lib/repositories/gateway";
 
 import { logger } from "@spctre/platform/logging";
 import { incrementCounter, recordDuration } from "@spctre/platform/metrics";
+import { swallow } from "@/lib/platform/swallow";
 
 export type GatewayProvider = "portkey" | "helicone" | "litellm" | "notion";
 
@@ -378,7 +379,7 @@ export async function ingestNormalizedGatewayEvent(
         gatewayProvider: event.provider,
         provenanceGap,
       },
-    }).catch(() => {});
+    }).catch(swallow("appendOperationsLog", undefined));
   }
 
   const outcome = deduplicated ? "deduplicated" : "created";

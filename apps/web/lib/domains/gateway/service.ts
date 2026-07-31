@@ -25,6 +25,7 @@ import {
 import { isDatabaseConfigured } from "@/lib/repositories/shared/database";
 import { ensureAuthDemoTenant, resolveTenantIdOrDemo, resolveWorkspaceIdOrDemo } from "@/lib/repositories/auth/session";
 import { ingestNormalizedGatewayEvent, type GatewayEventV1 } from "@/lib/domains/gateway/ingest";
+import { swallow } from "@/lib/platform/swallow";
 
 export function isGatewayDatabaseConfigured(): boolean {
   return isDatabaseConfigured();
@@ -81,7 +82,7 @@ export async function resolveGatewayEscalation(params: {
   return runWithTenantContext(params.tenantId, async () => {
     const resolved = await resolveEscalationQueueItem(params);
     if (!resolved || params.resolutionOutcome === "ESCALATE") return resolved;
-    const context = await getResolvedEscalationReceiptContext(params).catch(() => null);
+    const context = await getResolvedEscalationReceiptContext(params).catch(swallow("getResolvedEscalationReceiptContext", null));
     if (!context || !["HIGH", "CRITICAL"].includes(context.riskLevel)) return resolved;
     const receipt = issueGatewayActionReceipt({
       decisionId: context.decisionId,
@@ -101,7 +102,7 @@ export async function resolveGatewayEscalation(params: {
       gatewayDecisionId: context.gatewayDecisionId,
       stage: "RESOLUTION",
       receipt,
-    }).catch(() => null);
+    }).catch(swallow("persistActionReceipt", null));
     if (persisted) {
       appendOperationsLog({
         tenantId: params.tenantId,
@@ -111,7 +112,7 @@ export async function resolveGatewayEscalation(params: {
         sourceTable: "action_receipt",
         actorId: params.reviewedBy,
         payload: { decisionId: context.decisionId, revisionId: context.revisionId, artifactHash: context.artifactHash, outcome: params.resolutionOutcome, reviewerId: params.reviewedBy, keyId: persisted.signature.keyId, payloadHash: persisted.signature.payloadHash },
-      }).catch(() => {});
+      }).catch(swallow("appendOperationsLog", undefined));
     }
     return resolved;
   });
@@ -285,7 +286,7 @@ async function persistGatewayDecisionAndBrokerCredentialsInTenant(
       workspaceId: params.workspaceId,
       gatewayDecisionId,
       receipt: signed,
-    }).catch(() => null);
+    }).catch(swallow("persistActionReceipt", null));
     if (persisted) {
       appendOperationsLog({
         tenantId: params.tenantId,
@@ -302,7 +303,7 @@ async function persistGatewayDecisionAndBrokerCredentialsInTenant(
           keyId: persisted.signature.keyId,
           payloadHash: persisted.signature.payloadHash,
         },
-      }).catch(() => {});
+      }).catch(swallow("appendOperationsLog", undefined));
     }
     return persisted ?? undefined;
   };
@@ -404,7 +405,7 @@ export async function resolveEscalationDecision(input: {
   const { actor } = await getActiveActor({
     workspaceId: workspaceContext.workspaceId,
     tenantId: workspaceContext.tenantId,
-  }).catch(() => ({ actor: null }));
+  }).catch(swallow("getActiveActor", { actor: null }));
   if (!actor) return { error: "Authentication required." };
 
   if (!input.queueId) return { error: "Queue item ID is required." };
@@ -455,7 +456,7 @@ export async function resolveEscalationDecision(input: {
       resolutionNote: input.resolutionNote,
       agentGuidance: input.agentGuidance,
     },
-  }).catch(() => {});
+  }).catch(swallow("appendOperationsLog", undefined));
 
   return { ok: true };
   });
@@ -473,7 +474,7 @@ export async function claimEscalationDecision(input: {
   const { actor } = await getActiveActor({
     workspaceId: workspaceContext.workspaceId,
     tenantId: workspaceContext.tenantId,
-  }).catch(() => ({ actor: null }));
+  }).catch(swallow("getActiveActor", { actor: null }));
   if (!actor) return { error: "Authentication required." };
 
   if (!input.queueId) return { error: "Queue item ID is required." };
@@ -504,7 +505,7 @@ export async function claimEscalationDecision(input: {
     sourceTable: "gateway_escalation_queue",
     actorId: actor.id,
     payload: { queueId: input.queueId, action: "CLAIMED", assignedTo: actor.id },
-  }).catch(() => {});
+  }).catch(swallow("appendOperationsLog", undefined));
 
   return { ok: true };
   });

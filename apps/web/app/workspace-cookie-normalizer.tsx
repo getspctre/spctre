@@ -26,7 +26,7 @@ export function WorkspaceCookieNormalizer({
       },
       body: JSON.stringify({ tenantId, workspaceId })
     }).catch(() => {
-      // Ignore normalization failures and keep using the resolved fallback workspace.
+      // Keep using the resolved fallback workspace; this browser-only normalization is retried on navigation.
     });
   }, [enabled, tenantId, workspaceId]);
 

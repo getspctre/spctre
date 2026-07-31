@@ -4,6 +4,7 @@ import { getAuthSession } from "@/lib/auth-session";
 import { findActorById } from "@/lib/actors";
 import { isWorkspaceDatabaseConfigured } from "@/lib/domains/workspace/service";
 import { getRequiredWorkspaceContext } from "@/lib/workspace";
+import { swallow } from "@/lib/platform/swallow";
 
 export type AdminAuthActionState =
   | { ok: true; message?: string; messageCode?: string; error?: never; errorCode?: never }
@@ -15,7 +16,7 @@ export async function requireAdminSession() {
     return { error: "Database is not configured." } as const;
   }
 
-  const session = await getAuthSession().catch(() => null);
+  const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (!session) {
     return { error: "Authentication required." } as const;
   }
@@ -25,7 +26,7 @@ export async function requireAdminSession() {
   const actor = await findActorById(session.principalId, {
     tenantId: session.tenantId,
     workspaceId
-  }).catch(() => null);
+  }).catch(swallow("findActorById", null));
   if (!actor || !actor.reviewerRoles.includes("Admin")) {
     return { error: "Admin permission is required." } as const;
   }

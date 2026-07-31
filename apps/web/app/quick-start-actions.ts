@@ -18,6 +18,7 @@ import { insertRuntimeEvidenceWithDedup } from "@/lib/repositories/evidence/runt
 import { issueServiceAccountKey } from "@/lib/service-tokens";
 import { verifyWriteAccess } from "@/lib/demo-guard";
 import { buildWorkspacePath } from "@/lib/workspace/path";
+import { swallow } from "@/lib/platform/swallow";
 
 export type QuickStartState = { error: string } | null;
 export type SetupTokenState =
@@ -201,7 +202,7 @@ export async function generateOnboardingSetupToken(
         source: "web_onboarding",
         expiresInDays: 30,
       },
-    }).catch(() => {});
+    }).catch(swallow("recordAuthOperation", undefined));
 
     await recordWebOnboardingMilestone({
       tenantId,

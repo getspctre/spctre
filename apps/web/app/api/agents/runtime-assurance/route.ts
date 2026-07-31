@@ -1,6 +1,7 @@
 import { getAuthSession } from "@/lib/auth-session";
 import { getAgentsPageModel } from "@/lib/domains/agents/service";
 import { withApiRoute } from "@/lib/platform/api-route";
+import { swallow } from "@/lib/platform/swallow";
 
 /**
  * Reviewer/API view of declared reporting inventory, production heartbeat
@@ -8,7 +9,7 @@ import { withApiRoute } from "@/lib/platform/api-route";
  * discovery or infrastructure scanning.
  */
 const handleGetRuntimeAssurance = withApiRoute("/api/agents/runtime-assurance", async (request, ctx) => {
-  const session = await getAuthSession().catch(() => null);
+  const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (!session) return ctx.error(401, "Authentication required.");
   const model = await getAgentsPageModel();
   const url = new URL(request.url);

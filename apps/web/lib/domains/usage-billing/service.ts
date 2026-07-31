@@ -7,6 +7,7 @@ import {
   listCommercialEvents,
   requestCommercialReview,
 } from "@/lib/repositories/workspace";
+import { swallow } from "@/lib/platform/swallow";
 
 export async function getUsageBillingInputs(params: {
   workspaceId: string;
@@ -16,7 +17,7 @@ export async function getUsageBillingInputs(params: {
   commercialEventsLimit?: number;
 }) {
   const [usage, profile, events, branches, agents, simulations] = await Promise.all([
-    getCommercialUsageSummary(params.workspaceId, params.tenantId).catch(() => ({
+    getCommercialUsageSummary(params.workspaceId, params.tenantId).catch(swallow("getCommercialUsageSummary", {
       workspaceCount: params.workspaceCountFallback,
       policyBundleCount: 0,
       retainedAuditEventCount: 0,
@@ -25,9 +26,9 @@ export async function getUsageBillingInputs(params: {
     })),
     getCommercialProfile(params.tenantId),
     listCommercialEvents(params.workspaceId, params.tenantId, params.commercialEventsLimit),
-    listBranches(params.workspaceId, params.tenantId).catch(() => []),
-    listAgentSummaries(params.workspaceId, params.tenantId).catch(() => []),
-    listSimulationRuns(params.workspaceId, params.tenantId, params.simulationLimit).catch(() => []),
+    listBranches(params.workspaceId, params.tenantId).catch(swallow("listBranches", [])),
+    listAgentSummaries(params.workspaceId, params.tenantId).catch(swallow("listAgentSummaries", [])),
+    listSimulationRuns(params.workspaceId, params.tenantId, params.simulationLimit).catch(swallow("listSimulationRuns", [])),
   ]);
 
   return { usage, profile, events, branches, agents, simulations };

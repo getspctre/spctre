@@ -13,6 +13,7 @@ import { getAuthSession, SESSION_COOKIE, sessionTtlHours } from "@/lib/auth-sess
 import { createSessionGuardToken, SESSION_GUARD_COOKIE } from "@/lib/session-guard";
 import { getWorkspaceContext } from "@/lib/workspace";
 import { isFeatureEnabled } from "@/lib/feature-flags-server";
+import { swallow } from "@/lib/platform/swallow";
 
 export type WorkspaceSwitchState =
   | { workspaceId: string; error?: never }
@@ -42,7 +43,7 @@ export async function setActiveWorkspace(
   if (!workspaceId) return { error: "Workspace is required." };
 
   const cookieStore = await cookies();
-  const session = await getAuthSession().catch(() => null);
+  const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (!session) return { error: "Authentication required." };
   const tenantId = session.tenantId;
 
@@ -72,7 +73,7 @@ export async function createWorkspace(
   _prev: WorkspaceCreateState,
   formData: FormData
 ): Promise<WorkspaceCreateState> {
-  const session = await getAuthSession().catch(() => null);
+  const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (!session) return { error: "Authentication required." };
   const tenantId = session.tenantId;
   const principalId = session.principalId;
@@ -120,7 +121,7 @@ export async function setActiveTenant(
   if (!tenantId) return { error: "Tenant is required." };
 
   const cookieStore = await cookies();
-  const session = await getAuthSession().catch(() => null);
+  const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (!session) return { error: "Authentication required." };
   const principalId = session.principalId;
   const currentTenantId = session.tenantId;
@@ -187,8 +188,8 @@ export async function setActiveTenant(
 // cookies (in that precedence order).
 async function resolveActorSwitchScope() {
   const cookieStore = await cookies();
-  const session = await getAuthSession().catch(() => null);
-  const workspaceContext = await getWorkspaceContext().catch(() => null);
+  const session = await getAuthSession().catch(swallow("getAuthSession", null));
+  const workspaceContext = await getWorkspaceContext().catch(swallow("getWorkspaceContext", null));
   return {
     cookieStore,
     session,

@@ -10,6 +10,7 @@ import {
   isScimProvisioningEntitled,
   revokeScimToken,
 } from "@/lib/domains/scim-token/service";
+import { swallow } from "@/lib/platform/swallow";
 
 export type ScimTokenActionState =
   | { ok: true; token: string; label: string | null; error?: never; errorCode?: never }
@@ -22,18 +23,18 @@ export type ScimTokenMutationState =
   | null;
 
 async function requireScimAdmin() {
-  const session = await getAuthSession().catch(() => null);
+  const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (!session) return { error: "Authentication required.", errorCode: "auth_required" } as const;
-  const ctx = await getActiveScope().catch(() => null);
+  const ctx = await getActiveScope().catch(swallow("getActiveScope", null));
   if (!ctx) return { error: "Workspace context unavailable.", errorCode: "workspace_unavailable" } as const;
   const actor = await findActorById(session.principalId, {
     tenantId: session.tenantId,
     workspaceId: ctx.workspaceId,
-  }).catch(() => null);
+  }).catch(swallow("findActorById", null));
   if (!actor?.reviewerRoles.includes("Admin")) {
     return { error: "Admin permission is required.", errorCode: "admin_required" } as const;
   }
-  const entitled = await isScimProvisioningEntitled(session.tenantId).catch(() => false);
+  const entitled = await isScimProvisioningEntitled(session.tenantId).catch(swallow("isScimProvisioningEntitled", false));
   if (!entitled) {
     return { error: "SCIM provisioning requires an Enterprise subscription.", errorCode: "not_entitled" } as const;
   }
@@ -98,7 +99,7 @@ export async function revokeScimProvisioningToken(
     id,
     tenantId: guard.session.tenantId,
     actorId: guard.session.principalId,
-  }).catch(() => false);
+  }).catch(swallow("revokeScimToken", false));
 
   if (!revoked) {
     return { error: "Token was not found or is already revoked.", errorCode: "revoke_failed" };

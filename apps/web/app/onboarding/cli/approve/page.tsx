@@ -5,6 +5,7 @@ import { getTranslations } from "next-intl/server";
 import { getAuthSession } from "@/lib/auth-session";
 import { isDemoTenant } from "@/lib/demo-guard";
 import { approveCliOnboarding } from "./actions";
+import { swallow } from "@/lib/platform/swallow";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +20,7 @@ export default async function CliOnboardingApprovePage({
   const approved = params.approved === "1";
   const error = typeof params.error === "string" ? params.error : "";
   const workspace = typeof params.workspace === "string" ? params.workspace : "";
-  const session = await getAuthSession().catch(() => null);
+  const session = await getAuthSession().catch(swallow("getAuthSession", null));
 
   if (session && isDemoTenant(session.tenantId)) redirect("/");
 

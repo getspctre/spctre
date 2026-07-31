@@ -5,6 +5,7 @@ import { getReviewArtifacts } from "@/lib/repositories/policy";
 import { isDatabaseConfigured } from "@/lib/repositories/shared/database";
 import { getWorkspaceContext } from "@/lib/workspace";
 import { buildWorkspacePath } from "@/lib/workspace/path";
+import { swallow } from "@/lib/platform/swallow";
 
 export type ComposeState =
   | { ok: true; refreshedAt: string; error?: never }
@@ -30,7 +31,7 @@ export async function refreshReviewComposition(
       revisionId,
       workspaceContext.workspaceId,
       workspaceContext.tenantId
-    ).catch(() => null);
+    ).catch(swallow("getReviewArtifacts", null));
 
     if (!reviewArtifacts) {
       return { error: "Unable to compose review artifacts for this revision." };

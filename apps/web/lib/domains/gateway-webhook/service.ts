@@ -7,6 +7,7 @@ import {
   type WebhookProvider,
   type WebhookRegistration,
 } from "@/lib/repositories/gateway-webhook";
+import { swallow } from "@/lib/platform/swallow";
 
 export interface GatewayWebhookProviderMeta {
   id: WebhookProvider;
@@ -76,7 +77,7 @@ export async function createGatewayWebhookRegistration(params: {
         provider: params.provider,
         label: params.label ?? null,
       },
-    }).catch(() => {});
+    }).catch(swallow("appendOperationsLog", undefined));
 
     return result;
   });
@@ -105,7 +106,7 @@ export async function revokeGatewayWebhookRegistration(params: {
         sourceTable: "gateway_webhook_registration",
         actorId: params.actorId,
         payload: { keyType: "GATEWAY_WEBHOOK", revokedAt: new Date().toISOString() },
-      }).catch(() => {});
+      }).catch(swallow("appendOperationsLog", undefined));
     }
 
     return revoked;

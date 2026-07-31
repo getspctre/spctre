@@ -5,6 +5,7 @@ import { getTranslations } from "next-intl/server";
 import { getAuthSession } from "@/lib/auth-session";
 import { isDemoTenant } from "@/lib/demo-guard";
 import { approveDevice } from "./actions";
+import { swallow } from "@/lib/platform/swallow";
 
 export const dynamic = "force-dynamic";
 
@@ -24,7 +25,7 @@ export default async function DeviceAuthPage({
         ? params.error
         : "";
   const workspace = typeof params.workspace === "string" ? params.workspace : "";
-  const session = await getAuthSession().catch(() => null);
+  const session = await getAuthSession().catch(swallow("getAuthSession", null));
 
   if (session && isDemoTenant(session.tenantId)) redirect("/");
 

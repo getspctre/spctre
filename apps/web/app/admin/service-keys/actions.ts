@@ -8,6 +8,7 @@ import { recordAuthOperation, revokeServiceKeyById } from "@/lib/domains/auth/se
 import { ADMIN_ISSUABLE_API_KEY_SCOPES, issueServiceAccountKey, type ServiceTokenScope } from "@/lib/service-tokens";
 import { getActiveScope } from "@/lib/workspace";
 import { verifyWriteAccess } from "@/lib/demo-guard";
+import { swallow } from "@/lib/platform/swallow";
 
 export type ServiceKeyActionState =
   | { ok: true; rawToken: string; label: string; tokenPrefix: string; error?: never; errorCode?: never }
@@ -20,14 +21,14 @@ export type ServiceKeyMutationState =
   | null;
 
 async function requireKeyAdmin() {
-  const session = await getAuthSession().catch(() => null);
+  const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (!session) return { error: "Authentication required.", errorCode: "auth_required" } as const;
-  const ctx = await getActiveScope().catch(() => null);
+  const ctx = await getActiveScope().catch(swallow("getActiveScope", null));
   if (!ctx) return { error: "Workspace context unavailable.", errorCode: "workspace_unavailable" } as const;
   const actor = await findActorById(session.principalId, {
     tenantId: session.tenantId,
     workspaceId: ctx.workspaceId,
-  }).catch(() => null);
+  }).catch(swallow("findActorById", null));
   if (!actor?.reviewerRoles.includes("Admin")) {
     return { error: "Admin permission is required.", errorCode: "admin_required" } as const;
   }
@@ -83,7 +84,7 @@ export async function createServiceKey(
     sourceTable: "service_token",
     actorId: guard.session.principalId,
     payload: { label, scopes, keyType: "API_KEY", expiresInDays: expiresInDays ?? null },
-  }).catch(() => {});
+  }).catch(swallow("recordAuthOperation", undefined));
 
   revalidatePath("/admin/service-keys");
   return { ok: true, rawToken: result.rawToken, label, tokenPrefix: result.tokenPrefix };
@@ -129,7 +130,7 @@ export async function revokeServiceKey(
     sourceTable: "service_token",
     actorId: guard.session.principalId,
     payload: { keyId, revokedAt: new Date().toISOString() },
-  }).catch(() => {});
+  }).catch(swallow("recordAuthOperation", undefined));
 
   revalidatePath("/admin/service-keys");
   return { ok: true, message: "Service key revoked.", messageCode: "revoked" };

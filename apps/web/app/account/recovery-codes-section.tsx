@@ -75,7 +75,9 @@ export function RecoveryCodesSection({ unusedCount }: RecoveryCodesSectionProps)
             className="button"
             type="button"
             onClick={() => {
-              navigator.clipboard.writeText(codes.join("\n")).catch(() => undefined);
+              navigator.clipboard.writeText(codes.join("\n")).catch(() => {
+                // Clipboard access is a browser permission; the codes remain visible for manual copying.
+              });
             }}
           >
             {t("copy_all")}

@@ -7,6 +7,7 @@ import {
 import { revalidatePaths } from "@/lib/platform/cache";
 import { verifyWriteAccess } from "@/lib/demo-guard";
 import { getActiveScope, getWorkspaceContext } from "@/lib/workspace";
+import { swallow } from "@/lib/platform/swallow";
 
 export type ClaimEscalationState = { error: string } | { ok: true } | null;
 
@@ -24,7 +25,7 @@ export async function claimEscalation(
   if (denied) return denied;
 
   const queueId = String(formData.get("queueId") ?? "").trim();
-  const result = await claimEscalationDecision({ queueId }, await getActiveScope().catch(() => null));
+  const result = await claimEscalationDecision({ queueId }, await getActiveScope().catch(swallow("getActiveScope", null)));
   if ("error" in result) return result;
   revalidatePaths(["/escalations"]);
   return result;
@@ -49,7 +50,7 @@ export async function resolveEscalation(
     resolutionOutcome,
     resolutionNote,
     agentGuidance,
-  }, await getActiveScope().catch(() => null));
+  }, await getActiveScope().catch(swallow("getActiveScope", null)));
   if ("error" in result) {
     return result;
   }

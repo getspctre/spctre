@@ -1,6 +1,7 @@
 import { rawSql, runWithTenantContext, sql } from "@/lib/db";
 import type { JSONValue } from "postgres";
 import { recordConversionTelemetry, type ConversionTelemetryEventType } from "@/lib/repositories/onboarding/telemetry";
+import { swallow } from "@/lib/platform/swallow";
 
 export interface CommercialUsageSummary {
   workspaceCount: number;
@@ -102,7 +103,7 @@ export async function getCommercialUsageSummary(
       WHERE tenant_id = ${tenantId}
         AND workspace_id = ${workspaceId}
         AND revoked_at IS NULL
-    `.catch(() => [{ count: "0" }])
+    `.catch(swallow("sql", [{ count: "0" }]))
   ]);
 
   return {
@@ -314,6 +315,6 @@ export async function requestCommercialReview(params: {
         'ALLOWED', ${`Requested ${params.targetPlan} commercial review`},
         ${tx.json({ targetPlan: params.targetPlan, note: params.note } as JSONValue)}
       )
-    `.catch(() => {});
+    `.catch(swallow("tx", undefined));
   });
 }

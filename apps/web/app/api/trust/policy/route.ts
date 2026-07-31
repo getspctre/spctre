@@ -6,15 +6,16 @@ import { isDemoTenant } from "@/lib/demo-guard";
 import { extractTraceId, makeMeta, withTraceId } from "@spctre/api-contracts";
 import type { TrustCalibrationPolicy } from "@spctre/policy-schema";
 import { asInt, asNumber, asString } from "../_shared";
+import { swallow } from "@/lib/platform/swallow";
 
 export const dynamic = "force-dynamic";
 
 async function handleGetApiTrustPolicy(request: Request) {
   const traceId = extractTraceId(request);
-  const session = await getAuthSession().catch(() => null);
+  const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (!session) return withTraceId(Response.json({ error: "Authentication required.", meta: makeMeta(traceId) }, { status: 401 }), traceId);
 
-  const ctx = await getActiveScope().catch(() => null);
+  const ctx = await getActiveScope().catch(swallow("getActiveScope", null));
   if (!ctx) return withTraceId(Response.json({ error: "Workspace context unavailable.", meta: makeMeta(traceId) }, { status: 400 }), traceId);
 
   const url = new URL(request.url);
@@ -39,10 +40,10 @@ async function handleGetApiTrustPolicy(request: Request) {
 
 async function handlePostApiTrustPolicy(request: Request) {
   const traceId = extractTraceId(request);
-  const session = await getAuthSession().catch(() => null);
+  const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (!session) return withTraceId(Response.json({ error: "Authentication required.", meta: makeMeta(traceId) }, { status: 401 }), traceId);
 
-  const ctx = await getActiveScope().catch(() => null);
+  const ctx = await getActiveScope().catch(swallow("getActiveScope", null));
   if (!ctx) return withTraceId(Response.json({ error: "Workspace context unavailable.", meta: makeMeta(traceId) }, { status: 400 }), traceId);
 
   if (isDemoTenant(ctx.tenantId)) {
@@ -103,7 +104,7 @@ async function handlePostApiTrustPolicy(request: Request) {
     sourceTable: "trust_calibration_policy",
     actorId: session.principalId,
     payload: { action: "POLICY_CREATED", policyId: policy.id, name: policy.name },
-  }).catch(() => {});
+  }).catch(swallow("recordTrustOperation", undefined));
 
   return withTraceId(Response.json({ policy, meta: makeMeta(traceId) }, { status: 201 }), traceId);
 }

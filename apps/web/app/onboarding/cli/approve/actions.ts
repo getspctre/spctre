@@ -3,12 +3,13 @@
 import { redirect } from "next/navigation";
 import { getAuthSession } from "@/lib/auth-session";
 import { approveCliOnboardingRequest } from "@/lib/onboarding";
+import { swallow } from "@/lib/platform/swallow";
 
 export async function approveCliOnboarding(formData: FormData): Promise<void> {
   const code = String(formData.get("code") ?? "").trim();
   if (!code) redirect("/onboarding/cli/approve?error=Missing%20approval%20code.");
 
-  const session = await getAuthSession().catch(() => null);
+  const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (!session) {
     redirect(`/login?next=${encodeURIComponent(`/onboarding/cli/approve?code=${code}`)}`);
   }

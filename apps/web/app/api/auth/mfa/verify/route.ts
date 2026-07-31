@@ -13,6 +13,7 @@ import {
 import { extractTraceId, makeMeta } from "@spctre/api-contracts";
 import { checkAuthRateLimit } from "@/lib/auth-rate-limit";
 import { logSecurityEvent } from "@/lib/security-logger";
+import { swallow } from "@/lib/platform/swallow";
 
 interface MfaVerifyPayload {
   code?: unknown;
@@ -96,7 +97,7 @@ async function handlePostApiAuthMfaVerify(request: Request) {
     return response;
   }
 
-  const session = await getAuthSession().catch(() => null);
+  const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (!session) {
     const response = NextResponse.json({ error: "Authentication required.", meta: makeMeta(traceId) }, { status: 401 });
     response.headers.set("x-request-id", traceId);

@@ -14,6 +14,7 @@ import { insertAuthorizationDenialEvent } from "@/lib/repositories/workspace";
 import { isDatabaseConfigured } from "@/lib/repositories/shared/database";
 import { reservedStableRuleIdError } from "@/lib/policy/reserved-rule-ids";
 import type { PolicyParameterConstraint, PolicyControlMapping } from "@spctre/policy-schema";
+import { swallow } from "@/lib/platform/swallow";
 
 export type DraftRevisionState =
   | { revisionId: string; sourceHash: string; ruleCount: number; error?: never }
@@ -237,7 +238,7 @@ export async function createDraftRuleRevisionDecision(input: {
       resourceId: input.branchId,
       principalId: actor.id,
       workspaceId: baseRevision.workspace_id,
-    }).catch(() => {});
+    }).catch(swallow("insertAuthorizationDenialEvent", undefined));
     return { error: adminCheck.reason };
   }
 
@@ -255,7 +256,7 @@ export async function createDraftRuleRevisionDecision(input: {
     };
   }
 
-  const baseRules = await listRulesForRevision(input.baseRevisionId, tenantId).catch(() => []);
+  const baseRules = await listRulesForRevision(input.baseRevisionId, tenantId).catch(swallow("listRulesForRevision", []));
 
   // Copy base rules verbatim into the draft document. Projecting to a subset
   // here would strip parameterConstraints, controlMappings, and AGT-native
@@ -388,11 +389,11 @@ export async function commitRuleRevisionDecision(input: {
       resourceId: input.branchId,
       principalId: actor.id,
       workspaceId: branch.workspace_id,
-    }).catch(() => {});
+    }).catch(swallow("insertAuthorizationDenialEvent", undefined));
     return { error: adminCheck.reason };
   }
 
-  const parentRules = await listRulesForRevision(input.parentRevisionId, tenantId).catch(() => []);
+  const parentRules = await listRulesForRevision(input.parentRevisionId, tenantId).catch(swallow("listRulesForRevision", []));
   const immutableRules = parentRules.filter((r) => r.immutable);
 
   for (const immutableRule of immutableRules) {

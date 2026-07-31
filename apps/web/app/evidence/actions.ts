@@ -9,6 +9,7 @@ import {
 import { revalidatePaths } from "@/lib/platform/cache";
 import { verifyWriteAccess } from "@/lib/demo-guard";
 import { getActiveScope, getWorkspaceContext } from "@/lib/workspace";
+import { swallow } from "@/lib/platform/swallow";
 
 export type SimulationState =
   | { newlyDenied: number; newlyAllowed: number; unchanged: number; total: number; branchId: string; revisionId: string; runId: string; error?: never }
@@ -57,7 +58,7 @@ export async function generateSimulationChangeRecommendation(
   const result = await generateSimulationChangeRecommendationDecision({
     branchId,
     revisionId,
-  }, await getActiveScope().catch(() => null));
+  }, await getActiveScope().catch(swallow("getActiveScope", null)));
   if ("error" in result) return result;
   revalidatePaths(["/evidence", "/operations", "/simulate"]);
   return result;
@@ -81,7 +82,7 @@ export async function applySimulationChangeRecommendation(
     runId: String(formData.get("runId") ?? "").trim() || undefined,
     recommendationSummary: String(formData.get("recommendationSummary") ?? "").trim() || undefined,
     editedSummary: String(formData.get("editedSummary") ?? "").trim() || undefined,
-  }, await getActiveScope().catch(() => null));
+  }, await getActiveScope().catch(swallow("getActiveScope", null)));
   if ("error" in result) return result;
   revalidatePaths(["/evidence", "/operations", "/simulate"]);
   return result;

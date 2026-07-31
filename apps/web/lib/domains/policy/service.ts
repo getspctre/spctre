@@ -26,6 +26,7 @@ import type { ImportPolicyBranchResult } from "@/lib/repositories/policy";
 import { insertAuthorizationDenialEvent, resolveWorkspaceForAction } from "@/lib/repositories/workspace";
 import { isDatabaseConfigured } from "@/lib/repositories/shared/database";
 import { reservedStableRuleIdError } from "@/lib/policy/reserved-rule-ids";
+import { swallow } from "@/lib/platform/swallow";
 
 const VALID_SCOPES = new Set(["ORGANIZATION", "WORKSPACE", "ENVIRONMENT", "CONNECTOR"]);
 
@@ -481,12 +482,12 @@ export async function getPoliciesPageModel(params: {
   const workspaceContext = await getWorkspaceContext({ workspaceSlug: params.workspaceSlug });
   const appViewMode = await getAppViewMode();
 
-  const session = await getAuthSession().catch(() => null);
+  const session = await getAuthSession().catch(swallow("getAuthSession", null));
   const actor = session
     ? await findActorById(session.principalId, {
         tenantId: session.tenantId,
         workspaceId: workspaceContext.workspaceId,
-      }).catch(() => null)
+      }).catch(swallow("findActorById", null))
     : null;
   const isAdmin = Boolean(actor?.reviewerRoles.includes("Admin"));
 

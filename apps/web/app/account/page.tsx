@@ -14,12 +14,13 @@ import { SocialLoginsSection } from "./social-logins-section";
 import { SmsSection } from "./sms-section";
 import { ActiveSessionsSection } from "./active-sessions-section";
 import { PreferencesSection } from "./preferences-section";
+import { swallow } from "@/lib/platform/swallow";
 
 export const dynamic = "force-dynamic";
 
 export default async function AccountPage() {
   const t = await getTranslations("account");
-  const session = await getAuthSession().catch(() => null);
+  const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (!session) {
     redirect("/login");
   }

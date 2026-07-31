@@ -14,13 +14,14 @@ import { PlanGate } from "@/app/plan-gate";
 import { KeyRound, LockKeyhole, ShieldCheck } from "lucide-react";
 import { RemoveIdpForm } from "./remove-idp-form";
 import { SettingsHeader } from "@/components/settings-header";
+import { swallow } from "@/lib/platform/swallow";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminAuthPage() {
   const t = await getTranslations("admin.auth");
   const workspaceContext = await getActiveScope();
-  const session = await getAuthSession().catch(() => null);
+  const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (!session) {
     redirect("/login");
   }
@@ -28,16 +29,16 @@ export default async function AdminAuthPage() {
   const actor = await findActorById(session.principalId, {
     tenantId: session.tenantId,
     workspaceId: workspaceContext.workspaceId
-  }).catch(() => null);
+  }).catch(swallow("findActorById", null));
   if (!actor?.reviewerRoles.includes("Admin")) {
     redirect("/?error=admin-required");
   }
 
   const { providers, tenantMfa } = await getAdminAuthPageModel(session.tenantId);
 
-  const scimEntitled = await isScimProvisioningEntitled(session.tenantId).catch(() => false);
+  const scimEntitled = await isScimProvisioningEntitled(session.tenantId).catch(swallow("isScimProvisioningEntitled", false));
   const scimTokens = scimEntitled
-    ? await listScimTokens({ tenantId: session.tenantId }).catch(() => [])
+    ? await listScimTokens({ tenantId: session.tenantId }).catch(swallow("listScimTokens", []))
     : [];
   const scimEndpoint = `${process.env.SPCTRE_APP_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? ""}/api/scim/v2`;
 

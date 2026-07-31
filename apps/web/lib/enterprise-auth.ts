@@ -6,6 +6,7 @@ import {
   findSamlProviderForTenant as findSamlProviderForTenantRow,
   upsertDefaultOidcProvider,
 } from "@/lib/repositories/identity-providers";
+import { swallow } from "@/lib/platform/swallow";
 
 export const OIDC_STATE_COOKIE = "spctre_oidc_state";
 export const OIDC_VERIFIER_COOKIE = "spctre_oidc_verifier";
@@ -63,20 +64,20 @@ async function bootstrapDefaultProvider(tenantId: string): Promise<void> {
   if (!env) return;
   if (tenantId !== env.defaultTenantId) return;
 
-  await ensureAuthDemoTenant().catch(() => {});
+  await ensureAuthDemoTenant().catch(swallow("ensureAuthDemoTenant", undefined));
   await upsertDefaultOidcProvider({
     tenantId,
     issuer: env.issuer,
     clientId: env.clientId,
     clientSecret: env.clientSecret,
     scope: env.scope,
-  }).catch(() => {});
+  }).catch(swallow("upsertDefaultOidcProvider", undefined));
 }
 
 export async function getOidcProviderForTenant(tenantId: string): Promise<OidcProviderConfig | null> {
-  await bootstrapDefaultProvider(tenantId).catch(() => {});
+  await bootstrapDefaultProvider(tenantId).catch(swallow("bootstrapDefaultProvider", undefined));
 
-  const row = await findOidcProviderForTenantRow(tenantId).catch(() => null);
+  const row = await findOidcProviderForTenantRow(tenantId).catch(swallow("findOidcProviderForTenantRow", null));
   const env = getOidcConfig();
   if (!row || !row.client_secret_enc || !env?.redirectUri) return null;
 
@@ -96,11 +97,11 @@ export async function getOidcProviderByIssuer(params: {
   tenantId?: string;
 }): Promise<OidcProviderConfig | null> {
   if (params.tenantId) {
-    const preferred = await getOidcProviderForTenant(params.tenantId).catch(() => null);
+    const preferred = await getOidcProviderForTenant(params.tenantId).catch(swallow("getOidcProviderForTenant", null));
     if (preferred?.issuer === params.issuer) return preferred;
   }
 
-  const row = await findOidcProviderByIssuerRow({ issuer: params.issuer }).catch(() => null);
+  const row = await findOidcProviderByIssuerRow({ issuer: params.issuer }).catch(swallow("findOidcProviderByIssuerRow", null));
   const env = getOidcConfig();
   if (!row || !row.client_secret_enc || !env?.redirectUri) return null;
 
@@ -156,7 +157,7 @@ export function getSamlConfig(): SamlEnvConfig | null {
 export async function getSamlProviderForTenant(
   tenantId: string
 ): Promise<SamlProviderConfig | null> {
-  const row = await findSamlProviderForTenantRow(tenantId).catch(() => null);
+  const row = await findSamlProviderForTenantRow(tenantId).catch(swallow("findSamlProviderForTenantRow", null));
   if (!row || !row.saml_entry_point || !row.saml_cert) return null;
 
   return {

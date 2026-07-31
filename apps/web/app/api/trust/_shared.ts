@@ -4,6 +4,7 @@ import { fetchWithTimeout } from "@/lib/platform/fetch-timeout";
 import { getActiveScope } from "@/lib/workspace";
 import { authenticateServiceToken, hasBearerToken } from "@/lib/service-tokens";
 import { withTraceId } from "@spctre/api-contracts";
+import { swallow } from "@/lib/platform/swallow";
 export { asInt, asNumber, asString } from "../_shared";
 
 export const VALID_STACKS = new Set([
@@ -21,9 +22,9 @@ export async function resolveAuth(request: Request): Promise<
     if (!tokenAuth.ok) return { ok: false, error: tokenAuth.error };
     return { ok: true, tenantId: tokenAuth.auth.tenantId, workspaceId: tokenAuth.auth.workspaceId, actorId: tokenAuth.auth.principalId };
   }
-  const session = await getAuthSession().catch(() => null);
+  const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (!session) return { ok: false, error: "Authentication required." };
-  const ctx = await getActiveScope().catch(() => null);
+  const ctx = await getActiveScope().catch(swallow("getActiveScope", null));
   if (!ctx) return { ok: false, error: "Workspace context unavailable." };
   return { ok: true, tenantId: ctx.tenantId, workspaceId: ctx.workspaceId, actorId: session.principalId };
 }

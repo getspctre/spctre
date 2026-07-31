@@ -3,6 +3,7 @@ import { listPostureRuleRows, type PostureRuleRow } from "@/lib/repositories/pos
 import { getLatestPublishedBundle } from "@/lib/repositories/policy/publish";
 import { getRulesForRevision } from "@/lib/repositories/policy/rules";
 import { listAgentSummaries } from "@/lib/repositories/evidence";
+import { swallow } from "@/lib/platform/swallow";
 
 export type PostureDimension = "CONTROL_HEALTH" | "SCOPE_INTEGRITY" | "OPERATIONAL_EFFICIENCY";
 export type PostureSeverity = "HIGH" | "MEDIUM" | "LOW";
@@ -34,17 +35,17 @@ function severityRank(severity: PostureSeverity) {
 
 export async function getPostureModel(params: { tenantId: string; workspaceId: string; workspaceSlug: string }): Promise<PostureModel> {
   const [baseline, friction, unused, agents, published] = await Promise.all([
-    listPostureRuleRows(params.tenantId).catch(() => ({ orgRules: [], workspaceRules: [], workspaceCount: 0 })),
-    getHighFrictionRules(25, params.workspaceId, params.tenantId).catch(() => []),
-    getUnusedActiveRules(params.workspaceId, params.tenantId).catch(() => []),
-    listAgentSummaries(params.workspaceId, params.tenantId).catch(() => []),
-    getLatestPublishedBundle(params.workspaceId, params.tenantId).catch(() => null),
+    listPostureRuleRows(params.tenantId).catch(swallow("listPostureRuleRows", { orgRules: [], workspaceRules: [], workspaceCount: 0 })),
+    getHighFrictionRules(25, params.workspaceId, params.tenantId).catch(swallow("getHighFrictionRules", [])),
+    getUnusedActiveRules(params.workspaceId, params.tenantId).catch(swallow("getUnusedActiveRules", [])),
+    listAgentSummaries(params.workspaceId, params.tenantId).catch(swallow("listAgentSummaries", [])),
+    getLatestPublishedBundle(params.workspaceId, params.tenantId).catch(swallow("getLatestPublishedBundle", null)),
   ]);
   const publishedRules = published
-    ? await getRulesForRevision(published.revisionId, params.tenantId).catch(() => [])
+    ? await getRulesForRevision(published.revisionId, params.tenantId).catch(swallow("getRulesForRevision", []))
     : [];
   const composition = published
-    ? await getReviewArtifacts(published.branchId, published.revisionId, params.workspaceId, params.tenantId).catch(() => null)
+    ? await getReviewArtifacts(published.branchId, published.revisionId, params.workspaceId, params.tenantId).catch(swallow("getReviewArtifacts", null))
     : null;
   const baselineById = new Map(baseline.orgRules.map((rule) => [rule.stableRuleId, rule]));
   const drift = baseline.workspaceRules.filter((rule) => {

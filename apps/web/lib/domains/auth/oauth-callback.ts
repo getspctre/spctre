@@ -8,6 +8,7 @@ import {
   linkSocialIdentity,
   upsertSocialPrincipal,
 } from "@/lib/domains/auth/service";
+import { swallow } from "@/lib/platform/swallow";
 
 type SocialProvider = "GITHUB" | "GOOGLE";
 
@@ -108,7 +109,7 @@ export async function finalizeOAuthCallback(params: {
   logPrefix: string;
   safeNext: string;
 }): Promise<NextResponse> {
-  const session = await getAuthSession().catch(() => null);
+  const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (session) {
     return linkOAuthIdentityToSession({
       request: params.request,
@@ -125,7 +126,7 @@ export async function finalizeOAuthCallback(params: {
     subject: params.identity.subject,
     email: params.identity.email,
     displayName: params.identity.displayName,
-  }).catch(() => null);
+  }).catch(swallow("upsertSocialPrincipal", null));
 
   if (!result) {
     return loginRedirect(params.request, "database_required");

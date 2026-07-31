@@ -4,6 +4,7 @@ import type { RuntimePolicyContext } from "@spctre/policy-schema";
 import { hitlService } from "@/lib/ee-adapters/hitl";
 import { recordConversionTelemetry } from "@/lib/repositories/onboarding/telemetry";
 import { dispatchEscalationCreatedAlert } from "@/lib/domains/gateway/alerting-dispatch";
+import { swallow } from "@/lib/platform/swallow";
 
 export interface RevisionAtTime {
   revisionId: string;
@@ -187,7 +188,7 @@ export async function persistGatewayDecision(record: GatewayDecisionRecord): Pro
     `;
 
     // Trigger FIRST_HITL_ESCALATION conversion telemetry asynchronously
-    recordConversionTelemetry(record.tenantId, "FIRST_HITL_ESCALATION").catch(() => {});
+    recordConversionTelemetry(record.tenantId, "FIRST_HITL_ESCALATION").catch(swallow("recordConversionTelemetry", undefined));
 
     // Dispatch alerting notification for new escalation (fire-and-forget)
     dispatchEscalationCreatedAlert({
@@ -201,7 +202,7 @@ export async function persistGatewayDecision(record: GatewayDecisionRecord): Pro
       dataSensitivity: record.dataSensitivity,
       toolIntent: record.toolIntent,
       planSummary: record.planSummary,
-    }).catch(() => {});
+    }).catch(swallow("dispatchEscalationCreatedAlert", undefined));
   }
 
   return gatewayDecisionId;

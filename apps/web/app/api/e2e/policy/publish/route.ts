@@ -14,6 +14,7 @@ import { getOpenEscalationSummaryForRevision } from "@/lib/repositories/gateway"
 import { getLatestVerificationStatus } from "@/lib/repositories/verification";
 import { findActorById, getBranchPermissions } from "@/lib/actors";
 import { extractTraceId, makeMeta, withTraceId } from "@spctre/api-contracts";
+import { swallow } from "@/lib/platform/swallow";
 
 export const dynamic = "force-dynamic";
 
@@ -38,7 +39,7 @@ async function authorizeE2ePublish(params: {
 }): Promise<{ branchRow: E2eBranchRow; actor: E2eActor } | { error: string; status: number }> {
   const { tenantId, branchId, revisionId, actorId } = params;
 
-  const branchRow = await getPublishBranchScope({ tenantId, branchId }).catch(() => null);
+  const branchRow = await getPublishBranchScope({ tenantId, branchId }).catch(swallow("getPublishBranchScope", null));
   if (!branchRow) {
     return { error: "Branch not found.", status: 404 };
   }
@@ -48,7 +49,7 @@ async function authorizeE2ePublish(params: {
     branchId,
     revisionId,
     workspaceId: branchRow.workspace_id,
-  }).catch(() => false);
+  }).catch(swallow("revisionExistsOnPublishBranch", false));
   if (!hasRevision) {
     return { error: "Revision not found on this branch.", status: 404 };
   }
@@ -92,7 +93,7 @@ async function checkE2ePublishReadiness(params: {
 
   const verificationPolicy = approvalWorkflow.verificationPolicy ?? { requireVerification: false };
   const verificationSummary = verificationPolicy.requireVerification
-    ? await getLatestVerificationStatus(params.workspaceId, tenantId, { revisionId }).catch(() => null)
+    ? await getLatestVerificationStatus(params.workspaceId, tenantId, { revisionId }).catch(swallow("getLatestVerificationStatus", null))
     : null;
 
   const readiness = evaluatePublishReadiness({

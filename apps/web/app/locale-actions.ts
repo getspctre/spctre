@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { getAuthSession } from "@/lib/auth-session";
 import { LOCALE_COOKIE, isSupportedLocaleInput, normalizeLocale } from "@/lib/i18n/messages";
 import { setPrincipalPreferredLocale } from "@/lib/repositories/i18n/preferences";
+import { swallow } from "@/lib/platform/swallow";
 
 export async function setLocalePreference(localeInput: string): Promise<void> {
   if (!isSupportedLocaleInput(localeInput)) return;
@@ -19,13 +20,13 @@ export async function setLocalePreference(localeInput: string): Promise<void> {
     maxAge: 60 * 60 * 24 * 365,
   });
 
-  const session = await getAuthSession().catch(() => null);
+  const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (session) {
     await setPrincipalPreferredLocale({
       tenantId: session.tenantId,
       principalId: session.principalId,
       locale,
-    }).catch(() => undefined);
+    }).catch(swallow("setPrincipalPreferredLocale", undefined));
   }
 
   revalidatePath("/");

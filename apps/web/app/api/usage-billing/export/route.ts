@@ -2,13 +2,14 @@ import { getAuthSession } from "@/lib/auth-session";
 import { getUsageBillingExportInputs } from "@/lib/domains/usage-billing/service";
 import { getWorkspaceContext } from "@/lib/workspace";
 import { extractTraceId, makeMeta, newTraceId, withTraceId } from "@spctre/api-contracts";
+import { swallow } from "@/lib/platform/swallow";
 
 export const dynamic = "force-dynamic";
 
 async function handleGetApiUsageBillingExport(request?: Request) {
   const traceId = request ? extractTraceId(request) : newTraceId();
   try {
-    const session = await getAuthSession().catch(() => null);
+    const session = await getAuthSession().catch(swallow("getAuthSession", null));
     if (!session) {
       return withTraceId(Response.json({ error: "Authentication required.", meta: makeMeta(traceId) }, { status: 401 }), traceId);
     }

@@ -34,6 +34,7 @@ import { authenticateServiceToken, hasBearerToken } from "@/lib/service-tokens";
 import { logger } from "@spctre/platform/logging";
 import { incrementCounter, recordDuration } from "@spctre/platform/metrics";
 import { INGEST_LAG_WARN_MS } from "@spctre/platform/slos";
+import { swallow } from "@/lib/platform/swallow";
 
 const EVIDENCE_ROUTE = "/api/evidence";
 const EVIDENCE_REVALIDATE_PATHS = ["/evidence", "/compliance", "/agents", "/escalations"];
@@ -291,7 +292,7 @@ function emitPostInsertSideEffects(input: {
       runtimeAdapter: evidence.runtimeTarget.adapter,
       blueprintRevisionId: evidence.blueprintContext?.revisionId,
     },
-  }).catch(() => {});
+  }).catch(swallow("appendOperationsLog", undefined));
 
   const incomingTrustScore = numberValue(rawPayload.trustScore);
   if (incomingTrustScore !== undefined) {
@@ -304,7 +305,7 @@ function emitPostInsertSideEffects(input: {
       trustScore: incomingTrustScore,
       source: "EVIDENCE_INGEST",
       sourceRef: evidence.decisionId,
-    }).catch(() => {});
+    }).catch(swallow("ingestTrustScoreEvent", undefined));
   }
 }
 
@@ -444,7 +445,7 @@ export async function ingestRuntimeEvidence(input: {
     workspaceId,
     agentId: agtInput.agentId,
     policyRevisionIds: agtInput.policyContext.map((context) => context.revisionId),
-  }).catch(() => undefined);
+  }).catch(swallow("getPublishedBlueprintContext", undefined));
   const scopedInput: AgtRuntimeDecisionInput = {
     ...agtInput,
     tenantId,
@@ -456,7 +457,7 @@ export async function ingestRuntimeEvidence(input: {
   // rather than strictly sequentially on the ingest hot path.
   // See database-optimizations-audit finding 4.
   const [profile, workspaceCheck, contextCheck] = await Promise.all([
-    getCommercialProfile(tenantId).catch(() => null),
+    getCommercialProfile(tenantId).catch(swallow("getCommercialProfile", null)),
     validateEvidenceWorkspaceBoundary(tenantId, workspaceId),
     validateEvidencePolicyContextBoundary(scopedInput.policyContext, tenantId, workspaceId),
   ]);
@@ -494,7 +495,7 @@ export async function ingestRuntimeEvidence(input: {
   if (persistResult) return persistResult;
 
   // Trigger FIRST_EVIDENCE_INGEST conversion telemetry asynchronously
-  recordConversionTelemetry(tenantId, "FIRST_EVIDENCE_INGEST").catch(() => {});
+  recordConversionTelemetry(tenantId, "FIRST_EVIDENCE_INGEST").catch(swallow("recordConversionTelemetry", undefined));
 
   emitPostInsertSideEffects({
     tenantId,

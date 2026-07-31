@@ -6,6 +6,7 @@ import { toBase64Url } from "@/lib/crypto-utils";
 import { sendMagicLinkEmail } from "@/lib/email";
 import { checkAuthRateLimit } from "@/lib/auth-rate-limit";
 import { logSecurityEvent } from "@/lib/security-logger";
+import { swallow } from "@/lib/platform/swallow";
 
 function getSessionGuardSecret(): string {
   const configured = process.env.SPCTRE_SESSION_GUARD_SECRET?.trim();
@@ -65,7 +66,7 @@ async function handlePostApiAuthMagicRequest(request: Request) {
   logSecurityEvent("magic_link_requested", { endpoint: "/api/auth/magic/request" });
 
   // Always return success to avoid email enumeration attacks
-  const principal = await findPrincipalByEmail(email).catch(() => null);
+  const principal = await findPrincipalByEmail(email).catch(swallow("findPrincipalByEmail", null));
   if (principal) {
     const exp = Math.floor(Date.now() / 1000) + 60 * 15; // 15 minutes
     const payloadJson = JSON.stringify({

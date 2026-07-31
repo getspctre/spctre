@@ -6,6 +6,7 @@ import { incrementCounter, recordDuration } from "@spctre/platform/metrics";
 import { withSpan } from "@spctre/platform/tracing";
 import { asString } from "../_shared";
 import { resolveRouteScope } from "../_route-scope";
+import { swallow } from "@/lib/platform/swallow";
 
 export const dynamic = "force-dynamic";
 
@@ -160,7 +161,7 @@ async function handlePostApiVerification(request: Request) {
     sourceTable: "agt_verification_result",
     actorId: auth.actorId,
     payload: { artifactHash, verificationType, outcome, revisionId },
-  }).catch(() => {});
+  }).catch(swallow("recordVerificationOperation", undefined));
 
   span.setAttributes({ "spctre.verification.type": verificationType, "spctre.verification.outcome": outcome });
   incrementCounter("spctre.verification.ingest", 1, { verificationType, outcome });

@@ -2,9 +2,10 @@ import { getAuthSession } from "@/lib/auth-session";
 import { withApiRoute } from "@/lib/platform/api-route";
 import { listRuntimeAssuranceHistory } from "@/lib/repositories/runtime-assurance";
 import { getActiveScope } from "@/lib/workspace";
+import { swallow } from "@/lib/platform/swallow";
 
 const handleGetRuntimeAssuranceHistory = withApiRoute("/api/agents/runtime-assurance/history", async (request, ctx) => {
-  const [session, scope] = await Promise.all([getAuthSession().catch(() => null), getActiveScope().catch(() => null)]);
+  const [session, scope] = await Promise.all([getAuthSession().catch(swallow("getAuthSession", null)), getActiveScope().catch(swallow("getActiveScope", null))]);
   if (!session || !scope) return ctx.error(401, "Authentication and workspace context are required.");
   const url = new URL(request.url);
   const agentId = url.searchParams.get("agentId")?.trim();

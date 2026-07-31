@@ -12,6 +12,7 @@ import { isDemoTenant } from "@/lib/demo-guard";
 import { getActiveScope } from "@/lib/workspace";
 import { incrementCounter, recordDuration } from "@spctre/platform/metrics";
 import { withSpan } from "@spctre/platform/tracing";
+import { swallow } from "@/lib/platform/swallow";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +20,7 @@ async function handlePostApiGatewayResolve(request: Request) {
   const traceId = extractTraceId(request);
   const started = Date.now();
   return await withSpan("api.gateway.resolve", { "spctre.request_id": traceId, "http.route": "/api/gateway/resolve" }, async () => {
-  const session = await getAuthSession().catch(() => null);
+  const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (!session) {
     incrementCounter("spctre.api.errors", 1, { "http.route": "/api/gateway/resolve", "http.response.status_code": 401 });
     return withTraceId(
@@ -46,7 +47,7 @@ async function handlePostApiGatewayResolve(request: Request) {
     );
   }
 
-  const workspaceContext = await getActiveScope().catch(() => null);
+  const workspaceContext = await getActiveScope().catch(swallow("getActiveScope", null));
   if (!workspaceContext || !workspaceContext.workspaceId || !workspaceContext.tenantId) {
     incrementCounter("spctre.api.errors", 1, { "http.route": "/api/gateway/resolve", "http.response.status_code": 400 });
     return withTraceId(

@@ -207,7 +207,9 @@ function useLiveOnboardingStatus(status: WebOnboardingStatus) {
         .then((payload: { status?: WebOnboardingStatus } | null) => {
           if (!cancelled && payload?.status) setLiveStatus(payload.status);
         })
-        .catch(() => undefined);
+        .catch(() => {
+          // A transient browser fetch failure is retried by the polling interval.
+        });
     };
 
     loadStatus();
@@ -265,7 +267,9 @@ export function QuickStartBanner({
     navigator.clipboard.writeText(value).then(() => {
       setCopied(id);
       setTimeout(() => setCopied(null), 2000);
-    }).catch(() => undefined);
+    }).catch(() => {
+      // Clipboard access is browser-local; keep the value visible for manual copying.
+    });
   }
 
   if (hasRealEvidence) {

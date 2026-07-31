@@ -22,6 +22,7 @@ import { requireAdminActor, checkWriteAccess } from "../shared/guard";
 import { getAuthSession } from "@/lib/auth-session";
 import { findActorById } from "@/lib/actors";
 import { sendMemberInviteEmail } from "@/lib/email";
+import { swallow } from "@/lib/platform/swallow";
 
 export type { OrganizationMember, WorkspaceSummary } from "@/lib/repositories/members";
 
@@ -36,13 +37,13 @@ export interface MembersPageModel {
 
 export async function getMembersPageModel(): Promise<MembersPageModel> {
   const workspaceContext = await getWorkspaceContext();
-  const session = await getAuthSession().catch(() => null);
+  const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (!session) redirect("/login");
 
   const actor = await findActorById(session.principalId, {
     tenantId: session.tenantId,
     workspaceId: workspaceContext.workspaceId,
-  }).catch(() => null);
+  }).catch(swallow("findActorById", null));
   if (!actor?.reviewerRoles.includes("Admin")) {
     redirect("/?error=admin-required");
   }

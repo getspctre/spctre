@@ -11,19 +11,20 @@ import { ADMIN_ISSUABLE_API_KEY_SCOPES } from "@/lib/service-tokens";
 import { formatAdminDate } from "../format";
 import { ServiceKeyForm } from "./service-key-form";
 import { RevokeServiceKeyForm } from "./revoke-service-key-form";
+import { swallow } from "@/lib/platform/swallow";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminServiceKeysPage() {
   const t = await getTranslations("admin.service_keys");
   const workspaceContext = await getActiveScope();
-  const session = await getAuthSession().catch(() => null);
+  const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (!session) redirect("/login");
 
   const actor = await findActorById(session.principalId, {
     tenantId: session.tenantId,
     workspaceId: workspaceContext.workspaceId,
-  }).catch(() => null);
+  }).catch(swallow("findActorById", null));
   if (!actor?.reviewerRoles.includes("Admin")) {
     redirect("/?error=admin-required");
   }

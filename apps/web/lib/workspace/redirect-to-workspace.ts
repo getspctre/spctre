@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getWorkspaceContext } from "@/lib/workspace";
+import { swallow } from "@/lib/platform/swallow";
 
 /**
  * If the active workspace has a slug, redirects to the canonical
@@ -11,7 +12,7 @@ export async function redirectToWorkspace(
   path: string,
   searchParams?: Promise<Record<string, string | string[] | undefined>>
 ): Promise<void> {
-  const ctx = await getWorkspaceContext().catch(() => null);
+  const ctx = await getWorkspaceContext().catch(swallow("getWorkspaceContext", null));
   if (ctx?.workspaceSlug) {
     let queryString = "";
     if (searchParams) {

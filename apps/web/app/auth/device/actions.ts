@@ -3,12 +3,13 @@
 import { redirect } from "next/navigation";
 import { getAuthSession } from "@/lib/auth-session";
 import { approveDeviceOnboarding } from "@/lib/onboarding";
+import { swallow } from "@/lib/platform/swallow";
 
 export async function approveDevice(formData: FormData): Promise<void> {
   const userCode = String(formData.get("user_code") ?? "").trim().toUpperCase();
   if (!userCode) redirect("/auth/device?errorCode=missing_code");
 
-  const session = await getAuthSession().catch(() => null);
+  const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (!session) {
     redirect(`/login?next=${encodeURIComponent(`/auth/device?user_code=${userCode}`)}`);
   }

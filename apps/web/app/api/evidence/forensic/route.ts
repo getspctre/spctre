@@ -5,6 +5,7 @@ import { authenticateServiceToken } from "@/lib/service-tokens";
 import { getActiveScope } from "@/lib/workspace";
 import { queryForensicEvidence } from "@/lib/repositories/evidence";
 import { extractTraceId, makeMeta, withTraceId } from "@spctre/api-contracts";
+import { swallow } from "@/lib/platform/swallow";
 
 export const dynamic = "force-dynamic";
 
@@ -31,7 +32,7 @@ async function handleGetApiForensicEvidence(request: Request) {
     tenantId = auth.auth.tenantId;
     workspaceId = auth.auth.workspaceId;
   } else {
-    const session = await getAuthSession().catch(() => null);
+    const session = await getAuthSession().catch(swallow("getAuthSession", null));
     if (!session) {
       return withTraceId(Response.json({ error: "Authentication required.", meta: makeMeta(traceId) }, { status: 401 }), traceId);
     }

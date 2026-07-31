@@ -3,6 +3,7 @@ import { ingestTrustScore, recordTrustOperation } from "@/lib/domains/trust/serv
 import type { TrustScoreSource } from "@spctre/policy-schema";
 import { extractTraceId, makeMeta, withTraceId } from "@spctre/api-contracts";
 import { asNumber, asString, delegateTrustPostToWorker, resolveAuth, VALID_STACKS } from "../_shared";
+import { swallow } from "@/lib/platform/swallow";
 
 export const dynamic = "force-dynamic";
 
@@ -69,7 +70,7 @@ async function handlePostApiTrustIngest(request: Request) {
     sourceTable: "agt_trust_score_event",
     actorId: auth.actorId,
     payload: { agentId, environment, runtimeStack, trustScore, source, sourceRef },
-  }).catch(() => {});
+  }).catch(swallow("recordTrustOperation", undefined));
 
   return withTraceId(Response.json({ ok: true, agentId, trustScore, meta: makeMeta(traceId) }, { status: 201 }), traceId);
 }

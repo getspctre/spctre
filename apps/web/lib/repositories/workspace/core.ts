@@ -1,5 +1,6 @@
 import { sql } from "@/lib/db";
 import { ensureDemoTenant } from "@/lib/repositories/seed/local-dev";
+import { swallow } from "@/lib/platform/swallow";
 
 export async function insertAuthorizationDenialEvent(params: {
   tenantId: string;
@@ -23,7 +24,7 @@ export async function insertAuthorizationDenialEvent(params: {
       ${params.resourceType},
       ${params.resourceId ?? null}
     )
-  `.catch(() => {});
+  `.catch(swallow("sql", undefined));
 }
 
 export async function resolveWorkspaceForAction(params: {
@@ -69,7 +70,7 @@ export async function normalizeWorkspaceContext(params: {
   let tenantId = params.sessionTenantId;
   let workspaceId: string = "";
 
-  await ensureDemoTenant().catch(() => {});
+  await ensureDemoTenant().catch(swallow("ensureDemoTenant", undefined));
 
   if (!sql) return { tenantId: params.sessionTenantId, workspaceId: "" };
 

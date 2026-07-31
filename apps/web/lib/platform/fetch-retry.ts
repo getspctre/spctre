@@ -1,4 +1,5 @@
 import { fetchWithTimeout } from "@/lib/platform/fetch-timeout";
+import { swallow } from "@/lib/platform/swallow";
 
 type FetchInitWithTimeout = Parameters<typeof fetchWithTimeout>[1] & {};
 
@@ -147,7 +148,7 @@ export async function fetchWithRetry(
       lastError = undefined;
       if (attempt < totalAttempts) {
         // Release the connection before retrying.
-        await response.body?.cancel().catch(() => {});
+        await response.body?.cancel().catch(swallow("cancel", undefined));
       }
     } catch (err) {
       // A caller-initiated abort is a decision, not a failure — propagate,
