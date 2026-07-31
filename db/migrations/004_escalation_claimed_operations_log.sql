@@ -1,7 +1,7 @@
-ALTER TABLE agt_operations_log
+ALTER TABLE public.agt_operations_log
   DROP CONSTRAINT IF EXISTS agt_operations_log_event_type_check;
 
-ALTER TABLE agt_operations_log
+ALTER TABLE public.agt_operations_log
   ADD CONSTRAINT agt_operations_log_event_type_check CHECK (
     event_type = ANY (ARRAY[
       'POLICY_IMPORT', 'POLICY_PUBLISH', 'POLICY_APPROVE',
