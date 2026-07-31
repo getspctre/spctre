@@ -41,6 +41,15 @@
   color: var(--block);
 }
 
+.degradedDataNotice {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--warn);
+  border-radius: 6px;
+  background: var(--warn-soft);
+  color: var(--ink);
+}
+
 .workspaceHint {
   color: oklch(0.76 0.022 252);
   font-size: 12px;

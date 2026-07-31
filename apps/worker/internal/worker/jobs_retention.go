@@ -375,7 +375,7 @@ func dropEmptyExpiredEvidencePartitions(ctx context.Context, db *pgxpool.Pool, l
 		if monthStart.AddDate(0, 1, 0).After(now) {
 			continue
 		}
-		wasDropped, err := dropEvidencePartitionIfEmpty(ctx, db, name)
+		wasDropped, err := dropEvidencePartitionIfEmpty(ctx, db, logger, name)
 		if err != nil {
 			return err
 		}
@@ -395,13 +395,13 @@ func dropEmptyExpiredEvidencePartitions(ctx context.Context, db *pgxpool.Pool, l
 // whether the partition was dropped. The name comes from the catalog and is
 // regex-validated as a monthly partition by the caller; it is quoted with
 // pgx.Identifier.Sanitize so it can be interpolated safely.
-func dropEvidencePartitionIfEmpty(ctx context.Context, db *pgxpool.Pool, name string) (bool, error) {
+func dropEvidencePartitionIfEmpty(ctx context.Context, db *pgxpool.Pool, logger *slog.Logger, name string) (bool, error) {
 	ident := pgx.Identifier{name}.Sanitize()
 	tx, err := db.Begin(ctx)
 	if err != nil {
 		return false, err
 	}
-	defer func() { _ = tx.Rollback(ctx) }()
+	defer rollbackAfterFailure(logger, ctx, tx, "drop_expired_evidence_partition")
 
 	if _, err := tx.Exec(ctx, "LOCK TABLE "+ident+" IN ACCESS EXCLUSIVE MODE"); err != nil {
 		return false, err

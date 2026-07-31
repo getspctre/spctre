@@ -6,6 +6,7 @@ import { getWebOnboardingStatus } from "@/lib/repositories/onboarding/shared";
 import { QuickStartBanner } from "../quick-start-banner";
 import { getTranslations } from "next-intl/server";
 import { RuntimeAssurancePanel } from "./runtime-assurance-panel";
+import { DegradedDataNotice } from "../degraded-data-notice";
 
 export async function AgentsPageContent({ workspaceSlug }: { workspaceSlug?: string } = {}) {
   const t = await getTranslations("agents");
@@ -20,6 +21,7 @@ export async function AgentsPageContent({ workspaceSlug }: { workspaceSlug?: str
     productionHeartbeatAssurance,
     policyScopedDiscovery,
     connectorActionCoverage,
+    degraded,
   } = await getAgentsPageModel({ workspaceSlug });
   const attentionAgents = agents.filter((agent) => agent.healthStatus !== "CURRENT");
   const currentAgents = agents.filter((agent) => agent.healthStatus === "CURRENT");
@@ -38,6 +40,7 @@ export async function AgentsPageContent({ workspaceSlug }: { workspaceSlug?: str
           <h1>{t("title")}</h1>
         </div>
       </section>
+      {degraded ? <DegradedDataNotice /> : null}
 
       <section className="agentHero" aria-label="Agent fleet summary">
         <div className="agentHeroMain">

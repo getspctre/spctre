@@ -74,7 +74,7 @@ func appendEscalationSLAReminder(ctx context.Context, db *pgxpool.Pool, item esc
 	if err != nil {
 		return err
 	}
-	defer func() { _ = tx.Rollback(ctx) }()
+	defer rollbackAfterFailure(slog.Default(), ctx, tx, "append_escalation_sla_reminder")
 
 	var exists bool
 	if err := tx.QueryRow(ctx, `

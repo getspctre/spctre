@@ -9,6 +9,7 @@ import { getEvidencePageModel } from "@/lib/domains/evidence/service";
 import { getWebOnboardingStatus } from "@/lib/repositories/onboarding/shared";
 import { Play } from "lucide-react";
 import { QuickStartBanner } from "../quick-start-banner";
+import { DegradedDataNotice } from "../degraded-data-notice";
 import {
   EvidenceOverview,
   EvidenceStreamSection,
@@ -49,6 +50,7 @@ export async function EvidencePageContent({
     evidence,
     totalEvidenceCount,
     usingDb,
+    degraded,
     nextCursor,
     prevCursor,
     hasNext,
@@ -107,6 +109,7 @@ export async function EvidencePageContent({
           </>
         }
       />
+      {degraded ? <DegradedDataNotice /> : null}
 
       <EvidenceOverview
         evidenceCount={totalEvidenceCount}

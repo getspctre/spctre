@@ -67,10 +67,14 @@ func (s *Server) spawn(fn func(ctx context.Context)) {
 // Wait blocks until all goroutines started with spawn have finished.
 func (s *Server) Wait() { s.wg.Wait() }
 
-func (s *Server) rollbackAfterFailure(ctx context.Context, tx pgx.Tx, operation string) {
+func rollbackAfterFailure(logger *slog.Logger, ctx context.Context, tx pgx.Tx, operation string) {
 	if err := tx.Rollback(ctx); err != nil && !errors.Is(err, pgx.ErrTxClosed) {
-		s.logger.Warn("worker transaction rollback failed", "operation", operation, "error", err)
+		logger.Warn("worker transaction rollback failed", "operation", operation, "error", err)
 	}
+}
+
+func (s *Server) rollbackAfterFailure(ctx context.Context, tx pgx.Tx, operation string) {
+	rollbackAfterFailure(s.logger, ctx, tx, operation)
 }
 
 func (s *Server) MarkReady() {
