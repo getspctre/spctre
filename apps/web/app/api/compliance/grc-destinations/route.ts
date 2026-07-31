@@ -4,13 +4,14 @@ import { createGrcDeliveryDestination, listGrcDeliveryDestinations, type GrcDeli
 import { getActiveScope } from "@/lib/workspace";
 import { appendOperationsLog } from "@/lib/repositories/operations-log";
 import { extractTraceId, makeMeta, withTraceId } from "@spctre/api-contracts";
+import { swallow } from "@/lib/platform/swallow";
 
 export const dynamic = "force-dynamic";
 const KINDS = new Set<GrcDeliveryDestination["kind"]>(["webhook"]);
 
 async function context(request: Request) {
   const traceId = extractTraceId(request);
-  const [session, scope] = await Promise.all([getAuthSession().catch(() => null), getActiveScope().catch(() => null)]);
+  const [session, scope] = await Promise.all([getAuthSession().catch(swallow("getAuthSession", null)), getActiveScope().catch(swallow("getActiveScope", null))]);
   if (!session || !scope) return { traceId, response: withTraceId(Response.json({ error: "Authentication and workspace context are required.", meta: makeMeta(traceId) }, { status: 401 }), traceId) };
   return { traceId, session, scope };
 }
@@ -33,7 +34,7 @@ export async function POST(request: Request) {
   if (!kind || !endpoint || !label) return withTraceId(Response.json({ error: "kind, HTTPS endpoint, and label are required.", meta: makeMeta(auth.traceId) }, { status: 400 }), auth.traceId);
   try {
     const id = await createGrcDeliveryDestination({ tenantId: auth.scope.tenantId, workspaceId: auth.scope.workspaceId, kind, endpoint, label, credential, createdBy: auth.session.principalId });
-    appendOperationsLog({ tenantId: auth.scope.tenantId, workspaceId: auth.scope.workspaceId, eventType: "GRC_DESTINATION_CONFIGURED", sourceId: id, sourceTable: "grc_delivery_destination", actorId: auth.session.principalId, payload: { action: "CREATED", kind, endpoint, label, hasCredential: Boolean(credential) } }).catch(() => {});
+    appendOperationsLog({ tenantId: auth.scope.tenantId, workspaceId: auth.scope.workspaceId, eventType: "GRC_DESTINATION_CONFIGURED", sourceId: id, sourceTable: "grc_delivery_destination", actorId: auth.session.principalId, payload: { action: "CREATED", kind, endpoint, label, hasCredential: Boolean(credential) } }).catch(swallow("appendOperationsLog", undefined));
     return withTraceId(Response.json({ id, meta: makeMeta(auth.traceId) }, { status: 201 }), auth.traceId);
   } catch (error) {
     return withTraceId(Response.json({ error: error instanceof Error ? error.message : "Destination could not be created.", meta: makeMeta(auth.traceId) }, { status: 400 }), auth.traceId);

@@ -21,6 +21,7 @@ import { getOpenEscalationSummaryForRevision } from "@/lib/repositories/gateway"
 import { getLatestManagedSimulationRegression } from "@/lib/repositories/evidence";
 import { isFeatureEnabledForPlan } from "@/lib/feature-flags";
 import { getSpctrePlan } from "@/lib/feature-flags-server";
+import { swallow } from "@/lib/platform/swallow";
 
 export interface PublishRevisionInput {
   revisionId: string;
@@ -103,7 +104,7 @@ async function checkPublishReadiness(
   const verificationSummary = verificationPolicy.requireVerification
     ? await getLatestVerificationStatus(branchRow.workspace_id ?? scope.workspaceId, tenantId, {
         revisionId: input.revisionId,
-      }).catch(() => null)
+      }).catch(swallow("getLatestVerificationStatus", null))
     : null;
   const readiness = evaluatePublishReadiness({
     branchId: input.branchId,
@@ -197,7 +198,7 @@ export async function publishRevisionDecision(input: PublishRevisionInput, scope
     sourceTable: "policy_publish",
     actorId: actor.id,
     payload: { branchId: input.branchId, revisionId: input.revisionId, artifactHash },
-  }).catch(() => {});
+  }).catch(swallow("appendOperationsLog", undefined));
 
   span.setAttribute("spctre.artifact_hash", artifactHash);
   recordDuration("spctre.review.publish.duration", Date.now() - started, { outcome: "published" });

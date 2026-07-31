@@ -3,6 +3,7 @@ import { getBooleanEnv } from "@/lib/platform/config";
 import { upsertApprovalForRevision, getRevisionWorkspaceScope } from "@/lib/repositories/policy";
 import { findActorById, canActorReviewRole } from "@/lib/actors";
 import { extractTraceId, makeMeta, withTraceId } from "@spctre/api-contracts";
+import { swallow } from "@/lib/platform/swallow";
 
 export const dynamic = "force-dynamic";
 
@@ -68,7 +69,7 @@ async function handlePostApiE2ePolicyApprove(request: Request) {
   const revisionRow = await getRevisionWorkspaceScope({
     tenantId: tokenAuth.auth.tenantId,
     revisionId,
-  }).catch(() => null);
+  }).catch(swallow("getRevisionWorkspaceScope", null));
   if (!revisionRow) {
     return withTraceId(Response.json({ error: "Revision not found.", meta: makeMeta(traceId) }, { status: 404 }), traceId);
   }

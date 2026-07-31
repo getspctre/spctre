@@ -6,6 +6,7 @@ import { requestUsageBillingCommercialReview } from "@/lib/domains/usage-billing
 import { getWorkspaceContext } from "@/lib/workspace";
 import { buildWorkspacePath } from "@/lib/workspace/path";
 import { isDemoTenant } from "@/lib/demo-guard";
+import { swallow } from "@/lib/platform/swallow";
 
 const VALID_TARGET_PLANS = new Set(["TEAM", "BUSINESS", "ENTERPRISE"]);
 
@@ -18,7 +19,7 @@ export async function requestUsageBillingReview(formData: FormData): Promise<voi
 
   const [workspaceContext, session] = await Promise.all([
     getWorkspaceContext({ workspaceSlug: workspaceSlug || undefined }),
-    getAuthSession().catch(() => null)
+    getAuthSession().catch(swallow("getAuthSession", null))
   ]);
   if (!session) return;
   if (isDemoTenant(workspaceContext.tenantId)) return;

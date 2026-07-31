@@ -23,6 +23,7 @@ import {
   type RevisionMetadata,
 } from "@/lib/repositories/shared/revisions";
 import { listRuntimeEvidence } from "./runtime";
+import { swallow } from "@/lib/platform/swallow";
 
 // Premium bulk-simulation details attached for the Cloud UI reports; optional so
 // the local-sample fallback (a plain SimulationRun) still satisfies the type.
@@ -52,7 +53,7 @@ export async function getEvidenceSimulationRun(
 
   let revision: RevisionMetadata | null = null;
   if (branchId && revisionId) {
-    revision = await getRevisionMetadata(revisionId, tenantId).catch(() => null);
+    revision = await getRevisionMetadata(revisionId, tenantId).catch(swallow("getRevisionMetadata", null));
     if (revision && revision.branchId !== branchId) {
       revision = null;
     }
@@ -65,7 +66,7 @@ export async function getEvidenceSimulationRun(
   }
   if (!revision) return null;
 
-  const proposedRules = await listRulesForRevision(revision.revisionId, tenantId).catch(() => [] as PolicyRuleSummary[]);
+  const proposedRules = await listRulesForRevision(revision.revisionId, tenantId).catch(swallow("listRulesForRevision", [] as PolicyRuleSummary[]));
 
   const plan = getSpctrePlan();
   if (options.allowBulk && isFeatureEnabledForPlan("bulkProductionSimulation", plan)) {

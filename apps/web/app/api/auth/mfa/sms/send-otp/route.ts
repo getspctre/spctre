@@ -6,6 +6,7 @@ import { getSpctrePlan } from "@/lib/feature-flags-server";
 import { sendSmsOtp } from "@/lib/platform/sms";
 import { extractTraceId, makeMeta } from "@spctre/api-contracts";
 import { errorText } from "@/lib/error-message";
+import { swallow } from "@/lib/platform/swallow";
 
 async function handlePostApiAuthMfaSmsSendOtp(request: Request) {
   const traceId = extractTraceId(request);
@@ -22,7 +23,7 @@ async function handlePostApiAuthMfaSmsSendOtp(request: Request) {
     return response;
   }
 
-  const session = await getAuthSession().catch(() => null);
+  const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (!session) {
     const response = NextResponse.json({ error: "Authentication required.", meta: makeMeta(traceId) }, { status: 401 });
     response.headers.set("x-request-id", traceId);

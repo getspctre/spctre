@@ -13,6 +13,7 @@ import {
 import { formatAdminDate } from "../format";
 import { WebhookForm } from "./webhook-form";
 import { RevokeWebhookForm } from "./revoke-webhook-form";
+import { swallow } from "@/lib/platform/swallow";
 
 export const dynamic = "force-dynamic";
 
@@ -21,13 +22,13 @@ const PROVIDER_LABELS = new Map(GATEWAY_WEBHOOK_PROVIDERS.map((provider) => [pro
 export default async function AdminWebhooksPage() {
   const t = await getTranslations("admin.webhooks");
   const workspaceContext = await getActiveScope();
-  const session = await getAuthSession().catch(() => null);
+  const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (!session) redirect("/login");
 
   const actor = await findActorById(session.principalId, {
     tenantId: session.tenantId,
     workspaceId: workspaceContext.workspaceId,
-  }).catch(() => null);
+  }).catch(swallow("findActorById", null));
   if (!actor?.reviewerRoles.includes("Admin")) {
     redirect("/?error=admin-required");
   }

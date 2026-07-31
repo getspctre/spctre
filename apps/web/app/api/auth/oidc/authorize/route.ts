@@ -12,6 +12,7 @@ import {
 import { ACTIVE_TENANT_COOKIE } from "@/lib/workspace/cookies";
 import { toBase64Url } from "@/lib/crypto-utils";
 import { fetchWithRetry } from "@/lib/platform/fetch-retry";
+import { swallow } from "@/lib/platform/swallow";
 
 interface OidcDiscoveryDocument {
   authorization_endpoint: string;
@@ -38,7 +39,7 @@ async function handleGetApiAuthOidcAuthorize(request: NextRequest) {
     request.cookies.get(ACTIVE_TENANT_COOKIE)?.value ||
     envConfig.defaultTenantId;
 
-  const provider = await getOidcProviderForTenant(tenantId).catch(() => null);
+  const provider = await getOidcProviderForTenant(tenantId).catch(swallow("getOidcProviderForTenant", null));
   if (!provider) {
     return NextResponse.json({ error: "No OIDC provider is configured for this tenant." }, { status: 404 });
   }

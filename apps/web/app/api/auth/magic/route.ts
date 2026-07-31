@@ -3,6 +3,7 @@ import { createAuthSession } from "@/lib/auth-session";
 import { setControlPlaneSessionCookies } from "@/lib/auth-session-cookies";
 import { getPrimaryWorkspaceIdForTenant, getPrincipalForLogin, isAuthDatabaseConfigured } from "@/lib/domains/auth/service";
 import { fromBase64Url, toBase64Url } from "@/lib/crypto-utils";
+import { swallow } from "@/lib/platform/swallow";
 
 // Helper to get session guard secret matching next.js standard
 function getSessionGuardSecret(): string {
@@ -175,7 +176,7 @@ async function handleGetApiAuthMagic(request: Request) {
     VALUES (${payload.jti}, ${principal.id}, to_timestamp(${payload.exp}))
     ON CONFLICT (jti) DO NOTHING
     RETURNING jti
-  `.catch(() => [] as { jti: string }[]);
+  `.catch(swallow("rawSql", [] as { jti: string }[]));
   if (consumed.length === 0) {
     return NextResponse.redirect(new URL("/login?error=token_already_used", base));
   }

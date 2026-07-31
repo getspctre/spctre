@@ -21,6 +21,7 @@ import {
 } from "@/lib/auth-session";
 import { createSessionGuardToken, SESSION_GUARD_COOKIE } from "@/lib/session-guard";
 import { isConfiguredUserLoginEnabled } from "@/lib/auth-login-modes";
+import { swallow } from "@/lib/platform/swallow";
 
 export type LoginState =
   | { error: string; ok?: never }
@@ -196,7 +197,7 @@ async function verifyMfaLogin(
   _prev: MfaVerifyState,
   formData: FormData
 ): Promise<MfaVerifyState> {
-  const session = await getAuthSession().catch(() => null);
+  const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (!session) return { error: "Sign in before verifying MFA." };
   if (!session.requireMfa) return { ok: true };
   if (session.mfaVerified) return { ok: true };
@@ -247,11 +248,9 @@ export async function verifyMfaLoginForm(formData: FormData): Promise<void> {
 }
 
 export async function logoutControlPlane() {
-  const session = await getAuthSession().catch(() => null);
+  const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (session?.sessionId) {
-    await revokeAuthSession(session.sessionId, session.tenantId).catch(() => {
-      // Best-effort revoke.
-    });
+    await revokeAuthSession(session.sessionId, session.tenantId).catch(swallow("revokeAuthSession", undefined));
   }
 
   const cookieStore = await cookies();

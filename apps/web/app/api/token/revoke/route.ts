@@ -6,6 +6,7 @@ import { fetchWithTimeout } from "@/lib/platform/fetch-timeout";
 import { extractTraceId, withTraceId } from "@spctre/api-contracts";
 import { incrementCounter, recordDuration } from "@spctre/platform/metrics";
 import { withSpan } from "@spctre/platform/tracing";
+import { swallow } from "@/lib/platform/swallow";
 
 export const dynamic = "force-dynamic";
 
@@ -45,7 +46,7 @@ async function handlePostApiTokenRevoke(request: Request) {
     sourceTable: "service_token",
     actorId: auth.auth.principalId,
     payload: { tokenId, revokedAt: new Date().toISOString() },
-  }).catch(() => {});
+  }).catch(swallow("recordAuthOperation", undefined));
 
   incrementCounter("spctre.token.revoke", 1, { outcome: "success" });
   recordDuration("spctre.token.revoke.duration", Date.now() - started, { "http.route": ROUTE_PATH });

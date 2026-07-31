@@ -2,9 +2,10 @@ import { NextResponse } from "next/server";
 import { getAuthSession } from "@/lib/auth-session";
 import { generateRecoveryCodes } from "@/lib/domains/auth/service";
 import { isDemoTenant } from "@/lib/demo-guard";
+import { swallow } from "@/lib/platform/swallow";
 
 async function handlePostApiAuthRecoveryGenerate() {
-  const session = await getAuthSession().catch(() => null);
+  const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (!session) {
     return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
   }

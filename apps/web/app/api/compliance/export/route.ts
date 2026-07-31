@@ -15,6 +15,7 @@ import type { ComplianceFramework } from "@spctre/policy-schema";
 import { extractTraceId, makeMeta, withTraceId } from "@spctre/api-contracts";
 import { incrementCounter, recordDuration } from "@spctre/platform/metrics";
 import { withSpan } from "@spctre/platform/tracing";
+import { swallow } from "@/lib/platform/swallow";
 
 export const dynamic = "force-dynamic";
 
@@ -122,7 +123,7 @@ async function handleGetApiComplianceExport(request: Request) {
     tenantId = auth.auth.tenantId;
     workspaceId = auth.auth.workspaceId;
   } else {
-    const session = await getAuthSession().catch(() => null);
+    const session = await getAuthSession().catch(swallow("getAuthSession", null));
     if (!session) {
       incrementCounter("spctre.api.errors", 1, { "http.route": "/api/compliance/export", "http.response.status_code": 401 });
       return withTraceId(Response.json({ error: "Authentication required.", meta: makeMeta(traceId) }, { status: 401 }), traceId);
@@ -153,7 +154,7 @@ async function handleGetApiComplianceExport(request: Request) {
         workspaceId,
         tenantId,
         artifactHash: packet.export.artifactHash,
-      }).catch(() => null);
+      }).catch(swallow("getComplianceVerificationStatus", null));
     }
   } catch (err) {
     incrementCounter("spctre.api.errors", 1, { "http.route": "/api/compliance/export", "http.response.status_code": 503 });
@@ -203,7 +204,7 @@ async function handleGetApiComplianceExport(request: Request) {
   const filename = `spctre-compliance-${revisionSlug}-${date}.json`;
 
   // Trigger FIRST_COMPLIANCE_EXPORT conversion telemetry asynchronously
-  recordComplianceExportConversion(tenantId).catch(() => {});
+  recordComplianceExportConversion(tenantId).catch(swallow("recordComplianceExportConversion", undefined));
 
   recordDuration("spctre.compliance.export.duration", Date.now() - started, { framework: framework ?? "none" });
   if (url.searchParams.get("format")?.toLowerCase() === "pdf") {

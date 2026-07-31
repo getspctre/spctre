@@ -4,12 +4,13 @@ import { getActiveActor, requireActorAdminWorkspace } from "@/lib/actors";
 import { verifyWriteAccess } from "@/lib/demo-guard";
 import { getWorkspaceContext } from "@/lib/workspace";
 import { ensureStarterPublishedBundle, getWebOnboardingStatus } from "@/lib/repositories/onboarding/shared";
+import { swallow } from "@/lib/platform/swallow";
 
 export const dynamic = "force-dynamic";
 
 async function handlePostApiOnboardingStarter(request: Request) {
   const traceId = extractTraceId(request);
-  const session = await getAuthSession().catch(() => null);
+  const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (!session) {
     return withTraceId(
       Response.json({ error: "Authentication required.", meta: makeMeta(traceId) }, { status: 401 }),
@@ -17,7 +18,7 @@ async function handlePostApiOnboardingStarter(request: Request) {
     );
   }
 
-  const workspaceContext = await getWorkspaceContext().catch(() => null);
+  const workspaceContext = await getWorkspaceContext().catch(swallow("getWorkspaceContext", null));
   if (!workspaceContext) {
     return withTraceId(
       Response.json({ error: "Workspace context unavailable.", meta: makeMeta(traceId) }, { status: 400 }),

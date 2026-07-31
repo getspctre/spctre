@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { swallow } from "@/lib/platform/swallow";
 
 interface WorkspaceCookieNormalizerProps {
   tenantId: string;
@@ -25,9 +26,7 @@ export function WorkspaceCookieNormalizer({
         "content-type": "application/json"
       },
       body: JSON.stringify({ tenantId, workspaceId })
-    }).catch(() => {
-      // Ignore normalization failures and keep using the resolved fallback workspace.
-    });
+    }).catch(swallow("fetch", undefined));
   }, [enabled, tenantId, workspaceId]);
 
   return null;

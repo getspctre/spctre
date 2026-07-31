@@ -7,6 +7,7 @@ import { buildPolicyBundleExport, buildPolicyBundleExports, verifyPolicyBundleEx
 import type { PolicyBundleExportFormat } from "@spctre/policy-schema";
 import { appendOperationsLog } from "@/lib/repositories/operations-log/log";
 import { insertBundleExportLog } from "@/lib/repositories/bundle-export-log";
+import { swallow } from "@/lib/platform/swallow";
 
 export const dynamic = "force-dynamic";
 
@@ -202,7 +203,7 @@ function recordBundleExport(params: {
       verified: params.verified,
       blockingWarnings: params.blockingWarnings,
     },
-  }).catch(() => {});
+  }).catch(swallow("appendOperationsLog", undefined));
   insertBundleExportLog({
     tenantId: workspaceContext.tenantId,
     workspaceId: workspaceContext.workspaceId,
@@ -215,5 +216,5 @@ function recordBundleExport(params: {
     blockingCount: params.blockingWarnings.length,
     verified: params.verified,
     actorId: workspaceContext.principalId,
-  }).catch(() => {});
+  }).catch(swallow("insertBundleExportLog", undefined));
 }

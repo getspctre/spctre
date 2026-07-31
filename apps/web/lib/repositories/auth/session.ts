@@ -1,5 +1,6 @@
 import { sql, runWithTenantContext } from "@/lib/db";
 import { ensureDemoTenant } from "@/lib/repositories/seed/local-dev";
+import { swallow } from "@/lib/platform/swallow";
 
 export function isAuthDatabaseConfigured(): boolean {
   return Boolean(sql);
@@ -27,9 +28,7 @@ export function canBootstrapDemoTenant(): boolean {
 export async function getPrimaryWorkspaceIdForTenant(tenantId: string, db = sql): Promise<string | null> {
   if (!db) return null;
 
-  await ensureDemoTenant().catch(() => {
-    // non-fatal for lookup below
-  });
+  await ensureDemoTenant().catch(swallow("ensureDemoTenant", undefined));
 
   // workspace is RLS-gated; callers on pre-session paths (SSO/recovery) pass the
   // default tenant-aware client, so bind the trusted tenant here. A caller that
@@ -385,9 +384,7 @@ export async function revokeSessionRow(sessionId: string, tenantId: string): Pro
 export async function listAllLoginPrincipals() {
   if (!sql) return [] as { id: string; tenant_id: string; display_name: string; email: string | null }[];
 
-  await ensureAuthDemoTenant().catch(() => {
-    // non-fatal for read-only list
-  });
+  await ensureAuthDemoTenant().catch(swallow("ensureAuthDemoTenant", undefined));
 
   return sql<
     { id: string; tenant_id: string; display_name: string; email: string | null }[]

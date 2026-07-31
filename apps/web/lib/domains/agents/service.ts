@@ -20,6 +20,7 @@ import { getRulesForRevision } from "@/lib/repositories/policy/rules";
 import { runWithTenantContext } from "@/lib/tenant-context";
 import { isFeatureEnabled } from "@/lib/feature-flags-server";
 import type { AgentBlueprintSummary, AgentSurfaceBinding } from "@spctre/policy-schema";
+import { swallow } from "@/lib/platform/swallow";
 
 export type { AgentSummary };
 
@@ -120,18 +121,18 @@ export async function getAgentsPageModel({
 
   const [dbAgents, allSurfaces, blueprints, published, heartbeats, policyScopedObservations, connectorActionObservations] = await Promise.all([
     runWithTenantContext(tenantId, () =>
-      listAgentSummaries(workspaceId, tenantId).catch(() => [])
+      listAgentSummaries(workspaceId, tenantId).catch(swallow("listAgentSummaries", []))
     ),
     isFeatureEnabled("crossSurfaceAgentIdentity")
       ? runWithTenantContext(tenantId, () =>
-          listAllSurfaceBindingsForWorkspace({ tenantId, workspaceId }).catch(() => [])
+          listAllSurfaceBindingsForWorkspace({ tenantId, workspaceId }).catch(swallow("listAllSurfaceBindingsForWorkspace", []))
         )
       : Promise.resolve([] as AgentSurfaceBinding[]),
-    runWithTenantContext(tenantId, () => listAgentBlueprints({ tenantId, workspaceId }).catch(() => [])),
-    runWithTenantContext(tenantId, () => getLatestPublishedBundle(workspaceId, tenantId).catch(() => null)),
-    runWithTenantContext(tenantId, () => listProductionHeartbeatObservations({ tenantId, workspaceId }).catch(() => [])),
-    runWithTenantContext(tenantId, () => listPolicyScopedRuntimeObservations({ tenantId, workspaceId }).catch(() => [])),
-    runWithTenantContext(tenantId, () => listProductionConnectorActionObservations({ tenantId, workspaceId }).catch(() => [])),
+    runWithTenantContext(tenantId, () => listAgentBlueprints({ tenantId, workspaceId }).catch(swallow("listAgentBlueprints", []))),
+    runWithTenantContext(tenantId, () => getLatestPublishedBundle(workspaceId, tenantId).catch(swallow("getLatestPublishedBundle", null))),
+    runWithTenantContext(tenantId, () => listProductionHeartbeatObservations({ tenantId, workspaceId }).catch(swallow("listProductionHeartbeatObservations", []))),
+    runWithTenantContext(tenantId, () => listPolicyScopedRuntimeObservations({ tenantId, workspaceId }).catch(swallow("listPolicyScopedRuntimeObservations", []))),
+    runWithTenantContext(tenantId, () => listProductionConnectorActionObservations({ tenantId, workspaceId }).catch(swallow("listProductionConnectorActionObservations", []))),
   ]);
 
   const agents = dbAgents.length ? dbAgents : getAgentDemoFallbackData(tenantId);
@@ -177,7 +178,7 @@ export async function getAgentsPageModel({
     ? { branchId: published.branchId, revisionId: published.revisionId, artifactHash: published.artifactHash }
     : null;
   const publishedRules = published
-    ? await runWithTenantContext(tenantId, () => getRulesForRevision(published.revisionId, tenantId).catch(() => []))
+    ? await runWithTenantContext(tenantId, () => getRulesForRevision(published.revisionId, tenantId).catch(swallow("getRulesForRevision", [])))
     : [];
   const heartbeatInventory = heartbeats.map((heartbeat) => ({
     agentId: heartbeat.agentId,

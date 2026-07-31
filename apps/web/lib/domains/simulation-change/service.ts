@@ -3,6 +3,7 @@ import type { ActiveScope } from "@/lib/workspace";
 import { appendOperationsLog } from "@/lib/repositories/operations-log";
 import { getEvidenceSimulationRun } from "@/lib/repositories/evidence";
 import type { SimulationReplayInput, SimulationRun } from "@spctre/policy-schema";
+import { swallow } from "@/lib/platform/swallow";
 
 const SIMULATION_GUIDANCE_SOURCE_ID = "system:simulation-guidance-v1";
 
@@ -140,7 +141,7 @@ export async function generateSimulationChangeRecommendation(input: {
   const activeActorResult = await getActiveActor({
     workspaceId: workspaceContext.workspaceId,
     tenantId: workspaceContext.tenantId,
-  }).catch(() => null);
+  }).catch(swallow("getActiveActor", null));
   if (!activeActorResult?.actor) return { error: "Authentication required." };
 
   const run = await getEvidenceSimulationRun(
@@ -165,7 +166,7 @@ export async function generateSimulationChangeRecommendation(input: {
       generatedForActorId: activeActorResult.actor.id,
       recommendation,
     },
-  }).catch(() => {});
+  }).catch(swallow("appendOperationsLog", undefined));
 
   return { ok: true, recommendation };
 }
@@ -188,7 +189,7 @@ export async function applySimulationChangeDecision(input: {
   const { actor } = await getActiveActor({
     workspaceId: workspaceContext.workspaceId,
     tenantId: workspaceContext.tenantId,
-  }).catch(() => ({ actor: null }));
+  }).catch(swallow("getActiveActor", { actor: null }));
   if (!actor) return { error: "Authentication required." };
 
   if (input.decision !== "ACCEPT" && input.decision !== "EDIT" && input.decision !== "REJECT") {
@@ -221,7 +222,7 @@ export async function applySimulationChangeDecision(input: {
       rationale: input.rationale,
       policyWriteCreated: false,
     },
-  }).catch(() => {});
+  }).catch(swallow("appendOperationsLog", undefined));
 
   return { ok: true };
 }

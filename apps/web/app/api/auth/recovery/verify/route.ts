@@ -6,6 +6,7 @@ import { setControlPlaneSessionCookies } from "@/lib/auth-session-cookies";
 import { getPrincipalForLogin } from "@/lib/domains/auth/service";
 import { checkAuthRateLimit } from "@/lib/auth-rate-limit";
 import { logSecurityEvent } from "@/lib/security-logger";
+import { swallow } from "@/lib/platform/swallow";
 
 async function handlePostApiAuthRecoveryVerify(request: Request) {
   if (!isAuthDatabaseConfigured()) {
@@ -40,7 +41,7 @@ async function handlePostApiAuthRecoveryVerify(request: Request) {
     );
   }
 
-  const principal = await findPrincipalByEmail(email).catch(() => null);
+  const principal = await findPrincipalByEmail(email).catch(swallow("findPrincipalByEmail", null));
   if (!principal) {
     // Constant-time response to avoid email enumeration
     return NextResponse.json({ error: "invalid_code" }, { status: 401 });
@@ -81,7 +82,7 @@ async function handlePostApiAuthRecoveryVerify(request: Request) {
   // the RLS-gated app_principal row via the owner connection (rawSql), deriving
   // the trusted principal/tenant from that row. createAuthSession and the
   // workspace lookup below bind the tenant themselves.
-  const loginPrincipal = await getPrincipalForLogin(principal.principalId, rawSql).catch(() => null);
+  const loginPrincipal = await getPrincipalForLogin(principal.principalId, rawSql).catch(swallow("getPrincipalForLogin", null));
   if (!loginPrincipal || loginPrincipal.disabled_at) {
     return NextResponse.json({ error: "principal_unavailable" }, { status: 403 });
   }

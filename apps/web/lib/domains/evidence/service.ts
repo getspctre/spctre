@@ -48,6 +48,7 @@ import {
   type RuntimeEvidenceSearchQuery,
   type SimulationRun,
 } from "@spctre/policy-schema";
+import { swallow } from "@/lib/platform/swallow";
 
 export type { SimulationRunSummary } from "@/lib/repositories/evidence";
 export type { RuleHeatEntry, UnusedRule } from "@/lib/repositories/policy";
@@ -127,7 +128,7 @@ export async function getEvidencePageModel({
         countRuntimeEvidence(workspaceId, tenantId)
       ),
     ])
-  ).catch(() => null);
+  ).catch(swallow("runWithTenantContext", null));
 
   if (dbResult) {
     const [keysetRows, dbTotal] = dbResult;
@@ -145,9 +146,9 @@ export async function getEvidencePageModel({
 
   const [heatmap, unusedRules, publishedBundle] = await runWithTenantContext(tenantId, () =>
     Promise.all([
-      getHighFrictionRules(8, workspaceId, tenantId).catch(() => null),
-      getUnusedActiveRules(workspaceId, tenantId).catch(() => null),
-      getLatestPublishedBundle(workspaceId, tenantId).catch(() => null),
+      getHighFrictionRules(8, workspaceId, tenantId).catch(swallow("getHighFrictionRules", null)),
+      getUnusedActiveRules(workspaceId, tenantId).catch(swallow("getUnusedActiveRules", null)),
+      getLatestPublishedBundle(workspaceId, tenantId).catch(swallow("getLatestPublishedBundle", null)),
     ])
   );
   const controlMappingIndex = buildRuleControlMappingIndex(publishedBundle?.bundle.rules ?? []);
@@ -214,16 +215,16 @@ export async function getSimulationPageModel({
 
   const savedRun = simRunId && isSimulationRunId(simRunId)
     ? await runWithTenantContext(tenantId, () =>
-      getSimulationRunReview({ tenantId, workspaceId, simulationRunId: simRunId }).catch(() => null)
+      getSimulationRunReview({ tenantId, workspaceId, simulationRunId: simRunId }).catch(swallow("getSimulationRunReview", null))
     )
     : null;
 
   const [generatedSimulationRun, heatmap, branches, simulationHistory] = await runWithTenantContext(tenantId, () =>
     Promise.all([
-      savedRun ? Promise.resolve(null) : getEvidenceSimulationRun(simBranchId, simRevisionId, workspaceId, tenantId, "system", { allowBulk: false }).catch(() => null),
-      getHighFrictionRules(8, workspaceId, tenantId).catch(() => null),
-      listBranches(workspaceId, tenantId).catch(() => []),
-      listSimulationRuns(workspaceId, tenantId).catch(() => null),
+      savedRun ? Promise.resolve(null) : getEvidenceSimulationRun(simBranchId, simRevisionId, workspaceId, tenantId, "system", { allowBulk: false }).catch(swallow("getEvidenceSimulationRun", null)),
+      getHighFrictionRules(8, workspaceId, tenantId).catch(swallow("getHighFrictionRules", null)),
+      listBranches(workspaceId, tenantId).catch(swallow("listBranches", [])),
+      listSimulationRuns(workspaceId, tenantId).catch(swallow("listSimulationRuns", null)),
     ])
   );
 
@@ -275,7 +276,7 @@ export async function getAgtVerificationExportInputs(params: {
   const escalations = await listResolvedEscalationsForRevision(
     published.revisionId,
     params.tenantId
-  ).catch(() => []);
+  ).catch(swallow("listResolvedEscalationsForRevision", []));
   const verificationResults = await listVerificationResults(
     params.workspaceId,
     params.tenantId,
@@ -284,7 +285,7 @@ export async function getAgtVerificationExportInputs(params: {
       artifactHash: published.artifactHash,
       limit: 25,
     }
-  ).catch(() => []);
+  ).catch(swallow("listVerificationResults", []));
 
   return { published, escalations, verificationResults };
 }
@@ -307,7 +308,7 @@ export async function runSimulationDecision(input: {
 }): Promise<RunSimulationResult> {
   const started = Date.now();
   return await withSpan("evidence.simulation.run", { "spctre.branch_id": input.branchId, "spctre.revision_id": input.revisionId }, async (span) => {
-  const workspaceContext = await getWorkspaceContext().catch(() => null);
+  const workspaceContext = await getWorkspaceContext().catch(swallow("getWorkspaceContext", null));
   if (!workspaceContext) {
     recordDuration("spctre.evidence.simulation.duration", Date.now() - started, { outcome: "missing_workspace_context" });
     return { error: "Workspace context unavailable." };
@@ -315,7 +316,7 @@ export async function runSimulationDecision(input: {
   const { workspaceId, tenantId } = workspaceContext;
 
   try {
-    const { actor } = await getActiveActor({ workspaceId, tenantId }).catch(() => ({
+    const { actor } = await getActiveActor({ workspaceId, tenantId }).catch(swallow("getActiveActor", {
       actor: { id: "system", name: "system" },
     }));
 
@@ -332,7 +333,7 @@ export async function runSimulationDecision(input: {
       return { error: "No evidence or revision data available to simulate against." };
     }
 
-    const persistedRunId = await persistSimulationRun(run, workspaceId, tenantId).catch(() => null);
+    const persistedRunId = await persistSimulationRun(run, workspaceId, tenantId).catch(swallow("persistSimulationRun", null));
     appendOperationsLog({
       tenantId,
       workspaceId,
@@ -351,7 +352,7 @@ export async function runSimulationDecision(input: {
         regressionSummary: run.regressionSummary,
         sampledEventIds: run.results.slice(0, 10).map((result) => result.eventId),
       },
-    }).catch(() => {});
+    }).catch(swallow("appendOperationsLog", undefined));
 
     span.setAttributes({
       "spctre.simulation.total": run.sourceEventCount,

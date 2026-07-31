@@ -12,6 +12,7 @@ import {
   type MessageCatalog,
   type SupportedLocale,
 } from "./messages";
+import { swallow } from "@/lib/platform/swallow";
 
 export interface I18nRequestConfig {
   locale: SupportedLocale;
@@ -40,11 +41,11 @@ export const resolveI18nRequestConfig = cache(async (): Promise<I18nRequestConfi
   let tenantId: string | undefined;
   let overrides: Record<string, string> = {};
 
-  const session = await getAuthSession().catch(() => null);
+  const session = await getAuthSession().catch(swallow("getAuthSession", null));
   const hasAppAccess = Boolean(session && (!session.requireMfa || session.mfaVerified));
 
   if (hasAppAccess) {
-    const workspaceContext = await getWorkspaceContext().catch(() => null);
+    const workspaceContext = await getWorkspaceContext().catch(swallow("getWorkspaceContext", null));
     if (workspaceContext) {
       tenantId = workspaceContext.tenantId;
       locale = resolveLocalePreference({
@@ -56,7 +57,7 @@ export const resolveI18nRequestConfig = cache(async (): Promise<I18nRequestConfi
         createTenantTerminologyStore(),
         workspaceContext.tenantId,
         locale
-      ).catch(() => ({}));
+      ).catch(swallow("getTenantTerminologyOverrides", {}));
     }
   }
 

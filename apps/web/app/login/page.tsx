@@ -13,6 +13,7 @@ import { EmailAuthForm } from "./email-auth-form";
 import { getSpctrePlan } from "@/lib/feature-flags-server";
 import { SmsMfaTrigger } from "./sms-mfa-trigger";
 import { isConfiguredUserLoginEnabled } from "@/lib/auth-login-modes";
+import { swallow } from "@/lib/platform/swallow";
 
 export const dynamic = "force-dynamic";
 
@@ -23,7 +24,7 @@ async function loadLoginOptions(session: LoginSession) {
   const configuredUserLoginEnabled = isConfiguredUserLoginEnabled();
   const demoPrincipalIds = new Set<string>(Object.values(DEMO_PRINCIPAL_IDS));
   const principals = configuredUserLoginEnabled
-    ? (await listAllLoginPrincipals().catch(() => []))
+    ? (await listAllLoginPrincipals().catch(swallow("listAllLoginPrincipals", [])))
       .filter((principal) => principal.tenant_id !== DEMO_TENANT_ID && !demoPrincipalIds.has(principal.id))
     : [];
   const oidcEnabled = Boolean(getOidcConfig());
@@ -31,7 +32,7 @@ async function loadLoginOptions(session: LoginSession) {
   const samlEnvConfigured = Boolean(getSamlConfig());
   const samlProviderConfigured =
     samlEnvConfigured &&
-    Boolean(await getSamlProviderForTenant(DEMO_TENANT_ID).catch(() => null));
+    Boolean(await getSamlProviderForTenant(DEMO_TENANT_ID).catch(swallow("getSamlProviderForTenant", null)));
   const googleEnabled = Boolean(process.env.GOOGLE_CLIENT_ID?.trim());
   const githubEnabled = Boolean(process.env.GITHUB_CLIENT_ID?.trim());
 
@@ -41,7 +42,7 @@ async function loadLoginOptions(session: LoginSession) {
     ? await listPrincipalMfaMethods({
         principalId: session.principalId,
         tenantId: session.tenantId,
-      }).catch(() => [])
+      }).catch(swallow("listPrincipalMfaMethods", []))
     : [];
   const hasSmsMfa = enrollments.some((e) => e.mfaType === "SMS") && getSpctrePlan() !== "oss";
 

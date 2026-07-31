@@ -21,6 +21,7 @@ import { getLatestManagedSimulationRegression } from "@/lib/repositories/evidenc
 import { getAuthoringVocabulary, listAdapterDeclarationsForWorkspace, type AuthoringVocabularyEntry } from "@/lib/domains/packs/service";
 import type { EnforcementCoverage } from "@/lib/policy/rule-enforcement";
 import type { SimulationRegressionSummary } from "@spctre/policy-schema";
+import { swallow } from "@/lib/platform/swallow";
 
 /**
  * Presentation loader for the review route. This assembles the read-model the
@@ -115,19 +116,19 @@ async function loadActiveRevisionData(
     return [[], null, [], []];
   }
   return Promise.all([
-    getApprovals(activeBranch.activeRevision, workspaceContext.tenantId).catch(() => []),
+    getApprovals(activeBranch.activeRevision, workspaceContext.tenantId).catch(swallow("getApprovals", [])),
     getReviewArtifacts(
       activeBranch.id,
       activeBranch.activeRevision,
       workspaceContext.workspaceId,
       workspaceContext.tenantId
-    ).catch(() => null),
+    ).catch(swallow("getReviewArtifacts", null)),
     listBranchRevisions(
       activeBranch.id,
       workspaceContext.workspaceId,
       workspaceContext.tenantId
-    ).catch(() => []),
-    getRulesForRevision(activeBranch.activeRevision, workspaceContext.tenantId).catch(() => [])
+    ).catch(swallow("listBranchRevisions", [])),
+    getRulesForRevision(activeBranch.activeRevision, workspaceContext.tenantId).catch(swallow("getRulesForRevision", []))
   ]);
 }
 
@@ -141,17 +142,17 @@ async function loadReviewAugments(
 ): Promise<[BlastRadius, CompatibilityReport | null, ApprovalWorkflow | null]> {
   return Promise.all([
     usingRealBranch && changedRuleIds.length > 0
-      ? getBlastRadius(changedRuleIds, workspaceContext.workspaceId, workspaceContext.tenantId).catch(() => null)
+      ? getBlastRadius(changedRuleIds, workspaceContext.workspaceId, workspaceContext.tenantId).catch(swallow("getBlastRadius", null))
       : Promise.resolve(null),
     usingRealBranch && activeBundle
-      ? getBundleCompatibilityReport(activeBundle, workspaceContext.workspaceId, workspaceContext.tenantId).catch(() => null)
+      ? getBundleCompatibilityReport(activeBundle, workspaceContext.workspaceId, workspaceContext.tenantId).catch(swallow("getBundleCompatibilityReport", null))
       : Promise.resolve(null),
     usingRealBranch && activeBranch
       ? getApprovalWorkflowForContext({
           tenantId: workspaceContext.tenantId,
           workspaceId: workspaceContext.workspaceId,
           environment: activeBranch.environment ?? null,
-        }).catch(() => null)
+        }).catch(swallow("getApprovalWorkflowForContext", null))
       : Promise.resolve(null),
   ]);
 }
@@ -282,14 +283,14 @@ export async function getReviewPageModel({
     ? await getLatestVerificationStatus(workspaceContext.workspaceId, workspaceContext.tenantId, {
         revisionId: activeBranch.activeRevision,
         artifactHash: activeArtifact.artifactHash,
-      }).catch(() => null)
+      }).catch(swallow("getLatestVerificationStatus", null))
     : null;
   const simulationRegression = usingRealBranch && activeBranch?.activeRevision
     ? await getLatestManagedSimulationRegression({
         tenantId: workspaceContext.tenantId,
         workspaceId: workspaceContext.workspaceId,
         revisionId: activeBranch.activeRevision,
-      }).catch(() => null)
+      }).catch(swallow("getLatestManagedSimulationRegression", null))
     : null;
 
   const { readiness, isPublished, approvedRequiredCount, diffSummary, changedRuleCount, readinessPillClass } =
@@ -309,11 +310,11 @@ export async function getReviewPageModel({
         getAuthoringVocabulary({
           workspaceId: workspaceContext.workspaceId,
           tenantId: workspaceContext.tenantId,
-        }).catch(() => []),
+        }).catch(swallow("getAuthoringVocabulary", [])),
         listAdapterDeclarationsForWorkspace({
           workspaceId: workspaceContext.workspaceId,
           tenantId: workspaceContext.tenantId,
-        }).catch(() => []),
+        }).catch(swallow("listAdapterDeclarationsForWorkspace", [])),
       ])
     : [[], []];
 

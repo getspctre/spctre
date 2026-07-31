@@ -42,6 +42,7 @@ import { upsertLocalDevWorkspaceGrant } from "@/lib/repositories/auth/grants";
 import { listActiveApiKeys, revokeApiKey, revokeServiceTokenAndRefresh } from "@/lib/repositories/auth/service-keys";
 import { appendOperationsLog } from "@/lib/repositories/operations-log";
 import { recordConversionTelemetry } from "@/lib/repositories/onboarding/telemetry";
+import { swallow } from "@/lib/platform/swallow";
 
 export type { IdentityProviderSummary, PrincipalMfaEnrollment, PrincipalPasskey };
 
@@ -68,11 +69,11 @@ export async function getAccountPageModel(
   }
 
   const [passkeys, enrollments, unusedRecoveryCodes, linkedIdentities, activeSessions] = await Promise.all([
-    listPrincipalPasskeys(principalId, tenantId).catch(() => []),
-    listMfaEnrollments(principalId, tenantId).catch(() => []),
-    countUnusedRecoveryCodes({ principalId, tenantId }).catch(() => 0),
-    listLinkedSocialIdentities({ principalId, tenantId }).catch(() => []),
-    listPrincipalSessions({ principalId, tenantId }).catch(() => []),
+    listPrincipalPasskeys(principalId, tenantId).catch(swallow("listPrincipalPasskeys", [])),
+    listMfaEnrollments(principalId, tenantId).catch(swallow("listMfaEnrollments", [])),
+    countUnusedRecoveryCodes({ principalId, tenantId }).catch(swallow("countUnusedRecoveryCodes", 0)),
+    listLinkedSocialIdentities({ principalId, tenantId }).catch(swallow("listLinkedSocialIdentities", [])),
+    listPrincipalSessions({ principalId, tenantId }).catch(swallow("listPrincipalSessions", [])),
   ]);
 
   return {
@@ -204,7 +205,7 @@ export async function createLocalDevSignup(params: {
 
   await recordConversionTelemetry(localWorkspace.tenantId, "SIGNUP_COMPLETED", {
     signupMethod: "local",
-  }).catch(() => {});
+  }).catch(swallow("recordConversionTelemetry", undefined));
 
   return { ok: true };
 }
@@ -250,7 +251,7 @@ export async function unlinkSocialIdentity(params: {
   // Server-side guard: prevent removing last authentication method
   const [passkeys, identities] = await Promise.all([
     listPrincipalPasskeys(params.principalId, params.tenantId),
-    listLinkedSocialIdentities({ principalId: params.principalId, tenantId: params.tenantId }).catch(() => []),
+    listLinkedSocialIdentities({ principalId: params.principalId, tenantId: params.tenantId }).catch(swallow("listLinkedSocialIdentities", [])),
   ]);
   const remainingIdentities = identities.filter((i) => i.provider !== params.provider);
   if (passkeys.length === 0 && remainingIdentities.length === 0) {
@@ -296,8 +297,8 @@ export async function getAdminAuthPageModel(tenantId: string): Promise<AdminAuth
   }
 
   const [providers, tenantMfa] = await Promise.all([
-    listIdentityProviders(tenantId).catch(() => []),
-    getTenantMfaSettings(tenantId).catch(() => ({ requireMfa: false, mfaGraceDays: 7 })),
+    listIdentityProviders(tenantId).catch(swallow("listIdentityProviders", [])),
+    getTenantMfaSettings(tenantId).catch(swallow("getTenantMfaSettings", { requireMfa: false, mfaGraceDays: 7 })),
   ]);
 
   return {

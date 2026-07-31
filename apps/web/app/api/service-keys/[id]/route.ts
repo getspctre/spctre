@@ -4,6 +4,7 @@ import { recordAuthOperation, revokeServiceKeyById } from "@/lib/domains/auth/se
 
 import { extractTraceId, makeMeta, withTraceId } from "@spctre/api-contracts";
 import { getActiveScope } from "@/lib/workspace";
+import { swallow } from "@/lib/platform/swallow";
 
 export const dynamic = "force-dynamic";
 
@@ -14,12 +15,12 @@ async function handleDeleteApiServiceKeysByid(
   const traceId = extractTraceId(request);
   const { id } = await params;
 
-  const session = await getAuthSession().catch(() => null);
+  const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (!session) {
     return withTraceId(Response.json({ error: "Authentication required.", meta: makeMeta(traceId) }, { status: 401 }), traceId);
   }
 
-  const ctx = await getActiveScope().catch(() => null);
+  const ctx = await getActiveScope().catch(swallow("getActiveScope", null));
   if (!ctx) {
     return withTraceId(Response.json({ error: "Workspace context unavailable.", meta: makeMeta(traceId) }, { status: 400 }), traceId);
   }
@@ -27,7 +28,7 @@ async function handleDeleteApiServiceKeysByid(
   const actor = await findActorById(session.principalId, {
     tenantId: session.tenantId,
     workspaceId: ctx.workspaceId,
-  }).catch(() => null);
+  }).catch(swallow("findActorById", null));
   if (!actor?.reviewerRoles.includes("Admin")) {
     return withTraceId(Response.json({ error: "Admin permission is required.", meta: makeMeta(traceId) }, { status: 403 }), traceId);
   }
@@ -53,7 +54,7 @@ async function handleDeleteApiServiceKeysByid(
     sourceTable: "service_token",
     actorId: session.principalId,
     payload: { keyId: id, revokedAt: new Date().toISOString() },
-  }).catch(() => {});
+  }).catch(swallow("recordAuthOperation", undefined));
 
   return withTraceId(new Response(null, { status: 204, headers: { "X-Trace-Id": traceId } }), traceId);
 }

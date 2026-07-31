@@ -28,6 +28,7 @@ import { isDatabaseConfigured } from "@/lib/repositories/shared/database";
 import { insertPolicyPublish } from "@/lib/repositories/policy/publish";
 import { appendOperationsLog } from "@/lib/repositories/operations-log";
 import { workspaceAllowsImmediatePackPublish } from "@/lib/repositories/approval-workflow/config";
+import { swallow } from "@/lib/platform/swallow";
 
 export interface PackUpgradeSummary {
   addedFromUpstream: number;
@@ -164,7 +165,7 @@ export async function getPacksCatalogModel(params: {
     const rulesByRevision = await listRulesForRevisions({
       revisionIds: statuses.map((status) => status.revisionId),
       tenantId: params.tenantId,
-    }).catch(() => new Map<string, PolicyRuleSummary[]>());
+    }).catch(swallow("listRulesForRevisions", new Map<string, PolicyRuleSummary[]>()));
     const installedRulesByConnector = Object.fromEntries(
       statuses.map((status) => [status.connector, rulesByRevision.get(status.revisionId) ?? []])
     ) as Record<string, PolicyRuleSummary[]>;
@@ -298,10 +299,10 @@ export async function getAuthoringVocabulary(params: {
 }): Promise<AuthoringVocabularyEntry[]> {
   const [statuses, observed] = await runWithTenantContext(params.tenantId, () =>
     Promise.all([
-      listPackInstallStatuses(params.workspaceId, params.tenantId).catch(() => []),
-      listObservedConnectorActions(params.workspaceId, params.tenantId).catch(() => []),
+      listPackInstallStatuses(params.workspaceId, params.tenantId).catch(swallow("listPackInstallStatuses", [])),
+      listObservedConnectorActions(params.workspaceId, params.tenantId).catch(swallow("listObservedConnectorActions", [])),
     ])
-  ).catch(() => [[], []] as const);
+  ).catch(swallow("runWithTenantContext", [[], []] as const));
 
   const packVocab = buildAuthoringVocabulary(statuses.map((status) => status.connector));
   return mergeObservedVocabulary(packVocab, observed);
@@ -470,7 +471,7 @@ async function publishPackImmediately(args: {
     sourceTable: "policy_publish",
     actorId: args.actorId,
     payload: { branchId: args.branchId, revisionId: args.revisionId, artifactHash },
-  }).catch(() => {});
+  }).catch(swallow("appendOperationsLog", undefined));
 
   return null;
 }

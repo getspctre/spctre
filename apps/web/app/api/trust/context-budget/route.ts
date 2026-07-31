@@ -6,6 +6,7 @@ import { isRecord } from "@/lib/records";
 import { extractTraceId, makeMeta, withTraceId } from "@spctre/api-contracts";
 import type { ContextBudgetEventType } from "@spctre/policy-schema";
 import { asInt, asNumber, asString, delegateTrustPostToWorker, resolveAuth, VALID_STACKS } from "../_shared";
+import { swallow } from "@/lib/platform/swallow";
 
 export const dynamic = "force-dynamic";
 
@@ -15,10 +16,10 @@ const VALID_EVENT_TYPES = new Set<ContextBudgetEventType>([
 
 async function handleGetApiTrustContextBudget(request: Request) {
   const traceId = extractTraceId(request);
-  const session = await getAuthSession().catch(() => null);
+  const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (!session) return withTraceId(Response.json({ error: "Authentication required.", meta: makeMeta(traceId) }, { status: 401 }), traceId);
 
-  const ctx = await getActiveScope().catch(() => null);
+  const ctx = await getActiveScope().catch(swallow("getActiveScope", null));
   if (!ctx) return withTraceId(Response.json({ error: "Workspace context unavailable.", meta: makeMeta(traceId) }, { status: 400 }), traceId);
 
   const url = new URL(request.url);
@@ -136,7 +137,7 @@ async function handlePostApiTrustContextBudget(request: Request) {
       sourceTable: "context_budget_event",
       actorId: auth.actorId,
       payload: { sessionId, agentId, environment, runtimeStack, tokenCount, budgetLimit, budgetUtilization },
-    }).catch(() => {});
+    }).catch(swallow("recordTrustOperation", undefined));
   }
 
   return withTraceId(Response.json({ ok: true, id, meta: makeMeta(traceId) }, { status: 201 }), traceId);

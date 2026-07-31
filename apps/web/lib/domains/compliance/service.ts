@@ -43,6 +43,7 @@ import { recordConversionTelemetry } from "@/lib/repositories/onboarding/telemet
 import { listActionReceipts } from "@/lib/repositories/action-receipts";
 import { listGrcDeliveryAttempts } from "@/lib/repositories/grc-delivery-attempts";
 import { listGrcDeliveryDestinations, type GrcDeliveryDestination } from "@/lib/repositories/grc-delivery-destinations";
+import { swallow } from "@/lib/platform/swallow";
 
 export interface CompliancePacket {
   export: PolicyComplianceEvidenceExport;
@@ -71,7 +72,7 @@ export async function getCompliancePacket(
     listApprovalTimelineEvents(published.branch_id, published.revision_id, tenantId),
     listResolvedEscalationsForRevision(published.revision_id, tenantId),
     getApprovalWorkflowForContext({ tenantId, workspaceId, environment: "production" }),
-    listActionReceipts({ tenantId, workspaceId, revisionId: published.revision_id }).catch(() => [])
+    listActionReceipts({ tenantId, workspaceId, revisionId: published.revision_id }).catch(swallow("listActionReceipts", []))
   ]);
   const generatedAt = new Date().toISOString();
   const artifact: PolicyArtifactExport = {
@@ -264,7 +265,7 @@ export async function getEvidenceRetentionPlan(
   const evidence = await listRuntimeEvidence(workspaceId, tenantId);
   if (!evidence.length) return null;
 
-  const profile = await getCommercialProfile(tenantId).catch(() => null);
+  const profile = await getCommercialProfile(tenantId).catch(swallow("getCommercialProfile", null));
   const activeRules = resolveActiveRules(profile);
 
   return buildEvidenceRetentionPlan({
@@ -284,7 +285,7 @@ export async function pruneExpiredEvidence(
   const evidence = await listRuntimeEvidence(workspaceId, tenantId);
   if (!evidence.length) return { prunedCount: 0, prunedDecisionIds: [] };
 
-  const profile = await getCommercialProfile(tenantId).catch(() => null);
+  const profile = await getCommercialProfile(tenantId).catch(swallow("getCommercialProfile", null));
   const activeRules = resolveActiveRules(profile);
 
   const plan = buildEvidenceRetentionPlan({
@@ -313,7 +314,7 @@ export async function pruneExpiredEvidence(
       expiredCount: plan.expiredCount,
       generatedAt: plan.generatedAt,
     },
-  }).catch(() => {});
+  }).catch(swallow("appendOperationsLog", undefined));
 
   return { prunedCount: prunedDecisionIds.length, prunedDecisionIds };
 }
@@ -348,7 +349,7 @@ export async function eraseEvidencePii(
         before: filters.before,
         decisionIdFilterCount: filters.decisionIds?.length ?? 0,
       },
-    }).catch(() => {});
+    }).catch(swallow("appendOperationsLog", undefined));
   }
 
   return { erasedCount: erasedDecisionIds.length, erasedDecisionIds };
@@ -387,11 +388,11 @@ export async function getCompliancePageModel<Posture>(params: {
 
   const [packet, persistedRetentionPlan, activeActor, grcDestinations, grcDeliveryAttempts, posture] = await runWithTenantContext(workspaceContext.tenantId, () =>
     Promise.all([
-      getCompliancePacket(workspaceContext.workspaceId, workspaceContext.tenantId).catch(() => null),
-      getEvidenceRetentionPlan(workspaceContext.workspaceId, workspaceContext.tenantId).catch(() => null),
-      getActiveActor({ workspaceId: workspaceContext.workspaceId, tenantId: workspaceContext.tenantId }).catch(() => null),
-      listGrcDeliveryDestinations({ tenantId: workspaceContext.tenantId, workspaceId: workspaceContext.workspaceId }).catch(() => []),
-      listGrcDeliveryAttempts({ tenantId: workspaceContext.tenantId, workspaceId: workspaceContext.workspaceId, limit: 5 }).catch(() => []),
+      getCompliancePacket(workspaceContext.workspaceId, workspaceContext.tenantId).catch(swallow("getCompliancePacket", null)),
+      getEvidenceRetentionPlan(workspaceContext.workspaceId, workspaceContext.tenantId).catch(swallow("getEvidenceRetentionPlan", null)),
+      getActiveActor({ workspaceId: workspaceContext.workspaceId, tenantId: workspaceContext.tenantId }).catch(swallow("getActiveActor", null)),
+      listGrcDeliveryDestinations({ tenantId: workspaceContext.tenantId, workspaceId: workspaceContext.workspaceId }).catch(swallow("listGrcDeliveryDestinations", [])),
+      listGrcDeliveryAttempts({ tenantId: workspaceContext.tenantId, workspaceId: workspaceContext.workspaceId, limit: 5 }).catch(swallow("listGrcDeliveryAttempts", [])),
       params.loadPosture({ tenantId: workspaceContext.tenantId, workspaceId: workspaceContext.workspaceId, workspaceSlug: workspaceContext.workspaceSlug }),
     ])
   );
@@ -401,7 +402,7 @@ export async function getCompliancePageModel<Posture>(params: {
         getLatestVerificationStatus(workspaceContext.workspaceId, workspaceContext.tenantId, {
           artifactHash: packet.export.artifact.artifactHash,
         })
-      ).catch(() => null)
+      ).catch(swallow("runWithTenantContext", null))
     : null;
 
   return {

@@ -5,6 +5,7 @@ import { sql } from "@/lib/db";
 import { getLatestPublishedBundle } from "@/lib/repositories/policy";
 import { listActiveApiKeys } from "@/lib/repositories/auth/service-keys";
 import type { ServiceTokenScope } from "@/lib/service-tokens";
+import { swallow } from "@/lib/platform/swallow";
 
 export const ONBOARDING_TTL_MINUTES = 10;
 const STARTER_BRANCH_NAME = "starter/runtime-onboarding";
@@ -373,9 +374,9 @@ export async function getWebOnboardingStatus(params: {
       FROM gateway_decision
       WHERE tenant_id = ${params.tenantId}
         AND workspace_id = ${params.workspaceId}
-    `.catch(() => [{ gateway_count: "0" }]),
-    listActiveApiKeys(params.tenantId, params.workspaceId).catch(() => null),
-    getLatestPublishedBundle(params.workspaceId, params.tenantId).catch(() => null),
+    `.catch(swallow("sql", [{ gateway_count: "0" }])),
+    listActiveApiKeys(params.tenantId, params.workspaceId).catch(swallow("listActiveApiKeys", null)),
+    getLatestPublishedBundle(params.workspaceId, params.tenantId).catch(swallow("getLatestPublishedBundle", null)),
   ]);
 
   const setupToken = keys?.find((key) => key.label === WEB_ONBOARDING_TOKEN_LABEL) ?? null;

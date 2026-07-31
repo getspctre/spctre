@@ -35,6 +35,7 @@ import {
   listLatestPublishedBundleSummariesForTenant,
 } from "@/lib/repositories/policy";
 import { countOpenEscalations, listOpenEscalationQueue } from "@/lib/repositories/gateway";
+import { swallow } from "@/lib/platform/swallow";
 
 export function isWorkspaceDatabaseConfigured(): boolean {
   return isDatabaseConfigured();
@@ -124,9 +125,9 @@ export async function createWorkspace(params: {
   await ensureAuthDemoTenant();
 
   // Enforce plan-aware workspace limits
-  const profile = await getCommercialProfile(params.tenantId).catch(() => null);
+  const profile = await getCommercialProfile(params.tenantId).catch(swallow("getCommercialProfile", null));
   const planCode = profile?.planCode ?? "HOSTED_TRIAL";
-  const wsCount = await countTenantWorkspaces(params.tenantId).catch(() => 0);
+  const wsCount = await countTenantWorkspaces(params.tenantId).catch(swallow("countTenantWorkspaces", 0));
 
   let limit = 1;
   if (planCode === "TEAM") limit = 3;
@@ -140,7 +141,7 @@ export async function createWorkspace(params: {
   const writeCheck = verifyWriteAccess(params.tenantId);
   if (!writeCheck.allowed) return { error: writeCheck.error || "Write access denied." };
 
-  const actor = await findActorById(params.principalId, { tenantId: params.tenantId }).catch(() => null);
+  const actor = await findActorById(params.principalId, { tenantId: params.tenantId }).catch(swallow("findActorById", null));
   if (!actor || !actor.reviewerRoles.includes("Admin")) {
     await insertAdminAuditEvent({
       tenantId: params.tenantId,
@@ -149,7 +150,7 @@ export async function createWorkspace(params: {
       targetType: "workspace",
       outcome: "DENIED",
       reason: "Admin permission is required to create workspaces."
-    }).catch(() => {});
+    }).catch(swallow("insertAdminAuditEvent", undefined));
     return { error: "Admin permission is required to create workspaces." };
   }
 
@@ -186,7 +187,7 @@ export async function createWorkspace(params: {
     targetId: workspaceId,
     outcome: "ALLOWED",
     metadata: { slug, workspaceName }
-  }).catch(() => {});
+  }).catch(swallow("insertAdminAuditEvent", undefined));
 
   return { ok: true, workspaceId, slug };
 }
@@ -201,7 +202,7 @@ export async function switchTenant(params: {
   if (isDatabaseConfigured()) {
     await ensureAuthDemoTenant();
 
-    const actor = await findActorById(params.principalId, { tenantId: params.currentTenantId }).catch(() => null);
+    const actor = await findActorById(params.principalId, { tenantId: params.currentTenantId }).catch(swallow("findActorById", null));
     if (!actor || !actor.reviewerRoles.includes("Admin")) {
       await insertAdminAuditEvent({
         tenantId: params.currentTenantId,
@@ -211,7 +212,7 @@ export async function switchTenant(params: {
         targetId: params.tenantId,
         outcome: "DENIED",
         reason: "Admin permission is required to switch tenants."
-      }).catch(() => {});
+      }).catch(swallow("insertAdminAuditEvent", undefined));
       return { error: "Admin permission is required to switch tenants." };
     }
 
@@ -240,7 +241,7 @@ export async function switchTenant(params: {
       targetType: "tenant",
       targetId: params.tenantId,
       outcome: "ALLOWED"
-    }).catch(() => {});
+    }).catch(swallow("insertAdminAuditEvent", undefined));
 
     return {
       ok: true,
@@ -266,7 +267,7 @@ export async function switchActor(params: {
   const { DEMO_TENANT_ID } = await import("@/lib/demo");
   const isDemo = params.tenantId === DEMO_TENANT_ID;
   if (!isDemo) {
-    const adminActor = await findActorById(params.currentPrincipalId, { tenantId: params.tenantId, workspaceId: params.workspaceId }).catch(() => null);
+    const adminActor = await findActorById(params.currentPrincipalId, { tenantId: params.tenantId, workspaceId: params.workspaceId }).catch(swallow("findActorById", null));
     if (!adminActor || !adminActor.reviewerRoles.includes("Admin")) {
       await insertAdminAuditEvent({
         tenantId: params.tenantId,
@@ -277,12 +278,12 @@ export async function switchActor(params: {
         targetId: params.actorId,
         outcome: "DENIED",
         reason: "Admin permission is required to switch active actor."
-      }).catch(() => {});
+      }).catch(swallow("insertAdminAuditEvent", undefined));
       return { error: "Admin permission is required to switch active actor." };
     }
   }
 
-  const actor = await findActorById(params.actorId, { tenantId: params.tenantId, workspaceId: params.workspaceId }).catch(() => null);
+  const actor = await findActorById(params.actorId, { tenantId: params.tenantId, workspaceId: params.workspaceId }).catch(swallow("findActorById", null));
   if (!actor) return { error: "Actor is not available for this tenant/workspace." };
 
   const actorSubject = await getPrincipalSubject({ tenantId: params.tenantId, principalId: params.actorId });
@@ -300,7 +301,7 @@ export async function switchActor(params: {
     targetType: "principal",
     targetId: params.actorId,
     outcome: "ALLOWED"
-  }).catch(() => {});
+  }).catch(swallow("insertAdminAuditEvent", undefined));
 
   return { ok: true, actorSubject };
 }
@@ -435,7 +436,7 @@ export async function getShellPageModel(params: {
   const actor = await findActorById(params.principalId, {
     tenantId: params.tenantId,
     workspaceId: params.workspaceId,
-  }).catch(() => null);
+  }).catch(swallow("findActorById", null));
   const isAdmin = Boolean(actor?.reviewerRoles.includes("Admin"));
 
   let branchCount = 0;
@@ -445,9 +446,9 @@ export async function getShellPageModel(params: {
   if (isDatabaseConfigured()) {
     try {
       const [branches, openEscalations, openEscalationItems] = await Promise.all([
-        listBranches(params.workspaceId, params.tenantId).catch(() => []),
-        countOpenEscalations(params.workspaceId, params.tenantId).catch(() => 0),
-        listOpenEscalationQueue(params.workspaceId, params.tenantId, 5).catch(() => []),
+        listBranches(params.workspaceId, params.tenantId).catch(swallow("listBranches", [])),
+        countOpenEscalations(params.workspaceId, params.tenantId).catch(swallow("countOpenEscalations", 0)),
+        listOpenEscalationQueue(params.workspaceId, params.tenantId, 5).catch(swallow("listOpenEscalationQueue", [])),
       ]);
       branchCount = branches.length;
       escalationCount = openEscalations;
@@ -485,7 +486,7 @@ export interface AdminWorkspacePageModel {
 
 export async function getAdminWorkspacePageModel(scope: ActiveScope): Promise<AdminWorkspacePageModel> {
   const workspaceContext = scope;
-  const session = await getAuthSession().catch(() => null);
+  const session = await getAuthSession().catch(swallow("getAuthSession", null));
 
   if (!session) {
     redirect("/login");
@@ -494,7 +495,7 @@ export async function getAdminWorkspacePageModel(scope: ActiveScope): Promise<Ad
   const actor = await findActorById(session.principalId, {
     tenantId: session.tenantId,
     workspaceId: workspaceContext.workspaceId,
-  }).catch(() => null);
+  }).catch(swallow("findActorById", null));
 
   if (!actor?.reviewerRoles.includes("Admin")) {
     redirect("/?error=admin-required");

@@ -11,6 +11,7 @@ import {
   type QuickStartState,
   type SetupTokenState,
 } from "./quick-start-actions";
+import { swallow } from "@/lib/platform/swallow";
 
 interface Props {
   status: WebOnboardingStatus;
@@ -207,7 +208,7 @@ function useLiveOnboardingStatus(status: WebOnboardingStatus) {
         .then((payload: { status?: WebOnboardingStatus } | null) => {
           if (!cancelled && payload?.status) setLiveStatus(payload.status);
         })
-        .catch(() => undefined);
+        .catch(swallow("fetch", undefined));
     };
 
     loadStatus();
@@ -265,7 +266,7 @@ export function QuickStartBanner({
     navigator.clipboard.writeText(value).then(() => {
       setCopied(id);
       setTimeout(() => setCopied(null), 2000);
-    }).catch(() => undefined);
+    }).catch(swallow("writeText", undefined));
   }
 
   if (hasRealEvidence) {

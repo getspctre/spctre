@@ -2,14 +2,15 @@ import { extractTraceId, makeMeta, withTraceId } from "@spctre/api-contracts";
 import { getAuthSession } from "@/lib/auth-session";
 import { getSimulationRunReview } from "@/lib/repositories/evidence";
 import { getActiveScope } from "@/lib/workspace";
+import { swallow } from "@/lib/platform/swallow";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const traceId = extractTraceId(request);
   const [session, scope] = await Promise.all([
-    getAuthSession().catch(() => null),
-    getActiveScope().catch(() => null),
+    getAuthSession().catch(swallow("getAuthSession", null)),
+    getActiveScope().catch(swallow("getActiveScope", null)),
   ]);
   if (!session || !scope) {
     return withTraceId(
@@ -23,7 +24,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     tenantId: scope.tenantId,
     workspaceId: scope.workspaceId,
     simulationRunId: id,
-  }).catch(() => null);
+  }).catch(swallow("getSimulationRunReview", null));
   if (!simulation) {
     return withTraceId(Response.json({ error: "Simulation run not found.", meta: makeMeta(traceId) }, { status: 404 }), traceId);
   }

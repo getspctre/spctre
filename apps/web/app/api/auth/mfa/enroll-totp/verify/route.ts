@@ -10,6 +10,7 @@ import {
 } from "@/lib/domains/auth/service";
 import { extractTraceId, makeMeta } from "@spctre/api-contracts";
 import { isDemoTenant } from "@/lib/demo-guard";
+import { swallow } from "@/lib/platform/swallow";
 
 interface EnrollVerifyPayload {
   enrollmentId?: unknown;
@@ -24,7 +25,7 @@ async function handlePostApiAuthMfaEnrollTotpVerify(request: Request) {
     return response;
   }
 
-  const session = await getAuthSession().catch(() => null);
+  const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (!session) {
     const response = NextResponse.json({ error: "Authentication required.", meta: makeMeta(traceId) }, { status: 401 });
     response.headers.set("x-request-id", traceId);

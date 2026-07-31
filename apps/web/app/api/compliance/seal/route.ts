@@ -6,6 +6,7 @@ import { getActiveScope } from "@/lib/workspace";
 
 import { authenticateServiceToken } from "@/lib/service-tokens";
 import { makeMeta, newTraceId, withTraceId } from "@spctre/api-contracts";
+import { swallow } from "@/lib/platform/swallow";
 
 export const dynamic = "force-dynamic";
 
@@ -26,7 +27,7 @@ async function handleGetApiComplianceSeal(request: Request) {
     workspaceId = auth.auth.workspaceId;
     actorId = auth.auth.principalId;
   } else {
-    const session = await getAuthSession().catch(() => null);
+    const session = await getAuthSession().catch(swallow("getAuthSession", null));
     if (!session) {
       return withTraceId(Response.json({ error: "Authentication required.", meta: makeMeta(traceId) }, { status: 401 }), traceId);
     }
@@ -63,7 +64,7 @@ async function handleGetApiComplianceSeal(request: Request) {
       eventType: "COMPLIANCE_EXPORT",
       actorId,
       payload: { action: "SEAL", sealToken, packetDigest, sealedAt },
-    }).catch(() => {});
+    }).catch(swallow("recordComplianceOperation", undefined));
 
     return withTraceId(Response.json({
       sealToken,

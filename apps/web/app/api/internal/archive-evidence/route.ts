@@ -3,6 +3,7 @@ import { workerInternalSecret } from "@/lib/platform/config";
 import { archivalService } from "@/lib/ee-adapters/archival";
 import { getCommercialProfile } from "@/lib/repositories/workspace";
 import { getRawEvidenceForArchival } from "@/lib/repositories/evidence/runtime";
+import { swallow } from "@/lib/platform/swallow";
 
 export const dynamic = "force-dynamic";
 
@@ -31,7 +32,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Fetch tenant commercial profile to determine plan-based retention
-    const profile = await getCommercialProfile(tenantId).catch(() => null);
+    const profile = await getCommercialProfile(tenantId).catch(swallow("getCommercialProfile", null));
     let retentionDays = 90;
     if (profile?.planCode === "TEAM") {
       retentionDays = 365;

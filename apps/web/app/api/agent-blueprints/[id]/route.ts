@@ -5,12 +5,13 @@ import { verifyWriteAccess } from "@/lib/demo-guard";
 import type { AgentBlueprintStatus } from "@spctre/policy-schema";
 import { diffAgentBlueprintRevisions } from "@spctre/policy-schema";
 import { extractTraceId, makeMeta, withTraceId } from "@spctre/api-contracts";
+import { swallow } from "@/lib/platform/swallow";
 
 export const dynamic = "force-dynamic";
 
 async function context(request: Request) {
   const traceId = extractTraceId(request);
-  const [session, scope] = await Promise.all([getAuthSession().catch(() => null), getActiveScope().catch(() => null)]);
+  const [session, scope] = await Promise.all([getAuthSession().catch(swallow("getAuthSession", null)), getActiveScope().catch(swallow("getActiveScope", null))]);
   if (!session || !scope) return { traceId, response: withTraceId(Response.json({ error: "Authentication and workspace context are required.", meta: makeMeta(traceId) }, { status: 401 }), traceId) };
   return { traceId, session, scope };
 }

@@ -3,6 +3,7 @@ import { evaluateTrustDecision, ingestContextBudget, listTrustPolicies, recordTr
 import { extractTraceId, makeMeta, withTraceId } from "@spctre/api-contracts";
 import type { TrustCalibrationPolicy } from "@spctre/policy-schema";
 import { asInt, asNumber, asString, delegateTrustPostToWorker, resolveAuth, VALID_STACKS } from "../_shared";
+import { swallow } from "@/lib/platform/swallow";
 
 export const dynamic = "force-dynamic";
 
@@ -45,7 +46,7 @@ function recordBreachTelemetry(
       budgetUtilization: result.budgetUtilization,
       governanceAction: result.action,
       policyRef: result.matchedPolicyId,
-    }).catch(() => {});
+    }).catch(swallow("ingestContextBudget", undefined));
   }
 
   const opsEventType = isContextBreach ? "CONTEXT_BUDGET_BREACH" as const : "TRUST_POLICY_BREACH" as const;
@@ -70,7 +71,7 @@ function recordBreachTelemetry(
       agentId,
       sessionId,
     },
-  }).catch(() => {});
+  }).catch(swallow("recordTrustOperation", undefined));
 }
 
 async function handlePostApiTrustEvaluate(request: Request) {

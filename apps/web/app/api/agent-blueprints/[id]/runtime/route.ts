@@ -3,12 +3,13 @@ import { getActiveScope } from "@/lib/workspace";
 import { getPublishedAgentBlueprintRuntime } from "@/lib/domains/agent-blueprints/service";
 import { buildAgentBlueprintRuntimeArtifact } from "@spctre/policy-schema";
 import { extractTraceId, makeMeta, withTraceId } from "@spctre/api-contracts";
+import { swallow } from "@/lib/platform/swallow";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const traceId = extractTraceId(request);
-  const [session, scope] = await Promise.all([getAuthSession().catch(() => null), getActiveScope().catch(() => null)]);
+  const [session, scope] = await Promise.all([getAuthSession().catch(swallow("getAuthSession", null)), getActiveScope().catch(swallow("getActiveScope", null))]);
   if (!session || !scope) {
     return withTraceId(Response.json({ error: "Authentication and workspace context are required.", meta: makeMeta(traceId) }, { status: 401 }), traceId);
   }

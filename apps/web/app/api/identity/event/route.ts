@@ -5,6 +5,7 @@ import { getActiveScope } from "@/lib/workspace";
 import type { IdentityLifecycleEventType, IdentityEventSource } from "@spctre/policy-schema";
 import { extractTraceId, makeMeta, withTraceId } from "@spctre/api-contracts";
 import { asString } from "../../_shared";
+import { swallow } from "@/lib/platform/swallow";
 
 export const dynamic = "force-dynamic";
 
@@ -24,10 +25,10 @@ const VALID_SOURCES = new Set<IdentityEventSource>([
 
 async function handlePostApiIdentityEvent(request: Request) {
   const traceId = extractTraceId(request);
-  const session = await getAuthSession().catch(() => null);
+  const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (!session) return withTraceId(Response.json({ error: "Authentication required.", meta: makeMeta(traceId) }, { status: 401 }), traceId);
 
-  const ctx = await getActiveScope().catch(() => null);
+  const ctx = await getActiveScope().catch(swallow("getActiveScope", null));
   if (!ctx) return withTraceId(Response.json({ error: "Workspace context unavailable.", meta: makeMeta(traceId) }, { status: 400 }), traceId);
 
   const body = await request.json().catch(() => null);
@@ -96,7 +97,7 @@ async function handlePostApiIdentityEvent(request: Request) {
     sourceTable: "agt_identity_lifecycle_event",
     actorId: session.principalId,
     payload: { principalId, eventType, source },
-  }).catch(() => {});
+  }).catch(swallow("recordIdentityOperation", undefined));
 
   return withTraceId(Response.json({ ok: true, meta: makeMeta(traceId) }, { status: 201 }), traceId);
 }

@@ -10,9 +10,10 @@ import {
   revokeSession,
 } from "@/lib/domains/auth/service";
 import { isDemoTenant } from "@/lib/demo-guard";
+import { swallow } from "@/lib/platform/swallow";
 
 export async function deletePasskeyForm(formData: FormData): Promise<void> {
-  const session = await getAuthSession().catch(() => null);
+  const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (!session) return;
 
   const passkeyId = String(formData.get("passkeyId") ?? "").trim();
@@ -27,7 +28,7 @@ export async function deletePasskeyForm(formData: FormData): Promise<void> {
   revalidatePath("/account");
 }
 export async function renamePasskeyForm(formData: FormData): Promise<void> {
-  const session = await getAuthSession().catch(() => null);
+  const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (!session) return;
 
   const passkeyId = String(formData.get("passkeyId") ?? "").trim();
@@ -45,7 +46,7 @@ export async function renamePasskeyForm(formData: FormData): Promise<void> {
 }
 
 export async function deleteMfaEnrollmentForm(formData: FormData): Promise<void> {
-  const session = await getAuthSession().catch(() => null);
+  const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (!session) return;
 
   const enrollmentId = String(formData.get("enrollmentId") ?? "").trim();
@@ -61,7 +62,7 @@ export async function deleteMfaEnrollmentForm(formData: FormData): Promise<void>
 }
 
 export async function unlinkSocialIdentityForm(formData: FormData): Promise<void> {
-  const session = await getAuthSession().catch(() => null);
+  const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (!session) return;
 
   const provider = String(formData.get("provider") ?? "").toUpperCase() as "GOOGLE" | "GITHUB";
@@ -82,7 +83,7 @@ export async function revokeSessionForm(
   _prevState: RevokeSessionState,
   formData: FormData
 ): Promise<RevokeSessionState> {
-  const session = await getAuthSession().catch(() => null);
+  const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (!session) return null;
 
   if (isDemoTenant(session.tenantId)) {

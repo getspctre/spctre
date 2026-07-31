@@ -5,6 +5,7 @@ import { isAuthDatabaseConfigured } from "@/lib/domains/auth/service";
 import { createTotpEnrollment } from "@/lib/domains/auth/service";
 import { makeMeta, newTraceId } from "@spctre/api-contracts";
 import { isDemoTenant } from "@/lib/demo-guard";
+import { swallow } from "@/lib/platform/swallow";
 
 async function handlePostApiAuthMfaEnrollTotpStart() {
   const traceId = newTraceId();
@@ -14,7 +15,7 @@ async function handlePostApiAuthMfaEnrollTotpStart() {
     return response;
   }
 
-  const session = await getAuthSession().catch(() => null);
+  const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (!session) {
     const response = NextResponse.json({ error: "Authentication required.", meta: makeMeta(traceId) }, { status: 401 });
     response.headers.set("x-request-id", traceId);

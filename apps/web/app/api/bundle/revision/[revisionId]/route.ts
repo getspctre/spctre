@@ -4,6 +4,7 @@ import { getActiveScope } from "@/lib/workspace";
 import { extractTraceId, makeMeta, withTraceId } from "@spctre/api-contracts";
 import { buildPolicyBundleExport, verifyPolicyBundleExport } from "@spctre/policy-schema";
 import type { PolicyBundleExportFormat } from "@spctre/policy-schema";
+import { swallow } from "@/lib/platform/swallow";
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +21,7 @@ export async function GET(
   { params }: { params: Promise<{ revisionId: string }> }
 ) {
   const traceId = extractTraceId(request);
-  const session = await getAuthSession().catch(() => null);
+  const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (!session) {
     return withTraceId(Response.json({ error: "Authentication required.", meta: makeMeta(traceId) }, { status: 401 }), traceId);
   }
@@ -37,11 +38,11 @@ export async function GET(
   }
 
   const scope = await getActiveScope();
-  const branch = await listBranches(scope.workspaceId, scope.tenantId).then((branches) => branches.find((item) => item.id === branchId)).catch(() => undefined);
+  const branch = await listBranches(scope.workspaceId, scope.tenantId).then((branches) => branches.find((item) => item.id === branchId)).catch(swallow("listBranches", undefined));
   if (!branch || branch.activeRevision !== revisionId) {
     return withTraceId(Response.json({ error: "The reviewed revision is unavailable in this workspace.", meta: makeMeta(traceId) }, { status: 404 }), traceId);
   }
-  const artifacts = await getReviewArtifacts(branchId, revisionId, scope.workspaceId, scope.tenantId).catch(() => null);
+  const artifacts = await getReviewArtifacts(branchId, revisionId, scope.workspaceId, scope.tenantId).catch(swallow("getReviewArtifacts", null));
   if (!artifacts) {
     return withTraceId(Response.json({ error: "The reviewed revision is unavailable.", meta: makeMeta(traceId) }, { status: 404 }), traceId);
   }

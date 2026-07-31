@@ -11,6 +11,7 @@ import {
   parseBody,
   withTraceId,
 } from "@spctre/api-contracts";
+import { swallow } from "@/lib/platform/swallow";
 
 export const dynamic = "force-dynamic";
 
@@ -99,7 +100,7 @@ async function resolveEvaluateAuth(request: Request): Promise<
     return { ok: true, tenantId, workspaceId };
   }
 
-  const session = await getAuthSession().catch(() => null);
+  const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (!session) {
     return { ok: false, error: "Authentication required.", status: 401 };
   }

@@ -6,6 +6,7 @@ import {
   resolveTenantIdByBillingCustomerId,
 } from "@/lib/domains/billing/service";
 import { extractTraceId, makeMeta, withTraceId } from "@spctre/api-contracts";
+import { swallow } from "@/lib/platform/swallow";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -58,7 +59,7 @@ function customerIdFrom(object: Record<string, unknown>): string | null {
 
 async function effectiveTenantIdFrom(tenantId: string | null, customerId: string | null): Promise<string | null> {
   return tenantId ?? (customerId
-    ? await resolveTenantIdByBillingCustomerId("PADDLE", customerId).catch(() => null)
+    ? await resolveTenantIdByBillingCustomerId("PADDLE", customerId).catch(swallow("resolveTenantIdByBillingCustomerId", null))
     : null);
 }
 
@@ -115,7 +116,7 @@ async function cancellationTelemetryEventFor(
 ): Promise<{ tenantId: string | null; eventType: CancellationTelemetryEvent }> {
   const effectiveTenantId = await effectiveTenantIdFrom(tenantId, customerId);
   const priorProfile = effectiveTenantId
-    ? await getCommercialProfileWithContext(effectiveTenantId).catch(() => null)
+    ? await getCommercialProfileWithContext(effectiveTenantId).catch(swallow("getCommercialProfileWithContext", null))
     : null;
   return {
     tenantId: effectiveTenantId,
@@ -129,7 +130,7 @@ async function activationTelemetryEventFor(
 ): Promise<{ tenantId: string | null; eventType: "TRIAL_CONVERTED" | "PLAN_CHANGED" }> {
   const effectiveTenantId = await effectiveTenantIdFrom(tenantId, customerId);
   const priorProfile = effectiveTenantId
-    ? await getCommercialProfileWithContext(effectiveTenantId).catch(() => null)
+    ? await getCommercialProfileWithContext(effectiveTenantId).catch(swallow("getCommercialProfileWithContext", null))
     : null;
   return {
     tenantId: effectiveTenantId,

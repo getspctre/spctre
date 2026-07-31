@@ -9,6 +9,7 @@ import {
 import { ACTIVE_TENANT_COOKIE, ACTIVE_WORKSPACE_COOKIE } from "./cookies";
 import type { WorkspaceContext, WorkspaceSummary } from "./types";
 import { getLocalePreferencesForShell, type LocalePreferences } from "@/lib/repositories/i18n/preferences";
+import { swallow } from "@/lib/platform/swallow";
 
 interface WorkspaceContextOptions {
   workspaceSlug?: string;
@@ -103,7 +104,7 @@ export async function getWorkspaceContext(
   const cookieStore = await cookies();
   const cookieWorkspaceId = cookieStore.get(ACTIVE_WORKSPACE_COOKIE)?.value;
   const cookieTenantId = cookieStore.get(ACTIVE_TENANT_COOKIE)?.value;
-  const session = await getAuthSession().catch(() => null);
+  const session = await getAuthSession().catch(swallow("getAuthSession", null));
 
   if (!isDatabaseConfigured()) {
     return demoFallbackContext(options, cookieWorkspaceId, cookieTenantId);
@@ -152,7 +153,7 @@ export async function getWorkspaceContext(
   const localePreferences: LocalePreferences = await getLocalePreferencesForShell({
     tenantId: activeTenant.id,
     principalId: session?.principalId,
-  }).catch(() => ({}));
+  }).catch(swallow("getLocalePreferencesForShell", {}));
 
   return {
     tenantId: activeTenant.id,

@@ -4,6 +4,7 @@ import { DEMO_TENANT_ID, DEMO_WORKSPACE_ID } from "../demo";
 import { isDatabaseConfigured } from "./repository";
 import { ACTIVE_TENANT_COOKIE, ACTIVE_WORKSPACE_COOKIE } from "./cookies";
 import { listWorkspacesForWorkspaceContext } from "@/lib/repositories/workspace/context";
+import { swallow } from "@/lib/platform/swallow";
 
 export interface ActiveScope {
   tenantId: string;
@@ -24,7 +25,7 @@ export async function getActiveScope(): Promise<ActiveScope> {
     return { tenantId: DEMO_TENANT_ID, workspaceId: DEMO_WORKSPACE_ID };
   }
 
-  const session = await getAuthSession().catch(() => null);
+  const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (!session) {
     return { tenantId: DEMO_TENANT_ID, workspaceId: DEMO_WORKSPACE_ID };
   }

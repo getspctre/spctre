@@ -2,6 +2,7 @@ import { getAuthSession } from "@/lib/auth-session";
 import { authenticateServiceToken, hasBearerToken, type ServiceTokenScope } from "@/lib/service-tokens";
 import { getActiveScope } from "@/lib/workspace";
 import { makeMeta, withTraceId } from "@spctre/api-contracts";
+import { swallow } from "@/lib/platform/swallow";
 
 export interface RouteScope {
   tenantId: string;
@@ -39,11 +40,11 @@ export async function resolveRouteScope(
     tenantId = tokenAuth.auth.tenantId;
     actorId = tokenAuth.auth.principalId;
   } else {
-    const session = await getAuthSession().catch(() => null);
+    const session = await getAuthSession().catch(swallow("getAuthSession", null));
     if (!session) {
       return routeScopeError("Authentication required.", 401, params.traceId);
     }
-    const ctx = await getActiveScope().catch(() => null);
+    const ctx = await getActiveScope().catch(swallow("getActiveScope", null));
     if (!ctx) {
       return routeScopeError("Workspace context unavailable.", contextUnavailableStatus, params.traceId);
     }

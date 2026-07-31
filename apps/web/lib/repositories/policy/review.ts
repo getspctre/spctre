@@ -22,6 +22,7 @@ import {
   stableHash,
 } from "@/lib/repositories/shared/revisions";
 import { listRulesForRevision } from "@/lib/repositories/shared/rules";
+import { swallow } from "@/lib/platform/swallow";
 
 export interface ReviewArtifacts {
   composition: PolicyCompositionPreview;
@@ -221,7 +222,7 @@ export async function getBundleCompatibilityReport(
   workspaceId: string | null,
   tenantId: string
 ): Promise<BundleCompatibilityReport> {
-  const adapters = await listAdapterDeclarations(workspaceId, tenantId).catch(() => []);
+  const adapters = await listAdapterDeclarations(workspaceId, tenantId).catch(swallow("listAdapterDeclarations", []));
   return validateBundleCompatibility({ bundle, adapters });
 }
 

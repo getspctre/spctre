@@ -30,6 +30,7 @@ import {
   getTenantRequireMfa,
   isAuthDatabaseConfigured,
 } from "@/lib/domains/auth/service";
+import { swallow } from "@/lib/platform/swallow";
 
 interface OidcDiscoveryDocument {
   token_endpoint: string;
@@ -132,7 +133,7 @@ async function resolveOidcClaims(
   params: ValidatedOidcCallback
 ): Promise<{ discovery: OidcDiscoveryDocument; provider: OidcProvider; claims: OidcIdTokenClaims & { sub: string } } | NextResponse> {
   const tenantProvider = params.tenantCookie
-    ? await getOidcProviderForTenant(params.tenantCookie).catch(() => null)
+    ? await getOidcProviderForTenant(params.tenantCookie).catch(swallow("getOidcProviderForTenant", null))
     : null;
 
   let discovery: OidcDiscoveryDocument;
@@ -148,7 +149,7 @@ async function resolveOidcClaims(
       : await getOidcProviderByIssuer({
           issuer: discovery.issuer,
           tenantId: params.tenantCookie || undefined
-        }).catch(() => null);
+        }).catch(swallow("getOidcProviderByIssuer", null));
   if (!provider) {
     return loginRedirect(request, "provider_not_configured");
   }

@@ -10,6 +10,7 @@ import {
   isGatewayWebhookProvider,
   revokeGatewayWebhookRegistration,
 } from "@/lib/domains/gateway-webhook/service";
+import { swallow } from "@/lib/platform/swallow";
 
 export type WebhookActionState =
   | { ok: true; secret: string; provider: string; label: string | null; error?: never; errorCode?: never }
@@ -22,14 +23,14 @@ export type WebhookMutationState =
   | null;
 
 async function requireWebhookAdmin() {
-  const session = await getAuthSession().catch(() => null);
+  const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (!session) return { error: "Authentication required.", errorCode: "auth_required" } as const;
-  const ctx = await getActiveScope().catch(() => null);
+  const ctx = await getActiveScope().catch(swallow("getActiveScope", null));
   if (!ctx) return { error: "Workspace context unavailable.", errorCode: "workspace_unavailable" } as const;
   const actor = await findActorById(session.principalId, {
     tenantId: session.tenantId,
     workspaceId: ctx.workspaceId,
-  }).catch(() => null);
+  }).catch(swallow("findActorById", null));
   if (!actor?.reviewerRoles.includes("Admin")) {
     return { error: "Admin permission is required.", errorCode: "admin_required" } as const;
   }

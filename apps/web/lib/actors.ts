@@ -8,6 +8,7 @@ import {
   type Principal
 } from "./repositories/auth/permissions";
 import { isDatabaseConfigured } from "./repositories/shared/database";
+import { swallow } from "@/lib/platform/swallow";
 
 const ACTIVE_ACTOR_COOKIE = "spctre_actor_id";
 
@@ -73,10 +74,10 @@ function loadPersistedActors(options?: {
 }
 
 export async function getActiveActor(options?: { workspaceId?: string; tenantId?: string }) {
-  const persisted = await loadPersistedActors(options).catch(() => []);
+  const persisted = await loadPersistedActors(options).catch(swallow("loadPersistedActors", []));
   const actors = persisted.length ? persisted : SEED_PRINCIPALS;
 
-  const session = await getAuthSession().catch(() => null);
+  const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (isDatabaseConfigured() && !session) {
     throw new Error("Authentication required.");
   }
@@ -111,7 +112,7 @@ export async function findActorById(
   actorId: string,
   options?: { workspaceId?: string; tenantId?: string }
 ): Promise<Principal | null> {
-  const actors = (await loadPersistedActors(options).catch(() => [])) || [];
+  const actors = (await loadPersistedActors(options).catch(swallow("loadPersistedActors", []))) || [];
   const source = actors.length ? actors : SEED_PRINCIPALS;
   return source.find((candidate) => candidate.id === actorId) ?? null;
 }

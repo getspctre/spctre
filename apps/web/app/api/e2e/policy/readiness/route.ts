@@ -6,6 +6,7 @@ import { getOpenEscalationSummaryForRevision } from "@/lib/repositories/gateway"
 import { getLatestVerificationStatus } from "@/lib/repositories/verification";
 import { extractTraceId, makeMeta, withTraceId } from "@spctre/api-contracts";
 import { resolveRouteScope } from "../../../_route-scope";
+import { swallow } from "@/lib/platform/swallow";
 
 export const dynamic = "force-dynamic";
 
@@ -36,7 +37,7 @@ async function handleGetApiE2ePolicyReadiness(request: Request) {
   if (!branchId) return withTraceId(Response.json({ error: "branchId query param is required.", meta: makeMeta(traceId) }, { status: 400 }), traceId);
   if (!revisionId) return withTraceId(Response.json({ error: "revisionId query param is required.", meta: makeMeta(traceId) }, { status: 400 }), traceId);
 
-  const branchRow = await getPublishBranchScope({ tenantId, branchId }).catch(() => null);
+  const branchRow = await getPublishBranchScope({ tenantId, branchId }).catch(swallow("getPublishBranchScope", null));
   if (!branchRow) {
     return withTraceId(Response.json({ error: "Branch not found.", meta: makeMeta(traceId) }, { status: 404 }), traceId);
   }
@@ -55,7 +56,7 @@ async function handleGetApiE2ePolicyReadiness(request: Request) {
         branchRow.workspace_id ?? workspaceId,
         tenantId,
         { revisionId }
-      ).catch(() => null)
+      ).catch(swallow("getLatestVerificationStatus", null))
     : null;
 
   const readiness = evaluatePublishReadiness({

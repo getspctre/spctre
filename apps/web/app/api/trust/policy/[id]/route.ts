@@ -6,6 +6,7 @@ import { isDemoTenant } from "@/lib/demo-guard";
 import { extractTraceId, makeMeta, withTraceId } from "@spctre/api-contracts";
 import type { TrustCalibrationPolicy } from "@spctre/policy-schema";
 import { asInt, asNumber, asString } from "../../_shared";
+import { swallow } from "@/lib/platform/swallow";
 
 export const dynamic = "force-dynamic";
 
@@ -13,10 +14,10 @@ async function handlePatchApiTrustPolicyByid(request: Request, { params }: { par
   const traceId = extractTraceId(request);
   const { id } = await params;
 
-  const session = await getAuthSession().catch(() => null);
+  const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (!session) return withTraceId(Response.json({ error: "Authentication required.", meta: makeMeta(traceId) }, { status: 401 }), traceId);
 
-  const ctx = await getActiveScope().catch(() => null);
+  const ctx = await getActiveScope().catch(swallow("getActiveScope", null));
   if (!ctx) return withTraceId(Response.json({ error: "Workspace context unavailable.", meta: makeMeta(traceId) }, { status: 400 }), traceId);
 
   if (isDemoTenant(ctx.tenantId)) {
@@ -72,7 +73,7 @@ async function handlePatchApiTrustPolicyByid(request: Request, { params }: { par
     sourceTable: "trust_calibration_policy",
     actorId: session.principalId,
     payload: { action: "POLICY_UPDATED", policyId: id },
-  }).catch(() => {});
+  }).catch(swallow("recordTrustOperation", undefined));
 
   return withTraceId(Response.json({ policy: updated, meta: makeMeta(traceId) }), traceId);
 }
@@ -81,10 +82,10 @@ async function handleDeleteApiTrustPolicyByid(request: Request, { params }: { pa
   const traceId = extractTraceId(request);
   const { id } = await params;
 
-  const session = await getAuthSession().catch(() => null);
+  const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (!session) return withTraceId(Response.json({ error: "Authentication required.", meta: makeMeta(traceId) }, { status: 401 }), traceId);
 
-  const ctx = await getActiveScope().catch(() => null);
+  const ctx = await getActiveScope().catch(swallow("getActiveScope", null));
   if (!ctx) return withTraceId(Response.json({ error: "Workspace context unavailable.", meta: makeMeta(traceId) }, { status: 400 }), traceId);
 
   if (isDemoTenant(ctx.tenantId)) {
@@ -110,7 +111,7 @@ async function handleDeleteApiTrustPolicyByid(request: Request, { params }: { pa
     sourceTable: "trust_calibration_policy",
     actorId: session.principalId,
     payload: { action: "POLICY_DELETED", policyId: id },
-  }).catch(() => {});
+  }).catch(swallow("recordTrustOperation", undefined));
 
   return withTraceId(Response.json({ ok: true, meta: makeMeta(traceId) }), traceId);
 }

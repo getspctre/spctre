@@ -9,6 +9,7 @@ import {
   revokeScimTokenRegistration,
   type ScimTokenRegistration,
 } from "@/lib/repositories/scim-token";
+import { swallow } from "@/lib/platform/swallow";
 
 export type ScimTokenBindingResult =
   | { ok: true; tenantId: string; registrationId: string }
@@ -79,7 +80,7 @@ export async function createScimToken(params: {
         keyType: "SCIM_PROVISIONING",
         label: params.label ?? null,
       },
-    }).catch(() => {});
+    }).catch(swallow("appendOperationsLog", undefined));
 
     return result;
   });
@@ -105,7 +106,7 @@ export async function revokeScimToken(params: {
         sourceTable: "scim_token_registration",
         actorId: params.actorId,
         payload: { keyType: "SCIM_PROVISIONING", revokedAt: new Date().toISOString() },
-      }).catch(() => {});
+      }).catch(swallow("appendOperationsLog", undefined));
     }
 
     return revoked;

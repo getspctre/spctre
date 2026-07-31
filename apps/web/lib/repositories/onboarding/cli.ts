@@ -6,6 +6,7 @@ import { ensureDemoTenant } from "@/lib/repositories/seed/local-dev";
 import { issueAccessRefreshPair, type ServiceTokenScope } from "@/lib/service-tokens";
 import { ensureStarterPublishedBundle, ONBOARDING_TTL_MINUTES, slugifyWorkspace } from "./shared";
 import { recordConversionTelemetry } from "./telemetry";
+import { swallow } from "@/lib/platform/swallow";
 
 const DEV_TOKEN_SCOPES: ServiceTokenScope[] = ["bundle:read", "decision:evaluate", "evidence:write", "heartbeat:write"];
 
@@ -235,7 +236,7 @@ export async function exchangeCliOnboardingCode(code: string): Promise<CliOnboar
       await recordConversionTelemetry(approvedTenantId, "TRIAL_START", {
         billingProvider: "PADDLE",
         trialDurationDays: 30,
-      }).catch(() => {});
+      }).catch(swallow("recordConversionTelemetry", undefined));
     }
 
     return { principalId, tokenId: pair.accessTokenId, pair };

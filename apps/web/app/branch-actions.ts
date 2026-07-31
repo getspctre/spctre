@@ -6,6 +6,7 @@ import { getRequiredWorkspaceContext } from "@/lib/workspace";
 import { deleteUnpublishedBranchDecision } from "@/lib/domains/policy/service";
 import { findActorById } from "@/lib/actors";
 import { verifyWriteAccess } from "@/lib/demo-guard";
+import { swallow } from "@/lib/platform/swallow";
 
 export type DeleteBranchState = { error: string } | { success: true } | null;
 
@@ -13,7 +14,7 @@ export async function deleteBranchAdmin(
   _prevState: DeleteBranchState,
   formData: FormData
 ): Promise<DeleteBranchState> {
-  const session = await getAuthSession().catch(() => null);
+  const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (!session) return { error: "Authentication required." };
 
   const { workspaceId, tenantId } = await getRequiredWorkspaceContext();
@@ -23,7 +24,7 @@ export async function deleteBranchAdmin(
   const actor = await findActorById(session.principalId, {
     tenantId,
     workspaceId
-  }).catch(() => null);
+  }).catch(swallow("findActorById", null));
   if (!actor?.reviewerRoles.includes("Admin")) {
     return { error: "Admin permission required." };
   }

@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { getAuthSession } from "@/lib/auth-session";
 import { renamePasskey } from "@/lib/domains/auth/service";
+import { swallow } from "@/lib/platform/swallow";
 
 async function handlePostApiAuthPasskeyRename(request: Request) {
-  const session = await getAuthSession().catch(() => null);
+  const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (!session) {
     return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
   }

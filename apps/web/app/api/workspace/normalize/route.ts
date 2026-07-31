@@ -7,6 +7,7 @@ import {
 } from "@/lib/domains/workspace/service";
 import { ACTIVE_TENANT_COOKIE, ACTIVE_WORKSPACE_COOKIE } from "@/lib/workspace/cookies";
 import { extractTraceId, withTraceId } from "@spctre/api-contracts";
+import { swallow } from "@/lib/platform/swallow";
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +18,7 @@ interface WorkspacePayload {
 
 async function handlePostApiWorkspaceNormalize(request: Request) {
   const traceId = extractTraceId(request);
-  const session = await getAuthSession().catch(() => null);
+  const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (!session) {
     return withTraceId(new Response(null, { status: 401 }), traceId);
   }

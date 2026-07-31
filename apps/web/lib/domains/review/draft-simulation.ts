@@ -2,6 +2,7 @@ import { evaluateDecision, type PolicyRuleSummary, type RuntimeDecisionStatus, t
 import { getWorkspaceContext } from "@/lib/workspace";
 import { runWithTenantContext } from "@/lib/tenant-context";
 import { listRuntimeEvidence } from "@/lib/repositories/evidence/runtime";
+import { swallow } from "@/lib/platform/swallow";
 
 /**
  * Ephemeral, authoring-time simulation: replay the DRAFT (uncommitted) rule set
@@ -125,7 +126,7 @@ export async function simulateDraftAgainstEvidence(input: {
 
   const evidence = await runWithTenantContext(tenantId, () =>
     listRuntimeEvidence(workspaceId, tenantId, SAMPLE_LIMIT, 0)
-  ).catch(() => []);
+  ).catch(swallow("runWithTenantContext", []));
 
   return { summary: buildDraftSimulationSummary(evidence, input.rules) };
 }

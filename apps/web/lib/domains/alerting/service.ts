@@ -12,6 +12,7 @@ import { CodedError } from "@/lib/errors/coded-error";
 import { getWorkspaceContext, getRequiredWorkspaceContext } from "@/lib/workspace";
 import { getAuthSession } from "@/lib/auth-session";
 import { validateWebhookUrl, validateSentinelWorkspaceId } from "@/lib/platform/url-guard";
+import { swallow } from "@/lib/platform/swallow";
 
 const URL_DISPATCH_TYPES = new Set<string>(["SLACK", "TEAMS", "WEBHOOK", "SPLUNK_HEC"]);
 
@@ -47,7 +48,7 @@ export async function addAlertingIntegrationDecision(params: {
   url: string;
   config?: Record<string, unknown>;
 }) {
-  const session = await getAuthSession().catch(() => null);
+  const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (!session) throw new CodedError("AUTH_REQUIRED");
   const ctx = await getRequiredWorkspaceContext();
   if (ctx.workspaceId !== params.workspaceId) throw new CodedError("INVALID_WORKSPACE");
@@ -72,7 +73,7 @@ export async function removeAlertingIntegrationDecision(params: {
   workspaceId: string;
   id: string;
 }) {
-  const session = await getAuthSession().catch(() => null);
+  const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (!session) throw new CodedError("AUTH_REQUIRED");
   const ctx = await getRequiredWorkspaceContext();
   if (ctx.workspaceId !== params.workspaceId) throw new CodedError("INVALID_WORKSPACE");
@@ -90,7 +91,7 @@ export async function addAlertingRuleDecision(params: {
   frequencyWindowMinutes: number | null;
   integrationId: string;
 }) {
-  const session = await getAuthSession().catch(() => null);
+  const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (!session) throw new CodedError("AUTH_REQUIRED");
   const ctx = await getRequiredWorkspaceContext();
   if (ctx.workspaceId !== params.workspaceId) throw new CodedError("INVALID_WORKSPACE");
@@ -112,7 +113,7 @@ export async function removeAlertingRuleDecision(params: {
   workspaceId: string;
   id: string;
 }) {
-  const session = await getAuthSession().catch(() => null);
+  const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (!session) throw new CodedError("AUTH_REQUIRED");
   const ctx = await getRequiredWorkspaceContext();
   if (ctx.workspaceId !== params.workspaceId) throw new CodedError("INVALID_WORKSPACE");

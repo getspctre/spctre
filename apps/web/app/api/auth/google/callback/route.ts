@@ -8,6 +8,7 @@ import {
   type OAuthIdentity,
 } from "@/lib/domains/auth/oauth-callback";
 import { fetchWithTimeout } from "@/lib/platform/fetch-timeout";
+import { swallow } from "@/lib/platform/swallow";
 
 const STATE_COOKIE = "spctre_google_state";
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
@@ -61,7 +62,7 @@ async function resolveGoogleIdentity(
     audience: params.clientId,
   })
     .then(({ payload }) => payload as GoogleIdTokenClaims)
-    .catch(() => null);
+    .catch(swallow("jwtVerify", null));
   const subject = typeof claims?.sub === "string" ? claims.sub : "";
   const email = typeof claims?.email === "string" ? claims.email : "";
   const displayName = typeof claims?.name === "string" ? claims.name.trim() : "";

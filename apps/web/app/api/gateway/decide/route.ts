@@ -16,6 +16,7 @@ import { recordDuration } from "@spctre/platform/metrics";
 import { getPublishedBlueprintForGateway } from "@/lib/repositories/agent-blueprints";
 import { countGatewaySessionDecisions } from "@/lib/repositories/gateway/decisions";
 import { resolveCanonicalAgentId } from "@/lib/repositories/identity";
+import { swallow } from "@/lib/platform/swallow";
 
 export const dynamic = "force-dynamic";
 
@@ -232,10 +233,10 @@ async function resolveGatewayAuth(request: Request): Promise<
     return { ok: true, tenantId, workspaceId, actorId };
   }
 
-  const session = await getAuthSession().catch(() => null);
+  const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (!session) return { ok: false, error: "Authentication required.", status: 401 };
 
-  const workspaceContext = await getActiveScope().catch(() => null);
+  const workspaceContext = await getActiveScope().catch(swallow("getActiveScope", null));
   if (!workspaceContext) {
     return { ok: false, error: "Workspace context unavailable.", status: 400 };
   }

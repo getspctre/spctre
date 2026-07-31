@@ -25,6 +25,7 @@ import {
   type ApprovalWorkflowConfigSummary,
 } from "@/lib/repositories/approval-workflow";
 import { listTenantWorkspaces } from "@/lib/repositories/members";
+import { swallow } from "@/lib/platform/swallow";
 
 export type { ApprovalWorkflowConfigSummary };
 
@@ -39,13 +40,13 @@ export interface WorkflowsPageModel {
 
 export async function getWorkflowsPageModel(scope: ActiveScope): Promise<WorkflowsPageModel> {
   const workspaceContext = scope;
-  const session = await getAuthSession().catch(() => null);
+  const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (!session) redirect("/login");
 
   const actor = await findActorById(session.principalId, {
     tenantId: session.tenantId,
     workspaceId: workspaceContext.workspaceId,
-  }).catch(() => null);
+  }).catch(swallow("findActorById", null));
   if (!actor?.reviewerRoles.includes("Admin")) {
     redirect("/?error=admin-required");
   }

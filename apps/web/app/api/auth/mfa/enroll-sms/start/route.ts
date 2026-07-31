@@ -7,6 +7,7 @@ import { sendSmsOtp } from "@/lib/platform/sms";
 import { makeMeta, newTraceId } from "@spctre/api-contracts";
 import { isDemoTenant } from "@/lib/demo-guard";
 import { errorText } from "@/lib/error-message";
+import { swallow } from "@/lib/platform/swallow";
 
 interface EnrollSmsStartPayload {
   phoneNumber?: unknown;
@@ -28,7 +29,7 @@ async function handlePostApiAuthMfaEnrollSmsStart(request: Request) {
     return response;
   }
 
-  const session = await getAuthSession().catch(() => null);
+  const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (!session) {
     const response = NextResponse.json({ error: "Authentication required.", meta: makeMeta(traceId) }, { status: 401 });
     response.headers.set("x-request-id", traceId);
