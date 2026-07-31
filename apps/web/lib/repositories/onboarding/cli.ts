@@ -1,6 +1,6 @@
 import { randomBytes } from "crypto";
 import type { RuntimePolicyContext } from "@spctre/policy-schema";
-import { sql } from "@/lib/db";
+import { runWithTenantContext, sql } from "@/lib/db";
 import type { AuthSession } from "@/lib/auth-session";
 import { ensureDemoTenant } from "@/lib/repositories/seed/local-dev";
 import { issueAccessRefreshPair, type ServiceTokenScope } from "@/lib/service-tokens";
@@ -149,8 +149,7 @@ export async function exchangeCliOnboardingCode(code: string): Promise<CliOnboar
   const approvedWorkspaceId = request.approved_workspace_id;
   const serviceSubject = `service:spctre-cli:${request.requested_agent_id}`;
   const serviceDisplayName = `Spctre CLI ${request.requested_agent_id}`;
-
-  const exchange = await sql.begin(async (tx) => {
+  const exchange = await runWithTenantContext(approvedTenantId, () => sql.begin(async (tx) => {
     const principalRows = await tx<{ id: string }[]>`
       INSERT INTO app_principal (tenant_id, subject, display_name, principal_type)
       VALUES (
@@ -240,22 +239,24 @@ export async function exchangeCliOnboardingCode(code: string): Promise<CliOnboar
     }
 
     return { principalId, tokenId: pair.accessTokenId, pair };
-  });
-
-  const starter = await ensureStarterPublishedBundle({
-    tenantId: request.approved_tenant_id,
-    workspaceId: request.approved_workspace_id,
-    actorId: exchange.principalId,
-    environment: request.requested_environment
-  });
-
-  const workspaceRows = await sql<{ slug: string }[]>`
-    SELECT slug
-    FROM workspace
-    WHERE tenant_id = ${request.approved_tenant_id}
-      AND id = ${request.approved_workspace_id}
-    LIMIT 1
-  `;
+  }));
+  const starter = await runWithTenantContext(approvedTenantId, () =>
+    ensureStarterPublishedBundle({
+      tenantId: approvedTenantId,
+      workspaceId: approvedWorkspaceId,
+      actorId: exchange.principalId,
+      environment: request.requested_environment
+    })
+  );
+  const workspaceRows = await runWithTenantContext(approvedTenantId, () =>
+    sql<{ slug: string }[]>`
+      SELECT slug
+      FROM workspace
+      WHERE tenant_id = ${approvedTenantId}
+        AND id = ${approvedWorkspaceId}
+      LIMIT 1
+    `
+  );
 
   return {
     token: exchange.pair.accessToken,
@@ -264,7 +265,7 @@ export async function exchangeCliOnboardingCode(code: string): Promise<CliOnboar
     refreshToken: exchange.pair.refreshToken,
     refreshTokenExpiresAt: exchange.pair.refreshTokenExpiresAt,
     tenantId: approvedTenantId,
-    workspaceId: request.approved_workspace_id,
+    workspaceId: approvedWorkspaceId,
     workspaceSlug: workspaceRows[0]?.slug ?? "default",
     agentId: request.requested_agent_id,
     environment: request.requested_environment,
