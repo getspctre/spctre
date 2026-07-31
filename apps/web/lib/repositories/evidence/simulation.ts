@@ -200,7 +200,7 @@ export async function persistSimulationRun(
           finding.event_id, finding.connector, finding.action,
           finding.previous_status, finding.proposed_status, finding.delta,
           finding.matched_policy_refs, finding.reason
-        FROM jsonb_to_recordset(${JSON.stringify(findings)}::jsonb) AS finding(
+        FROM jsonb_to_recordset(${tx.json(findings)}::jsonb) AS finding(
           event_id text,
           connector text,
           action text,
