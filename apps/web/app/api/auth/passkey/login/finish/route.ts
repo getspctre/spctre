@@ -5,7 +5,6 @@ import type { AuthenticationResponseJSON, AuthenticatorTransportFuture } from "@
 import { createAuthSession } from "@/lib/auth-session";
 import { PASSKEY_LOGIN_CHALLENGE_COOKIE } from "@/lib/auth-challenge";
 import { setControlPlaneSessionCookies } from "@/lib/auth-session-cookies";
-import { runWithTenantContext } from "@/lib/tenant-context";
 import {
   consumeWebauthnChallenge,
   getPasskeyByCredentialId,
@@ -103,23 +102,21 @@ async function handlePostApiAuthPasskeyLoginFinish(request: Request) {
     return jsonError(traceId, "Passkey assertion could not be verified.", 403, true);
   }
 
-  // Tenant is now trusted; bind context for the principal/workspace/session reads.
-  const sessionResult = await runWithTenantContext(tenantId, async () => {
-    const subject = await getPrincipalSubject({ tenantId, principalId });
-    if (!subject) return null;
-    const workspaceId = await getPrimaryWorkspaceIdForTenant(tenantId);
-    const sessionId = await createAuthSession({
-      principalId,
-      tenantId,
-      authMethod: "SESSION",
-      mfaVerifiedAt: new Date().toISOString()
-    });
-    return { subject, workspaceId, sessionId };
-  });
-
-  if (!sessionResult) {
+  // Tenant is now trusted. Each of these reads/writes binds the tenant itself
+  // (they hit RLS-gated tables before a session context exists), so no wrapping
+  // tenant scope is needed here.
+  const subject = await getPrincipalSubject({ tenantId, principalId });
+  if (!subject) {
     return jsonError(traceId, "Principal is not available.", 403, true);
   }
+  const workspaceId = await getPrimaryWorkspaceIdForTenant(tenantId);
+  const sessionId = await createAuthSession({
+    principalId,
+    tenantId,
+    authMethod: "SESSION",
+    mfaVerifiedAt: new Date().toISOString()
+  });
+  const sessionResult = { subject, workspaceId, sessionId };
 
   const response = NextResponse.json({ ok: true, meta: makeMeta(traceId) });
   response.headers.set("x-request-id", traceId);

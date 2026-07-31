@@ -1,4 +1,4 @@
-import { sql } from "@/lib/db";
+import { sql, runWithTenantContext } from "@/lib/db";
 import { ensureDemoTenant } from "@/lib/repositories/seed/local-dev";
 
 export function isAuthDatabaseConfigured(): boolean {
@@ -31,15 +31,20 @@ export async function getPrimaryWorkspaceIdForTenant(tenantId: string, db = sql)
     // non-fatal for lookup below
   });
 
-  const rows = await db<{ id: string }[]>`
-    SELECT id
-    FROM workspace
-    WHERE tenant_id = ${tenantId}
-    ORDER BY created_at ASC
-    LIMIT 1
-  `;
+  // workspace is RLS-gated; callers on pre-session paths (SSO/recovery) pass the
+  // default tenant-aware client, so bind the trusted tenant here. A caller that
+  // passes rawSql (RLS-bypassing owner) is unaffected by the bound context.
+  return runWithTenantContext(tenantId, async () => {
+    const rows = await db<{ id: string }[]>`
+      SELECT id
+      FROM workspace
+      WHERE tenant_id = ${tenantId}
+      ORDER BY created_at ASC
+      LIMIT 1
+    `;
 
-  return rows[0]?.id ?? null;
+    return rows[0]?.id ?? null;
+  });
 }
 
 export async function getTenantRequireMfa(tenantId: string): Promise<boolean | null> {
@@ -323,42 +328,49 @@ export async function createSessionRow(params: {
 }, db = sql): Promise<string> {
   if (!db) throw new Error("Database not configured.");
 
-  const principalRows = await db<{ id: string }[]>`
-    SELECT id
-    FROM app_principal
-    WHERE id = ${params.principalId}
-      AND tenant_id = ${params.tenantId}
-      AND disabled_at IS NULL
-      AND invite_status <> 'REVOKED'
-    LIMIT 1
-  `;
-  if (!principalRows.length) {
-    throw new Error("Principal is not available in the selected tenant.");
-  }
+  // Session creation is the shared chokepoint for every login method (magic,
+  // passkey, OIDC, social OAuth, SAML, recovery). app_principal and app_session
+  // are both RLS-gated and this runs before a session/tenant context exists, so
+  // bind the trusted tenant here once for all callers. Callers passing rawSql
+  // (RLS-bypassing owner) are unaffected by the bound context.
+  return runWithTenantContext(params.tenantId, async () => {
+    const principalRows = await db<{ id: string }[]>`
+      SELECT id
+      FROM app_principal
+      WHERE id = ${params.principalId}
+        AND tenant_id = ${params.tenantId}
+        AND disabled_at IS NULL
+        AND invite_status <> 'REVOKED'
+      LIMIT 1
+    `;
+    if (!principalRows.length) {
+      throw new Error("Principal is not available in the selected tenant.");
+    }
 
-  const rows = await db<{ id: string }[]>`
-    INSERT INTO app_session (
-      tenant_id,
-      principal_id,
-      expires_at,
-      user_agent,
-      ip_address,
-      auth_method,
-      mfa_verified_at
-    )
-    VALUES (
-      ${params.tenantId},
-      ${params.principalId},
-      ${params.expiresAt},
-      ${params.userAgent ?? null},
-      ${params.ipAddress ?? null},
-      ${params.authMethod},
-      ${params.mfaVerifiedAt ?? null}
-    )
-    RETURNING id
-  `;
+    const rows = await db<{ id: string }[]>`
+      INSERT INTO app_session (
+        tenant_id,
+        principal_id,
+        expires_at,
+        user_agent,
+        ip_address,
+        auth_method,
+        mfa_verified_at
+      )
+      VALUES (
+        ${params.tenantId},
+        ${params.principalId},
+        ${params.expiresAt},
+        ${params.userAgent ?? null},
+        ${params.ipAddress ?? null},
+        ${params.authMethod},
+        ${params.mfaVerifiedAt ?? null}
+      )
+      RETURNING id
+    `;
 
-  return rows[0].id;
+    return rows[0].id;
+  });
 }
 
 export async function revokeSessionRow(sessionId: string, tenantId: string): Promise<void> {
