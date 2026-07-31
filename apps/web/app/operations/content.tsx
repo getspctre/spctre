@@ -48,6 +48,7 @@ function eventTypeTooltip(eventType: string): string {
     "POLICY_PUBLISH": "Policy released to agents",
     "POLICY_APPROVE": "Policy changes approved by reviewer",
     "ESCALATION_OPENED": "High-risk decision escalated for review",
+    "ESCALATION_CLAIMED": "Escalated decision claimed for review",
     "ESCALATION_RESOLVED": "Escalated decision resolved",
     "AGENT_TRIAGE": "Historical advisor triage record",
     "AGENT_RECOMMENDATION": "Historical advisor recommendation record",
@@ -88,6 +89,7 @@ const EVENT_TYPE_GROUPS: Array<{ group: string; options: Array<{ label: string; 
     group: "Escalation",
     options: [
       { label: "Escalation Opened", value: "ESCALATION_OPENED" },
+      { label: "Escalation Claimed", value: "ESCALATION_CLAIMED" },
       { label: "Escalation Resolved", value: "ESCALATION_RESOLVED" },
       { label: "Simulation Guidance", value: "SIMULATION_GUIDANCE" },
     ],

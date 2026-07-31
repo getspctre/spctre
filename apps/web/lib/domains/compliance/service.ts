@@ -377,6 +377,7 @@ export interface CompliancePageModel<Posture = unknown> {
   grcDestinations: GrcDeliveryDestination[];
   grcDeliveryAttempts: Awaited<ReturnType<typeof listGrcDeliveryAttempts>>;
   posture: Posture;
+  degraded: boolean;
 }
 
 export async function getCompliancePageModel<Posture>(params: {
@@ -385,14 +386,19 @@ export async function getCompliancePageModel<Posture>(params: {
 }): Promise<CompliancePageModel<Posture>> {
   const workspaceContext = await getWorkspaceContext({ workspaceSlug: params.workspaceSlug });
   const appViewMode = await getAppViewMode();
+  let degraded = false;
+  const degrade = <T,>(op: string, value: T) => (error: unknown): T => {
+    degraded = true;
+    return swallow(op, value)(error);
+  };
 
   const [packet, persistedRetentionPlan, activeActor, grcDestinations, grcDeliveryAttempts, posture] = await runWithTenantContext(workspaceContext.tenantId, () =>
     Promise.all([
-      getCompliancePacket(workspaceContext.workspaceId, workspaceContext.tenantId).catch(swallow("getCompliancePacket", null)),
-      getEvidenceRetentionPlan(workspaceContext.workspaceId, workspaceContext.tenantId).catch(swallow("getEvidenceRetentionPlan", null)),
-      getActiveActor({ workspaceId: workspaceContext.workspaceId, tenantId: workspaceContext.tenantId }).catch(swallow("getActiveActor", null)),
-      listGrcDeliveryDestinations({ tenantId: workspaceContext.tenantId, workspaceId: workspaceContext.workspaceId }).catch(swallow("listGrcDeliveryDestinations", [])),
-      listGrcDeliveryAttempts({ tenantId: workspaceContext.tenantId, workspaceId: workspaceContext.workspaceId, limit: 5 }).catch(swallow("listGrcDeliveryAttempts", [])),
+      getCompliancePacket(workspaceContext.workspaceId, workspaceContext.tenantId).catch(degrade("getCompliancePacket", null)),
+      getEvidenceRetentionPlan(workspaceContext.workspaceId, workspaceContext.tenantId).catch(degrade("getEvidenceRetentionPlan", null)),
+      getActiveActor({ workspaceId: workspaceContext.workspaceId, tenantId: workspaceContext.tenantId }).catch(degrade("getActiveActor", null)),
+      listGrcDeliveryDestinations({ tenantId: workspaceContext.tenantId, workspaceId: workspaceContext.workspaceId }).catch(degrade("listGrcDeliveryDestinations", [])),
+      listGrcDeliveryAttempts({ tenantId: workspaceContext.tenantId, workspaceId: workspaceContext.workspaceId, limit: 5 }).catch(degrade("listGrcDeliveryAttempts", [])),
       params.loadPosture({ tenantId: workspaceContext.tenantId, workspaceId: workspaceContext.workspaceId, workspaceSlug: workspaceContext.workspaceSlug }),
     ])
   );
@@ -402,7 +408,7 @@ export async function getCompliancePageModel<Posture>(params: {
         getLatestVerificationStatus(workspaceContext.workspaceId, workspaceContext.tenantId, {
           artifactHash: packet.export.artifact.artifactHash,
         })
-      ).catch(swallow("runWithTenantContext", null))
+      ).catch(degrade("runWithTenantContext", null))
     : null;
 
   return {
@@ -415,5 +421,6 @@ export async function getCompliancePageModel<Posture>(params: {
     grcDestinations,
     grcDeliveryAttempts,
     posture,
+    degraded,
   };
 }

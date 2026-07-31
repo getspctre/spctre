@@ -474,6 +474,7 @@ export interface PoliciesPageModel {
   branches: Awaited<ReturnType<typeof listBranches>>;
   rules: Awaited<ReturnType<typeof listRules>>;
   session: Awaited<ReturnType<typeof getAuthSession>>;
+  degraded: boolean;
 }
 
 export async function getPoliciesPageModel(params: {
@@ -494,6 +495,7 @@ export async function getPoliciesPageModel(params: {
   const fallback = getPolicyDemoFallbackData(workspaceContext.tenantId);
   let branches = fallback.branches;
   let rules = fallback.rules;
+  let degraded = false;
 
   if (isDatabaseConfigured()) {
     try {
@@ -508,6 +510,7 @@ export async function getPoliciesPageModel(params: {
         rules = dbRules;
       }
     } catch (err) {
+      degraded = true;
       // Degrade to the demo/empty lists, but keep the failure visible: this
       // catch also swallows query and RLS errors, not just "no database".
       logger.warn("Policy page branch/rule query failed; using fallback data", {
@@ -523,5 +526,6 @@ export async function getPoliciesPageModel(params: {
     branches,
     rules,
     session,
+    degraded,
   };
 }

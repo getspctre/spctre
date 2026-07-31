@@ -123,7 +123,9 @@ func runRetention(ctx context.Context, db *pgxpool.Pool, logger *slog.Logger) er
 			// Drain before close so the connection can be reused (keep-alive);
 			// closing an unread body forces a new TLS handshake per tenant per
 			// sweep. See concurrency-and-memory-audit finding 11.
-			_, _ = io.Copy(io.Discard, resp.Body)
+			if _, err := io.Copy(io.Discard, resp.Body); err != nil {
+				logger.Warn("failed to drain archive response body", "error", err, "tenant_id", tenantID)
+			}
 			resp.Body.Close()
 			if resp.StatusCode != http.StatusOK {
 				logger.Error("control plane archive endpoint returned non-200 status", "status", resp.StatusCode, "tenant_id", tenantID)

@@ -61,11 +61,13 @@ func (s *Server) handleGatewayClaim(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_ = s.appendGenericOperationsLog(r.Context(), auth.TenantID, auth.WorkspaceID, "ESCALATION_RESOLVED", payload.QueueID, "gateway_escalation_queue", auth.ActorID, map[string]any{
+	if err := s.appendGenericOperationsLog(r.Context(), auth.TenantID, auth.WorkspaceID, "ESCALATION_CLAIMED", payload.QueueID, "gateway_escalation_queue", auth.ActorID, map[string]any{
 		"queueId":    payload.QueueID,
 		"action":     "CLAIMED",
 		"assignedTo": auth.ActorID,
-	})
+	}); err != nil {
+		s.logger.Warn("gateway claim operations log append failed", "error", err, "queue_id", payload.QueueID)
+	}
 	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "meta": makeMeta(traceID)})
 }
 
@@ -219,12 +221,14 @@ func (s *Server) handleGatewayResolve(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_ = s.appendGenericOperationsLog(r.Context(), auth.TenantID, auth.WorkspaceID, "ESCALATION_RESOLVED", payload.QueueID, "gateway_escalation_queue", auth.ActorID, map[string]any{
+	if err := s.appendGenericOperationsLog(r.Context(), auth.TenantID, auth.WorkspaceID, "ESCALATION_RESOLVED", payload.QueueID, "gateway_escalation_queue", auth.ActorID, map[string]any{
 		"queueId":           payload.QueueID,
 		"resolutionOutcome": payload.ResolutionOutcome,
 		"resolutionNote":    payload.ResolutionNote,
 		"agentGuidance":     payload.AgentGuidance,
-	})
+	}); err != nil {
+		s.logger.Warn("gateway resolve operations log append failed", "error", err, "queue_id", payload.QueueID)
+	}
 	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "meta": makeMeta(traceID)})
 }
 

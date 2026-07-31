@@ -500,7 +500,7 @@ export async function claimEscalationDecision(input: {
   appendOperationsLog({
     tenantId: workspaceContext.tenantId,
     workspaceId: workspaceContext.workspaceId,
-    eventType: "ESCALATION_RESOLVED",
+    eventType: "ESCALATION_CLAIMED",
     sourceId: input.queueId,
     sourceTable: "gateway_escalation_queue",
     actorId: actor.id,

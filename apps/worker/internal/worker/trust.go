@@ -236,7 +236,7 @@ func (s *Server) ingestTrustScoreWithOps(ctx context.Context, auth gatewayIntern
 	if err != nil {
 		return err
 	}
-	defer func() { _ = tx.Rollback(ctx) }()
+	defer s.rollbackAfterFailure(ctx, tx, "ingest_trust_score")
 
 	var previous *float64
 	err = tx.QueryRow(ctx, `
@@ -286,22 +286,26 @@ func (s *Server) evaluateTrustGovernanceForRequest(ctx context.Context, auth gat
 			if result.Action == "ESCALATE" {
 				eventType = "BUDGET_BREACH"
 			}
-			_, _ = s.insertContextBudgetEvent(ctx, auth, contextBudgetRequest{
+			if _, err := s.insertContextBudgetEvent(ctx, auth, contextBudgetRequest{
 				SessionID: payload.SessionID, AgentID: payload.AgentID, Environment: payload.Environment, RuntimeStack: payload.RuntimeStack,
 				EventType: eventType, TokenCount: payload.ContextTokens, BudgetLimit: payload.BudgetLimit,
 				BudgetUtilization: result.BudgetUtilization, GovernanceAction: result.Action, PolicyRef: stringPtrValue(result.MatchedPolicyID),
-			})
+			}); err != nil {
+				s.logger.Warn("trust context budget event append failed", "error", err, "agent_id", payload.AgentID, "session_id", payload.SessionID)
+			}
 		}
 		eventType := "TRUST_POLICY_BREACH"
 		if isContextBreach {
 			eventType = "CONTEXT_BUDGET_BREACH"
 		}
-		_ = s.appendGenericOperationsLog(ctx, auth.TenantID, auth.WorkspaceID, eventType, stringPtrValue(result.MatchedPolicyID), "trust_calibration_policy", auth.ActorID, map[string]any{
+		if err := s.appendGenericOperationsLog(ctx, auth.TenantID, auth.WorkspaceID, eventType, stringPtrValue(result.MatchedPolicyID), "trust_calibration_policy", auth.ActorID, map[string]any{
 			"action": result.Action, "reason": result.Reason, "trustScore": payload.TrustScore, "contextTokens": payload.ContextTokens,
 			"budgetUtilization": result.BudgetUtilization, "matchedPolicyId": result.MatchedPolicyID, "agentClass": payload.AgentClass,
 			"environment": payload.Environment, "connector": payload.Connector, "consequenceTier": payload.ConsequenceTier,
 			"agentId": payload.AgentID, "sessionId": payload.SessionID,
-		})
+		}); err != nil {
+			s.logger.Warn("trust governance operations log append failed", "error", err, "agent_id", payload.AgentID)
+		}
 	}
 	return result, nil
 }

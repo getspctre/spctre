@@ -237,6 +237,7 @@ export type OperationsLogEventType =
   | "TOKEN_REVOKED"
   | "TOKEN_REFRESHED"
   | "ESCALATION_OPENED"
+  | "ESCALATION_CLAIMED"
   | "ESCALATION_RESOLVED"
   /** @deprecated Advisor workflows were retired; retained for historical evidence reads. */
   | "AGENT_TRIAGE"
