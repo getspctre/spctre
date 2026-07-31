@@ -1,4 +1,5 @@
 import { logger } from "@spctre/platform/logging";
+import type { JSONValue } from "postgres";
 import { sql, rawSql } from "@/lib/db";
 import type {
   AgtVerificationOutcome,
@@ -80,7 +81,7 @@ export async function ingestVerificationResult(params: IngestVerificationParams)
       ) VALUES (
         ${params.tenantId}, ${params.workspaceId}, ${v.revisionId},
         ${params.artifactHash}, ${params.verificationType}, ${params.outcome},
-        ${JSON.stringify(params.summary)}::jsonb, ${params.runBy}, ${v.runtimeVersion},
+        ${sql.json(params.summary as JSONValue)}::jsonb, ${params.runBy}, ${v.runtimeVersion},
         ${v.argumentsHash}, ${v.approverDid}, ${v.policyVersion},
         ${v.issuedAt}, ${v.completedAt},
         ${v.agtVersion}, ${v.agtPoliciesVersion},

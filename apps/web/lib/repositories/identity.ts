@@ -1,4 +1,5 @@
 import { logger } from "@spctre/platform/logging";
+import type { JSONValue } from "postgres";
 import { sql, rawSql } from "@/lib/db";
 import {
   buildCrossSurfaceIdentityHistory,
@@ -38,7 +39,7 @@ export async function recordIdentityLifecycleEvent(params: {
       ) VALUES (
         ${params.tenantId}, ${params.workspaceId ?? null}, ${params.principalId},
         ${params.eventType}, ${params.actorId}, ${params.source},
-        ${JSON.stringify(params.detail ?? {})}::jsonb,
+        ${sql.json((params.detail ?? {}) as JSONValue)}::jsonb,
         ${params.agentDid ?? null}, ${params.signatureAlgorithm ?? null}, ${params.signatureKeyId ?? null},
         ${params.payloadHash ?? null}, ${params.signature ?? null},
         ${params.signatureVerificationOutcome ?? null}, ${params.signatureFailureReason ?? null},

@@ -441,7 +441,7 @@ export async function ingestContextBudgetEvent(params: {
         ${params.tenantId}, ${params.workspaceId}, ${params.sessionId}, ${params.agentId},
         ${params.environment}, ${params.runtimeStack},
         ${params.eventType}, ${params.tokenCount}, ${params.tokenDelta ?? null},
-        ${JSON.stringify(params.contextSourceMix ?? {})}::jsonb,
+        ${sql.json(params.contextSourceMix ?? {})}::jsonb,
         ${params.budgetLimit ?? null}, ${params.budgetUtilization ?? null},
         ${params.governanceAction ?? null}, ${params.policyRef ?? null}
       )

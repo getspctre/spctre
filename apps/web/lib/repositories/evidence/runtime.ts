@@ -1,5 +1,6 @@
 import { logger } from "@spctre/platform/logging";
 import { createHash } from "node:crypto";
+import type { JSONValue } from "postgres";
 import { sql, rawSql } from "@/lib/db";
 import type { KeysetCursor } from "@/lib/pagination/keyset";
 import { ensureDemoTenant } from "@/lib/repositories/seed/local-dev";
@@ -492,9 +493,9 @@ export async function insertRuntimeEvidenceWithDedup(params: {
         ${params.evidence.runtimeTarget.stack}, ${params.evidence.runtimeTarget.adapter ?? null},
         ${params.evidence.agentId}, ${params.evidence.connector}, ${params.evidence.action},
         ${params.evidence.status}, ${params.evidence.reason}, ${params.evidence.policyRefs},
-        ${params.evidence.artifactHash}, ${JSON.stringify(params.evidence.policyContext)},
-        ${JSON.stringify(params.rawEvidenceWithSource)}, ${params.evidence.latencyMs}, ${params.evidence.createdAt},
-        ${params.executionTrace ? JSON.stringify(params.executionTrace) : null}::jsonb,
+        ${params.evidence.artifactHash}, ${tx.json(params.evidence.policyContext as unknown as JSONValue)},
+        ${tx.json(params.rawEvidenceWithSource as JSONValue)}, ${params.evidence.latencyMs}, ${params.evidence.createdAt},
+        ${params.executionTrace ? tx.json(params.executionTrace as JSONValue) : null}::jsonb,
         ${params.engineVersion}, ${contentHash}, ${prevHash}
       )
       RETURNING id, decision_id, created_at
@@ -622,8 +623,8 @@ export async function insertGatewayEvidenceEvent(params: {
         ${params.runtimeStack}, ${params.runtimeAdapter},
         ${params.agentId}, ${params.connector}, ${params.action},
         ${params.status}, ${params.reason}, ${params.policyRefs},
-        ${params.artifactHash}, ${JSON.stringify(params.policyContext)},
-        ${JSON.stringify(params.rawEvidence)}, ${params.latencyMs}, ${params.createdAt},
+        ${params.artifactHash}, ${tx.json(params.policyContext as JSONValue)},
+        ${tx.json(params.rawEvidence as JSONValue)}, ${params.latencyMs}, ${params.createdAt},
         ${contentHash}, ${prevHash}
       )
       ON CONFLICT (tenant_id, decision_id, created_at) DO NOTHING

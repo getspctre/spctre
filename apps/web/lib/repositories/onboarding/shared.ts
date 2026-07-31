@@ -1,5 +1,6 @@
 import { logger } from "@spctre/platform/logging";
 import { randomUUID } from "crypto";
+import type { JSONValue } from "postgres";
 import { computeShortHash } from "@spctre/platform";
 import { sql } from "@/lib/db";
 import { getLatestPublishedBundle } from "@/lib/repositories/policy";
@@ -133,9 +134,9 @@ export async function ensureStarterPublishedBundle(params: {
         source_document, source_hash, artifact_hash, target_stacks, author_id, message
       ) VALUES (
         ${revisionId}, ${params.tenantId}, ${params.workspaceId}, ${branchId},
-        'AGT_YAML', 'spctre-starter.yaml', ${JSON.stringify(sourceDocument)},
+        'AGT_YAML', 'spctre-starter.yaml', ${sql.json(sourceDocument as JSONValue)},
         ${sourceHash}, ${artifactHash},
-        ${JSON.stringify([{ stack: "LOCAL", adapter: "spctre-cli", environment: params.environment }])}::jsonb,
+        ${sql.json([{ stack: "LOCAL", adapter: "spctre-cli", environment: params.environment }])}::jsonb,
         ${params.actorId}, 'Starter policy — auto-published on first workspace setup'
       )
     `;
@@ -217,7 +218,7 @@ export async function recordWebOnboardingMilestone(params: {
         tenant_id, workspace_id, milestone, metadata
       ) VALUES (
         ${params.tenantId}, ${params.workspaceId}, ${params.milestone},
-        ${JSON.stringify(params.metadata ?? {})}::jsonb
+        ${sql.json((params.metadata ?? {}) as JSONValue)}::jsonb
       )
       ON CONFLICT (tenant_id, workspace_id, milestone)
       DO UPDATE SET

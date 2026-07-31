@@ -1,4 +1,5 @@
 import { createHash } from "crypto";
+import type { JSONValue } from "postgres";
 import { assertCustomerRulesDoNotUseReservedIds } from "@/lib/policy/reserved-rule-ids";
 import { sql } from "@/lib/db";
 import { ensureDemoTenant } from "@/lib/repositories/seed/local-dev";
@@ -468,7 +469,7 @@ export async function persistImportedBranch(params: {
         ${params.branchName}, ${params.authorId}
       )
     `;
-    const targetStacksJson = JSON.stringify((params.targetStacks ?? []).map((stack) => ({ stack })));
+    const targetStacks = (params.targetStacks ?? []).map((stack) => ({ stack }));
     await tx`
       INSERT INTO policy_revision (
         id, tenant_id, workspace_id, branch_id,
@@ -477,13 +478,13 @@ export async function persistImportedBranch(params: {
       ) VALUES (
         ${revisionId}, ${params.tenantId}, ${workspaceId}, ${branchId},
         'AGT_YAML', ${params.sourcePath},
-        ${JSON.stringify({
+        ${tx.json({
           ...(params.sourceDocument ?? { rules: params.rules, metadata: params.metadata }),
           metadata: params.metadata,
           spctre_agt_compatibility: params.compatibility,
-        })},
+        } as JSONValue)},
         ${sourceHash}, ${params.authorId}, ${params.message},
-        ${targetStacksJson}::jsonb
+        ${tx.json(targetStacks as JSONValue)}::jsonb
       )
     `;
     if (params.rules.length > 0) {
@@ -569,12 +570,12 @@ export async function importPolicyBranchIdempotent(params: {
 
   const sourceHash = `sha256:${createHash("sha256").update(params.source).digest("hex").slice(0, 16)}`;
   const workspaceId = params.scope === "ORGANIZATION" ? null : params.workspaceId;
-  const targetStacksJson = JSON.stringify((params.targetStacks ?? []).map((stack) => ({ stack })));
-  const sourceDocumentJson = JSON.stringify({
+  const targetStacks = (params.targetStacks ?? []).map((stack) => ({ stack }));
+  const sourceDocument = {
     ...(params.sourceDocument ?? { rules: params.rules, metadata: params.metadata }),
     metadata: params.metadata,
     spctre_agt_compatibility: params.compatibility,
-  });
+  };
   // Stable identity string matching the branch uniqueness columns; used to key
   // the advisory lock (0x1f unit separator keeps components unambiguous).
   const identity = [
@@ -629,8 +630,8 @@ export async function importPolicyBranchIdempotent(params: {
             author_id, message, target_stacks
           ) VALUES (
             ${revisionId}, ${params.tenantId}, ${workspaceId}, ${branchId}, ${parentRevisionId},
-            'AGT_YAML', ${params.sourcePath}, ${sourceDocumentJson},
-            ${sourceHash}, ${params.authorId}, ${params.message}, ${targetStacksJson}::jsonb
+            'AGT_YAML', ${params.sourcePath}, ${tx.json(sourceDocument as JSONValue)},
+            ${sourceHash}, ${params.authorId}, ${params.message}, ${tx.json(targetStacks as JSONValue)}::jsonb
           )
         `;
         if (params.rules.length > 0) {
@@ -731,7 +732,7 @@ export async function createDraftRevision(params: {
       ) VALUES (
         ${params.draftRevisionId}, ${params.tenantId}, ${params.baseWorkspaceId}, ${params.branchId}, ${params.baseRevisionId},
         ${params.sourceFormat}, ${params.sourcePath},
-        ${JSON.stringify(params.sourceDocument)}, ${params.sourceHash},
+        ${sql.json(params.sourceDocument as JSONValue)}, ${params.sourceHash},
         ${params.actorId}, ${params.message}
       )
     `;
@@ -779,7 +780,7 @@ export async function createCommittedRevision(params: {
         author_id, message
       ) VALUES (
         ${params.revisionId}, ${params.tenantId}, ${params.branchWorkspaceId}, ${params.branchId}, ${params.parentRevisionId},
-        'AGT_YAML', ${params.sourcePath}, ${JSON.stringify(params.sourceDocument)}, ${params.sourceHash},
+        'AGT_YAML', ${params.sourcePath}, ${sql.json(params.sourceDocument as JSONValue)}, ${params.sourceHash},
         ${params.actorId}, ${params.message}
       )
     `;

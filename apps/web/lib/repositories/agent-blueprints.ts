@@ -1,4 +1,5 @@
 import { createHash } from "crypto";
+import type { JSONValue } from "postgres";
 import { sql } from "@/lib/db";
 import type {
   AgentBlueprintDefinition,
@@ -38,7 +39,7 @@ function canonicalize(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(canonicalize).join(",")}]`;
   if (value && typeof value === "object") {
     const record = value as Record<string, unknown>;
-    return `{${Object.keys(record).sort().map((key) => `${JSON.stringify(key)}:${canonicalize(record[key])}`).join(",")}}`;
+    return `{${Object.keys(record).sort().map((key) => [JSON.stringify(key), canonicalize(record[key])].join(":")).join(",")}}`;
   }
   return JSON.stringify(value);
 }
@@ -220,7 +221,7 @@ export async function createAgentBlueprint(params: {
       RETURNING id
     ), revision AS (
       INSERT INTO agent_blueprint_revision (tenant_id, blueprint_id, definition, definition_hash, message, author_id)
-      SELECT ${params.tenantId}, id, ${JSON.stringify(params.definition)}::jsonb, ${definitionHash}, ${params.message}, ${params.authorId}
+      SELECT ${params.tenantId}, id, ${sql.json(params.definition as unknown as JSONValue)}::jsonb, ${definitionHash}, ${params.message}, ${params.authorId}
       FROM blueprint RETURNING id, blueprint_id
     )
     UPDATE agent_blueprint b SET active_revision_id = revision.id, updated_at = now()
@@ -243,7 +244,7 @@ export async function createAgentBlueprintRevision(params: {
     ), revision AS (
       INSERT INTO agent_blueprint_revision (tenant_id, blueprint_id, parent_revision_id, definition, definition_hash, message, author_id)
       SELECT ${params.tenantId}, ${params.blueprintId}, active_revision_id,
-        ${JSON.stringify(params.definition)}::jsonb, ${definitionHash}, ${params.message}, ${params.authorId}
+        ${sql.json(params.definition as unknown as JSONValue)}::jsonb, ${definitionHash}, ${params.message}, ${params.authorId}
       FROM parent
       RETURNING id, blueprint_id, parent_revision_id, definition, definition_hash, message, author_id, status, created_at, published_at
     )

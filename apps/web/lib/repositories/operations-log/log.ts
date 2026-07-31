@@ -1,4 +1,5 @@
 import { logger } from "@spctre/platform/logging";
+import type { JSONValue } from "postgres";
 import { sql, rawSql } from "@/lib/db";
 import { isRecord } from "@/lib/records";
 import type { KeysetCursor } from "@/lib/pagination/keyset";
@@ -49,7 +50,7 @@ export async function appendOperationsLog(params: {
         ) VALUES (
           ${params.tenantId}, ${params.workspaceId ?? null}, ${params.eventType},
           ${params.sourceId ?? null}, ${params.sourceTable ?? null},
-          ${params.actorId ?? ""}, ${JSON.stringify(params.payload)}::jsonb,
+          ${params.actorId ?? ""}, ${sql.json(params.payload as JSONValue)}::jsonb,
           ${contentHash}, ${prevHash}
         )
       `;

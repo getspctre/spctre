@@ -1,4 +1,5 @@
 import { logger } from "@spctre/platform/logging";
+import type { JSONValue } from "postgres";
 import { sql } from "@/lib/db";
 import { ensureDemoTenant } from "@/lib/repositories/seed/local-dev";
 import {
@@ -181,7 +182,7 @@ export async function persistSimulationRun(
       ) VALUES (
         ${tenantId}, ${workspaceId}, ${run.branchId}, ${run.revisionId},
         ${run.sourceEventCount}, ${run.newlyDeniedCount}, ${run.newlyAllowedCount},
-        ${run.unchangedCount}, ${JSON.stringify(run.regressionSummary ?? null)}::jsonb,
+        ${run.unchangedCount}, ${tx.json((run.regressionSummary ?? null) as JSONValue)}::jsonb,
         ${run.regressionSummary?.coverage ?? "SAMPLED"}, ${run.createdBy}
       )
       RETURNING id::text AS id

@@ -1,3 +1,4 @@
+import type { JSONValue } from "postgres";
 import { sql } from "@/lib/db";
 import {
   ORG_ROLES,
@@ -306,7 +307,7 @@ export async function auditRbacAndLifecycle(params: {
       tenant_id, workspace_id, actor_id, target_principal_id, action, detail
     ) VALUES (
       ${params.tenantId}, ${params.workspaceId ?? null}, ${params.actorId},
-      ${params.targetPrincipalId ?? null}, ${params.action}, ${JSON.stringify(params.detail)}::jsonb
+      ${params.targetPrincipalId ?? null}, ${params.action}, ${sql.json(params.detail as JSONValue)}::jsonb
     )
   `;
   if (params.targetPrincipalId) {
@@ -316,7 +317,7 @@ export async function auditRbacAndLifecycle(params: {
       ) VALUES (
         ${params.tenantId}, ${params.workspaceId ?? null}, ${params.targetPrincipalId},
         ${params.action === "MEMBER_REMOVED" ? "ROLE_REVOKED" : "ROLE_GRANTED"},
-        ${params.actorId}, 'ADMIN', ${JSON.stringify(params.detail)}::jsonb
+        ${params.actorId}, 'ADMIN', ${sql.json(params.detail as JSONValue)}::jsonb
       )
     `;
   }

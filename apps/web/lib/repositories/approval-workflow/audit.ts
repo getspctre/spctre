@@ -1,3 +1,4 @@
+import type { JSONValue } from "postgres";
 import { sql } from "@/lib/db";
 
 export interface ApprovalWorkflowAuditEvent {
@@ -58,7 +59,7 @@ export async function insertWorkflowAuditEvent(params: {
       tenant_id, workspace_id, workflow_id, actor_id, action, detail
     ) VALUES (
       ${params.tenantId}, ${params.workspaceId ?? null}, ${params.workflowId ?? null},
-      ${params.actorId}, ${params.action}, ${JSON.stringify(params.detail)}::jsonb
+      ${params.actorId}, ${params.action}, ${sql.json(params.detail as JSONValue)}::jsonb
     )
   `;
 }

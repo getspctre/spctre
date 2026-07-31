@@ -1,3 +1,4 @@
+import type { JSONValue } from "postgres";
 import { sql, rawSql } from "@/lib/db";
 import { ensureDemoTenant } from "@/lib/repositories/seed/local-dev";
 import { getPackVersion, POLICY_PACKS } from "@spctre/policy-schema/packs";
@@ -248,11 +249,11 @@ export async function persistPackInstallBranch(params: {
       ) VALUES (
         ${revisionId}, ${params.tenantId}, ${params.workspaceId}, ${branchId},
         'AGT_YAML', ${params.sourcePath},
-        ${JSON.stringify({
+        ${tx.json({
           ...(params.sourceDocument ?? { rules: params.rules, metadata: params.metadata }),
           metadata: params.metadata,
           spctre_agt_compatibility: params.compatibility,
-        })},
+        } as JSONValue)},
         ${sourceHash}, ${params.authorId}, ${params.message},
         '[]'::jsonb
       )
@@ -310,11 +311,11 @@ export async function persistPackUpgradeRevision(params: {
       ) VALUES (
         ${revisionId}, ${params.tenantId}, ${params.workspaceId}, ${params.branchId}, ${params.parentRevisionId ?? null},
         'AGT_YAML', ${params.sourcePath},
-        ${JSON.stringify({
+        ${tx.json({
           ...(params.sourceDocument ?? { rules: params.rules, metadata: params.metadata }),
           metadata: params.metadata,
           spctre_agt_compatibility: params.compatibility,
-        })},
+        } as JSONValue)},
         ${sourceHash}, ${params.authorId}, ${params.message},
         '[]'::jsonb
       )
@@ -360,7 +361,7 @@ export async function upsertAdapterDeclaration(
     ) VALUES (
       ${tenantId}, ${workspaceId}, ${declaration.environment ?? null},
       ${declaration.stack}, ${declaration.adapterId}, ${declaration.adapterVersion ?? null},
-      ${declaration.supportedConnectors}, ${JSON.stringify(declaration.capabilities)}::jsonb,
+      ${declaration.supportedConnectors}, ${sql.json(declaration.capabilities as JSONValue)}::jsonb,
       ${declaration.registeredBy}
     )
     ON CONFLICT (tenant_id, workspace_id, environment, stack, adapter_id) DO UPDATE SET

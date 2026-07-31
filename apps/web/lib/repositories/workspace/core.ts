@@ -1,3 +1,4 @@
+import type { JSONValue } from "postgres";
 import { sql } from "@/lib/db";
 import { ensureDemoTenant } from "@/lib/repositories/seed/local-dev";
 import { swallow } from "@/lib/platform/swallow";
@@ -235,7 +236,7 @@ export async function insertAdminAuditEvent(params: {
       ${params.targetId ?? null},
       ${params.outcome},
       ${params.reason ?? null},
-      ${JSON.stringify(params.metadata ?? {})}
+      ${sql.json((params.metadata ?? {}) as JSONValue)}
     )
   `;
 }
