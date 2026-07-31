@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import "./globals.css";
 import { getShellPageModel } from "@/lib/domains/workspace/service";
+import { DegradedDataNotice } from "./degraded-data-notice";
 import { Sidebar } from "./sidebar";
 import { TopNav } from "./top-nav";
 import { getWorkspaceContext } from "@/lib/workspace";
@@ -55,7 +56,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   const workspaceContext = await getWorkspaceContext();
   const appViewMode = await getAppViewMode();
-  const { branchCount, escalationCount, escalationPreview, isAdmin } = await getShellPageModel({
+  const { branchCount, escalationCount, escalationPreview, isAdmin, degraded } = await getShellPageModel({
     tenantId: workspaceContext.tenantId,
     workspaceId: workspaceContext.workspaceId,
     principalId: session.principalId,
@@ -99,7 +100,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                     items={escalationPreview}
                   />
                 ) : null}
-                <main className="main">{children}</main>
+                <main className="main">
+                  {degraded ? <DegradedDataNotice /> : null}
+                  {children}
+                </main>
               </div>
             </div>
           </FeatureFlagProvider>

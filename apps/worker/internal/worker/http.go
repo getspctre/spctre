@@ -3,6 +3,7 @@ package worker
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -65,6 +66,16 @@ func (s *Server) spawn(fn func(ctx context.Context)) {
 
 // Wait blocks until all goroutines started with spawn have finished.
 func (s *Server) Wait() { s.wg.Wait() }
+
+func rollbackAfterFailure(logger *slog.Logger, ctx context.Context, tx pgx.Tx, operation string) {
+	if err := tx.Rollback(ctx); err != nil && !errors.Is(err, pgx.ErrTxClosed) {
+		logger.Warn("worker transaction rollback failed", "operation", operation, "error", err)
+	}
+}
+
+func (s *Server) rollbackAfterFailure(ctx context.Context, tx pgx.Tx, operation string) {
+	rollbackAfterFailure(s.logger, ctx, tx, operation)
+}
 
 func (s *Server) MarkReady() {
 	s.ready.Store(true)
@@ -131,7 +142,9 @@ func (s *Server) tryAdvisoryLock(ctx context.Context, lockID int64) (bool, func(
 		return false, nil, nil
 	}
 	release := func() {
-		_, _ = conn.Exec(context.Background(), "SELECT pg_advisory_unlock($1)", lockID)
+		if _, err := conn.Exec(context.Background(), "SELECT pg_advisory_unlock($1)", lockID); err != nil {
+			s.logger.Warn("advisory unlock failed", "error", err, "lock_id", lockID)
+		}
 		conn.Release()
 	}
 	return true, release, nil
@@ -152,12 +165,12 @@ func (s *Server) beginTenantTx(ctx context.Context, tenantID string) (pgx.Tx, er
 		return nil, err
 	}
 	if _, err := tx.Exec(ctx, "SET LOCAL ROLE spctre_app"); err != nil {
-		_ = tx.Rollback(ctx)
+		s.rollbackAfterFailure(ctx, tx, "begin_tenant_tx.set_role")
 		return nil, err
 	}
 	// SET does not support $1 parameters in pgx extended protocol; use set_config instead.
 	if _, err := tx.Exec(ctx, "SELECT set_config('app.current_tenant_id', $1, true)", tenantID); err != nil {
-		_ = tx.Rollback(ctx)
+		s.rollbackAfterFailure(ctx, tx, "begin_tenant_tx.set_tenant")
 		return nil, err
 	}
 	return tx, nil
@@ -299,7 +312,7 @@ func (s *Server) handleReady(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleMetrics(w http.ResponseWriter, _ *http.Request) {
 	stats := s.db.Stat()
 	w.Header().Set("Content-Type", "text/plain; version=0.0.4")
-	_, _ = w.Write([]byte(
+	if _, err := w.Write([]byte(
 		"# HELP spctre_worker_db_pool_acquired Active acquired database connections.\n" +
 			"# TYPE spctre_worker_db_pool_acquired gauge\n" +
 			formatMetric("spctre_worker_db_pool_acquired", float64(stats.AcquiredConns())) +
@@ -309,7 +322,9 @@ func (s *Server) handleMetrics(w http.ResponseWriter, _ *http.Request) {
 			"# HELP spctre_worker_db_pool_total Total database connections.\n" +
 			"# TYPE spctre_worker_db_pool_total gauge\n" +
 			formatMetric("spctre_worker_db_pool_total", float64(stats.TotalConns())),
-	))
+	)); err != nil {
+		s.logger.Warn("metrics response write failed", "error", err)
+	}
 }
 
 func writeJSON(w http.ResponseWriter, status int, payload any) {

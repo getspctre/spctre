@@ -7,6 +7,7 @@ import { mapEnvironmentBranches } from "@/lib/policy-targets";
 import { BranchTable } from "./branch-inspector";
 import { formatProvenanceId } from "@/lib/app-view-mode";
 import { hashToFingerprint } from "@/lib/fingerprint";
+import { DegradedDataNotice } from "./degraded-data-notice";
 
 type PoliciesSearchParams = Record<string, string | string[] | undefined>;
 const RULE_PREVIEW_LIMIT = 4;
@@ -175,6 +176,7 @@ export async function PoliciesPageContent({
     isAdmin,
     branches,
     rules,
+    degraded,
   } = await getPoliciesPageModel({ workspaceSlug });
   if (searchParams) await searchParams;
 
@@ -200,6 +202,7 @@ export async function PoliciesPageContent({
           />
         </div>
       </section>
+      {degraded ? <DegradedDataNotice /> : null}
 
       <NeedsAttention awaitingReviewCount={awaitingReviewCount} missingEnvironmentPolicies={missingEnvironmentPolicies} hasBranches={branches.length > 0} workspaceId={workspaceContext.workspaceId} workspaceSlug={workspaceContext.workspaceSlug} />
 

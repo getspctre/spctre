@@ -426,6 +426,7 @@ export interface ShellPageModel {
     assignedTo?: string;
   }>;
   isAdmin: boolean;
+  degraded: boolean;
 }
 
 export async function getShellPageModel(params: {
@@ -433,10 +434,14 @@ export async function getShellPageModel(params: {
   workspaceId: string;
   principalId: string;
 }): Promise<ShellPageModel> {
+  let degraded = false;
   const actor = await findActorById(params.principalId, {
     tenantId: params.tenantId,
     workspaceId: params.workspaceId,
-  }).catch(swallow("findActorById", null));
+  }).catch((error) => {
+    degraded = true;
+    return swallow("findActorById", null)(error);
+  });
   const isAdmin = Boolean(actor?.reviewerRoles.includes("Admin"));
 
   let branchCount = 0;
@@ -446,9 +451,18 @@ export async function getShellPageModel(params: {
   if (isDatabaseConfigured()) {
     try {
       const [branches, openEscalations, openEscalationItems] = await Promise.all([
-        listBranches(params.workspaceId, params.tenantId).catch(swallow("listBranches", [])),
-        countOpenEscalations(params.workspaceId, params.tenantId).catch(swallow("countOpenEscalations", 0)),
-        listOpenEscalationQueue(params.workspaceId, params.tenantId, 5).catch(swallow("listOpenEscalationQueue", [])),
+        listBranches(params.workspaceId, params.tenantId).catch((error) => {
+          degraded = true;
+          return swallow("listBranches", [])(error);
+        }),
+        countOpenEscalations(params.workspaceId, params.tenantId).catch((error) => {
+          degraded = true;
+          return swallow("countOpenEscalations", 0)(error);
+        }),
+        listOpenEscalationQueue(params.workspaceId, params.tenantId, 5).catch((error) => {
+          degraded = true;
+          return swallow("listOpenEscalationQueue", [])(error);
+        }),
       ]);
       branchCount = branches.length;
       escalationCount = openEscalations;
@@ -476,6 +490,7 @@ export async function getShellPageModel(params: {
     escalationCount,
     escalationPreview,
     isAdmin,
+    degraded,
   };
 }
 

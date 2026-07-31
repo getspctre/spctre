@@ -2,6 +2,7 @@ import { getCompliancePageModel } from "@/lib/domains/compliance/service";
 import { getPostureModel } from "@/lib/domains/posture/service";
 import { getWebOnboardingStatus } from "@/lib/repositories/onboarding/shared";
 import { CompliancePresenter } from "./compliance-presenter";
+import { DegradedDataNotice } from "../degraded-data-notice";
 
 type ComplianceSearchParams = Record<string, string | string[] | undefined>;
 type RetentionTab = "rules" | "decisions";
@@ -44,13 +45,16 @@ export async function CompliancePageContent({
   });
   const path = `/${model.workspaceContext.workspaceSlug}/compliance`;
   return (
-    <CompliancePresenter
-      model={model}
-      onboardingStatus={onboardingStatus}
-      controlPlaneUrl={process.env.NEXT_PUBLIC_APP_URL ?? "https://app.spctre.dev"}
-      retentionTab={getRetentionTab(params)}
-      retentionRulesHref={buildRetentionHref(path, params, "rules")}
-      retentionDecisionsHref={buildRetentionHref(path, params, "decisions")}
-    />
+    <>
+      {model.degraded ? <DegradedDataNotice /> : null}
+      <CompliancePresenter
+        model={model}
+        onboardingStatus={onboardingStatus}
+        controlPlaneUrl={process.env.NEXT_PUBLIC_APP_URL ?? "https://app.spctre.dev"}
+        retentionTab={getRetentionTab(params)}
+        retentionRulesHref={buildRetentionHref(path, params, "rules")}
+        retentionDecisionsHref={buildRetentionHref(path, params, "decisions")}
+      />
+    </>
   );
 }

@@ -8,6 +8,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"regexp"
 	"strings"
@@ -535,7 +536,7 @@ func appendGenericOperationsLog(ctx context.Context, db *pgxpool.Pool, tenantID 
 	if err != nil {
 		return err
 	}
-	defer func() { _ = tx.Rollback(ctx) }()
+	defer rollbackAfterFailure(slog.Default(), ctx, tx, "append_notification_audit")
 
 	if err := appendGenericOperationsLogTx(ctx, tx, tenantID, workspaceID, eventType, sourceID, sourceTable, actorID, payload); err != nil {
 		return err

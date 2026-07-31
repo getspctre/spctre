@@ -34,7 +34,7 @@ func (s *Server) resolveGatewayEscalation(ctx context.Context, auth gatewayInter
 	if err != nil {
 		return false, err
 	}
-	defer func() { _ = tx.Rollback(ctx) }()
+	defer s.rollbackAfterFailure(ctx, tx, "resolve_gateway_escalation")
 
 	var status string
 	var existingOutcome *string

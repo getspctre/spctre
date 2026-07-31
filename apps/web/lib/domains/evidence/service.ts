@@ -82,6 +82,7 @@ export interface EvidencePageModel {
   controlMappingIndex: EvidenceControlMappingEntry[];
   totalEvidenceCount: number;
   usingDb: boolean;
+  degraded: boolean;
   nextCursor: string | null;
   prevCursor: string | null;
   hasNext: boolean;
@@ -114,6 +115,11 @@ export async function getEvidencePageModel({
   const decodedCursor = decodeCursor(cursor);
 
   let evidence = fallback.evidence;
+  let degraded = false;
+  const degrade = <T,>(op: string, value: T) => (error: unknown): T => {
+    degraded = true;
+    return swallow(op, value)(error);
+  };
   let totalEvidenceCount = evidence.length;
   let usingDb = false;
   let nextCursor: string | null = null;
@@ -128,7 +134,7 @@ export async function getEvidencePageModel({
         countRuntimeEvidence(workspaceId, tenantId)
       ),
     ])
-  ).catch(swallow("runWithTenantContext", null));
+  ).catch(degrade("runWithTenantContext", null));
 
   if (dbResult) {
     const [keysetRows, dbTotal] = dbResult;
@@ -146,9 +152,9 @@ export async function getEvidencePageModel({
 
   const [heatmap, unusedRules, publishedBundle] = await runWithTenantContext(tenantId, () =>
     Promise.all([
-      getHighFrictionRules(8, workspaceId, tenantId).catch(swallow("getHighFrictionRules", null)),
-      getUnusedActiveRules(workspaceId, tenantId).catch(swallow("getUnusedActiveRules", null)),
-      getLatestPublishedBundle(workspaceId, tenantId).catch(swallow("getLatestPublishedBundle", null)),
+      getHighFrictionRules(8, workspaceId, tenantId).catch(degrade("getHighFrictionRules", null)),
+      getUnusedActiveRules(workspaceId, tenantId).catch(degrade("getUnusedActiveRules", null)),
+      getLatestPublishedBundle(workspaceId, tenantId).catch(degrade("getLatestPublishedBundle", null)),
     ])
   );
   const controlMappingIndex = buildRuleControlMappingIndex(publishedBundle?.bundle.rules ?? []);
@@ -174,6 +180,7 @@ export async function getEvidencePageModel({
     controlMappingIndex,
     totalEvidenceCount,
     usingDb,
+    degraded,
     nextCursor,
     prevCursor,
     hasNext,

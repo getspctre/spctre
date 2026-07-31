@@ -73,6 +73,7 @@ export interface AgentsPageModel {
     lastSeenAt: string;
     status: "GOVERNED" | "AUDIT_ONLY" | "PROVENANCE_GAP";
   }>;
+  degraded: boolean;
 }
 
 const HEARTBEAT_STALE_MS = 60 * 60 * 1000;
@@ -118,21 +119,26 @@ export async function getAgentsPageModel({
 } = {}): Promise<AgentsPageModel> {
   const workspaceContext = await getWorkspaceContext({ workspaceSlug });
   const { tenantId, workspaceId } = workspaceContext;
+  let degraded = false;
+  const degrade = <T,>(op: string, value: T) => (error: unknown): T => {
+    degraded = true;
+    return swallow(op, value)(error);
+  };
 
   const [dbAgents, allSurfaces, blueprints, published, heartbeats, policyScopedObservations, connectorActionObservations] = await Promise.all([
     runWithTenantContext(tenantId, () =>
-      listAgentSummaries(workspaceId, tenantId).catch(swallow("listAgentSummaries", []))
+      listAgentSummaries(workspaceId, tenantId).catch(degrade("listAgentSummaries", []))
     ),
     isFeatureEnabled("crossSurfaceAgentIdentity")
       ? runWithTenantContext(tenantId, () =>
-          listAllSurfaceBindingsForWorkspace({ tenantId, workspaceId }).catch(swallow("listAllSurfaceBindingsForWorkspace", []))
+          listAllSurfaceBindingsForWorkspace({ tenantId, workspaceId }).catch(degrade("listAllSurfaceBindingsForWorkspace", []))
         )
       : Promise.resolve([] as AgentSurfaceBinding[]),
-    runWithTenantContext(tenantId, () => listAgentBlueprints({ tenantId, workspaceId }).catch(swallow("listAgentBlueprints", []))),
-    runWithTenantContext(tenantId, () => getLatestPublishedBundle(workspaceId, tenantId).catch(swallow("getLatestPublishedBundle", null))),
-    runWithTenantContext(tenantId, () => listProductionHeartbeatObservations({ tenantId, workspaceId }).catch(swallow("listProductionHeartbeatObservations", []))),
-    runWithTenantContext(tenantId, () => listPolicyScopedRuntimeObservations({ tenantId, workspaceId }).catch(swallow("listPolicyScopedRuntimeObservations", []))),
-    runWithTenantContext(tenantId, () => listProductionConnectorActionObservations({ tenantId, workspaceId }).catch(swallow("listProductionConnectorActionObservations", []))),
+    runWithTenantContext(tenantId, () => listAgentBlueprints({ tenantId, workspaceId }).catch(degrade("listAgentBlueprints", []))),
+    runWithTenantContext(tenantId, () => getLatestPublishedBundle(workspaceId, tenantId).catch(degrade("getLatestPublishedBundle", null))),
+    runWithTenantContext(tenantId, () => listProductionHeartbeatObservations({ tenantId, workspaceId }).catch(degrade("listProductionHeartbeatObservations", []))),
+    runWithTenantContext(tenantId, () => listPolicyScopedRuntimeObservations({ tenantId, workspaceId }).catch(degrade("listPolicyScopedRuntimeObservations", []))),
+    runWithTenantContext(tenantId, () => listProductionConnectorActionObservations({ tenantId, workspaceId }).catch(degrade("listProductionConnectorActionObservations", []))),
   ]);
 
   const agents = dbAgents.length ? dbAgents : getAgentDemoFallbackData(tenantId);
@@ -178,7 +184,7 @@ export async function getAgentsPageModel({
     ? { branchId: published.branchId, revisionId: published.revisionId, artifactHash: published.artifactHash }
     : null;
   const publishedRules = published
-    ? await runWithTenantContext(tenantId, () => getRulesForRevision(published.revisionId, tenantId).catch(swallow("getRulesForRevision", [])))
+    ? await runWithTenantContext(tenantId, () => getRulesForRevision(published.revisionId, tenantId).catch(degrade("getRulesForRevision", [])))
     : [];
   const heartbeatInventory = heartbeats.map((heartbeat) => ({
     agentId: heartbeat.agentId,
@@ -259,6 +265,7 @@ export async function getAgentsPageModel({
     productionHeartbeatAssurance,
     policyScopedDiscovery,
     connectorActionCoverage,
+    degraded,
   };
 }
 

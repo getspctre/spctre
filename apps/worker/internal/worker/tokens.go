@@ -130,7 +130,9 @@ func (s *Server) authenticateServiceTokenScope(ctx context.Context, r *http.Requ
 	if !contains(scopes, requiredScope) {
 		return authResult{}, errors.New("Token is missing " + requiredScope + " scope.")
 	}
-	_, _ = s.db.Exec(ctx, `UPDATE service_token SET last_used_at = now() WHERE id = $1`, auth.TokenID)
+	if _, err := s.db.Exec(ctx, `UPDATE service_token SET last_used_at = now() WHERE id = $1`, auth.TokenID); err != nil {
+		s.logger.Warn("service token last-used update failed", "error", err, "token_id", auth.TokenID)
+	}
 	return auth, nil
 }
 
@@ -141,7 +143,7 @@ func (s *Server) rotateRefreshToken(ctx context.Context, rawRefreshToken string)
 	if err != nil {
 		return tokenPairResponse{}, http.StatusInternalServerError, err
 	}
-	defer func() { _ = tx.Rollback(ctx) }()
+	defer s.rollbackAfterFailure(ctx, tx, "rotate_refresh_token")
 
 	var row refreshTokenRow
 	err = tx.QueryRow(ctx, `
@@ -247,7 +249,7 @@ func (s *Server) revokeServiceTokenAndRefresh(ctx context.Context, auth authResu
 	if err != nil {
 		return err
 	}
-	defer func() { _ = tx.Rollback(ctx) }()
+	defer s.rollbackAfterFailure(ctx, tx, "revoke_service_token")
 
 	if _, err := tx.Exec(ctx, `
 		UPDATE service_token

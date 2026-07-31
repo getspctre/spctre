@@ -404,7 +404,9 @@ func (s *Server) authenticateRuntimeRequest(ctx context.Context, r *http.Request
 	if requestedWorkspaceID != "" && requestedWorkspaceID != auth.WorkspaceID {
 		return authResult{}, errors.New("Workspace is outside this token scope.")
 	}
-	_, _ = s.db.Exec(ctx, `UPDATE service_token SET last_used_at = now() WHERE id = $1`, auth.TokenID)
+	if _, err := s.db.Exec(ctx, `UPDATE service_token SET last_used_at = now() WHERE id = $1`, auth.TokenID); err != nil {
+		s.logger.Warn("service token last-used update failed", "error", err, "token_id", auth.TokenID)
+	}
 	return auth, nil
 }
 
@@ -463,7 +465,7 @@ func (s *Server) insertEvidence(ctx context.Context, evidence EvidenceRequest) (
 	if err != nil {
 		return false, err
 	}
-	defer func() { _ = tx.Rollback(ctx) }()
+	defer s.rollbackAfterFailure(ctx, tx, "persist_evidence")
 
 	var keyDecisionID string
 	err = tx.QueryRow(ctx, `
@@ -567,7 +569,7 @@ func (s *Server) appendOperationsLog(ctx context.Context, evidence EvidenceReque
 		s.logger.Warn("operations log transaction failed", "error", err)
 		return
 	}
-	defer func() { _ = tx.Rollback(ctx) }()
+	defer s.rollbackAfterFailure(ctx, tx, "append_evidence_operations_log")
 
 	prevHash, err := operationsChainPrevHash(ctx, tx, evidence.TenantID)
 	if err != nil {
@@ -589,7 +591,9 @@ func (s *Server) appendOperationsLog(ctx context.Context, evidence EvidenceReque
 		s.logger.Warn("operations log chain head advance failed", "error", err)
 		return
 	}
-	_ = tx.Commit(ctx)
+	if err := tx.Commit(ctx); err != nil {
+		s.logger.Warn("operations log commit failed", "error", err, "decision_id", evidence.DecisionID)
+	}
 }
 
 func (s *Server) ingestTrustScore(ctx context.Context, evidence EvidenceRequest) {

@@ -19,7 +19,7 @@ func (s *Server) persistGatewayDecision(ctx context.Context, record GatewayDecis
 	if err != nil {
 		return "", err
 	}
-	defer func() { _ = tx.Rollback(ctx) }()
+	defer s.rollbackAfterFailure(ctx, tx, "persist_gateway_decision")
 
 	var toolParamsJSON *string
 	if record.ToolParameters != nil {
@@ -141,7 +141,7 @@ func (s *Server) appendGenericOperationsLog(ctx context.Context, tenantID string
 	if err != nil {
 		return err
 	}
-	defer func() { _ = tx.Rollback(ctx) }()
+	defer s.rollbackAfterFailure(ctx, tx, "append_operations_log")
 
 	if err := appendGenericOperationsLogTx(ctx, tx, tenantID, workspaceID, eventType, sourceID, sourceTable, actorID, payload); err != nil {
 		return err
