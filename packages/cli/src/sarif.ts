@@ -1,6 +1,7 @@
 import * as path from "node:path";
 import type { LintResult } from "./lint";
 import type { TestReport } from "./test-cmd";
+import { SPCTRE_VERSION } from "./version.js";
 
 interface SarifRule {
   id: string;
@@ -109,7 +110,7 @@ export function buildSarif(lintResult: LintResult, testReport: TestReport | null
         tool: {
           driver: {
             name: "spctre",
-            version: "0.1.0",
+            version: SPCTRE_VERSION,
             informationUri: "https://spctre.dev",
             rules: Array.from(rules.values()),
           },
