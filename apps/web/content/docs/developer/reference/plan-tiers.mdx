@@ -42,6 +42,10 @@ SPCTRE_PLAN=cloud   # or: business, enterprise
 
 Set this on the web app and worker processes. The value is read at startup; restart both services after changing it.
 
+Workspace switching within the current tenant is available on every hosted
+plan. The Enterprise-only multi-tenant isolation feature controls switching
+between tenants and its additional attribute-aware access controls.
+
 <Callout type="info">
   `SPCTRE_PLAN` is not validated against a license key in OSS builds — it is an honour-system gate. Cloud and Enterprise deployments enforce the plan via a signed license token set by Spctre.
 </Callout>

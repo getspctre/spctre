@@ -12,6 +12,7 @@ import {
 import { getAuthSession, SESSION_COOKIE, sessionTtlHours } from "@/lib/auth-session";
 import { createSessionGuardToken, SESSION_GUARD_COOKIE } from "@/lib/session-guard";
 import { getWorkspaceContext } from "@/lib/workspace";
+import { isFeatureEnabled } from "@/lib/feature-flags-server";
 
 export type WorkspaceSwitchState =
   | { workspaceId: string; error?: never }
@@ -111,6 +112,10 @@ export async function setActiveTenant(
   _prev: TenantSwitchState,
   formData: FormData
 ): Promise<TenantSwitchState> {
+  if (!isFeatureEnabled("multiTenantWorkspaceIsolation")) {
+    return { error: "Switching tenants requires the Enterprise plan." };
+  }
+
   const tenantId = String(formData.get("tenantId") ?? "").trim();
   if (!tenantId) return { error: "Tenant is required." };
 
