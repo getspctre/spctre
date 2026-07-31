@@ -66,7 +66,7 @@ function initialsFromName(name: string): string {
 }
 
 function WorkspaceSwitcherMenu({
-  canSwitchWorkspaces,
+  canSwitchTenants,
   tenantAction,
   tenantState,
   workspaceAction,
@@ -80,7 +80,7 @@ function WorkspaceSwitcherMenu({
   closeMenu,
   usageBillingHref,
 }: {
-  canSwitchWorkspaces: boolean;
+  canSwitchTenants: boolean;
   tenantAction: (formData: FormData) => void;
   tenantState: { error?: string } | null;
   workspaceAction: (formData: FormData) => void;
@@ -96,8 +96,8 @@ function WorkspaceSwitcherMenu({
 }) {
   return (
     <div className="topNavWorkspaceMenu">
-      <p className="meta">Switch tenant and workspace</p>
-      {canSwitchWorkspaces ? (
+      <p className="meta">{canSwitchTenants ? "Switch tenant and workspace" : "Switch workspace"}</p>
+      {canSwitchTenants ? (
         <>
           <label className="workspaceFieldLabel" htmlFor="topnav-tenant-select">
             Tenant
@@ -120,46 +120,9 @@ function WorkspaceSwitcherMenu({
               ))}
             </select>
           </form>
-
-          <label className="workspaceFieldLabel" htmlFor="topnav-workspace-search">
-            Workspace
-          </label>
-          <input
-            id="topnav-workspace-search"
-            className="input topNavWorkspaceSearch"
-            type="search"
-            value={workspaceQuery}
-            onChange={(event) => setWorkspaceQuery(event.currentTarget.value)}
-            placeholder="Search workspaces"
-            aria-label="Search workspaces"
-            autoComplete="off"
-          />
-          <form action={workspaceAction} className="topNavWorkspaceForm">
-            <select
-              className="input topNavWorkspaceSelect"
-              name="workspaceId"
-              defaultValue={activeWorkspaceId}
-              size={Math.min(8, Math.max(3, filteredWorkspaces.length || 3))}
-              disabled={!filteredWorkspaces.length}
-              onChange={(event) => {
-                event.currentTarget.form?.requestSubmit();
-                closeMenu();
-              }}
-            >
-              {filteredWorkspaces.map((workspace) => (
-                <option key={workspace.id} value={workspace.id}>
-                  {workspace.slug}
-                </option>
-              ))}
-            </select>
-          </form>
           {tenantState?.error ? <p className="meta workspaceError">{tenantState.error}</p> : null}
-          {workspaceQuery && !filteredWorkspaces.length ? (
-            <p className="meta workspaceHint">No workspaces match that search.</p>
-          ) : null}
-          {workspaceState?.error ? <p className="meta workspaceError">{workspaceState.error}</p> : null}
         </>
-      ) : (
+      ) : tenantOptions.length > 1 ? (
         <div className="topNavGatePrompt">
           <strong>{FEATURE_FLAGS.multiTenantWorkspaceIsolation.label}</strong>
           <p className="meta">{FEATURE_FLAGS.multiTenantWorkspaceIsolation.description}</p>
@@ -167,7 +130,44 @@ function WorkspaceSwitcherMenu({
             View plans
           </a>
         </div>
-      )}
+      ) : null}
+
+      <label className="workspaceFieldLabel" htmlFor="topnav-workspace-search">
+        Workspace
+      </label>
+      <input
+        id="topnav-workspace-search"
+        className="input topNavWorkspaceSearch"
+        type="search"
+        value={workspaceQuery}
+        onChange={(event) => setWorkspaceQuery(event.currentTarget.value)}
+        placeholder="Search workspaces"
+        aria-label="Search workspaces"
+        autoComplete="off"
+      />
+      <form action={workspaceAction} className="topNavWorkspaceForm">
+        <select
+          className="input topNavWorkspaceSelect"
+          name="workspaceId"
+          defaultValue={activeWorkspaceId}
+          size={Math.min(8, Math.max(3, filteredWorkspaces.length || 3))}
+          disabled={!filteredWorkspaces.length}
+          onChange={(event) => {
+            event.currentTarget.form?.requestSubmit();
+            closeMenu();
+          }}
+        >
+          {filteredWorkspaces.map((workspace) => (
+            <option key={workspace.id} value={workspace.id}>
+              {workspace.slug}
+            </option>
+          ))}
+        </select>
+      </form>
+      {workspaceQuery && !filteredWorkspaces.length ? (
+        <p className="meta workspaceHint">No workspaces match that search.</p>
+      ) : null}
+      {workspaceState?.error ? <p className="meta workspaceError">{workspaceState.error}</p> : null}
     </div>
   );
 }
@@ -395,7 +395,7 @@ export function TopNav({
   const workspaceMenuRef = useRef<HTMLDivElement>(null);
   const [tenantState, tenantAction, tenantPending] = useActionState(setActiveTenant, null);
   const [workspaceState, workspaceAction, workspacePending] = useActionState(setActiveWorkspace, null);
-  const canSwitchWorkspaces = useFeatureFlag("multiTenantWorkspaceIsolation");
+  const canSwitchTenants = useFeatureFlag("multiTenantWorkspaceIsolation");
 
   useMenuDismissal(open, workspaceOpen, menuRef, workspaceMenuRef, setOpen, setWorkspaceOpen);
 
@@ -453,7 +453,7 @@ export function TopNav({
 
         {workspaceOpen ? (
           <WorkspaceSwitcherMenu
-            canSwitchWorkspaces={canSwitchWorkspaces}
+            canSwitchTenants={canSwitchTenants}
             tenantAction={tenantAction}
             tenantState={tenantState}
             workspaceAction={workspaceAction}
