@@ -36,10 +36,11 @@ Select the **Review changes** stage. Review the specific rule additions/removals
 
 The approvals panel is also in **Review changes**. It details the required approval seats for your branch's environment scope. Reviewers can log in, inspect your changes, and provide their approval. The separate **Publish** stage shows readiness, verification, export, and the publish action.
 
-If no approval workflow is configured, a workspace with one eligible reviewer
-defaults to one approval in that reviewer's role. Workspaces with multiple
-eligible reviewers default to separate Security and Platform approvals. A
-configured workflow always takes precedence.
+If no approval workflow is configured, Spctre defaults to one approval in an
+eligible reviewer's role (preferring Admin where available). This keeps the
+implicit workflow satisfiable even as workspace membership changes. Configure
+an approval workflow when separate Security, Platform, or other role lanes are
+required; a configured workflow always takes precedence.
 </Step>
 </Steps>
 

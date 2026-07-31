@@ -37,14 +37,14 @@ interface ApprovalWorkflowRuleSummary {
 export function defaultApprovalWorkflowSnapshot(params: {
   workspaceId?: string | null;
   environment?: string | null;
-  singleReviewerRole?: string;
+  eligibleReviewerRole?: string;
 } = {}): ApprovalWorkflowSnapshot {
-  const rules = params.singleReviewerRole
-    ? [{ role: params.singleReviewerRole, requiredCount: 1 }]
+  const rules = params.eligibleReviewerRole
+    ? [{ role: params.eligibleReviewerRole, requiredCount: 1 }]
     : REQUIRED_APPROVAL_RULES;
   return {
     id: "default-static-approval-workflow",
-    name: params.singleReviewerRole ? "Default single-reviewer workflow" : "Default approval workflow",
+    name: params.eligibleReviewerRole ? "Default reviewer workflow" : "Default approval workflow",
     reviewMode: "PARALLEL",
     workspaceId: params.workspaceId ?? undefined,
     environment: params.environment ?? undefined,
@@ -61,7 +61,7 @@ export function defaultApprovalWorkflowSnapshot(params: {
   };
 }
 
-async function getSingleEligibleReviewerRole(params: {
+async function getDefaultEligibleReviewerRole(params: {
   tenantId: string;
   workspaceId: string | null;
 }): Promise<string | null> {
@@ -85,9 +85,16 @@ async function getSingleEligibleReviewerRole(params: {
     }
     if (roles.size) rolesByPrincipal.set(row.principal_id, roles);
   }
-  if (rolesByPrincipal.size !== 1) return null;
-  const [roles] = rolesByPrincipal.values();
-  return SINGLE_REVIEWER_ROLE_PRIORITY.find((role) => roles.has(role)) ?? null;
+  // `policy_approval` has one row per reviewer identity and revision. An
+  // implicit multi-role default can therefore become impossible for a solo
+  // operator as soon as any extra reviewer-capable principal exists. Keep
+  // multi-role separation an explicit workflow choice; choose one lane that
+  // an eligible principal can actually satisfy for the unconfigured default.
+  const eligibleRoles = new Set<string>();
+  for (const roles of rolesByPrincipal.values()) {
+    for (const role of roles) eligibleRoles.add(role);
+  }
+  return SINGLE_REVIEWER_ROLE_PRIORITY.find((role) => eligibleRoles.has(role)) ?? null;
 }
 
 function verificationPolicyFromRiskTags(riskTags: string[]) {
@@ -277,8 +284,8 @@ export async function getApprovalWorkflowForContext(params: {
 
   const workflow = mapWorkflowRows(rows)[0];
   if (!workflow) {
-    const singleReviewerRole = await getSingleEligibleReviewerRole({ tenantId, workspaceId });
-    return defaultApprovalWorkflowSnapshot({ workspaceId, environment, singleReviewerRole: singleReviewerRole ?? undefined });
+    const eligibleReviewerRole = await getDefaultEligibleReviewerRole({ tenantId, workspaceId });
+    return defaultApprovalWorkflowSnapshot({ workspaceId, environment, eligibleReviewerRole: eligibleReviewerRole ?? undefined });
   }
   return workflowToSnapshot(workflow);
 }
