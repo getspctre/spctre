@@ -61,7 +61,7 @@ describe.skipIf(!databaseAvailable)("default approval workflow contract", () => 
     expect(approvalRulesFromWorkflow(workflow)).toEqual([{ role: "Security", requiredCount: 1 }]);
   });
 
-  it("retains the multi-reviewer default", async () => {
+  it("collapses multiple eligible reviewers to a single satisfiable lane", async () => {
     const fixture = await createFixture([["Security"], ["Platform"]]);
 
     const workflow = await runWithTenantContext(fixture.tenantId, () => getApprovalWorkflowForContext({
@@ -69,10 +69,12 @@ describe.skipIf(!databaseAvailable)("default approval workflow contract", () => 
       workspaceId: fixture.workspaceId,
     }));
 
-    expect(approvalRulesFromWorkflow(workflow)).toEqual([
-      { role: "Security", requiredCount: 1 },
-      { role: "Platform", requiredCount: 1 },
-    ]);
+    // policy_approval holds one row per reviewer identity and revision, so an
+    // implicit multi-role default is unsatisfiable for a solo operator once a
+    // second reviewer-capable principal exists. The unconfigured default picks
+    // the single highest-priority lane an eligible reviewer can satisfy;
+    // multi-role separation stays an explicit workflow choice.
+    expect(approvalRulesFromWorkflow(workflow)).toEqual([{ role: "Security", requiredCount: 1 }]);
   });
 
   it("ignores pending, revoked, and IdP-deprovisioned reviewers", async () => {
