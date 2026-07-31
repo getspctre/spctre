@@ -33,7 +33,7 @@ export async function getPrimaryWorkspaceIdForTenant(tenantId: string, db = sql)
 
   // workspace is RLS-gated; callers on pre-session paths (SSO/recovery) pass the
   // default tenant-aware client, so bind the trusted tenant here. A caller that
-  // passes rawSql (RLS-bypassing owner) is unaffected by the bound context.
+  // passes the RLS-bypassing owner connection is unaffected by the bound context.
   return runWithTenantContext(tenantId, async () => {
     const rows = await db<{ id: string }[]>`
       SELECT id
@@ -331,8 +331,8 @@ export async function createSessionRow(params: {
   // Session creation is the shared chokepoint for every login method (magic,
   // passkey, OIDC, social OAuth, SAML, recovery). app_principal and app_session
   // are both RLS-gated and this runs before a session/tenant context exists, so
-  // bind the trusted tenant here once for all callers. Callers passing rawSql
-  // (RLS-bypassing owner) are unaffected by the bound context.
+  // bind the trusted tenant here once for all callers. Callers passing the
+  // RLS-bypassing owner connection are unaffected by the bound context.
   return runWithTenantContext(params.tenantId, async () => {
     const principalRows = await db<{ id: string }[]>`
       SELECT id

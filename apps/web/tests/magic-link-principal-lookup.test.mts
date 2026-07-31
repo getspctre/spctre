@@ -7,6 +7,7 @@ const { ownerSqlMock, tenantSqlMock } = vi.hoisted(() => ({
 
 vi.mock("@/lib/db", () => ({
   sql: tenantSqlMock,
+  runWithTenantContext: (_tenantId: string, fn: () => unknown) => fn(),
 }));
 
 const { createSessionRow, getPrincipalForLogin } = await import("../lib/repositories/auth/session");
