@@ -13,6 +13,7 @@ import {
 } from "./token.js";
 import { type GovernedMcpCapability } from "./governance.js";
 import { recordToolMetric } from "./metrics.js";
+import { SPCTRE_MCP_VERSION } from "./version.js";
 import { TOOL_SCHEMAS } from "./tools/schemas.js";
 import type { SpctreConfig, SessionConfigOverrides } from "./config.js";
 import type { McpServerContext } from "./handlers/context.js";
@@ -91,7 +92,7 @@ export class SpctreMcpServer {
     this.server = new Server(
       {
         name: "spctre",
-        version: "0.2.0",
+        version: SPCTRE_MCP_VERSION,
       },
       {
         capabilities: {
