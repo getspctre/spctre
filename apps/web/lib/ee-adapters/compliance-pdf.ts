@@ -1,6 +1,7 @@
 import { logger } from "@spctre/platform/logging";
 import { getSpctrePlan } from "@/lib/feature-flags-server";
 import { isFeatureEnabledForPlan } from "@/lib/feature-flags";
+import { loadCommercialSlot } from "./slot-loader";
 
 export async function handleCompliancePdfExport(
   request: Request,
@@ -15,9 +16,7 @@ export async function handleCompliancePdfExport(
   }
 
   try {
-    const prefix = "ee";
-    const modulePath = `${prefix}/web/compliance/pdf-export.js`;
-    const module = await import(/* @vite-ignore */ /* webpackIgnore: true */ `../../../../${modulePath}`);
+    const module = await loadCommercialSlot<{ handlePdfExport: typeof handleCompliancePdfExport }>("web/compliance/pdf-export.js");
     return module.handlePdfExport(request, exportDoc);
   } catch (err) {
     logger.warn("Failed to load commercial Compliance PDF export slot implementation.", { error: err instanceof Error ? err.message : String(err) });

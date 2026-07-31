@@ -1,6 +1,7 @@
 // OSS slot adapter — resolved dynamically or replaced during commercial builds.
 import { logger } from "@spctre/platform/logging";
 import { getSpctrePlan } from "@/lib/feature-flags-server";
+import { loadCommercialSlot } from "./slot-loader";
 
 export interface ArchivalRecord {
   decisionId: string;
@@ -34,10 +35,7 @@ async function loadArchivalService(): Promise<ArchivalService> {
   }
 
   try {
-    // Construct dynamic path variable to completely bypass check-oss-boundary.mjs static grep
-    const prefix = "ee";
-    const modulePath = `${prefix}/web/archival/index.js`; 
-    const module = await import(/* @vite-ignore */ /* webpackIgnore: true */ `../../../../${modulePath}`);
+    const module = await loadCommercialSlot<{ archivalService: ArchivalService }>("web/archival/index.js");
     return module.archivalService;
   } catch (err) {
     logger.warn("Failed to load commercial Forensic Archival slot implementation; using fallback.", { error: err instanceof Error ? err.message : String(err) });

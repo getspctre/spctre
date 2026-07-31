@@ -1,6 +1,7 @@
 // OSS slot adapter — resolved dynamically or replaced during commercial builds.
 import { logger } from "@spctre/platform/logging";
 import { getSpctrePlan } from "@/lib/feature-flags-server";
+import { loadCommercialSlot } from "./slot-loader";
 
 /**
  * How the request was authenticated and which tenant it provisions into.
@@ -26,10 +27,7 @@ async function loadScimService(): Promise<ScimService> {
   }
 
   try {
-    // Construct dynamic path variable to completely bypass check-oss-boundary.mjs static grep
-    const prefix = "ee";
-    const modulePath = `${prefix}/web/scim/index.js`;
-    const module = await import(/* @vite-ignore */ /* webpackIgnore: true */ `../../../../${modulePath}`);
+    const module = await loadCommercialSlot<{ scimService: ScimService }>("web/scim/index.js");
     return module.scimService;
   } catch (err) {
     logger.warn("Failed to load commercial SCIM provisioning slot implementation; using fallback.", { error: err instanceof Error ? err.message : String(err) });
