@@ -1,6 +1,7 @@
 // OSS slot adapter — resolved dynamically or replaced during commercial builds.
 import { logger } from "@spctre/platform/logging";
 import { getSpctrePlan } from "@/lib/feature-flags-server";
+import { loadCommercialSlot } from "./slot-loader";
 import type { PolicyRuleSummary, SimulationRegressionSummary, SimulationReplayInput } from "@spctre/policy-schema";
 
 export interface SimulationCostSummary {
@@ -31,9 +32,7 @@ async function loadSimulationService(): Promise<BulkSimulationService> {
   }
 
   try {
-    const prefix = "ee";
-    const modulePath = `${prefix}/web/simulation/index.js`;
-    const module = await import(/* @vite-ignore */ /* webpackIgnore: true */ `../../../../${modulePath}`);
+    const module = await loadCommercialSlot<{ bulkSimulationService: BulkSimulationService }>("web/simulation/index.js");
     return module.bulkSimulationService;
   } catch (err) {
     logger.warn("Failed to load commercial Bulk Simulation slot implementation; using fallback.", { error: err instanceof Error ? err.message : String(err) });

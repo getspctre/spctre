@@ -1,6 +1,7 @@
 // OSS slot adapter — resolved dynamically or replaced during commercial builds.
 import { logger } from "@spctre/platform/logging";
 import { getSpctrePlan } from "@/lib/feature-flags-server";
+import { loadCommercialSlot } from "./slot-loader";
 
 export interface HitlAssignmentParams {
   queueId: string;
@@ -32,9 +33,7 @@ async function loadHitlService(): Promise<HitlService> {
   }
 
   try {
-    const prefix = "ee";
-    const modulePath = `${prefix}/web/hitl/index.js`;
-    const module = await import(/* @vite-ignore */ /* webpackIgnore: true */ `../../../../${modulePath}`);
+    const module = await loadCommercialSlot<{ hitlService: HitlService }>("web/hitl/index.js");
     return module.hitlService;
   } catch (err) {
     logger.warn("Failed to load commercial Managed HITL slot implementation; using fallback.", { error: err instanceof Error ? err.message : String(err) });
