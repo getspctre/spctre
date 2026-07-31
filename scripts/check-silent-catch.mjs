@@ -28,14 +28,14 @@ function* walk(dir) {
   }
 }
 
-// Classify what the arrow returns, given the text immediately after `=>`.
-function isBareFallbackReturn(after) {
+// Only explicit non-empty handler blocks are allowed. Every expression handler
+// (including variable and computed fallbacks) must go through `swallow`.
+function isSilentCatchHandler(after) {
   const t = after.replace(/^\s+/, "");
-  if (t.startsWith("swallow")) return false; // already migrated
+  if (/^swallow\s*\(/.test(t)) return false; // already migrated
   if (/^\{\s*\}/.test(t)) return true; // empty block: () => {}
   if (t.startsWith("{")) return false; // non-empty block: handled explicitly
-  if (/^\(\s*\{/.test(t)) return true; // object-literal fallback: () => ({ ... })
-  return /^(null|undefined|true|false|-?\d|["'`]|\[|new\s)/.test(t); // literal/array/new fallback
+  return true;
 }
 
 const violations = [];
@@ -47,7 +47,7 @@ for (const root of checkedRoots) {
       const before = source.slice(0, match.index);
       if (BODY_PARSE_BEFORE.test(before)) continue; // HTTP body parse: allowed
       const after = source.slice(match.index + match[0].length);
-      if (isBareFallbackReturn(after)) {
+      if (isSilentCatchHandler(after)) {
         const line = before.split("\n").length;
         violations.push(`${file}:${line}: bare .catch(() => …) — degrade through swallow(op, fallback)`);
       }

@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { swallow } from "@/lib/platform/swallow";
 
 interface RecoveryCodesSectionProps {
   unusedCount: number;
@@ -76,7 +75,9 @@ export function RecoveryCodesSection({ unusedCount }: RecoveryCodesSectionProps)
             className="button"
             type="button"
             onClick={() => {
-              navigator.clipboard.writeText(codes.join("\n")).catch(swallow("writeText", undefined));
+              navigator.clipboard.writeText(codes.join("\n")).catch(() => {
+                // Clipboard access is a browser permission; the codes remain visible for manual copying.
+              });
             }}
           >
             {t("copy_all")}

@@ -4,7 +4,7 @@ import { incrementCounter } from "@spctre/platform/metrics";
 /**
  * Observable degradation for read/side-effect failures.
  *
- * A bare `.catch(() => fallback)` collapses four very different outcomes —
+ * A bare fallback catch handler collapses four very different outcomes —
  * "this tenant legitimately has no data", "the query has a bug", "tenant
  * context / RLS is misbound", and "the database is unreachable" — into the
  * same healthy-looking empty state. In production the error never surfaces:
@@ -14,7 +14,7 @@ import { incrementCounter } from "@spctre/platform/metrics";
  * `swallow` preserves the exact same fallback behaviour but makes every
  * degrade observable: it emits a warning log and increments a counter keyed
  * by operation before returning the fallback. Use it as a drop-in for
- * `.catch(() => fallback)`:
+ * a bare fallback catch handler:
  *
  *   const rows = await listBranches(workspaceId, tenantId)
  *     .catch(swallow("listBranches", []));
