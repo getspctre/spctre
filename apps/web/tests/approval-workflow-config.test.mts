@@ -20,6 +20,15 @@ describe("approval workflow configuration", () => {
     ]);
   });
 
+  it("uses the single reviewer's eligible role for an unconfigured workspace", () => {
+    const workflow = defaultApprovalWorkflowSnapshot({ workspaceId: "ws-1", singleReviewerRole: "Security" });
+
+    expect(workflow.name).toBe("Default single-reviewer workflow");
+    expect(approvalRulesFromWorkflow(workflow)).toEqual([
+      { role: "Security", requiredCount: 1 },
+    ]);
+  });
+
   it("attaches the workflow snapshot to publish readiness and blocks missing configured roles", () => {
     const workflow = {
       ...defaultApprovalWorkflowSnapshot(),

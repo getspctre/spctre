@@ -264,11 +264,12 @@ export async function getBranchForRollback(params: {
 export async function getBranchWithPublishStatus(params: {
   tenantId: string;
   branchId: string;
-}): Promise<{ id: string; has_published_revision: boolean } | null> {
+}): Promise<{ id: string; name: string; has_published_revision: boolean } | null> {
   if (!sql) return null;
-  const rows = await sql<{ id: string; has_published_revision: boolean }[]>`
+  const rows = await sql<{ id: string; name: string; has_published_revision: boolean }[]>`
     SELECT
       pb.id,
+      pb.name,
       (EXISTS (
         SELECT 1 FROM policy_publish pp
         INNER JOIN policy_revision pr ON pr.id = pp.revision_id

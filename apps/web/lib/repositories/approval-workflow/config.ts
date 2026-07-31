@@ -1,13 +1,10 @@
 import { sql } from "@/lib/db";
-import { REQUIRED_APPROVAL_RULES } from "@/lib/approval-config";
+import { ALL_REVIEWER_ROLES, REQUIRED_APPROVAL_RULES } from "@/lib/approval-config";
 import type { ApprovalWorkflowSnapshot, PolicyApprovalRule } from "@spctre/policy-schema";
 
 type ReviewMode = "PARALLEL" | "SEQUENTIAL";
 const REQUIRE_AGT_VERIFICATION_TAG = "verification:require-agt";
-const ADMIN_ONLY_APPROVAL_RULE: PolicyApprovalRule = {
-  role: "Admin",
-  requiredCount: 1,
-};
+const SINGLE_REVIEWER_ROLE_PRIORITY = ["Admin", "Security", "Platform", "Legal", "Ops"] as const;
 
 export interface ApprovalWorkflowConfigSummary {
   id: string;
@@ -40,14 +37,18 @@ interface ApprovalWorkflowRuleSummary {
 export function defaultApprovalWorkflowSnapshot(params: {
   workspaceId?: string | null;
   environment?: string | null;
+  singleReviewerRole?: string;
 } = {}): ApprovalWorkflowSnapshot {
+  const rules = params.singleReviewerRole
+    ? [{ role: params.singleReviewerRole, requiredCount: 1 }]
+    : REQUIRED_APPROVAL_RULES;
   return {
     id: "default-static-approval-workflow",
-    name: "Default approval workflow",
+    name: params.singleReviewerRole ? "Default single-reviewer workflow" : "Default approval workflow",
     reviewMode: "PARALLEL",
     workspaceId: params.workspaceId ?? undefined,
     environment: params.environment ?? undefined,
-    rules: REQUIRED_APPROVAL_RULES.map((rule, index) => ({
+    rules: rules.map((rule, index) => ({
       role: rule.role,
       requiredCount: rule.requiredCount,
       eligibleRoles: [rule.role],
@@ -58,6 +59,35 @@ export function defaultApprovalWorkflowSnapshot(params: {
     },
     generatedAt: new Date().toISOString(),
   };
+}
+
+async function getSingleEligibleReviewerRole(params: {
+  tenantId: string;
+  workspaceId: string | null;
+}): Promise<string | null> {
+  if (!sql) return null;
+  const rows = await sql<{ principal_id: string; reviewer_roles: string[] }[]>`
+    SELECT g.principal_id, g.reviewer_roles
+    FROM principal_permission_grant g
+    INNER JOIN app_principal p ON p.id = g.principal_id AND p.tenant_id = g.tenant_id
+    WHERE g.tenant_id = ${params.tenantId}
+      AND (g.workspace_id IS NULL OR g.workspace_id = ${params.workspaceId})
+      AND p.principal_type = 'USER'
+      AND p.invite_status = 'ACCEPTED'
+      AND p.disabled_at IS NULL
+      AND p.idp_deprovisioned_at IS NULL
+  `;
+  const rolesByPrincipal = new Map<string, Set<string>>();
+  for (const row of rows) {
+    const roles = rolesByPrincipal.get(row.principal_id) ?? new Set<string>();
+    for (const role of row.reviewer_roles ?? []) {
+      if ((ALL_REVIEWER_ROLES as readonly string[]).includes(role)) roles.add(role);
+    }
+    if (roles.size) rolesByPrincipal.set(row.principal_id, roles);
+  }
+  if (rolesByPrincipal.size !== 1) return null;
+  const [roles] = rolesByPrincipal.values();
+  return SINGLE_REVIEWER_ROLE_PRIORITY.find((role) => roles.has(role)) ?? null;
 }
 
 function verificationPolicyFromRiskTags(riskTags: string[]) {
@@ -142,7 +172,7 @@ function workflowToSnapshot(workflow: ApprovalWorkflowConfigSummary): ApprovalWo
 
 export function approvalRulesFromWorkflow(workflow: ApprovalWorkflowSnapshot): PolicyApprovalRule[] {
   if (!workflow.rules.length) {
-    return [ADMIN_ONLY_APPROVAL_RULE];
+    return [{ role: "Admin", requiredCount: 1 }];
   }
   return workflow.rules.map((rule) => ({
     role: rule.role,
@@ -247,7 +277,8 @@ export async function getApprovalWorkflowForContext(params: {
 
   const workflow = mapWorkflowRows(rows)[0];
   if (!workflow) {
-    return defaultApprovalWorkflowSnapshot({ workspaceId, environment });
+    const singleReviewerRole = await getSingleEligibleReviewerRole({ tenantId, workspaceId });
+    return defaultApprovalWorkflowSnapshot({ workspaceId, environment, singleReviewerRole: singleReviewerRole ?? undefined });
   }
   return workflowToSnapshot(workflow);
 }

@@ -448,12 +448,16 @@ export async function rollbackBranchDecision(input: {
 export async function deleteUnpublishedBranchDecision(params: {
   tenantId: string;
   branchId: string;
+  confirmation: string;
 }): Promise<{ success: true } | { error: string }> {
   const branch = await getBranchWithPublishStatus({
     tenantId: params.tenantId,
     branchId: params.branchId,
   });
   if (!branch) return { error: "Branch not found." };
+  if (params.confirmation.trim() !== branch.name) {
+    return { error: `Type the branch name exactly to delete: ${branch.name}` };
+  }
   if (branch.has_published_revision) {
     return { error: "This branch has published revisions and cannot be deleted." };
   }

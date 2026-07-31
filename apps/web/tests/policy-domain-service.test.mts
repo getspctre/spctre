@@ -1,8 +1,20 @@
 import { describe, expect, it, vi } from "vitest";
 
+const getBranchWithPublishStatusMock = vi.fn();
+const deletePolicyBranchMock = vi.fn();
+
 vi.mock("@/lib/db", () => ({
   sql: null,
 }));
+
+vi.mock("@/lib/repositories/policy", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/repositories/policy")>();
+  return {
+    ...actual,
+    getBranchWithPublishStatus: getBranchWithPublishStatusMock,
+    deletePolicyBranch: deletePolicyBranchMock,
+  };
+});
 
 const policyService = await import("../lib/domains/policy/service");
 
@@ -62,5 +74,29 @@ describe("policy domain service", () => {
     });
 
     expect(result).toEqual({ error: "Database not configured." });
+  });
+
+  it("requires the branch name, rather than a separate DELETE token, before deletion", async () => {
+    getBranchWithPublishStatusMock.mockResolvedValue({
+      id: "branch-1",
+      name: "acquisition-outreach",
+      has_published_revision: false,
+    });
+
+    const rejected = await policyService.deleteUnpublishedBranchDecision({
+      tenantId: "tenant-1",
+      branchId: "branch-1",
+      confirmation: "DELETE",
+    });
+    expect(rejected).toEqual({ error: "Type the branch name exactly to delete: acquisition-outreach" });
+    expect(deletePolicyBranchMock).not.toHaveBeenCalled();
+
+    const deleted = await policyService.deleteUnpublishedBranchDecision({
+      tenantId: "tenant-1",
+      branchId: "branch-1",
+      confirmation: "acquisition-outreach",
+    });
+    expect(deleted).toEqual({ success: true });
+    expect(deletePolicyBranchMock).toHaveBeenCalledWith({ tenantId: "tenant-1", branchId: "branch-1" });
   });
 });

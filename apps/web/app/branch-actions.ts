@@ -29,14 +29,14 @@ export async function deleteBranchAdmin(
   }
 
   const branchId = String(formData.get("branchId") ?? "").trim();
-  const confirm = String(formData.get("confirm") ?? "").trim().toUpperCase();
+  const confirmation = String(formData.get("confirm") ?? "").trim();
 
   if (!branchId) return { error: "Branch ID is required." };
-  if (confirm !== "DELETE") return { error: 'Type DELETE (all caps) to confirm.' };
 
   const deleteResult = await deleteUnpublishedBranchDecision({
     tenantId,
     branchId,
+    confirmation,
   });
   if ("error" in deleteResult) return deleteResult;
 
