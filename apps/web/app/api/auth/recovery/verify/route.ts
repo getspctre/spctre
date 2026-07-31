@@ -77,7 +77,11 @@ async function handlePostApiAuthRecoveryVerify(request: Request) {
     `;
   }
 
-  const loginPrincipal = await getPrincipalForLogin(principal.principalId).catch(() => null);
+  // Recovery verification runs before a session/tenant context exists, so read
+  // the RLS-gated app_principal row via the owner connection (rawSql), deriving
+  // the trusted principal/tenant from that row. createAuthSession and the
+  // workspace lookup below bind the tenant themselves.
+  const loginPrincipal = await getPrincipalForLogin(principal.principalId, rawSql).catch(() => null);
   if (!loginPrincipal || loginPrincipal.disabled_at) {
     return NextResponse.json({ error: "principal_unavailable" }, { status: 403 });
   }

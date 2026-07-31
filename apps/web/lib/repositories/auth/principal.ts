@@ -1,5 +1,5 @@
 import { createHash } from "crypto";
-import { sql, rawSql } from "@/lib/db";
+import { sql, rawSql, runWithTenantContext } from "@/lib/db";
 
 export async function findUserPrincipalIdByIdentifier(params: {
   tenantId: string;
@@ -28,15 +28,19 @@ export async function getPrincipalSubject(params: {
 }): Promise<string | null> {
   if (!sql) return null;
 
-  const rows = await sql<{ subject: string }[]>`
-    SELECT subject
-    FROM app_principal
-    WHERE id = ${params.principalId}
-      AND tenant_id = ${params.tenantId}
-    LIMIT 1
-  `;
+  // app_principal is RLS-gated; passkey login reads this before a session/tenant
+  // context exists, so scope the lookup to the trusted tenant.
+  return runWithTenantContext(params.tenantId, async () => {
+    const rows = await sql<{ subject: string }[]>`
+      SELECT subject
+      FROM app_principal
+      WHERE id = ${params.principalId}
+        AND tenant_id = ${params.tenantId}
+      LIMIT 1
+    `;
 
-  return rows[0]?.subject ?? null;
+    return rows[0]?.subject ?? null;
+  });
 }
 
 /** @eeBoundary consumed by ee/web/saml via ee-adapters (knip ignores ee/) */
@@ -48,35 +52,39 @@ export async function upsertSamlPrincipal(params: {
 }): Promise<string | null> {
   if (!sql) return null;
 
-  const existing = await sql<{ id: string }[]>`
-    SELECT id
-    FROM app_principal
-    WHERE tenant_id = ${params.tenantId}
-      AND subject = ${params.subject}
-    LIMIT 1
-  `;
-
-  if (existing.length) {
-    const principalId = existing[0].id;
-    await sql`
-      UPDATE app_principal
-      SET display_name = ${params.displayName},
-          email = ${params.email},
-          auth_method = 'SAML',
-          last_idp_sync_at = now()
-      WHERE id = ${principalId}
-        AND tenant_id = ${params.tenantId}
+  // app_principal is RLS-gated and the SAML callback runs before a tenant is
+  // bound; scope the upsert to the trusted tenant from the validated assertion.
+  return runWithTenantContext(params.tenantId, async () => {
+    const existing = await sql<{ id: string }[]>`
+      SELECT id
+      FROM app_principal
+      WHERE tenant_id = ${params.tenantId}
+        AND subject = ${params.subject}
+      LIMIT 1
     `;
-    return principalId;
-  }
 
-  const inserted = await sql<{ id: string }[]>`
-    INSERT INTO app_principal (tenant_id, subject, display_name, email, principal_type, auth_method, last_idp_sync_at)
-    VALUES (${params.tenantId}, ${params.subject}, ${params.displayName}, ${params.email}, 'USER', 'SAML', now())
-    RETURNING id
-  `;
+    if (existing.length) {
+      const principalId = existing[0].id;
+      await sql`
+        UPDATE app_principal
+        SET display_name = ${params.displayName},
+            email = ${params.email},
+            auth_method = 'SAML',
+            last_idp_sync_at = now()
+        WHERE id = ${principalId}
+          AND tenant_id = ${params.tenantId}
+      `;
+      return principalId;
+    }
 
-  return inserted[0]?.id ?? null;
+    const inserted = await sql<{ id: string }[]>`
+      INSERT INTO app_principal (tenant_id, subject, display_name, email, principal_type, auth_method, last_idp_sync_at)
+      VALUES (${params.tenantId}, ${params.subject}, ${params.displayName}, ${params.email}, 'USER', 'SAML', now())
+      RETURNING id
+    `;
+
+    return inserted[0]?.id ?? null;
+  });
 }
 
 export async function upsertOidcPrincipal(params: {
@@ -87,35 +95,39 @@ export async function upsertOidcPrincipal(params: {
 }): Promise<string | null> {
   if (!sql) return null;
 
-  const existing = await sql<{ id: string }[]>`
-    SELECT id
-    FROM app_principal
-    WHERE tenant_id = ${params.tenantId}
-      AND subject = ${params.subject}
-    LIMIT 1
-  `;
-
-  if (existing.length) {
-    const principalId = existing[0].id;
-    await sql`
-      UPDATE app_principal
-      SET display_name = ${params.displayName},
-          email = ${params.email},
-          auth_method = 'OIDC',
-          last_idp_sync_at = now()
-      WHERE id = ${principalId}
-        AND tenant_id = ${params.tenantId}
+  // app_principal is RLS-gated and OIDC callback runs before a tenant is bound;
+  // scope the upsert to the trusted tenant from the validated IdP claims.
+  return runWithTenantContext(params.tenantId, async () => {
+    const existing = await sql<{ id: string }[]>`
+      SELECT id
+      FROM app_principal
+      WHERE tenant_id = ${params.tenantId}
+        AND subject = ${params.subject}
+      LIMIT 1
     `;
-    return principalId;
-  }
 
-  const inserted = await sql<{ id: string }[]>`
-    INSERT INTO app_principal (tenant_id, subject, display_name, email, principal_type, auth_method, last_idp_sync_at)
-    VALUES (${params.tenantId}, ${params.subject}, ${params.displayName}, ${params.email}, 'USER', 'OIDC', now())
-    RETURNING id
-  `;
+    if (existing.length) {
+      const principalId = existing[0].id;
+      await sql`
+        UPDATE app_principal
+        SET display_name = ${params.displayName},
+            email = ${params.email},
+            auth_method = 'OIDC',
+            last_idp_sync_at = now()
+        WHERE id = ${principalId}
+          AND tenant_id = ${params.tenantId}
+      `;
+      return principalId;
+    }
 
-  return inserted[0]?.id ?? null;
+    const inserted = await sql<{ id: string }[]>`
+      INSERT INTO app_principal (tenant_id, subject, display_name, email, principal_type, auth_method, last_idp_sync_at)
+      VALUES (${params.tenantId}, ${params.subject}, ${params.displayName}, ${params.email}, 'USER', 'OIDC', now())
+      RETURNING id
+    `;
+
+    return inserted[0]?.id ?? null;
+  });
 }
 
 export async function upsertPrincipalExternalIdentity(params: {
@@ -128,33 +140,37 @@ export async function upsertPrincipalExternalIdentity(params: {
 }): Promise<"ok" | "db-unavailable"> {
   if (!sql) return "db-unavailable";
 
-  await sql`
-    INSERT INTO principal_external_identity (
-      principal_id,
-      tenant_id,
-      provider_id,
-      external_subject,
-      external_email,
-      last_authenticated_at,
-      metadata
-    ) VALUES (
-      ${params.principalId},
-      ${params.tenantId},
-      ${params.providerId},
-      ${params.externalSubject},
-      ${params.externalEmail},
-      now(),
-      ${JSON.stringify({ issuer: params.issuer })}::jsonb
-    )
-    ON CONFLICT (provider_id, external_subject) DO UPDATE SET
-      principal_id = EXCLUDED.principal_id,
-      tenant_id = EXCLUDED.tenant_id,
-      external_email = EXCLUDED.external_email,
-      last_authenticated_at = now(),
-      metadata = EXCLUDED.metadata
-  `;
+  // principal_external_identity is RLS-gated; bind the trusted tenant so the
+  // OIDC callback can record the link before a session/tenant context exists.
+  return runWithTenantContext<"ok" | "db-unavailable">(params.tenantId, async () => {
+    await sql`
+      INSERT INTO principal_external_identity (
+        principal_id,
+        tenant_id,
+        provider_id,
+        external_subject,
+        external_email,
+        last_authenticated_at,
+        metadata
+      ) VALUES (
+        ${params.principalId},
+        ${params.tenantId},
+        ${params.providerId},
+        ${params.externalSubject},
+        ${params.externalEmail},
+        now(),
+        ${JSON.stringify({ issuer: params.issuer })}::jsonb
+      )
+      ON CONFLICT (provider_id, external_subject) DO UPDATE SET
+        principal_id = EXCLUDED.principal_id,
+        tenant_id = EXCLUDED.tenant_id,
+        external_email = EXCLUDED.external_email,
+        last_authenticated_at = now(),
+        metadata = EXCLUDED.metadata
+    `;
 
-  return "ok";
+    return "ok";
+  });
 }
 
 export async function upsertLocalDevPrincipal(params: {

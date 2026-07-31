@@ -117,6 +117,12 @@ async function runWithTransientRetry<T>(readOnly: boolean, run: () => Promise<T>
   throw lastErr;
 }
 
+// For pre-authentication reads that must use the owner connection before a
+// tenant can be derived (for example, bearer-token hash lookups).
+export function runWithTransientReadRetry<T>(run: () => Promise<T>): Promise<T> {
+  return runWithTransientRetry(true, run);
+}
+
 function createTenantAwareClient(client: SqlClient): SqlClient {
   const raw = client as any;
 
