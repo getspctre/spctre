@@ -37,7 +37,7 @@ describe("default approval workflow repository", () => {
     ]);
   });
 
-  it("keeps the Security and Platform default when multiple reviewers are eligible", async () => {
+  it("uses one satisfiable lane when multiple reviewers are eligible", async () => {
     sqlMock.mockImplementation(async (strings: TemplateStringsArray) => {
       const query = Array.from(strings).join(" ");
       if (query.includes("WITH candidate_workflows")) return [];
@@ -57,7 +57,29 @@ describe("default approval workflow repository", () => {
 
     expect(repository.approvalRulesFromWorkflow(workflow)).toEqual([
       { role: "Security", requiredCount: 1 },
-      { role: "Platform", requiredCount: 1 },
+    ]);
+  });
+
+  it("prefers the owner's Admin lane even when another reviewer-capable principal exists", async () => {
+    sqlMock.mockImplementation(async (strings: TemplateStringsArray) => {
+      const query = Array.from(strings).join(" ");
+      if (query.includes("WITH candidate_workflows")) return [];
+      if (query.includes("FROM principal_permission_grant")) {
+        return [
+          { principal_id: "owner-1", reviewer_roles: ["Admin", "Security", "Platform"] },
+          { principal_id: "service-user", reviewer_roles: ["Security"] },
+        ];
+      }
+      throw new Error(`unexpected query: ${query}`);
+    });
+
+    const workflow = await repository.getApprovalWorkflowForContext({
+      tenantId: "tenant-1",
+      workspaceId: "workspace-1",
+    });
+
+    expect(repository.approvalRulesFromWorkflow(workflow)).toEqual([
+      { role: "Admin", requiredCount: 1 },
     ]);
   });
 });
