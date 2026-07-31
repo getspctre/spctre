@@ -33,6 +33,7 @@ const SERVICE_API_PATHS = new Set([
   "/api/verification",
   "/api/v1/verification",
   "/api/v1/openapi.json",
+  "/api/v1/policy/imports",
   "/api/compliance/seal",
   "/api/token/refresh",
   "/api/v1/token/refresh",

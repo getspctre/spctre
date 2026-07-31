@@ -88,6 +88,18 @@ describe("proxy rate limiting", () => {
     expect(response.status).toBe(200);
   });
 
+  it("passes policy imports through to their bearer-authenticated route", async () => {
+    process.env.DATABASE_URL = "postgres://spctre.test/app";
+
+    const { proxy } = await import("../proxy");
+    const response = await proxy(makeRequest("/api/v1/policy/imports", "203.0.113.10", {
+      method: "POST",
+      headers: { authorization: "Bearer policy-import-token" },
+    }));
+
+    expect(response.status).toBe(200);
+  });
+
   it("rejects cookie-authenticated mutations from a mismatched origin", async () => {
     process.env.DATABASE_URL = "postgres://spctre.test/app";
 
