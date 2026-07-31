@@ -1,12 +1,13 @@
 #!/usr/bin/env node
 import { Command } from "commander";
+import { SPCTRE_VERSION } from "./version.js";
 
 const program = new Command();
 
 program
   .name("spctre")
   .description("Control plane CLI for governed agent systems")
-  .version("0.1.0")
+  .version(SPCTRE_VERSION)
   .option("--non-interactive", "disable all prompts; fail fast on missing inputs (auto-set when CI=true)");
 
 program
