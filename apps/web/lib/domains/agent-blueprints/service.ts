@@ -7,12 +7,19 @@ import {
   createAgentBlueprintRevision,
   getAgentBlueprint,
   getPublishedAgentBlueprintRuntime,
-  getPublishedAgentBlueprintRuntimeByAgent,
+  getPublishedAgentBlueprintRuntimeByAgent as getPublishedAgentBlueprintRuntimeByAgentInTenant,
   listAgentBlueprints,
   rollbackAgentBlueprint,
   simulateAgentBlueprintRevision,
   setAgentBlueprintRevisionStatus,
 } from "@/lib/repositories/agent-blueprints";
+import { runWithTenantContext } from "@/lib/tenant-context";
+
+export async function getPublishedAgentBlueprintRuntimeByAgent(
+  params: Parameters<typeof getPublishedAgentBlueprintRuntimeByAgentInTenant>[0]
+) {
+  return runWithTenantContext(params.tenantId, () => getPublishedAgentBlueprintRuntimeByAgentInTenant(params));
+}
 
 function normalizedStrings(value: unknown, field: string, issues: string[]): string[] {
   if (!Array.isArray(value) || value.some((item) => typeof item !== "string" || !item.trim())) {
@@ -112,5 +119,5 @@ export async function publishBlueprintRevision(input: {
 export { rollbackAgentBlueprint };
 export { simulateAgentBlueprintRevision };
 
-export { createAgentBlueprint, createAgentBlueprintRevision, getAgentBlueprint, getPublishedAgentBlueprintRuntime, getPublishedAgentBlueprintRuntimeByAgent, listAgentBlueprints, setAgentBlueprintRevisionStatus, getAgentBlueprintApprovals };
+export { createAgentBlueprint, createAgentBlueprintRevision, getAgentBlueprint, getPublishedAgentBlueprintRuntime, listAgentBlueprints, setAgentBlueprintRevisionStatus, getAgentBlueprintApprovals };
 export type { AgentBlueprintStatus };

@@ -3,7 +3,7 @@ import { getSpctrePlan } from "@/lib/feature-flags-server";
 import { isFeatureEnabledForPlan } from "@/lib/feature-flags";
 import { authenticateServiceToken } from "@/lib/service-tokens";
 import { getActiveScope } from "@/lib/workspace";
-import { queryForensicEvidence } from "@/lib/repositories/evidence";
+import { queryForensicEvidence } from "@/lib/domains/evidence/service";
 import { extractTraceId, makeMeta, withTraceId } from "@spctre/api-contracts";
 import { swallow } from "@/lib/platform/swallow";
 

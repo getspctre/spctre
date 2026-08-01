@@ -23,6 +23,7 @@ import { getAuthSession } from "@/lib/auth-session";
 import { findActorById } from "@/lib/actors";
 import { sendMemberInviteEmail } from "@/lib/email";
 import { swallow } from "@/lib/platform/swallow";
+import { runWithTenantContext } from "@/lib/tenant-context";
 
 export type { OrganizationMember, WorkspaceSummary } from "@/lib/repositories/members";
 
@@ -65,7 +66,7 @@ export async function getMembersPageModel(): Promise<MembersPageModel> {
 }
 
 export async function listOrganizationMembersForApi(tenantId: string) {
-  return listOrganizationMembers(tenantId);
+  return runWithTenantContext(tenantId, () => listOrganizationMembers(tenantId));
 }
 
 export type MemberActionState =

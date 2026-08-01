@@ -28,6 +28,7 @@ import {
 } from "@/lib/repositories/auth/session";
 import { countUnusedRecoveryCodes } from "@/lib/repositories/auth/recovery";
 import { isDatabaseConfigured } from "@/lib/repositories/shared/database";
+import { runWithTenantContext } from "@/lib/tenant-context";
 import {
   listIdentityProviders,
   upsertSamlIdentityProvider,
@@ -107,8 +108,8 @@ export async function revokeServiceKeyById(params: {
   return revokeApiKey(params);
 }
 
-export async function revokeBearerServiceToken(tokenId: string) {
-  return revokeServiceTokenAndRefresh(tokenId);
+export async function revokeBearerServiceToken(params: { tokenId: string; tenantId: string }) {
+  return runWithTenantContext(params.tenantId, () => revokeServiceTokenAndRefresh(params.tokenId));
 }
 
 export async function listTokenRevocations(params: {

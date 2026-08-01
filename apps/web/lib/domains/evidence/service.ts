@@ -10,6 +10,7 @@ import {
   listRuntimeEvidenceKeyset,
   listSimulationRuns,
   persistSimulationRun,
+  queryForensicEvidence as queryForensicEvidenceInTenant,
   type SimulationRunSummary,
 } from "@/lib/repositories/evidence";
 import { buildKeysetPage, decodeCursor } from "@/lib/pagination/keyset";
@@ -53,6 +54,9 @@ import { swallow } from "@/lib/platform/swallow";
 export type { SimulationRunSummary } from "@/lib/repositories/evidence";
 export type { RuleHeatEntry, UnusedRule } from "@/lib/repositories/policy";
 
+export async function queryForensicEvidence(params: Parameters<typeof queryForensicEvidenceInTenant>[0]) {
+  return runWithTenantContext(params.tenantId, () => queryForensicEvidenceInTenant(params));
+}
 
 function emptySimulationRun(): SimulationRun {
   return {

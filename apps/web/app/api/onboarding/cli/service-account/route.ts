@@ -4,6 +4,7 @@ import {
   verifyWorkspaceSlugForServiceToken,
 } from "@/lib/domains/workspace/service";
 import { authenticateServiceToken } from "@/lib/service-tokens";
+import { runWithTenantContext } from "@/lib/tenant-context";
 import { extractTraceId, makeMeta, withTraceId } from "@spctre/api-contracts";
 import { isDemoTenant } from "@/lib/demo-guard";
 
@@ -62,12 +63,14 @@ async function handlePostApiOnboardingCliServiceAccount(request: Request) {
 
   let starter;
   try {
-    starter = await ensureStarterPublishedBundle({
-    tenantId: auth.auth.tenantId,
-    workspaceId: workspace.id,
-    actorId: auth.auth.principalId,
-    environment,
-  });
+    starter = await runWithTenantContext(auth.auth.tenantId, () =>
+      ensureStarterPublishedBundle({
+        tenantId: auth.auth.tenantId,
+        workspaceId: workspace.id,
+        actorId: auth.auth.principalId,
+        environment,
+      })
+    );
   } catch (err) {
     console.error("[onboarding/cli/service-account] ensureStarterPublishedBundle failed", err);
     return withTraceId(Response.json({ error: "Service temporarily unavailable.", meta: makeMeta(traceId) }, { status: 503 }), traceId);

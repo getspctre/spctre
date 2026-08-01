@@ -32,7 +32,7 @@ async function handlePostApiTokenRevoke(request: Request) {
   }
 
   const { tokenId } = auth.auth;
-  const revokeResult = await revokeBearerServiceToken(tokenId);
+  const revokeResult = await revokeBearerServiceToken({ tokenId, tenantId: auth.auth.tenantId });
   if (revokeResult === "db-unavailable") {
     incrementCounter("spctre.api.errors", 1, { ...spanAttrs, "http.response.status_code": "503" });
     return withTraceId(Response.json({ error: "Database not configured." }, { status: 503 }), traceId);
