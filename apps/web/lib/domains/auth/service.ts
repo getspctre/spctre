@@ -379,7 +379,7 @@ export async function updateTenantMfaSettings(params: {
 
 export async function bootstrapDemoTenant(): Promise<{ ok: boolean } | { error: string }> {
   if (!isDatabaseConfigured()) return { error: "Database not configured." };
-  await ensureAuthDemoTenant();
+  if (!await ensureAuthDemoTenant()) return { error: "Demo Cloud is disabled on this deployment." };
   return { ok: true };
 }
 

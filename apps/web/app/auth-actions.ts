@@ -34,7 +34,8 @@ type MfaVerifyState =
   | null;
 
 export async function launchDemoCloud(): Promise<void> {
-  await bootstrapDemoTenant();
+  const bootstrap = await bootstrapDemoTenant();
+  if ("error" in bootstrap) redirect("/login?error=demo_unavailable");
 
   const principal = await authenticatePrincipalForLogin(DEMO_PRINCIPAL_IDS.owner);
   if (!principal || principal.tenant_id !== DEMO_TENANT_ID) {

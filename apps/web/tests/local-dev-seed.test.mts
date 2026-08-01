@@ -310,7 +310,7 @@ vi.mock("@spctre/platform", () => ({
 
 process.env.DATABASE_URL = "postgres://spctre-local-dev";
 
-const { ensureDemoTenant } = await import("../lib/repositories/seed/local-dev");
+const { canBootstrapDemoTenant, ensureDemoTenant } = await import("../lib/repositories/seed/local-dev");
 
 describe("local dev seeded workspace", () => {
   beforeEach(() => {
@@ -336,6 +336,23 @@ describe("local dev seeded workspace", () => {
     seedState.sql.mockClear();
     seedState.tx.mockClear();
     seedState.sql.begin.mockClear();
+  });
+
+  it("requires an explicit opt-in before seeding a production deployment", () => {
+    const previousNodeEnv = process.env.NODE_ENV;
+    const previousDemoEnabled = process.env.SPCTRE_ENABLE_DEMO_TENANT;
+    process.env.NODE_ENV = "production";
+    delete process.env.SPCTRE_ENABLE_DEMO_TENANT;
+
+    expect(canBootstrapDemoTenant()).toBe(false);
+
+    process.env.SPCTRE_ENABLE_DEMO_TENANT = "true";
+    expect(canBootstrapDemoTenant()).toBe(true);
+
+    if (previousNodeEnv === undefined) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = previousNodeEnv;
+    if (previousDemoEnabled === undefined) delete process.env.SPCTRE_ENABLE_DEMO_TENANT;
+    else process.env.SPCTRE_ENABLE_DEMO_TENANT = previousDemoEnabled;
   });
 
   it("installs, approves, and publishes the Spctre embedded-agent governance pack into default and production-pilot targets", async () => {
