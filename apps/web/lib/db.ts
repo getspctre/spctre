@@ -34,17 +34,33 @@ async function resolveTenantContext(): Promise<string | null> {
   const explicit = getBoundTenantId();
   if (explicit) return explicit;
 
+  let bearerRequest = false;
   try {
-    const { cookies } = await import("next/headers");
-    const cookieStore = await cookies();
-    const sessionId = cookieStore.get("spctre_session_id")?.value;
-    const guardToken = cookieStore.get(SESSION_GUARD_COOKIE)?.value;
-    if (sessionId && guardToken) {
-      const claims = await verifySessionGuardToken(guardToken, sessionId);
-      if (claims?.tid) return claims.tid;
+    const { cookies, headers } = await import("next/headers");
+    const requestHeaders = await headers();
+    bearerRequest = /^Bearer\s+/i.test(requestHeaders.get("authorization") ?? "");
+    if (!bearerRequest) {
+      const cookieStore = await cookies();
+      const sessionId = cookieStore.get("spctre_session_id")?.value;
+      const guardToken = cookieStore.get(SESSION_GUARD_COOKIE)?.value;
+      if (sessionId && guardToken) {
+        const claims = await verifySessionGuardToken(guardToken, sessionId);
+        if (claims?.tid) return claims.tid;
+      }
     }
   } catch {
     // Not running in a request context.
+  }
+
+  if (bearerRequest) {
+    incrementCounter("spctre.db.unbound_tenant_context", 1, {
+      environment: process.env.NODE_ENV ?? "development",
+      auth_mode: "bearer",
+    });
+    throw new Error(
+      "Bearer-token database work requires an explicit tenant context. " +
+        "Wrap tenant-scoped work in runWithTenantContext."
+    );
   }
 
   const explicitDefault = process.env.SPCTRE_DEFAULT_TENANT_ID?.trim();
