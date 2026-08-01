@@ -3,12 +3,12 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, AlertTriangle, ChevronRight } from "lucide-react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { logoutControlPlane } from "./auth-actions";
-import { setActiveTenant, setActiveWorkspace } from "./workspace-actions";
+import { setActiveTenant, setActiveWorkspace, type WorkspaceSwitchState } from "./workspace-actions";
 import { useActionState } from "react";
 import type { TenantSummary, WorkspaceSummary } from "@/lib/workspace/types";
-import { buildWorkspacePath } from "@/lib/workspace/path";
+import { buildWorkspacePath, buildWorkspaceSwitchPath } from "@/lib/workspace/path";
 import { APP_VIEW_MODE_COOKIE, type AppViewMode } from "@/lib/app-view-mode";
 import { FEATURE_FLAGS } from "@/lib/feature-flags";
 import { useFeatureFlag } from "./feature-flags";
@@ -370,6 +370,43 @@ function ViewModeToggle({
   );
 }
 
+/**
+ * Rewrites the URL to the newly selected workspace after a switch, keeping the
+ * equivalent scoped route and query. Runs only for a fresh switch action:
+ * workspaceState persists across navigations (TopNav lives in the layout and
+ * never remounts), so without the ref guard the effect would re-fire on every
+ * later navigation and bounce the user off global routes (e.g. /admin) back to
+ * the workspace home.
+ */
+function useWorkspaceSwitchRedirect(
+  workspaceState: WorkspaceSwitchState,
+  workspaceOptions: WorkspaceSummary[]
+) {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const handledWorkspaceState = useRef<WorkspaceSwitchState>(null);
+
+  useEffect(() => {
+    if (!workspaceState || "error" in workspaceState) return;
+    if (handledWorkspaceState.current === workspaceState) return;
+    handledWorkspaceState.current = workspaceState;
+
+    const workspace = workspaceOptions.find((option) => option.id === workspaceState.workspaceId);
+    if (!workspace) return;
+
+    const search = searchParams.toString();
+    const nextPath = buildWorkspaceSwitchPath({
+      workspaceSlug: workspace.slug,
+      pathname,
+      search,
+      knownWorkspaceSlugs: workspaceOptions.map((option) => option.slug),
+    });
+    const currentPath = `${pathname}${search ? `?${search}` : ""}`;
+    if (nextPath !== currentPath) router.replace(nextPath);
+  }, [pathname, router, searchParams, workspaceOptions, workspaceState]);
+}
+
 export function TopNav({
   tenantLabel,
   activeTenantId,
@@ -422,6 +459,8 @@ export function TopNav({
       );
     });
   }, [workspaceOptions, workspaceQuery]);
+
+  useWorkspaceSwitchRedirect(workspaceState, workspaceOptions);
 
   return (
     <header className="topNav">

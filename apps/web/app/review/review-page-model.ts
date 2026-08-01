@@ -60,6 +60,7 @@ export interface ReviewPageModel {
   actor: Actor;
   branches: Branch[];
   activeBranch: Branch | undefined;
+  requestedBranchUnavailable: boolean;
   usingRealBranch: boolean;
   approvals: Approval[];
   reviewArtifacts: ReviewArtifactsModel | null;
@@ -255,10 +256,12 @@ export async function getReviewPageModel({
   const useDemoFallbackData = canUseDemoFallbackData(workspaceContext.tenantId);
   const branches = await resolveReviewBranches(workspaceContext, useDemoFallbackData ? mockBranches : []);
 
-  const activeBranch =
-    branches.find((b) => b.id === selectedBranchId) ??
-    branches.find((b) => b.status !== "PUBLISHED") ??
-    branches[0];
+  const requestedBranchUnavailable = Boolean(selectedBranchId) && !branches.some((branch) => branch.id === selectedBranchId);
+  const activeBranch = requestedBranchUnavailable
+    ? undefined
+    : branches.find((branch) => branch.id === selectedBranchId) ??
+      branches.find((branch) => branch.status !== "PUBLISHED") ??
+      branches[0];
 
   const usingRealBranch = branches !== mockBranches && !!activeBranch;
 
@@ -266,7 +269,7 @@ export async function getReviewPageModel({
     await loadActiveRevisionData(workspaceContext, activeBranch, usingRealBranch);
 
   const { activeComposition, activeDiff, activeArtifact, activeBundle, changedRuleIds } =
-    resolveActiveArtifacts(reviewArtifacts, useDemoFallbackData, {
+    resolveActiveArtifacts(reviewArtifacts, useDemoFallbackData && !requestedBranchUnavailable, {
       compositionPreview,
       revisionDiff,
       artifactExport,
@@ -329,6 +332,7 @@ export async function getReviewPageModel({
     actor,
     branches,
     activeBranch,
+    requestedBranchUnavailable,
     usingRealBranch,
     approvals,
     reviewArtifacts,

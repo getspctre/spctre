@@ -147,6 +147,7 @@ export async function ReviewPageContent({
         readiness={model.readiness}
         readinessPillClass={model.readinessPillClass}
         activeBranch={model.activeBranch}
+        requestedBranchUnavailable={model.requestedBranchUnavailable}
         branches={model.branches}
         workspaceSlug={model.workspaceContext.workspaceSlug}
         nextStep={nextStep}

@@ -13,6 +13,7 @@ interface ReviewHeaderProps {
   readiness: PublishReadiness;
   readinessPillClass: string;
   activeBranch: PolicyBranch | undefined;
+  requestedBranchUnavailable: boolean;
   branches: PolicyBranch[];
   workspaceSlug: string | undefined;
   nextStep: { eyebrow: string; label: string; description: string; href: string; action: string } | null;
@@ -25,6 +26,7 @@ export function ReviewHeader({
   readiness,
   readinessPillClass,
   activeBranch,
+  requestedBranchUnavailable,
   branches,
   workspaceSlug,
   nextStep,
@@ -72,6 +74,11 @@ export function ReviewHeader({
             selectedId={activeBranch?.id}
             workspaceSlug={workspaceSlug ?? ""}
           />
+          {requestedBranchUnavailable ? (
+            <p className="importError" role="alert">
+              The requested branch is unavailable in this workspace. Choose a branch to continue.
+            </p>
+          ) : null}
           {activeBranch ? (
             <div className="reviewProvenance">
               <span>

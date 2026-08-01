@@ -59,13 +59,23 @@ describe("review domain service", () => {
   it("getReviewPageModel returns demo fallback data for demo tenant", async () => {
     const model = await getReviewPageModel({
       workspaceSlug: "default",
-      selectedBranchId: "branch-demo",
     });
 
     expect(model.workspaceContext.tenantId).toBe("00000000-0000-0000-0000-000000000001");
     expect(model.branches.length).toBeGreaterThan(0);
     expect(model.usingRealBranch).toBe(false);
     expect(model.activeDiff).not.toBeNull();
+  });
+
+  it("does not substitute another branch when a requested branch is unavailable", async () => {
+    const model = await getReviewPageModel({
+      workspaceSlug: "default",
+      selectedBranchId: "branch-missing",
+    });
+
+    expect(model.requestedBranchUnavailable).toBe(true);
+    expect(model.activeBranch).toBeUndefined();
+    expect(model.activeDiff).toBeNull();
   });
 
   it("createDraftRuleRevisionDecision returns database not configured when DB is not configured", async () => {
