@@ -14,6 +14,7 @@ export interface RuntimeConfig {
 }
 
 const VALID_PLANS = new Set<SpctrePlan>(["oss", "cloud", "business", "enterprise"]);
+let validatedProcessConfig: RuntimeConfig | undefined;
 
 function envValue(env: NodeJS.ProcessEnv, name: string): string | null {
   return env[name]?.trim() || null;
@@ -26,7 +27,7 @@ function parseBoolean(env: NodeJS.ProcessEnv, name: string): boolean {
   throw new Error(`${name} must be "true" or "false".`);
 }
 
-export function getRuntimeConfig(env: NodeJS.ProcessEnv = process.env): RuntimeConfig {
+function buildRuntimeConfig(env: NodeJS.ProcessEnv): RuntimeConfig {
   const configuredMode = envValue(env, "SPCTRE_RUNTIME_MODE");
   if (configuredMode && configuredMode !== "development" && configuredMode !== "production") {
     throw new Error('SPCTRE_RUNTIME_MODE must be "development" or "production".');
@@ -74,8 +75,24 @@ export function getRuntimeConfig(env: NodeJS.ProcessEnv = process.env): RuntimeC
   };
 }
 
+/**
+ * Reads live process configuration until startup validation succeeds. Callers
+ * with an injected environment always receive an uncached validation result.
+ */
+export function getRuntimeConfig(env?: NodeJS.ProcessEnv): RuntimeConfig {
+  if (env) return buildRuntimeConfig(env);
+  return validatedProcessConfig ?? buildRuntimeConfig(process.env);
+}
+
 export function validateRuntimeConfig(): RuntimeConfig {
-  return getRuntimeConfig();
+  const config = buildRuntimeConfig(process.env);
+  validatedProcessConfig = config;
+  return config;
+}
+
+/** Test-only reset for suites that exercise post-startup process configuration. */
+export function resetRuntimeConfigCacheForTests(): void {
+  validatedProcessConfig = undefined;
 }
 
 export function isProductionRuntime(): boolean {

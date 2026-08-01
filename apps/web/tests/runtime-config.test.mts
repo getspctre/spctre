@@ -1,11 +1,31 @@
-import { describe, expect, it } from "vitest";
-import { getRuntimeConfig } from "../lib/config/runtime";
+import { afterEach, describe, expect, it } from "vitest";
+import { getRuntimeConfig, resetRuntimeConfigCacheForTests, validateRuntimeConfig } from "../lib/config/runtime";
 
 const productionEnvironment = {
   NODE_ENV: "production",
   SPCTRE_RUNTIME_MODE: "production",
   SPCTRE_SESSION_GUARD_SECRET: "production-secret",
 };
+
+const originalEnvironment = {
+  nodeEnv: process.env.NODE_ENV,
+  runtimeMode: process.env.SPCTRE_RUNTIME_MODE,
+  plan: process.env.SPCTRE_PLAN,
+  sessionGuardSecret: process.env.SPCTRE_SESSION_GUARD_SECRET,
+};
+
+function restore(name: string, value: string | undefined) {
+  if (value === undefined) delete process.env[name];
+  else process.env[name] = value;
+}
+
+afterEach(() => {
+  resetRuntimeConfigCacheForTests();
+  restore("NODE_ENV", originalEnvironment.nodeEnv);
+  restore("SPCTRE_RUNTIME_MODE", originalEnvironment.runtimeMode);
+  restore("SPCTRE_PLAN", originalEnvironment.plan);
+  restore("SPCTRE_SESSION_GUARD_SECRET", originalEnvironment.sessionGuardSecret);
+});
 
 describe("runtime configuration", () => {
   it("rejects a production Node process without an explicit runtime mode", () => {
@@ -32,5 +52,18 @@ describe("runtime configuration", () => {
     });
 
     expect(config).toMatchObject({ mode: "production", demoTenantEnabled: true, plan: "business" });
+  });
+
+  it("caches only the validated process environment", () => {
+    process.env.NODE_ENV = "production";
+    process.env.SPCTRE_RUNTIME_MODE = "production";
+    process.env.SPCTRE_SESSION_GUARD_SECRET = "production-secret";
+    process.env.SPCTRE_PLAN = "cloud";
+
+    expect(validateRuntimeConfig().plan).toBe("cloud");
+    process.env.SPCTRE_PLAN = "enterprise";
+
+    expect(getRuntimeConfig().plan).toBe("cloud");
+    expect(getRuntimeConfig({ ...productionEnvironment, SPCTRE_PLAN: "enterprise" }).plan).toBe("enterprise");
   });
 });
