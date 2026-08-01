@@ -341,11 +341,15 @@ export async function runSimulationDecision(input: {
     }
 
     const persistedRunId = await persistSimulationRun(run, workspaceId, tenantId).catch(swallow("persistSimulationRun", null));
+    if (!persistedRunId) {
+      recordDuration("spctre.evidence.simulation.duration", Date.now() - started, { outcome: "persistence_failed" });
+      return { error: "Simulation completed but could not be saved. Please retry." };
+    }
     appendOperationsLog({
       tenantId,
       workspaceId,
       eventType: "SIMULATION_RUN",
-      sourceId: persistedRunId ?? run.id,
+      sourceId: persistedRunId,
       sourceTable: "simulation_run",
       actorId: actor.id,
       payload: {
@@ -374,7 +378,7 @@ export async function runSimulationDecision(input: {
       total: run.sourceEventCount,
       branchId: run.branchId,
       revisionId: run.revisionId,
-      runId: persistedRunId ?? run.id,
+      runId: persistedRunId,
     };
   } catch (error) {
     logger.error("[runSimulationDecision] error:", { error: error instanceof Error ? error.message : String(error) });
