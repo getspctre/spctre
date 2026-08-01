@@ -96,6 +96,14 @@ export function CommandPalette({ workspaceSlug }: CommandPaletteProps) {
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
+    if (e.key === "Tab") {
+      const focusable = [...(e.currentTarget.closest(".cmdPaletteModal")?.querySelectorAll<HTMLElement>('button:not([disabled]), input:not([disabled])') ?? [])];
+      const first = focusable[0]; const last = focusable.at(-1);
+      if (first && last && ((e.shiftKey && document.activeElement === first) || (!e.shiftKey && document.activeElement === last))) {
+        e.preventDefault(); (e.shiftKey ? last : first).focus();
+      }
+      return;
+    }
     if (e.key === "ArrowDown") {
       e.preventDefault();
       setActiveIndex((i) => Math.min(i + 1, filtered.length - 1));

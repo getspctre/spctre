@@ -39,6 +39,13 @@ export function EvidenceExportDialog() {
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") setOpen(false);
+      if (event.key === "Tab" && dialogRef.current) {
+        const focusable = [...dialogRef.current.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), input:not([disabled])')];
+        const first = focusable[0]; const last = focusable.at(-1);
+        if (first && last && ((event.shiftKey && document.activeElement === first) || (!event.shiftKey && document.activeElement === last))) {
+          event.preventDefault(); (event.shiftKey ? last : first).focus();
+        }
+      }
     };
 
     window.addEventListener("keydown", onKeyDown);
