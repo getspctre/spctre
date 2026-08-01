@@ -35,7 +35,7 @@ export function ComposeReviewButton({
         {isPending ? <Loader size={16} className="spin" /> : <Combine size={16} />}
         {isPending ? "Preparing review bundle..." : "Prepare review bundle"}
       </button>
-      {state?.error ? <p className="meta publishError">{state.error}</p> : null}
+      {state?.error ? <p className="meta publishError" role="alert">{state.error}</p> : null}
     </form>
   );
 }

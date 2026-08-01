@@ -5,6 +5,7 @@ import { getTranslations } from "next-intl/server";
 import { getAuthSession } from "@/lib/auth-session";
 import { isDemoTenant } from "@/lib/demo-guard";
 import { approveDevice } from "./actions";
+import { PendingSubmitButton } from "@/app/pending-submit-button";
 import { swallow } from "@/lib/platform/swallow";
 
 export const dynamic = "force-dynamic";
@@ -101,10 +102,10 @@ export default async function DeviceAuthPage({
             required
           />
           <div className="toolbar">
-            <button className="button buttonPrimary" type="submit">
+            <PendingSubmitButton pendingLabel="Approving…">
               <ShieldCheck size={16} />
               {t("approve")}
-            </button>
+            </PendingSubmitButton>
           </div>
         </form>
       ) : (

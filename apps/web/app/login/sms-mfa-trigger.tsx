@@ -45,7 +45,7 @@ export function SmsMfaTrigger() {
         {status === "sent" && t("sent")}
         {status === "error" && t("retry")}
       </button>
-      {error && <p className="meta workspaceError" style={{ color: "var(--red)", fontSize: "12px", margin: 0 }}>{error}</p>}
+      {error && <p className="meta workspaceError" role="alert" style={{ color: "var(--red)", fontSize: "12px", margin: 0 }}>{error}</p>}
     </div>
   );
 }
