@@ -198,7 +198,7 @@ export async function switchTenant(params: {
   principalId: string;
   subject: string;
   sessionId: string | undefined;
-}): Promise<{ ok: true; firstWorkspaceId: string | null; requiresMfa?: boolean; targetPrincipalId?: string; targetPrincipalSubject?: string } | { error: string }> {
+}): Promise<{ ok: true; firstWorkspaceId: string | null; firstWorkspaceSlug: string | null; requiresMfa?: boolean; targetPrincipalId?: string; targetPrincipalSubject?: string } | { error: string }> {
   if (isDatabaseConfigured()) {
     await ensureAuthDemoTenant();
 
@@ -220,6 +220,9 @@ export async function switchTenant(params: {
     if (!targetTenant) return { error: "Tenant is not available to the signed-in principal." };
 
     const firstWorkspaceId = await getFirstWorkspaceId(params.tenantId);
+    const firstWorkspaceSlug = firstWorkspaceId
+      ? (await listWorkspacesForTenant(params.tenantId)).find((workspace) => workspace.id === firstWorkspaceId)?.slug ?? null
+      : null;
     let targetRequiresMfa = false;
 
     if (params.sessionId) {
@@ -246,13 +249,14 @@ export async function switchTenant(params: {
     return {
       ok: true,
       firstWorkspaceId,
+      firstWorkspaceSlug,
       requiresMfa: targetRequiresMfa,
       targetPrincipalId: targetTenant.principal_id,
       targetPrincipalSubject: targetTenant.principal_subject,
     };
   }
 
-  return { ok: true, firstWorkspaceId: null };
+  return { ok: true, firstWorkspaceId: null, firstWorkspaceSlug: null };
 }
 
 export async function switchActor(params: {

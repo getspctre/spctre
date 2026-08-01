@@ -18,7 +18,9 @@ interface NavItemProps {
 
 function NavItem({ href, icon, badge, children }: NavItemProps) {
   const pathname = usePathname();
-  const active = pathname === href;
+  const active = href.endsWith(`/${pathname.split("/").filter(Boolean)[0] ?? ""}`)
+    ? pathname === href
+    : pathname === href || pathname.startsWith(`${href}/`);
   return (
     <Link
       className="navItem"

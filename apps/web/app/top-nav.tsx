@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, AlertTriangle, ChevronRight } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { logoutControlPlane } from "./auth-actions";
-import { setActiveTenant, setActiveWorkspace, type WorkspaceSwitchState } from "./workspace-actions";
+import { setActiveTenant, setActiveWorkspace, type TenantSwitchState, type WorkspaceSwitchState } from "./workspace-actions";
 import { useActionState } from "react";
 import type { TenantSummary, WorkspaceSummary } from "@/lib/workspace/types";
 import { buildWorkspacePath, buildWorkspaceSwitchPath } from "@/lib/workspace/path";
@@ -110,7 +110,6 @@ function WorkspaceSwitcherMenu({
               defaultValue={activeTenantId}
               onChange={(event) => {
                 event.currentTarget.form?.requestSubmit();
-                closeMenu();
               }}
             >
               {tenantOptions.map((tenant) => (
@@ -154,7 +153,6 @@ function WorkspaceSwitcherMenu({
           disabled={!filteredWorkspaces.length}
           onChange={(event) => {
             event.currentTarget.form?.requestSubmit();
-            closeMenu();
           }}
         >
           {filteredWorkspaces.map((workspace) => (
@@ -407,6 +405,16 @@ function useWorkspaceSwitchRedirect(
   }, [pathname, router, searchParams, workspaceOptions, workspaceState]);
 }
 
+function useTenantSwitchRedirect(tenantState: TenantSwitchState) {
+  const router = useRouter();
+  const handledTenantState = useRef<TenantSwitchState>(null);
+  useEffect(() => {
+    if (!tenantState || "error" in tenantState || handledTenantState.current === tenantState) return;
+    handledTenantState.current = tenantState;
+    router.replace(tenantState.workspaceSlug ? `/${tenantState.workspaceSlug}` : "/");
+  }, [router, tenantState]);
+}
+
 export function TopNav({
   tenantLabel,
   activeTenantId,
@@ -461,6 +469,7 @@ export function TopNav({
   }, [workspaceOptions, workspaceQuery]);
 
   useWorkspaceSwitchRedirect(workspaceState, workspaceOptions);
+  useTenantSwitchRedirect(tenantState);
 
   return (
     <header className="topNav">
