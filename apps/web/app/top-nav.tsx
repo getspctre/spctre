@@ -411,6 +411,10 @@ function useTenantSwitchRedirect(tenantState: TenantSwitchState) {
   useEffect(() => {
     if (!tenantState || "error" in tenantState || handledTenantState.current === tenantState) return;
     handledTenantState.current = tenantState;
+    // When the target tenant requires MFA, leave the user in place: the root
+    // layout re-renders the MFA gate (revalidatePath already fired), so pushing
+    // into the new workspace would only bounce off that gate.
+    if (tenantState.requiresMfa) return;
     router.replace(tenantState.workspaceSlug ? `/${tenantState.workspaceSlug}` : "/");
   }, [router, tenantState]);
 }

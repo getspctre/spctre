@@ -219,10 +219,11 @@ export async function switchTenant(params: {
     const targetTenant = await getTenantPrincipalBySubject({ tenantId: params.tenantId, subject: params.subject });
     if (!targetTenant) return { error: "Tenant is not available to the signed-in principal." };
 
-    const firstWorkspaceId = await getFirstWorkspaceId(params.tenantId);
-    const firstWorkspaceSlug = firstWorkspaceId
-      ? (await listWorkspacesForTenant(params.tenantId)).find((workspace) => workspace.id === firstWorkspaceId)?.slug ?? null
-      : null;
+    // `listWorkspacesForTenant` and `getFirstWorkspaceId` both order by created_at ASC,
+    // so the first row is the same workspace — one query yields both id and slug.
+    const firstWorkspace = (await listWorkspacesForTenant(params.tenantId))[0] ?? null;
+    const firstWorkspaceId = firstWorkspace?.id ?? null;
+    const firstWorkspaceSlug = firstWorkspace?.slug ?? null;
     let targetRequiresMfa = false;
 
     if (params.sessionId) {

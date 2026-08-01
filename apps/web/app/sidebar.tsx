@@ -14,11 +14,14 @@ interface NavItemProps {
   icon: React.ReactNode;
   badge?: number;
   children: React.ReactNode;
+  // The workspace home (`/{slug}`) is a prefix of every scoped route, so it must
+  // match exactly; all other items also light up on their sub-routes.
+  exact?: boolean;
 }
 
-function NavItem({ href, icon, badge, children }: NavItemProps) {
+function NavItem({ href, icon, badge, children, exact = false }: NavItemProps) {
   const pathname = usePathname();
-  const active = href.endsWith(`/${pathname.split("/").filter(Boolean)[0] ?? ""}`)
+  const active = exact
     ? pathname === href
     : pathname === href || pathname.startsWith(`${href}/`);
   return (
@@ -131,7 +134,7 @@ export function Sidebar({
           <div className="navGroup" key={group.label}>
             <p className="navLabel">{group.label}</p>
             {group.items.map((item) => (
-              <NavItem key={item.key} href={scopedHref(item.path)} icon={item.icon} badge={item.badge}>
+              <NavItem key={item.key} href={scopedHref(item.path)} icon={item.icon} badge={item.badge} exact={item.path === "/"}>
                 {item.label}
               </NavItem>
             ))}

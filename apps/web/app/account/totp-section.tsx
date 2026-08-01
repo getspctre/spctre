@@ -134,7 +134,7 @@ export function TotpSection({ existingEnrollments }: TotpSectionProps) {
               <p className="meta">
                 {t("verified_at", { date: new Date(enrollment.verifiedAt ?? enrollment.createdAt).toLocaleString() })}
               </p>
-              <form action={deleteMfaEnrollmentForm} onSubmit={(event) => { if (!window.confirm(`Remove ${enrollment.mfaType}?`)) event.preventDefault(); }}>
+              <form action={deleteMfaEnrollmentForm} onSubmit={(event) => { if (!window.confirm(t("remove_confirm", { name: enrollment.mfaType }))) event.preventDefault(); }}>
                 <input type="hidden" name="enrollmentId" value={enrollment.id} />
                 <button className="button" type="submit">
                   {t("remove")}
