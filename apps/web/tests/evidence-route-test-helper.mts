@@ -21,6 +21,10 @@ export function makeEvidenceSqlMock(resolveInsertResult: InsertResultResolver) {
   };
   return Object.assign(fn, {
     begin: vi.fn(async (callback: (tx: typeof fn) => Promise<unknown>) => callback(fn)),
+    // Mirrors postgres' sql.json(): serializes to a jsonb-bound payload. Tests
+    // that inspect the captured arg read the same serialized string the route
+    // persists (a jsonb param, not a JS array).
+    json: (value: unknown) => JSON.stringify(value),
   });
 }
 
