@@ -21,6 +21,7 @@ description: Full table of SPCTRE_* and platform env vars with types and default
 | Variable | Type | Default | Description |
 |---|---|---|---|
 | `SPCTRE_SESSION_GUARD_SECRET` | string | — | JWT signing secret for session guard tokens |
+| `SPCTRE_DEV_SESSION_GUARD_SECRET` | string | — | Explicit local-development signing secret. It is accepted only when `NODE_ENV=development`; production always requires `SPCTRE_SESSION_GUARD_SECRET`. |
 | `SPCTRE_SESSION_TTL_HOURS` | integer | `24` | Session lifetime in hours |
 | `SPCTRE_ENVELOPE_SECRET` | string | — | Request envelope signing secret |
 | `SPCTRE_ADMIN_SECRET` | string | — | Admin API credentials |

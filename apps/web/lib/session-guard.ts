@@ -1,4 +1,5 @@
 import { toBase64Url, fromBase64Url } from "@/lib/crypto-utils";
+import { getSessionGuardSecret } from "@/lib/session-guard-secret";
 
 export const SESSION_GUARD_COOKIE = "spctre_session_guard";
 
@@ -9,18 +10,6 @@ interface SessionGuardClaims {
   sub: string;
   mfa: boolean;
   exp: number;
-}
-
-function getSessionGuardSecret(): string | null {
-  const configured = process.env.SPCTRE_SESSION_GUARD_SECRET?.trim();
-  if (configured) return configured;
-
-  // Keep local development usable without extra setup.
-  if (process.env.NODE_ENV !== "production") {
-    return "spctre-dev-session-guard-secret";
-  }
-
-  return null;
 }
 
 function timingSafeEqual(a: Uint8Array, b: Uint8Array): boolean {
@@ -55,9 +44,6 @@ export async function createSessionGuardToken(params: {
   ttlSeconds: number;
 }): Promise<string> {
   const secret = getSessionGuardSecret();
-  if (!secret) {
-    throw new Error("SPCTRE_SESSION_GUARD_SECRET is required in production.");
-  }
 
   const exp = Math.floor(Date.now() / 1000) + Math.max(1, params.ttlSeconds);
   const payload: SessionGuardClaims = {
@@ -79,7 +65,6 @@ export async function verifySessionGuardToken(
   expectedSessionId?: string
 ): Promise<SessionGuardClaims | null> {
   const secret = getSessionGuardSecret();
-  if (!secret) return null;
 
   const parts = token.split(".");
   if (parts.length !== 2 || !parts[0] || !parts[1]) return null;

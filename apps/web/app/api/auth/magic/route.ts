@@ -4,19 +4,7 @@ import { setControlPlaneSessionCookies } from "@/lib/auth-session-cookies";
 import { getPrimaryWorkspaceIdForTenant, getPrincipalForLogin, isAuthDatabaseConfigured } from "@/lib/domains/auth/service";
 import { fromBase64Url, toBase64Url } from "@/lib/crypto-utils";
 import { swallow } from "@/lib/platform/swallow";
-
-// Helper to get session guard secret matching next.js standard
-function getSessionGuardSecret(): string {
-  const configured = process.env.SPCTRE_SESSION_GUARD_SECRET?.trim();
-  if (configured) return configured;
-
-  // Keep local development usable without extra setup.
-  if (process.env.NODE_ENV !== "production") {
-    return "spctre-dev-session-guard-secret";
-  }
-
-  return "";
-}
+import { getSessionGuardSecret } from "@/lib/session-guard-secret";
 
 function timingSafeEqual(a: Uint8Array, b: Uint8Array): boolean {
   if (a.length !== b.length) return false;
@@ -142,8 +130,10 @@ async function handleGetApiAuthMagic(request: Request) {
     return NextResponse.redirect(new URL("/login?error=missing_token", base));
   }
 
-  const secret = getSessionGuardSecret();
-  if (!secret) {
+  let secret: string;
+  try {
+    secret = getSessionGuardSecret();
+  } catch {
     return NextResponse.redirect(new URL("/login?error=sso_not_configured", base));
   }
 
