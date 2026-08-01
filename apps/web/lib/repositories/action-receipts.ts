@@ -1,3 +1,4 @@
+import type { JSONValue } from "postgres";
 import { sql } from "@/lib/db";
 import type { SignedActionReceipt } from "@spctre/policy-schema";
 
@@ -24,7 +25,7 @@ export async function persistActionReceipt(params: {
       ${params.receipt.signature.keyId}, ${params.receipt.signature.publicKey},
       ${params.receipt.signature.payloadHash}, ${params.receipt.signature.value},
       ${params.stage ?? "DECISION"},
-      ${JSON.stringify(params.receipt)}::jsonb
+      ${sql.json(params.receipt as unknown as JSONValue)}::jsonb
     )
     ON CONFLICT (tenant_id, gateway_decision_id, receipt_stage) DO NOTHING
     RETURNING receipt

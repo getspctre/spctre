@@ -171,8 +171,8 @@ export async function seedRuntimeEvidenceEvents({ revisionId, branchId, artifact
             ${id}, ${ev.decisionId}, ${DEMO_TENANT_ID}, ${DEMO_WORKSPACE_ID}, 'production', 'CUSTOM', 'spctre-demo',
             ${ev.agentId}, ${ev.connector}, ${ev.action}, ${ev.status}, ${ev.reason},
             ARRAY['spctre-agent-governance-v1']::text[], ${artifactHash},
-            ${JSON.stringify([{ revisionId, branchId, packId: 'spctre-agent-governance-v1' }])}::jsonb,
-            ${JSON.stringify({ details: ev.reason })}::jsonb, 120, ${createdAt}, ${hash}, null
+            ${sql.json([{ revisionId, branchId, packId: 'spctre-agent-governance-v1' }])}::jsonb,
+            ${sql.json({ details: ev.reason })}::jsonb, 120, ${createdAt}, ${hash}, null
           )
         `;
 

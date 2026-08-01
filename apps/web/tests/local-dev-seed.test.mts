@@ -27,10 +27,11 @@ const seedState = vi.hoisted(() => {
       prevHash: string | null;
     }>;
 
-    tx: ReturnType<typeof vi.fn>;
+    tx: ReturnType<typeof vi.fn> & { json: (value: unknown) => string };
     sql: ReturnType<typeof vi.fn> & {
       begin: ReturnType<typeof vi.fn>;
       counts: { connecting: number; idle: number; active: number; waiting: number };
+      json: (value: unknown) => string;
     };
   } = {
     ruleRows: [],
@@ -52,10 +53,13 @@ const seedState = vi.hoisted(() => {
     // Per-tenant operations-log chain head (agt_operations_log_chain_head).
     chainHeads: new Map<string, string | null>(),
 
-    tx: vi.fn(),
+    // Mirrors postgres' sql.json()/tx.json(): serializes to the jsonb-bound
+    // payload (a string param, not a JS array).
+    tx: Object.assign(vi.fn(), { json: (value: unknown) => JSON.stringify(value) }),
     sql: Object.assign(vi.fn(), {
       begin: vi.fn(),
       counts: { connecting: 0, idle: 1, active: 0, waiting: 0 },
+      json: (value: unknown) => JSON.stringify(value),
     }),
   };
 

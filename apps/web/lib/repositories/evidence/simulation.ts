@@ -1,4 +1,5 @@
 import { logger } from "@spctre/platform/logging";
+import type { JSONValue } from "postgres";
 import { sql } from "@/lib/db";
 import { ensureDemoTenant } from "@/lib/repositories/seed/local-dev";
 import {
@@ -181,7 +182,7 @@ export async function persistSimulationRun(
       ) VALUES (
         ${tenantId}, ${workspaceId}, ${run.branchId}, ${run.revisionId},
         ${run.sourceEventCount}, ${run.newlyDeniedCount}, ${run.newlyAllowedCount},
-        ${run.unchangedCount}, ${JSON.stringify(run.regressionSummary ?? null)}::jsonb,
+        ${run.unchangedCount}, ${tx.json((run.regressionSummary ?? null) as JSONValue)}::jsonb,
         ${run.regressionSummary?.coverage ?? "SAMPLED"}, ${run.createdBy}
       )
       RETURNING id::text AS id
@@ -200,7 +201,7 @@ export async function persistSimulationRun(
           finding.event_id, finding.connector, finding.action,
           finding.previous_status, finding.proposed_status, finding.delta,
           finding.matched_policy_refs, finding.reason
-        FROM jsonb_to_recordset(${JSON.stringify(findings)}::jsonb) AS finding(
+        FROM jsonb_to_recordset(${tx.json(findings)}::jsonb) AS finding(
           event_id text,
           connector text,
           action text,

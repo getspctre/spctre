@@ -1,4 +1,5 @@
 import { randomUUID } from "crypto";
+import type { JSONValue } from "postgres";
 import { computeShortHash } from "@spctre/platform";
 import { getPackMetadata, packToDocument, parseAgtPolicyDocument, POLICY_PACKS } from "@spctre/policy-schema";
 import { DEMO_TENANT_ID } from "@/lib/demo";
@@ -107,16 +108,16 @@ export async function ensureDefaultPublishedPolicyPack(params: {
           author_id, message, target_stacks
         ) VALUES (
           ${revisionId}, ${params.tenantId}, ${params.workspaceId}, ${branchId},
-          'AGT_YAML', ${sourcePath}, ${JSON.stringify(sourceDocument)}::jsonb,
+          'AGT_YAML', ${sourcePath}, ${sql.json(sourceDocument as JSONValue)}::jsonb,
           ${sourceHash}, ${artifactHash}, ${params.actorId},
           ${`Install ${pack.name} v${packMetadata.version}`},
-          ${JSON.stringify([
+          ${sql.json([
             {
               stack: ADVISOR_GOVERNANCE_BASELINE_RUNTIME_STACK,
               adapter: "spctre-control-plane",
               environment: ADVISOR_GOVERNANCE_BASELINE_ENVIRONMENT,
             },
-          ])}::jsonb
+          ] as JSONValue)}::jsonb
         )
       `;
 

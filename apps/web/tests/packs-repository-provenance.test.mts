@@ -27,6 +27,9 @@ const { state, sqlMock } = vi.hoisted(() => {
 
   const sqlMock = Object.assign(fn, {
     begin: vi.fn(async (callback: (tx: typeof fn) => Promise<unknown>) => callback(fn)),
+    // Mirrors postgres' sql.json(): the persisted jsonb payload is the
+    // serialized value, so captured args stay JSON-parseable strings.
+    json: (value: unknown) => JSON.stringify(value),
   });
 
   return { state, sqlMock };

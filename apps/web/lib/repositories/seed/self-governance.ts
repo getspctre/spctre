@@ -1,6 +1,7 @@
 // Self-governance policy pack seeding (local-dev + production rollout).
 // Extracted from local-dev.ts (Phase 2 large-file split).
 import { randomUUID } from "crypto";
+import type { JSONValue } from "postgres";
 import { computeShortHash } from "@spctre/platform";
 import { POLICY_PACKS } from "@spctre/policy-schema";
 import { DEMO_PRINCIPAL_IDS, DEMO_TENANT_ID, DEMO_WORKSPACE_ID } from "@/lib/demo";
@@ -98,10 +99,10 @@ async function ensureSelfGovernancePackRevision(): Promise<SelfGovernancePackIns
         author_id, message, target_stacks
       ) VALUES (
         ${revisionId}, ${DEMO_TENANT_ID}, ${DEMO_WORKSPACE_ID}, ${branchId},
-        'AGT_YAML', ${`packs/${pack.id}.json`}, ${JSON.stringify(sourceDocument)}::jsonb,
+        'AGT_YAML', ${`packs/${pack.id}.json`}, ${sql.json(sourceDocument as JSONValue)}::jsonb,
         ${sourceHash}, ${artifactHash}, ${LOCAL_DEV_SELF_GOVERNANCE_ACTOR},
         ${`Seed ${pack.name} v${pack.metadata.version ?? "1.0.0"} for local dev`},
-        ${JSON.stringify([
+        ${sql.json([
           {
             stack: "LOCAL",
             adapter: LOCAL_DEV_SELF_GOVERNANCE_ADAPTER,
@@ -112,7 +113,7 @@ async function ensureSelfGovernancePackRevision(): Promise<SelfGovernancePackIns
             adapter: PRODUCTION_SELF_GOVERNANCE_ADAPTER,
             environment: PRODUCTION_SELF_GOVERNANCE_ENVIRONMENT
           }
-        ])}::jsonb
+        ] as JSONValue)}::jsonb
       )
     `;
 

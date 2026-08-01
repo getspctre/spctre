@@ -80,6 +80,9 @@ function makeSqlMock() {
   };
   return Object.assign(fn, {
     begin: vi.fn(async (callback: (tx: typeof fn) => Promise<unknown>) => callback(fn)),
+    // Mirrors postgres' sql.json(): the persisted jsonb payload is the
+    // serialized value (a string param, not a JS array).
+    json: (value: unknown) => JSON.stringify(value),
   });
 }
 

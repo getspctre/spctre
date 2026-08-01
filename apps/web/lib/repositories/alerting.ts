@@ -81,7 +81,7 @@ export async function createAlertingIntegration(
       ${name},
       ${type},
       ${url},
-      pgp_sym_encrypt(${JSON.stringify(config)}, ${key})
+      pgp_sym_encrypt(${JSON.stringify(config)} /* jsonb-serialization-allow: encrypted text, not a JSONB binding */, ${key})
     )
     RETURNING
       id,

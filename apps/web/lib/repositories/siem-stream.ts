@@ -1,3 +1,4 @@
+import type { JSONValue } from "postgres";
 import { sql } from "@/lib/db";
 
 export interface SiemStream {
@@ -63,7 +64,7 @@ export async function createSiemStream(
       ${name},
       ${type},
       ${url},
-      ${JSON.stringify(config)},
+      ${sql.json(config as JSONValue)},
       pgp_sym_encrypt(${credentialsJson}, ${credentialKey})
     )
     RETURNING

@@ -159,7 +159,7 @@ export async function upsertPrincipalExternalIdentity(params: {
         ${params.externalSubject},
         ${params.externalEmail},
         now(),
-        ${JSON.stringify({ issuer: params.issuer })}::jsonb
+        ${sql.json({ issuer: params.issuer })}::jsonb
       )
       ON CONFLICT (provider_id, external_subject) DO UPDATE SET
         principal_id = EXCLUDED.principal_id,
@@ -259,7 +259,7 @@ export async function upsertSocialPrincipal(params: {
       INSERT INTO principal_external_identity (
         principal_id, tenant_id, provider_id, external_subject, external_email, last_authenticated_at, metadata
       ) VALUES (
-        ${principalId}, ${tenantId}, NULL, ${externalSubject}, ${params.email}, now(), ${JSON.stringify({ provider: params.provider })}::jsonb
+        ${principalId}, ${tenantId}, NULL, ${externalSubject}, ${params.email}, now(), ${sql.json({ provider: params.provider })}::jsonb
       )
       ON CONFLICT (tenant_id, principal_id, external_subject) DO UPDATE SET
         external_email = EXCLUDED.external_email,
@@ -349,7 +349,7 @@ export async function linkSocialIdentity(params: {
       ${externalSubject},
       ${params.providerEmail},
       now(),
-      ${JSON.stringify({ provider: params.provider })}::jsonb
+      ${sql.json({ provider: params.provider })}::jsonb
     )
     ON CONFLICT (tenant_id, principal_id, external_subject) DO UPDATE SET
       external_email = EXCLUDED.external_email,
