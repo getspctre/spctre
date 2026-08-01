@@ -72,7 +72,7 @@ function PasskeyRow({ passkey }: { passkey: PrincipalPasskey }) {
       <p className="meta">
         {t("last_used", { date: passkey.usedAt ? new Date(passkey.usedAt).toLocaleString() : t("never") })}
       </p>
-      <form action={deletePasskeyForm}>
+      <form action={deletePasskeyForm} onSubmit={(event) => { if (!window.confirm(`Remove ${displayName}?`)) event.preventDefault(); }}>
         <input type="hidden" name="passkeyId" value={passkey.id} />
         <button className="button" type="submit">{t("remove")}</button>
       </form>
@@ -161,7 +161,7 @@ export function PasskeySection({ passkeys }: PasskeySectionProps) {
       <button className="button buttonPrimary accountAction" type="button" onClick={registerPasskey} disabled={busy}>
         {busy ? t("registering") : t("register")}
       </button>
-      {error ? <p className="meta workspaceError">{error}</p> : null}
+      {error ? <p className="meta workspaceError" role="alert">{error}</p> : null}
 
       <div style={{ display: "grid", gap: "10px" }}>
         {passkeys.length ? (
