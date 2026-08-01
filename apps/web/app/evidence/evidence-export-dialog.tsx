@@ -39,6 +39,17 @@ export function EvidenceExportDialog() {
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") setOpen(false);
+      if (event.key === "Tab" && dialogRef.current) {
+        const focusable = [...dialogRef.current.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), input:not([disabled])')];
+        const first = focusable[0]; const last = focusable.at(-1);
+        if (first && last) {
+          // Index-based wrap also covers focus sitting on the dialog container
+          // (index -1), so the first Tab/shift-Tab cannot escape the dialog.
+          const index = focusable.indexOf(document.activeElement as HTMLElement);
+          if (event.shiftKey && index <= 0) { event.preventDefault(); last.focus(); }
+          else if (!event.shiftKey && (index === -1 || index === focusable.length - 1)) { event.preventDefault(); first.focus(); }
+        }
+      }
     };
 
     window.addEventListener("keydown", onKeyDown);

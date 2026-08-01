@@ -148,7 +148,7 @@ export function SmsSection({ existingEnrollments }: SmsSectionProps) {
       )}
 
       {status === "done" && <p className="meta">{t("verified")}</p>}
-      {error && <p className="meta workspaceError">{error}</p>}
+      {error && <p className="meta workspaceError" role="alert">{error}</p>}
 
       <div style={{ display: "grid", gap: "10px" }}>
         {smsEnrollments.length > 0 && (
@@ -164,7 +164,7 @@ export function SmsSection({ existingEnrollments }: SmsSectionProps) {
                     {t("verified_at", { date: new Date(enrollment.verifiedAt ?? enrollment.createdAt).toLocaleString() })}
                   </p>
                 </div>
-                <form action={deleteMfaEnrollmentForm}>
+                <form action={deleteMfaEnrollmentForm} onSubmit={(event) => { if (!window.confirm(t("remove_confirm", { name: enrollment.mfaType }))) event.preventDefault(); }}>
                   <input type="hidden" name="enrollmentId" value={enrollment.id} />
                   <button className="button" type="submit">
                     {t("remove")}

@@ -19,6 +19,7 @@ import type {
 import { listRulesForRevision } from "@/lib/repositories/shared/rules";
 import {
   getLatestRevisionMetadata,
+  getLatestRevisionMetadataForBranch,
   getRevisionMetadata,
   revisionBelongsToWorkspace,
   type RevisionMetadata,
@@ -53,16 +54,18 @@ export async function getEvidenceSimulationRun(
   if (!evidence.length) return null;
 
   let revision: RevisionMetadata | null = null;
-  if (branchId && revisionId) {
+  if (revisionId) {
     revision = await getRevisionMetadata(revisionId, tenantId).catch(swallow("getRevisionMetadata", null));
-    if (revision && revision.branchId !== branchId) {
+    if (revision && branchId && revision.branchId !== branchId) {
       revision = null;
     }
     if (revision && !(await revisionBelongsToWorkspace(revision.revisionId, workspaceId, tenantId))) {
       revision = null;
     }
-  }
-  if (!revision) {
+  } else if (branchId) {
+    revision = await getLatestRevisionMetadataForBranch(branchId, workspaceId, tenantId)
+      .catch(swallow("getLatestRevisionMetadataForBranch", null));
+  } else {
     revision = await getLatestRevisionMetadata(workspaceId, tenantId);
   }
   if (!revision) return null;

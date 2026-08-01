@@ -5,6 +5,7 @@ import { getTranslations } from "next-intl/server";
 import { getAuthSession } from "@/lib/auth-session";
 import { isDemoTenant } from "@/lib/demo-guard";
 import { approveCliOnboarding } from "./actions";
+import { PendingSubmitButton } from "@/app/pending-submit-button";
 import { swallow } from "@/lib/platform/swallow";
 
 export const dynamic = "force-dynamic";
@@ -81,10 +82,10 @@ export default async function CliOnboardingApprovePage({
       ) : session ? (
         <form action={approveCliOnboarding} className="toolbar">
           <input name="code" type="hidden" value={code} />
-          <button className="button buttonPrimary" disabled={!code} type="submit">
+          <PendingSubmitButton disabled={!code} pendingLabel="Approving…">
             <ShieldCheck size={16} />
             {t("approve")}
-          </button>
+          </PendingSubmitButton>
         </form>
       ) : (
         <div className="toolbar">

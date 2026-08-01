@@ -25,11 +25,13 @@ export function TotpSection({ existingEnrollments }: TotpSectionProps) {
   const [secret, setSecret] = useState("");
   const [otpauthUrl, setOtpauthUrl] = useState("");
   const [code, setCode] = useState("");
+  const [busy, setBusy] = useState(false);
 
   async function startEnrollment() {
     setError(null);
 
-    const res = await fetch("/api/auth/mfa/enroll-totp/start", {
+    setBusy(true);
+    try { const res = await fetch("/api/auth/mfa/enroll-totp/start", {
       method: "POST",
       headers: { "content-type": "application/json" }
     });
@@ -44,6 +46,7 @@ export function TotpSection({ existingEnrollments }: TotpSectionProps) {
     setSecret(data.secret);
     setOtpauthUrl(data.otpauthUrl);
     setStatus("enrolling");
+    } catch { setError(t("errors.start")); } finally { setBusy(false); }
   }
 
   async function verifyEnrollment(event: FormEvent<HTMLFormElement>) {
@@ -56,7 +59,8 @@ export function TotpSection({ existingEnrollments }: TotpSectionProps) {
       return;
     }
 
-    const res = await fetch("/api/auth/mfa/enroll-totp/verify", {
+    setBusy(true);
+    try { const res = await fetch("/api/auth/mfa/enroll-totp/verify", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ enrollmentId, code: normalizedCode })
@@ -70,6 +74,7 @@ export function TotpSection({ existingEnrollments }: TotpSectionProps) {
 
     setStatus("done");
     window.location.reload();
+    } catch { setError(t("errors.verify")); } finally { setBusy(false); }
   }
 
   return (
@@ -81,7 +86,7 @@ export function TotpSection({ existingEnrollments }: TotpSectionProps) {
       </div>
 
       {status === "idle" ? (
-        <button className="button buttonPrimary accountAction" type="button" onClick={startEnrollment}>
+        <button className="button buttonPrimary accountAction" type="button" onClick={startEnrollment} disabled={busy}>
           {t("enroll")}
         </button>
       ) : null}
@@ -107,7 +112,7 @@ export function TotpSection({ existingEnrollments }: TotpSectionProps) {
               placeholder="123456"
               required
             />
-            <button className="button buttonPrimary accountAction" type="submit">
+            <button className="button buttonPrimary accountAction" type="submit" disabled={busy}>
               {t("verify")}
             </button>
           </form>
@@ -115,7 +120,7 @@ export function TotpSection({ existingEnrollments }: TotpSectionProps) {
       ) : null}
 
       {status === "done" ? <p className="meta">{t("verified")}</p> : null}
-      {error ? <p className="meta workspaceError">{error}</p> : null}
+      {error ? <p className="meta workspaceError" role="alert">{error}</p> : null}
 
       <div style={{ display: "grid", gap: "10px" }}>
         <h3>{t("verified_enrollments")}</h3>
@@ -129,7 +134,7 @@ export function TotpSection({ existingEnrollments }: TotpSectionProps) {
               <p className="meta">
                 {t("verified_at", { date: new Date(enrollment.verifiedAt ?? enrollment.createdAt).toLocaleString() })}
               </p>
-              <form action={deleteMfaEnrollmentForm}>
+              <form action={deleteMfaEnrollmentForm} onSubmit={(event) => { if (!window.confirm(t("remove_confirm", { name: enrollment.mfaType }))) event.preventDefault(); }}>
                 <input type="hidden" name="enrollmentId" value={enrollment.id} />
                 <button className="button" type="submit">
                   {t("remove")}

@@ -120,7 +120,7 @@ describe("review page model demo boundary", () => {
 
   it("shows demo branches and artifacts for the demo tenant", async () => {
     useTenant(DEMO_TENANT_ID);
-    const model = await getReviewPageModel({ workspaceSlug: "demo", selectedBranchId: "branch-demo" });
+    const model = await getReviewPageModel({ workspaceSlug: "demo", selectedBranchId: "br-refund-review" });
     expect(model.branches.length).toBeGreaterThan(0);
     expect(model.activeDiff).not.toBeNull();
   });

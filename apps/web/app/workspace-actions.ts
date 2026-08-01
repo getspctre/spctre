@@ -31,7 +31,7 @@ export type ActorSwitchState =
   | null;
 
 export type TenantSwitchState =
-  | { tenantId: string; error?: never }
+  | { tenantId: string; workspaceSlug: string | null; requiresMfa: boolean; error?: never }
   | { error: string; tenantId?: never }
   | null;
 
@@ -181,7 +181,7 @@ export async function setActiveTenant(
   revalidatePath("/compliance");
   revalidatePath("/packs");
 
-  return { tenantId };
+  return { tenantId, workspaceSlug: result.firstWorkspaceSlug, requiresMfa: result.requiresMfa === true };
 }
 
 // Resolve the acting session/workspace identifiers from context, session, and

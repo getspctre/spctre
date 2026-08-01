@@ -96,6 +96,18 @@ export function CommandPalette({ workspaceSlug }: CommandPaletteProps) {
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
+    if (e.key === "Tab") {
+      const focusable = [...(e.currentTarget.closest(".cmdPaletteModal")?.querySelectorAll<HTMLElement>('button:not([disabled]), input:not([disabled])') ?? [])];
+      const first = focusable[0]; const last = focusable.at(-1);
+      if (first && last) {
+        // Index-based wrap keeps focus inside the palette even when the active
+        // element is not in the focusable set (index -1).
+        const index = focusable.indexOf(document.activeElement as HTMLElement);
+        if (e.shiftKey && index <= 0) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && (index === -1 || index === focusable.length - 1)) { e.preventDefault(); first.focus(); }
+      }
+      return;
+    }
     if (e.key === "ArrowDown") {
       e.preventDefault();
       setActiveIndex((i) => Math.min(i + 1, filtered.length - 1));

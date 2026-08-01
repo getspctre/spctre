@@ -5,7 +5,7 @@ const getWorkspaceContextSpy = vi.fn();
 const getActiveActorSpy = vi.fn();
 const appendOperationsLogSpy = vi.fn(async () => undefined);
 const getEvidenceSimulationRunSpy = vi.fn();
-const persistSimulationRunSpy = vi.fn(async () => undefined);
+const persistSimulationRunSpy = vi.fn(async () => "11111111-1111-4111-8111-111111111111");
 
 vi.mock("@/lib/workspace", () => ({
   getWorkspaceContext: getWorkspaceContextSpy,
@@ -83,13 +83,13 @@ describe("evidence simulation domain service", () => {
       total: 2,
       branchId: "br-prod-support",
       revisionId: "rev-8f12",
-      runId: "sim-1",
+      runId: "11111111-1111-4111-8111-111111111111",
     });
     expect(persistSimulationRunSpy).toHaveBeenCalled();
     expect(appendOperationsLogSpy).toHaveBeenCalledWith(expect.objectContaining({
       eventType: "SIMULATION_RUN",
       actorId: "maya-security",
-      sourceId: "sim-1",
+      sourceId: "11111111-1111-4111-8111-111111111111",
       sourceTable: "simulation_run",
       payload: expect.objectContaining({
         branchId: "br-prod-support",

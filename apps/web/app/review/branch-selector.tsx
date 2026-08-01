@@ -40,6 +40,11 @@ export function BranchSelector({ branches, selectedId, workspaceSlug }: BranchSe
         value={selectedId ?? ""}
         onChange={(e) => router.push(buildWorkspacePath(workspaceSlug, `/review?branch=${e.target.value}`))}
       >
+        {!selectedId ? (
+          <option value="" disabled>
+            Select a policy branch
+          </option>
+        ) : null}
         {branches.map((b) => (
           <option key={b.id} value={b.id}>
             {b.name} — {b.scope}

@@ -100,6 +100,26 @@ export async function getLatestRevisionMetadata(
   return rows[0] ? getRevisionMetadata(rows[0].revision_id, tenantId) : null;
 }
 
+/** Returns the newest revision for a workspace-visible branch. */
+export async function getLatestRevisionMetadataForBranch(
+  branchId: string,
+  workspaceId: string | null,
+  tenantId: string
+): Promise<RevisionMetadata | null> {
+  if (!sql) return null;
+  const rows = await sql<{ revision_id: string }[]>`
+    SELECT pr.id AS revision_id
+    FROM policy_revision pr
+    JOIN policy_branch pb ON pb.id = pr.branch_id AND pb.tenant_id = pr.tenant_id
+    WHERE pr.tenant_id = ${tenantId}
+      AND pr.branch_id = ${branchId}
+      AND (pb.workspace_id = ${workspaceId} OR pb.scope = 'ORGANIZATION')
+    ORDER BY pr.created_at DESC
+    LIMIT 1
+  `;
+  return rows[0] ? getRevisionMetadata(rows[0].revision_id, tenantId) : null;
+}
+
 export async function revisionBelongsToWorkspace(
   revisionId: string,
   workspaceId: string | null,
