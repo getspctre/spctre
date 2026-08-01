@@ -12,7 +12,8 @@ description: Full table of SPCTRE_* and platform env vars with types and default
 | `NODE_ENV` | `production` \| `development` | `development` | Runtime environment |
 | `SPCTRE_APP_URL` | string | — | Public URL of the control plane web app |
 | `SPCTRE_ENV` | string | `development` | Deployment environment name |
-| `SPCTRE_DEFAULT_TENANT_ID` | string | — | Default tenant for single-tenant deployments |
+| `SPCTRE_DEFAULT_TENANT_ID` | string | — | Default tenant for an explicitly declared single-tenant deployment; requires `SPCTRE_SINGLE_TENANT_MODE=true`. |
+| `SPCTRE_SINGLE_TENANT_MODE` | boolean | `false` | Allows `SPCTRE_DEFAULT_TENANT_ID` to bind background work. Do not enable in a multi-tenant deployment. |
 | `SPCTRE_PLAN` | `oss` \| `cloud` \| `business` \| `enterprise` | `oss` | Plan tier; controls feature gating for SAML, SCIM, simulation, HITL, archival, and SIEM features. See [Plan tiers](/help-docs/developer/reference/plan-tiers). |
 
 ## Authentication

@@ -18,6 +18,7 @@ vi.mock("postgres", () => ({
 }));
 
 vi.mock("@spctre/platform/metrics", () => ({
+  incrementCounter: vi.fn(),
   registerDbPoolMetrics: vi.fn(),
 }));
 
@@ -77,5 +78,10 @@ describe("database tenant context", () => {
     const [queryStrings] = txMock.mock.calls[1]!;
     expect(Array.from(queryStrings)).toEqual(["SELECT 1"]);
     expect(rawSqlMock).not.toHaveBeenCalled();
+  });
+
+  it("fails closed when a tenant-scoped query has no bound context", async () => {
+    await expect(sql!`SELECT 1`).rejects.toThrow("No tenant context is bound.");
+    expect(beginMock).not.toHaveBeenCalled();
   });
 });

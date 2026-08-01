@@ -1,8 +1,7 @@
 import postgres, { type TransactionSql } from "postgres";
 import { logger } from "@spctre/platform/logging";
-import { registerDbPoolMetrics } from "@spctre/platform/metrics";
+import { incrementCounter, registerDbPoolMetrics } from "@spctre/platform/metrics";
 import { assertTenantId, getBoundTenantId, runWithTenantContext } from "@/lib/tenant-context";
-import { DEMO_TENANT_ID, DEMO_WORKSPACE_ID } from "@/lib/demo";
 import { SESSION_GUARD_COOKIE, verifySessionGuardToken } from "@/lib/session-guard";
 
 type SqlClient = ReturnType<typeof postgres>;
@@ -38,10 +37,6 @@ async function resolveTenantContext(): Promise<string | null> {
   try {
     const { cookies } = await import("next/headers");
     const cookieStore = await cookies();
-    const workspaceId = cookieStore.get("spctre_workspace_id")?.value;
-    if (workspaceId === DEMO_WORKSPACE_ID) {
-      return DEMO_TENANT_ID;
-    }
     const sessionId = cookieStore.get("spctre_session_id")?.value;
     const guardToken = cookieStore.get(SESSION_GUARD_COOKIE)?.value;
     if (sessionId && guardToken) {
@@ -53,21 +48,18 @@ async function resolveTenantContext(): Promise<string | null> {
   }
 
   const explicitDefault = process.env.SPCTRE_DEFAULT_TENANT_ID?.trim();
-  if (explicitDefault) return explicitDefault;
-
-  // Outside a request context with no configured default, fail closed in
-  // production (no tenant is set, so RLS restricts every query) rather than
-  // silently binding to the demo tenant. Outside production we log the demo
-  // fallback so a missing runWithTenantContext wrapper is visible in dev
-  // instead of surfacing only under RLS in production.
-  if (process.env.NODE_ENV !== "production") {
-    logger.warn(
-      "[spctre-db] No tenant context bound; falling back to the demo tenant. " +
-        "Wrap this call in runWithTenantContext if it should be tenant-scoped."
-    );
-    return DEMO_TENANT_ID;
+  if (explicitDefault && process.env.SPCTRE_SINGLE_TENANT_MODE === "true") {
+    assertTenantId(explicitDefault);
+    return explicitDefault;
   }
-  return null;
+
+  incrementCounter("spctre.db.unbound_tenant_context", 1, {
+    environment: process.env.NODE_ENV ?? "development",
+    default_tenant_configured: String(Boolean(explicitDefault)),
+  });
+  throw new Error(
+    "No tenant context is bound. Wrap tenant-scoped database work in runWithTenantContext."
+  );
 }
 
 // Connection-class failures (Cloud SQL maintenance/failover, dropped pooled
