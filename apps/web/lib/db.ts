@@ -3,6 +3,7 @@ import { logger } from "@spctre/platform/logging";
 import { incrementCounter, registerDbPoolMetrics } from "@spctre/platform/metrics";
 import { assertTenantId, getBoundTenantId, runWithTenantContext } from "@/lib/tenant-context";
 import { SESSION_GUARD_COOKIE, verifySessionGuardToken } from "@/lib/session-guard";
+import { getRuntimeConfig } from "@/lib/config/runtime";
 
 type SqlClient = ReturnType<typeof postgres>;
 
@@ -53,8 +54,9 @@ async function resolveTenantContext(): Promise<string | null> {
   }
 
   if (bearerRequest) {
+    const runtimeConfig = getRuntimeConfig();
     incrementCounter("spctre.db.unbound_tenant_context", 1, {
-      environment: process.env.NODE_ENV ?? "development",
+      environment: runtimeConfig.mode,
       auth_mode: "bearer",
     });
     throw new Error(
@@ -63,15 +65,14 @@ async function resolveTenantContext(): Promise<string | null> {
     );
   }
 
-  const explicitDefault = process.env.SPCTRE_DEFAULT_TENANT_ID?.trim();
-  if (explicitDefault && process.env.SPCTRE_SINGLE_TENANT_MODE === "true") {
-    assertTenantId(explicitDefault);
-    return explicitDefault;
+  const runtimeConfig = getRuntimeConfig();
+  if (runtimeConfig.singleTenantMode && runtimeConfig.defaultTenantId) {
+    return runtimeConfig.defaultTenantId;
   }
 
   incrementCounter("spctre.db.unbound_tenant_context", 1, {
-    environment: process.env.NODE_ENV ?? "development",
-    default_tenant_configured: String(Boolean(explicitDefault)),
+    environment: runtimeConfig.mode,
+    default_tenant_configured: String(Boolean(runtimeConfig.defaultTenantId)),
   });
   throw new Error(
     "No tenant context is bound. Wrap tenant-scoped database work in runWithTenantContext."

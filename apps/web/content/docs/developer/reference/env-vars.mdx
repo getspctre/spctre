@@ -10,6 +10,7 @@ description: Full table of SPCTRE_* and platform env vars with types and default
 | `DATABASE_URL` | string | — | PostgreSQL connection string (required) |
 | `DATABASE_OWNER_URL` | string | — | Owner connection for multi-tenant schemas |
 | `NODE_ENV` | `production` \| `development` | `development` | Runtime environment |
+| `SPCTRE_RUNTIME_MODE` | `production` \| `development` | `development` locally | Runtime security policy. Required when `NODE_ENV=production`; production-like deployments should set `production` explicitly. |
 | `SPCTRE_APP_URL` | string | — | Public URL of the control plane web app |
 | `SPCTRE_ENV` | string | `development` | Deployment environment name |
 | `SPCTRE_DEFAULT_TENANT_ID` | string | — | Default tenant for an explicitly declared single-tenant deployment; requires `SPCTRE_SINGLE_TENANT_MODE=true`. |

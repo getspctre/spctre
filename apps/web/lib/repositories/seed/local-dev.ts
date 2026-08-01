@@ -5,13 +5,15 @@
 import { logger } from "@spctre/platform/logging";
 import { DEMO_PRINCIPAL_IDS, DEMO_TENANT_ID, DEMO_WORKSPACE_ID } from "@/lib/demo";
 import { runWithTenantContext, sql } from "@/lib/db";
+import { getRuntimeConfig } from "@/lib/config/runtime";
 import { seedLocalDevSelfGovernancePack, rolloutProductionSelfGovernancePack } from "./self-governance";
 import { seedTrustCalibrationPolicies, seedContextBudgetEvents, seedTrustScoreEvents } from "./trust";
 import { resolveGovernancePackRefs, seedGatewayDecisionsAndEscalations, seedRuntimeEvidenceEvents, seedSimulationRuns } from "./governance-telemetry";
 
 /** Demo seeding is automatic only outside production; hosted demos opt in explicitly. */
 export function canBootstrapDemoTenant(): boolean {
-  return process.env.NODE_ENV !== "production" || process.env.SPCTRE_ENABLE_DEMO_TENANT === "true";
+  const config = getRuntimeConfig();
+  return config.mode === "development" || config.demoTenantEnabled;
 }
 
 export async function ensureDemoTenant(): Promise<boolean> {

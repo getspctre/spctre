@@ -1,4 +1,4 @@
-import { getStringEnv } from "@/lib/platform/config";
+import { getRuntimeConfig } from "@/lib/config/runtime";
 import {
   getFeatureFlagSnapshot,
   isFeatureEnabledForPlan,
@@ -9,7 +9,7 @@ import {
 } from "./feature-flags";
 
 export function getSpctrePlan(): SpctrePlan {
-  return normalizeSpctrePlan(getStringEnv("SPCTRE_PLAN", "oss"));
+  return getRuntimeConfig().plan;
 }
 
 export function isFeatureEnabled(flag: FeatureFlag): boolean {

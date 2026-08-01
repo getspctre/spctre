@@ -4,6 +4,7 @@ const originalEnvironment = {
   nodeEnv: process.env.NODE_ENV,
   sessionGuardSecret: process.env.SPCTRE_SESSION_GUARD_SECRET,
   developmentSecret: process.env.SPCTRE_DEV_SESSION_GUARD_SECRET,
+  runtimeMode: process.env.SPCTRE_RUNTIME_MODE,
 };
 
 function restore(name: string, value: string | undefined) {
@@ -15,11 +16,13 @@ afterEach(() => {
   restore("NODE_ENV", originalEnvironment.nodeEnv);
   restore("SPCTRE_SESSION_GUARD_SECRET", originalEnvironment.sessionGuardSecret);
   restore("SPCTRE_DEV_SESSION_GUARD_SECRET", originalEnvironment.developmentSecret);
+  restore("SPCTRE_RUNTIME_MODE", originalEnvironment.runtimeMode);
 });
 
 describe("session-guard secret resolution", () => {
   it("uses the configured production secret", async () => {
     process.env.NODE_ENV = "production";
+    process.env.SPCTRE_RUNTIME_MODE = "production";
     process.env.SPCTRE_SESSION_GUARD_SECRET = "configured-secret";
     delete process.env.SPCTRE_DEV_SESSION_GUARD_SECRET;
 
@@ -29,6 +32,7 @@ describe("session-guard secret resolution", () => {
 
   it("allows a development secret only with explicit local opt-in", async () => {
     process.env.NODE_ENV = "development";
+    process.env.SPCTRE_RUNTIME_MODE = "development";
     delete process.env.SPCTRE_SESSION_GUARD_SECRET;
     process.env.SPCTRE_DEV_SESSION_GUARD_SECRET = "local-secret";
 
@@ -38,11 +42,12 @@ describe("session-guard secret resolution", () => {
 
   it("fails closed when production has no configured secret", async () => {
     process.env.NODE_ENV = "production";
+    process.env.SPCTRE_RUNTIME_MODE = "production";
     delete process.env.SPCTRE_SESSION_GUARD_SECRET;
     delete process.env.SPCTRE_DEV_SESSION_GUARD_SECRET;
 
     const { assertSessionGuardConfiguration, getSessionGuardSecret } = await import("../lib/session-guard-secret");
-    expect(() => getSessionGuardSecret()).toThrow("SPCTRE_SESSION_GUARD_SECRET is required.");
-    expect(() => assertSessionGuardConfiguration()).toThrow("SPCTRE_SESSION_GUARD_SECRET is required.");
+    expect(() => getSessionGuardSecret()).toThrow("SPCTRE_SESSION_GUARD_SECRET is required in production.");
+    expect(() => assertSessionGuardConfiguration()).toThrow("SPCTRE_SESSION_GUARD_SECRET is required in production.");
   });
 });

@@ -1,4 +1,4 @@
-const DEV_SESSION_GUARD_SECRET = "SPCTRE_DEV_SESSION_GUARD_SECRET";
+import { getRuntimeConfig } from "@/lib/config/runtime";
 
 /**
  * Resolves the single signing secret used by session-guard cookies and magic
@@ -6,20 +6,16 @@ const DEV_SESSION_GUARD_SECRET = "SPCTRE_DEV_SESSION_GUARD_SECRET";
  * built-in key that could be used to forge tenant claims.
  */
 export function getSessionGuardSecret(): string {
-  const configured = process.env.SPCTRE_SESSION_GUARD_SECRET?.trim();
-  if (configured) return configured;
-
-  const developmentSecret = process.env[DEV_SESSION_GUARD_SECRET]?.trim();
-  if (process.env.NODE_ENV === "development" && developmentSecret) {
-    return developmentSecret;
-  }
+  const config = getRuntimeConfig();
+  if (config.sessionGuardSecret) return config.sessionGuardSecret;
+  if (config.mode === "development" && config.developmentSessionGuardSecret) return config.developmentSessionGuardSecret;
 
   throw new Error(
-    `SPCTRE_SESSION_GUARD_SECRET is required. Local development may explicitly set ${DEV_SESSION_GUARD_SECRET}.`
+    "SPCTRE_SESSION_GUARD_SECRET is required. Local development may explicitly set SPCTRE_DEV_SESSION_GUARD_SECRET."
   );
 }
 
 /** Called from instrumentation so a production process never starts without a signing key. */
 export function assertSessionGuardConfiguration(): void {
-  if (process.env.NODE_ENV === "production") getSessionGuardSecret();
+  getSessionGuardSecret();
 }
