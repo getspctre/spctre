@@ -12,6 +12,7 @@ vi.mock("@/lib/db", () => ({
 }));
 
 const { getTenantPrincipalBySubject, getTenantRequireMfa } = await import("../lib/repositories/auth/session");
+const { findUserPrincipalIdByIdentifier } = await import("../lib/repositories/auth/principal");
 
 describe("tenant-known pre-session auth lookups", () => {
   beforeEach(() => {
@@ -43,6 +44,18 @@ describe("tenant-known pre-session auth lookups", () => {
     });
 
     expect(runWithTenantContextMock).toHaveBeenCalledWith("tenant-2", expect.any(Function));
+    expect(sqlMock).toHaveBeenCalledOnce();
+  });
+
+  it("binds the trusted tenant before resolving a login identifier", async () => {
+    sqlMock.mockResolvedValue([{ id: "principal-3" }]);
+
+    await expect(findUserPrincipalIdByIdentifier({
+      tenantId: "tenant-3",
+      identifier: "user@example.com",
+    })).resolves.toBe("principal-3");
+
+    expect(runWithTenantContextMock).toHaveBeenCalledWith("tenant-3", expect.any(Function));
     expect(sqlMock).toHaveBeenCalledOnce();
   });
 });

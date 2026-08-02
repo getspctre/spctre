@@ -7,19 +7,23 @@ export async function findUserPrincipalIdByIdentifier(params: {
 }): Promise<string | null> {
   if (!sql || !params.identifier.trim()) return null;
 
-  const rows = await sql<{ id: string }[]>`
-    SELECT id
-    FROM app_principal
-    WHERE tenant_id = ${params.tenantId}
-      AND principal_type = 'USER'
-      AND (
-        subject = ${params.identifier}
-        OR lower(email) = lower(${params.identifier})
-      )
-    LIMIT 1
-  `;
+  // app_principal is RLS-gated; login/SSO resolves the identifier within a
+  // trusted tenant before a session/tenant context exists, so bind it here.
+  return runWithTenantContext(params.tenantId, async () => {
+    const rows = await sql<{ id: string }[]>`
+      SELECT id
+      FROM app_principal
+      WHERE tenant_id = ${params.tenantId}
+        AND principal_type = 'USER'
+        AND (
+          subject = ${params.identifier}
+          OR lower(email) = lower(${params.identifier})
+        )
+      LIMIT 1
+    `;
 
-  return rows[0]?.id ?? null;
+    return rows[0]?.id ?? null;
+  });
 }
 
 export async function getPrincipalSubject(params: {
