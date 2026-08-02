@@ -4,13 +4,15 @@
 // bind at "start", so the challenge lives here keyed by an opaque id carried in
 // a short-lived httpOnly cookie. webauthn_challenge is RLS-excluded and written
 // pre-session — the same path as saml_authn_request.
-import { sql } from "@/lib/db";
+import { rawSql } from "@/lib/db";
 
 export type WebauthnChallengePurpose = "REGISTRATION" | "AUTHENTICATION";
 
 /**
  * Persist a challenge and return its opaque id (to be stored in an httpOnly
  * cookie that binds it to this browser). Prunes expired rows opportunistically.
+ * This is an intentional owner-connection exception: no tenant exists during a
+ * usernameless login, and the migration keeps this short-lived table RLS-excluded.
  * Returns null when the database is not configured.
  */
 export async function saveWebauthnChallenge(params: {
@@ -20,9 +22,9 @@ export async function saveWebauthnChallenge(params: {
   tenantId?: string | null;
   ttlSeconds: number;
 }): Promise<string | null> {
-  if (!sql || !params.challenge) return null;
+  if (!rawSql || !params.challenge) return null;
 
-  const rows = await sql<{ id: string }[]>`
+  const rows = await rawSql<{ id: string }[]>`
     WITH pruned_expired_challenges AS (
       DELETE FROM webauthn_challenge
       WHERE expires_at < now()
@@ -57,9 +59,9 @@ export async function consumeWebauthnChallenge(params: {
   id: string;
   purpose: WebauthnChallengePurpose;
 }): Promise<ConsumedWebauthnChallenge | null> {
-  if (!sql || !params.id) return null;
+  if (!rawSql || !params.id) return null;
 
-  const rows = await sql<
+  const rows = await rawSql<
     { challenge: string; principal_id: string | null; tenant_id: string | null }[]
   >`
     DELETE FROM webauthn_challenge

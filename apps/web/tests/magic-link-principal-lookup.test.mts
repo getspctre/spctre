@@ -7,6 +7,7 @@ const { ownerSqlMock, tenantSqlMock } = vi.hoisted(() => ({
 
 vi.mock("@/lib/db", () => ({
   sql: tenantSqlMock,
+  rawSql: ownerSqlMock,
   runWithTenantContext: (_tenantId: string, fn: () => unknown) => fn(),
 }));
 
@@ -30,6 +31,26 @@ describe("magic-link principal lookup", () => {
     ]);
 
     await expect(getPrincipalForLogin("principal-1", ownerSqlMock as never)).resolves.toMatchObject({
+      id: "principal-1",
+      tenant_id: "tenant-1",
+    });
+
+    expect(ownerSqlMock).toHaveBeenCalledOnce();
+    expect(tenantSqlMock).not.toHaveBeenCalled();
+  });
+
+  it("uses the owner connection by default before a tenant session exists", async () => {
+    ownerSqlMock.mockResolvedValueOnce([
+      {
+        id: "principal-1",
+        tenant_id: "tenant-1",
+        subject: "buyer@example.com",
+        require_mfa: false,
+        disabled_at: null,
+      },
+    ]);
+
+    await expect(getPrincipalForLogin("principal-1")).resolves.toMatchObject({
       id: "principal-1",
       tenant_id: "tenant-1",
     });

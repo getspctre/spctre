@@ -1,4 +1,4 @@
-import { sql, runWithTenantContext } from "@/lib/db";
+import { rawSql, sql, runWithTenantContext } from "@/lib/db";
 import { canBootstrapDemoTenant, ensureDemoTenant } from "@/lib/repositories/seed/local-dev";
 import { swallow } from "@/lib/platform/swallow";
 
@@ -59,7 +59,7 @@ export async function getTenantRequireMfa(tenantId: string): Promise<boolean | n
 
 export async function getPrincipalForLogin(
   principalId: string,
-  db = sql
+  db = rawSql
 ): Promise<{
   id: string;
   tenant_id: string;
@@ -380,11 +380,14 @@ export async function revokeSessionRow(sessionId: string, tenantId: string): Pro
 }
 
 export async function listAllLoginPrincipals() {
-  if (!sql) return [] as { id: string; tenant_id: string; display_name: string; email: string | null }[];
+  if (!rawSql) return [] as { id: string; tenant_id: string; display_name: string; email: string | null }[];
 
   await ensureAuthDemoTenant().catch(swallow("ensureAuthDemoTenant", undefined));
 
-  return sql<
+  // This powers the explicitly enabled configured-user login chooser before a
+  // tenant is known, so use the owner connection rather than inventing a tenant
+  // context. The page filters demo principals before rendering.
+  return rawSql<
     { id: string; tenant_id: string; display_name: string; email: string | null }[]
   >`
     SELECT id, tenant_id, display_name, email
