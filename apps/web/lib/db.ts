@@ -67,6 +67,15 @@ async function resolveTenantContext(): Promise<string | null> {
 
   const runtimeConfig = getRuntimeConfig();
   if (runtimeConfig.singleTenantMode && runtimeConfig.defaultTenantId) {
+    // Single-tenant OSS deployments have no per-request tenant to resolve, so
+    // fall back to the configured default. This also silently satisfies any
+    // pre-session read that forgot to bind its tenant, which is exactly how a
+    // multi-tenant RLS-binding bug can hide until an environment stops setting
+    // a default tenant. Count usage so reliance on the fallback is observable
+    // rather than invisible.
+    incrementCounter("spctre.db.single_tenant_fallback", 1, {
+      environment: runtimeConfig.mode,
+    });
     return runtimeConfig.defaultTenantId;
   }
 
