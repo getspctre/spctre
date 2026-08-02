@@ -1,12 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { beginMock, rawSqlMock, txMock } = vi.hoisted(() => {
+const { beginMock, rawSqlMock, requestHeadersMock, txMock } = vi.hoisted(() => {
   const rawSqlMock = vi.fn(async () => [{ direct: true }]);
+  const requestHeadersMock = vi.fn(() => new Headers());
   const txMock = Object.assign(vi.fn(async () => [{ set_config: "tenant-id" }]), {
     unsafe: vi.fn(async () => [{ unsafe: true }]),
   });
   const beginMock = vi.fn(async (callback: (tx: typeof txMock) => Promise<unknown>) => callback(txMock));
-  return { beginMock, rawSqlMock, txMock };
+  return { beginMock, rawSqlMock, requestHeadersMock, txMock };
 });
 
 vi.mock("postgres", () => ({
@@ -18,7 +19,13 @@ vi.mock("postgres", () => ({
 }));
 
 vi.mock("@spctre/platform/metrics", () => ({
+  incrementCounter: vi.fn(),
   registerDbPoolMetrics: vi.fn(),
+}));
+
+vi.mock("next/headers", () => ({
+  cookies: vi.fn(async () => new Map()),
+  headers: requestHeadersMock,
 }));
 
 process.env.DATABASE_URL = "postgres://spctre.test/app";
@@ -31,6 +38,8 @@ describe("database tenant context", () => {
     rawSqlMock.mockClear();
     txMock.mockClear();
     txMock.unsafe.mockClear();
+    requestHeadersMock.mockReset();
+    requestHeadersMock.mockReturnValue(new Headers());
   });
 
   it("rejects missing tenant IDs before opening a transaction", async () => {
@@ -77,5 +86,17 @@ describe("database tenant context", () => {
     const [queryStrings] = txMock.mock.calls[1]!;
     expect(Array.from(queryStrings)).toEqual(["SELECT 1"]);
     expect(rawSqlMock).not.toHaveBeenCalled();
+  });
+
+  it("fails closed when a tenant-scoped query has no bound context", async () => {
+    await expect(sql!`SELECT 1`).rejects.toThrow("No tenant context is bound.");
+    expect(beginMock).not.toHaveBeenCalled();
+  });
+
+  it("never inherits cookie context for an unbound bearer request", async () => {
+    requestHeadersMock.mockReturnValue(new Headers({ authorization: "Bearer token-value" }));
+
+    await expect(sql!`SELECT 1`).rejects.toThrow("Bearer-token database work requires an explicit tenant context.");
+    expect(beginMock).not.toHaveBeenCalled();
   });
 });

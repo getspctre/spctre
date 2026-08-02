@@ -28,6 +28,10 @@ vi.mock("@/lib/db", () => ({
   sql: sqlMock,
 }));
 
+vi.mock("@/lib/tenant-context", () => ({
+  runWithTenantContext: (_tenantId: string, work: () => Promise<unknown>) => work(),
+}));
+
 vi.mock("@/lib/service-tokens", () => ({
   hasBearerToken: hasBearerTokenMock,
   authenticateServiceToken: authenticateServiceTokenMock,

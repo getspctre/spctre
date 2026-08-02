@@ -1,5 +1,5 @@
 import { sql, runWithTenantContext } from "@/lib/db";
-import { ensureDemoTenant } from "@/lib/repositories/seed/local-dev";
+import { canBootstrapDemoTenant, ensureDemoTenant } from "@/lib/repositories/seed/local-dev";
 import { swallow } from "@/lib/platform/swallow";
 
 export function isAuthDatabaseConfigured(): boolean {
@@ -16,14 +16,12 @@ export function resolveWorkspaceIdOrDemo(workspaceId: string | null | undefined)
   return normalized || null;
 }
 
-export async function ensureAuthDemoTenant(): Promise<void> {
-  await ensureDemoTenant();
+export async function ensureAuthDemoTenant(): Promise<boolean> {
+  return ensureDemoTenant();
 }
 
 /** @eeBoundary consumed by ee/web/saml via ee-adapters (knip ignores ee/) */
-export function canBootstrapDemoTenant(): boolean {
-  return process.env.NODE_ENV !== "production" || process.env.SPCTRE_ENABLE_DEMO_TENANT === "true";
-}
+export { canBootstrapDemoTenant };
 
 export async function getPrimaryWorkspaceIdForTenant(tenantId: string, db = sql): Promise<string | null> {
   if (!db) return null;

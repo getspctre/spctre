@@ -17,6 +17,7 @@ import { getPublishedBlueprintForGateway } from "@/lib/repositories/agent-bluepr
 import { countGatewaySessionDecisions } from "@/lib/repositories/gateway/decisions";
 import { resolveCanonicalAgentId } from "@/lib/repositories/identity";
 import { swallow } from "@/lib/platform/swallow";
+import { runWithTenantContext } from "@/lib/tenant-context";
 
 export const dynamic = "force-dynamic";
 
@@ -40,57 +41,32 @@ const handlePostApiGatewayDecide = withApiRoute("/api/gateway/decide", async (re
     return ctx.error(auth.status, auth.error);
   }
 
-  if (parsed.value.agentId) {
-    parsed.value.agentId = await resolveCanonicalAgentId({
-      tenantId: auth.tenantId, workspaceId: auth.workspaceId, agentId: parsed.value.agentId,
-    });
-  }
+  return decideGatewayRequest(parsed.value, auth, ctx, started);
+});
 
-  const blueprint = parsed.value.agentId && parsed.value.connector && parsed.value.action
-    ? await getPublishedBlueprintForGateway({ tenantId: auth.tenantId, workspaceId: auth.workspaceId, agentId: parsed.value.agentId, policyRevisionIds: parsed.value.policyContext.map((context) => context.revisionId) })
-    : null;
-  const toolRef = parsed.value.connector && parsed.value.action ? `${parsed.value.connector}.${parsed.value.action}` : "";
-  const violatesBlueprint = blueprint && parsed.value.connector && parsed.value.action &&
-    (!blueprint.definition.connectors.includes(parsed.value.connector) ||
-      !blueprint.definition.tools.some((tool) => tool === parsed.value.action || tool === toolRef));
-  const gatewayEnabled = isGatewayEnabled();
-  let decisionResult = gatewayEnabled
-    ? evaluateGatewayDecision(parsed.value)
-    : {
-        outcome: "PROCEED" as const,
-        reason: "Gateway disabled; proceeding by configuration.",
-        riskLevel: "LOW" as const,
-        shouldQueue: false,
-        slaHours: undefined,
-      };
-  if (violatesBlueprint) decisionResult = { outcome: "ABORT", reason: `Action ${toolRef} is outside the published Blueprint operating envelope.`, riskLevel: "HIGH", shouldQueue: false, slaHours: undefined };
-  if (gatewayEnabled && decisionResult.outcome === "PROCEED" && blueprint && parsed.value.agentId && parsed.value.sessionId) {
-    const budgets = blueprint.definition.budgets;
-    if (budgets?.maxTokensPerTurn !== undefined && parsed.value.contextBudget !== undefined && parsed.value.contextBudget > budgets.maxTokensPerTurn) {
-      decisionResult = { outcome: "ESCALATE", reason: `Gateway escalated action: context budget ${parsed.value.contextBudget} exceeds published Blueprint limit ${budgets.maxTokensPerTurn}.`, riskLevel: "HIGH", shouldQueue: true, slaHours: 4 };
-    } else if (budgets?.maxToolCallsPerSession !== undefined) {
-      const prior = await countGatewaySessionDecisions({ tenantId: auth.tenantId, workspaceId: auth.workspaceId, agentId: parsed.value.agentId, sessionId: parsed.value.sessionId });
-      if (prior >= budgets.maxToolCallsPerSession) decisionResult = { outcome: "ABORT", reason: `Gateway aborted action: session has reached published Blueprint tool-call limit ${budgets.maxToolCallsPerSession}.`, riskLevel: "HIGH", shouldQueue: false, slaHours: undefined };
-    }
-  }
+type GatewayDecisionInput = Parameters<typeof evaluateGatewayDecision>[0];
+type GatewayAuth = { tenantId: string; workspaceId: string; actorId: string };
 
+async function decideGatewayRequest(
+  input: GatewayDecisionInput,
+  auth: GatewayAuth,
+  ctx: ApiRouteContext,
+  started: number
+) {
+  const { gatewayEnabled, decisionResult } = await resolveGatewayDecision(input, auth);
   const isDemo = isDemoTenant(auth.tenantId);
   const shouldPersist = isGatewayDatabaseConfigured() && gatewayEnabled && !isDemo;
 
   let credentialGrant: unknown = undefined;
   let actionReceipt: unknown = undefined;
   if (shouldPersist) {
-    const persistOutcome = await persistDecisionWithReplayGuard(ctx, parsed.value, decisionResult, auth, gatewayEnabled);
+    const persistOutcome = await persistDecisionWithReplayGuard(ctx, input, decisionResult, auth, gatewayEnabled);
     if (persistOutcome instanceof Response) return persistOutcome;
     credentialGrant = persistOutcome.credentialGrant;
     actionReceipt = persistOutcome.receipt;
   }
 
-  const decision = {
-    ...decisionResult,
-    credentialGrant,
-  };
-
+  const decision = { ...decisionResult, credentialGrant };
   ctx.span.setAttributes({
     "spctre.gateway.enabled": gatewayEnabled,
     "spctre.gateway.outcome": decision.outcome,
@@ -108,7 +84,64 @@ const handlePostApiGatewayDecide = withApiRoute("/api/gateway/decide", async (re
     decision,
     actionReceipt,
   });
-});
+}
+
+async function resolveGatewayDecision(input: GatewayDecisionInput, auth: GatewayAuth) {
+  const { agentId, blueprint } = await resolveBlueprintForDecision(input, auth);
+  const toolRef = input.connector && input.action ? `${input.connector}.${input.action}` : "";
+  const violatesBlueprint = !blueprintAllowsAction(blueprint, input.connector, input.action, toolRef);
+  const gatewayEnabled = isGatewayEnabled();
+  let decisionResult = gatewayEnabled
+    ? evaluateGatewayDecision(input)
+    : {
+        outcome: "PROCEED" as const,
+        reason: "Gateway disabled; proceeding by configuration.",
+        riskLevel: "LOW" as const,
+        shouldQueue: false,
+        slaHours: undefined,
+      };
+  if (violatesBlueprint) decisionResult = { outcome: "ABORT", reason: `Action ${toolRef} is outside the published Blueprint operating envelope.`, riskLevel: "HIGH", shouldQueue: false, slaHours: undefined };
+  const sessionId = input.sessionId;
+  if (gatewayEnabled && decisionResult.outcome === "PROCEED" && blueprint && agentId && sessionId) {
+    const budgets = blueprint.definition.budgets;
+    if (budgets?.maxTokensPerTurn !== undefined && input.contextBudget !== undefined && input.contextBudget > budgets.maxTokensPerTurn) {
+      decisionResult = { outcome: "ESCALATE", reason: `Gateway escalated action: context budget ${input.contextBudget} exceeds published Blueprint limit ${budgets.maxTokensPerTurn}.`, riskLevel: "HIGH", shouldQueue: true, slaHours: 4 };
+    } else if (budgets?.maxToolCallsPerSession !== undefined) {
+      const prior = await runWithTenantContext(auth.tenantId, () => countGatewaySessionDecisions({ tenantId: auth.tenantId, workspaceId: auth.workspaceId, agentId, sessionId }));
+      if (prior >= budgets.maxToolCallsPerSession) decisionResult = { outcome: "ABORT", reason: `Gateway aborted action: session has reached published Blueprint tool-call limit ${budgets.maxToolCallsPerSession}.`, riskLevel: "HIGH", shouldQueue: false, slaHours: undefined };
+    }
+  }
+
+  return { gatewayEnabled, decisionResult };
+}
+
+async function resolveBlueprintForDecision(input: GatewayDecisionInput, auth: GatewayAuth) {
+  const requestedAgentId = input.agentId;
+  if (requestedAgentId) {
+    input.agentId = await runWithTenantContext(auth.tenantId, () =>
+      resolveCanonicalAgentId({
+        tenantId: auth.tenantId, workspaceId: auth.workspaceId, agentId: requestedAgentId,
+      })
+    );
+  }
+
+  const { agentId, connector, action } = input;
+  const blueprint = agentId && connector && action
+    ? await runWithTenantContext(auth.tenantId, () => getPublishedBlueprintForGateway({ tenantId: auth.tenantId, workspaceId: auth.workspaceId, agentId, policyRevisionIds: input.policyContext.map((context) => context.revisionId) }))
+    : null;
+  return { agentId, blueprint };
+}
+
+function blueprintAllowsAction(
+  blueprint: Awaited<ReturnType<typeof getPublishedBlueprintForGateway>>,
+  connector: string | undefined,
+  action: string | undefined,
+  toolRef: string
+) {
+  if (!blueprint || !connector || !action) return true;
+  return blueprint.definition.connectors.includes(connector) &&
+    blueprint.definition.tools.some((tool) => tool === action || tool === toolRef);
+}
 
 type GatewayDecisionResult = ReturnType<typeof evaluateGatewayDecision>;
 type GatewayPersistInput = Parameters<typeof persistGatewayDecisionAndBrokerCredentials>[0]["input"];

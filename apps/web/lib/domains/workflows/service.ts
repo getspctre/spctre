@@ -26,6 +26,7 @@ import {
 } from "@/lib/repositories/approval-workflow";
 import { listTenantWorkspaces } from "@/lib/repositories/members";
 import { swallow } from "@/lib/platform/swallow";
+import { runWithTenantContext } from "@/lib/tenant-context";
 
 export type { ApprovalWorkflowConfigSummary };
 
@@ -73,7 +74,7 @@ export async function getApprovalWorkflowConfig(params: {
   workspaceId: string;
   environment: string | null;
 }) {
-  return getApprovalWorkflowForContext(params);
+  return runWithTenantContext(params.tenantId, () => getApprovalWorkflowForContext(params));
 }
 
 export type WorkflowActionState =

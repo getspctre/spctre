@@ -36,6 +36,7 @@ import {
 } from "@/lib/repositories/policy";
 import { countOpenEscalations, listOpenEscalationQueue } from "@/lib/repositories/gateway";
 import { swallow } from "@/lib/platform/swallow";
+import { runWithTenantContext } from "@/lib/tenant-context";
 
 export function isWorkspaceDatabaseConfigured(): boolean {
   return isDatabaseConfigured();
@@ -55,29 +56,31 @@ export async function verifyWorkspaceSlugForServiceToken(params: {
   workspaceSlug: string;
   workspaceId: string;
 }) {
-  return verifyWorkspaceSlugForToken(params);
+  return runWithTenantContext(params.tenantId, () => verifyWorkspaceSlugForToken(params));
 }
 
 export async function listWorkspaceApiSummaries(tenantId: string) {
-  const [workspaces, publishedByWorkspace, branchesByWorkspace] = await Promise.all([
-    listWorkspacesForTenant(tenantId),
-    listLatestPublishedBundleSummariesForTenant(tenantId),
-    listBranchStatusSummariesForTenant(tenantId),
-  ]);
+  return runWithTenantContext(tenantId, async () => {
+    const [workspaces, publishedByWorkspace, branchesByWorkspace] = await Promise.all([
+      listWorkspacesForTenant(tenantId),
+      listLatestPublishedBundleSummariesForTenant(tenantId),
+      listBranchStatusSummariesForTenant(tenantId),
+    ]);
 
-  return workspaces.map((workspace) => {
-    const bundle = publishedByWorkspace.get(workspace.id) ?? null;
-    const branchSummary = branchesByWorkspace.get(workspace.id);
-    return {
-      id: workspace.id,
-      slug: workspace.slug,
-      name: workspace.name,
-      publicationStatus: bundle ? "PUBLISHED" : branchSummary?.hasInReview ? "IN_REVIEW" : "DRAFT",
-      activeBranchId: bundle?.branchId ?? branchSummary?.firstBranchId ?? null,
-      revisionId: bundle?.revisionId ?? null,
-      artifactHash: bundle?.artifactHash ?? null,
-      publishedAt: bundle?.publishedAt ?? null,
-    };
+    return workspaces.map((workspace) => {
+      const bundle = publishedByWorkspace.get(workspace.id) ?? null;
+      const branchSummary = branchesByWorkspace.get(workspace.id);
+      return {
+        id: workspace.id,
+        slug: workspace.slug,
+        name: workspace.name,
+        publicationStatus: bundle ? "PUBLISHED" : branchSummary?.hasInReview ? "IN_REVIEW" : "DRAFT",
+        activeBranchId: bundle?.branchId ?? branchSummary?.firstBranchId ?? null,
+        revisionId: bundle?.revisionId ?? null,
+        artifactHash: bundle?.artifactHash ?? null,
+        publishedAt: bundle?.publishedAt ?? null,
+      };
+    });
   });
 }
 

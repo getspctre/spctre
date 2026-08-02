@@ -59,6 +59,10 @@ const listApprovalTimelineEventsMock = vi.fn(async () => []);
 const listResolvedEscalationsForRevisionMock = vi.fn(async () => []);
 const listActionReceiptsMock = vi.fn(async () => []);
 
+vi.mock("@/lib/tenant-context", () => ({
+  runWithTenantContext: (_tenantId: string, work: () => Promise<unknown>) => work(),
+}));
+
 vi.mock("@/lib/repositories/evidence/compliance", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/repositories/evidence/compliance")>();
   return { ...actual, getLatestPublishAndRevision: getLatestPublishAndRevisionMock };

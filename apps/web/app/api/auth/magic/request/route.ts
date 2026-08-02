@@ -7,13 +7,7 @@ import { sendMagicLinkEmail } from "@/lib/email";
 import { checkAuthRateLimit } from "@/lib/auth-rate-limit";
 import { logSecurityEvent } from "@/lib/security-logger";
 import { swallow } from "@/lib/platform/swallow";
-
-function getSessionGuardSecret(): string {
-  const configured = process.env.SPCTRE_SESSION_GUARD_SECRET?.trim();
-  if (configured) return configured;
-  if (process.env.NODE_ENV !== "production") return "spctre-dev-session-guard-secret";
-  return "";
-}
+import { getSessionGuardSecret } from "@/lib/session-guard-secret";
 
 async function signValue(value: string, secret: string): Promise<string> {
   const key = await crypto.subtle.importKey(
@@ -32,8 +26,10 @@ async function handlePostApiAuthMagicRequest(request: Request) {
     return NextResponse.json({ error: "database_required" }, { status: 503 });
   }
 
-  const secret = getSessionGuardSecret();
-  if (!secret) {
+  let secret: string;
+  try {
+    secret = getSessionGuardSecret();
+  } catch {
     return NextResponse.json({ error: "not_configured" }, { status: 503 });
   }
 

@@ -126,6 +126,7 @@ describe("Auth and signup redirection targets", () => {
   beforeEach(() => {
     redirectSpy.mockReset();
     ensureAuthDemoTenantSpy.mockReset();
+    ensureAuthDemoTenantSpy.mockResolvedValue({ ok: true });
     upsertLocalDevPrincipalSpy.mockReset();
     upsertLocalDevWorkspaceGrantSpy.mockReset();
     getPrincipalForLoginSpy.mockReset();

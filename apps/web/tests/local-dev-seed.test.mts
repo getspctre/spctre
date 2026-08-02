@@ -310,7 +310,7 @@ vi.mock("@spctre/platform", () => ({
 
 process.env.DATABASE_URL = "postgres://spctre-local-dev";
 
-const { ensureDemoTenant } = await import("../lib/repositories/seed/local-dev");
+const { canBootstrapDemoTenant, ensureDemoTenant } = await import("../lib/repositories/seed/local-dev");
 
 describe("local dev seeded workspace", () => {
   beforeEach(() => {
@@ -336,6 +336,33 @@ describe("local dev seeded workspace", () => {
     seedState.sql.mockClear();
     seedState.tx.mockClear();
     seedState.sql.begin.mockClear();
+  });
+
+  it("requires an explicit opt-in before seeding a production deployment", () => {
+    const previousNodeEnv = process.env.NODE_ENV;
+    const previousDemoEnabled = process.env.SPCTRE_ENABLE_DEMO_TENANT;
+    const previousRuntimeMode = process.env.SPCTRE_RUNTIME_MODE;
+    const previousSessionGuardSecret = process.env.SPCTRE_SESSION_GUARD_SECRET;
+    try {
+      process.env.NODE_ENV = "production";
+      process.env.SPCTRE_RUNTIME_MODE = "production";
+      process.env.SPCTRE_SESSION_GUARD_SECRET = "test-session-guard-secret";
+      delete process.env.SPCTRE_ENABLE_DEMO_TENANT;
+
+      expect(canBootstrapDemoTenant()).toBe(false);
+
+      process.env.SPCTRE_ENABLE_DEMO_TENANT = "true";
+      expect(canBootstrapDemoTenant()).toBe(true);
+    } finally {
+      if (previousNodeEnv === undefined) delete process.env.NODE_ENV;
+      else process.env.NODE_ENV = previousNodeEnv;
+      if (previousDemoEnabled === undefined) delete process.env.SPCTRE_ENABLE_DEMO_TENANT;
+      else process.env.SPCTRE_ENABLE_DEMO_TENANT = previousDemoEnabled;
+      if (previousRuntimeMode === undefined) delete process.env.SPCTRE_RUNTIME_MODE;
+      else process.env.SPCTRE_RUNTIME_MODE = previousRuntimeMode;
+      if (previousSessionGuardSecret === undefined) delete process.env.SPCTRE_SESSION_GUARD_SECRET;
+      else process.env.SPCTRE_SESSION_GUARD_SECRET = previousSessionGuardSecret;
+    }
   });
 
   it("installs, approves, and publishes the Spctre embedded-agent governance pack into default and production-pilot targets", async () => {

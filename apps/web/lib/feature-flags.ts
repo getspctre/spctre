@@ -85,11 +85,11 @@ const warnedPlanValues = new Set<string>();
 export function normalizeSpctrePlan(value?: string | null): SpctrePlan {
   const normalized = value?.trim().toLowerCase();
   if (normalized === "cloud" || normalized === "business" || normalized === "enterprise") return normalized;
-  if (normalized && normalized !== "oss" && process.env.NODE_ENV !== "production") {
+  if (normalized && normalized !== "oss") {
     if (!warnedPlanValues.has(normalized)) {
       warnedPlanValues.add(normalized);
-      console.warn(
-        `Unrecognized SPCTRE_PLAN "${value}". Falling back to "oss"; expected "oss", "cloud", or "enterprise".`
+      console.error(
+        `Unrecognized SPCTRE_PLAN "${value}". Falling back to "oss"; expected "oss", "cloud", "business", or "enterprise".`
       );
     }
   }

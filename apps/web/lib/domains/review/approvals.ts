@@ -8,6 +8,7 @@ import {
 } from "@/lib/repositories/policy";
 import { insertAuthorizationDenialEvent } from "@/lib/repositories/workspace";
 import { listPendingApprovalQueue } from "@/lib/repositories/policy/review";
+import { runWithTenantContext } from "@/lib/tenant-context";
 
 export interface AddApprovalInput {
   revisionId: string;
@@ -84,5 +85,7 @@ export async function listPendingApprovals(params: {
   workspaceId: string;
   tenantId: string;
 }) {
-  return listPendingApprovalQueue(params.workspaceId, params.tenantId);
+  return runWithTenantContext(params.tenantId, () =>
+    listPendingApprovalQueue(params.workspaceId, params.tenantId)
+  );
 }

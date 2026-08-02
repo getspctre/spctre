@@ -62,6 +62,13 @@ export async function getCompliancePacket(
   workspaceId: string | null,
   tenantId: string
 ): Promise<CompliancePacket | null> {
+  return runWithTenantContext(tenantId, () => getCompliancePacketInTenant(workspaceId, tenantId));
+}
+
+async function getCompliancePacketInTenant(
+  workspaceId: string | null,
+  tenantId: string
+): Promise<CompliancePacket | null> {
   const published = await getLatestPublishAndRevision(workspaceId, tenantId);
   if (!published) return null;
 
@@ -211,7 +218,9 @@ export async function getComplianceOperationsEventCounts(params: {
   workspaceId: string;
 }) {
   return operationsEventCountsCache.get(`${params.tenantId}:${params.workspaceId}`, () =>
-    getOperationsLogEventCounts(params.tenantId, params.workspaceId)
+    runWithTenantContext(params.tenantId, () =>
+      getOperationsLogEventCounts(params.tenantId, params.workspaceId)
+    )
   );
 }
 
@@ -220,9 +229,11 @@ export async function getComplianceVerificationStatus(params: {
   tenantId: string;
   artifactHash: string;
 }) {
-  return getLatestVerificationStatus(params.workspaceId, params.tenantId, {
-    artifactHash: params.artifactHash,
-  });
+  return runWithTenantContext(params.tenantId, () =>
+    getLatestVerificationStatus(params.workspaceId, params.tenantId, {
+      artifactHash: params.artifactHash,
+    })
+  );
 }
 
 export async function recordComplianceExportConversion(tenantId: string): Promise<void> {
@@ -281,6 +292,14 @@ export async function pruneExpiredEvidence(
   workspaceId: string | null,
   tenantId: string,
   actorId = "system"
+): Promise<{ prunedCount: number; prunedDecisionIds: string[] }> {
+  return runWithTenantContext(tenantId, () => pruneExpiredEvidenceInTenant(workspaceId, tenantId, actorId));
+}
+
+async function pruneExpiredEvidenceInTenant(
+  workspaceId: string | null,
+  tenantId: string,
+  actorId: string
 ): Promise<{ prunedCount: number; prunedDecisionIds: string[] }> {
   const evidence = await listRuntimeEvidence(workspaceId, tenantId);
   if (!evidence.length) return { prunedCount: 0, prunedDecisionIds: [] };

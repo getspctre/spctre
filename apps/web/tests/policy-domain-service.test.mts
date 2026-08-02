@@ -2,9 +2,15 @@ import { describe, expect, it, vi } from "vitest";
 
 const getBranchWithPublishStatusMock = vi.fn();
 const deletePolicyBranchMock = vi.fn();
+const getLatestPublishedBundleMock = vi.fn();
+const runWithTenantContextMock = vi.fn(async (_tenantId: string, work: () => Promise<unknown>) => work());
 
 vi.mock("@/lib/db", () => ({
   sql: null,
+}));
+
+vi.mock("@/lib/tenant-context", () => ({
+  runWithTenantContext: runWithTenantContextMock,
 }));
 
 vi.mock("@/lib/repositories/policy", async (importOriginal) => {
@@ -13,12 +19,26 @@ vi.mock("@/lib/repositories/policy", async (importOriginal) => {
     ...actual,
     getBranchWithPublishStatus: getBranchWithPublishStatusMock,
     deletePolicyBranch: deletePolicyBranchMock,
+    getLatestPublishedBundle: getLatestPublishedBundleMock,
   };
 });
 
 const policyService = await import("../lib/domains/policy/service");
 
 describe("policy domain service", () => {
+  it("binds the tenant before reading a published bundle", async () => {
+    const bundle = { artifactHash: "sha256:published" };
+    getLatestPublishedBundleMock.mockResolvedValue(bundle);
+
+    await expect(policyService.getLatestPublishedPolicyBundle({
+      tenantId: "tenant-1",
+      workspaceId: "workspace-1",
+    })).resolves.toBe(bundle);
+
+    expect(runWithTenantContextMock).toHaveBeenCalledWith("tenant-1", expect.any(Function));
+    expect(getLatestPublishedBundleMock).toHaveBeenCalledWith("workspace-1", "tenant-1");
+  });
+
   it("creates an empty branch draft when the database is unavailable", async () => {
     const result = await policyService.createPolicyBranchDecision({
       branchName: "stripe/refund-controls",

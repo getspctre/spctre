@@ -4,13 +4,25 @@
 // the ordered orchestration. Extracted domains in Phase 2 large-file split.
 import { logger } from "@spctre/platform/logging";
 import { DEMO_PRINCIPAL_IDS, DEMO_TENANT_ID, DEMO_WORKSPACE_ID } from "@/lib/demo";
-import { sql } from "@/lib/db";
+import { runWithTenantContext, sql } from "@/lib/db";
+import { getRuntimeConfig } from "@/lib/config/runtime";
 import { seedLocalDevSelfGovernancePack, rolloutProductionSelfGovernancePack } from "./self-governance";
 import { seedTrustCalibrationPolicies, seedContextBudgetEvents, seedTrustScoreEvents } from "./trust";
 import { resolveGovernancePackRefs, seedGatewayDecisionsAndEscalations, seedRuntimeEvidenceEvents, seedSimulationRuns } from "./governance-telemetry";
 
-export async function ensureDemoTenant() {
-  if (!sql) return;
+/** Demo seeding is automatic only outside production; hosted demos opt in explicitly. */
+export function canBootstrapDemoTenant(): boolean {
+  const config = getRuntimeConfig();
+  return config.mode === "development" || config.demoTenantEnabled;
+}
+
+export async function ensureDemoTenant(): Promise<boolean> {
+  if (!sql || !canBootstrapDemoTenant()) return false;
+  await runWithTenantContext(DEMO_TENANT_ID, ensureDemoTenantInTenant);
+  return true;
+}
+
+async function ensureDemoTenantInTenant(): Promise<void> {
 
   let blockedBySlugConflict = false;
   try {

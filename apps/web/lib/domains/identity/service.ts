@@ -45,6 +45,17 @@ export async function linkAgentSurface(params: {
   surfaceAgentId: string;
   actorId: string;
 }): Promise<AgentSurfaceBinding | null> {
+  return runWithTenantContext(params.tenantId, () => linkAgentSurfaceInTenant(params));
+}
+
+async function linkAgentSurfaceInTenant(params: {
+  tenantId: string;
+  workspaceId: string;
+  canonicalAgentId: string;
+  surfaceType: AgentSurfaceType;
+  surfaceAgentId: string;
+  actorId: string;
+}): Promise<AgentSurfaceBinding | null> {
   const binding = await createAgentSurfaceBinding({
     tenantId: params.tenantId,
     workspaceId: params.workspaceId,
@@ -72,6 +83,18 @@ export async function linkAgentSurface(params: {
 }
 
 export async function unlinkAgentSurface(params: {
+  bindingId: string;
+  tenantId: string;
+  workspaceId: string;
+  canonicalAgentId: string;
+  surfaceType: AgentSurfaceType;
+  surfaceAgentId: string;
+  actorId: string;
+}): Promise<boolean> {
+  return runWithTenantContext(params.tenantId, () => unlinkAgentSurfaceInTenant(params));
+}
+
+async function unlinkAgentSurfaceInTenant(params: {
   bindingId: string;
   tenantId: string;
   workspaceId: string;
@@ -108,7 +131,7 @@ export async function listAgentSurfaces(params: {
   workspaceId: string;
   canonicalAgentId: string;
 }): Promise<AgentSurfaceBinding[]> {
-  return listAgentSurfaceBindings(params);
+  return runWithTenantContext(params.tenantId, () => listAgentSurfaceBindings(params));
 }
 
 /**

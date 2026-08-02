@@ -108,7 +108,9 @@ export async function getLatestPublishedPolicyBundle(params: {
   workspaceId: string;
   tenantId: string;
 }) {
-  return getLatestPublishedBundle(params.workspaceId, params.tenantId);
+  return runWithTenantContext(params.tenantId, () =>
+    getLatestPublishedBundle(params.workspaceId, params.tenantId)
+  );
 }
 
 export async function importPolicyDecision(input: {

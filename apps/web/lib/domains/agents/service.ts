@@ -275,5 +275,7 @@ export async function listAgentAuditDecisions(params: {
   tenantId: string;
   limit: number;
 }) {
-  return listAgentEvidenceDecisions(params.agentId, params.workspaceId, params.tenantId, params.limit);
+  return runWithTenantContext(params.tenantId, () =>
+    listAgentEvidenceDecisions(params.agentId, params.workspaceId, params.tenantId, params.limit)
+  );
 }

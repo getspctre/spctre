@@ -10,9 +10,11 @@ description: Full table of SPCTRE_* and platform env vars with types and default
 | `DATABASE_URL` | string | — | PostgreSQL connection string (required) |
 | `DATABASE_OWNER_URL` | string | — | Owner connection for multi-tenant schemas |
 | `NODE_ENV` | `production` \| `development` | `development` | Runtime environment |
+| `SPCTRE_RUNTIME_MODE` | `production` \| `development` | `development` locally | Runtime security policy. Required when `NODE_ENV=production`; production-like deployments should set `production` explicitly. |
 | `SPCTRE_APP_URL` | string | — | Public URL of the control plane web app |
 | `SPCTRE_ENV` | string | `development` | Deployment environment name |
-| `SPCTRE_DEFAULT_TENANT_ID` | string | — | Default tenant for single-tenant deployments |
+| `SPCTRE_DEFAULT_TENANT_ID` | string | — | Default tenant for an explicitly declared single-tenant deployment; requires `SPCTRE_SINGLE_TENANT_MODE=true`. |
+| `SPCTRE_SINGLE_TENANT_MODE` | boolean | `false` | Allows `SPCTRE_DEFAULT_TENANT_ID` to bind background work. Do not enable in a multi-tenant deployment. |
 | `SPCTRE_PLAN` | `oss` \| `cloud` \| `business` \| `enterprise` | `oss` | Plan tier; controls feature gating for SAML, SCIM, simulation, HITL, archival, and SIEM features. See [Plan tiers](/help-docs/developer/reference/plan-tiers). |
 
 ## Authentication
@@ -20,6 +22,8 @@ description: Full table of SPCTRE_* and platform env vars with types and default
 | Variable | Type | Default | Description |
 |---|---|---|---|
 | `SPCTRE_SESSION_GUARD_SECRET` | string | — | JWT signing secret for session guard tokens |
+| `SPCTRE_DEV_SESSION_GUARD_SECRET` | string | — | Explicit local-development signing secret. It is accepted only when `NODE_ENV=development`; production always requires `SPCTRE_SESSION_GUARD_SECRET`. |
+| `SPCTRE_ENABLE_DEMO_TENANT` | boolean | `false` | Enable Demo Cloud tenant seeding in production. Set only on a deliberate hosted-demo deployment. |
 | `SPCTRE_SESSION_TTL_HOURS` | integer | `24` | Session lifetime in hours |
 | `SPCTRE_ENVELOPE_SECRET` | string | — | Request envelope signing secret |
 | `SPCTRE_ADMIN_SECRET` | string | — | Admin API credentials |
