@@ -9,6 +9,8 @@ const allowed = new Set([
   "apps/web/lib/repositories/auth/principal.ts",
   "apps/web/lib/repositories/auth/recovery.ts",
   "apps/web/lib/repositories/auth/service-tokens.ts",
+  "apps/web/lib/repositories/auth/session.ts",
+  "apps/web/lib/repositories/auth/webauthn-challenge.ts",
   "apps/web/lib/repositories/bundle-export-log.ts",
   "apps/web/lib/repositories/economic.ts",
   "apps/web/lib/repositories/evidence/runtime.ts",
