@@ -1,4 +1,5 @@
 import { AsyncLocalStorage } from "node:async_hooks";
+import { assertTenantId } from "@/lib/tenant-id";
 
 /**
  * Tenant context for RLS scoping, shared by the tenant-aware DB client and
@@ -8,12 +9,10 @@ import { AsyncLocalStorage } from "node:async_hooks";
  */
 const tenantContext = new AsyncLocalStorage<string>();
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-export function assertTenantId(tenantId: string | null | undefined): asserts tenantId is string {
-  if (tenantId == null || tenantId.trim() === "") throw new Error("Tenant ID is required.");
-  if (!UUID_RE.test(tenantId)) throw new Error("Invalid tenant ID.");
-}
+// Re-exported so existing importers keep working; the implementation lives in
+// lib/tenant-id (async_hooks-free) so client-reachable config modules can
+// validate a tenant id without bundling AsyncLocalStorage.
+export { assertTenantId };
 
 /** Returns the tenant bound by runWithTenantContext, if any. */
 export function getBoundTenantId(): string | undefined {

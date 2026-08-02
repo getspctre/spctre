@@ -1,4 +1,4 @@
-import { assertTenantId } from "@/lib/tenant-context";
+import { assertTenantId } from "@/lib/tenant-id";
 import type { SpctrePlan } from "@/lib/feature-flags";
 
 export type SpctreRuntimeMode = "development" | "production";
