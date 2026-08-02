@@ -17,6 +17,8 @@ const allowed = new Set([
   "apps/web/lib/repositories/gateway-webhook.ts",
   "apps/web/lib/repositories/identity.ts",
   "apps/web/lib/repositories/mfa.ts",
+  "apps/web/lib/repositories/onboarding/cli.ts",
+  "apps/web/lib/repositories/onboarding/device.ts",
   "apps/web/lib/repositories/operations-log/log.ts",
   "apps/web/lib/repositories/packs.ts",
   "apps/web/lib/repositories/policy/rules.ts",

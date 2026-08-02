@@ -1,6 +1,6 @@
 import { randomBytes } from "crypto";
 import type { RuntimePolicyContext } from "@spctre/policy-schema";
-import { runWithTenantContext, sql } from "@/lib/db";
+import { rawSql, runWithTenantContext, sql } from "@/lib/db";
 import type { AuthSession } from "@/lib/auth-session";
 import { ensureDemoTenant } from "@/lib/repositories/seed/local-dev";
 import { issueAccessRefreshPair, type ServiceTokenScope } from "@/lib/service-tokens";
@@ -41,14 +41,16 @@ export async function startCliOnboarding(params: {
   environment: string;
   bundlePath: string;
 }): Promise<CliOnboardingStart> {
-  if (!sql) throw new Error("Database not configured.");
+  if (!rawSql) throw new Error("Database not configured.");
 
   const code = randomBytes(8).toString("base64url");
   const expiresAt = new Date(Date.now() + ONBOARDING_TTL_MINUTES * 60 * 1000).toISOString();
   const baseUrl = params.controlPlaneUrl.replace(/\/+$/, "");
 
   await ensureDemoTenant();
-  await sql`
+  // The request is created before a browser approval identifies its tenant.
+  // cli_onboarding_request is intentionally RLS-excluded for this exchange.
+  await rawSql`
     INSERT INTO cli_onboarding_request (
       code, requested_workspace_slug, requested_agent_id,
       requested_environment, requested_bundle_path, control_plane_url, expires_at
@@ -116,9 +118,11 @@ export async function approveCliOnboardingRequest(params: {
 }
 
 export async function exchangeCliOnboardingCode(code: string): Promise<CliOnboardingExchange> {
-  if (!sql) throw new Error("Database not configured.");
+  if (!rawSql || !sql) throw new Error("Database not configured.");
 
-  const requestRows = await sql<
+  // The opaque code is the sole pre-session capability. After resolving its
+  // approved tenant, all tenant-scoped issuance below is explicitly bound.
+  const requestRows = await rawSql<
     {
       id: string;
       requested_agent_id: string;

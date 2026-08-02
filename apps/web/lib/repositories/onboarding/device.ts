@@ -1,5 +1,5 @@
 import { randomBytes } from "crypto";
-import { sql } from "@/lib/db";
+import { rawSql, sql } from "@/lib/db";
 import type { AuthSession } from "@/lib/auth-session";
 import { ensureDemoTenant } from "@/lib/repositories/seed/local-dev";
 import {
@@ -32,7 +32,7 @@ export async function startDeviceOnboarding(params: {
   bundlePath: string;
   trial?: boolean;
 }): Promise<DeviceOnboardingStart> {
-  if (!sql) throw new Error("Database not configured.");
+  if (!rawSql) throw new Error("Database not configured.");
 
   const rawPart1 = randomBytes(2).toString("hex").toUpperCase();
   const rawPart2 = randomBytes(2).toString("hex").toUpperCase();
@@ -44,7 +44,9 @@ export async function startDeviceOnboarding(params: {
   const isTrial = params.trial ?? false;
 
   await ensureDemoTenant();
-  await sql`
+  // Device authorization begins before a browser session identifies a tenant.
+  // The opaque device code is stored in the RLS-excluded request table.
+  await rawSql`
     INSERT INTO cli_onboarding_request (
       code, requested_workspace_slug, requested_agent_id,
       requested_environment, requested_bundle_path, control_plane_url, expires_at,
@@ -88,9 +90,9 @@ export async function approveDeviceOnboarding(params: {
 }
 
 export async function exchangeDeviceCode(deviceCode: string): Promise<DeviceTokenResult> {
-  if (!sql) throw new Error("Database not configured.");
+  if (!rawSql) throw new Error("Database not configured.");
 
-  const rows = await sql<{
+  const rows = await rawSql<{
     id: string;
     code: string;
     polling_interval_seconds: number;
@@ -119,7 +121,7 @@ export async function exchangeDeviceCode(deviceCode: string): Promise<DeviceToke
     }
   }
 
-  await sql`
+  await rawSql`
     UPDATE cli_onboarding_request
     SET last_polled_at = now()
     WHERE id = ${req.id}

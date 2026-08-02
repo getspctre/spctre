@@ -47,12 +47,12 @@ export async function getPrimaryWorkspaceIdForTenant(tenantId: string, db = sql)
 export async function getTenantRequireMfa(tenantId: string): Promise<boolean | null> {
   if (!sql) return null;
 
-  const rows = await sql<{ require_mfa: boolean }[]>`
-    SELECT require_mfa
-    FROM tenant
-    WHERE id = ${tenantId}
-    LIMIT 1
-  `;
+  const rows = await runWithTenantContext(tenantId, () => sql<{ require_mfa: boolean }[]>`
+      SELECT require_mfa
+      FROM tenant
+      WHERE id = ${tenantId}
+      LIMIT 1
+    `);
 
   return rows[0]?.require_mfa ?? false;
 }
@@ -84,14 +84,16 @@ export async function getTenantPrincipalBySubject(params: {
   subject: string;
 }): Promise<{ id: string; principal_id: string; principal_subject: string } | null> {
   if (!sql) return null;
-  const rows = await sql<{ id: string; principal_id: string; principal_subject: string }[]>`
-    SELECT t.id, p.id AS principal_id, p.subject AS principal_subject
-    FROM tenant t
-    JOIN app_principal p ON p.tenant_id = t.id
-    WHERE t.id = ${params.tenantId}
-      AND p.subject = ${params.subject}
-    LIMIT 1
-  `;
+  const rows = await runWithTenantContext(params.tenantId, () => sql<
+    { id: string; principal_id: string; principal_subject: string }[]
+  >`
+      SELECT t.id, p.id AS principal_id, p.subject AS principal_subject
+      FROM tenant t
+      JOIN app_principal p ON p.tenant_id = t.id
+      WHERE t.id = ${params.tenantId}
+        AND p.subject = ${params.subject}
+      LIMIT 1
+    `);
   return rows[0] ?? null;
 }
 
