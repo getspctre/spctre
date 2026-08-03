@@ -1,0 +1,93 @@
+---
+title: Agent Blueprints
+description: Source-controlled operating envelopes for governed agents.
+---
+
+An **Agent Blueprint** is a versioned declaration of one agent's permitted
+operating envelope. It records purpose, allowed task classes, tools,
+connectors, services, environments, runtime targets, optional budgets and
+approval paths. A Blueprint does not schedule, prompt, or otherwise orchestrate
+an agent.
+
+## Import from source control
+
+Use `spctre blueprint import` from CI or an operator workstation to draft a
+Blueprint from YAML or JSON:
+
+```bash
+spctre blueprint import blueprints/payments-agent.yaml \
+  --key "$SPCTRE_OPERATOR_TOKEN" --url https://app.spctre.dev
+```
+
+The key must carry the **`blueprint:import`** scope. Only an administrator can
+issue that scope; runtime tokens from `spctre init` never receive it. A governed
+agent therefore cannot define or publish its own operating authority.
+
+Use `--dry-run` to validate the source locally without making a network request:
+
+```bash
+spctre blueprint import blueprints/payments-agent.yaml --dry-run
+```
+
+## Source format
+
+Each source document needs a display name, a stable `agentId`, and a
+`definition`. The definition must name a **published policy branch** with
+`policyBranchId`. Do not set `policyRevisionId`: the control plane resolves the
+branch's currently published revision during import.
+
+```yaml
+name: Payments agent
+agentId: payments-agent-production
+message: Restrict the payments agent to refund operations.
+definition:
+  purpose: Process approved customer refunds.
+  allowedTaskClasses: [refund]
+  tools: [refund_customer]
+  connectors: [stripe]
+  services: [payments-api]
+  environments: [production]
+  runtimeTargets:
+    - stack: LOCAL
+  budgets:
+    maxTokensPerTurn: 4000
+    maxCostUsdPerSession: 2
+    maxToolCallsPerSession: 10
+  approvalPath: [payments-reviewer]
+  policyBranchId: payments-refunds
+```
+
+The named policy branch must already have a published revision. Import fails
+with `409` if it does not. This ensures each draft Blueprint is bound to a
+reviewed policy revision rather than selecting its own policy authority.
+
+## Idempotency and review
+
+Imports are idempotent on the token workspace, `agentId`, and definition bound
+to the published policy revision:
+
+| Situation | Result |
+|---|---|
+| Agent Blueprint does not exist | A new draft Blueprint is created (`201`) |
+| Active revision has the same bound definition | No write (`200`, `alreadyCurrent: true`) |
+| Definition or resolved policy revision changed | A new draft revision is appended (`200`) |
+
+An import never approves or publishes. Review the draft Blueprint in the
+control plane, collect the required approvals, then publish it. Re-importing a
+previous definition after a later revision creates a fresh draft, so a source
+rollback can be reviewed and published normally.
+
+## API
+
+Automation that cannot use the CLI can send the raw source to
+`POST /api/v1/blueprint/imports` with a `blueprint:import` service key:
+
+```bash
+curl -sS -X POST https://app.spctre.dev/api/v1/blueprint/imports \
+  -H "Authorization: Bearer $SPCTRE_OPERATOR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"source":"'"$(cat blueprints/payments-agent.yaml)"'","sourcePath":"blueprints/payments-agent.yaml"}'
+```
+
+The response includes the Blueprint and draft revision IDs, the definition hash,
+and the policy branch and revision that were resolved at import time.
