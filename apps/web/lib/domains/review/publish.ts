@@ -19,7 +19,7 @@ import { approvalRulesFromWorkflow, getApprovalWorkflowForContext } from "@/lib/
 import { getLatestVerificationStatus } from "@/lib/repositories/verification";
 import { insertAuthorizationDenialEvent } from "@/lib/repositories/workspace";
 import { getOpenEscalationSummaryForRevision } from "@/lib/repositories/gateway";
-import { getLatestManagedSimulationRegression } from "@/lib/repositories/evidence";
+import { getLatestManagedSimulationRegression, countRuntimeEvidence } from "@/lib/repositories/evidence";
 import { isFeatureEnabledForPlan } from "@/lib/feature-flags";
 import { getSpctrePlan } from "@/lib/feature-flags-server";
 import { swallow } from "@/lib/platform/swallow";
@@ -134,9 +134,15 @@ async function checkPublishReadiness(
       revisionId: input.revisionId,
     });
     if (!regression) {
-      return "Publish is blocked: run a managed retained-log simulation for this revision before publishing.";
-    }
-    if (regression.blockingCount > 0) {
+      // Only require a managed simulation when there is runtime evidence to
+      // replay. A workspace with no evidence yet (e.g. first policy before any
+      // agent traffic) has nothing to regress against, so the gate would be
+      // unsatisfiable — don't dead-end publication.
+      const evidenceCount = await countRuntimeEvidence(branchRow.workspace_id ?? scope.workspaceId, tenantId);
+      if (evidenceCount > 0) {
+        return "Publish is blocked: run a managed retained-log simulation for this revision before publishing.";
+      }
+    } else if (regression.blockingCount > 0) {
       return `Publish is blocked: managed replay found ${regression.blockingCount} regression(s), including ${regression.newlyDeniedExpectedWorkCount} newly denied expected action(s), ${regression.removedEscalationCoverageCount} removed escalation control(s), and ${regression.newlyAllowedHighRiskCount} newly allowed high-risk action(s).`;
     }
   }

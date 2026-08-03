@@ -26,6 +26,7 @@ const insertPolicyPublishMock = vi.fn();
 const insertAuthorizationDenialEventMock = vi.fn();
 const appendOperationsLogMock = vi.fn().mockResolvedValue(undefined);
 const getLatestManagedSimulationRegressionMock = vi.fn();
+const countRuntimeEvidenceMock = vi.fn();
 
 vi.mock("@/lib/repositories/policy", () => ({
   getPublishBranchScope: getPublishBranchScopeMock,
@@ -60,6 +61,7 @@ vi.mock("@/lib/repositories/operations-log", () => ({
 }));
 vi.mock("@/lib/repositories/evidence", () => ({
   getLatestManagedSimulationRegression: getLatestManagedSimulationRegressionMock,
+  countRuntimeEvidence: countRuntimeEvidenceMock,
 }));
 
 vi.mock("@/lib/workspace/scope", () => ({
@@ -228,10 +230,21 @@ describe("Publish gating — open gateway escalations", () => {
   it("blocks Cloud publish until a retained-log replay exists for the revision", async () => {
     process.env.SPCTRE_PLAN = "cloud";
     getLatestManagedSimulationRegressionMock.mockResolvedValue(null);
+    countRuntimeEvidenceMock.mockResolvedValue(4);
 
     const result = await publishRevisionDecision({ branchId: "branch-1", revisionId: "rev-1" }, { tenantId: "t-1", workspaceId: "ws-1" });
 
     expect(result).toEqual({ error: expect.stringMatching(/managed retained-log simulation/i) });
+  });
+
+  it("waives the managed-simulation gate when there is no evidence to replay", async () => {
+    process.env.SPCTRE_PLAN = "cloud";
+    getLatestManagedSimulationRegressionMock.mockResolvedValue(null);
+    countRuntimeEvidenceMock.mockResolvedValue(0);
+
+    const result = await publishRevisionDecision({ branchId: "branch-1", revisionId: "rev-1" }, { tenantId: "t-1", workspaceId: "ws-1" });
+
+    expect(result).toHaveProperty("artifactHash");
   });
 
   it("blocks Cloud publish when retained-log replay reports regressions", async () => {
