@@ -240,17 +240,21 @@ export function ImportForm({ workspaceId, workspaceSlug, initialScope = "WORKSPA
               required
             />
 
-            <label className="meta" htmlFor="purpose">
-              Policy purpose
-            </label>
-            <textarea
-              className="input"
-              id="purpose"
-              name="purpose"
-              rows={3}
-              placeholder="e.g. Require escalation before production refund actions."
-              required
-            />
+            {creationMode === "guided" ? (
+              <>
+                <label className="meta" htmlFor="purpose">
+                  Policy purpose
+                </label>
+                <textarea
+                  className="input"
+                  id="purpose"
+                  name="purpose"
+                  rows={3}
+                  placeholder="e.g. Require escalation before production refund actions."
+                  required
+                />
+              </>
+            ) : null}
 
             <span className="meta">How do you want to start?</span>
             <div className="policySourceChoice" role="radiogroup" aria-label="Policy source">
