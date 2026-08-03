@@ -278,30 +278,52 @@ export async function createAgentBlueprintRevision(params: {
 }): Promise<AgentBlueprintRevision | null> {
   if (!sql) return null;
   const definitionHash = hashBlueprintDefinition(params.definition);
-  const rows = await sql<RevisionRow[]>`
-    WITH parent AS (
-      SELECT b.active_revision_id, r.definition_hash AS active_hash
-      FROM agent_blueprint b
-      LEFT JOIN agent_blueprint_revision r ON r.id = b.active_revision_id AND r.tenant_id = b.tenant_id
-      WHERE b.id = ${params.blueprintId} AND b.tenant_id = ${params.tenantId} AND b.workspace_id = ${params.workspaceId}
-    ), revision AS (
+  // Serialize revision creation per Blueprint. With no global definition_hash
+  // uniqueness, two concurrent identical submissions could otherwise each read
+  // the same head and append duplicate revisions. Locking the agent_blueprint
+  // row (FOR UPDATE) before the head-hash check makes the loser observe the
+  // winner's appended revision as the new head and no-op.
+  const rows = await sql.begin(async (tx) => {
+    // Lock the Blueprint row first. A concurrent creator blocks here until we
+    // commit. Blueprint not found → no revision.
+    const locked = await tx<{ active_revision_id: string | null }[]>`
+      SELECT active_revision_id FROM agent_blueprint
+      WHERE id = ${params.blueprintId} AND tenant_id = ${params.tenantId} AND workspace_id = ${params.workspaceId}
+      FOR UPDATE
+    `;
+    if (!locked[0]) return [] as RevisionRow[];
+    const activeRevisionId = locked[0].active_revision_id;
+
+    // Read the head hash in a SEPARATE statement so it runs on a fresh READ
+    // COMMITTED snapshot taken after the lock was granted — this is what makes a
+    // concurrent winner's just-committed revision visible (a single joined
+    // statement would use the loser's stale snapshot and miss it). No-op when
+    // the definition is unchanged from the head; a recurring definition after
+    // other revisions (source rollback A→B→A) still appends, because the head
+    // differs. This head check is the only dedup (no global hash uniqueness).
+    const headRev = activeRevisionId
+      ? await tx<{ definition_hash: string }[]>`
+          SELECT definition_hash FROM agent_blueprint_revision
+          WHERE id = ${activeRevisionId} AND tenant_id = ${params.tenantId}
+        `
+      : [];
+    if ((headRev[0]?.definition_hash ?? null) === definitionHash) return [] as RevisionRow[];
+
+    const inserted = await tx<RevisionRow[]>`
       INSERT INTO agent_blueprint_revision (tenant_id, blueprint_id, parent_revision_id, definition, definition_hash, message, author_id)
-      SELECT ${params.tenantId}, ${params.blueprintId}, active_revision_id,
-        ${sql.json(params.definition as unknown as JSONValue)}::jsonb, ${definitionHash}, ${params.message}, ${params.authorId}
-      FROM parent
-      -- No-op when the definition is unchanged from the current head. This is the
-      -- only dedup (there is no global definition_hash uniqueness): a definition
-      -- that recurs after other revisions — e.g. a source rollback A→B→A — must
-      -- append a fresh revision so it can be published and re-selected at runtime.
-      WHERE parent.active_hash IS DISTINCT FROM ${definitionHash}
+      VALUES (${params.tenantId}, ${params.blueprintId}, ${activeRevisionId},
+        ${sql.json(params.definition as unknown as JSONValue)}::jsonb, ${definitionHash}, ${params.message}, ${params.authorId})
       RETURNING id, blueprint_id, parent_revision_id, definition, definition_hash, message, author_id, status, created_at, published_at
-    )
-    UPDATE agent_blueprint b SET active_revision_id = revision.id, updated_at = now()
-    FROM revision WHERE b.id = revision.blueprint_id
-    RETURNING revision.id, revision.blueprint_id, revision.parent_revision_id, revision.definition,
-      revision.definition_hash, revision.message, revision.author_id, revision.status, revision.created_at, revision.published_at
-  `;
-  return rows[0] ? mapRevision(rows[0]) : null;
+    `;
+    const revision = inserted[0];
+    if (!revision) return [] as RevisionRow[];
+    await tx`
+      UPDATE agent_blueprint SET active_revision_id = ${revision.id}, updated_at = now()
+      WHERE id = ${params.blueprintId} AND tenant_id = ${params.tenantId}
+    `;
+    return inserted;
+  });
+  return rows[0] ? mapRevision(rows[0] as RevisionRow) : null;
 }
 
 export async function getAgentBlueprintApprovals(params: { tenantId: string; revisionId: string }): Promise<PolicyApproval[]> {

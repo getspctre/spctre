@@ -228,18 +228,43 @@ export async function importBlueprintForToken(input: {
         message: input.message,
         definition: boundDefinition,
       });
-      if (!revision) return { error: "Blueprint revision could not be created.", status: 500 };
-      return {
-        result: {
-          blueprintId: existing.id,
-          revisionId: revision.id,
-          definitionHash,
-          created: false,
-          alreadyCurrent: false,
-          policyBranchId: published.branchId,
-          policyRevisionId: published.revisionId,
-        },
-      };
+      if (revision) {
+        return {
+          result: {
+            blueprintId: existing.id,
+            revisionId: revision.id,
+            definitionHash,
+            created: false,
+            alreadyCurrent: false,
+            policyBranchId: published.branchId,
+            policyRevisionId: published.revisionId,
+          },
+        };
+      }
+
+      // createAgentBlueprintRevision no-ops (null) when the head already carries
+      // this definition — which, given our earlier head check passed, means a
+      // concurrent import appended it under the row lock between the two. Re-read
+      // and report it as already current rather than a spurious failure.
+      const afterRace = await getAgentBlueprintByAgent({
+        tenantId: input.tenantId,
+        workspaceId: input.workspaceId,
+        agentId: input.agentId,
+      });
+      if (afterRace && afterRace.activeDefinitionHash === definitionHash) {
+        return {
+          result: {
+            blueprintId: afterRace.id,
+            revisionId: afterRace.activeRevisionId ?? "",
+            definitionHash,
+            created: false,
+            alreadyCurrent: true,
+            policyBranchId: published.branchId,
+            policyRevisionId: published.revisionId,
+          },
+        };
+      }
+      return { error: "Blueprint revision could not be created.", status: 500 };
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);

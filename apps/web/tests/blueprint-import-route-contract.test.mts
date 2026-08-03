@@ -226,6 +226,37 @@ describe.skipIf(!databaseAvailable)("POST /api/v1/blueprint/imports contract", (
     expect(head.active).toBe(true);
   });
 
+  it("serializes concurrent identical imports; appends exactly one revision", async () => {
+    const fixture = await createFixture();
+    await seedPublishedPolicy(fixture, "acquisition-scout");
+    const operatorToken = await mintToken(fixture, ["blueprint:import"]);
+
+    // Establish the Blueprint with head = A.
+    const first = await POST(importRequest(operatorToken, blueprintSource({ policyBranch: "acquisition-scout", purpose: "Definition A." })));
+    expect(first.status).toBe(201);
+    const blueprintId = (await first.json()).blueprintId as string;
+
+    // Fire several identical imports of a CHANGED definition B at once. With the
+    // per-Blueprint row lock they serialize: exactly one appends the B revision,
+    // the rest observe it as the new head and no-op — never duplicate revisions.
+    const sourceB = blueprintSource({ policyBranch: "acquisition-scout", purpose: "Definition B." });
+    const responses = await Promise.all(Array.from({ length: 6 }, () => POST(importRequest(operatorToken, sourceB))));
+    const bodies = await Promise.all(responses.map((r) => r.json()));
+    for (const r of responses) expect([200, 201]).toContain(r.status);
+    for (const body of bodies) expect(body.error).toBeUndefined();
+
+    // Head A + exactly one B = 2 revisions, and every response points at the
+    // single B revision.
+    expect(await blueprintRevisionCount(blueprintId)).toBe(2);
+    expect(new Set(bodies.map((b) => b.revisionId)).size).toBe(1);
+    const [headB] = await rawSql!<{ id: string; definition_hash: string }[]>`
+      SELECT r.id, r.definition_hash
+      FROM agent_blueprint b JOIN agent_blueprint_revision r ON r.id = b.active_revision_id
+      WHERE b.id = ${blueprintId}
+    `;
+    expect(bodies.every((b) => b.revisionId === headB.id && b.definitionHash === headB.definition_hash)).toBe(true);
+  });
+
   it("rejects a source that pins policyRevisionId as 400", async () => {
     const fixture = await createFixture();
     await seedPublishedPolicy(fixture, "acquisition-scout");
