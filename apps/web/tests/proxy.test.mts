@@ -100,6 +100,15 @@ describe("proxy rate limiting", () => {
     expect(response.status).toBe(200);
   });
 
+  it("passes Blueprint runtime fetches through to their route handler", async () => {
+    process.env.DATABASE_URL = "postgres://spctre.test/app";
+
+    const { proxy } = await import("../proxy");
+    const response = await proxy(makeRequest("/api/agent-blueprints/runtime?agentId=scout", "203.0.113.10"));
+
+    expect(response.status).toBe(200);
+  });
+
   it("rejects cookie-authenticated mutations from a mismatched origin", async () => {
     process.env.DATABASE_URL = "postgres://spctre.test/app";
 
