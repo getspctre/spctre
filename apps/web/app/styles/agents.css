@@ -518,8 +518,8 @@
   gap: 12px;
 }
 
-.blueprintRevisionActive {
-  background: var(--surface-subtle, rgba(127, 127, 127, 0.06));
+.auditRow.blueprintRevisionActive td {
+  background: var(--bg);
 }
 
 .blueprintRevisionActions {

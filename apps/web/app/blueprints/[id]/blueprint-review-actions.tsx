@@ -291,12 +291,12 @@ export function BlueprintSimulatePanel({ blueprintId, revisionId }: { blueprintI
       </div>
       {error ? <p className="meta publishError" role="alert">{error}</p> : null}
       {simulation && simulation.examples.length ? (
-        <div className="tableWrap">
-          <table>
+        <div className="auditTableWrapper">
+          <table className="auditTable">
             <thead><tr><th>Decision</th><th>Connector</th><th>Action</th></tr></thead>
             <tbody>
               {simulation.examples.map((example) => (
-                <tr key={example.decisionId}>
+                <tr className="auditRow" key={example.decisionId}>
                   <td><code className="smallCode">{example.decisionId.slice(0, 12)}</code></td>
                   <td>{example.connector}</td>
                   <td>{example.action}</td>

@@ -270,15 +270,15 @@ export async function BlueprintReviewContent({
           </div>
           <FileCode2 size={20} className="sectionIcon" />
         </div>
-        <div className="tableWrap">
-          <table>
+        <div className="auditTableWrapper">
+          <table className="auditTable">
             <thead><tr><th>Revision</th><th>Lifecycle</th><th>Policy revision</th><th>Note</th><th>Created</th><th /></tr></thead>
             <tbody>
               {revisions.map((revision: AgentBlueprintRevision) => {
                 const isHead = revision.id === headRevision.id;
                 const isInspected = revision.id === inspected.id;
                 return (
-                  <tr key={revision.id} className={isInspected ? "blueprintRevisionActive" : undefined}>
+                  <tr key={revision.id} className={`auditRow${isInspected ? " blueprintRevisionActive" : ""}`}>
                     <td>
                       <code className="smallCode">{hashToFingerprint(revision.id)}</code>
                       {isHead ? <span className="pill pillNeutral blueprintHeadTag">head</span> : null}
