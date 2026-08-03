@@ -14,6 +14,7 @@ const findActorByIdSpy = vi.fn();
 const blueprintWorkspaceScopeSpy = vi.fn();
 const submitApprovalSpy = vi.fn().mockResolvedValue(true);
 const rollbackSpy = vi.fn();
+const setRevisionStatusSpy = vi.fn();
 
 vi.mock("next/headers", () => ({
   cookies: async () => ({ get: () => undefined, set: () => {} }),
@@ -35,12 +36,15 @@ vi.mock("@/lib/domains/agent-blueprints/service", () => ({
   getAgentBlueprintWorkspaceScope: blueprintWorkspaceScopeSpy,
   submitBlueprintApproval: submitApprovalSpy,
   rollbackAgentBlueprint: rollbackSpy,
+  setAgentBlueprintRevisionStatus: setRevisionStatusSpy,
+  publishBlueprintRevision: vi.fn(),
 }));
 
 const { POST: approvalsPost } = await import(
   "../app/api/agent-blueprints/[id]/revisions/[revisionId]/approvals/route"
 );
 const { POST: rollbackPost } = await import("../app/api/agent-blueprints/[id]/rollback/route");
+const { PATCH: lifecyclePatch } = await import("../app/api/agent-blueprints/[id]/route");
 
 function scopedActor(overrides: Record<string, unknown> = {}) {
   return {
@@ -58,6 +62,7 @@ function scopedActor(overrides: Record<string, unknown> = {}) {
 beforeEach(() => {
   vi.clearAllMocks();
   submitApprovalSpy.mockResolvedValue(true);
+  setRevisionStatusSpy.mockResolvedValue({ id: "rev-1" });
   getAuthSessionSpy.mockResolvedValue({ principalId: "principal-1", tenantId: "tenant-1", subject: "sub-1" });
   getActiveScopeSpy.mockResolvedValue({ tenantId: "tenant-1", workspaceId: "ws-1" });
 });
@@ -87,7 +92,7 @@ describe("Blueprint approvals route authorizes against the real workspace slug",
 
   it("denies the reviewer when the Blueprint belongs to a workspace they are not assigned to", async () => {
     findActorByIdSpy.mockResolvedValue(scopedActor());
-    blueprintWorkspaceScopeSpy.mockResolvedValue({ workspace_id: "ws-2", workspace_slug: "other-workspace" });
+    blueprintWorkspaceScopeSpy.mockResolvedValue({ workspace_id: "ws-1", workspace_slug: "other-workspace" });
 
     const response = await approvalsPost(approvalsRequest({ role: "Security", status: "APPROVED" }), {
       params: Promise.resolve({ id: "bp-1", revisionId: "rev-1" }),
@@ -95,6 +100,54 @@ describe("Blueprint approvals route authorizes against the real workspace slug",
 
     expect(response.status).toBe(403);
     expect(submitApprovalSpy).not.toHaveBeenCalled();
+  });
+
+  it("does not write an approval through a different active workspace", async () => {
+    findActorByIdSpy.mockResolvedValue(scopedActor());
+    blueprintWorkspaceScopeSpy.mockResolvedValue({ workspace_id: "ws-2", workspace_slug: "acme-prod" });
+
+    const response = await approvalsPost(approvalsRequest({ role: "Security", status: "APPROVED" }), {
+      params: Promise.resolve({ id: "bp-1", revisionId: "rev-1" }),
+    });
+
+    expect(response.status).toBe(404);
+    expect(submitApprovalSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe("Blueprint lifecycle route authorizes workspace admins", () => {
+  it("denies a non-admin reviewer before advancing a draft", async () => {
+    findActorByIdSpy.mockResolvedValue(scopedActor());
+    blueprintWorkspaceScopeSpy.mockResolvedValue({ workspace_id: "ws-1", workspace_slug: "acme-prod" });
+
+    const response = await lifecyclePatch(
+      new Request("http://localhost/api/agent-blueprints/bp-1", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ revisionId: "rev-1", status: "IN_REVIEW" }),
+      }),
+      { params: Promise.resolve({ id: "bp-1" }) }
+    );
+
+    expect(response.status).toBe(403);
+    expect(setRevisionStatusSpy).not.toHaveBeenCalled();
+  });
+
+  it("allows an admin in the Blueprint's active workspace to advance a draft", async () => {
+    findActorByIdSpy.mockResolvedValue(scopedActor({ reviewerRoles: ["Admin"] }));
+    blueprintWorkspaceScopeSpy.mockResolvedValue({ workspace_id: "ws-1", workspace_slug: "acme-prod" });
+
+    const response = await lifecyclePatch(
+      new Request("http://localhost/api/agent-blueprints/bp-1", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ revisionId: "rev-1", status: "IN_REVIEW" }),
+      }),
+      { params: Promise.resolve({ id: "bp-1" }) }
+    );
+
+    expect(response.status).toBe(200);
+    expect(setRevisionStatusSpy).toHaveBeenCalledWith({ tenantId: "tenant-1", workspaceId: "ws-1", blueprintId: "bp-1", revisionId: "rev-1", status: "IN_REVIEW" });
   });
 });
 

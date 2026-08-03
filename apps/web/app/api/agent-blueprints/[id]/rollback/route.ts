@@ -20,6 +20,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   // Require admin on the Blueprint's real governing workspace, not a hardcoded
   // slug; "workspace-demo" is only the no-workspace/no-DB null-guard.
   const workspaceScope = await getAgentBlueprintWorkspaceScope({ tenantId: scope.tenantId, blueprintId });
+  if (!workspaceScope || workspaceScope.workspace_id !== scope.workspaceId) return withTraceId(Response.json({ error: "Blueprint not found.", meta: makeMeta(traceId) }, { status: 404 }), traceId);
   if (!actor || !requireActorAdminWorkspace(actor, workspaceScope?.workspace_slug ?? "workspace-demo").allowed) return withTraceId(Response.json({ error: "Admin permission is required to roll back a Blueprint.", meta: makeMeta(traceId) }, { status: 403 }), traceId);
   const body = await request.json().catch(() => null) as Record<string, unknown> | null;
   const targetRevisionId = typeof body?.targetRevisionId === "string" ? body.targetRevisionId.trim() : "";

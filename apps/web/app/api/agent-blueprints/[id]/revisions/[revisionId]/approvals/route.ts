@@ -29,6 +29,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   // Authorize the reviewer against the Blueprint's real governing workspace, not
   // a hardcoded slug; "workspace-demo" is only the no-workspace/no-DB null-guard.
   const workspaceScope = await getAgentBlueprintWorkspaceScope({ tenantId: scope.tenantId, blueprintId });
+  if (!workspaceScope || workspaceScope.workspace_id !== scope.workspaceId) return withTraceId(Response.json({ error: "Blueprint not found.", meta: makeMeta(traceId) }, { status: 404 }), traceId);
   const review = canActorReviewRole(actor, workspaceScope?.workspace_slug ?? "workspace-demo", role);
   if (!review.allowed) return withTraceId(Response.json({ error: review.reason ?? "Review is not allowed.", meta: makeMeta(traceId) }, { status: 403 }), traceId);
   const ok = await submitBlueprintApproval({ tenantId: scope.tenantId, workspaceId: scope.workspaceId, blueprintId, revisionId, reviewerId: actor.id, reviewerRole: role, status: status as "APPROVED" | "CHANGES_REQUESTED" | "PENDING", note: typeof body?.note === "string" ? body.note : null });

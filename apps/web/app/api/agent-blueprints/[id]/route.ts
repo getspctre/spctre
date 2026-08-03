@@ -1,6 +1,7 @@
 import { getAuthSession } from "@/lib/auth-session";
 import { getActiveScope } from "@/lib/workspace";
-import { createAgentBlueprintRevision, getAgentBlueprint, parseAgentBlueprintDefinition, publishBlueprintRevision, setAgentBlueprintRevisionStatus } from "@/lib/domains/agent-blueprints/service";
+import { findActorById, requireActorAdminWorkspace } from "@/lib/actors";
+import { createAgentBlueprintRevision, getAgentBlueprint, getAgentBlueprintWorkspaceScope, parseAgentBlueprintDefinition, publishBlueprintRevision, setAgentBlueprintRevisionStatus } from "@/lib/domains/agent-blueprints/service";
 import { verifyWriteAccess } from "@/lib/demo-guard";
 import type { AgentBlueprintStatus } from "@spctre/policy-schema";
 import { diffAgentBlueprintRevisions } from "@spctre/policy-schema";
@@ -63,6 +64,13 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const revisionId = typeof body?.revisionId === "string" ? body.revisionId : "";
   const status = body?.status as AgentBlueprintStatus | undefined;
   if (!revisionId || !status || !["IN_REVIEW", "PUBLISHED"].includes(status)) return withTraceId(Response.json({ error: "revisionId and a valid lifecycle transition are required.", meta: makeMeta(auth.traceId) }, { status: 400 }), auth.traceId);
+  const [actor, workspaceScope] = await Promise.all([
+    findActorById(auth.session.principalId, { tenantId: auth.scope.tenantId, workspaceId: auth.scope.workspaceId }),
+    getAgentBlueprintWorkspaceScope({ tenantId: auth.scope.tenantId, blueprintId: id }),
+  ]);
+  if (!workspaceScope || workspaceScope.workspace_id !== auth.scope.workspaceId) return withTraceId(Response.json({ error: "Blueprint not found.", meta: makeMeta(auth.traceId) }, { status: 404 }), auth.traceId);
+  const admin = actor ? requireActorAdminWorkspace(actor, workspaceScope.workspace_slug ?? "workspace-demo") : { allowed: false };
+  if (!admin.allowed) return withTraceId(Response.json({ error: "Admin permission is required to advance a Blueprint lifecycle.", meta: makeMeta(auth.traceId) }, { status: 403 }), auth.traceId);
   const result = status === "PUBLISHED"
     ? await publishBlueprintRevision({ tenantId: auth.scope.tenantId, workspaceId: auth.scope.workspaceId, blueprintId: id, revisionId })
     : { revision: await setAgentBlueprintRevisionStatus({ tenantId: auth.scope.tenantId, workspaceId: auth.scope.workspaceId, blueprintId: id, revisionId, status }) };
