@@ -19,6 +19,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const getPublishBranchScopeMock = vi.fn();
 const revisionExistsOnPublishBranchMock = vi.fn();
 const getApprovalsMock = vi.fn();
+const getRulesForRevisionMock = vi.fn();
 const getOpenEscalationSummaryMock = vi.fn();
 const getExistingPublishArtifactHashMock = vi.fn();
 const insertPolicyPublishMock = vi.fn();
@@ -30,6 +31,7 @@ vi.mock("@/lib/repositories/policy", () => ({
   getPublishBranchScope: getPublishBranchScopeMock,
   revisionExistsOnPublishBranch: revisionExistsOnPublishBranchMock,
   getApprovals: getApprovalsMock,
+  getRulesForRevision: getRulesForRevisionMock,
   getExistingPublishArtifactHash: getExistingPublishArtifactHashMock,
   insertPolicyPublish: insertPolicyPublishMock,
   getRevisionWorkspaceScope: vi.fn(),
@@ -106,6 +108,7 @@ describe("Publish gating — approval not satisfied", () => {
     getPublishBranchScopeMock.mockResolvedValue(BRANCH_ROW);
     revisionExistsOnPublishBranchMock.mockResolvedValue(true);
     getApprovalsMock.mockResolvedValue([]);
+    getRulesForRevisionMock.mockResolvedValue([{ stableRuleId: "refund.review" }]);
     getOpenEscalationSummaryMock.mockResolvedValue({ count: 0, nearestSlaDueAt: null });
     getExistingPublishArtifactHashMock.mockResolvedValue(null);
     insertPolicyPublishMock.mockResolvedValue(undefined);
@@ -164,6 +167,7 @@ describe("Publish gating — open gateway escalations", () => {
     getPublishBranchScopeMock.mockResolvedValue(BRANCH_ROW);
     revisionExistsOnPublishBranchMock.mockResolvedValue(true);
     getApprovalsMock.mockResolvedValue([]);
+    getRulesForRevisionMock.mockResolvedValue([{ stableRuleId: "refund.review" }]);
     getExistingPublishArtifactHashMock.mockResolvedValue(null);
     insertPolicyPublishMock.mockResolvedValue(undefined);
     evaluatePublishReadinessMock.mockReturnValue({
@@ -194,6 +198,15 @@ describe("Publish gating — open gateway escalations", () => {
       expect(result.error).toMatch(/escalation/i);
       expect(result.error).toContain("3");
     }
+  });
+
+  it("blocks publication of an empty policy revision", async () => {
+    getRulesForRevisionMock.mockResolvedValue([]);
+
+    const result = await publishRevisionDecision({ branchId: "branch-1", revisionId: "rev-1" }, { tenantId: "t-1", workspaceId: "ws-1" });
+
+    expect(result).toEqual({ error: "Publish is blocked: a policy revision must contain at least one rule." });
+    expect(insertPolicyPublishMock).not.toHaveBeenCalled();
   });
 
   it("does not block when gateway is disabled even with open escalations", async () => {

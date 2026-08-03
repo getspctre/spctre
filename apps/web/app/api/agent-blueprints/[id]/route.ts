@@ -43,6 +43,13 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const writeCheck = verifyWriteAccess(auth.scope.tenantId);
   if (!writeCheck.allowed) return withTraceId(Response.json({ error: writeCheck.error || "Write access denied.", meta: makeMeta(auth.traceId) }, { status: 403 }), auth.traceId);
   const { id } = await params;
+  const [actor, workspaceScope] = await Promise.all([
+    findActorById(auth.session.principalId, { tenantId: auth.scope.tenantId, workspaceId: auth.scope.workspaceId }),
+    getAgentBlueprintWorkspaceScope({ tenantId: auth.scope.tenantId, blueprintId: id }),
+  ]);
+  if (!workspaceScope || workspaceScope.workspace_id !== auth.scope.workspaceId) return withTraceId(Response.json({ error: "Blueprint not found.", meta: makeMeta(auth.traceId) }, { status: 404 }), auth.traceId);
+  const admin = actor ? requireActorAdminWorkspace(actor, workspaceScope.workspace_slug ?? "workspace-demo") : { allowed: false };
+  if (!admin.allowed) return withTraceId(Response.json({ error: "Admin permission is required to create a Blueprint revision.", meta: makeMeta(auth.traceId) }, { status: 403 }), auth.traceId);
   const body = await request.json().catch(() => null);
   if (!body || typeof body !== "object" || Array.isArray(body)) return withTraceId(Response.json({ error: "Request body must be an object.", meta: makeMeta(auth.traceId) }, { status: 400 }), auth.traceId);
   const record = body as Record<string, unknown>;

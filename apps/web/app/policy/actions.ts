@@ -23,6 +23,7 @@ export async function createPolicyBranch(_prev: CreatePolicyBranchState, formDat
 
   const result = await createPolicyBranchDecision({
     branchName: ((formData.get("branchName") as string | null) ?? "").trim(),
+    purpose: ((formData.get("purpose") as string | null) ?? "").trim(),
     scope: (formData.get("scope") as string | null) ?? "WORKSPACE",
     environment: ((formData.get("environment") as string | null) ?? "").trim(),
     connector: ((formData.get("connector") as string | null) ?? "").trim(),

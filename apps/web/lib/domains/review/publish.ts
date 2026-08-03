@@ -10,6 +10,7 @@ import {
   getApprovals,
   getExistingPublishArtifactHash,
   getPublishBranchScope,
+  getRulesForRevision,
   insertPolicyPublish,
   revisionExistsOnPublishBranch,
 } from "@/lib/repositories/policy";
@@ -94,12 +95,18 @@ async function checkPublishReadiness(
   branchRow: PublishBranchRow
 ): Promise<string | null> {
   const tenantId = scope.tenantId;
-  const approvals = await getApprovals(input.revisionId, tenantId);
-  const approvalWorkflow = await getApprovalWorkflowForContext({
-    tenantId,
-    workspaceId: branchRow.workspace_id ?? scope.workspaceId,
-    environment: branchRow.environment,
-  });
+  const [rules, approvals, approvalWorkflow] = await Promise.all([
+    getRulesForRevision(input.revisionId, tenantId),
+    getApprovals(input.revisionId, tenantId),
+    getApprovalWorkflowForContext({
+      tenantId,
+      workspaceId: branchRow.workspace_id ?? scope.workspaceId,
+      environment: branchRow.environment,
+    }),
+  ]);
+  if (rules.length === 0) {
+    return "Publish is blocked: a policy revision must contain at least one rule.";
+  }
   const verificationPolicy = approvalWorkflow.verificationPolicy ?? { requireVerification: false };
   const verificationSummary = verificationPolicy.requireVerification
     ? await getLatestVerificationStatus(branchRow.workspace_id ?? scope.workspaceId, tenantId, {

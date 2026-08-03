@@ -17,6 +17,7 @@ const getApprovalsSpy = vi.fn().mockResolvedValue([]);
 const submitApprovalSpy = vi.fn().mockResolvedValue(true);
 const rollbackSpy = vi.fn();
 const setRevisionStatusSpy = vi.fn();
+const createRevisionSpy = vi.fn();
 
 vi.mock("next/headers", () => ({
   cookies: async () => ({ get: () => undefined, set: () => {} }),
@@ -40,6 +41,8 @@ vi.mock("@/lib/domains/agent-blueprints/service", () => ({
   submitBlueprintApproval: submitApprovalSpy,
   rollbackAgentBlueprint: rollbackSpy,
   setAgentBlueprintRevisionStatus: setRevisionStatusSpy,
+  createAgentBlueprintRevision: createRevisionSpy,
+  parseAgentBlueprintDefinition: vi.fn((definition) => ({ definition })),
   publishBlueprintRevision: vi.fn(),
 }));
 
@@ -51,6 +54,7 @@ const { GET: approvalsGet } = await import(
 );
 const { POST: rollbackPost } = await import("../app/api/agent-blueprints/[id]/rollback/route");
 const { PATCH: lifecyclePatch } = await import("../app/api/agent-blueprints/[id]/route");
+const { POST: blueprintPost } = await import("../app/api/agent-blueprints/[id]/route");
 
 function scopedActor(overrides: Record<string, unknown> = {}) {
   return {
@@ -70,6 +74,7 @@ beforeEach(() => {
   submitApprovalSpy.mockResolvedValue(true);
   getBlueprintSpy.mockResolvedValue({ revisions: [{ id: "rev-1" }] });
   setRevisionStatusSpy.mockResolvedValue({ id: "rev-1" });
+  createRevisionSpy.mockResolvedValue({ id: "rev-2" });
   getAuthSessionSpy.mockResolvedValue({ principalId: "principal-1", tenantId: "tenant-1", subject: "sub-1" });
   getActiveScopeSpy.mockResolvedValue({ tenantId: "tenant-1", workspaceId: "ws-1" });
 });
@@ -169,6 +174,48 @@ describe("Blueprint lifecycle route authorizes workspace admins", () => {
 
     expect(response.status).toBe(200);
     expect(setRevisionStatusSpy).toHaveBeenCalledWith({ tenantId: "tenant-1", workspaceId: "ws-1", blueprintId: "bp-1", revisionId: "rev-1", status: "IN_REVIEW" });
+  });
+});
+
+describe("Blueprint revision creation requires a workspace admin", () => {
+  it("denies a non-admin before creating a revision", async () => {
+    findActorByIdSpy.mockResolvedValue(scopedActor());
+    blueprintWorkspaceScopeSpy.mockResolvedValue({ workspace_id: "ws-1", workspace_slug: "acme-prod" });
+
+    const response = await blueprintPost(
+      new Request("http://localhost/api/agent-blueprints/bp-1", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ definition: {} }),
+      }),
+      { params: Promise.resolve({ id: "bp-1" }) }
+    );
+
+    expect(response.status).toBe(403);
+    expect(createRevisionSpy).not.toHaveBeenCalled();
+  });
+
+  it("allows a workspace admin to create a revision", async () => {
+    findActorByIdSpy.mockResolvedValue(scopedActor({ reviewerRoles: ["Admin"] }));
+    blueprintWorkspaceScopeSpy.mockResolvedValue({ workspace_id: "ws-1", workspace_slug: "acme-prod" });
+
+    const response = await blueprintPost(
+      new Request("http://localhost/api/agent-blueprints/bp-1", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ definition: {}, message: "Tighten session budget" }),
+      }),
+      { params: Promise.resolve({ id: "bp-1" }) }
+    );
+
+    expect(response.status).toBe(201);
+    expect(createRevisionSpy).toHaveBeenCalledWith(expect.objectContaining({
+      tenantId: "tenant-1",
+      workspaceId: "ws-1",
+      blueprintId: "bp-1",
+      authorId: "principal-1",
+      message: "Tighten session budget",
+    }));
   });
 });
 
