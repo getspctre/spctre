@@ -257,6 +257,34 @@ describe.skipIf(!databaseAvailable)("POST /api/v1/blueprint/imports contract", (
     expect(bodies.every((b) => b.revisionId === headB.id && b.definitionHash === headB.definition_hash)).toBe(true);
   });
 
+  it("serializes concurrent first-ever imports; creates one Blueprint without a spurious 409", async () => {
+    const fixture = await createFixture();
+    await seedPublishedPolicy(fixture, "acquisition-scout");
+    const operatorToken = await mintToken(fixture, ["blueprint:import"]);
+
+    // No Blueprint exists yet. Fire several identical first imports at once: the
+    // agent-id unique constraint lets exactly one create it; the rest must
+    // re-read the winner and converge (alreadyCurrent), not return 409.
+    const source = blueprintSource({ policyBranch: "acquisition-scout", purpose: "Definition A." });
+    const responses = await Promise.all(Array.from({ length: 6 }, () => POST(importRequest(operatorToken, source))));
+    const bodies = await Promise.all(responses.map((r) => r.json()));
+
+    for (const r of responses) expect([200, 201]).toContain(r.status);
+    for (const body of bodies) expect(body.error).toBeUndefined();
+
+    const blueprintIds = new Set(bodies.map((b) => b.blueprintId));
+    expect(blueprintIds.size).toBe(1);
+    const blueprintId = [...blueprintIds][0] as string;
+    expect(await blueprintRevisionCount(blueprintId)).toBe(1);
+    expect(new Set(bodies.map((b) => b.revisionId)).size).toBe(1);
+    // Exactly one winner created it; the rest are already-current.
+    expect(bodies.filter((b) => b.created === true)).toHaveLength(1);
+    const [{ count }] = await rawSql!<{ count: string }[]>`
+      SELECT count(*)::text AS count FROM agent_blueprint WHERE tenant_id = ${fixture.tenantId} AND agent_id = 'scout'
+    `;
+    expect(Number(count)).toBe(1);
+  });
+
   it("rejects a source that pins policyRevisionId as 400", async () => {
     const fixture = await createFixture();
     await seedPublishedPolicy(fixture, "acquisition-scout");

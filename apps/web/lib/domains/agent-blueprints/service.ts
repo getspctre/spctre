@@ -166,7 +166,7 @@ export async function importBlueprintForToken(input: {
       };
       const definitionHash = hashBlueprintDefinition(boundDefinition);
 
-      const existing = await getAgentBlueprintByAgent({
+      let existing = await getAgentBlueprintByAgent({
         tenantId: input.tenantId,
         workspaceId: input.workspaceId,
         agentId: input.agentId,
@@ -182,20 +182,33 @@ export async function importBlueprintForToken(input: {
           definition: boundDefinition,
           authorId: input.principalId,
         });
-        if (!created) {
+        if (created) {
+          return {
+            result: {
+              blueprintId: created.id,
+              revisionId: created.activeRevisionId,
+              definitionHash,
+              created: true,
+              alreadyCurrent: false,
+              policyBranchId: published.branchId,
+              policyRevisionId: published.revisionId,
+            },
+          };
+        }
+        // Create failed on a unique violation. Re-read by agent: a concurrent
+        // first-ever import may have just created the Blueprint (the agent-id
+        // unique constraint let only one win) — fall through to the head-check /
+        // append path so the loser converges instead of returning 409. If no
+        // Blueprint governs this agent, the conflict was on the name, which is a
+        // genuine 409.
+        existing = await getAgentBlueprintByAgent({
+          tenantId: input.tenantId,
+          workspaceId: input.workspaceId,
+          agentId: input.agentId,
+        });
+        if (!existing) {
           return { error: "Blueprint could not be created; its name may already be in use.", status: 409 };
         }
-        return {
-          result: {
-            blueprintId: created.id,
-            revisionId: created.activeRevisionId,
-            definitionHash,
-            created: true,
-            alreadyCurrent: false,
-            policyBranchId: published.branchId,
-            policyRevisionId: published.revisionId,
-          },
-        };
       }
 
       // Idempotency is HEAD-based: no-op only when the current head (active
