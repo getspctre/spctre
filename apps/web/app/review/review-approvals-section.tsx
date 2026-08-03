@@ -8,6 +8,7 @@ import type {
   AgtVerificationSummary,
   ApprovalWorkflowSnapshot,
   PublishReadiness,
+  SimulationRegressionSummary,
 } from "@spctre/policy-schema";
 import type { BundleCompatibilityReport } from "@spctre/policy-schema";
 import type { AppViewMode } from "@/lib/app-view-mode";
@@ -46,6 +47,8 @@ interface ReviewPublishSectionProps {
   actor: Principal;
   permissions: BranchPermissionSnapshot;
   verificationSummary: AgtVerificationSummary | null;
+  simulationRegression: SimulationRegressionSummary | null;
+  requiresManagedSimulation: boolean;
   activeArtifact: PolicyArtifactExport;
   activeBundle: AgtCompatiblePolicyBundle;
   viewMode: AppViewMode;
@@ -83,9 +86,9 @@ export function ReviewApprovalsSection({
               <h2>Approvals</h2>
               <p className="meta">
                 {usingRealBranch
-                  ? `${approvalRules.filter((rule) => approvals.some((a) => a.role === rule.role && a.status === "APPROVED")).length} of ${approvalRules.length} required approvals · ${(() => {
+                  ? `${approvalRules.reduce((count, rule) => count + Math.min(rule.requiredCount, approvals.filter((approval) => approval.role === rule.role && approval.status === "APPROVED").length), 0)} of ${approvalRules.reduce((count, rule) => count + rule.requiredCount, 0)} required approvals · ${(() => {
                       const pendingRoles = approvalRules
-                        .filter((rule) => !approvals.some((a) => a.role === rule.role && a.status === "APPROVED"))
+                        .filter((rule) => approvals.filter((approval) => approval.role === rule.role && approval.status === "APPROVED").length < rule.requiredCount)
                         .map((rule) => rule.role);
                       if (pendingRoles.length === 0) return "all required approvals complete.";
                       if (pendingRoles.length === 1) return `1 pending ${pendingRoles[0]} review.`;
@@ -105,6 +108,7 @@ export function ReviewApprovalsSection({
               approvalRules={approvalRules}
               approvals={approvals}
               isPublished={isPublished}
+              actorId={actor.id}
               actorName={actor.name}
               reviewableRoles={permissions.reviewableRoles}
               reviewBlockedReason={permissions.reviewBlockedReason}
@@ -130,6 +134,8 @@ export function ReviewPublishSection({
   actor,
   permissions,
   verificationSummary,
+  simulationRegression,
+  requiresManagedSimulation,
   activeArtifact,
   activeBundle,
   viewMode,
@@ -171,6 +177,8 @@ export function ReviewPublishSection({
             actorId={actor.id}
             canPublish={permissions.canPublish}
             publishReason={permissions.publishReason}
+            simulationRegression={simulationRegression}
+            requiresManagedSimulation={requiresManagedSimulation}
           />
         </section>
       ) : null}

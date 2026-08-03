@@ -305,6 +305,7 @@ export async function importPolicyForToken(input: {
 /** Creates the empty, revision-backed draft that the in-app rule author uses. */
 export async function createPolicyBranchDecision(input: {
   branchName: string;
+  purpose: string;
   scope: string;
   environment: string;
   connector: string;
@@ -312,6 +313,7 @@ export async function createPolicyBranchDecision(input: {
   targetStacks: string[];
 }): Promise<CreatePolicyBranchResult> {
   if (!input.branchName) return { error: "Branch name is required." };
+  if (!input.purpose) return { error: "Policy purpose is required." };
   if (!/^[a-z0-9][a-z0-9/-]*[a-z0-9]$|^[a-z0-9]$/.test(input.branchName)) {
     return { error: "Branch name must use only lowercase letters, digits, hyphens, and slashes, and cannot start or end with a hyphen or slash." };
   }
@@ -355,7 +357,7 @@ export async function createPolicyBranchDecision(input: {
     const sourceDocument = {
       name: input.branchName,
       rules: [],
-      metadata: { authoredInApp: true, emptyDraft: true },
+      metadata: { authoredInApp: true, emptyDraft: true, purpose: input.purpose },
     };
     const persisted = await persistImportedBranch({
       tenantId,

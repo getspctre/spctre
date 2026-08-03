@@ -232,7 +232,7 @@ export async function getLatestManagedSimulationRegression(params: {
     WHERE tenant_id = ${params.tenantId}
       AND workspace_id IS NOT DISTINCT FROM ${params.workspaceId}
       AND revision_id = ${params.revisionId}
-      AND replay_coverage = 'RETAINED_LOG'
+      AND replay_coverage IN ('RETAINED_LOG', 'SAMPLED')
       AND regression_summary IS NOT NULL
     ORDER BY created_at DESC
     LIMIT 1

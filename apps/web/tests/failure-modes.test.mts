@@ -19,17 +19,20 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const getPublishBranchScopeMock = vi.fn();
 const revisionExistsOnPublishBranchMock = vi.fn();
 const getApprovalsMock = vi.fn();
+const getRulesForRevisionMock = vi.fn();
 const getOpenEscalationSummaryMock = vi.fn();
 const getExistingPublishArtifactHashMock = vi.fn();
 const insertPolicyPublishMock = vi.fn();
 const insertAuthorizationDenialEventMock = vi.fn();
 const appendOperationsLogMock = vi.fn().mockResolvedValue(undefined);
 const getLatestManagedSimulationRegressionMock = vi.fn();
+const countRuntimeEvidenceMock = vi.fn();
 
 vi.mock("@/lib/repositories/policy", () => ({
   getPublishBranchScope: getPublishBranchScopeMock,
   revisionExistsOnPublishBranch: revisionExistsOnPublishBranchMock,
   getApprovals: getApprovalsMock,
+  getRulesForRevision: getRulesForRevisionMock,
   getExistingPublishArtifactHash: getExistingPublishArtifactHashMock,
   insertPolicyPublish: insertPolicyPublishMock,
   getRevisionWorkspaceScope: vi.fn(),
@@ -58,6 +61,7 @@ vi.mock("@/lib/repositories/operations-log", () => ({
 }));
 vi.mock("@/lib/repositories/evidence", () => ({
   getLatestManagedSimulationRegression: getLatestManagedSimulationRegressionMock,
+  countRuntimeEvidence: countRuntimeEvidenceMock,
 }));
 
 vi.mock("@/lib/workspace/scope", () => ({
@@ -106,6 +110,7 @@ describe("Publish gating — approval not satisfied", () => {
     getPublishBranchScopeMock.mockResolvedValue(BRANCH_ROW);
     revisionExistsOnPublishBranchMock.mockResolvedValue(true);
     getApprovalsMock.mockResolvedValue([]);
+    getRulesForRevisionMock.mockResolvedValue([{ stableRuleId: "refund.review" }]);
     getOpenEscalationSummaryMock.mockResolvedValue({ count: 0, nearestSlaDueAt: null });
     getExistingPublishArtifactHashMock.mockResolvedValue(null);
     insertPolicyPublishMock.mockResolvedValue(undefined);
@@ -164,6 +169,7 @@ describe("Publish gating — open gateway escalations", () => {
     getPublishBranchScopeMock.mockResolvedValue(BRANCH_ROW);
     revisionExistsOnPublishBranchMock.mockResolvedValue(true);
     getApprovalsMock.mockResolvedValue([]);
+    getRulesForRevisionMock.mockResolvedValue([{ stableRuleId: "refund.review" }]);
     getExistingPublishArtifactHashMock.mockResolvedValue(null);
     insertPolicyPublishMock.mockResolvedValue(undefined);
     evaluatePublishReadinessMock.mockReturnValue({
@@ -196,6 +202,15 @@ describe("Publish gating — open gateway escalations", () => {
     }
   });
 
+  it("blocks publication of an empty policy revision", async () => {
+    getRulesForRevisionMock.mockResolvedValue([]);
+
+    const result = await publishRevisionDecision({ branchId: "branch-1", revisionId: "rev-1" }, { tenantId: "t-1", workspaceId: "ws-1" });
+
+    expect(result).toEqual({ error: "Publish is blocked: a policy revision must contain at least one rule." });
+    expect(insertPolicyPublishMock).not.toHaveBeenCalled();
+  });
+
   it("does not block when gateway is disabled even with open escalations", async () => {
     delete process.env.GATEWAY_ENABLED;
     getOpenEscalationSummaryMock.mockResolvedValue({ count: 5, nearestSlaDueAt: null });
@@ -215,10 +230,21 @@ describe("Publish gating — open gateway escalations", () => {
   it("blocks Cloud publish until a retained-log replay exists for the revision", async () => {
     process.env.SPCTRE_PLAN = "cloud";
     getLatestManagedSimulationRegressionMock.mockResolvedValue(null);
+    countRuntimeEvidenceMock.mockResolvedValue(4);
 
     const result = await publishRevisionDecision({ branchId: "branch-1", revisionId: "rev-1" }, { tenantId: "t-1", workspaceId: "ws-1" });
 
     expect(result).toEqual({ error: expect.stringMatching(/managed retained-log simulation/i) });
+  });
+
+  it("waives the managed-simulation gate when there is no evidence to replay", async () => {
+    process.env.SPCTRE_PLAN = "cloud";
+    getLatestManagedSimulationRegressionMock.mockResolvedValue(null);
+    countRuntimeEvidenceMock.mockResolvedValue(0);
+
+    const result = await publishRevisionDecision({ branchId: "branch-1", revisionId: "rev-1" }, { tenantId: "t-1", workspaceId: "ws-1" });
+
+    expect(result).toHaveProperty("artifactHash");
   });
 
   it("blocks Cloud publish when retained-log replay reports regressions", async () => {

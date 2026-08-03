@@ -240,6 +240,22 @@ export function ImportForm({ workspaceId, workspaceSlug, initialScope = "WORKSPA
               required
             />
 
+            {creationMode === "guided" ? (
+              <>
+                <label className="meta" htmlFor="purpose">
+                  Policy purpose
+                </label>
+                <textarea
+                  className="input"
+                  id="purpose"
+                  name="purpose"
+                  rows={3}
+                  placeholder="e.g. Require escalation before production refund actions."
+                  required
+                />
+              </>
+            ) : null}
+
             <span className="meta">How do you want to start?</span>
             <div className="policySourceChoice" role="radiogroup" aria-label="Policy source">
               <button
@@ -285,7 +301,7 @@ export function ImportForm({ workspaceId, workspaceSlug, initialScope = "WORKSPA
             <div className="importFormSource policyDraftSummary">
               <span className="eyebrow">Draft policy</span>
               <h3>Set the policy context first</h3>
-              <p className="meta">Create an empty branch with the scope and targets above. You&apos;ll add and test the first rule next, before anything can affect agents.</p>
+              <p className="meta">Record the purpose, then create an empty branch with the scope and targets above. You&apos;ll add and test the first rule next, before anything can affect agents.</p>
             </div>
           ) : (
             <ImportSourceFields />

@@ -1,6 +1,7 @@
 import { getAuthSession } from "@/lib/auth-session";
 import { getActiveScope } from "@/lib/workspace";
-import { createAgentBlueprintRevision, getAgentBlueprint, parseAgentBlueprintDefinition, publishBlueprintRevision, setAgentBlueprintRevisionStatus } from "@/lib/domains/agent-blueprints/service";
+import { findActorById, getBranchPermissions } from "@/lib/actors";
+import { createAgentBlueprintRevision, getAgentBlueprint, getAgentBlueprintWorkspaceScope, parseAgentBlueprintDefinition, publishBlueprintRevision, setAgentBlueprintRevisionStatus } from "@/lib/domains/agent-blueprints/service";
 import { verifyWriteAccess } from "@/lib/demo-guard";
 import type { AgentBlueprintStatus } from "@spctre/policy-schema";
 import { diffAgentBlueprintRevisions } from "@spctre/policy-schema";
@@ -42,6 +43,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const writeCheck = verifyWriteAccess(auth.scope.tenantId);
   if (!writeCheck.allowed) return withTraceId(Response.json({ error: writeCheck.error || "Write access denied.", meta: makeMeta(auth.traceId) }, { status: 403 }), auth.traceId);
   const { id } = await params;
+  // Appending a revision is authoring, like adding rules to a policy branch:
+  // workspace write access is enough (no admin gate). Still confirm the Blueprint
+  // belongs to the active workspace so a writer cannot author across workspaces.
+  const workspaceScope = await getAgentBlueprintWorkspaceScope({ tenantId: auth.scope.tenantId, blueprintId: id });
+  if (!workspaceScope || workspaceScope.workspace_id !== auth.scope.workspaceId) return withTraceId(Response.json({ error: "Blueprint not found.", meta: makeMeta(auth.traceId) }, { status: 404 }), auth.traceId);
   const body = await request.json().catch(() => null);
   if (!body || typeof body !== "object" || Array.isArray(body)) return withTraceId(Response.json({ error: "Request body must be an object.", meta: makeMeta(auth.traceId) }, { status: 400 }), auth.traceId);
   const record = body as Record<string, unknown>;
@@ -63,6 +69,20 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const revisionId = typeof body?.revisionId === "string" ? body.revisionId : "";
   const status = body?.status as AgentBlueprintStatus | undefined;
   if (!revisionId || !status || !["IN_REVIEW", "PUBLISHED"].includes(status)) return withTraceId(Response.json({ error: "revisionId and a valid lifecycle transition are required.", meta: makeMeta(auth.traceId) }, { status: 400 }), auth.traceId);
+  const [actor, workspaceScope] = await Promise.all([
+    findActorById(auth.session.principalId, { tenantId: auth.scope.tenantId, workspaceId: auth.scope.workspaceId }),
+    getAgentBlueprintWorkspaceScope({ tenantId: auth.scope.tenantId, blueprintId: id }),
+  ]);
+  if (!workspaceScope || workspaceScope.workspace_id !== auth.scope.workspaceId) return withTraceId(Response.json({ error: "Blueprint not found.", meta: makeMeta(auth.traceId) }, { status: 404 }), auth.traceId);
+  // Mirror the policy lifecycle: submitting for review is authoring (write access
+  // is enough); publishing requires workspace publish permission (publishScopes),
+  // the same gate as policy publish — not blanket admin.
+  if (status === "PUBLISHED") {
+    const permissions = actor
+      ? getBranchPermissions({ actor, branch: { scope: "WORKSPACE", environment: undefined }, workspaceSlug: workspaceScope.workspace_slug ?? "workspace-demo" })
+      : { canPublish: false, publishReason: "Publish is not allowed." };
+    if (!permissions.canPublish) return withTraceId(Response.json({ error: permissions.publishReason ?? "Publish is not allowed.", meta: makeMeta(auth.traceId) }, { status: 403 }), auth.traceId);
+  }
   const result = status === "PUBLISHED"
     ? await publishBlueprintRevision({ tenantId: auth.scope.tenantId, workspaceId: auth.scope.workspaceId, blueprintId: id, revisionId })
     : { revision: await setAgentBlueprintRevisionStatus({ tenantId: auth.scope.tenantId, workspaceId: auth.scope.workspaceId, blueprintId: id, revisionId, status }) };

@@ -425,6 +425,60 @@ spctre revoke [--output <format>]
 
 ---
 
+## spctre policy import
+
+Create or update a policy branch from a source-controlled policy file. This is
+an operator/CI command: it drafts a revision but never approves or publishes
+it.
+
+```bash
+spctre policy import policies/payments.yaml \
+  --connector stripe --scope CONNECTOR \
+  --key "$SPCTRE_OPERATOR_TOKEN" --url https://app.spctre.dev
+```
+
+| Flag | Description |
+|---|---|
+| `-b`, `--branch` | Branch name; defaults to the connector, then the file name |
+| `-c`, `--connector` | Connector ID; selects `CONNECTOR` scope unless `--scope` is given |
+| `--scope` | `WORKSPACE`, `CONNECTOR`, `ENVIRONMENT`, or `ORGANIZATION` |
+| `-e`, `--environment` | Environment; required for `ENVIRONMENT` scope |
+| `-w`, `--workspace` | Advisory workspace assertion; the token workspace is authoritative |
+| `--source-path` | Provenance path recorded with the revision |
+| `-k`, `--key` | Service key with the admin-issued `policy:import` scope |
+| `-u`, `--url` | Control plane URL |
+| `--format` | Output format: `text` (default) or `json` |
+
+See [Importing policies](/help-docs/developer/policies/importing) for the
+source format and idempotency behavior.
+
+---
+
+## spctre blueprint import
+
+Create or update an agent Blueprint from a source-controlled YAML or JSON
+file. This is also an operator/CI command: it creates an unapproved draft and
+never approves or publishes it.
+
+```bash
+spctre blueprint import blueprints/payments-agent.yaml \
+  --key "$SPCTRE_OPERATOR_TOKEN" --url https://app.spctre.dev
+```
+
+| Flag | Description |
+|---|---|
+| `-w`, `--workspace` | Advisory workspace assertion; the token workspace is authoritative |
+| `--source-path` | Provenance path recorded with the revision |
+| `--dry-run` | Validate the source locally without contacting the control plane |
+| `-k`, `--key` | Service key with the admin-issued `blueprint:import` scope |
+| `-u`, `--url` | Control plane URL |
+| `--format` | Output format: `text` (default) or `json` |
+
+See [Agent Blueprints](/help-docs/developer/agents/blueprints) for the source
+format, the published-policy binding, and review workflow.
+
+---
+
 ## spctre cloud login
 
 Connect this agent to Spctre Cloud without a self-hosted control plane.

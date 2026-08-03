@@ -2,5 +2,5 @@
   "title": "Agents",
   "description": "Monitor agent fleet health and resolve gateway block escalations.",
   "icon": "Bot",
-  "pages": ["agents", "runtime-assurance", "cross-surface-identity", "escalations"]
+  "pages": ["agents", "blueprints", "runtime-assurance", "cross-surface-identity", "escalations"]
 }

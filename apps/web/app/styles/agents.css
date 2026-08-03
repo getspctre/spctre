@@ -466,3 +466,75 @@
   display: grid;
   gap: 4px;
 }
+
+/* Blueprint review (revision detail) surface */
+.blueprintLifecycleActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.blueprintLifecyclePublished {
+  align-self: flex-start;
+}
+
+.blueprintDefGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.blueprintDefRow {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+}
+
+.blueprintDefWide {
+  grid-column: 1 / -1;
+}
+
+.blueprintDefChips .blueprintChip {
+  cursor: default;
+}
+
+.blueprintDiffSummary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.blueprintSimulate {
+  display: grid;
+  gap: 12px;
+}
+
+.blueprintSimulateHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.auditRow.blueprintRevisionActive td {
+  background: var(--bg);
+}
+
+.blueprintRevisionActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.blueprintHeadTag {
+  margin-left: 8px;
+}
+
+@media (max-width: 720px) {
+  .blueprintDefGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

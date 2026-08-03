@@ -42,6 +42,7 @@ describe("policy domain service", () => {
   it("creates an empty branch draft when the database is unavailable", async () => {
     const result = await policyService.createPolicyBranchDecision({
       branchName: "stripe/refund-controls",
+      purpose: "Require review for high-value Stripe refunds.",
       scope: "WORKSPACE",
       environment: "",
       connector: "",
@@ -53,6 +54,20 @@ describe("policy domain service", () => {
       branchId: expect.any(String),
       revisionId: expect.any(String),
     });
+  });
+
+  it("requires a purpose for guided policy creation", async () => {
+    const result = await policyService.createPolicyBranchDecision({
+      branchName: "stripe/refund-controls",
+      purpose: "",
+      scope: "WORKSPACE",
+      environment: "",
+      connector: "",
+      requestedWorkspaceId: "",
+      targetStacks: [],
+    });
+
+    expect(result).toEqual({ error: "Policy purpose is required." });
   });
 
   it("validates importPolicyDecision required source", async () => {

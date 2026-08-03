@@ -17,10 +17,12 @@ import {
 } from "@/lib/repositories/policy";
 import { approvalRulesFromWorkflow, getApprovalWorkflowForContext } from "@/lib/repositories/approval-workflow";
 import { getLatestVerificationStatus } from "@/lib/repositories/verification";
-import { getLatestManagedSimulationRegression } from "@/lib/repositories/evidence";
+import { getLatestManagedSimulationRegression, countRuntimeEvidence } from "@/lib/repositories/evidence";
 import { getAuthoringVocabulary, listAdapterDeclarationsForWorkspace, type AuthoringVocabularyEntry } from "@/lib/domains/packs/service";
 import type { EnforcementCoverage } from "@/lib/policy/rule-enforcement";
 import type { SimulationRegressionSummary } from "@spctre/policy-schema";
+import { isFeatureEnabledForPlan } from "@/lib/feature-flags";
+import { getSpctrePlan } from "@/lib/feature-flags-server";
 import { swallow } from "@/lib/platform/swallow";
 
 /**
@@ -71,6 +73,7 @@ export interface ReviewPageModel {
   approvalWorkflow: ApprovalWorkflow | null;
   verificationSummary: VerificationSummary | null;
   simulationRegression: SimulationRegressionSummary | null;
+  requiresManagedSimulation: boolean;
   readiness: Readiness;
   isPublished: boolean;
   approvedRequiredCount: number;
@@ -288,6 +291,13 @@ export async function getReviewPageModel({
         artifactHash: activeArtifact.artifactHash,
       }).catch(swallow("getLatestVerificationStatus", null))
     : null;
+  // Only surface the managed-simulation publish gate when there is runtime
+  // evidence to replay; a workspace with none has nothing to regress against, so
+  // the server waives the requirement (see review/publish.ts) and the UI must not
+  // show an unsatisfiable "run simulation" step.
+  const managedSimulationEligible = usingRealBranch && Boolean(activeBranch?.activeRevision) && isFeatureEnabledForPlan("bulkProductionSimulation", getSpctrePlan());
+  const requiresManagedSimulation = managedSimulationEligible
+    && (await countRuntimeEvidence(workspaceContext.workspaceId, workspaceContext.tenantId)) > 0;
   const simulationRegression = usingRealBranch && activeBranch?.activeRevision
     ? await getLatestManagedSimulationRegression({
         tenantId: workspaceContext.tenantId,
@@ -343,6 +353,7 @@ export async function getReviewPageModel({
     approvalWorkflow,
     verificationSummary,
     simulationRegression,
+    requiresManagedSimulation,
     readiness,
     isPublished,
     approvedRequiredCount,

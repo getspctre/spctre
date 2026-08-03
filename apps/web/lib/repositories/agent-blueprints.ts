@@ -133,6 +133,27 @@ export async function getAgentBlueprintByAgent(params: {
   return row ? { id: row.id, activeRevisionId: row.active_revision_id, activeDefinitionHash: row.active_definition_hash } : null;
 }
 
+/**
+ * Resolves the real workspace slug that governs a Blueprint, for reviewer-role
+ * authorization. Mirrors {@link getRevisionWorkspaceScope} for policy revisions:
+ * the caller uses `workspace_slug ?? "workspace-demo"`, so the demo slug is only
+ * a null-guard (a missing workspace row / no-DB mode), never a hardcoded value.
+ */
+export async function getAgentBlueprintWorkspaceScope(params: {
+  tenantId: string;
+  blueprintId: string;
+}): Promise<{ workspace_id: string | null; workspace_slug: string | null } | null> {
+  if (!sql) return null;
+  const rows = await sql<{ workspace_id: string | null; workspace_slug: string | null }[]>`
+    SELECT b.workspace_id, w.slug AS workspace_slug
+    FROM agent_blueprint b
+    LEFT JOIN workspace w ON w.id = b.workspace_id
+    WHERE b.id = ${params.blueprintId} AND b.tenant_id = ${params.tenantId}
+    LIMIT 1
+  `;
+  return rows[0] ?? null;
+}
+
 export async function getPublishedBlueprintContext(params: {
   tenantId: string;
   workspaceId: string;

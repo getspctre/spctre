@@ -71,6 +71,9 @@ function reviewNextStep(model: ReviewModel, reviewPath: string) {
   if (model.isPublished) {
     return { eyebrow: "Revision status", label: "This revision is published", description: "Use History to inspect or restore a prior published revision.", href: `${reviewPath}${branchQuery}&stage=history#history`, action: "View history" };
   }
+  if (model.requiresManagedSimulation && !model.simulationRegression) {
+    return { eyebrow: "Next required step", label: "Run retained-log simulation", description: "A managed simulation must be recorded for this revision before publication.", href: `${reviewPath}${branchQuery}&stage=publish#publish-gate`, action: "Run simulation" };
+  }
   const blocker = model.readiness.blockingReasons[0];
   if (blocker?.href && blocker.cta) {
     const publishTab = blocker.href === "#verification" ? "&publishTab=verification" : "";
@@ -177,6 +180,8 @@ export async function ReviewPageContent({
               actor={model.actor}
               permissions={model.permissions}
               verificationSummary={model.verificationSummary}
+              simulationRegression={model.simulationRegression}
+              requiresManagedSimulation={model.requiresManagedSimulation}
               activeArtifact={model.activeArtifact}
               activeBundle={model.activeBundle}
               viewMode={model.appViewMode}
