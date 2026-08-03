@@ -37,7 +37,7 @@ export async function runSimulation(
     return result;
   }
 
-  revalidatePaths(["/evidence", "/simulate"]);
+  revalidatePaths(["/evidence", "/simulate", "/review"]);
   return result;
 }
 

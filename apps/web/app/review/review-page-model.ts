@@ -21,6 +21,8 @@ import { getLatestManagedSimulationRegression } from "@/lib/repositories/evidenc
 import { getAuthoringVocabulary, listAdapterDeclarationsForWorkspace, type AuthoringVocabularyEntry } from "@/lib/domains/packs/service";
 import type { EnforcementCoverage } from "@/lib/policy/rule-enforcement";
 import type { SimulationRegressionSummary } from "@spctre/policy-schema";
+import { isFeatureEnabledForPlan } from "@/lib/feature-flags";
+import { getSpctrePlan } from "@/lib/feature-flags-server";
 import { swallow } from "@/lib/platform/swallow";
 
 /**
@@ -71,6 +73,7 @@ export interface ReviewPageModel {
   approvalWorkflow: ApprovalWorkflow | null;
   verificationSummary: VerificationSummary | null;
   simulationRegression: SimulationRegressionSummary | null;
+  requiresManagedSimulation: boolean;
   readiness: Readiness;
   isPublished: boolean;
   approvedRequiredCount: number;
@@ -288,6 +291,7 @@ export async function getReviewPageModel({
         artifactHash: activeArtifact.artifactHash,
       }).catch(swallow("getLatestVerificationStatus", null))
     : null;
+  const requiresManagedSimulation = usingRealBranch && Boolean(activeBranch?.activeRevision) && isFeatureEnabledForPlan("bulkProductionSimulation", getSpctrePlan());
   const simulationRegression = usingRealBranch && activeBranch?.activeRevision
     ? await getLatestManagedSimulationRegression({
         tenantId: workspaceContext.tenantId,
@@ -343,6 +347,7 @@ export async function getReviewPageModel({
     approvalWorkflow,
     verificationSummary,
     simulationRegression,
+    requiresManagedSimulation,
     readiness,
     isPublished,
     approvedRequiredCount,

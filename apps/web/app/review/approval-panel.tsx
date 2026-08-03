@@ -1,8 +1,11 @@
 "use client";
 
-import { CheckCircle2, Clock3, XCircle } from "lucide-react";
-import { useActionState } from "react";
-import type { ApprovalWorkflowSnapshot, PolicyApproval, PublishReadiness } from "@spctre/policy-schema";
+import { CheckCircle2, Clock3, Loader, Play, XCircle } from "lucide-react";
+import { useActionState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import type { ApprovalWorkflowSnapshot, PolicyApproval, PublishReadiness, SimulationRegressionSummary } from "@spctre/policy-schema";
+import { runSimulation } from "@/app/evidence/actions";
+import type { SimulationState } from "@/app/evidence/actions";
 import { addApproval, publishRevision } from "./publish-actions";
 import type { ApprovalState, PublishState } from "./publish-actions";
 
@@ -41,6 +44,39 @@ interface PublishGateProps {
   actorId: string;
   canPublish: boolean;
   publishReason?: string;
+  simulationRegression: SimulationRegressionSummary | null;
+  requiresManagedSimulation: boolean;
+}
+
+function isSimulationSuccess(state: SimulationState): state is Exclude<SimulationState, { error: string } | null> {
+  return !!state && !("error" in state);
+}
+
+function ManagedSimulationGate({ branchId, revisionId }: { branchId: string; revisionId: string }) {
+  const [state, action, pending] = useActionState<SimulationState, FormData>(runSimulation, null);
+  const router = useRouter();
+
+  useEffect(() => {
+    if (isSimulationSuccess(state)) router.refresh();
+  }, [router, state]);
+
+  return (
+    <div className="blockerActionRow">
+      <div>
+        <p className="meta">A managed retained-log simulation is required before this revision can be published.</p>
+        {isSimulationSuccess(state) ? <p className="meta">Simulation logged. Refreshing publish readiness…</p> : null}
+        {state?.error ? <p className="meta publishError" role="alert">{state.error}</p> : null}
+      </div>
+      <form action={action}>
+        <input type="hidden" name="branchId" value={branchId} />
+        <input type="hidden" name="revisionId" value={revisionId} />
+        <button className="button buttonSmall" type="submit" disabled={pending}>
+          {pending ? <Loader size={14} className="spin" /> : <Play size={14} />}
+          {pending ? "Running…" : "Run simulation"}
+        </button>
+      </form>
+    </div>
+  );
 }
 
 export function PublishGate({
@@ -51,12 +87,15 @@ export function PublishGate({
   isPublished,
   actorId,
   canPublish,
-  publishReason
+  publishReason,
+  simulationRegression,
+  requiresManagedSimulation,
 }: PublishGateProps) {
   const [publishState, publishAction, publishPending] = useActionState<PublishState, FormData>(
     publishRevision,
     null
   );
+  const simulationRequired = requiresManagedSimulation && !simulationRegression;
 
   return (
     <div className="publishGate" id="publish-gate">
@@ -66,6 +105,8 @@ export function PublishGate({
           Workflow: {approvalWorkflow.name} ({approvalWorkflow.reviewMode.toLowerCase()} review)
         </p>
       ) : null}
+
+      {simulationRequired ? <ManagedSimulationGate branchId={branchId} revisionId={revisionId} /> : null}
 
       {readiness.blockingReasons.length > 0 ? (
         <div className="blockerList">
@@ -98,11 +139,11 @@ export function PublishGate({
           <button
             className="button buttonPrimary"
             type="submit"
-            disabled={readiness.status !== "READY" || publishPending || !canPublish}
+            disabled={readiness.status !== "READY" || publishPending || !canPublish || simulationRequired}
             title={
-              readiness.status === "READY" && canPublish
+              readiness.status === "READY" && canPublish && !simulationRequired
                 ? "Publish approved policy bundle"
-                : publishReason ?? readiness.blockingReasons[0]?.message
+                : simulationRequired ? "Run the required managed simulation first." : publishReason ?? readiness.blockingReasons[0]?.message
             }
           >
             {publishPending ? "Publishing…" : "Publish bundle"}

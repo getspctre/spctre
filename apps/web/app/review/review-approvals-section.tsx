@@ -8,6 +8,7 @@ import type {
   AgtVerificationSummary,
   ApprovalWorkflowSnapshot,
   PublishReadiness,
+  SimulationRegressionSummary,
 } from "@spctre/policy-schema";
 import type { BundleCompatibilityReport } from "@spctre/policy-schema";
 import type { AppViewMode } from "@/lib/app-view-mode";
@@ -46,6 +47,8 @@ interface ReviewPublishSectionProps {
   actor: Principal;
   permissions: BranchPermissionSnapshot;
   verificationSummary: AgtVerificationSummary | null;
+  simulationRegression: SimulationRegressionSummary | null;
+  requiresManagedSimulation: boolean;
   activeArtifact: PolicyArtifactExport;
   activeBundle: AgtCompatiblePolicyBundle;
   viewMode: AppViewMode;
@@ -130,6 +133,8 @@ export function ReviewPublishSection({
   actor,
   permissions,
   verificationSummary,
+  simulationRegression,
+  requiresManagedSimulation,
   activeArtifact,
   activeBundle,
   viewMode,
@@ -171,6 +176,8 @@ export function ReviewPublishSection({
             actorId={actor.id}
             canPublish={permissions.canPublish}
             publishReason={permissions.publishReason}
+            simulationRegression={simulationRegression}
+            requiresManagedSimulation={requiresManagedSimulation}
           />
         </section>
       ) : null}

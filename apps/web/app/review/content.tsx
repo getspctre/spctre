@@ -177,6 +177,8 @@ export async function ReviewPageContent({
               actor={model.actor}
               permissions={model.permissions}
               verificationSummary={model.verificationSummary}
+              simulationRegression={model.simulationRegression}
+              requiresManagedSimulation={model.requiresManagedSimulation}
               activeArtifact={model.activeArtifact}
               activeBundle={model.activeBundle}
               viewMode={model.appViewMode}
