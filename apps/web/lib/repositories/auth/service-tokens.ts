@@ -7,6 +7,7 @@ export type ServiceTokenScope =
   | "evidence:write"
   | "heartbeat:write"
   | "policy:import"
+  | "blueprint:import"
   | "compliance:read"
   | "simulation:run"
   | "approvals:read"
@@ -17,12 +18,14 @@ export type ServiceTokenScope =
   | "e2e:write";
 
 // Runtime agent tokens (issued by `spctre init`) get only these scopes. They
-// deliberately exclude policy:import so a runtime agent can never author,
-// import, approve, or publish its own governing policy.
+// deliberately exclude policy:import and blueprint:import so a runtime agent can
+// never author, import, approve, or publish its own governing policy or its own
+// authority Blueprint.
 export const DEV_TOKEN_SCOPES: ServiceTokenScope[] = ["bundle:read", "decision:evaluate", "evidence:write", "heartbeat:write"];
 export const ALL_API_KEY_SCOPES: ServiceTokenScope[] = [
   ...DEV_TOKEN_SCOPES,
   "policy:import",
+  "blueprint:import",
   "compliance:read",
   "simulation:run",
   "approvals:read",

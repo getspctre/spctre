@@ -284,6 +284,24 @@ policyCommand
     await policyImport(file, options);
   });
 
+const blueprintCommand = program
+  .command("blueprint")
+  .description("Author and import agent Blueprint sources with an operator/CI identity");
+
+blueprintCommand
+  .command("import [file]")
+  .description("Import a local Blueprint source into the control plane (operator/CI only; drafts a Blueprint — never approves or publishes)")
+  .option("-w, --workspace <workspace>", "advisory target workspace (the token's workspace is authoritative)")
+  .option("--source-path <path>", "provenance source path recorded with the revision")
+  .option("--dry-run", "validate the source locally without importing")
+  .option("-k, --key <key>", "operator/CI service key carrying the blueprint:import scope")
+  .option("-u, --url <url>", "control plane URL")
+  .option("--format <format>", "output format: text (default) or json")
+  .action(async (file: string | undefined, options) => {
+    const { blueprintImport } = await import("./blueprint-import.js");
+    await blueprintImport(file, options);
+  });
+
 const cloudCommand = program
   .command("cloud")
   .description("Manage Spctre Cloud connectivity");

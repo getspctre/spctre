@@ -217,6 +217,59 @@ export function buildPolicyArtifactExport(params: {
   };
 }
 
+/** The import envelope parsed from a declarative Blueprint source document. */
+export interface AgentBlueprintSourceEnvelope {
+  name: string;
+  agentId: string;
+  message: string;
+  /** Raw, unvalidated — the control plane validates via parseAgentBlueprintDefinition. */
+  definition: Record<string, unknown>;
+}
+
+/**
+ * Parses a declarative Blueprint source (YAML or JSON) into its import envelope.
+ *
+ * The source names the governing policy branch via `definition.policyBranchId`
+ * (a branch NAME) and must NOT pin `definition.policyRevisionId` — the import
+ * resolves the branch's currently-published revision server-side. The returned
+ * `definition` is raw; the control plane validates it with
+ * parseAgentBlueprintDefinition before persisting a draft.
+ */
+export function parseAgentBlueprintSource(params: { document: string; sourcePath?: string }):
+  { envelope: AgentBlueprintSourceEnvelope } | { error: string } {
+  const content = params.document.trim();
+  if (!content) return { error: "Blueprint source is required." };
+
+  let parsed: unknown;
+  try {
+    const isJson = content.startsWith("{") || content.startsWith("[");
+    parsed = isJson ? JSON.parse(content) : yaml.load(content);
+  } catch (e) {
+    return { error: `Failed to parse Blueprint source: ${String(e)}` };
+  }
+
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    return { error: "Blueprint source must be an object with name, agentId, and definition." };
+  }
+
+  const doc = parsed as Record<string, unknown>;
+  const name = typeof doc.name === "string" ? doc.name.trim() : "";
+  const agentId = typeof doc.agentId === "string" ? doc.agentId.trim() : "";
+  const message = typeof doc.message === "string" && doc.message.trim() ? doc.message.trim() : "Imported Blueprint revision";
+  if (!name) return { error: "Blueprint source is missing 'name'." };
+  if (!agentId) return { error: "Blueprint source is missing 'agentId'." };
+  if (!doc.definition || typeof doc.definition !== "object" || Array.isArray(doc.definition)) {
+    return { error: "Blueprint source is missing a 'definition' object." };
+  }
+
+  const definition = doc.definition as Record<string, unknown>;
+  if (definition.policyRevisionId !== undefined) {
+    return { error: "Blueprint source must not set definition.policyRevisionId; the import resolves the published revision." };
+  }
+
+  return { envelope: { name, agentId, message, definition } };
+}
+
 export function buildAgentBlueprintRuntimeArtifact(params: {
   revision: AgentBlueprintRevision;
   name: string;

@@ -186,6 +186,31 @@ export async function getLatestPublishedBundle(
   };
 }
 
+/**
+ * Resolves a policy branch by NAME to its currently-published revision. Returns
+ * the branch id and the most-recently-published revision id, or null when the
+ * branch does not exist or has no published revision. Used by the Blueprint
+ * import to fail closed unless a governing policy is already published.
+ */
+export async function getPublishedPolicyBranchByName(params: {
+  tenantId: string;
+  workspaceId: string;
+  branchName: string;
+}): Promise<{ branchId: string; revisionId: string } | null> {
+  if (!sql) return null;
+  const rows = await sql<{ branch_id: string; revision_id: string }[]>`
+    SELECT pp.branch_id, pp.revision_id
+    FROM policy_publish pp
+    JOIN policy_branch pb ON pb.id = pp.branch_id AND pb.tenant_id = pp.tenant_id
+    WHERE pp.tenant_id = ${params.tenantId}
+      AND pb.name = ${params.branchName}
+      AND (pb.workspace_id = ${params.workspaceId} OR pb.scope = 'ORGANIZATION')
+    ORDER BY pp.published_at DESC
+    LIMIT 1
+  `;
+  return rows[0] ? { branchId: rows[0].branch_id, revisionId: rows[0].revision_id } : null;
+}
+
 export async function getExistingPublishArtifactHash(params: {
   tenantId: string;
   branchId: string;
