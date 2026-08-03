@@ -176,6 +176,56 @@ describe.skipIf(!databaseAvailable)("POST /api/v1/blueprint/imports contract", (
     expect(head[0].active_revision_id).toBe(changedBody.revisionId);
   });
 
+  it("appends a fresh draft when a reverted definition recurs after both versions were published (A→B→A)", async () => {
+    const fixture = await createFixture();
+    await seedPublishedPolicy(fixture, "acquisition-scout");
+    const operatorToken = await mintToken(fixture, ["blueprint:import"]);
+
+    const sourceA = blueprintSource({ policyBranch: "acquisition-scout", purpose: "Definition A." });
+    const sourceB = blueprintSource({ policyBranch: "acquisition-scout", purpose: "Definition B." });
+
+    // Import A, then publish it.
+    const a = await POST(importRequest(operatorToken, sourceA));
+    expect(a.status).toBe(201);
+    const aBody = await a.json();
+    const blueprintId = aBody.blueprintId as string;
+    const revA = aBody.revisionId as string;
+    await rawSql!`UPDATE agent_blueprint_revision SET status = 'PUBLISHED', published_at = now() WHERE id = ${revA}`;
+
+    // Import B (a change) → appends a new revision; publish it later than A.
+    const b = await POST(importRequest(operatorToken, sourceB));
+    expect(b.status).toBe(200);
+    const bBody = await b.json();
+    expect(bBody.alreadyCurrent).toBe(false);
+    expect(bBody.revisionId).not.toBe(revA);
+    await rawSql!`UPDATE agent_blueprint_revision SET status = 'PUBLISHED', published_at = now() + interval '1 second' WHERE id = ${bBody.revisionId}`;
+    expect(await blueprintRevisionCount(blueprintId)).toBe(2);
+
+    // Revert the source back to A. The old A revision is PUBLISHED and superseded
+    // by B at runtime. The import must NOT no-op — it must append a fresh draft
+    // carrying A's definition so it can be published and re-selected.
+    const a2 = await POST(importRequest(operatorToken, sourceA));
+    expect(a2.status).toBe(200);
+    const a2Body = await a2.json();
+    expect(a2Body.alreadyCurrent).toBe(false);
+    expect(a2Body.revisionId).not.toBe(revA);
+    expect(await blueprintRevisionCount(blueprintId)).toBe(3);
+
+    // The new head revision carries A's definition (same hash as revA) but is a
+    // distinct, unpublished revision — publishing it makes A live again.
+    const [head] = await rawSql!<{ definition_hash: string; status: string; active: boolean }[]>`
+      SELECT r.definition_hash, r.status, (r.id = b.active_revision_id) AS active
+      FROM agent_blueprint_revision r JOIN agent_blueprint b ON b.id = r.blueprint_id
+      WHERE r.id = ${a2Body.revisionId}
+    `;
+    const [{ definition_hash: aHash }] = await rawSql!<{ definition_hash: string }[]>`
+      SELECT definition_hash FROM agent_blueprint_revision WHERE id = ${revA}
+    `;
+    expect(head.definition_hash).toBe(aHash);
+    expect(head.status).toBe("DRAFT");
+    expect(head.active).toBe(true);
+  });
+
   it("rejects a source that pins policyRevisionId as 400", async () => {
     const fixture = await createFixture();
     await seedPublishedPolicy(fixture, "acquisition-scout");

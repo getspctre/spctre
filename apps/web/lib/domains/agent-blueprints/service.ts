@@ -6,7 +6,6 @@ import { getAgentBlueprintApprovals, upsertAgentBlueprintApproval } from "@/lib/
 import {
   createAgentBlueprint,
   createAgentBlueprintRevision,
-  findBlueprintRevisionByHash,
   getAgentBlueprint,
   getAgentBlueprintByAgent,
   getPublishedAgentBlueprintRuntime,
@@ -199,17 +198,19 @@ export async function importBlueprintForToken(input: {
         };
       }
 
-      // Idempotency: a revision with this exact bound hash already exists.
-      const identical = await findBlueprintRevisionByHash({
-        tenantId: input.tenantId,
-        blueprintId: existing.id,
-        definitionHash,
-      });
-      if (identical) {
+      // Idempotency is HEAD-based: no-op only when the current head (active
+      // revision) already carries this exact bound definition. A definition that
+      // merely appeared in some *historical* revision must still append a fresh
+      // draft — e.g. a source rollback A→B→A after both A and B were published.
+      // Runtime selects the latest-PUBLISHED revision by published_at, so reusing
+      // the old, already-PUBLISHED A could never converge (it cannot be
+      // republished, and B stays selected). Appending a new draft lets the
+      // operator publish it and make A live again.
+      if (existing.activeDefinitionHash === definitionHash) {
         return {
           result: {
             blueprintId: existing.id,
-            revisionId: identical.id,
+            revisionId: existing.activeRevisionId ?? "",
             definitionHash,
             created: false,
             alreadyCurrent: true,

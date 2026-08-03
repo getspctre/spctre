@@ -133,26 +133,6 @@ export async function getAgentBlueprintByAgent(params: {
   return row ? { id: row.id, activeRevisionId: row.active_revision_id, activeDefinitionHash: row.active_definition_hash } : null;
 }
 
-/**
- * Finds an existing revision of a Blueprint with the given definition hash.
- * Revisions are unique on (tenant, blueprint, definition_hash), so a match means
- * the desired state already exists — the import returns it rather than colliding.
- */
-export async function findBlueprintRevisionByHash(params: {
-  tenantId: string;
-  blueprintId: string;
-  definitionHash: string;
-}): Promise<AgentBlueprintRevision | null> {
-  if (!sql) return null;
-  const rows = await sql<RevisionRow[]>`
-    SELECT id, blueprint_id, parent_revision_id, definition, definition_hash, message, author_id, status, created_at, published_at
-    FROM agent_blueprint_revision
-    WHERE tenant_id = ${params.tenantId} AND blueprint_id = ${params.blueprintId} AND definition_hash = ${params.definitionHash}
-    LIMIT 1
-  `;
-  return rows[0] ? mapRevision(rows[0]) : null;
-}
-
 export async function getPublishedBlueprintContext(params: {
   tenantId: string;
   workspaceId: string;
@@ -300,13 +280,20 @@ export async function createAgentBlueprintRevision(params: {
   const definitionHash = hashBlueprintDefinition(params.definition);
   const rows = await sql<RevisionRow[]>`
     WITH parent AS (
-      SELECT active_revision_id FROM agent_blueprint
-      WHERE id = ${params.blueprintId} AND tenant_id = ${params.tenantId} AND workspace_id = ${params.workspaceId}
+      SELECT b.active_revision_id, r.definition_hash AS active_hash
+      FROM agent_blueprint b
+      LEFT JOIN agent_blueprint_revision r ON r.id = b.active_revision_id AND r.tenant_id = b.tenant_id
+      WHERE b.id = ${params.blueprintId} AND b.tenant_id = ${params.tenantId} AND b.workspace_id = ${params.workspaceId}
     ), revision AS (
       INSERT INTO agent_blueprint_revision (tenant_id, blueprint_id, parent_revision_id, definition, definition_hash, message, author_id)
       SELECT ${params.tenantId}, ${params.blueprintId}, active_revision_id,
         ${sql.json(params.definition as unknown as JSONValue)}::jsonb, ${definitionHash}, ${params.message}, ${params.authorId}
       FROM parent
+      -- No-op when the definition is unchanged from the current head. This is the
+      -- only dedup (there is no global definition_hash uniqueness): a definition
+      -- that recurs after other revisions — e.g. a source rollback A→B→A — must
+      -- append a fresh revision so it can be published and re-selected at runtime.
+      WHERE parent.active_hash IS DISTINCT FROM ${definitionHash}
       RETURNING id, blueprint_id, parent_revision_id, definition, definition_hash, message, author_id, status, created_at, published_at
     )
     UPDATE agent_blueprint b SET active_revision_id = revision.id, updated_at = now()
