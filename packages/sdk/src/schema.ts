@@ -384,6 +384,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/blueprint/imports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import a local agent Blueprint source (idempotent)
+         * @description Imports a declarative agent Blueprint source into the control plane as an unapproved DRAFT, for automation/CI. Requires the `blueprint:import` scope, which is admin-issuable only and never granted to runtime agent tokens — so a governed agent can never define its own authority. The source names its governing policy branch (`definition.policyBranchId`, a branch name) and must not pin a revision; the import resolves that branch's currently-published revision and fails closed (409) if none. Idempotent on `(workspace, agentId)` and the bound definition hash: a new Blueprint returns 201; a re-import of an unchanged, same-bound definition returns 200 with `alreadyCurrent: true` and writes nothing; a changed definition appends a new draft revision. Never approves or publishes.
+         */
+        post: operations["importBlueprint"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/verification": {
         parameters: {
             query?: never;
@@ -1091,6 +1111,27 @@ export interface components {
             ruleCount: number;
             meta: components["schemas"]["ApiMeta"];
         };
+        BlueprintImportRequest: {
+            /** @description The raw declarative Blueprint source document (YAML or JSON): an envelope of name, agentId, message, and definition. The definition names its governing policy branch via policyBranchId (a branch name) and must not pin policyRevisionId. */
+            source: string;
+            /** @description Provenance path recorded with the revision. */
+            sourcePath?: string;
+        };
+        BlueprintImportResponse: {
+            blueprintId: string;
+            revisionId: string;
+            /** @description SHA-256 of the bound Blueprint definition. */
+            definitionHash: string;
+            /** @description True when a brand-new Blueprint was created (HTTP 201). */
+            created: boolean;
+            /** @description True when a revision with this exact bound definition already existed; no write was performed. */
+            alreadyCurrent: boolean;
+            /** @description Resolved id of the governing policy branch. */
+            policyBranchId: string;
+            /** @description Resolved id of the branch's published revision the Blueprint is bound to. */
+            policyRevisionId: string;
+            meta: components["schemas"]["ApiMeta"];
+        };
         ApprovalResponse: {
             /** @description The approval record for the requested revision. */
             approval: {
@@ -1778,6 +1819,50 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
+        };
+    };
+    importBlueprint: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BlueprintImportRequest"];
+            };
+        };
+        responses: {
+            /** @description Revision appended, or already current (no write). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BlueprintImportResponse"];
+                };
+            };
+            /** @description New draft Blueprint created. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BlueprintImportResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            /** @description The named policy branch has no published revision; publish the policy first. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
         };
     };
     listVerifications: {

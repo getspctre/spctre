@@ -895,6 +895,34 @@ export const SPCTRE_OPENAPI_SPEC = {
         },
       },
 
+      BlueprintImportRequest: {
+        type: "object",
+        required: ["source"],
+        properties: {
+          source: {
+            type: "string",
+            minLength: 1,
+            description: "The raw declarative Blueprint source document (YAML or JSON): an envelope of name, agentId, message, and definition. The definition names its governing policy branch via policyBranchId (a branch name) and must not pin policyRevisionId.",
+          },
+          sourcePath: { type: "string", description: "Provenance path recorded with the revision." },
+        },
+      },
+
+      BlueprintImportResponse: {
+        type: "object",
+        required: ["blueprintId", "revisionId", "definitionHash", "created", "alreadyCurrent", "policyBranchId", "policyRevisionId", "meta"],
+        properties: {
+          blueprintId: { type: "string" },
+          revisionId: { type: "string" },
+          definitionHash: { type: "string", description: "SHA-256 of the bound Blueprint definition." },
+          created: { type: "boolean", description: "True when a brand-new Blueprint was created (HTTP 201)." },
+          alreadyCurrent: { type: "boolean", description: "True when a revision with this exact bound definition already existed; no write was performed." },
+          policyBranchId: { type: "string", description: "Resolved id of the governing policy branch." },
+          policyRevisionId: { type: "string", description: "Resolved id of the branch's published revision the Blueprint is bound to." },
+          meta: { $ref: "#/components/schemas/ApiMeta" },
+        },
+      },
+
       // ── Approvals ─────────────────────────────────────────
       ApprovalResponse: {
         type: "object",
@@ -1608,6 +1636,53 @@ export const SPCTRE_OPENAPI_SPEC = {
         },
       },
     },
+    "/blueprint/imports": {
+      post: {
+        operationId: "importBlueprint",
+        summary: "Import a local agent Blueprint source (idempotent)",
+        description:
+          "Imports a declarative agent Blueprint source into the control plane as an unapproved DRAFT, for automation/CI. Requires the `blueprint:import` scope, which is admin-issuable only and never granted to runtime agent tokens — so a governed agent can never define its own authority. The source names its governing policy branch (`definition.policyBranchId`, a branch name) and must not pin a revision; the import resolves that branch's currently-published revision and fails closed (409) if none. Idempotent on `(workspace, agentId)` and the bound definition hash: a new Blueprint returns 201; a re-import of an unchanged, same-bound definition returns 200 with `alreadyCurrent: true` and writes nothing; a changed definition appends a new draft revision. Never approves or publishes.",
+        "x-spctre-plan": "oss",
+        tags: ["Blueprint"],
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/BlueprintImportRequest" },
+            },
+          },
+        },
+        responses: {
+          "200": {
+            description: "Revision appended, or already current (no write).",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/BlueprintImportResponse" },
+              },
+            },
+          },
+          "201": {
+            description: "New draft Blueprint created.",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/BlueprintImportResponse" },
+              },
+            },
+          },
+          "400": { $ref: "#/components/responses/BadRequest" },
+          "401": { $ref: "#/components/responses/Unauthorized" },
+          "409": {
+            description: "The named policy branch has no published revision; publish the policy first.",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/ApiError" },
+              },
+            },
+          },
+        },
+      },
+    },
 
     "/verification": {
       post: {
@@ -1828,6 +1903,7 @@ export const SPCTRE_OPENAPI_SPEC = {
     { name: "Gateway", description: "Policy enforcement gateway — decide, escalate, and resolve." },
     { name: "Bundle", description: "Published policy bundle download." },
     { name: "Policy", description: "Policy authoring — idempotent import of local policy sources (operator/CI identity)." },
+    { name: "Blueprint", description: "Agent Blueprint authoring — idempotent import of local Blueprint sources (operator/CI identity)." },
     { name: "Compliance", description: "Compliance packet export and framework annotation." },
     { name: "Simulation", description: "Policy simulation and evaluation." },
     { name: "Verification", description: "Policy verification result ingestion and query." },
