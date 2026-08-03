@@ -6,7 +6,7 @@ import { getWorkspaceContext, formatWorkspaceEyebrow } from "@/lib/workspace";
 import { buildWorkspacePath } from "@/lib/workspace/path";
 import { getAgentBlueprint, getAgentBlueprintApprovals } from "@/lib/domains/agent-blueprints/service";
 import { getApprovalWorkflowForContext, approvalRulesFromWorkflow } from "@/lib/repositories/approval-workflow";
-import { getActiveActor, canActorReviewRole, requireActorAdminWorkspace } from "@/lib/actors";
+import { getActiveActor, canActorReviewRole, requireActorAdminWorkspace, getBranchPermissions } from "@/lib/actors";
 import { ALL_REVIEWER_ROLES } from "@/lib/approval-config";
 import { hashToFingerprint } from "@/lib/fingerprint";
 import { swallow } from "@/lib/platform/swallow";
@@ -145,8 +145,17 @@ export async function BlueprintReviewContent({
   const reviewableRoles = actor
     ? ALL_REVIEWER_ROLES.filter((role) => canActorReviewRole(actor, reviewSlug, role).allowed)
     : [];
-  const canAdminister = Boolean(actor && requireActorAdminWorkspace(actor, reviewSlug).allowed);
-  const canRollback = canAdminister;
+  // Publishing mirrors the policy publish gate (publishScopes), rollback mirrors
+  // policy rollback (workspace admin); submitting for review is authoring, open to
+  // any workspace member (the server enforces write access).
+  const publishPermission = actor
+    ? getBranchPermissions({ actor, branch: { scope: "WORKSPACE", environment: undefined }, workspaceSlug: reviewSlug })
+    : { canPublish: false, publishReason: "You do not have permission to publish in this workspace." };
+  const canRollback = Boolean(actor && requireActorAdminWorkspace(actor, reviewSlug).allowed);
+  const canTransition = headRevision.status === "DRAFT" ? Boolean(actor) : publishPermission.canPublish;
+  const transitionBlockedReason = headRevision.status === "DRAFT"
+    ? "You need workspace access to submit this Blueprint for review."
+    : publishPermission.publishReason ?? "You do not have permission to publish in this workspace.";
 
   const requiredRoles = new Set(approvalRules.map((rule) => rule.role));
   const approvalRoleCards: BlueprintApprovalRole[] = ALL_REVIEWER_ROLES.map((role) => ({
@@ -194,8 +203,8 @@ export async function BlueprintReviewContent({
           status={headRevision.status}
           canPublish={canPublish}
           publishBlockedReason={headRevision.status === "DRAFT" ? "Submit the draft for review first." : publishBlockedReason}
-          canTransition={canAdminister}
-          transitionBlockedReason="Admin permission is required to advance a Blueprint lifecycle."
+          canTransition={canTransition}
+          transitionBlockedReason={transitionBlockedReason}
         />
         {!isPublished && readiness.blockingReasons.length ? (
           <div className="blockerList">

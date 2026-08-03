@@ -1,5 +1,7 @@
 import { getAuthSession } from "@/lib/auth-session";
 import { getActiveScope } from "@/lib/workspace";
+import { findActorById, requireActorAdminWorkspace } from "@/lib/actors";
+import { resolveWorkspaceForAction } from "@/lib/repositories/workspace/core";
 import { createAgentBlueprint, listAgentBlueprints, parseAgentBlueprintDefinition } from "@/lib/domains/agent-blueprints/service";
 import { verifyWriteAccess } from "@/lib/demo-guard";
 import { extractTraceId, makeMeta, withTraceId } from "@spctre/api-contracts";
@@ -26,6 +28,16 @@ export async function POST(request: Request) {
   if ("response" in auth) return auth.response;
   const writeCheck = verifyWriteAccess(auth.scope.tenantId);
   if (!writeCheck.allowed) return withTraceId(Response.json({ error: writeCheck.error || "Write access denied.", meta: makeMeta(auth.traceId) }, { status: 403 }), auth.traceId);
+  // A Blueprint is a top-level governed object, like a policy branch: creating one
+  // requires workspace admin (mirrors createPolicyBranchDecision). Appending
+  // revisions and advancing lifecycle are authored/published under the lighter
+  // gates on the [id] routes.
+  const [actor, workspace] = await Promise.all([
+    findActorById(auth.session.principalId, { tenantId: auth.scope.tenantId, workspaceId: auth.scope.workspaceId }),
+    resolveWorkspaceForAction({ tenantId: auth.scope.tenantId, fallbackWorkspaceId: auth.scope.workspaceId }),
+  ]);
+  const admin = actor ? requireActorAdminWorkspace(actor, workspace?.slug ?? "workspace-demo") : { allowed: false as const };
+  if (!admin.allowed) return withTraceId(Response.json({ error: "Admin permission is required to create a Blueprint.", meta: makeMeta(auth.traceId) }, { status: 403 }), auth.traceId);
   const body = await request.json().catch(() => null);
   if (!body || typeof body !== "object" || Array.isArray(body)) {
     return withTraceId(Response.json({ error: "Request body must be an object.", meta: makeMeta(auth.traceId) }, { status: 400 }), auth.traceId);
