@@ -6,7 +6,7 @@ import { getWorkspaceContext, formatWorkspaceEyebrow } from "@/lib/workspace";
 import { buildWorkspacePath } from "@/lib/workspace/path";
 import { getAgentBlueprint, getAgentBlueprintApprovals } from "@/lib/domains/agent-blueprints/service";
 import { getApprovalWorkflowForContext, approvalRulesFromWorkflow } from "@/lib/repositories/approval-workflow";
-import { getActiveActor, canActorReviewRole } from "@/lib/actors";
+import { getActiveActor, canActorReviewRole, requireActorAdminWorkspace } from "@/lib/actors";
 import { ALL_REVIEWER_ROLES } from "@/lib/approval-config";
 import { hashToFingerprint } from "@/lib/fingerprint";
 import { swallow } from "@/lib/platform/swallow";
@@ -145,14 +145,15 @@ export async function BlueprintReviewContent({
   const reviewableRoles = actor
     ? ALL_REVIEWER_ROLES.filter((role) => canActorReviewRole(actor, reviewSlug, role).allowed)
     : [];
-  const canRollback = Boolean(actor?.reviewerRoles.includes("Admin"));
+  const canAdminister = Boolean(actor && requireActorAdminWorkspace(actor, reviewSlug).allowed);
+  const canRollback = canAdminister;
 
   const requiredRoles = new Set(approvalRules.map((rule) => rule.role));
   const approvalRoleCards: BlueprintApprovalRole[] = ALL_REVIEWER_ROLES.map((role) => ({
     role,
     isRequired: requiredRoles.has(role),
     requiredCount: approvalRules.find((rule) => rule.role === role)?.requiredCount,
-    existing: approvals.find((approval) => approval.role === role),
+    approvals: approvals.filter((approval) => approval.role === role),
   }));
 
   const isPublished = headRevision.status === "PUBLISHED";
@@ -193,6 +194,8 @@ export async function BlueprintReviewContent({
           status={headRevision.status}
           canPublish={canPublish}
           publishBlockedReason={headRevision.status === "DRAFT" ? "Submit the draft for review first." : publishBlockedReason}
+          canTransition={canAdminister}
+          transitionBlockedReason="Admin permission is required to advance a Blueprint lifecycle."
         />
         {!isPublished && readiness.blockingReasons.length ? (
           <div className="blockerList">
@@ -246,6 +249,7 @@ export async function BlueprintReviewContent({
           reviewableRoles={reviewableRoles}
           reviewBlockedReason={reviewableRoles.length ? undefined : `${actorName} has no reviewer roles in this workspace.`}
           actorName={actorName}
+          actorId={actor?.id}
           isPublished={isPublished}
         />
       </section>

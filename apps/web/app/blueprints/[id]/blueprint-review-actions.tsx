@@ -23,6 +23,25 @@ async function postJson(url: string, body: unknown): Promise<{ error?: string }>
   return {};
 }
 
+export function getBlueprintApprovalRoleSummary({
+  approvals,
+  role,
+  actorId,
+  requiredCount = 1,
+}: {
+  approvals: PolicyApproval[];
+  role: string;
+  actorId?: string;
+  requiredCount?: number;
+}) {
+  const roleApprovals = approvals.filter((approval) => approval.role === role);
+  return {
+    actorApproval: actorId ? roleApprovals.find((approval) => approval.reviewer === actorId) : undefined,
+    approvedCount: roleApprovals.filter((approval) => approval.status === "APPROVED").length,
+    requiredCount,
+  };
+}
+
 /**
  * DRAFT → IN_REVIEW → PUBLISHED transitions for the active revision. Both hit the
  * existing `PATCH /api/agent-blueprints/[id]` route, which enforces the source
@@ -34,12 +53,16 @@ export function BlueprintLifecycleActions({
   status,
   canPublish,
   publishBlockedReason,
+  canTransition,
+  transitionBlockedReason,
 }: {
   blueprintId: string;
   revisionId: string;
   status: AgentBlueprintStatus;
   canPublish: boolean;
   publishBlockedReason?: string;
+  canTransition: boolean;
+  transitionBlockedReason?: string;
 }) {
   const router = useRouter();
   const [pending, setPending] = useState<null | "IN_REVIEW" | "PUBLISHED">(null);
@@ -66,7 +89,7 @@ export function BlueprintLifecycleActions({
   return (
     <div className="blueprintLifecycleActions">
       {status === "DRAFT" ? (
-        <button className="button buttonPrimary" type="button" disabled={pending !== null} onClick={() => transition("IN_REVIEW")}>
+        <button className="button buttonPrimary" type="button" disabled={pending !== null || !canTransition} title={canTransition ? "Submit this Blueprint for review" : transitionBlockedReason} onClick={() => transition("IN_REVIEW")}>
           <Send size={15} />
           {pending === "IN_REVIEW" ? "Submitting…" : "Submit for review"}
         </button>
@@ -74,8 +97,8 @@ export function BlueprintLifecycleActions({
         <button
           className="button buttonPrimary"
           type="button"
-          disabled={pending !== null || !canPublish}
-          title={canPublish ? "Publish this Blueprint revision" : publishBlockedReason}
+          disabled={pending !== null || !canPublish || !canTransition}
+          title={!canTransition ? transitionBlockedReason : canPublish ? "Publish this Blueprint revision" : publishBlockedReason}
           onClick={() => transition("PUBLISHED")}
         >
           <ShieldCheck size={15} />
@@ -93,7 +116,8 @@ function ApprovalRoleCard({
   role,
   requiredCount,
   isRequired,
-  existing,
+  approvals,
+  actorId,
   canReview,
   reviewReason,
   disabled,
@@ -103,7 +127,8 @@ function ApprovalRoleCard({
   role: string;
   requiredCount?: number;
   isRequired: boolean;
-  existing?: PolicyApproval;
+  approvals: PolicyApproval[];
+  actorId?: string;
   canReview: boolean;
   reviewReason?: string;
   disabled: boolean;
@@ -112,10 +137,11 @@ function ApprovalRoleCard({
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState("");
-  const Icon = statusIcon[existing?.status ?? "PENDING"];
+  const { actorApproval, approvedCount } = getBlueprintApprovalRoleSummary({ approvals, role, actorId, requiredCount });
+  const Icon = statusIcon[actorApproval?.status ?? "PENDING"];
 
   async function submit(nextStatus: "APPROVED" | "CHANGES_REQUESTED") {
-    if (nextStatus === "CHANGES_REQUESTED" && existing?.status === "APPROVED"
+    if (nextStatus === "CHANGES_REQUESTED" && actorApproval?.status === "APPROVED"
       && !window.confirm(`Withdraw your ${role} approval? Publish will be blocked until re-approved.`)) return;
     setError(null);
     setPending(true);
@@ -135,19 +161,19 @@ function ApprovalRoleCard({
     <article className="approvalCard">
       <div className="approvalCardHeader">
         <div>
-          <h3>{role}{requiredCount != null && requiredCount > 1 ? ` · 1 of ${requiredCount} required` : ""}</h3>
+          <h3>{role}{isRequired ? ` · ${approvedCount} of ${requiredCount ?? 1} approved` : ""}</h3>
           {isRequired ? <span className="approvalRequired">required</span> : null}
         </div>
-        <span className={statusClass[existing?.status ?? "PENDING"]}>
+        <span className={statusClass[actorApproval?.status ?? "PENDING"]}>
           <Icon size={13} />
-          {existing?.status ?? "PENDING"}
+          {actorApproval?.status ?? "PENDING"}
         </span>
       </div>
 
-      {existing?.reviewedAt ? <p className="meta">{existing.reviewedAt.slice(0, 10)}</p> : null}
+      {actorApproval?.reviewedAt ? <p className="meta">Your decision: {actorApproval.reviewedAt.slice(0, 10)}</p> : null}
 
       {!disabled ? (
-        existing?.status === "APPROVED" ? (
+        actorApproval?.status === "APPROVED" ? (
           <div className="approvalActions">
             <button className="button buttonSmall" type="button" disabled={!actionable} title={reviewReason} onClick={() => submit("CHANGES_REQUESTED")}>
               {pending ? "Withdrawing…" : "Withdraw"}
@@ -184,7 +210,7 @@ export type BlueprintApprovalRole = {
   role: string;
   isRequired: boolean;
   requiredCount?: number;
-  existing?: PolicyApproval;
+  approvals: PolicyApproval[];
 };
 
 /**
@@ -199,6 +225,7 @@ export function BlueprintApprovalGrid({
   reviewableRoles,
   reviewBlockedReason,
   actorName,
+  actorId,
   isPublished,
 }: {
   blueprintId: string;
@@ -207,6 +234,7 @@ export function BlueprintApprovalGrid({
   reviewableRoles: string[];
   reviewBlockedReason?: string;
   actorName: string;
+  actorId?: string;
   isPublished: boolean;
 }) {
   const required = roles.filter((role) => role.isRequired);
@@ -222,7 +250,8 @@ export function BlueprintApprovalGrid({
         role={role.role}
         requiredCount={role.requiredCount}
         isRequired={role.isRequired}
-        existing={role.existing}
+        approvals={role.approvals}
+        actorId={actorId}
         canReview={canReview}
         reviewReason={canReview ? undefined : reviewBlockedReason ?? `${actorName} cannot review as ${role.role}.`}
         disabled={isPublished}
