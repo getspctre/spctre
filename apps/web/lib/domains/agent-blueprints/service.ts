@@ -8,6 +8,7 @@ import {
   createAgentBlueprintRevision,
   getAgentBlueprint,
   getAgentBlueprintByAgent,
+  getAgentBlueprintWorkspaceScope,
   getPublishedAgentBlueprintRuntime,
   getPublishedAgentBlueprintRuntimeByAgent as getPublishedAgentBlueprintRuntimeByAgentInTenant,
   hashBlueprintDefinition,
@@ -314,5 +315,5 @@ export async function publishBlueprintRevision(input: {
 export { rollbackAgentBlueprint };
 export { simulateAgentBlueprintRevision };
 
-export { createAgentBlueprint, createAgentBlueprintRevision, getAgentBlueprint, getPublishedAgentBlueprintRuntime, listAgentBlueprints, setAgentBlueprintRevisionStatus, getAgentBlueprintApprovals };
+export { createAgentBlueprint, createAgentBlueprintRevision, getAgentBlueprint, getAgentBlueprintWorkspaceScope, getPublishedAgentBlueprintRuntime, listAgentBlueprints, setAgentBlueprintRevisionStatus, getAgentBlueprintApprovals };
 export type { AgentBlueprintStatus };

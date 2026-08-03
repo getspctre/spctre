@@ -18,11 +18,6 @@ import {
   type BlueprintApprovalRole,
 } from "./blueprint-review-actions";
 
-// Reviewer-role authorization is enforced by the API routes. The routes gate on
-// the fixed "workspace-demo" slug, so the UI mirrors that to keep the optimistic
-// enable/disable of controls consistent with what the server will accept.
-const REVIEW_SLUG = "workspace-demo";
-
 const statusPill = (status: string) =>
   status === "PUBLISHED" ? "pillAllow" : status === "IN_REVIEW" ? "pillWarn" : "pillNeutral";
 
@@ -143,8 +138,12 @@ export async function BlueprintReviewContent({
 
   const actor = actorResult?.actor ?? null;
   const actorName = actor?.name ?? "You";
+  // Gate the controls against the real governing workspace slug — the same value
+  // the API routes now authorize against — so the optimistic enable/disable
+  // matches what the server will accept.
+  const reviewSlug = workspace.workspaceSlug || "workspace-demo";
   const reviewableRoles = actor
-    ? ALL_REVIEWER_ROLES.filter((role) => canActorReviewRole(actor, REVIEW_SLUG, role).allowed)
+    ? ALL_REVIEWER_ROLES.filter((role) => canActorReviewRole(actor, reviewSlug, role).allowed)
     : [];
   const canRollback = Boolean(actor?.reviewerRoles.includes("Admin"));
 
