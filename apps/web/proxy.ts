@@ -22,6 +22,7 @@ const SERVICE_API_PATHS = new Set([
   "/api/v1/evidence",
   "/api/bundle/latest",
   "/api/v1/bundle/latest",
+  "/api/agent-blueprints/runtime",
   "/api/compliance/export",
   "/api/v1/compliance/export",
   "/api/gateway/decide",
