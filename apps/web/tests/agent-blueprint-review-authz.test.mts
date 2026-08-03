@@ -12,6 +12,8 @@ const getAuthSessionSpy = vi.fn();
 const getActiveScopeSpy = vi.fn();
 const findActorByIdSpy = vi.fn();
 const blueprintWorkspaceScopeSpy = vi.fn();
+const getBlueprintSpy = vi.fn();
+const getApprovalsSpy = vi.fn().mockResolvedValue([]);
 const submitApprovalSpy = vi.fn().mockResolvedValue(true);
 const rollbackSpy = vi.fn();
 const setRevisionStatusSpy = vi.fn();
@@ -32,7 +34,8 @@ vi.mock("@/lib/actors", async (importOriginal) => {
 });
 
 vi.mock("@/lib/domains/agent-blueprints/service", () => ({
-  getAgentBlueprintApprovals: async () => [],
+  getAgentBlueprint: getBlueprintSpy,
+  getAgentBlueprintApprovals: getApprovalsSpy,
   getAgentBlueprintWorkspaceScope: blueprintWorkspaceScopeSpy,
   submitBlueprintApproval: submitApprovalSpy,
   rollbackAgentBlueprint: rollbackSpy,
@@ -41,6 +44,9 @@ vi.mock("@/lib/domains/agent-blueprints/service", () => ({
 }));
 
 const { POST: approvalsPost } = await import(
+  "../app/api/agent-blueprints/[id]/revisions/[revisionId]/approvals/route"
+);
+const { GET: approvalsGet } = await import(
   "../app/api/agent-blueprints/[id]/revisions/[revisionId]/approvals/route"
 );
 const { POST: rollbackPost } = await import("../app/api/agent-blueprints/[id]/rollback/route");
@@ -62,9 +68,24 @@ function scopedActor(overrides: Record<string, unknown> = {}) {
 beforeEach(() => {
   vi.clearAllMocks();
   submitApprovalSpy.mockResolvedValue(true);
+  getBlueprintSpy.mockResolvedValue({ revisions: [{ id: "rev-1" }] });
   setRevisionStatusSpy.mockResolvedValue({ id: "rev-1" });
   getAuthSessionSpy.mockResolvedValue({ principalId: "principal-1", tenantId: "tenant-1", subject: "sub-1" });
   getActiveScopeSpy.mockResolvedValue({ tenantId: "tenant-1", workspaceId: "ws-1" });
+});
+
+describe("Blueprint approvals read route scopes revisions to the active workspace", () => {
+  it("does not disclose approvals for a Blueprint outside the active workspace", async () => {
+    getBlueprintSpy.mockResolvedValue(null);
+
+    const response = await approvalsGet(
+      new Request("http://localhost/api/agent-blueprints/bp-1/revisions/rev-1/approvals"),
+      { params: Promise.resolve({ id: "bp-1", revisionId: "rev-1" }) }
+    );
+
+    expect(response.status).toBe(404);
+    expect(getApprovalsSpy).not.toHaveBeenCalled();
+  });
 });
 
 function approvalsRequest(body: unknown) {

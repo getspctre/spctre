@@ -30,9 +30,18 @@ interface ApprovalPanelProps {
   approvalRules?: Array<{ role: string; requiredCount: number }>;
   approvals: PolicyApproval[];
   isPublished: boolean;
+  actorId: string;
   actorName: string;
   reviewableRoles: string[];
   reviewBlockedReason?: string;
+}
+
+export function getPolicyApprovalRoleSummary({ approvals, role, actorId }: { approvals: PolicyApproval[]; role: string; actorId: string }) {
+  const roleApprovals = approvals.filter((approval) => approval.role === role);
+  return {
+    actorApproval: roleApprovals.find((approval) => approval.reviewer === actorId),
+    approvedCount: roleApprovals.filter((approval) => approval.status === "APPROVED").length,
+  };
 }
 
 interface PublishGateProps {
@@ -160,7 +169,8 @@ export function PublishGate({
 function ApprovalRoleCard({
   role,
   revisionId,
-  existing,
+  approvals,
+  actorId,
   isRequired,
   requiredCount,
   isPublished,
@@ -170,7 +180,8 @@ function ApprovalRoleCard({
 }: {
   role: string;
   revisionId: string;
-  existing: PolicyApproval | undefined;
+  approvals: PolicyApproval[];
+  actorId: string;
   isRequired: boolean;
   requiredCount: number | undefined;
   isPublished: boolean;
@@ -178,26 +189,27 @@ function ApprovalRoleCard({
   reviewReason: string | undefined;
   approvalAction: (formData: FormData) => void;
 }) {
-  const Icon = statusIcon[existing?.status ?? "PENDING"];
+  const { actorApproval, approvedCount } = getPolicyApprovalRoleSummary({ approvals, role, actorId });
+  const Icon = statusIcon[actorApproval?.status ?? "PENDING"];
 
   return (
     <article className="approvalCard">
       <div className="approvalCardHeader">
         <div>
-          <h3>{role}{requiredCount != null && requiredCount > 1 ? ` · 1 of ${requiredCount} required` : ""}</h3>
+          <h3>{role}{isRequired ? ` · ${approvedCount} of ${requiredCount ?? 1} approved` : ""}</h3>
           {isRequired ? <span className="approvalRequired">required</span> : null}
         </div>
-        <span className={statusClass[existing?.status ?? "PENDING"]}>
+        <span className={statusClass[actorApproval?.status ?? "PENDING"]}>
           <Icon size={13} />
-          {existing?.status ?? "PENDING"}
+          {actorApproval?.status ?? "PENDING"}
         </span>
       </div>
 
-      {existing?.reviewedAt ? (
-        <p className="meta">{existing.reviewedAt.slice(0, 10)}</p>
+      {actorApproval?.reviewedAt ? (
+        <p className="meta">Your decision: {actorApproval.reviewedAt.slice(0, 10)}</p>
       ) : null}
 
-      {!isPublished && existing?.status !== "APPROVED" ? (
+      {!isPublished && actorApproval?.status !== "APPROVED" ? (
         <div className="approvalActions">
           <form action={approvalAction}>
             <input type="hidden" name="revisionId" value={revisionId} />
@@ -233,7 +245,7 @@ function ApprovalRoleCard({
         </div>
       ) : null}
 
-      {!isPublished && existing?.status === "APPROVED" ? (
+      {!isPublished && actorApproval?.status === "APPROVED" ? (
         <div className="approvalActions">
           <form
             action={approvalAction}
@@ -272,6 +284,7 @@ export function ApprovalPanel({
   approvalRules,
   approvals,
   isPublished,
+  actorId,
   actorName,
   reviewableRoles,
   reviewBlockedReason,
@@ -291,7 +304,8 @@ export function ApprovalPanel({
               key={role}
               role={role}
               revisionId={revisionId}
-              existing={approvals.find((a) => a.role === role)}
+              approvals={approvals.filter((approval) => approval.role === role)}
+              actorId={actorId}
               isRequired={requiredRoles.includes(role)}
               requiredCount={approvalRules?.find((r) => r.role === role)?.requiredCount}
               isPublished={isPublished}
@@ -318,7 +332,8 @@ export function ApprovalPanel({
                   key={role}
                   role={role}
                   revisionId={revisionId}
-                  existing={approvals.find((a) => a.role === role)}
+                  approvals={approvals.filter((approval) => approval.role === role)}
+                  actorId={actorId}
                   isRequired={false}
                   requiredCount={undefined}
                   isPublished={isPublished}

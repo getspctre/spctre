@@ -1,6 +1,6 @@
 import { getAuthSession } from "@/lib/auth-session";
 import { getActiveScope } from "@/lib/workspace";
-import { getAgentBlueprintApprovals, getAgentBlueprintWorkspaceScope, submitBlueprintApproval } from "@/lib/domains/agent-blueprints/service";
+import { getAgentBlueprint, getAgentBlueprintApprovals, getAgentBlueprintWorkspaceScope, submitBlueprintApproval } from "@/lib/domains/agent-blueprints/service";
 import { ALL_REVIEWER_ROLES } from "@/lib/approval-config";
 import { findActorById, canActorReviewRole } from "@/lib/actors";
 import { appendOperationsLog } from "@/lib/repositories/operations-log";
@@ -12,7 +12,9 @@ export const dynamic = "force-dynamic";
 export async function GET(request: Request, { params }: { params: Promise<{ id: string; revisionId: string }> }) {
   const traceId = extractTraceId(request); const scope = await getActiveScope().catch(swallow("getActiveScope", null)); const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (!scope || !session) return withTraceId(Response.json({ error: "Authentication and workspace context are required.", meta: makeMeta(traceId) }, { status: 401 }), traceId);
-  const { revisionId } = await params;
+  const { id: blueprintId, revisionId } = await params;
+  const blueprint = await getAgentBlueprint({ tenantId: scope.tenantId, workspaceId: scope.workspaceId, blueprintId });
+  if (!blueprint || !blueprint.revisions.some((revision) => revision.id === revisionId)) return withTraceId(Response.json({ error: "Blueprint revision not found.", meta: makeMeta(traceId) }, { status: 404 }), traceId);
   const approvals = await getAgentBlueprintApprovals({ tenantId: scope.tenantId, revisionId });
   return withTraceId(Response.json({ approvals, meta: makeMeta(traceId) }), traceId);
 }
