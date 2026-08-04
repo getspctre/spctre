@@ -83,7 +83,7 @@ function scopedActor(overrides: Record<string, unknown> = {}) {
 beforeEach(() => {
   vi.clearAllMocks();
   submitApprovalSpy.mockResolvedValue(true);
-  getBlueprintSpy.mockResolvedValue({ revisions: [{ id: "rev-1" }] });
+  getBlueprintSpy.mockResolvedValue({ revisions: [{ id: "rev-1", status: "IN_REVIEW" }] });
   setRevisionStatusSpy.mockResolvedValue({ id: "rev-1" });
   createRevisionSpy.mockResolvedValue({ id: "rev-2" });
   publishRevisionSpy.mockResolvedValue({ revision: { id: "rev-1" } });
@@ -116,6 +116,15 @@ function approvalsRequest(body: unknown) {
 }
 
 describe("Blueprint approvals route authorizes against the real workspace slug", () => {
+  it("rejects PENDING because reviewer decisions must be explicit", async () => {
+    const response = await approvalsPost(approvalsRequest({ role: "Security", status: "PENDING" }), {
+      params: Promise.resolve({ id: "bp-1", revisionId: "rev-1" }),
+    });
+
+    expect(response.status).toBe(400);
+    expect(submitApprovalSpy).not.toHaveBeenCalled();
+  });
+
   it("allows a workspace-scoped reviewer to approve in their own (non-demo) workspace", async () => {
     findActorByIdSpy.mockResolvedValue(scopedActor());
     blueprintWorkspaceScopeSpy.mockResolvedValue({ workspace_id: "ws-1", workspace_slug: "acme-prod" });
@@ -151,6 +160,18 @@ describe("Blueprint approvals route authorizes against the real workspace slug",
     });
 
     expect(response.status).toBe(404);
+    expect(submitApprovalSpy).not.toHaveBeenCalled();
+  });
+
+  it("rejects approvals until the Blueprint revision has been submitted for review", async () => {
+    getBlueprintSpy.mockResolvedValue({ revisions: [{ id: "rev-1", status: "DRAFT" }] });
+
+    const response = await approvalsPost(approvalsRequest({ role: "Security", status: "APPROVED" }), {
+      params: Promise.resolve({ id: "bp-1", revisionId: "rev-1" }),
+    });
+
+    expect(response.status).toBe(409);
+    expect(await response.json()).toMatchObject({ error: "Submit the Blueprint revision for review before recording approvals." });
     expect(submitApprovalSpy).not.toHaveBeenCalled();
   });
 });

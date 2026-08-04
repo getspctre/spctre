@@ -24,17 +24,21 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   if (!scope || !session) return withTraceId(Response.json({ error: "Authentication and workspace context are required.", meta: makeMeta(traceId) }, { status: 401 }), traceId);
   const body = await request.json().catch(() => null) as Record<string, unknown> | null;
   const role = typeof body?.role === "string" ? body.role : ""; const status = body?.status;
-  if (!(ALL_REVIEWER_ROLES as readonly string[]).includes(role) || !["APPROVED", "CHANGES_REQUESTED", "PENDING"].includes(String(status))) return withTraceId(Response.json({ error: "A valid reviewer role and status are required.", meta: makeMeta(traceId) }, { status: 400 }), traceId);
+  if (!(ALL_REVIEWER_ROLES as readonly string[]).includes(role) || !["APPROVED", "CHANGES_REQUESTED"].includes(String(status))) return withTraceId(Response.json({ error: "A valid reviewer role and status are required.", meta: makeMeta(traceId) }, { status: 400 }), traceId);
+  const { id: blueprintId, revisionId } = await params;
+  const blueprint = await getAgentBlueprint({ tenantId: scope.tenantId, workspaceId: scope.workspaceId, blueprintId });
+  const revision = blueprint?.revisions.find((candidate) => candidate.id === revisionId);
+  if (!revision) return withTraceId(Response.json({ error: "Blueprint revision not found.", meta: makeMeta(traceId) }, { status: 404 }), traceId);
+  if (revision.status !== "IN_REVIEW") return withTraceId(Response.json({ error: "Submit the Blueprint revision for review before recording approvals.", meta: makeMeta(traceId) }, { status: 409 }), traceId);
   const actor = await findActorById(session.principalId, { tenantId: scope.tenantId, workspaceId: scope.workspaceId });
   if (!actor) return withTraceId(Response.json({ error: "Reviewer principal is not available.", meta: makeMeta(traceId) }, { status: 403 }), traceId);
-  const { id: blueprintId, revisionId } = await params;
   // Authorize the reviewer against the Blueprint's real governing workspace, not
   // a hardcoded slug; "workspace-demo" is only the no-workspace/no-DB null-guard.
   const workspaceScope = await getAgentBlueprintWorkspaceScope({ tenantId: scope.tenantId, blueprintId });
   if (!workspaceScope || workspaceScope.workspace_id !== scope.workspaceId) return withTraceId(Response.json({ error: "Blueprint not found.", meta: makeMeta(traceId) }, { status: 404 }), traceId);
   const review = canActorReviewRole(actor, workspaceScope?.workspace_slug ?? "workspace-demo", role);
   if (!review.allowed) return withTraceId(Response.json({ error: review.reason ?? "Review is not allowed.", meta: makeMeta(traceId) }, { status: 403 }), traceId);
-  const ok = await submitBlueprintApproval({ tenantId: scope.tenantId, workspaceId: scope.workspaceId, blueprintId, revisionId, reviewerId: actor.id, reviewerRole: role, status: status as "APPROVED" | "CHANGES_REQUESTED" | "PENDING", note: typeof body?.note === "string" ? body.note : null });
+  const ok = await submitBlueprintApproval({ tenantId: scope.tenantId, workspaceId: scope.workspaceId, blueprintId, revisionId, reviewerId: actor.id, reviewerRole: role, status: status as "APPROVED" | "CHANGES_REQUESTED", note: typeof body?.note === "string" ? body.note : null });
   if (!ok) return withTraceId(Response.json({ error: "Blueprint revision not found.", meta: makeMeta(traceId) }, { status: 404 }), traceId);
   appendOperationsLog({ tenantId: scope.tenantId, workspaceId: scope.workspaceId, eventType: "BLUEPRINT_APPROVE", sourceId: revisionId, sourceTable: "agent_blueprint_approval", actorId: actor.id, payload: { blueprintId, role, status } }).catch(swallow("appendOperationsLog", undefined));
   return withTraceId(Response.json({ ok: true, meta: makeMeta(traceId) }), traceId);
