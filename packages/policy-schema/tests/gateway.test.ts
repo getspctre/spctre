@@ -6,12 +6,7 @@ const base: GatewayDecisionInput = {
   decisionId: "dec-001",
   artifactHash: "hash-abc",
   policyContext: [
-    {
-      scope: "ORGANIZATION",
-      branchId: "branch-1",
-      revisionId: "rev-1",
-      artifactHash: "hash-abc",
-    },
+    { scope: "ORGANIZATION", branchId: "branch-1", revisionId: "rev-1", artifactHash: "hash-abc" },
   ],
 };
 
@@ -108,20 +103,12 @@ describe("evaluateGatewayDecision", () => {
     });
 
     it("aborts when critically low trust + high monetary amount", () => {
-      const result = evaluateGatewayDecision({
-        ...base,
-        trustScore: 0.19,
-        amountUsd: 50000,
-      });
+      const result = evaluateGatewayDecision({ ...base, trustScore: 0.19, amountUsd: 50000 });
       expect(result.outcome).toBe("ABORT");
     });
 
     it("does not abort at trust 0.2 boundary (threshold is < 0.2)", () => {
-      const result = evaluateGatewayDecision({
-        ...base,
-        trustScore: 0.2,
-        amountUsd: 50000,
-      });
+      const result = evaluateGatewayDecision({ ...base, trustScore: 0.2, amountUsd: 50000 });
       expect(result.outcome).toBe("ESCALATE");
     });
 
@@ -166,7 +153,14 @@ describe("buildAgtVerificationEvidencePacket", () => {
     targetStacks: [],
     artifactHash: "hash-abc",
     generatedAt: "2026-01-01T00:00:00Z",
-    approvals: [{ reviewer: "user-1", role: "Security", status: "APPROVED" as const, reviewedAt: "2026-01-01T00:00:00Z" }],
+    approvals: [
+      {
+        reviewer: "user-1",
+        role: "Security",
+        status: "APPROVED" as const,
+        reviewedAt: "2026-01-01T00:00:00Z",
+      },
+    ],
     rules: [],
     metadata: {},
   } as Parameters<typeof buildAgtVerificationEvidencePacket>[0]["bundle"];

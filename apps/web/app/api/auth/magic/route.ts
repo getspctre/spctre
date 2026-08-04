@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import { createAuthSession } from "@/lib/auth-session";
 import { setControlPlaneSessionCookies } from "@/lib/auth-session-cookies";
-import { getPrimaryWorkspaceIdForTenant, getPrincipalForLogin, isAuthDatabaseConfigured } from "@/lib/domains/auth/service";
+import {
+  getPrimaryWorkspaceIdForTenant,
+  getPrincipalForLogin,
+  isAuthDatabaseConfigured,
+} from "@/lib/domains/auth/service";
 import { fromBase64Url, toBase64Url } from "@/lib/crypto-utils";
 import { swallow } from "@/lib/platform/swallow";
 import { getSessionGuardSecret } from "@/lib/session-guard-secret";
@@ -19,7 +23,7 @@ async function signValue(value: string, secret: string): Promise<string> {
     new TextEncoder().encode(secret),
     { name: "HMAC", hash: "SHA-256" },
     false,
-    ["sign"]
+    ["sign"],
   );
   const sig = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(value));
   return toBase64Url(new Uint8Array(sig));
@@ -41,10 +45,12 @@ function getRequestBase(request: Request): string {
   // Set NEXT_PUBLIC_APP_URL or SPCTRE_APP_URL in production to avoid this path.
   // Multi-hop proxies set "X-Forwarded-Host: downstream, upstream" — take only
   // the first segment to prevent open-redirect via a crafted comma-separated value.
-  const rawHost = request.headers.get("x-forwarded-host") || request.headers.get("host") || "localhost:3000";
+  const rawHost =
+    request.headers.get("x-forwarded-host") || request.headers.get("host") || "localhost:3000";
   const host = rawHost.split(",")[0].trim();
   const rawProto = request.headers.get("x-forwarded-proto") || "";
-  const protocol = rawProto.split(",")[0].trim() || (process.env.NODE_ENV === "production" ? "https" : "http");
+  const protocol =
+    rawProto.split(",")[0].trim() || (process.env.NODE_ENV === "production" ? "https" : "http");
   return `${protocol}://${host}`;
 }
 
@@ -79,7 +85,10 @@ interface MagicTokenPayload {
 
 // Verify the signed magic-link token's format, signature, expiry, and jti.
 // Returns the payload, or the login error code to redirect with.
-async function validateMagicToken(token: string, secret: string): Promise<MagicTokenPayload | { error: string }> {
+async function validateMagicToken(
+  token: string,
+  secret: string,
+): Promise<MagicTokenPayload | { error: string }> {
   const parts = token.split(".");
   if (parts.length !== 2 || !parts[0] || !parts[1]) {
     return { error: "invalid_token_format" };
@@ -189,7 +198,7 @@ async function handleGetApiAuthMagic(request: Request) {
     workspaceId: workspaceId ?? "",
     principalId: principal.id,
     subject: principal.subject,
-    mfaVerified: !principal.require_mfa
+    mfaVerified: !principal.require_mfa,
   });
 
   return response;

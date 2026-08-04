@@ -9,9 +9,11 @@ describe("robots.txt route", () => {
   it("serves an indexable policy for spctre-site hosts", async () => {
     process.env.SPCTRE_SITE_URL = "https://spctre.dev/";
 
-    const response = GET(new Request("https://spctre.dev/robots.txt", {
-      headers: { host: "spctre-site-fyow2cpb6q-uc.a.run.app" },
-    }));
+    const response = GET(
+      new Request("https://spctre.dev/robots.txt", {
+        headers: { host: "spctre-site-fyow2cpb6q-uc.a.run.app" },
+      }),
+    );
     const body = await response.text();
 
     expect(response.headers.get("content-type")).toContain("text/plain");
@@ -21,9 +23,11 @@ describe("robots.txt route", () => {
   });
 
   it("blocks indexing for spctre control-plane hosts", async () => {
-    const response = GET(new Request("https://app.spctre.dev/robots.txt", {
-      headers: { host: "spctre-fyow2cpb6q-uc.a.run.app" },
-    }));
+    const response = GET(
+      new Request("https://app.spctre.dev/robots.txt", {
+        headers: { host: "spctre-fyow2cpb6q-uc.a.run.app" },
+      }),
+    );
     const body = await response.text();
 
     expect(body).toContain("Allow: /api-docs");

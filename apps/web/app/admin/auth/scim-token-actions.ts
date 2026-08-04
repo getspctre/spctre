@@ -26,7 +26,8 @@ async function requireScimAdmin() {
   const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (!session) return { error: "Authentication required.", errorCode: "auth_required" } as const;
   const ctx = await getActiveScope().catch(swallow("getActiveScope", null));
-  if (!ctx) return { error: "Workspace context unavailable.", errorCode: "workspace_unavailable" } as const;
+  if (!ctx)
+    return { error: "Workspace context unavailable.", errorCode: "workspace_unavailable" } as const;
   const actor = await findActorById(session.principalId, {
     tenantId: session.tenantId,
     workspaceId: ctx.workspaceId,
@@ -34,16 +35,21 @@ async function requireScimAdmin() {
   if (!actor?.reviewerRoles.includes("Admin")) {
     return { error: "Admin permission is required.", errorCode: "admin_required" } as const;
   }
-  const entitled = await isScimProvisioningEntitled(session.tenantId).catch(swallow("isScimProvisioningEntitled", false));
+  const entitled = await isScimProvisioningEntitled(session.tenantId).catch(
+    swallow("isScimProvisioningEntitled", false),
+  );
   if (!entitled) {
-    return { error: "SCIM provisioning requires an Enterprise subscription.", errorCode: "not_entitled" } as const;
+    return {
+      error: "SCIM provisioning requires an Enterprise subscription.",
+      errorCode: "not_entitled",
+    } as const;
   }
   return { session } as const;
 }
 
 export async function createScimProvisioningToken(
   _prev: ScimTokenActionState,
-  formData: FormData
+  formData: FormData,
 ): Promise<ScimTokenActionState> {
   const guard = await requireScimAdmin();
   if ("error" in guard) {
@@ -75,7 +81,7 @@ export async function createScimProvisioningToken(
 
 export async function revokeScimProvisioningToken(
   _prev: ScimTokenMutationState,
-  formData: FormData
+  formData: FormData,
 ): Promise<ScimTokenMutationState> {
   const guard = await requireScimAdmin();
   if ("error" in guard) {

@@ -18,10 +18,7 @@ export function createSpctreClient({
   return createClient<paths>({
     baseUrl,
     fetch: customFetch,
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
   });
 }
 

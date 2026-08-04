@@ -7,7 +7,7 @@ const TONE_CLASS: Record<StatusTone, string> = {
   allow: "pillAllow",
   warn: "pillWarn",
   block: "pillBlock",
-  neutral: "pillNeutral"
+  neutral: "pillNeutral",
 };
 
 export interface StatusPillProps extends HTMLAttributes<HTMLSpanElement> {

@@ -19,8 +19,12 @@ function FormStatus({ state }: { state: AdminAuthActionState }) {
   const t = useTranslations("admin.auth.idp.status");
   return (
     <>
-      {state?.error ? <p className="meta workspaceError">{state.errorCode ? t(state.errorCode) : state.error}</p> : null}
-      {state?.ok ? <p className="meta">{state.messageCode ? t(state.messageCode) : state.message}</p> : null}
+      {state?.error ? (
+        <p className="meta workspaceError">{state.errorCode ? t(state.errorCode) : state.error}</p>
+      ) : null}
+      {state?.ok ? (
+        <p className="meta">{state.messageCode ? t(state.messageCode) : state.message}</p>
+      ) : null}
     </>
   );
 }
@@ -41,7 +45,11 @@ function SamlUpgradePrompt() {
   );
 }
 
-function submitLabel(t: ReturnType<typeof useTranslations>, pending: boolean, editing: boolean): string {
+function submitLabel(
+  t: ReturnType<typeof useTranslations>,
+  pending: boolean,
+  editing: boolean,
+): string {
   if (pending) return t("saving");
   return editing ? t("save_provider") : t("add_provider");
 }
@@ -62,9 +70,7 @@ function SamlFields({ existing }: { existing?: IdentityProviderSummary }) {
       </label>
 
       <label className="field">
-        <span>
-          {existing ? t("saml_cert_keep") : t("saml_cert")}
-        </span>
+        <span>{existing ? t("saml_cert_keep") : t("saml_cert")}</span>
         <textarea
           className="input codearea"
           name="samlCert"
@@ -83,12 +89,7 @@ function OidcFields({ existing }: { existing?: IdentityProviderSummary }) {
     <>
       <label className="field">
         <span>{t("client_id")}</span>
-        <input
-          className="input"
-          name="clientId"
-          defaultValue={existing?.clientId ?? ""}
-          required
-        />
+        <input className="input" name="clientId" defaultValue={existing?.clientId ?? ""} required />
       </label>
 
       <label className="field">
@@ -107,11 +108,7 @@ function OidcFields({ existing }: { existing?: IdentityProviderSummary }) {
 
       <label className="field">
         <span>{t("metadata_url")}</span>
-        <input
-          className="input"
-          name="metadataUrl"
-          defaultValue={existing?.metadataUrl ?? ""}
-        />
+        <input className="input" name="metadataUrl" defaultValue={existing?.metadataUrl ?? ""} />
       </label>
     </>
   );
@@ -122,7 +119,7 @@ export function IdpForm({ existing }: IdpFormProps) {
   const [state, action, pending] = useActionState(upsertIdentityProvider, initialState);
   const canUseSaml = useFeatureFlag("samlScimProvisioning");
   const [providerType, setProviderType] = useState<"OIDC" | "SAML">(
-    existing?.providerType === "SAML" && canUseSaml ? "SAML" : "OIDC"
+    existing?.providerType === "SAML" && canUseSaml ? "SAML" : "OIDC",
   );
 
   const isSaml = providerType === "SAML";
@@ -146,7 +143,9 @@ export function IdpForm({ existing }: IdpFormProps) {
           disabled={Boolean(existing)}
         >
           <option value="OIDC">OIDC</option>
-          <option value="SAML" disabled={!canUseSaml}>SAML 2.0</option>
+          <option value="SAML" disabled={!canUseSaml}>
+            SAML 2.0
+          </option>
         </select>
       </label>
 

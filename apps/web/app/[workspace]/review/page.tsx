@@ -2,7 +2,7 @@ import { ReviewPageContent } from "../../review/content";
 
 export default async function WorkspaceReviewPage({
   params,
-  searchParams
+  searchParams,
 }: {
   params: Promise<{ workspace: string }>;
   searchParams: Promise<{

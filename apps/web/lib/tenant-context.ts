@@ -21,7 +21,7 @@ export function getBoundTenantId(): string | undefined {
 
 export async function runWithTenantContext<T>(
   tenantId: string | null | undefined,
-  fn: () => Promise<T>
+  fn: () => Promise<T>,
 ): Promise<T> {
   assertTenantId(tenantId);
   return tenantContext.run(tenantId, fn);

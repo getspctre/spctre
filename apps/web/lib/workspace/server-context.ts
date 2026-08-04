@@ -4,11 +4,14 @@ import { DEMO_TENANT_ID, DEMO_WORKSPACE_ID } from "../demo";
 import {
   isDatabaseConfigured,
   listTenantsForWorkspaceContext,
-  listWorkspacesForWorkspaceContext
+  listWorkspacesForWorkspaceContext,
 } from "./repository";
 import { ACTIVE_TENANT_COOKIE, ACTIVE_WORKSPACE_COOKIE } from "./cookies";
 import type { WorkspaceContext, WorkspaceSummary } from "./types";
-import { getLocalePreferencesForShell, type LocalePreferences } from "@/lib/repositories/i18n/preferences";
+import {
+  getLocalePreferencesForShell,
+  type LocalePreferences,
+} from "@/lib/repositories/i18n/preferences";
 import { swallow } from "@/lib/platform/swallow";
 
 interface WorkspaceContextOptions {
@@ -28,7 +31,7 @@ interface WorkspaceContextOptions {
 function demoFallbackContext(
   options: WorkspaceContextOptions,
   cookieWorkspaceId: string | undefined,
-  cookieTenantId: string | undefined
+  cookieTenantId: string | undefined,
 ): WorkspaceContext {
   const fallbackSlug = options.workspaceSlug ?? "workspace-demo";
 
@@ -37,13 +40,7 @@ function demoFallbackContext(
     tenantSlug: "tenant-demo",
     tenantDefaultLocale: null,
     principalPreferredLocale: null,
-    tenants: [
-      {
-        id: DEMO_TENANT_ID,
-        slug: "tenant-demo",
-        name: "Demo Organization"
-      }
-    ],
+    tenants: [{ id: DEMO_TENANT_ID, slug: "tenant-demo", name: "Demo Organization" }],
     workspaceId: DEMO_WORKSPACE_ID,
     workspaceSlug: fallbackSlug,
     workspaceName: "Default Workspace",
@@ -51,13 +48,7 @@ function demoFallbackContext(
       cookieWorkspaceId !== DEMO_WORKSPACE_ID ||
       cookieTenantId !== DEMO_TENANT_ID ||
       fallbackSlug !== "workspace-demo",
-    workspaces: [
-      {
-        id: DEMO_WORKSPACE_ID,
-        slug: fallbackSlug,
-        name: "Default Workspace"
-      }
-    ]
+    workspaces: [{ id: DEMO_WORKSPACE_ID, slug: fallbackSlug, name: "Default Workspace" }],
   };
 }
 
@@ -65,7 +56,7 @@ function resolveActiveTenant(
   tenantOptions: WorkspaceContext["tenants"],
   isDemo: boolean,
   sessionTenantId: string | undefined,
-  cookieTenantId: string | undefined
+  cookieTenantId: string | undefined,
 ) {
   if (isDemo) {
     return tenantOptions.find((tenant) => tenant.id === DEMO_TENANT_ID) ?? tenantOptions[0];
@@ -83,7 +74,7 @@ function resolveActiveWorkspace(
   isDemo: boolean,
   workspaceSlug: string | undefined,
   cookieWorkspaceId: string | undefined,
-  fallbackWorkspace: WorkspaceSummary
+  fallbackWorkspace: WorkspaceSummary,
 ) {
   if (isDemo) {
     return workspaceOptions.find((w) => w.id === DEMO_WORKSPACE_ID) ?? fallbackWorkspace;
@@ -99,7 +90,7 @@ function resolveActiveWorkspace(
 }
 
 export async function getWorkspaceContext(
-  options: WorkspaceContextOptions = {}
+  options: WorkspaceContextOptions = {},
 ): Promise<WorkspaceContext> {
   const cookieStore = await cookies();
   const cookieWorkspaceId = cookieStore.get(ACTIVE_WORKSPACE_COOKIE)?.value;
@@ -112,7 +103,7 @@ export async function getWorkspaceContext(
 
   const tenantRows = await listTenantsForWorkspaceContext({
     principalSubject: session?.subject,
-    fallbackTenantId: cookieTenantId ?? DEMO_TENANT_ID
+    fallbackTenantId: cookieTenantId ?? DEMO_TENANT_ID,
   });
   const tenantOptions = tenantRows.length
     ? tenantRows
@@ -123,21 +114,25 @@ export async function getWorkspaceContext(
     (!options.workspaceSlug && cookieWorkspaceId === DEMO_WORKSPACE_ID);
 
   if (isDemo && !tenantOptions.some((tenant) => tenant.id === DEMO_TENANT_ID)) {
-    tenantOptions.unshift({
-      id: DEMO_TENANT_ID,
-      slug: "tenant-demo",
-      name: "Demo Organization"
-    });
+    tenantOptions.unshift({ id: DEMO_TENANT_ID, slug: "tenant-demo", name: "Demo Organization" });
   }
 
-  const activeTenant = resolveActiveTenant(tenantOptions, isDemo, session?.tenantId, cookieTenantId);
+  const activeTenant = resolveActiveTenant(
+    tenantOptions,
+    isDemo,
+    session?.tenantId,
+    cookieTenantId,
+  );
 
-  const workspaceRows = await listWorkspacesForWorkspaceContext(activeTenant.id, session?.principalId);
+  const workspaceRows = await listWorkspacesForWorkspaceContext(
+    activeTenant.id,
+    session?.principalId,
+  );
 
   const fallbackWorkspace: WorkspaceSummary = {
     id: DEMO_WORKSPACE_ID,
     slug: "workspace-demo",
-    name: "Default Workspace"
+    name: "Default Workspace",
   };
 
   const workspaceOptions = workspaceRows.length ? workspaceRows : [fallbackWorkspace];
@@ -146,7 +141,7 @@ export async function getWorkspaceContext(
     isDemo,
     options.workspaceSlug,
     cookieWorkspaceId,
-    fallbackWorkspace
+    fallbackWorkspace,
   );
   const needsCookieNormalization =
     activeWorkspace.id !== cookieWorkspaceId || activeTenant.id !== cookieTenantId;
@@ -165,11 +160,14 @@ export async function getWorkspaceContext(
     workspaceSlug: activeWorkspace.slug,
     workspaceName: activeWorkspace.name,
     workspaces: workspaceOptions,
-    needsCookieNormalization
+    needsCookieNormalization,
   };
 }
 
-export async function getRequiredWorkspaceContext(): Promise<{ workspaceId: string; tenantId: string }> {
+export async function getRequiredWorkspaceContext(): Promise<{
+  workspaceId: string;
+  tenantId: string;
+}> {
   const cookieStore = await cookies();
   const cookieWorkspaceId = cookieStore.get(ACTIVE_WORKSPACE_COOKIE)?.value;
   const cookieTenantId = cookieStore.get(ACTIVE_TENANT_COOKIE)?.value;
@@ -181,8 +179,5 @@ export async function getRequiredWorkspaceContext(): Promise<{ workspaceId: stri
   }
 
   const context = await getWorkspaceContext();
-  return {
-    workspaceId: context.workspaceId,
-    tenantId: context.tenantId
-  };
+  return { workspaceId: context.workspaceId, tenantId: context.tenantId };
 }

@@ -9,7 +9,7 @@ const seedState = vi.hoisted(() => {
     branchId: string | null;
     activeRevisionId: unknown;
     artifactHash: unknown;
-    
+
     // Phase 2 High-Fidelity Seeding collections
     calibrationPolicies: Array<Record<string, unknown>>;
     budgetEvents: Array<Record<string, unknown>>;
@@ -41,7 +41,7 @@ const seedState = vi.hoisted(() => {
     branchId: null,
     activeRevisionId: null,
     artifactHash: null,
-    
+
     calibrationPolicies: [],
     budgetEvents: [],
     trustScoreEvents: [],
@@ -65,14 +65,25 @@ const seedState = vi.hoisted(() => {
 
   function handleQuery(query: string, values: unknown[]) {
     // 1. SELECT pb.id AS branch_id or general active revision checks
-    if (query.includes("SELECT pb.id AS branch_id") || query.includes("SELECT pb.id, pb.active_revision_id")) {
+    if (
+      query.includes("SELECT pb.id AS branch_id") ||
+      query.includes("SELECT pb.id, pb.active_revision_id")
+    ) {
       return Promise.resolve(
         state.branchId && state.activeRevisionId
-          ? [{ branch_id: state.branchId, active_revision_id: state.activeRevisionId, artifact_hash: state.artifactHash, id: state.branchId, active_revision_id: state.activeRevisionId }]
-          : []
+          ? [
+              {
+                branch_id: state.branchId,
+                active_revision_id: state.activeRevisionId,
+                artifact_hash: state.artifactHash,
+                id: state.branchId,
+                active_revision_id: state.activeRevisionId,
+              },
+            ]
+          : [],
       );
     }
-    
+
     // 2. INSERT INTO policy_branch
     if (query.includes("INSERT INTO policy_branch")) {
       state.branchId = "branch-spctre-agent";
@@ -82,7 +93,9 @@ const seedState = vi.hoisted(() => {
     // 3. INSERT INTO policy_revision
     if (query.includes("INSERT INTO policy_revision")) {
       state.activeRevisionId = values[0];
-      state.artifactHash = values.find((value) => typeof value === "string" && value.startsWith("sha256:"));
+      state.artifactHash = values.find(
+        (value) => typeof value === "string" && value.startsWith("sha256:"),
+      );
       const sourceDocumentValue = values.find((value) => {
         if (typeof value !== "string") return false;
         try {
@@ -101,14 +114,18 @@ const seedState = vi.hoisted(() => {
     if (query.includes("INSERT INTO policy_approval")) {
       state.approvalRows.push(
         { reviewerId: values[4], reviewerRole: "Security", status: "APPROVED" },
-        { reviewerId: values[9], reviewerRole: "Platform", status: "APPROVED" }
+        { reviewerId: values[9], reviewerRole: "Platform", status: "APPROVED" },
       );
       return Promise.resolve([]);
     }
 
     // 5. INSERT INTO policy_publish
     if (query.includes("INSERT INTO policy_publish")) {
-      const environment = values.includes("production") ? "production" : values.includes("development") ? "development" : undefined;
+      const environment = values.includes("production")
+        ? "production"
+        : values.includes("development")
+          ? "development"
+          : undefined;
       const runtimeAdapter = values.includes("spctre-control-plane")
         ? "spctre-control-plane"
         : values.includes("spctre-local-dev")
@@ -127,20 +144,23 @@ const seedState = vi.hoisted(() => {
     }
 
     // Economic deletes & inserts
-    if (query.includes("DELETE FROM economic_usage_event") || query.includes("DELETE FROM economic_budget_policy")) {
+    if (
+      query.includes("DELETE FROM economic_usage_event") ||
+      query.includes("DELETE FROM economic_budget_policy")
+    ) {
       return Promise.resolve([]);
     }
-    if (query.includes("INSERT INTO economic_budget_policy") || query.includes("INSERT INTO economic_usage_event")) {
+    if (
+      query.includes("INSERT INTO economic_budget_policy") ||
+      query.includes("INSERT INTO economic_usage_event")
+    ) {
       return Promise.resolve([]);
     }
 
     // 7. Trust Calibration Policy seeding
     if (query.includes("INSERT INTO trust_calibration_policy")) {
       for (let i = 0; i < values.length; i += 2) {
-        state.calibrationPolicies.push({
-          tenant_id: values[i],
-          workspace_id: values[i + 1],
-        });
+        state.calibrationPolicies.push({ tenant_id: values[i], workspace_id: values[i + 1] });
       }
       return Promise.resolve([]);
     }
@@ -148,10 +168,7 @@ const seedState = vi.hoisted(() => {
     // 8. Context Budget Event seeding
     if (query.includes("INSERT INTO context_budget_event")) {
       for (let i = 0; i < values.length; i += 2) {
-        state.budgetEvents.push({
-          tenant_id: values[i],
-          workspace_id: values[i + 1],
-        });
+        state.budgetEvents.push({ tenant_id: values[i], workspace_id: values[i + 1] });
       }
       return Promise.resolve([]);
     }
@@ -159,10 +176,7 @@ const seedState = vi.hoisted(() => {
     // 9. Trust Score History seeding
     if (query.includes("INSERT INTO agt_trust_score_event")) {
       for (let i = 0; i < values.length; i += 2) {
-        state.trustScoreEvents.push({
-          tenant_id: values[i],
-          workspace_id: values[i + 1],
-        });
+        state.trustScoreEvents.push({ tenant_id: values[i], workspace_id: values[i + 1] });
       }
       return Promise.resolve([]);
     }
@@ -200,25 +214,24 @@ const seedState = vi.hoisted(() => {
     // unique decision key before inserting its event, then attaches the event
     // within the same transaction.
     if (query.includes("INSERT INTO runtime_evidence_event_key")) {
-      const key = {
-        tenant_id: values[0],
-        decision_id: values[1],
-        evidence_event_id: undefined,
-      };
+      const key = { tenant_id: values[0], decision_id: values[1], evidence_event_id: undefined };
       state.runtimeEvidenceKeys.push(key);
       return Promise.resolve(query.includes("RETURNING decision_id") ? [key] : []);
     }
 
     if (query.includes("UPDATE runtime_evidence_event_key")) {
       const key = state.runtimeEvidenceKeys.find(
-        (item) => item.tenant_id === values[2] && item.decision_id === values[3]
+        (item) => item.tenant_id === values[2] && item.decision_id === values[3],
       );
       if (key) key.evidence_event_id = values[0];
       return Promise.resolve([]);
     }
 
     // 14. Runtime Evidence Event seeding
-    if (query.includes("INSERT INTO runtime_evidence_event") && !query.includes("INSERT INTO runtime_evidence_event_key")) {
+    if (
+      query.includes("INSERT INTO runtime_evidence_event") &&
+      !query.includes("INSERT INTO runtime_evidence_event_key")
+    ) {
       state.runtimeEvidenceEvents.push({
         id: values[0],
         decision_id: values[1],
@@ -292,15 +305,13 @@ const seedState = vi.hoisted(() => {
   });
 
   state.sql.begin.mockImplementation((callback: (tx: typeof state.tx) => Promise<unknown>) =>
-    callback(state.tx)
+    callback(state.tx),
   );
 
   return state;
 });
 
-vi.mock("postgres", () => ({
-  default: vi.fn(() => seedState.sql),
-}));
+vi.mock("postgres", () => ({ default: vi.fn(() => seedState.sql) }));
 
 vi.mock("@spctre/platform", () => ({
   registerDbPoolMetrics: vi.fn(),
@@ -310,7 +321,8 @@ vi.mock("@spctre/platform", () => ({
 
 process.env.DATABASE_URL = "postgres://spctre-local-dev";
 
-const { canBootstrapDemoTenant, ensureDemoTenant } = await import("../lib/repositories/seed/local-dev");
+const { canBootstrapDemoTenant, ensureDemoTenant } =
+  await import("../lib/repositories/seed/local-dev");
 
 describe("local dev seeded workspace", () => {
   beforeEach(() => {
@@ -386,13 +398,10 @@ describe("local dev seeded workspace", () => {
           effect: "DENY",
           connectors: ["spctre-agent"],
         }),
-      ])
+      ]),
     );
     expect(seedState.revisionDocuments[0]?.metadata).toEqual(
-      expect.objectContaining({
-        connector: "spctre-agent",
-        version: "1.0.0",
-      })
+      expect.objectContaining({ connector: "spctre-agent", version: "1.0.0" }),
     );
     expect(seedState.approvalRows).toEqual(
       expect.arrayContaining([
@@ -406,20 +415,22 @@ describe("local dev seeded workspace", () => {
           reviewerRole: "Platform",
           status: "APPROVED",
         }),
-      ])
+      ]),
     );
-    expect(seedState.publishRows).toEqual(expect.arrayContaining([
-      expect.objectContaining({
-        environment: "development",
-        runtimeAdapter: "spctre-local-dev",
-        publishedBy: "seed:local-dev",
-      }),
-      expect.objectContaining({
-        environment: "production",
-        runtimeAdapter: "spctre-control-plane",
-        publishedBy: "00000000-0000-0000-0000-000000000011",
-      }),
-    ]));
+    expect(seedState.publishRows).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          environment: "development",
+          runtimeAdapter: "spctre-local-dev",
+          publishedBy: "seed:local-dev",
+        }),
+        expect.objectContaining({
+          environment: "production",
+          runtimeAdapter: "spctre-control-plane",
+          publishedBy: "00000000-0000-0000-0000-000000000011",
+        }),
+      ]),
+    );
   });
 
   it("seeds high-fidelity telemetry, trust events, budget context, and cryptographic operations logs for the demo tenant", async () => {
@@ -431,48 +442,33 @@ describe("local dev seeded workspace", () => {
     // 1. Trust Calibration Policies
     expect(seedState.calibrationPolicies).toHaveLength(3);
     expect(seedState.calibrationPolicies[0]).toEqual(
-      expect.objectContaining({
-        tenant_id: DEMO_TENANT_ID,
-        workspace_id: DEMO_WORKSPACE_ID,
-      })
+      expect.objectContaining({ tenant_id: DEMO_TENANT_ID, workspace_id: DEMO_WORKSPACE_ID }),
     );
 
     // 2. Context Budget Events
     expect(seedState.budgetEvents).toHaveLength(4);
     expect(seedState.budgetEvents[0]).toEqual(
-      expect.objectContaining({
-        tenant_id: DEMO_TENANT_ID,
-        workspace_id: DEMO_WORKSPACE_ID,
-      })
+      expect.objectContaining({ tenant_id: DEMO_TENANT_ID, workspace_id: DEMO_WORKSPACE_ID }),
     );
 
     // 3. Trust Score Events
     expect(seedState.trustScoreEvents).toHaveLength(11);
     expect(seedState.trustScoreEvents[0]).toEqual(
-      expect.objectContaining({
-        tenant_id: DEMO_TENANT_ID,
-        workspace_id: DEMO_WORKSPACE_ID,
-      })
+      expect.objectContaining({ tenant_id: DEMO_TENANT_ID, workspace_id: DEMO_WORKSPACE_ID }),
     );
 
     // 4. Gateway Decisions and Escalations
     expect(seedState.gatewayDecisions).toHaveLength(3);
     expect(seedState.gatewayEscalations).toHaveLength(3);
     expect(seedState.gatewayEscalations[0]).toEqual(
-      expect.objectContaining({
-        tenant_id: DEMO_TENANT_ID,
-        workspace_id: DEMO_WORKSPACE_ID,
-      })
+      expect.objectContaining({ tenant_id: DEMO_TENANT_ID, workspace_id: DEMO_WORKSPACE_ID }),
     );
 
     // 5. Runtime Evidence Events and Keys
     expect(seedState.runtimeEvidenceEvents).toHaveLength(20);
     expect(seedState.runtimeEvidenceKeys).toHaveLength(20);
     expect(seedState.runtimeEvidenceEvents[0]).toEqual(
-      expect.objectContaining({
-        tenant_id: DEMO_TENANT_ID,
-        workspace_id: DEMO_WORKSPACE_ID,
-      })
+      expect.objectContaining({ tenant_id: DEMO_TENANT_ID, workspace_id: DEMO_WORKSPACE_ID }),
     );
 
     // 6. The retired advisor surface no longer seeds synthetic recommendation

@@ -36,14 +36,18 @@ async function loadHitlService(): Promise<HitlService> {
     const module = await loadCommercialSlot<{ hitlService: HitlService }>("web/hitl/index.js");
     return module.hitlService;
   } catch (err) {
-    logger.warn("Failed to load commercial Managed HITL slot implementation; using fallback.", { error: err instanceof Error ? err.message : String(err) });
+    logger.warn("Failed to load commercial Managed HITL slot implementation; using fallback.", {
+      error: err instanceof Error ? err.message : String(err),
+    });
     return fallbackService;
   }
 }
 
 const fallbackService: HitlService = {
   async assign() {
-    throw new Error("Managed HITL assignments require a commercial Cloud or Enterprise subscription.");
+    throw new Error(
+      "Managed HITL assignments require a commercial Cloud or Enterprise subscription.",
+    );
   },
   async calculateSla(tenantId, baseDate, slaHours) {
     // Default fallback: static timezone-unaware math for OSS
@@ -56,7 +60,7 @@ const fallbackService: HitlService = {
   },
   async notifyOnBreach() {
     // no-op for OSS
-  }
+  },
 };
 
 export const hitlService: HitlService = {
@@ -75,5 +79,5 @@ export const hitlService: HitlService = {
   async notifyOnBreach(summary) {
     const service = await loadHitlService();
     return service.notifyOnBreach(summary);
-  }
+  },
 };

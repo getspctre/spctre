@@ -10,9 +10,7 @@ import { join } from "node:path";
 // revisions, so every INSERT into agent_blueprint_revision must go through that
 // function. This check fails if a raw insert appears anywhere else, turning the
 // invariant back into something CI enforces rather than a convention.
-const allowed = new Set([
-  "apps/web/lib/repositories/agent-blueprints.ts",
-]);
+const allowed = new Set(["apps/web/lib/repositories/agent-blueprints.ts"]);
 
 const INSERT_RE = /insert\s+into\s+agent_blueprint_revision\b/i;
 
@@ -38,7 +36,7 @@ if (offenders.length > 0) {
     "Inserts into agent_blueprint_revision are restricted to the locked path in\n" +
       "apps/web/lib/repositories/agent-blueprints.ts (createAgentBlueprintRevision /\n" +
       "createAgentBlueprint). There is no DB uniqueness backstop; route revision\n" +
-      "creation through that function so the per-Blueprint row lock prevents duplicates."
+      "creation through that function so the per-Blueprint row lock prevents duplicates.",
   );
   for (const file of offenders) console.error(`  - ${file}`);
   process.exit(1);

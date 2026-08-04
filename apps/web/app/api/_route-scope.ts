@@ -1,5 +1,9 @@
 import { getAuthSession } from "@/lib/auth-session";
-import { authenticateServiceToken, hasBearerToken, type ServiceTokenScope } from "@/lib/service-tokens";
+import {
+  authenticateServiceToken,
+  hasBearerToken,
+  type ServiceTokenScope,
+} from "@/lib/service-tokens";
 import { getActiveScope } from "@/lib/workspace";
 import { makeMeta, withTraceId } from "@spctre/api-contracts";
 import { swallow } from "@/lib/platform/swallow";
@@ -22,7 +26,7 @@ export async function resolveRouteScope(
      * /api/verification) pass 401 to preserve their public contract.
      */
     contextUnavailableStatus?: number;
-  }
+  },
 ): Promise<RouteScope | Response> {
   const contextUnavailableStatus = params.contextUnavailableStatus ?? 400;
   let workspaceId: string;
@@ -46,7 +50,11 @@ export async function resolveRouteScope(
     }
     const ctx = await getActiveScope().catch(swallow("getActiveScope", null));
     if (!ctx) {
-      return routeScopeError("Workspace context unavailable.", contextUnavailableStatus, params.traceId);
+      return routeScopeError(
+        "Workspace context unavailable.",
+        contextUnavailableStatus,
+        params.traceId,
+      );
     }
     workspaceId = ctx.workspaceId;
     tenantId = ctx.tenantId;
@@ -54,7 +62,11 @@ export async function resolveRouteScope(
   }
 
   if (!workspaceId || !tenantId) {
-    return routeScopeError("Workspace context unavailable.", contextUnavailableStatus, params.traceId);
+    return routeScopeError(
+      "Workspace context unavailable.",
+      contextUnavailableStatus,
+      params.traceId,
+    );
   }
 
   return { tenantId, workspaceId, actorId };

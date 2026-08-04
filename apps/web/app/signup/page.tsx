@@ -6,7 +6,7 @@ import { localDevSignup } from "./actions";
 export const dynamic = "force-dynamic";
 
 export default async function SignupPage({
-  searchParams
+  searchParams,
 }: {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
@@ -26,9 +26,7 @@ export default async function SignupPage({
           <p className="eyebrow">{t("eyebrow")}</p>
           <h2>{t("title")}</h2>
           <p className="meta">
-            {t.rich("description", {
-              code: (chunks) => <code>{chunks}</code>,
-            })}
+            {t.rich("description", { code: (chunks) => <code>{chunks}</code> })}
           </p>
         </div>
 
@@ -36,11 +34,22 @@ export default async function SignupPage({
           <input type="hidden" name="next" value={next} />
           <label>
             <span>{t("display_name")}</span>
-            <input className="input" name="displayName" placeholder={t("display_name_placeholder")} required />
+            <input
+              className="input"
+              name="displayName"
+              placeholder={t("display_name_placeholder")}
+              required
+            />
           </label>
           <label>
             <span>{t("email")}</span>
-            <input className="input" name="email" type="email" placeholder={t("email_placeholder")} required />
+            <input
+              className="input"
+              name="email"
+              type="email"
+              placeholder={t("email_placeholder")}
+              required
+            />
           </label>
           <button className="button buttonPrimary" type="submit">
             {t("submit")}

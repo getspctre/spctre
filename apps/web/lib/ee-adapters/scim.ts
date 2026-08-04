@@ -11,12 +11,14 @@ import { loadCommercialSlot } from "./slot-loader";
  * - "token": a DB-bound per-tenant token matched; the tenant is pre-resolved
  *   and entitlement-checked by the route.
  */
-export type ScimTenantBinding =
-  | { mode: "env" }
-  | { mode: "token"; tenantId: string };
+export type ScimTenantBinding = { mode: "env" } | { mode: "token"; tenantId: string };
 
 export interface ScimService {
-  handleRequest(request: Request, scimPath: string[], binding: ScimTenantBinding): Promise<Response>;
+  handleRequest(
+    request: Request,
+    scimPath: string[],
+    binding: ScimTenantBinding,
+  ): Promise<Response>;
 }
 
 // Resilient slot loader that avoids static imports of ee/ to pass OSS boundary checks
@@ -30,7 +32,10 @@ async function loadScimService(): Promise<ScimService> {
     const module = await loadCommercialSlot<{ scimService: ScimService }>("web/scim/index.js");
     return module.scimService;
   } catch (err) {
-    logger.warn("Failed to load commercial SCIM provisioning slot implementation; using fallback.", { error: err instanceof Error ? err.message : String(err) });
+    logger.warn(
+      "Failed to load commercial SCIM provisioning slot implementation; using fallback.",
+      { error: err instanceof Error ? err.message : String(err) },
+    );
     return fallbackService;
   }
 }
@@ -39,14 +44,14 @@ const fallbackService: ScimService = {
   async handleRequest() {
     return Response.json(
       { error: "SCIM 2.0 Directory Sync is not available in this build." },
-      { status: 503 }
+      { status: 503 },
     );
-  }
+  },
 };
 
 export const scimService: ScimService = {
   async handleRequest(request, scimPath, binding) {
     const service = await loadScimService();
     return service.handleRequest(request, scimPath, binding);
-  }
+  },
 };

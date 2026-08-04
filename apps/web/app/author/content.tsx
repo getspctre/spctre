@@ -9,7 +9,7 @@ import { RuleAuthoringPanel } from "../review/rule-authoring-panel";
 
 export async function AuthorPageContent({
   workspaceSlug,
-  searchParams
+  searchParams,
 }: {
   workspaceSlug?: string;
   searchParams: Promise<{ branch?: string }>;
@@ -24,7 +24,10 @@ export async function AuthorPageContent({
       <section className="panel">
         <div className="emptyState" role="alert">
           <h3>Branch unavailable</h3>
-          <p className="meta">The requested branch is unavailable in this workspace. Return to Policies and choose another branch.</p>
+          <p className="meta">
+            The requested branch is unavailable in this workspace. Return to Policies and choose
+            another branch.
+          </p>
         </div>
       </section>
     );
@@ -54,7 +57,9 @@ export async function AuthorPageContent({
     <>
       <PageHeader
         eyebrow={formatWorkspaceEyebrow(model.workspaceContext)}
-        title={model.activeBranch ? t("branch_title", { branch: model.activeBranch.name }) : t("title")}
+        title={
+          model.activeBranch ? t("branch_title", { branch: model.activeBranch.name }) : t("title")
+        }
         actions={
           <a className="button" href={buildWorkspacePath(model.workspaceContext.workspaceSlug)}>
             <ArrowLeft size={16} />

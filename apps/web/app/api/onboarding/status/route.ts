@@ -11,16 +11,22 @@ async function handleGetApiOnboardingStatus(request: Request) {
   const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (!session) {
     return withTraceId(
-      Response.json({ error: "Authentication required.", meta: makeMeta(traceId) }, { status: 401 }),
-      traceId
+      Response.json(
+        { error: "Authentication required.", meta: makeMeta(traceId) },
+        { status: 401 },
+      ),
+      traceId,
     );
   }
 
   const scope = await getActiveScope().catch(swallow("getActiveScope", null));
   if (!scope) {
     return withTraceId(
-      Response.json({ error: "Workspace context unavailable.", meta: makeMeta(traceId) }, { status: 400 }),
-      traceId
+      Response.json(
+        { error: "Workspace context unavailable.", meta: makeMeta(traceId) },
+        { status: 400 },
+      ),
+      traceId,
     );
   }
 

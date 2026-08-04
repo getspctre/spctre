@@ -285,10 +285,7 @@ function buildGovernanceManifest(
     agentId: config.agentId,
     environment: config.environment,
     artifactHash: config.artifactHash,
-    files: {
-      adapterSha256: sha256(pythonSource),
-      wrapperSha256: sha256(wrapperSource),
-    },
+    files: { adapterSha256: sha256(pythonSource), wrapperSha256: sha256(wrapperSource) },
     auditNotes: [
       "This project uses a generated Python sitecustomize adapter loaded by the spctre-python wrapper.",
       "Framework calls visible in application source execute through patched library methods at runtime.",
@@ -305,19 +302,39 @@ function patchTargetsForFramework(framework: string) {
     case "crewai":
       return ["crewai.tools.BaseTool._run", "crewai.tools.BaseTool._arun"];
     case "langchain":
-      return ["langchain_core.tools.BaseTool.invoke", "langchain_core.tools.BaseTool.ainvoke", "langchain.tools.BaseTool.invoke", "langchain.tools.BaseTool.ainvoke"];
+      return [
+        "langchain_core.tools.BaseTool.invoke",
+        "langchain_core.tools.BaseTool.ainvoke",
+        "langchain.tools.BaseTool.invoke",
+        "langchain.tools.BaseTool.ainvoke",
+      ];
     case "openai-agents":
       return ["agents.FunctionTool.on_invoke_tool"];
     case "autogen":
-      return ["autogen_core.tools.FunctionTool.run_json", "autogen.ConversableAgent.execute_function"];
+      return [
+        "autogen_core.tools.FunctionTool.run_json",
+        "autogen.ConversableAgent.execute_function",
+      ];
     case "google-adk":
-      return ["google.adk.tools.BaseTool.run_async", "google.adk.tools.base_tool.BaseTool.run_async"];
+      return [
+        "google.adk.tools.BaseTool.run_async",
+        "google.adk.tools.base_tool.BaseTool.run_async",
+      ];
     case "antigravity-sdk":
-      return ["google.antigravity.tools.tool_runner.ToolRunner.execute", "google.antigravity.tools.tool_runner.ToolRunner.process_tool_calls"];
+      return [
+        "google.antigravity.tools.tool_runner.ToolRunner.execute",
+        "google.antigravity.tools.tool_runner.ToolRunner.process_tool_calls",
+      ];
     case "claude-agent-sdk":
-      return ["claude_agent_sdk.ClaudeAgentOptions.__init__", "Claude Agent SDK PreToolUse/PostToolUse/PostToolUseFailure hooks"];
+      return [
+        "claude_agent_sdk.ClaudeAgentOptions.__init__",
+        "Claude Agent SDK PreToolUse/PostToolUse/PostToolUseFailure hooks",
+      ];
     case "strands":
-      return ["strands.handlers.tool_handler.ToolHandler.process", "strands.tools.function_tool.FunctionTool.__call__"];
+      return [
+        "strands.handlers.tool_handler.ToolHandler.process",
+        "strands.tools.function_tool.FunctionTool.__call__",
+      ];
     case "notion-worker":
       return ["spctreGoverned (inline wrapper around Notion Worker handler tool calls)"];
     default:
@@ -365,7 +382,7 @@ function renderPythonTemplate(templateName: string, values: Record<string, strin
   // conversation/run identifier; the process fallback is stable for its life.
   source = source.replace(
     "_SPCTRE_URL =",
-    "_SPCTRE_SESSION_ID = os.environ.get(\"SPCTRE_SESSION_ID\") or f\"spctre-{os.getpid()}\"\n\n_SPCTRE_URL =",
+    '_SPCTRE_SESSION_ID = os.environ.get("SPCTRE_SESSION_ID") or f"spctre-{os.getpid()}"\n\n_SPCTRE_URL =',
   );
   source = source.replaceAll(
     '"agentId": _SPCTRE_AGENT,',

@@ -7,7 +7,7 @@ import { PASSKEY_REG_CHALLENGE_COOKIE } from "@/lib/auth-challenge";
 import {
   consumeWebauthnChallenge,
   isAuthDatabaseConfigured,
-  upsertPasskeyCredential
+  upsertPasskeyCredential,
 } from "@/lib/domains/auth/service";
 import { getPasskeyExpectedOrigins, getPasskeyRpId } from "@/lib/webauthn-config";
 import { toBase64Url } from "@/lib/crypto-utils";
@@ -22,20 +22,29 @@ interface RegisterFinishPayload {
 async function handlePostApiAuthPasskeyRegisterFinish(request: Request) {
   const traceId = extractTraceId(request);
   if (!isAuthDatabaseConfigured()) {
-    const response = NextResponse.json({ error: "Database not configured.", meta: makeMeta(traceId) }, { status: 503 });
+    const response = NextResponse.json(
+      { error: "Database not configured.", meta: makeMeta(traceId) },
+      { status: 503 },
+    );
     response.headers.set("x-request-id", traceId);
     return response;
   }
 
   const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (!session) {
-    const response = NextResponse.json({ error: "Authentication required.", meta: makeMeta(traceId) }, { status: 401 });
+    const response = NextResponse.json(
+      { error: "Authentication required.", meta: makeMeta(traceId) },
+      { status: 401 },
+    );
     response.headers.set("x-request-id", traceId);
     return response;
   }
 
   if (isDemoTenant(session.tenantId)) {
-    const response = NextResponse.json({ error: "Passkey registration is not available in Demo Mode.", meta: makeMeta(traceId) }, { status: 403 });
+    const response = NextResponse.json(
+      { error: "Passkey registration is not available in Demo Mode.", meta: makeMeta(traceId) },
+      { status: 403 },
+    );
     response.headers.set("x-request-id", traceId);
     return response;
   }
@@ -44,13 +53,19 @@ async function handlePostApiAuthPasskeyRegisterFinish(request: Request) {
   try {
     payload = (await request.json()) as RegisterFinishPayload;
   } catch {
-    const response = NextResponse.json({ error: "Request body must be JSON.", meta: makeMeta(traceId) }, { status: 400 });
+    const response = NextResponse.json(
+      { error: "Request body must be JSON.", meta: makeMeta(traceId) },
+      { status: 400 },
+    );
     response.headers.set("x-request-id", traceId);
     return response;
   }
 
   if (!payload.response || typeof payload.response !== "object") {
-    const response = NextResponse.json({ error: "A registration response is required.", meta: makeMeta(traceId) }, { status: 400 });
+    const response = NextResponse.json(
+      { error: "A registration response is required.", meta: makeMeta(traceId) },
+      { status: 400 },
+    );
     response.headers.set("x-request-id", traceId);
     return response;
   }
@@ -62,8 +77,15 @@ async function handlePostApiAuthPasskeyRegisterFinish(request: Request) {
   const stored = challengeId
     ? await consumeWebauthnChallenge({ id: challengeId, purpose: "REGISTRATION" })
     : null;
-  if (!stored || stored.principalId !== session.principalId || stored.tenantId !== session.tenantId) {
-    const response = NextResponse.json({ error: "Invalid or expired passkey challenge.", meta: makeMeta(traceId) }, { status: 400 });
+  if (
+    !stored ||
+    stored.principalId !== session.principalId ||
+    stored.tenantId !== session.tenantId
+  ) {
+    const response = NextResponse.json(
+      { error: "Invalid or expired passkey challenge.", meta: makeMeta(traceId) },
+      { status: 400 },
+    );
     response.headers.set("x-request-id", traceId);
     response.cookies.delete(PASSKEY_REG_CHALLENGE_COOKIE);
     return response;
@@ -76,17 +98,23 @@ async function handlePostApiAuthPasskeyRegisterFinish(request: Request) {
       expectedChallenge: stored.challenge,
       expectedOrigin: getPasskeyExpectedOrigins(),
       expectedRPID: getPasskeyRpId(),
-      requireUserVerification: false
+      requireUserVerification: false,
     });
   } catch {
-    const response = NextResponse.json({ error: "Passkey attestation could not be verified.", meta: makeMeta(traceId) }, { status: 400 });
+    const response = NextResponse.json(
+      { error: "Passkey attestation could not be verified.", meta: makeMeta(traceId) },
+      { status: 400 },
+    );
     response.headers.set("x-request-id", traceId);
     response.cookies.delete(PASSKEY_REG_CHALLENGE_COOKIE);
     return response;
   }
 
   if (!verification.verified || !verification.registrationInfo) {
-    const response = NextResponse.json({ error: "Passkey attestation could not be verified.", meta: makeMeta(traceId) }, { status: 400 });
+    const response = NextResponse.json(
+      { error: "Passkey attestation could not be verified.", meta: makeMeta(traceId) },
+      { status: 400 },
+    );
     response.headers.set("x-request-id", traceId);
     response.cookies.delete(PASSKEY_REG_CHALLENGE_COOKIE);
     return response;
@@ -102,16 +130,22 @@ async function handlePostApiAuthPasskeyRegisterFinish(request: Request) {
     credentialId: credential.id,
     publicKey: toBase64Url(credential.publicKey),
     counter: credential.counter,
-    transports: credential.transports ?? []
+    transports: credential.transports ?? [],
   });
   if (result === "db-unavailable") {
-    const response = NextResponse.json({ error: "Database not configured.", meta: makeMeta(traceId) }, { status: 503 });
+    const response = NextResponse.json(
+      { error: "Database not configured.", meta: makeMeta(traceId) },
+      { status: 503 },
+    );
     response.headers.set("x-request-id", traceId);
     return response;
   }
   if (result === "conflict") {
     // The credential is already registered to a different account; never reassign it.
-    const response = NextResponse.json({ error: "This passkey is already registered to another account.", meta: makeMeta(traceId) }, { status: 409 });
+    const response = NextResponse.json(
+      { error: "This passkey is already registered to another account.", meta: makeMeta(traceId) },
+      { status: 409 },
+    );
     response.headers.set("x-request-id", traceId);
     response.cookies.delete(PASSKEY_REG_CHALLENGE_COOKIE);
     return response;

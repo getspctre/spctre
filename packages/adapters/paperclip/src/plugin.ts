@@ -38,9 +38,7 @@ export class SpctrePaperclipPlugin {
    * check. Spctre governs individual tool-call semantics; Paperclip governs
    * task-level policy. Do not duplicate Paperclip's allowlist logic here.
    */
-  register(dispatcher: {
-    registerBeforeToolDispatch: (fn: BeforeToolDispatchHook) => void;
-  }): void {
+  register(dispatcher: { registerBeforeToolDispatch: (fn: BeforeToolDispatchHook) => void }): void {
     dispatcher.registerBeforeToolDispatch(this.beforeToolDispatch);
   }
 
@@ -54,7 +52,7 @@ export class SpctrePaperclipPlugin {
    *   - parentAgentId if dispatchContext carries orchestrator agent reference
    */
   beforeToolDispatch: BeforeToolDispatchHook = async (
-    context: DispatchContext
+    context: DispatchContext,
   ): Promise<DispatchResult> => {
     const decisionId = `paperclip-${context.toolName}-${Date.now()}`;
     const decidedAt = new Date().toISOString();
@@ -111,7 +109,7 @@ export class SpctrePaperclipPlugin {
       heartbeatPayload,
       this.workspaceId,
       this.tenantId,
-      this.environment
+      this.environment,
     );
   }
 }

@@ -65,7 +65,9 @@ interface IngestVerificationParams {
   escrowVerifiedAt?: string;
 }
 
-export async function ingestVerificationResult(params: IngestVerificationParams): Promise<string | null> {
+export async function ingestVerificationResult(
+  params: IngestVerificationParams,
+): Promise<string | null> {
   if (!sql) return null;
   const v = verificationInsertValues(params);
   try {
@@ -95,7 +97,9 @@ export async function ingestVerificationResult(params: IngestVerificationParams)
     `;
     return rows[0]?.id ?? null;
   } catch (err) {
-    logger.error("[verification] ingest failed:", { error: err instanceof Error ? err.message : String(err) });
+    logger.error("[verification] ingest failed:", {
+      error: err instanceof Error ? err.message : String(err),
+    });
     return null;
   }
 }
@@ -103,7 +107,7 @@ export async function ingestVerificationResult(params: IngestVerificationParams)
 export async function listVerificationResults(
   workspaceId: string | null,
   tenantId: string,
-  options: { revisionId?: string; artifactHash?: string; limit?: number } = {}
+  options: { revisionId?: string; artifactHash?: string; limit?: number } = {},
 ): Promise<AgtVerificationResult[]> {
   if (!sql) return [];
   const limit = options.limit ?? 50;
@@ -175,12 +179,14 @@ function mapVerificationProvenanceFields(row: VerificationRow) {
     cedarPolicyVersion: row.cedar_policy_version ?? undefined,
     policyEngineVersion: row.policy_engine_version ?? undefined,
     compatibilityCheckedAt: row.compatibility_checked_at?.toISOString() ?? undefined,
-    compatibilityCheckOutcome: row.compatibility_check_outcome as AgtVerificationResult["compatibilityCheckOutcome"] | undefined,
+    compatibilityCheckOutcome: row.compatibility_check_outcome as
+      AgtVerificationResult["compatibilityCheckOutcome"] | undefined,
     escrowSignerId: row.escrow_signer_id ?? undefined,
     escrowKeyId: row.escrow_key_id ?? undefined,
     outcomeHash: row.outcome_hash ?? undefined,
     escrowSignature: row.escrow_signature ?? undefined,
-    escrowVerificationOutcome: row.escrow_verification_outcome as AgtVerificationResult["escrowVerificationOutcome"] | undefined,
+    escrowVerificationOutcome: row.escrow_verification_outcome as
+      AgtVerificationResult["escrowVerificationOutcome"] | undefined,
     escrowVerifiedAt: row.escrow_verified_at?.toISOString() ?? undefined,
   };
 }
@@ -205,7 +211,7 @@ function mapVerificationRow(row: VerificationRow): AgtVerificationResult {
 export async function getLatestVerificationStatus(
   workspaceId: string | null,
   tenantId: string,
-  options: { revisionId?: string; artifactHash?: string } = {}
+  options: { revisionId?: string; artifactHash?: string } = {},
 ): Promise<AgtVerificationSummary> {
   const results = await listVerificationResults(workspaceId, tenantId, {
     revisionId: options.revisionId,
@@ -242,8 +248,11 @@ export async function getLatestVerificationStatus(
   const isStale = ageMs > VERIFICATION_STALE_DAYS * 24 * 60 * 60 * 1000;
 
   const outcomes = Object.values(resultsByType).map((v) => v!.outcome);
-  const overallOutcome: AgtVerificationOutcome =
-    outcomes.includes("FAIL") ? "FAIL" : outcomes.includes("WARN") ? "WARN" : "PASS";
+  const overallOutcome: AgtVerificationOutcome = outcomes.includes("FAIL")
+    ? "FAIL"
+    : outcomes.includes("WARN")
+      ? "WARN"
+      : "PASS";
 
   return {
     hasResults: true,

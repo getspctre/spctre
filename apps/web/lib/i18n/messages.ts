@@ -28,7 +28,9 @@ const catalogs = {
 export function normalizeLocale(locale: string | null | undefined): SupportedLocale {
   if (!locale) return "en";
   const candidate = locale.replace("_", "-").split("-")[0]?.toLowerCase();
-  return supportedLocales.includes(candidate as SupportedLocale) ? (candidate as SupportedLocale) : "en";
+  return supportedLocales.includes(candidate as SupportedLocale)
+    ? (candidate as SupportedLocale)
+    : "en";
 }
 
 export function isSupportedLocaleInput(locale: string | null | undefined): boolean {
@@ -37,7 +39,9 @@ export function isSupportedLocaleInput(locale: string | null | undefined): boole
   return supportedLocales.includes(candidate as SupportedLocale);
 }
 
-export function resolveLocaleFromAcceptLanguage(header: string | null | undefined): SupportedLocale {
+export function resolveLocaleFromAcceptLanguage(
+  header: string | null | undefined,
+): SupportedLocale {
   if (!header) return "en";
 
   for (const part of header.split(",")) {
@@ -57,7 +61,8 @@ export function resolveLocalePreference(input: {
 }): SupportedLocale {
   if (input.profileLocale) {
     const normalized = normalizeLocale(input.profileLocale);
-    if (normalized !== "en" || input.profileLocale.toLowerCase().startsWith("en")) return normalized;
+    if (normalized !== "en" || input.profileLocale.toLowerCase().startsWith("en"))
+      return normalized;
   }
 
   if (input.tenantLocale) {
@@ -79,7 +84,7 @@ export function getStaticMessages(locale: string | null | undefined): MessageCat
 
 export function applyMessageOverrides(
   messages: MessageCatalog,
-  overrides: Record<string, string> = {}
+  overrides: Record<string, string> = {},
 ): MessageCatalog {
   const merged: MessageCatalog = { ...messages };
 
@@ -120,7 +125,10 @@ export function extractMessageKeys(locale: string | null | undefined = "en"): st
   return Object.keys(flattenMessages(getStaticMessages(locale))).sort();
 }
 
-export function validateMessageCatalogs(): Record<SupportedLocale, { missing: string[]; extra: string[] }> {
+export function validateMessageCatalogs(): Record<
+  SupportedLocale,
+  { missing: string[]; extra: string[] }
+> {
   const referenceKeys = new Set(extractMessageKeys("en"));
   const report = {} as Record<SupportedLocale, { missing: string[]; extra: string[] }>;
 
@@ -139,7 +147,7 @@ export function formatMessage(
   locale: string | null | undefined,
   key: string,
   variables: MessageVariables = {},
-  overrides: Record<string, string> = {}
+  overrides: Record<string, string> = {},
 ): string {
   const messages = { ...flattenMessages(getStaticMessages(locale)), ...overrides };
   const template = messages[key] ?? flattenMessages(catalogs.en)[key] ?? key;

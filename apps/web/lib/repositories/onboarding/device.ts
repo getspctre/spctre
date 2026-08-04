@@ -92,15 +92,17 @@ export async function approveDeviceOnboarding(params: {
 export async function exchangeDeviceCode(deviceCode: string): Promise<DeviceTokenResult> {
   if (!rawSql) throw new Error("Database not configured.");
 
-  const rows = await rawSql<{
-    id: string;
-    code: string;
-    polling_interval_seconds: number;
-    last_polled_at: Date | null;
-    approved_tenant_id: string | null;
-    exchanged_at: Date | null;
-    expires_at: Date;
-  }[]>`
+  const rows = await rawSql<
+    {
+      id: string;
+      code: string;
+      polling_interval_seconds: number;
+      last_polled_at: Date | null;
+      approved_tenant_id: string | null;
+      exchanged_at: Date | null;
+      expires_at: Date;
+    }[]
+  >`
     SELECT id, code, polling_interval_seconds, last_polled_at,
            approved_tenant_id, exchanged_at, expires_at
     FROM cli_onboarding_request

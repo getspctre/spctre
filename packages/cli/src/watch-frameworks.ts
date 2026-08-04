@@ -20,10 +20,7 @@ interface FrameworkAdapterStrategy {
   writtenMessage: string;
   launchMessage: string;
   details: string[];
-  write(config: SpctreCliConfig): {
-    adapterPath: string;
-    launchHint: string;
-  };
+  write(config: SpctreCliConfig): { adapterPath: string; launchHint: string };
 }
 
 const frameworkAdapters: FrameworkAdapterStrategy[] = [
@@ -166,7 +163,8 @@ const frameworkAdapters: FrameworkAdapterStrategy[] = [
   {
     names: ["omnigent"],
     writtenMessage: "Omnigent policy adapter written to",
-    launchMessage: "Configure Omnigent to use Spctre policies by adding this module to your python path:",
+    launchMessage:
+      "Configure Omnigent to use Spctre policies by adding this module to your python path:",
     details: [
       "The adapter exports a custom Omnigent policy function that delegates",
       "governed tool-call decisions to the Spctre evaluate endpoint.",
@@ -181,7 +179,9 @@ export function runFrameworkAdapter(frameworkName: string) {
   const framework = frameworkName.toLowerCase();
   const adapter = frameworkAdapters.find((strategy) => strategy.names.includes(framework));
   if (!adapter) {
-    console.error(`Error: --framework "${frameworkName}" is not supported. Supported values: crewai, langchain, openai-agents, autogen, google-adk, bedrock, azure-ai, gemini, local-custom, strands, notion-worker, antigravity-sdk, claude-agent-sdk, omnigent`);
+    console.error(
+      `Error: --framework "${frameworkName}" is not supported. Supported values: crewai, langchain, openai-agents, autogen, google-adk, bedrock, azure-ai, gemini, local-custom, strands, notion-worker, antigravity-sdk, claude-agent-sdk, omnigent`,
+    );
     process.exit(1);
   }
 

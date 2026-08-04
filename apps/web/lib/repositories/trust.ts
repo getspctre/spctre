@@ -65,7 +65,9 @@ export async function ingestTrustScoreEvent(params: {
       )
     `;
   } catch (err) {
-    logger.error("[trust_score] ingest failed:", { error: err instanceof Error ? err.message : String(err) });
+    logger.error("[trust_score] ingest failed:", {
+      error: err instanceof Error ? err.message : String(err),
+    });
   }
 }
 
@@ -73,7 +75,7 @@ export async function listTrustScoreHistory(
   agentId: string,
   workspaceId: string | null,
   tenantId: string,
-  limit = 50
+  limit = 50,
 ): Promise<TrustScoreEvent[]> {
   if (!sql) return [];
   try {
@@ -99,7 +101,7 @@ export async function listTrustScoreHistoryCrossSurface(
   canonicalAgentId: string,
   workspaceId: string,
   tenantId: string,
-  limit = 100
+  limit = 100,
 ): Promise<TrustScoreEvent[]> {
   if (!sql) return [];
   try {
@@ -171,30 +173,32 @@ export async function createTrustCalibrationPolicy(params: {
 }): Promise<TrustCalibrationPolicy | null> {
   if (!sql) return null;
   try {
-    const rows = await sql<{
-      id: string;
-      tenant_id: string;
-      workspace_id: string | null;
-      name: string;
-      description: string | null;
-      enabled: boolean;
-      agent_class: string | null;
-      environment: string | null;
-      connector: string | null;
-      consequence_tier: string | null;
-      decay_enabled: boolean;
-      decay_rate: string | null;
-      decay_period_hours: number | null;
-      decay_floor: string | null;
-      warn_threshold: string | null;
-      escalate_threshold: string | null;
-      review_threshold: string | null;
-      context_warn_threshold: number | null;
-      context_escalate_threshold: number | null;
-      created_by: string;
-      created_at: Date;
-      updated_at: Date;
-    }[]>`
+    const rows = await sql<
+      {
+        id: string;
+        tenant_id: string;
+        workspace_id: string | null;
+        name: string;
+        description: string | null;
+        enabled: boolean;
+        agent_class: string | null;
+        environment: string | null;
+        connector: string | null;
+        consequence_tier: string | null;
+        decay_enabled: boolean;
+        decay_rate: string | null;
+        decay_period_hours: number | null;
+        decay_floor: string | null;
+        warn_threshold: string | null;
+        escalate_threshold: string | null;
+        review_threshold: string | null;
+        context_warn_threshold: number | null;
+        context_escalate_threshold: number | null;
+        created_by: string;
+        created_at: Date;
+        updated_at: Date;
+      }[]
+    >`
       INSERT INTO trust_calibration_policy (
         tenant_id, workspace_id, name, description,
         agent_class, environment, connector, consequence_tier,
@@ -216,7 +220,9 @@ export async function createTrustCalibrationPolicy(params: {
     if (!row) return null;
     return mapPolicyRow(row);
   } catch (err) {
-    logger.error("[trust_calibration_policy] create failed:", { error: err instanceof Error ? err.message : String(err) });
+    logger.error("[trust_calibration_policy] create failed:", {
+      error: err instanceof Error ? err.message : String(err),
+    });
     return null;
   }
 }
@@ -224,35 +230,37 @@ export async function createTrustCalibrationPolicy(params: {
 export async function listTrustCalibrationPolicies(
   tenantId: string,
   workspaceId?: string,
-  options: { enabledOnly?: boolean; limit?: number } = {}
+  options: { enabledOnly?: boolean; limit?: number } = {},
 ): Promise<TrustCalibrationPolicy[]> {
   if (!sql) return [];
   const limit = options.limit ?? 100;
   try {
-    const rows = await sql<{
-      id: string;
-      tenant_id: string;
-      workspace_id: string | null;
-      name: string;
-      description: string | null;
-      enabled: boolean;
-      agent_class: string | null;
-      environment: string | null;
-      connector: string | null;
-      consequence_tier: string | null;
-      decay_enabled: boolean;
-      decay_rate: string | null;
-      decay_period_hours: number | null;
-      decay_floor: string | null;
-      warn_threshold: string | null;
-      escalate_threshold: string | null;
-      review_threshold: string | null;
-      context_warn_threshold: number | null;
-      context_escalate_threshold: number | null;
-      created_by: string;
-      created_at: Date;
-      updated_at: Date;
-    }[]>`
+    const rows = await sql<
+      {
+        id: string;
+        tenant_id: string;
+        workspace_id: string | null;
+        name: string;
+        description: string | null;
+        enabled: boolean;
+        agent_class: string | null;
+        environment: string | null;
+        connector: string | null;
+        consequence_tier: string | null;
+        decay_enabled: boolean;
+        decay_rate: string | null;
+        decay_period_hours: number | null;
+        decay_floor: string | null;
+        warn_threshold: string | null;
+        escalate_threshold: string | null;
+        review_threshold: string | null;
+        context_warn_threshold: number | null;
+        context_escalate_threshold: number | null;
+        created_by: string;
+        created_at: Date;
+        updated_at: Date;
+      }[]
+    >`
       SELECT * FROM trust_calibration_policy
       WHERE tenant_id = ${tenantId}
         ${workspaceId ? rawSql`AND (workspace_id = ${workspaceId} OR workspace_id IS NULL)` : rawSql``}
@@ -262,7 +270,9 @@ export async function listTrustCalibrationPolicies(
     `;
     return rows.map(mapPolicyRow);
   } catch (err) {
-    logger.error("[listTrustCalibrationPolicies] failed:", { error: err instanceof Error ? err.message : String(err) });
+    logger.error("[listTrustCalibrationPolicies] failed:", {
+      error: err instanceof Error ? err.message : String(err),
+    });
     return [];
   }
 }
@@ -313,12 +323,37 @@ function updateTrustPolicyValues(params: UpdateTrustPolicyParams) {
 export async function updateTrustCalibrationPolicy(
   id: string,
   tenantId: string,
-  params: UpdateTrustPolicyParams
+  params: UpdateTrustPolicyParams,
 ): Promise<TrustCalibrationPolicy | null> {
   if (!sql) return null;
   const v = updateTrustPolicyValues(params);
   try {
-    const rows = await sql<{ id: string; tenant_id: string; workspace_id: string | null; name: string; description: string | null; enabled: boolean; agent_class: string | null; environment: string | null; connector: string | null; consequence_tier: string | null; decay_enabled: boolean; decay_rate: string | null; decay_period_hours: number | null; decay_floor: string | null; warn_threshold: string | null; escalate_threshold: string | null; review_threshold: string | null; context_warn_threshold: number | null; context_escalate_threshold: number | null; created_by: string; created_at: Date; updated_at: Date; }[]>`
+    const rows = await sql<
+      {
+        id: string;
+        tenant_id: string;
+        workspace_id: string | null;
+        name: string;
+        description: string | null;
+        enabled: boolean;
+        agent_class: string | null;
+        environment: string | null;
+        connector: string | null;
+        consequence_tier: string | null;
+        decay_enabled: boolean;
+        decay_rate: string | null;
+        decay_period_hours: number | null;
+        decay_floor: string | null;
+        warn_threshold: string | null;
+        escalate_threshold: string | null;
+        review_threshold: string | null;
+        context_warn_threshold: number | null;
+        context_escalate_threshold: number | null;
+        created_by: string;
+        created_at: Date;
+        updated_at: Date;
+      }[]
+    >`
       UPDATE trust_calibration_policy
       SET
         name = COALESCE(${v.name}, name),
@@ -344,7 +379,9 @@ export async function updateTrustCalibrationPolicy(
     const row = rows[0];
     return row ? mapPolicyRow(row) : null;
   } catch (err) {
-    logger.error("[trust_calibration_policy] update failed:", { error: err instanceof Error ? err.message : String(err) });
+    logger.error("[trust_calibration_policy] update failed:", {
+      error: err instanceof Error ? err.message : String(err),
+    });
     return null;
   }
 }
@@ -396,14 +433,17 @@ function mapPolicyRow(row: {
     agentClass: row.agent_class ?? undefined,
     environment: row.environment ?? undefined,
     connector: row.connector ?? undefined,
-    consequenceTier: (row.consequence_tier as TrustCalibrationPolicy["consequenceTier"]) ?? undefined,
+    consequenceTier:
+      (row.consequence_tier as TrustCalibrationPolicy["consequenceTier"]) ?? undefined,
     decayEnabled: row.decay_enabled,
     decayRate: row.decay_rate !== null ? Number.parseFloat(row.decay_rate) : undefined,
     decayPeriodHours: row.decay_period_hours ?? undefined,
     decayFloor: row.decay_floor !== null ? Number.parseFloat(row.decay_floor) : undefined,
     warnThreshold: row.warn_threshold !== null ? Number.parseFloat(row.warn_threshold) : undefined,
-    escalateThreshold: row.escalate_threshold !== null ? Number.parseFloat(row.escalate_threshold) : undefined,
-    reviewThreshold: row.review_threshold !== null ? Number.parseFloat(row.review_threshold) : undefined,
+    escalateThreshold:
+      row.escalate_threshold !== null ? Number.parseFloat(row.escalate_threshold) : undefined,
+    reviewThreshold:
+      row.review_threshold !== null ? Number.parseFloat(row.review_threshold) : undefined,
     contextWarnThreshold: row.context_warn_threshold ?? undefined,
     contextEscalateThreshold: row.context_escalate_threshold ?? undefined,
     createdBy: row.created_by,
@@ -449,7 +489,9 @@ export async function ingestContextBudgetEvent(params: {
     `;
     return rows[0]?.id ?? null;
   } catch (err) {
-    logger.error("[context_budget_event] ingest failed:", { error: err instanceof Error ? err.message : String(err) });
+    logger.error("[context_budget_event] ingest failed:", {
+      error: err instanceof Error ? err.message : String(err),
+    });
     return null;
   }
 }
@@ -457,29 +499,36 @@ export async function ingestContextBudgetEvent(params: {
 export async function listContextBudgetEvents(
   tenantId: string,
   workspaceId: string | null,
-  options: { sessionId?: string; agentId?: string; eventType?: ContextBudgetEventType; limit?: number } = {}
+  options: {
+    sessionId?: string;
+    agentId?: string;
+    eventType?: ContextBudgetEventType;
+    limit?: number;
+  } = {},
 ): Promise<ContextBudgetEvent[]> {
   if (!sql) return [];
   const limit = options.limit ?? 100;
   try {
-    const rows = await sql<{
-      id: string;
-      tenant_id: string;
-      workspace_id: string;
-      session_id: string;
-      agent_id: string;
-      environment: string;
-      runtime_stack: string;
-      event_type: string;
-      token_count: number;
-      token_delta: number | null;
-      context_source_mix: unknown;
-      budget_limit: number | null;
-      budget_utilization: string | null;
-      governance_action: string | null;
-      policy_ref: string | null;
-      created_at: Date;
-    }[]>`
+    const rows = await sql<
+      {
+        id: string;
+        tenant_id: string;
+        workspace_id: string;
+        session_id: string;
+        agent_id: string;
+        environment: string;
+        runtime_stack: string;
+        event_type: string;
+        token_count: number;
+        token_delta: number | null;
+        context_source_mix: unknown;
+        budget_limit: number | null;
+        budget_utilization: string | null;
+        governance_action: string | null;
+        policy_ref: string | null;
+        created_at: Date;
+      }[]
+    >`
       SELECT * FROM context_budget_event
       WHERE tenant_id = ${tenantId}
         AND workspace_id = ${workspaceId}
@@ -500,9 +549,12 @@ export async function listContextBudgetEvents(
       eventType: row.event_type as ContextBudgetEventType,
       tokenCount: row.token_count,
       tokenDelta: row.token_delta ?? undefined,
-      contextSourceMix: (isRecord(row.context_source_mix) ? row.context_source_mix : {}) as ContextBudgetEvent["contextSourceMix"],
+      contextSourceMix: (isRecord(row.context_source_mix)
+        ? row.context_source_mix
+        : {}) as ContextBudgetEvent["contextSourceMix"],
       budgetLimit: row.budget_limit ?? undefined,
-      budgetUtilization: row.budget_utilization !== null ? Number.parseFloat(row.budget_utilization) : undefined,
+      budgetUtilization:
+        row.budget_utilization !== null ? Number.parseFloat(row.budget_utilization) : undefined,
       governanceAction: (row.governance_action as TrustGovernanceAction) ?? undefined,
       policyRef: row.policy_ref ?? undefined,
       createdAt: row.created_at.toISOString(),
@@ -574,7 +626,10 @@ export function evaluateTrustGovernance(params: {
       }
     }
     if (contextTokens !== undefined) {
-      if (policy.contextEscalateThreshold !== undefined && contextTokens > policy.contextEscalateThreshold) {
+      if (
+        policy.contextEscalateThreshold !== undefined &&
+        contextTokens > policy.contextEscalateThreshold
+      ) {
         action = "ESCALATE";
         reason = `Context token count ${contextTokens} exceeds escalation threshold ${policy.contextEscalateThreshold}.`;
         matchedPolicyId = policy.id;
@@ -582,7 +637,10 @@ export function evaluateTrustGovernance(params: {
         recommendedRiskLevel = "HIGH";
         break;
       }
-      if (policy.contextWarnThreshold !== undefined && contextTokens > policy.contextWarnThreshold) {
+      if (
+        policy.contextWarnThreshold !== undefined &&
+        contextTokens > policy.contextWarnThreshold
+      ) {
         if (action === "ALLOW") {
           action = "WARN";
           reason = `Context token count ${contextTokens} exceeds warn threshold ${policy.contextWarnThreshold}.`;

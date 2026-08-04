@@ -38,14 +38,24 @@ export function RecommendationGenerateForm({
       <button
         className="button"
         disabled={disabled}
-        style={{ alignSelf: "start", display: "inline-flex", fontSize: 12, gap: 6, padding: "5px 10px" }}
+        style={{
+          alignSelf: "start",
+          display: "inline-flex",
+          fontSize: 12,
+          gap: 6,
+          padding: "5px 10px",
+        }}
         title={title}
         type="submit"
       >
         <Bot size={14} />
         {pending ? pendingLabel : buttonLabel}
       </button>
-      {error ? <p className="meta" style={{ color: "var(--block)" }}>{error}</p> : null}
+      {error ? (
+        <p className="meta" style={{ color: "var(--block)" }}>
+          {error}
+        </p>
+      ) : null}
     </form>
   );
 }
@@ -73,11 +83,15 @@ export function RecommendationCard({
       }}
     >
       <div>{title}</div>
-      <p className="meta" style={{ color: "var(--text)" }}>{summary}</p>
+      <p className="meta" style={{ color: "var(--text)" }}>
+        {summary}
+      </p>
       {children}
       <ul style={{ display: "grid", gap: 4, margin: 0, paddingLeft: 16 }}>
         {rationale.map((reason) => (
-          <li className="meta" key={reason}>{reason}</li>
+          <li className="meta" key={reason}>
+            {reason}
+          </li>
         ))}
       </ul>
     </div>
@@ -110,7 +124,9 @@ export function RecommendationDecisionForm({
     <form action={action} style={{ display: "grid", gap: 8 }}>
       {hiddenFields}
 
-      <label className="metadata" htmlFor={summaryId}>{t("edited_summary")}</label>
+      <label className="metadata" htmlFor={summaryId}>
+        {t("edited_summary")}
+      </label>
       <textarea
         id={summaryId}
         name="editedSummary"
@@ -121,7 +137,9 @@ export function RecommendationDecisionForm({
         value={editedSummary}
       />
 
-      <label className="metadata" htmlFor={rationaleId}>{t("reviewer_rationale")}</label>
+      <label className="metadata" htmlFor={rationaleId}>
+        {t("reviewer_rationale")}
+      </label>
       <textarea
         id={rationaleId}
         name="rationale"
@@ -131,7 +149,11 @@ export function RecommendationDecisionForm({
         style={{ ...fieldStyle, resize: "vertical" }}
       />
 
-      {error ? <p className="meta" style={{ color: "var(--block)" }}>{error}</p> : null}
+      {error ? (
+        <p className="meta" style={{ color: "var(--block)" }}>
+          {error}
+        </p>
+      ) : null}
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
         <button

@@ -56,12 +56,12 @@ export function EmailAuthForm() {
         headers: { "content-type": "application/json" },
       });
       const startData = (await startRes.json().catch(() => null)) as
-        | PasskeyLoginStartResponse
-        | { error?: string }
-        | null;
+        PasskeyLoginStartResponse | { error?: string } | null;
 
       if (!startRes.ok || !startData || !("options" in startData)) {
-        throw new Error((startData && "error" in startData && startData.error) || t("errors.start_passkey"));
+        throw new Error(
+          (startData && "error" in startData && startData.error) || t("errors.start_passkey"),
+        );
       }
 
       let authResponse;
@@ -76,7 +76,10 @@ export function EmailAuthForm() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ response: authResponse }),
       });
-      const finishData = (await finishRes.json().catch(() => null)) as { ok?: boolean; error?: string } | null;
+      const finishData = (await finishRes.json().catch(() => null)) as {
+        ok?: boolean;
+        error?: string;
+      } | null;
       if (!finishRes.ok || !finishData?.ok) {
         throw new Error(finishData?.error || t("errors.passkey_failed"));
       }
@@ -102,7 +105,9 @@ export function EmailAuthForm() {
   return (
     <form className="loginForm" onSubmit={(e) => e.preventDefault()}>
       <div className="loginFieldGroup">
-        <label className="metadata" htmlFor="login-email">{t("email")}</label>
+        <label className="metadata" htmlFor="login-email">
+          {t("email")}
+        </label>
         <input
           id="login-email"
           className="input"
@@ -117,7 +122,10 @@ export function EmailAuthForm() {
         />
       </div>
 
-      <div className="loginFormActions" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginTop: "2px" }}>
+      <div
+        className="loginFormActions"
+        style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginTop: "2px" }}
+      >
         <button
           className="button buttonPrimary"
           type="button"
@@ -127,12 +135,7 @@ export function EmailAuthForm() {
           {magicStatus === "busy" ? t("sending_link") : t("magic_link")}
         </button>
 
-        <button
-          className="button"
-          type="button"
-          onClick={handlePasskey}
-          disabled={isBusy}
-        >
+        <button className="button" type="button" onClick={handlePasskey} disabled={isBusy}>
           {passkeyBusy ? t("verifying") : t("use_passkey")}
         </button>
       </div>

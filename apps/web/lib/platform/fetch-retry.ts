@@ -47,7 +47,8 @@ export class CircuitOpenError extends Error {
 
 function breakerKey(input: RequestInfo | URL): string {
   try {
-    const url = input instanceof URL ? input : new URL(typeof input === "string" ? input : input.url);
+    const url =
+      input instanceof URL ? input : new URL(typeof input === "string" ? input : input.url);
     return url.host.toLowerCase();
   } catch {
     return String(input);
@@ -120,7 +121,7 @@ export function resetFetchBreakers(): void {
  */
 export async function fetchWithRetry(
   input: RequestInfo | URL,
-  init: FetchRetryInit = {}
+  init: FetchRetryInit = {},
 ): Promise<Response> {
   const { attempts = DEFAULT_ATTEMPTS, baseDelayMs = DEFAULT_BASE_DELAY_MS, ...fetchInit } = init;
   const totalAttempts = Math.max(1, attempts);

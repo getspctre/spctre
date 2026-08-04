@@ -6,13 +6,16 @@ type HookHarness = "claude" | "codex" | "gemini" | "antigravity";
 export type HookMode = "observe" | "enforce";
 type HarnessConfig = (typeof HARNESS_CONFIG)[HookHarness];
 
-const HARNESS_CONFIG: Record<HookHarness, {
-  displayName: string;
-  settingsPath: (global: boolean | undefined) => string;
-  hookEvent: "PreToolUse" | "BeforeTool";
-  settingsKey: "hooks" | "spctre";
-  governedTools: string;
-}> = {
+const HARNESS_CONFIG: Record<
+  HookHarness,
+  {
+    displayName: string;
+    settingsPath: (global: boolean | undefined) => string;
+    hookEvent: "PreToolUse" | "BeforeTool";
+    settingsKey: "hooks" | "spctre";
+    governedTools: string;
+  }
+> = {
   claude: {
     displayName: "Claude Code",
     settingsPath: (global) =>
@@ -104,7 +107,10 @@ export function installHook(options: InstallHookOptions) {
 
   hooks[config.hookEvent] = [
     ...hookEntries.filter(
-      (h) => !((h as { hooks?: Array<{ command?: string }> }).hooks ?? []).some((e) => commandMatches(e.command, config))
+      (h) =>
+        !((h as { hooks?: Array<{ command?: string }> }).hooks ?? []).some((e) =>
+          commandMatches(e.command, config),
+        ),
     ),
     hookEntry,
   ];
@@ -119,25 +125,37 @@ export function installHook(options: InstallHookOptions) {
   console.log(`On every governed ${config.displayName} tool call this local harness adapter will:`);
   console.log(`  • Send evidence for governed actions (${config.governedTools})`);
   console.log("  • Evaluate the action against your policy bundle");
-  console.log(mode === "enforce"
-    ? "  • Block on DENY, warn on WARN, pass-through on ALLOW"
-    : "  • Warn locally on DENY/WARN and never block tool execution");
+  console.log(
+    mode === "enforce"
+      ? "  • Block on DENY, warn on WARN, pass-through on ALLOW"
+      : "  • Warn locally on DENY/WARN and never block tool execution",
+  );
   console.log("  • Exit immediately (no network calls) for ungoverned/internal tools");
   if (harness === "antigravity") {
     console.log("");
-    console.log("Antigravity reads this hooks.json automatically (IDE and agy CLI) — no plugin staging required.");
+    console.log(
+      "Antigravity reads this hooks.json automatically (IDE and agy CLI) — no plugin staging required.",
+    );
   }
   if (harness === "codex") {
     console.log("");
-    console.log("Codex skips untrusted hooks: open Codex and run /hooks to review and trust the Spctre hook before it takes effect.");
-    console.log("(Trust is recorded against the hook definition's hash, so re-installing with different flags requires re-trusting.)");
+    console.log(
+      "Codex skips untrusted hooks: open Codex and run /hooks to review and trust the Spctre hook before it takes effect.",
+    );
+    console.log(
+      "(Trust is recorded against the hook definition's hash, so re-installing with different flags requires re-trusting.)",
+    );
   }
 }
 
 function parseHarness(options: InstallHookOptions): HookHarness {
-  const selectedFlags = [options.claude, options.codex, options.gemini, options.antigravity].filter(Boolean).length;
+  const selectedFlags = [options.claude, options.codex, options.gemini, options.antigravity].filter(
+    Boolean,
+  ).length;
   if (selectedFlags > 1) {
-    console.error('Error: choose only one harness flag: "--claude", "--codex", "--gemini", or "--antigravity".');
+    console.error(
+      'Error: choose only one harness flag: "--claude", "--codex", "--gemini", or "--antigravity".',
+    );
     process.exit(1);
   }
   if (options.claude) return "claude";
@@ -147,9 +165,17 @@ function parseHarness(options: InstallHookOptions): HookHarness {
 
   const harness = options.harness;
   if (!harness) return "claude";
-  if (harness === "claude" || harness === "codex" || harness === "gemini" || harness === "antigravity") return harness;
+  if (
+    harness === "claude" ||
+    harness === "codex" ||
+    harness === "gemini" ||
+    harness === "antigravity"
+  )
+    return harness;
   if (harness === "agy") return "antigravity";
-  console.error(`Error: unsupported harness "${harness}". Expected "claude", "codex", "gemini", or "antigravity".`);
+  console.error(
+    `Error: unsupported harness "${harness}". Expected "claude", "codex", "gemini", or "antigravity".`,
+  );
   process.exit(1);
 }
 
@@ -166,10 +192,7 @@ export function buildHookCommand(harness: HookHarness, mode: HookMode = "observe
 }
 
 function buildHookEntry(command: string) {
-  return {
-    matcher: ".*",
-    hooks: [{ type: "command", command }],
-  };
+  return { matcher: ".*", hooks: [{ type: "command", command }] };
 }
 
 function commandMatches(command: string | undefined, config: HarnessConfig) {
@@ -218,7 +241,10 @@ function removeHook(settingsPath: string, config: HarnessConfig) {
   const hookEntries = (hooks[config.hookEvent] ?? []) as unknown[];
 
   const filtered = hookEntries.filter(
-    (h) => !((h as { hooks?: Array<{ command?: string }> }).hooks ?? []).some((e) => commandMatches(e.command, config))
+    (h) =>
+      !((h as { hooks?: Array<{ command?: string }> }).hooks ?? []).some((e) =>
+        commandMatches(e.command, config),
+      ),
   );
 
   if (filtered.length === hookEntries.length) {

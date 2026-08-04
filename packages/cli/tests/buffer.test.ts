@@ -39,7 +39,8 @@ describe("SQLite telemetry outbox", () => {
   it("keeps FIFO order after a retryable failure and records a retry", async () => {
     pushToBuffer("evidence", { decisionId: "first" });
     pushToBuffer("evidence", { decisionId: "second" });
-    const fetchMock = vi.fn()
+    const fetchMock = vi
+      .fn()
       .mockResolvedValueOnce({ status: 503 })
       .mockResolvedValueOnce({ status: 200 })
       .mockResolvedValueOnce({ status: 200 });
@@ -52,20 +53,27 @@ describe("SQLite telemetry outbox", () => {
     await flushBuffer(config());
     expect(fetchMock).toHaveBeenCalledTimes(3);
     expect(JSON.parse(fetchMock.mock.calls[1][1]!.body as string)).toEqual({ decisionId: "first" });
-    expect(JSON.parse(fetchMock.mock.calls[2][1]!.body as string)).toEqual({ decisionId: "second" });
+    expect(JSON.parse(fetchMock.mock.calls[2][1]!.body as string)).toEqual({
+      decisionId: "second",
+    });
   });
 
   it("migrates legacy JSON entries before flushing them", async () => {
     const legacyDir = path.join(configDir, "telemetry-buffer");
     fs.mkdirSync(legacyDir, { recursive: true });
-    fs.writeFileSync(path.join(legacyDir, "100-first.json"), JSON.stringify({ payload: { decisionId: "legacy" } }));
+    fs.writeFileSync(
+      path.join(legacyDir, "100-first.json"),
+      JSON.stringify({ payload: { decisionId: "legacy" } }),
+    );
     const fetchMock = vi.fn().mockResolvedValue({ status: 200 });
     vi.stubGlobal("fetch", fetchMock);
 
     await flushBuffer(config());
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(JSON.parse(fetchMock.mock.calls[0][1]!.body as string)).toEqual({ decisionId: "legacy" });
+    expect(JSON.parse(fetchMock.mock.calls[0][1]!.body as string)).toEqual({
+      decisionId: "legacy",
+    });
     expect(fs.existsSync(path.join(legacyDir, "100-first.json"))).toBe(false);
     expect(fs.existsSync(path.join(configDir, "telemetry-outbox.sqlite"))).toBe(true);
   });
@@ -73,7 +81,8 @@ describe("SQLite telemetry outbox", () => {
   it("discards a 4xx entry and continues the queue", async () => {
     pushToBuffer({ decisionId: "invalid" });
     pushToBuffer({ decisionId: "valid" });
-    const fetchMock = vi.fn()
+    const fetchMock = vi
+      .fn()
       .mockResolvedValueOnce({ status: 400 })
       .mockResolvedValueOnce({ status: 201 });
     vi.stubGlobal("fetch", fetchMock);

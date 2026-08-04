@@ -19,11 +19,7 @@ describe("GET /api/ready", () => {
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({
       ok: true,
-      checks: {
-        env: { ok: true },
-        db: { ok: true },
-        migrations: { ok: true },
-      },
+      checks: { env: { ok: true }, db: { ok: true }, migrations: { ok: true } },
     });
     expect(rawSqlMock).toHaveBeenCalledTimes(2);
   });

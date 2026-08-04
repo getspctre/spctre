@@ -2,9 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const sqlMock = vi.hoisted(() => vi.fn());
 
-vi.mock("@/lib/db", () => ({
-  sql: sqlMock,
-}));
+vi.mock("@/lib/db", () => ({ sql: sqlMock }));
 
 const repository = await import("../lib/repositories/policy/branches");
 
@@ -33,10 +31,7 @@ describe("policy branches repository", () => {
 
     const branches = await repository.listBranches("workspace-1", "tenant-1");
 
-    expect(branches[0]).toMatchObject({
-      id: "br-workspace",
-      author: "Maya Security",
-    });
+    expect(branches[0]).toMatchObject({ id: "br-workspace", author: "Maya Security" });
   });
 
   it("falls back to raw branch author IDs when no principal matches", async () => {

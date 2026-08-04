@@ -23,7 +23,9 @@ describe("production heartbeat assurance", () => {
   it("requires the heartbeat context and artifact to match the published bundle", () => {
     expect(heartbeat()).toBe("CURRENT");
     expect(heartbeat({ artifactHash: "sha256:old" })).toBe("DRIFTED");
-    expect(heartbeat({ policyContext: [{ ...expected, revisionId: "revision-old" }] })).toBe("DRIFTED");
+    expect(heartbeat({ policyContext: [{ ...expected, revisionId: "revision-old" }] })).toBe(
+      "DRIFTED",
+    );
   });
 
   it("does not award assurance when provenance is absent", () => {

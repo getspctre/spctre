@@ -39,7 +39,7 @@ function credentialKey(): string {
 
 export async function listPrincipalPasskeys(
   principalId: string,
-  tenantId: string
+  tenantId: string,
 ): Promise<PrincipalPasskey[]> {
   if (!sql || !principalId) return [];
 
@@ -64,13 +64,13 @@ export async function listPrincipalPasskeys(
     name: row.name ?? null,
     credentialIdB64: row.credential_id_b64,
     createdAt: row.created_at.toISOString(),
-    usedAt: row.used_at?.toISOString() ?? null
+    usedAt: row.used_at?.toISOString() ?? null,
   }));
 }
 
 export async function listMfaEnrollments(
   principalId: string,
-  tenantId: string
+  tenantId: string,
 ): Promise<PrincipalMfaEnrollment[]> {
   if (!sql || !principalId) return [];
 
@@ -96,18 +96,13 @@ export async function listMfaEnrollments(
     mfaType: row.mfa_type,
     verifiedAt: row.verified_at?.toISOString() ?? null,
     createdAt: row.created_at.toISOString(),
-    phoneNumber: row.phone_number
+    phoneNumber: row.phone_number,
   }));
 }
 
-export async function getTenantMfaSettings(
-  tenantId: string
-): Promise<TenantMfaSettings> {
+export async function getTenantMfaSettings(tenantId: string): Promise<TenantMfaSettings> {
   if (!sql) {
-    return {
-      requireMfa: false,
-      mfaGraceDays: 7
-    };
+    return { requireMfa: false, mfaGraceDays: 7 };
   }
 
   const rows = await sql<{ require_mfa: boolean; mfa_grace_days: number }[]>`
@@ -119,35 +114,31 @@ export async function getTenantMfaSettings(
 
   const row = rows[0];
   if (!row) {
-    return {
-      requireMfa: false,
-      mfaGraceDays: 7
-    };
+    return { requireMfa: false, mfaGraceDays: 7 };
   }
 
-  return {
-    requireMfa: row.require_mfa,
-    mfaGraceDays: row.mfa_grace_days
-  };
+  return { requireMfa: row.require_mfa, mfaGraceDays: row.mfa_grace_days };
 }
 
 export async function listRevocationHistory(
   tenantId: string,
   workspaceId: string | null,
-  limit = 100
+  limit = 100,
 ): Promise<RevocationRecord[]> {
   if (!sql) return [];
 
   try {
-    const rows = await sql<{
-      id: string;
-      tenant_id: string;
-      workspace_id: string;
-      principal_id: string;
-      scopes: string[];
-      revoked_at: Date;
-      created_at: Date;
-    }[]>`
+    const rows = await sql<
+      {
+        id: string;
+        tenant_id: string;
+        workspace_id: string;
+        principal_id: string;
+        scopes: string[];
+        revoked_at: Date;
+        created_at: Date;
+      }[]
+    >`
       SELECT id, tenant_id, workspace_id, principal_id, scopes, revoked_at, created_at
       FROM service_token
       WHERE tenant_id = ${tenantId}
@@ -598,10 +589,14 @@ export async function getVerifiedSmsEnrollment(params: {
 export async function getVerifiedMfaEnrollments(params: {
   tenantId: string;
   principalId: string;
-}): Promise<{ id: string; mfa_type: "TOTP" | "SMS"; secret_enc: string; phone_number: string | null }[]> {
+}): Promise<
+  { id: string; mfa_type: "TOTP" | "SMS"; secret_enc: string; phone_number: string | null }[]
+> {
   if (!sql) return [];
   const key = credentialKey();
-  return sql<{ id: string; mfa_type: "TOTP" | "SMS"; secret_enc: string; phone_number: string | null }[]>`
+  return sql<
+    { id: string; mfa_type: "TOTP" | "SMS"; secret_enc: string; phone_number: string | null }[]
+  >`
     SELECT id, mfa_type, pgp_sym_decrypt(decode(secret_enc, 'base64'), ${key}) AS secret_enc, phone_number
     FROM mfa_enrollment
     WHERE tenant_id = ${params.tenantId}

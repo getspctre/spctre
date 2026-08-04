@@ -24,7 +24,8 @@ function PasskeyRow({ passkey }: { passkey: PrincipalPasskey }) {
   const t = useTranslations("account.passkeys");
   const [editing, setEditing] = useState(false);
   const [nameInput, setNameInput] = useState(passkey.name ?? "");
-  const displayName = passkey.name || t("fallback_name", { suffix: passkey.credentialIdB64.slice(-8) });
+  const displayName =
+    passkey.name || t("fallback_name", { suffix: passkey.credentialIdB64.slice(-8) });
 
   return (
     <article className="row">
@@ -46,8 +47,15 @@ function PasskeyRow({ passkey }: { passkey: PrincipalPasskey }) {
               autoFocus
               style={{ fontSize: "13px", height: "30px" }}
             />
-            <button className="button" type="submit" style={{ height: "30px" }}>{t("save")}</button>
-            <button className="button" type="button" onClick={() => setEditing(false)} style={{ height: "30px" }}>
+            <button className="button" type="submit" style={{ height: "30px" }}>
+              {t("save")}
+            </button>
+            <button
+              className="button"
+              type="button"
+              onClick={() => setEditing(false)}
+              style={{ height: "30px" }}
+            >
               {t("cancel")}
             </button>
           </form>
@@ -70,11 +78,20 @@ function PasskeyRow({ passkey }: { passkey: PrincipalPasskey }) {
       </div>
       <p className="meta">{t("created", { date: new Date(passkey.createdAt).toLocaleString() })}</p>
       <p className="meta">
-        {t("last_used", { date: passkey.usedAt ? new Date(passkey.usedAt).toLocaleString() : t("never") })}
+        {t("last_used", {
+          date: passkey.usedAt ? new Date(passkey.usedAt).toLocaleString() : t("never"),
+        })}
       </p>
-      <form action={deletePasskeyForm} onSubmit={(event) => { if (!window.confirm(t("remove_confirm", { name: displayName }))) event.preventDefault(); }}>
+      <form
+        action={deletePasskeyForm}
+        onSubmit={(event) => {
+          if (!window.confirm(t("remove_confirm", { name: displayName }))) event.preventDefault();
+        }}
+      >
         <input type="hidden" name="passkeyId" value={passkey.id} />
-        <button className="button" type="submit">{t("remove")}</button>
+        <button className="button" type="submit">
+          {t("remove")}
+        </button>
       </form>
     </article>
   );
@@ -94,15 +111,15 @@ async function performPasskeyRegistration(messages: PasskeyMessages): Promise<vo
 
   const startRes = await fetch("/api/auth/passkey/register/start", {
     method: "POST",
-    headers: { "content-type": "application/json" }
+    headers: { "content-type": "application/json" },
   });
   const startData = (await startRes.json().catch(() => null)) as
-    | PasskeyRegisterStartResponse
-    | { error?: string }
-    | null;
+    PasskeyRegisterStartResponse | { error?: string } | null;
 
   if (!startRes.ok || !startData || !("options" in startData)) {
-    throw new Error((startData && "error" in startData && startData.error) || messages.start_failed);
+    throw new Error(
+      (startData && "error" in startData && startData.error) || messages.start_failed,
+    );
   }
 
   let registrationResponse;
@@ -115,9 +132,12 @@ async function performPasskeyRegistration(messages: PasskeyMessages): Promise<vo
   const finishRes = await fetch("/api/auth/passkey/register/finish", {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ response: registrationResponse })
+    body: JSON.stringify({ response: registrationResponse }),
   });
-  const finishData = (await finishRes.json().catch(() => null)) as { ok?: boolean; error?: string } | null;
+  const finishData = (await finishRes.json().catch(() => null)) as {
+    ok?: boolean;
+    error?: string;
+  } | null;
 
   if (!finishRes.ok || !finishData?.ok) {
     throw new Error(finishData?.error || messages.finish_failed);
@@ -158,16 +178,23 @@ export function PasskeySection({ passkeys }: PasskeySectionProps) {
         <p className="meta">{t("description")}</p>
       </div>
 
-      <button className="button buttonPrimary accountAction" type="button" onClick={registerPasskey} disabled={busy}>
+      <button
+        className="button buttonPrimary accountAction"
+        type="button"
+        onClick={registerPasskey}
+        disabled={busy}
+      >
         {busy ? t("registering") : t("register")}
       </button>
-      {error ? <p className="meta workspaceError" role="alert">{error}</p> : null}
+      {error ? (
+        <p className="meta workspaceError" role="alert">
+          {error}
+        </p>
+      ) : null}
 
       <div style={{ display: "grid", gap: "10px" }}>
         {passkeys.length ? (
-          passkeys.map((passkey) => (
-            <PasskeyRow key={passkey.id} passkey={passkey} />
-          ))
+          passkeys.map((passkey) => <PasskeyRow key={passkey.id} passkey={passkey} />)
         ) : (
           <p className="meta">{t("empty")}</p>
         )}

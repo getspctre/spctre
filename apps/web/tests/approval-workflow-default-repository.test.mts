@@ -2,9 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const sqlMock = vi.hoisted(() => vi.fn());
 
-vi.mock("@/lib/db", () => ({
-  sql: sqlMock,
-}));
+vi.mock("@/lib/db", () => ({ sql: sqlMock }));
 
 const repository = await import("../lib/repositories/approval-workflow/config");
 

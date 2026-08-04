@@ -31,17 +31,14 @@ type VerifiedGithubUser = GithubUser & { id: number; login: string };
 
 async function resolveGithubIdentity(
   request: Request,
-  params: { code: string; clientId: string; clientSecret: string }
+  params: { code: string; clientId: string; clientSecret: string },
 ): Promise<OAuthIdentity | NextResponse> {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL?.trim() || new URL(request.url).origin;
   const redirectUri = `${appUrl}/api/auth/github/callback`;
 
   const tokenRes = await fetchWithTimeout(GITHUB_TOKEN_URL, {
     method: "POST",
-    headers: {
-      accept: "application/json",
-      "content-type": "application/x-www-form-urlencoded",
-    },
+    headers: { accept: "application/json", "content-type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
       client_id: params.clientId,
       client_secret: params.clientSecret,
@@ -83,7 +80,10 @@ async function resolveGithubIdentity(
   let email: string | null = null;
   if (emailsRes.ok) {
     const emails = (await emailsRes.json()) as GithubEmail[];
-    email = emails.find((e) => e.primary && e.verified)?.email ?? emails.find((e) => e.verified)?.email ?? null;
+    email =
+      emails.find((e) => e.primary && e.verified)?.email ??
+      emails.find((e) => e.verified)?.email ??
+      null;
   }
 
   if (!email) {
@@ -108,7 +108,10 @@ async function handleGetApiAuthGithubCallback(request: Request) {
   if (validated instanceof NextResponse) return validated;
   const { safeNext } = validated;
 
-  const identity = await resolveGithubIdentity(request, validated satisfies OAuthCallbackValidation);
+  const identity = await resolveGithubIdentity(
+    request,
+    validated satisfies OAuthCallbackValidation,
+  );
   if (identity instanceof NextResponse) return identity;
 
   return finalizeOAuthCallback({

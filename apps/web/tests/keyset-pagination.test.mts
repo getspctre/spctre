@@ -53,12 +53,32 @@ describe("keyset cursor encode/decode", () => {
     expect(decodeCursor(null)).toBeNull();
     expect(decodeCursor("")).toBeNull();
     expect(decodeCursor("not-base64-json!!")).toBeNull();
-    expect(decodeCursor(Buffer.from(`{"ts":"2026-07-01T00:00:00.000Z","id":"${uuid}","dir":"sideways"}`).toString("base64url"))).toBeNull();
+    expect(
+      decodeCursor(
+        Buffer.from(`{"ts":"2026-07-01T00:00:00.000Z","id":"${uuid}","dir":"sideways"}`).toString(
+          "base64url",
+        ),
+      ),
+    ).toBeNull();
     // unparseable timestamp is rejected
-    expect(decodeCursor(Buffer.from(`{"ts":"nope","id":"${uuid}","dir":"next"}`).toString("base64url"))).toBeNull();
+    expect(
+      decodeCursor(Buffer.from(`{"ts":"nope","id":"${uuid}","dir":"next"}`).toString("base64url")),
+    ).toBeNull();
     // non-UUID id is rejected before it can reach the ${cursor.id}::uuid SQL cast
-    expect(decodeCursor(Buffer.from('{"ts":"2026-07-01T00:00:00.000Z","id":"abc","dir":"next"}').toString("base64url"))).toBeNull();
-    expect(decodeCursor(Buffer.from(`{"ts":"2026-07-01T00:00:00.000Z","id":"'; DROP TABLE x;--","dir":"next"}`).toString("base64url"))).toBeNull();
+    expect(
+      decodeCursor(
+        Buffer.from('{"ts":"2026-07-01T00:00:00.000Z","id":"abc","dir":"next"}').toString(
+          "base64url",
+        ),
+      ),
+    ).toBeNull();
+    expect(
+      decodeCursor(
+        Buffer.from(
+          `{"ts":"2026-07-01T00:00:00.000Z","id":"'; DROP TABLE x;--","dir":"next"}`,
+        ).toString("base64url"),
+      ),
+    ).toBeNull();
   });
 });
 

@@ -30,7 +30,7 @@ interface GoogleIdTokenClaims {
 // Exchange the OAuth code and verify the ID token, requiring a verified email.
 async function resolveGoogleIdentity(
   request: Request,
-  params: { code: string; clientId: string; clientSecret: string }
+  params: { code: string; clientId: string; clientSecret: string },
 ): Promise<OAuthIdentity | NextResponse> {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL?.trim() || new URL(request.url).origin;
   const redirectUri = `${appUrl}/api/auth/google/callback`;
@@ -70,12 +70,7 @@ async function resolveGoogleIdentity(
     return loginRedirect(request, "invalid_id_token");
   }
 
-  return {
-    provider: "GOOGLE",
-    subject,
-    email,
-    displayName: displayName || email,
-  };
+  return { provider: "GOOGLE", subject, email, displayName: displayName || email };
 }
 
 async function handleGetApiAuthGoogleCallback(request: Request) {
@@ -88,7 +83,10 @@ async function handleGetApiAuthGoogleCallback(request: Request) {
   if (validated instanceof NextResponse) return validated;
   const { safeNext } = validated;
 
-  const identity = await resolveGoogleIdentity(request, validated satisfies OAuthCallbackValidation);
+  const identity = await resolveGoogleIdentity(
+    request,
+    validated satisfies OAuthCallbackValidation,
+  );
   if (identity instanceof NextResponse) return identity;
 
   return finalizeOAuthCallback({

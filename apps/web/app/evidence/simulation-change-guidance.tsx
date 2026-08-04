@@ -20,13 +20,13 @@ interface Props {
 }
 
 export function SimulationChangeGuidance({ branchId, revisionId }: Props) {
-  const [generateState, generateAction, generating] = useActionState<GenerateSimulationChangeState, FormData>(
-    generateSimulationChangeRecommendation,
-    null
-  );
+  const [generateState, generateAction, generating] = useActionState<
+    GenerateSimulationChangeState,
+    FormData
+  >(generateSimulationChangeRecommendation, null);
   const [applyState, applyAction, applying] = useActionState<ApplySimulationChangeState, FormData>(
     applySimulationChangeRecommendation,
-    null
+    null,
   );
   const [editedSummary, setEditedSummary] = useState("");
 
@@ -34,7 +34,8 @@ export function SimulationChangeGuidance({ branchId, revisionId }: Props) {
     return <span className="pill pillAllow">Simulation guidance recorded</span>;
   }
 
-  const recommendation = generateState && "ok" in generateState ? generateState.recommendation : null;
+  const recommendation =
+    generateState && "ok" in generateState ? generateState.recommendation : null;
 
   if (!recommendation) {
     return (

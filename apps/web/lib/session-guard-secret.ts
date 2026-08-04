@@ -8,10 +8,11 @@ import { getRuntimeConfig } from "@/lib/config/runtime";
 export function getSessionGuardSecret(): string {
   const config = getRuntimeConfig();
   if (config.sessionGuardSecret) return config.sessionGuardSecret;
-  if (config.mode === "development" && config.developmentSessionGuardSecret) return config.developmentSessionGuardSecret;
+  if (config.mode === "development" && config.developmentSessionGuardSecret)
+    return config.developmentSessionGuardSecret;
 
   throw new Error(
-    "SPCTRE_SESSION_GUARD_SECRET is required. Local development may explicitly set SPCTRE_DEV_SESSION_GUARD_SECRET."
+    "SPCTRE_SESSION_GUARD_SECRET is required. Local development may explicitly set SPCTRE_DEV_SESSION_GUARD_SECRET.",
   );
 }
 

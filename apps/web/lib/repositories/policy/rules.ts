@@ -33,7 +33,7 @@ export interface BlastRadius {
 export async function listRules(
   workspaceId: string | null,
   tenantId: string,
-  searchText?: string
+  searchText?: string,
 ): Promise<PolicyRuleSummary[]> {
   if (!sql) return [];
   const rows = await sql<
@@ -56,11 +56,15 @@ export async function listRules(
     JOIN policy_branch pb ON pb.id = rev.branch_id AND pb.tenant_id = rev.tenant_id AND pb.active_revision_id = rev.id
     WHERE pr.tenant_id = ${tenantId}
       AND (pb.workspace_id = ${workspaceId} OR pb.scope = 'ORGANIZATION')
-      ${searchText ? rawSql`AND (
+      ${
+        searchText
+          ? rawSql`AND (
         pr.search_text @@ websearch_to_tsquery('english', ${searchText})
         OR pr.effect ILIKE ${"%" + searchText + "%"}
         OR pr.stable_rule_id ILIKE ${"%" + searchText + "%"}
-      )` : rawSql``}
+      )`
+          : rawSql``
+      }
     ORDER BY pr.stable_rule_id, pb.created_at DESC
   `;
   return rows.map((row) => ({
@@ -72,13 +76,13 @@ export async function listRules(
     domains: row.domains ?? [],
     connectors: row.connectors ?? [],
     actions: row.actions ?? [],
-    immutable: row.immutable ?? false
+    immutable: row.immutable ?? false,
   }));
 }
 
 export async function getRulesForRevision(
   revisionId: string,
-  tenantId: string
+  tenantId: string,
 ): Promise<PolicyRuleSummary[]> {
   if (!revisionId) return [];
   return listRulesForRevision(revisionId, tenantId);
@@ -87,7 +91,7 @@ export async function getRulesForRevision(
 export async function getHighFrictionRules(
   limit = 10,
   workspaceId: string | null,
-  tenantId: string
+  tenantId: string,
 ): Promise<RuleHeatEntry[]> {
   if (!sql) return [];
 
@@ -124,13 +128,13 @@ export async function getHighFrictionRules(
     denyCount: r.deny_count,
     warnCount: r.warn_count,
     allowCount: r.allow_count,
-    total: r.total
+    total: r.total,
   }));
 }
 
 export async function getUnusedActiveRules(
   workspaceId: string | null,
-  tenantId: string
+  tenantId: string,
 ): Promise<UnusedRule[]> {
   if (!sql) return [];
 
@@ -169,14 +173,14 @@ export async function getUnusedActiveRules(
     title: r.title,
     effect: r.effect,
     connectors: r.connectors ?? [],
-    domains: r.domains ?? []
+    domains: r.domains ?? [],
   }));
 }
 
 export async function getBlastRadius(
   changedRuleIds: string[],
   workspaceId: string | null,
-  tenantId: string
+  tenantId: string,
 ): Promise<BlastRadius | null> {
   if (!sql || !changedRuleIds.length) return null;
 
@@ -220,6 +224,6 @@ export async function getBlastRadius(
     totalDecisions: row.total_decisions,
     denyCount: row.deny_count,
     warnCount: row.warn_count,
-    changedRuleCount: changedRuleIds.length
+    changedRuleCount: changedRuleIds.length,
   };
 }

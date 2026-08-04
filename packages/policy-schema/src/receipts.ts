@@ -1,4 +1,11 @@
-import { createHash, createPrivateKey, createPublicKey, randomUUID, sign, verify } from "node:crypto";
+import {
+  createHash,
+  createPrivateKey,
+  createPublicKey,
+  randomUUID,
+  sign,
+  verify,
+} from "node:crypto";
 
 export type ActionReceiptOutcome = "PROCEED" | "ESCALATE" | "ABORT";
 
@@ -59,15 +66,30 @@ export function signActionReceipt(params: {
   };
 }
 
-export function verifyActionReceipt(receipt: SignedActionReceipt): { verified: boolean; reason?: string } {
-  if (receipt.payload.schema !== "spctre.action-receipt.v1") return { verified: false, reason: "Unsupported receipt schema." };
-  if (receipt.signature.algorithm !== "Ed25519") return { verified: false, reason: "Unsupported signature algorithm." };
+export function verifyActionReceipt(receipt: SignedActionReceipt): {
+  verified: boolean;
+  reason?: string;
+} {
+  if (receipt.payload.schema !== "spctre.action-receipt.v1")
+    return { verified: false, reason: "Unsupported receipt schema." };
+  if (receipt.signature.algorithm !== "Ed25519")
+    return { verified: false, reason: "Unsupported signature algorithm." };
   try {
     const canonical = canonicalizeActionReceiptPayload(receipt.payload);
     const payloadHash = `sha256:${createHash("sha256").update(canonical).digest("hex")}`;
-    if (payloadHash !== receipt.signature.payloadHash) return { verified: false, reason: "Payload hash mismatch." };
-    const publicKey = createPublicKey({ key: Buffer.from(receipt.signature.publicKey, "base64"), type: "spki", format: "der" });
-    return verify(null, Buffer.from(canonical), publicKey, Buffer.from(receipt.signature.value, "base64"))
+    if (payloadHash !== receipt.signature.payloadHash)
+      return { verified: false, reason: "Payload hash mismatch." };
+    const publicKey = createPublicKey({
+      key: Buffer.from(receipt.signature.publicKey, "base64"),
+      type: "spki",
+      format: "der",
+    });
+    return verify(
+      null,
+      Buffer.from(canonical),
+      publicKey,
+      Buffer.from(receipt.signature.value, "base64"),
+    )
       ? { verified: true }
       : { verified: false, reason: "Signature verification failed." };
   } catch {
@@ -76,11 +98,15 @@ export function verifyActionReceipt(receipt: SignedActionReceipt): { verified: b
 }
 
 function stableJsonStringify(value: JsonValue): string {
-  if (value === null || typeof value === "boolean" || typeof value === "string") return JSON.stringify(value);
+  if (value === null || typeof value === "boolean" || typeof value === "string")
+    return JSON.stringify(value);
   if (typeof value === "number") {
     if (!Number.isFinite(value)) throw new Error("Cannot canonicalize non-finite JSON number.");
     return JSON.stringify(value);
   }
   if (Array.isArray(value)) return `[${value.map(stableJsonStringify).join(",")}]`;
-  return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stableJsonStringify(value[key])}`).join(",")}}`;
+  return `{${Object.keys(value)
+    .sort()
+    .map((key) => `${JSON.stringify(key)}:${stableJsonStringify(value[key])}`)
+    .join(",")}}`;
 }

@@ -26,10 +26,7 @@ import {
   GOOGLE_ANTIGRAVITY_GOVERNANCE_PACK,
   CLAUDE_AGENT_SDK_GOVERNANCE_PACK,
 } from "./packs/framework";
-import {
-  SPCTRE_AGENT_GOVERNANCE_PACK,
-  TRUST_GOVERNANCE_PACK,
-} from "./packs/core";
+import { SPCTRE_AGENT_GOVERNANCE_PACK, TRUST_GOVERNANCE_PACK } from "./packs/core";
 import { ENTIRE_SESSION_AUDIT_PACK } from "./packs/entire";
 import {
   STRIPE_PACK,
@@ -37,23 +34,9 @@ import {
   STRIPE_CONNECT_PACK,
   STRIPE_ISSUING_PACK,
 } from "./packs/stripe";
-import {
-  POSTGRESQL_PACK,
-  MONGODB_PACK,
-  SNOWFLAKE_PACK,
-  AWS_DYNAMODB_PACK,
-} from "./packs/database";
-import {
-  GITHUB_PACK,
-  GITHUB_ACTIONS_PACK,
-  GITHUB_ENTERPRISE_ADMIN_PACK,
-} from "./packs/github";
-import {
-  DEPLOYMENT_PACK,
-  KUBERNETES_PACK,
-  VERCEL_PACK,
-  ARGO_CD_PACK,
-} from "./packs/deploy";
+import { POSTGRESQL_PACK, MONGODB_PACK, SNOWFLAKE_PACK, AWS_DYNAMODB_PACK } from "./packs/database";
+import { GITHUB_PACK, GITHUB_ACTIONS_PACK, GITHUB_ENTERPRISE_ADMIN_PACK } from "./packs/github";
+import { DEPLOYMENT_PACK, KUBERNETES_PACK, VERCEL_PACK, ARGO_CD_PACK } from "./packs/deploy";
 import { ZENDESK_PACK, ZENDESK_SUPPORT_ADMIN_PACK } from "./packs/support";
 import { packSurfaces } from "./pack-surfaces";
 import type { PackSurface } from "./pack-surfaces";
@@ -114,7 +97,8 @@ function makeGeneratedPack(surface: PackSurface): PolicyPack {
         {
           version: "1.0.0",
           date: "2026-05-07",
-          summary: "Initial governed pack baseline with destructive-change, export, privilege, and automation controls.",
+          summary:
+            "Initial governed pack baseline with destructive-change, export, privilege, and automation controls.",
         },
       ],
     },
@@ -134,7 +118,11 @@ function makeGeneratedPack(surface: PackSurface): PolicyPack {
         effect: "DENY",
         domains: [secondaryDomain ?? primaryDomain, "exports"],
         connectors: [surface.connector],
-        actions: [`${secondaryDomain ?? primaryDomain}.export`, "report.export", "data.bulk_export"],
+        actions: [
+          `${secondaryDomain ?? primaryDomain}.export`,
+          "report.export",
+          "data.bulk_export",
+        ],
         immutable: true,
       },
       {

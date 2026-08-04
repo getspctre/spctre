@@ -10,7 +10,9 @@ function makeCaptureFetch() {
   const captured: CapturedRequest[] = [];
   const fetch = async (req: Request): Promise<Response> => {
     const headers: Record<string, string> = {};
-    req.headers.forEach((value, key) => { headers[key] = value; });
+    req.headers.forEach((value, key) => {
+      headers[key] = value;
+    });
     captured.push({ url: req.url, headers });
     return new Response(JSON.stringify({}), {
       status: 200,
@@ -59,11 +61,12 @@ describe("createSpctreClient — base URL", () => {
 
 describe("createSpctreClient — custom fetch", () => {
   it("uses the injected fetch implementation", async () => {
-    const customFetch = vi.fn(async (_req: Request) =>
-      new Response(JSON.stringify({}), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      })
+    const customFetch = vi.fn(
+      async (_req: Request) =>
+        new Response(JSON.stringify({}), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
     );
     const client = createSpctreClient({
       token: "tok",

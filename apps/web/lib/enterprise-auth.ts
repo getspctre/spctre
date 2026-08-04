@@ -49,14 +49,7 @@ export function getOidcConfig(): OidcEnvConfig | null {
     return null;
   }
 
-  return {
-    issuer,
-    clientId,
-    clientSecret,
-    redirectUri,
-    scope,
-    defaultTenantId
-  };
+  return { issuer, clientId, clientSecret, redirectUri, scope, defaultTenantId };
 }
 
 async function bootstrapDefaultProvider(tenantId: string): Promise<void> {
@@ -74,10 +67,14 @@ async function bootstrapDefaultProvider(tenantId: string): Promise<void> {
   }).catch(swallow("upsertDefaultOidcProvider", undefined));
 }
 
-export async function getOidcProviderForTenant(tenantId: string): Promise<OidcProviderConfig | null> {
+export async function getOidcProviderForTenant(
+  tenantId: string,
+): Promise<OidcProviderConfig | null> {
   await bootstrapDefaultProvider(tenantId).catch(swallow("bootstrapDefaultProvider", undefined));
 
-  const row = await findOidcProviderForTenantRow(tenantId).catch(swallow("findOidcProviderForTenantRow", null));
+  const row = await findOidcProviderForTenantRow(tenantId).catch(
+    swallow("findOidcProviderForTenantRow", null),
+  );
   const env = getOidcConfig();
   if (!row || !row.client_secret_enc || !env?.redirectUri) return null;
 
@@ -88,7 +85,7 @@ export async function getOidcProviderForTenant(tenantId: string): Promise<OidcPr
     clientId: row.client_id,
     clientSecret: row.client_secret_enc,
     redirectUri: env.redirectUri,
-    scope: row.scope?.trim() || env.scope || DEFAULT_OIDC_SCOPE
+    scope: row.scope?.trim() || env.scope || DEFAULT_OIDC_SCOPE,
   };
 }
 
@@ -97,11 +94,15 @@ export async function getOidcProviderByIssuer(params: {
   tenantId?: string;
 }): Promise<OidcProviderConfig | null> {
   if (params.tenantId) {
-    const preferred = await getOidcProviderForTenant(params.tenantId).catch(swallow("getOidcProviderForTenant", null));
+    const preferred = await getOidcProviderForTenant(params.tenantId).catch(
+      swallow("getOidcProviderForTenant", null),
+    );
     if (preferred?.issuer === params.issuer) return preferred;
   }
 
-  const row = await findOidcProviderByIssuerRow({ issuer: params.issuer }).catch(swallow("findOidcProviderByIssuerRow", null));
+  const row = await findOidcProviderByIssuerRow({ issuer: params.issuer }).catch(
+    swallow("findOidcProviderByIssuerRow", null),
+  );
   const env = getOidcConfig();
   if (!row || !row.client_secret_enc || !env?.redirectUri) return null;
 
@@ -112,7 +113,7 @@ export async function getOidcProviderByIssuer(params: {
     clientId: row.client_id,
     clientSecret: row.client_secret_enc,
     redirectUri: env.redirectUri,
-    scope: row.scope?.trim() || env.scope || DEFAULT_OIDC_SCOPE
+    scope: row.scope?.trim() || env.scope || DEFAULT_OIDC_SCOPE,
   };
 }
 
@@ -122,7 +123,7 @@ export function oidcCookieOptions(maxAgeSeconds: number) {
     sameSite: "lax" as const,
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    maxAge: maxAgeSeconds
+    maxAge: maxAgeSeconds,
   };
 }
 
@@ -155,9 +156,11 @@ export function getSamlConfig(): SamlEnvConfig | null {
 }
 
 export async function getSamlProviderForTenant(
-  tenantId: string
+  tenantId: string,
 ): Promise<SamlProviderConfig | null> {
-  const row = await findSamlProviderForTenantRow(tenantId).catch(swallow("findSamlProviderForTenantRow", null));
+  const row = await findSamlProviderForTenantRow(tenantId).catch(
+    swallow("findSamlProviderForTenantRow", null),
+  );
   if (!row || !row.saml_entry_point || !row.saml_cert) return null;
 
   return {
@@ -165,7 +168,7 @@ export async function getSamlProviderForTenant(
     tenantId: row.tenant_id,
     entryPoint: row.saml_entry_point,
     cert: row.saml_cert,
-    idpIssuer: row.issuer
+    idpIssuer: row.issuer,
   };
 }
 
@@ -176,6 +179,6 @@ export function samlCookieOptions(maxAgeSeconds: number) {
     sameSite: "lax" as const,
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    maxAge: maxAgeSeconds
+    maxAge: maxAgeSeconds,
   };
 }

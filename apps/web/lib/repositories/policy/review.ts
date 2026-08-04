@@ -33,7 +33,7 @@ export interface ReviewArtifacts {
 
 export async function getApprovals(
   revisionId: string,
-  tenantId: string
+  tenantId: string,
 ): Promise<PolicyApproval[]> {
   if (!sql) return [];
   const rows = await sql<
@@ -59,14 +59,14 @@ export async function getApprovals(
     reviewer: row.reviewer_name ?? row.reviewer_id,
     role: row.reviewer_role,
     status: row.status as PolicyApproval["status"],
-    reviewedAt: row.reviewed_at?.toISOString()
+    reviewedAt: row.reviewed_at?.toISOString(),
   }));
 }
 
 export async function getApprovalById(
   approvalId: string,
   workspaceId: string | null,
-  tenantId: string
+  tenantId: string,
 ): Promise<{
   id: string;
   reviewerId: string;
@@ -77,15 +77,17 @@ export async function getApprovalById(
   createdAt: string;
 } | null> {
   if (!sql) return null;
-  const rows = await sql<{
-    id: string;
-    reviewer_id: string;
-    reviewer_role: string;
-    status: string;
-    revision_id: string;
-    reviewed_at: Date | null;
-    created_at: Date;
-  }[]>`
+  const rows = await sql<
+    {
+      id: string;
+      reviewer_id: string;
+      reviewer_role: string;
+      status: string;
+      revision_id: string;
+      reviewed_at: Date | null;
+      created_at: Date;
+    }[]
+  >`
     SELECT pa.id, pa.reviewer_id, pa.reviewer_role, pa.status, pa.revision_id, pa.reviewed_at, pa.created_at
     FROM policy_approval pa
     JOIN policy_branch pb ON pb.id = pa.branch_id AND pb.tenant_id = pa.tenant_id
@@ -111,7 +113,7 @@ export async function getReviewArtifacts(
   branchId: string,
   revisionId: string,
   workspaceId: string | null,
-  tenantId: string
+  tenantId: string,
 ): Promise<ReviewArtifacts | null> {
   if (!sql || !branchId || !revisionId) return null;
 
@@ -122,12 +124,14 @@ export async function getReviewArtifacts(
     listActiveCompositionLayers(workspaceId, tenantId),
     listRulesForRevision(revisionId, tenantId),
     getBaseRevisionId(branchId, revisionId, tenantId),
-    getApprovals(revisionId, tenantId)
+    getApprovals(revisionId, tenantId),
   ]);
 
   if (!layers.length) return null;
 
-  const beforeRules = beforeRevisionId ? await listRulesForRevision(beforeRevisionId, tenantId) : [];
+  const beforeRules = beforeRevisionId
+    ? await listRulesForRevision(beforeRevisionId, tenantId)
+    : [];
   const generatedAt = new Date().toISOString();
   const composedArtifactHash = stableHash(
     JSON.stringify({
@@ -136,9 +140,9 @@ export async function getReviewArtifacts(
       layers: layers.map((layer) => ({
         branchId: layer.branchId,
         revisionId: layer.revisionId,
-        rules: layer.rules.map((rule) => rule.stableRuleId)
-      }))
-    })
+        rules: layer.rules.map((rule) => rule.stableRuleId),
+      })),
+    }),
   );
   const composition = composePolicyLayers({
     id: `cmp-${revisionId.slice(0, 8)}`,
@@ -146,7 +150,7 @@ export async function getReviewArtifacts(
     revisionId,
     layers,
     composedArtifactHash,
-    composedAt: generatedAt
+    composedAt: generatedAt,
   });
   const artifactHash = revision.publishedArtifactHash ?? composition.composedArtifactHash;
   const targetStacks = revision.targetStacks.length
@@ -154,7 +158,7 @@ export async function getReviewArtifacts(
     : [{ stack: "CUSTOM" as const, adapter: "agt-compatible", environment: "production" }];
   const bundle = toAgtCompatiblePolicyBundle({
     tenantId,
-      workspaceId,
+    workspaceId,
     branchId,
     revisionId,
     sourceFormat: revision.sourceFormat,
@@ -169,8 +173,8 @@ export async function getReviewArtifacts(
     compatibility: revision.compatibility,
     metadata: {
       composed_artifact_hash: composition.composedArtifactHash,
-      source_revision_rule_count: afterRules.length
-    }
+      source_revision_rule_count: afterRules.length,
+    },
   });
 
   return {
@@ -180,14 +184,10 @@ export async function getReviewArtifacts(
       baseRevisionId: beforeRevisionId ?? "initial",
       compareRevisionId: revisionId,
       before: beforeRules,
-      after: afterRules
+      after: afterRules,
     }),
-    artifact: buildPolicyArtifactExport({
-      bundle,
-      artifactHash,
-      generatedAt
-    }),
-    bundle
+    artifact: buildPolicyArtifactExport({ bundle, artifactHash, generatedAt }),
+    bundle,
   };
 }
 
@@ -220,9 +220,11 @@ export async function upsertApprovalForRevision(params: {
 export async function getBundleCompatibilityReport(
   bundle: AgtCompatiblePolicyBundle,
   workspaceId: string | null,
-  tenantId: string
+  tenantId: string,
 ): Promise<BundleCompatibilityReport> {
-  const adapters = await listAdapterDeclarations(workspaceId, tenantId).catch(swallow("listAdapterDeclarations", []));
+  const adapters = await listAdapterDeclarations(workspaceId, tenantId).catch(
+    swallow("listAdapterDeclarations", []),
+  );
   return validateBundleCompatibility({ bundle, adapters });
 }
 
@@ -246,24 +248,26 @@ export interface PendingApprovalBundle {
 
 export async function listPendingApprovalQueue(
   workspaceId: string | null,
-  tenantId: string
+  tenantId: string,
 ): Promise<PendingApprovalBundle[]> {
   if (!sql) return [];
 
-  const rows = await sql<{
-    branch_id: string;
-    branch_name: string;
-    workspace_id: string | null;
-    scope: string;
-    revision_id: string;
-    revision_message: string;
-    author_id: string;
-    revision_created_at: Date;
-    reviewer_id: string | null;
-    reviewer_role: string | null;
-    approval_status: string | null;
-    reviewed_at: Date | null;
-  }[]>`
+  const rows = await sql<
+    {
+      branch_id: string;
+      branch_name: string;
+      workspace_id: string | null;
+      scope: string;
+      revision_id: string;
+      revision_message: string;
+      author_id: string;
+      revision_created_at: Date;
+      reviewer_id: string | null;
+      reviewer_role: string | null;
+      approval_status: string | null;
+      reviewed_at: Date | null;
+    }[]
+  >`
     SELECT
       pb.id AS branch_id,
       pb.name AS branch_name,

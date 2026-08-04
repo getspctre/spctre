@@ -12,7 +12,7 @@ function decodeBase64(base64: string): Uint8Array<ArrayBuffer> {
     const buffer = Buffer.from(base64, "base64");
     const arrayBuffer = buffer.buffer.slice(
       buffer.byteOffset,
-      buffer.byteOffset + buffer.byteLength
+      buffer.byteOffset + buffer.byteLength,
     ) as ArrayBuffer;
     return new Uint8Array(arrayBuffer);
   }

@@ -1,9 +1,5 @@
 {
-  "common": {
-    "cancel": "Annuler",
-    "delete": "Supprimer",
-    "save": "Enregistrer"
-  },
+  "common": { "cancel": "Annuler", "delete": "Supprimer", "save": "Enregistrer" },
   "shared": {
     "advisor_decision": {
       "accept": "Accepter",
@@ -23,9 +19,7 @@
       "reject": "Écarter l’indication",
       "reviewer_rationale": "Justification du reviewer"
     },
-    "slide_out": {
-      "close": "Fermer le panneau"
-    }
+    "slide_out": { "close": "Fermer le panneau" }
   },
   "navigation": {
     "agents": "Agents",
@@ -64,21 +58,13 @@
     "no_results": "Aucun résultat pour « {query} »",
     "placeholder": "Aller à…",
     "search_aria_label": "Rechercher dans la navigation",
-    "footer": {
-      "close": "fermer",
-      "navigate": "naviguer",
-      "open": "ouvrir",
-      "toggle": "basculer"
-    },
+    "footer": { "close": "fermer", "navigate": "naviguer", "open": "ouvrir", "toggle": "basculer" },
     "items": {
       "advisors": {
         "description": "Performance des advisors et recommandations",
         "label": "Conseillers"
       },
-      "agents": {
-        "description": "Santé et état de la flotte d'agents",
-        "label": "Agents"
-      },
+      "agents": { "description": "Santé et état de la flotte d'agents", "label": "Agents" },
       "audit_ledger": {
         "description": "Journal d'événements infalsifiable chaîné par hash",
         "label": "Registre d'audit"
@@ -99,10 +85,7 @@
         "description": "Dépenses, usage, budgets et enforcement des breaches",
         "label": "Coût et usage"
       },
-      "escalations": {
-        "description": "File de revue human-in-the-loop",
-        "label": "Escalades"
-      },
+      "escalations": { "description": "File de revue human-in-the-loop", "label": "Escalades" },
       "escalation_routing": {
         "description": "Acheminer les violations de politique et les notifications aux réviseurs",
         "label": "Routage des escalades"
@@ -111,22 +94,13 @@
         "description": "Parcourir et installer des packs de politiques",
         "label": "Packs"
       },
-      "policies": {
-        "description": "Gérer les branches de politiques",
-        "label": "Politiques"
-      },
-      "review": {
-        "description": "Examiner les diffs et publier",
-        "label": "Revue et publication"
-      },
+      "policies": { "description": "Gérer les branches de politiques", "label": "Politiques" },
+      "review": { "description": "Examiner les diffs et publier", "label": "Revue et publication" },
       "siem_export": {
         "description": "Exporter les preuves d’exécution gouvernée vers Splunk ou Sentinel",
         "label": "Export SIEM"
       },
-      "rules": {
-        "description": "Parcourir l'inventaire des règles",
-        "label": "Règles"
-      }
+      "rules": { "description": "Parcourir l'inventaire des règles", "label": "Règles" }
     }
   },
   "import_policy_panel": {
@@ -190,9 +164,7 @@
         "chain_health": "Santé de la chaîne"
       }
     },
-    "filters": {
-      "clear": "Effacer le filtre"
-    },
+    "filters": { "clear": "Effacer le filtre" },
     "events": {
       "eyebrow": "Audit · Événements",
       "title": "Événements",
@@ -228,10 +200,7 @@
       "actor": "Acteur",
       "hash": "Hash"
     },
-    "pagination": {
-      "previous": "Précédent",
-      "next": "Suivant"
-    }
+    "pagination": { "previous": "Précédent", "next": "Suivant" }
   },
   "account": {
     "eyebrow": "Compte · Sécurité",
@@ -380,10 +349,7 @@
       "provider_count": "{count, plural, one {# fournisseur} other {# fournisseurs}}",
       "state_aria_label": "État de l'authentification",
       "title": "Paramètres d'authentification",
-      "access_section": {
-        "eyebrow": "Admin · Contrôles du tenant",
-        "title": "Politique d'accès"
-      },
+      "access_section": { "eyebrow": "Admin · Contrôles du tenant", "title": "Politique d'accès" },
       "idp": {
         "add_provider": "Ajouter un fournisseur",
         "add_title": "Ajouter un fournisseur d'identité",
@@ -425,9 +391,7 @@
         "saving": "Enregistrement...",
         "submit": "Enregistrer les paramètres du tenant",
         "title": "Exigences MFA",
-        "status": {
-          "updated": "Paramètres MFA du tenant mis à jour."
-        }
+        "status": { "updated": "Paramètres MFA du tenant mis à jour." }
       },
       "provider_section": {
         "eyebrow": "Admin · Fédération d'identité",
@@ -446,9 +410,7 @@
         "remove": "Supprimer le fournisseur",
         "removed": "Supprimé",
         "removing": "Suppression...",
-        "status": {
-          "removed": "Fournisseur d'identité supprimé."
-        }
+        "status": { "removed": "Fournisseur d'identité supprimé." }
       },
       "scim": {
         "description": "Synchronisez les utilisateurs, groupes et grants de workspace depuis votre fournisseur d'identité.",
@@ -492,10 +454,7 @@
       "generate_aria_label": "Générer une nouvelle clé",
       "never": "Jamais",
       "title": "Clés de compte de service",
-      "active": {
-        "eyebrow": "Clés de service · Actives",
-        "title": "Clés API pour ce workspace"
-      },
+      "active": { "eyebrow": "Clés de service · Actives", "title": "Clés API pour ce workspace" },
       "empty": {
         "description": "Générez une clé pour activer l'accès CLI sans interface et CI/CD.",
         "title": "Aucune clé active"
@@ -601,10 +560,7 @@
           "workspace_unavailable": "Contexte de workspace indisponible."
         }
       },
-      "new": {
-        "eyebrow": "Webhooks gateway · Nouveau",
-        "title": "Générer un secret webhook"
-      },
+      "new": { "eyebrow": "Webhooks gateway · Nouveau", "title": "Générer un secret webhook" },
       "revoke": {
         "confirm": "Révoquer le secret webhook {label} ? Les webhooks entrants utilisant ce secret cesseront immédiatement de s'authentifier.",
         "revoke": "Révoquer",
@@ -790,10 +746,7 @@
         "enabled": "{count} activés",
         "workflows": "{count, plural, one {# workflow} other {# workflows}}"
       },
-      "rules": {
-        "eyebrow": "Workflow · Gates",
-        "title": "Règles de workflow actives"
-      },
+      "rules": { "eyebrow": "Workflow · Gates", "title": "Règles de workflow actives" },
       "enforcement": {
         "description": "Acheminez automatiquement les policies à haut risque, expirez les approbations obsolètes et notifiez les reviewers.",
         "eyebrow": "Workflow · Application",
@@ -828,10 +781,7 @@
         "saving": "Enregistrement...",
         "tenant_default": "Défaut du tenant",
         "workspace_scope": "Scope du workspace",
-        "review_modes": {
-          "parallel": "Parallèle",
-          "sequential": "Séquentiel"
-        }
+        "review_modes": { "parallel": "Parallèle", "sequential": "Séquentiel" }
       },
       "table": {
         "active_approval_gates": "Gates d'approbation actifs",
@@ -941,10 +891,7 @@
         "submit": "Enregistrer la langue par défaut",
         "title": "Langue par défaut"
       },
-      "manage": {
-        "eyebrow": "Workspace · Gérer",
-        "title": "Workspaces existants"
-      },
+      "manage": { "eyebrow": "Workspace · Gérer", "title": "Workspaces existants" },
       "card": {
         "active": "ACTIF",
         "confirm_label": "Saisissez DELETE pour confirmer",
@@ -995,9 +942,7 @@
       "sign_in": "Se connecter pour approuver",
       "title": "Connecter une CLI ou un agent CI",
       "token_scope": "Scope du token",
-      "errors": {
-        "missing_code": "Code appareil manquant."
-      }
+      "errors": { "missing_code": "Code appareil manquant." }
     },
     "login": {
       "email": {
@@ -1471,10 +1416,7 @@
     }
   },
   "economic": {
-    "header": {
-      "title": "Coût et usage",
-      "manage_budgets": "Gérer les budgets"
-    },
+    "header": { "title": "Coût et usage", "manage_budgets": "Gérer les budgets" },
     "advisory": {
       "eyebrow": "Note consultative de gouvernance",
       "title": "Estimations heuristiques et de télémétrie",
@@ -1531,9 +1473,7 @@
       "name_required": "Veuillez indiquer un nom de politique.",
       "threshold_required": "Au moins un seuil de coût ou de tokens doit être défini."
     },
-    "scope": {
-      "wildcard": "Tous les événements (Joker)"
-    },
+    "scope": { "wildcard": "Tous les événements (Joker)" },
     "error": {
       "save_failed": "Échec de l'enregistrement de la politique de budget",
       "delete_failed": "Échec de la suppression de la politique de budget",
@@ -1670,10 +1610,7 @@
     }
   },
   "alerting": {
-    "header": {
-      "eyebrow": "Workspace · Alertes",
-      "title": "Alertes"
-    },
+    "header": { "eyebrow": "Workspace · Alertes", "title": "Alertes" },
     "validate": {
       "channel_name": "Veuillez indiquer un nom de canal.",
       "pagerduty_key": "Veuillez fournir une clé de routage PagerDuty.",

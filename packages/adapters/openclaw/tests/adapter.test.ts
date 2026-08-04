@@ -25,17 +25,13 @@ function mockFetchForStatus(status: TestStatus = "ALLOW") {
   const fetchMock = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
     const target = String(url);
     if (target.endsWith("/evaluate")) {
-      return new Response(JSON.stringify({
-        artifactHash: "artifact-1",
-        result: {
-          status,
-          reason: reasonForStatus(status),
-          matchedRefs: ["rule-1"],
-        },
-      }), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({
+          artifactHash: "artifact-1",
+          result: { status, reason: reasonForStatus(status), matchedRefs: ["rule-1"] },
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      );
     }
 
     if (target.endsWith("/evidence")) {
@@ -56,17 +52,13 @@ function mockFetchWithEvidenceFailure(status: TestStatus = "ALLOW") {
   const fetchMock = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
     const target = String(url);
     if (target.endsWith("/evaluate")) {
-      return new Response(JSON.stringify({
-        artifactHash: "artifact-1",
-        result: {
-          status,
-          reason: reasonForStatus(status),
-          matchedRefs: ["rule-1"],
-        },
-      }), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({
+          artifactHash: "artifact-1",
+          result: { status, reason: reasonForStatus(status), matchedRefs: ["rule-1"] },
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      );
     }
 
     if (target.endsWith("/evidence")) {
@@ -108,7 +100,11 @@ describe("SpctreOpenClawAdapter", () => {
 
     expect(result).toEqual({ action: "allow" });
     const evidence = evidenceBody(fetchMock);
-    expect(evidence.runtimeTarget).toMatchObject({ stack: "OPENCLAW", adapter: "@spctre/openclaw", environment: "production" });
+    expect(evidence.runtimeTarget).toMatchObject({
+      stack: "OPENCLAW",
+      adapter: "@spctre/openclaw",
+      environment: "production",
+    });
     expect(evidence.triggerKind).toBe("interactive");
     expect(evidence.connector).toBe("openclaw");
     expect(evidence.action).toBe("sendMessage");

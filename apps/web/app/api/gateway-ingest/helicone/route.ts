@@ -17,8 +17,8 @@ async function handlePostApiGatewayIngestHelicone(request: Request) {
       const data = (raw.data as Record<string, unknown> | undefined) ?? raw;
       return String(
         (data.properties as Record<string, unknown> | undefined)?.environment ??
-        request.headers.get("x-spctre-environment") ??
-        "production"
+          request.headers.get("x-spctre-environment") ??
+          "production",
       );
     },
   });

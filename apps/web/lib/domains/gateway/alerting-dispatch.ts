@@ -22,7 +22,7 @@ interface EscalationAlertContext {
 
 interface AlertingIntegration {
   id: string;
-  type: 'SLACK' | 'PAGERDUTY' | 'TEAMS' | 'EMAIL' | 'WEBHOOK' | 'SPLUNK_HEC' | 'SENTINEL';
+  type: "SLACK" | "PAGERDUTY" | "TEAMS" | "EMAIL" | "WEBHOOK" | "SPLUNK_HEC" | "SENTINEL";
   url: string;
   config: Record<string, unknown>;
 }
@@ -71,7 +71,7 @@ export async function dispatchEscalationCreatedAlert(ctx: EscalationAlertContext
       }
     }
 
-    const connectorAction = [connector, action].filter(Boolean).join('.');
+    const connectorAction = [connector, action].filter(Boolean).join(".");
     const summary = `🚨 New escalation: ${connectorAction || ctx.decisionId} (${ctx.riskLevel} risk)`;
     const details = [
       `**Decision ID**: ${ctx.decisionId}`,
@@ -82,15 +82,24 @@ export async function dispatchEscalationCreatedAlert(ctx: EscalationAlertContext
       ctx.toolIntent ? `**Tool Intent**: ${ctx.toolIntent}` : null,
       ctx.planSummary ? `**Plan Summary**: ${ctx.planSummary}` : null,
       `**SLA Due**: ${ctx.slaDueAt}`,
-    ].filter(Boolean).join('\n');
+    ]
+      .filter(Boolean)
+      .join("\n");
 
     await Promise.allSettled(
-      integrations.map((integration) => sendNotification({
-        id: integration.integrationId,
-        type: integration.type,
-        url: integration.url,
-        config: integration.config
-      }, summary, details, ctx))
+      integrations.map((integration) =>
+        sendNotification(
+          {
+            id: integration.integrationId,
+            type: integration.type,
+            url: integration.url,
+            config: integration.config,
+          },
+          summary,
+          details,
+          ctx,
+        ),
+      ),
     );
   } catch (err) {
     logger.error("[alerting-dispatch] dispatchEscalationCreatedAlert failed", {
@@ -103,21 +112,30 @@ async function sendPagerDutyNotification(
   integration: AlertingIntegration,
   summary: string,
   ctx: EscalationAlertContext,
-  signal: AbortSignal
+  signal: AbortSignal,
 ): Promise<void> {
   const routingKey = (integration.config.routingKey as string | undefined) ?? integration.url;
-  const severityMap: Record<string, string> = { CRITICAL: 'critical', HIGH: 'error', MEDIUM: 'warning', LOW: 'info' };
-  await fetch('https://events.pagerduty.com/v2/enqueue', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+  const severityMap: Record<string, string> = {
+    CRITICAL: "critical",
+    HIGH: "error",
+    MEDIUM: "warning",
+    LOW: "info",
+  };
+  await fetch("https://events.pagerduty.com/v2/enqueue", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       routing_key: routingKey,
-      event_action: 'trigger',
+      event_action: "trigger",
       payload: {
         summary: summary,
-        source: 'spctre-gateway',
-        severity: severityMap[ctx.riskLevel] ?? 'warning',
-        custom_details: { decisionId: ctx.decisionId, connector: ctx.connector, riskLevel: ctx.riskLevel },
+        source: "spctre-gateway",
+        severity: severityMap[ctx.riskLevel] ?? "warning",
+        custom_details: {
+          decisionId: ctx.decisionId,
+          connector: ctx.connector,
+          riskLevel: ctx.riskLevel,
+        },
       },
     }),
     signal,
@@ -127,15 +145,15 @@ async function sendPagerDutyNotification(
 async function sendSplunkHecNotification(
   integration: AlertingIntegration,
   ctx: EscalationAlertContext,
-  signal: AbortSignal
+  signal: AbortSignal,
 ): Promise<void> {
   const cfg = integration.config as Record<string, string>;
   const body = JSON.stringify({
-    sourcetype: 'spctre:decision',
-    source: 'spctre-gateway',
+    sourcetype: "spctre:decision",
+    source: "spctre-gateway",
     time: Date.now() / 1000,
     event: {
-      event: 'escalation.created',
+      event: "escalation.created",
       decisionId: ctx.decisionId,
       connector: ctx.connector,
       action: ctx.action,
@@ -148,9 +166,9 @@ async function sendSplunkHecNotification(
     ...(cfg.index ? { index: cfg.index } : {}),
   });
   await safeFetch(integration.url, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
       ...(cfg.token ? { Authorization: `Splunk ${cfg.token}` } : {}),
     },
     body,
@@ -161,48 +179,47 @@ async function sendSplunkHecNotification(
 async function sendSentinelNotification(
   integration: AlertingIntegration,
   ctx: EscalationAlertContext,
-  signal: AbortSignal
+  signal: AbortSignal,
 ): Promise<void> {
   const cfg = integration.config as Record<string, string>;
-  const primaryKey = cfg.primaryKey ?? '';
-  const logType = cfg.logType || 'SpctrePolicyEvent';
+  const primaryKey = cfg.primaryKey ?? "";
+  const logType = cfg.logType || "SpctrePolicyEvent";
   const workspaceId = integration.url;
-  const body = JSON.stringify([{
-    DecisionId: ctx.decisionId,
-    Connector: ctx.connector,
-    Action: ctx.action,
-    RiskLevel: ctx.riskLevel,
-    Reason: ctx.reason,
-    Consequence: ctx.consequence,
-    SlaDueAt: ctx.slaDueAt,
-    Timestamp: new Date().toISOString(),
-  }]);
-  const date = new Date().toUTCString();
-  const contentLength = Buffer.byteLength(body, 'utf8');
-  const stringToSign = `POST\n${contentLength}\napplication/json\nx-ms-date:${date}\n/api/logs`;
-  const keyBytes = Buffer.from(primaryKey, 'base64');
-  const signature = createHmac('sha256', keyBytes).update(stringToSign, 'utf8').digest('base64');
-  await fetch(
-    `https://${workspaceId}.ods.opinsights.azure.com/api/logs?api-version=2016-04-01`,
+  const body = JSON.stringify([
     {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Log-Type': logType,
-        'x-ms-date': date,
-        Authorization: `SharedKey ${workspaceId}:${signature}`,
-      },
-      body,
-      signal,
-    }
-  );
+      DecisionId: ctx.decisionId,
+      Connector: ctx.connector,
+      Action: ctx.action,
+      RiskLevel: ctx.riskLevel,
+      Reason: ctx.reason,
+      Consequence: ctx.consequence,
+      SlaDueAt: ctx.slaDueAt,
+      Timestamp: new Date().toISOString(),
+    },
+  ]);
+  const date = new Date().toUTCString();
+  const contentLength = Buffer.byteLength(body, "utf8");
+  const stringToSign = `POST\n${contentLength}\napplication/json\nx-ms-date:${date}\n/api/logs`;
+  const keyBytes = Buffer.from(primaryKey, "base64");
+  const signature = createHmac("sha256", keyBytes).update(stringToSign, "utf8").digest("base64");
+  await fetch(`https://${workspaceId}.ods.opinsights.azure.com/api/logs?api-version=2016-04-01`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Log-Type": logType,
+      "x-ms-date": date,
+      Authorization: `SharedKey ${workspaceId}:${signature}`,
+    },
+    body,
+    signal,
+  });
 }
 
 async function sendNotification(
   integration: AlertingIntegration,
   summary: string,
   details: string,
-  ctx: EscalationAlertContext
+  ctx: EscalationAlertContext,
 ): Promise<void> {
   const timeoutMs = 5000;
   const controller = new AbortController();
@@ -210,32 +227,37 @@ async function sendNotification(
 
   try {
     switch (integration.type) {
-      case 'SLACK': {
+      case "SLACK": {
         await safeFetch(integration.url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             text: summary,
             blocks: [
-              { type: 'header', text: { type: 'plain_text', text: '🚨 Spctre Escalation' } },
-              { type: 'section', text: { type: 'mrkdwn', text: details.replace(/\*\*/g, '*') } },
+              { type: "header", text: { type: "plain_text", text: "🚨 Spctre Escalation" } },
+              { type: "section", text: { type: "mrkdwn", text: details.replace(/\*\*/g, "*") } },
             ],
           }),
           signal: controller.signal,
         });
         break;
       }
-      case 'PAGERDUTY': {
+      case "PAGERDUTY": {
         await sendPagerDutyNotification(integration, summary, ctx, controller.signal);
         break;
       }
-      case 'TEAMS': {
+      case "TEAMS": {
         await safeFetch(integration.url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            '@type': 'MessageCard',
-            themeColor: ctx.riskLevel === 'CRITICAL' ? 'FF0000' : ctx.riskLevel === 'HIGH' ? 'FFA500' : '0078D7',
+            "@type": "MessageCard",
+            themeColor:
+              ctx.riskLevel === "CRITICAL"
+                ? "FF0000"
+                : ctx.riskLevel === "HIGH"
+                  ? "FFA500"
+                  : "0078D7",
             summary: summary,
             sections: [{ activityTitle: summary, text: details }],
           }),
@@ -243,7 +265,7 @@ async function sendNotification(
         });
         break;
       }
-      case 'EMAIL': {
+      case "EMAIL": {
         await sendAlertEmail({
           to: integration.url,
           subject: summary,
@@ -251,12 +273,12 @@ async function sendNotification(
         });
         break;
       }
-      case 'WEBHOOK': {
+      case "WEBHOOK": {
         await safeFetch(integration.url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            event: 'escalation.created',
+            event: "escalation.created",
             decisionId: ctx.decisionId,
             connector: ctx.connector,
             action: ctx.action,
@@ -272,17 +294,19 @@ async function sendNotification(
         });
         break;
       }
-      case 'SPLUNK_HEC': {
+      case "SPLUNK_HEC": {
         await sendSplunkHecNotification(integration, ctx, controller.signal);
         break;
       }
-      case 'SENTINEL': {
+      case "SENTINEL": {
         await sendSentinelNotification(integration, ctx, controller.signal);
         break;
       }
     }
   } catch (err) {
-    logger.error(`[alerting-dispatch] Failed to send ${integration.type} notification`, { error: err instanceof Error ? err.message : String(err) });
+    logger.error(`[alerting-dispatch] Failed to send ${integration.type} notification`, {
+      error: err instanceof Error ? err.message : String(err),
+    });
   } finally {
     clearTimeout(timer);
   }

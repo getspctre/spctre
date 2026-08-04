@@ -20,11 +20,18 @@ export const ROLE_DEFINITIONS: Record<OrgRole, RoleDefinition> = {
   OWNER: {
     role: "OWNER",
     label: "Owner",
-    summary: "Full tenant control, billing, workspace administration, review, and publish authority.",
+    summary:
+      "Full tenant control, billing, workspace administration, review, and publish authority.",
     reviewerRoles: ["Admin", "Security", "Platform", "Legal", "Ops"],
     publishScopes: ["ORGANIZATION", "WORKSPACE", "COMPANY", "ENVIRONMENT", "CONNECTOR"],
     allowedEnvironments: [...DEFAULT_ENVIRONMENTS],
-    capabilities: ["Manage billing", "Manage members", "Approve policies", "Publish bundles", "Export compliance"]
+    capabilities: [
+      "Manage billing",
+      "Manage members",
+      "Approve policies",
+      "Publish bundles",
+      "Export compliance",
+    ],
   },
   ADMIN: {
     role: "ADMIN",
@@ -33,7 +40,12 @@ export const ROLE_DEFINITIONS: Record<OrgRole, RoleDefinition> = {
     reviewerRoles: ["Admin", "Ops"],
     publishScopes: ["WORKSPACE", "COMPANY", "ENVIRONMENT", "CONNECTOR"],
     allowedEnvironments: [...DEFAULT_ENVIRONMENTS],
-    capabilities: ["Manage members", "Manage workspaces", "Publish workspace bundles", "Resolve operations"]
+    capabilities: [
+      "Manage members",
+      "Manage workspaces",
+      "Publish workspace bundles",
+      "Resolve operations",
+    ],
   },
   REVIEWER: {
     role: "REVIEWER",
@@ -42,7 +54,7 @@ export const ROLE_DEFINITIONS: Record<OrgRole, RoleDefinition> = {
     reviewerRoles: ["Security", "Platform", "Legal", "Ops"],
     publishScopes: [],
     allowedEnvironments: [...DEFAULT_ENVIRONMENTS],
-    capabilities: ["Approve policies", "Request changes", "Inspect evidence", "Export compliance"]
+    capabilities: ["Approve policies", "Request changes", "Inspect evidence", "Export compliance"],
   },
   CONTRIBUTOR: {
     role: "CONTRIBUTOR",
@@ -51,7 +63,7 @@ export const ROLE_DEFINITIONS: Record<OrgRole, RoleDefinition> = {
     reviewerRoles: [],
     publishScopes: [],
     allowedEnvironments: ["development", "staging"],
-    capabilities: ["Author rules", "Import packs", "Run simulations", "Submit for review"]
+    capabilities: ["Author rules", "Import packs", "Run simulations", "Submit for review"],
   },
   VIEWER: {
     role: "VIEWER",
@@ -60,8 +72,8 @@ export const ROLE_DEFINITIONS: Record<OrgRole, RoleDefinition> = {
     reviewerRoles: [],
     publishScopes: [],
     allowedEnvironments: [],
-    capabilities: ["View policies", "View evidence", "View compliance", "View operations"]
-  }
+    capabilities: ["View policies", "View evidence", "View compliance", "View operations"],
+  },
 };
 
 export function isOrgRole(value: string): value is OrgRole {
@@ -81,7 +93,7 @@ export function canGrantRole(actorRole: OrgRole, targetRole: OrgRole): boolean {
 }
 
 export function roleDefinition(role: string | null | undefined): RoleDefinition {
-  return ROLE_DEFINITIONS[isOrgRole(role ?? "") ? role as OrgRole : "VIEWER"];
+  return ROLE_DEFINITIONS[isOrgRole(role ?? "") ? (role as OrgRole) : "VIEWER"];
 }
 
 export function inferRoleFromGrant(params: {

@@ -24,31 +24,48 @@ async function createFixture() {
 
 afterEach(async () => {
   if (!rawSql) return;
-  await Promise.all(tenantIds.splice(0).map((tenantId) => rawSql`DELETE FROM tenant WHERE id = ${tenantId}`));
+  await Promise.all(
+    tenantIds.splice(0).map((tenantId) => rawSql`DELETE FROM tenant WHERE id = ${tenantId}`),
+  );
 });
 
 describe.skipIf(!databaseAvailable)("commercial review repository contract", () => {
   it("creates a Hosted Trial review profile and durable commercial/audit records", async () => {
     const fixture = await createFixture();
-    await runWithTenantContext(fixture.tenantId, () => requestCommercialReview({
-      ...fixture,
-      targetPlan: "BUSINESS",
-      note: "Need SSO",
-      workspaceSlug: "test",
-      requestedBy: "buyer@example.test",
-    }));
+    await runWithTenantContext(fixture.tenantId, () =>
+      requestCommercialReview({
+        ...fixture,
+        targetPlan: "BUSINESS",
+        note: "Need SSO",
+        workspaceSlug: "test",
+        requestedBy: "buyer@example.test",
+      }),
+    );
 
     await expect(rawSql<{ plan_code: string; lifecycle_status: string; sales_status: string }[]>`
       SELECT plan_code, lifecycle_status, sales_status FROM tenant_commercial_profile
       WHERE tenant_id = ${fixture.tenantId}
-    `).resolves.toEqual([{ plan_code: "HOSTED_TRIAL", lifecycle_status: "EVALUATING", sales_status: "REQUESTED" }]);
-    await expect(rawSql<{ event_type: string; target_plan: string; note: string; requested_by: string }[]>`
+    `).resolves.toEqual([
+      { plan_code: "HOSTED_TRIAL", lifecycle_status: "EVALUATING", sales_status: "REQUESTED" },
+    ]);
+    await expect(rawSql<
+      { event_type: string; target_plan: string; note: string; requested_by: string }[]
+    >`
       SELECT event_type, target_plan, metadata->>'note' AS note, metadata->>'requestedBy' AS requested_by
       FROM commercial_event WHERE tenant_id = ${fixture.tenantId}
-    `).resolves.toEqual([{ event_type: "COMMERCIAL_REVIEW_REQUESTED", target_plan: "BUSINESS", note: "Need SSO", requested_by: "buyer@example.test" }]);
+    `).resolves.toEqual([
+      {
+        event_type: "COMMERCIAL_REVIEW_REQUESTED",
+        target_plan: "BUSINESS",
+        note: "Need SSO",
+        requested_by: "buyer@example.test",
+      },
+    ]);
     await expect(rawSql<{ action: string; outcome: string; target_plan: string }[]>`
       SELECT action, outcome, metadata->>'targetPlan' AS target_plan FROM admin_audit_event
       WHERE tenant_id = ${fixture.tenantId} AND action = 'commercial.review_request'
-    `).resolves.toEqual([{ action: "commercial.review_request", outcome: "ALLOWED", target_plan: "BUSINESS" }]);
+    `).resolves.toEqual([
+      { action: "commercial.review_request", outcome: "ALLOWED", target_plan: "BUSINESS" },
+    ]);
   });
 });

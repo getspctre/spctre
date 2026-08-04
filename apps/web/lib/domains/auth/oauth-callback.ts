@@ -37,7 +37,7 @@ export function validateOAuthCallback(
     clientSecret: string | undefined;
     notConfiguredError: string;
     stateCookie: string;
-  }
+  },
 ): OAuthCallbackValidation | NextResponse {
   const clientId = params.clientId?.trim();
   const clientSecret = params.clientSecret?.trim();
@@ -64,7 +64,8 @@ export function validateOAuthCallback(
   const safeNext = encodedNext ? decodeURIComponent(encodedNext) : "/";
 
   const cookieHeader = request.headers.get("cookie") ?? "";
-  const stateCookie = cookieHeader.match(new RegExp(`(?:^|;\\s*)${params.stateCookie}=([^;]+)`))?.[1] ?? "";
+  const stateCookie =
+    cookieHeader.match(new RegExp(`(?:^|;\\s*)${params.stateCookie}=([^;]+)`))?.[1] ?? "";
 
   if (!stateValue || !stateCookie || stateValue !== stateCookie) {
     return loginRedirect(request, "invalid_state");
@@ -96,7 +97,7 @@ async function linkOAuthIdentityToSession(params: {
   });
 
   const response = NextResponse.redirect(
-    new URL(params.safeNext.startsWith("/") ? params.safeNext : "/account", params.request.url)
+    new URL(params.safeNext.startsWith("/") ? params.safeNext : "/account", params.request.url),
   );
   response.cookies.delete(params.stateCookie);
   return response;
@@ -150,7 +151,9 @@ export async function finalizeOAuthCallback(params: {
       ? params.safeNext
       : "/"
     : `/login?mfa=required${
-        params.safeNext && params.safeNext.startsWith("/") ? `&next=${encodeURIComponent(params.safeNext)}` : ""
+        params.safeNext && params.safeNext.startsWith("/")
+          ? `&next=${encodeURIComponent(params.safeNext)}`
+          : ""
       }`;
   const response = NextResponse.redirect(new URL(redirectTarget, params.request.url));
   response.cookies.delete(params.stateCookie);

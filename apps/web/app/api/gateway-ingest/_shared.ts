@@ -1,13 +1,7 @@
 import { evidenceIngestUrl, workerInternalSecret } from "@/lib/platform/config";
 import { fetchWithRetry } from "@/lib/platform/fetch-retry";
-import {
-  isGatewayDatabaseConfigured,
-  ingestGatewayEvent,
-} from "@/lib/domains/gateway/service";
-import type {
-  GatewayEventV1,
-  GatewayProvider,
-} from "@/lib/domains/gateway/ingest";
+import { isGatewayDatabaseConfigured, ingestGatewayEvent } from "@/lib/domains/gateway/service";
+import type { GatewayEventV1, GatewayProvider } from "@/lib/domains/gateway/ingest";
 import { authenticateServiceToken, hasBearerToken } from "@/lib/service-tokens";
 import { extractTraceId, makeMeta, withTraceId } from "@spctre/api-contracts";
 import { incrementCounter } from "@spctre/platform/metrics";
@@ -35,12 +29,10 @@ import {
 export async function resolveWebhookRegistration(
   request: Request,
   providerHeader: string,
-  expectedProvider: WebhookProvider
+  expectedProvider: WebhookProvider,
 ): Promise<ResolvedWebhookAuth | null> {
   const secret =
-    request.headers.get(providerHeader) ??
-    request.headers.get("x-spctre-gateway-secret") ??
-    "";
+    request.headers.get(providerHeader) ?? request.headers.get("x-spctre-gateway-secret") ?? "";
   if (!secret) return null;
   const registration = await resolveWebhookRegistrationBySecret(secret);
   if (!registration || registration.provider !== expectedProvider) return null;
@@ -60,7 +52,10 @@ async function delegateGatewayIngestToWorker(params: {
   const secret = workerInternalSecret();
   if (!baseUrl || !secret) return null;
 
-  const target = new URL(`/api/gateway-ingest/${params.provider}`, baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`);
+  const target = new URL(
+    `/api/gateway-ingest/${params.provider}`,
+    baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`,
+  );
   // Retry-safe: gateway ingest dedups per event on the worker side.
   const response = await fetchWithRetry(target, {
     method: "POST",
@@ -83,7 +78,7 @@ async function delegateGatewayIngestToWorker(params: {
       statusText: response.statusText,
       headers: response.headers,
     }),
-    params.traceId
+    params.traceId,
   );
 }
 
@@ -180,9 +175,9 @@ export async function handleRegisteredGatewayIngest(params: {
             deduplicated: result.deduplicated,
             meta: makeMeta(traceId),
           },
-          { status: result.deduplicated ? 200 : 201 }
+          { status: result.deduplicated ? 200 : 201 },
         ),
-        traceId
+        traceId,
       );
     } catch (err) {
       incrementCounter("spctre.api.errors", 1, {
@@ -206,7 +201,7 @@ async function resolveGatewayIngestAuth(params: {
   const webhookAuth = await resolveWebhookRegistration(
     params.request,
     params.providerHeader,
-    params.provider
+    params.provider,
   );
   if (webhookAuth) {
     return {
@@ -222,7 +217,11 @@ async function resolveGatewayIngestAuth(params: {
       "http.route": params.route,
       "http.response.status_code": 401,
     });
-    return gatewayJsonError("Missing or invalid gateway webhook secret or bearer token.", 401, params.traceId);
+    return gatewayJsonError(
+      "Missing or invalid gateway webhook secret or bearer token.",
+      401,
+      params.traceId,
+    );
   }
 
   const tokenAuth = await authenticateServiceToken(params.request, "evidence:write");
@@ -242,7 +241,10 @@ async function resolveGatewayIngestAuth(params: {
   };
 }
 
-async function readJsonBody(request: Request, traceId: string): Promise<Record<string, unknown> | Response> {
+async function readJsonBody(
+  request: Request,
+  traceId: string,
+): Promise<Record<string, unknown> | Response> {
   try {
     return (await request.json()) as Record<string, unknown>;
   } catch {

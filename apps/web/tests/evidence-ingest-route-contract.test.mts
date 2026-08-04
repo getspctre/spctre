@@ -4,9 +4,7 @@ const ingestRuntimeEvidenceSpy = vi.fn();
 const delegateToGoIngestorSpy = vi.fn();
 const revalidatePathSpy = vi.fn();
 
-vi.mock("next/cache", () => ({
-  revalidatePath: revalidatePathSpy,
-}));
+vi.mock("next/cache", () => ({ revalidatePath: revalidatePathSpy }));
 
 vi.mock("@/lib/domains/evidence/ingest-service", () => ({
   ingestRuntimeEvidence: ingestRuntimeEvidenceSpy,
@@ -47,17 +45,9 @@ describe("POST /api/evidence contract", () => {
     delegateToGoIngestorSpy.mockResolvedValue(null);
     ingestRuntimeEvidenceSpy.mockResolvedValue({
       status: 201,
-      body: {
-        evidence: {
-          decisionId: "dec-route-contract",
-          status: "ALLOW",
-        },
-        gateway: undefined,
-      },
+      body: { evidence: { decisionId: "dec-route-contract", status: "ALLOW" }, gateway: undefined },
       revalidatePaths: ["/evidence", "/compliance"],
-      spanAttributes: {
-        "spctre.evidence.status": "ALLOW",
-      },
+      spanAttributes: { "spctre.evidence.status": "ALLOW" },
     });
   });
 
@@ -65,34 +55,26 @@ describe("POST /api/evidence contract", () => {
     const response = await evidenceRoute.POST(
       new Request("http://localhost:3000/api/evidence", {
         method: "POST",
-        headers: {
-          "content-type": "application/json",
-          "x-request-id": "trace-route-contract",
-        },
+        headers: { "content-type": "application/json", "x-request-id": "trace-route-contract" },
         body: JSON.stringify(validPayload),
-      })
+      }),
     );
 
     expect(response.status).toBe(201);
     expect(response.headers.get("x-request-id")).toBe("trace-route-contract");
     await expect(response.json()).resolves.toMatchObject({
-      evidence: {
-        decisionId: "dec-route-contract",
-        status: "ALLOW",
-      },
-      meta: {
-        traceId: "trace-route-contract",
-      },
+      evidence: { decisionId: "dec-route-contract", status: "ALLOW" },
+      meta: { traceId: "trace-route-contract" },
     });
-    expect(ingestRuntimeEvidenceSpy).toHaveBeenCalledWith(expect.objectContaining({
-      parsed: expect.objectContaining({
-        decisionId: "dec-route-contract",
-        artifactHash: "sha256:route",
+    expect(ingestRuntimeEvidenceSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        parsed: expect.objectContaining({
+          decisionId: "dec-route-contract",
+          artifactHash: "sha256:route",
+        }),
+        rawPayload: expect.objectContaining({ decisionId: "dec-route-contract" }),
       }),
-      rawPayload: expect.objectContaining({
-        decisionId: "dec-route-contract",
-      }),
-    }));
+    );
     expect(revalidatePathSpy).toHaveBeenCalledWith("/evidence");
     expect(revalidatePathSpy).toHaveBeenCalledWith("/compliance");
   });
@@ -103,16 +85,14 @@ describe("POST /api/evidence contract", () => {
         method: "POST",
         headers: { "x-request-id": "trace-invalid-json" },
         body: "{",
-      })
+      }),
     );
 
     expect(response.status).toBe(400);
     expect(response.headers.get("x-request-id")).toBe("trace-invalid-json");
     await expect(response.json()).resolves.toMatchObject({
       error: "Request body must be JSON.",
-      meta: {
-        traceId: "trace-invalid-json",
-      },
+      meta: { traceId: "trace-invalid-json" },
     });
     expect(ingestRuntimeEvidenceSpy).not.toHaveBeenCalled();
   });
@@ -121,16 +101,17 @@ describe("POST /api/evidence contract", () => {
     const response = await evidenceRoute.POST(
       new Request("http://localhost:3000/api/evidence", {
         method: "POST",
-        headers: {
-          "content-type": "application/json",
-          "x-request-id": "trace-parse-issues",
-        },
+        headers: { "content-type": "application/json", "x-request-id": "trace-parse-issues" },
         body: JSON.stringify({ decisionId: "missing-required-fields" }),
-      })
+      }),
     );
 
     expect(response.status).toBe(400);
-    const body = await response.json() as { error?: string; issues?: unknown[]; meta?: { traceId?: string } };
+    const body = (await response.json()) as {
+      error?: string;
+      issues?: unknown[];
+      meta?: { traceId?: string };
+    };
     expect(body.error).toMatch(/^environment: /);
     expect(Array.isArray(body.issues)).toBe(true);
     expect(body.meta?.traceId).toBe("trace-parse-issues");

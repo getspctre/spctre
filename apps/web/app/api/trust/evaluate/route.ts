@@ -1,8 +1,20 @@
-import { evaluateTrustDecision, ingestContextBudget, listTrustPolicies, recordTrustOperation } from "@/lib/domains/trust/service";
+import {
+  evaluateTrustDecision,
+  ingestContextBudget,
+  listTrustPolicies,
+  recordTrustOperation,
+} from "@/lib/domains/trust/service";
 
 import { extractTraceId, makeMeta, withTraceId } from "@spctre/api-contracts";
 import type { TrustCalibrationPolicy } from "@spctre/policy-schema";
-import { asInt, asNumber, asString, delegateTrustPostToWorker, resolveAuth, VALID_STACKS } from "../_shared";
+import {
+  asInt,
+  asNumber,
+  asString,
+  delegateTrustPostToWorker,
+  resolveAuth,
+  VALID_STACKS,
+} from "../_shared";
 import { swallow } from "@/lib/platform/swallow";
 
 export const dynamic = "force-dynamic";
@@ -27,12 +39,30 @@ interface TrustEvaluateFields {
 function recordBreachTelemetry(
   result: ReturnType<typeof evaluateTrustDecision>,
   fields: TrustEvaluateFields,
-  auth: { tenantId: string; workspaceId: string; actorId: string }
+  auth: { tenantId: string; workspaceId: string; actorId: string },
 ): void {
-  const { trustScore, contextTokens, budgetLimit, agentClass, environment, connector, consequenceTier, sessionId, agentId, runtimeStack } = fields;
+  const {
+    trustScore,
+    contextTokens,
+    budgetLimit,
+    agentClass,
+    environment,
+    connector,
+    consequenceTier,
+    sessionId,
+    agentId,
+    runtimeStack,
+  } = fields;
 
   const isContextBreach = contextTokens !== undefined && result.reason.includes("token count");
-  if (isContextBreach && sessionId && agentId && environment && runtimeStack && VALID_STACKS.has(runtimeStack)) {
+  if (
+    isContextBreach &&
+    sessionId &&
+    agentId &&
+    environment &&
+    runtimeStack &&
+    VALID_STACKS.has(runtimeStack)
+  ) {
     ingestContextBudget({
       tenantId: auth.tenantId,
       workspaceId: auth.workspaceId,
@@ -49,7 +79,9 @@ function recordBreachTelemetry(
     }).catch(swallow("ingestContextBudget", undefined));
   }
 
-  const opsEventType = isContextBreach ? "CONTEXT_BUDGET_BREACH" as const : "TRUST_POLICY_BREACH" as const;
+  const opsEventType = isContextBreach
+    ? ("CONTEXT_BUDGET_BREACH" as const)
+    : ("TRUST_POLICY_BREACH" as const);
   recordTrustOperation({
     tenantId: auth.tenantId,
     workspaceId: auth.workspaceId,
@@ -77,11 +109,21 @@ function recordBreachTelemetry(
 async function handlePostApiTrustEvaluate(request: Request) {
   const traceId = extractTraceId(request);
   const auth = await resolveAuth(request);
-  if (!auth.ok) return withTraceId(Response.json({ error: auth.error, meta: makeMeta(traceId) }, { status: 401 }), traceId);
+  if (!auth.ok)
+    return withTraceId(
+      Response.json({ error: auth.error, meta: makeMeta(traceId) }, { status: 401 }),
+      traceId,
+    );
 
   const body = await request.json().catch(() => null);
   if (!body || typeof body !== "object" || Array.isArray(body)) {
-    return withTraceId(Response.json({ error: "Request body must be an object.", meta: makeMeta(traceId) }, { status: 400 }), traceId);
+    return withTraceId(
+      Response.json(
+        { error: "Request body must be an object.", meta: makeMeta(traceId) },
+        { status: 400 },
+      ),
+      traceId,
+    );
   }
 
   const rec = body as Record<string, unknown>;
@@ -91,16 +133,33 @@ async function handlePostApiTrustEvaluate(request: Request) {
   const agentClass = asString(rec.agentClass);
   const environment = asString(rec.environment);
   const connector = asString(rec.connector);
-  const consequenceTier = asString(rec.consequenceTier) as TrustCalibrationPolicy["consequenceTier"];
+  const consequenceTier = asString(
+    rec.consequenceTier,
+  ) as TrustCalibrationPolicy["consequenceTier"];
   const sessionId = asString(rec.sessionId);
   const agentId = asString(rec.agentId);
   const runtimeStack = asString(rec.runtimeStack);
 
   if (trustScore !== undefined && (trustScore < 0 || trustScore > 1)) {
-    return withTraceId(Response.json({ error: "trustScore must be between 0 and 1.", meta: makeMeta(traceId) }, { status: 400 }), traceId);
+    return withTraceId(
+      Response.json(
+        { error: "trustScore must be between 0 and 1.", meta: makeMeta(traceId) },
+        { status: 400 },
+      ),
+      traceId,
+    );
   }
   if (consequenceTier && !VALID_CONSEQUENCE_TIERS.has(consequenceTier)) {
-    return withTraceId(Response.json({ error: "consequenceTier must be LOW, MEDIUM, HIGH, or CRITICAL.", meta: makeMeta(traceId) }, { status: 400 }), traceId);
+    return withTraceId(
+      Response.json(
+        {
+          error: "consequenceTier must be LOW, MEDIUM, HIGH, or CRITICAL.",
+          meta: makeMeta(traceId),
+        },
+        { status: 400 },
+      ),
+      traceId,
+    );
   }
 
   const delegated = await delegateTrustPostToWorker({ path: "evaluate", auth, body: rec, traceId });
@@ -108,10 +167,20 @@ async function handlePostApiTrustEvaluate(request: Request) {
 
   let policies;
   try {
-    policies = await listTrustPolicies({ tenantId: auth.tenantId, workspaceId: auth.workspaceId, enabledOnly: true });
+    policies = await listTrustPolicies({
+      tenantId: auth.tenantId,
+      workspaceId: auth.workspaceId,
+      enabledOnly: true,
+    });
   } catch (err) {
     console.error("[trust/evaluate] listTrustCalibrationPolicies failed", err);
-    return withTraceId(Response.json({ error: "Service temporarily unavailable.", meta: makeMeta(traceId) }, { status: 503 }), traceId);
+    return withTraceId(
+      Response.json(
+        { error: "Service temporarily unavailable.", meta: makeMeta(traceId) },
+        { status: 503 },
+      ),
+      traceId,
+    );
   }
 
   const result = evaluateTrustDecision({
@@ -128,20 +197,34 @@ async function handlePostApiTrustEvaluate(request: Request) {
   if (result.action !== "ALLOW") {
     recordBreachTelemetry(
       result,
-      { trustScore, contextTokens, budgetLimit, agentClass, environment, connector, consequenceTier, sessionId, agentId, runtimeStack },
-      auth
+      {
+        trustScore,
+        contextTokens,
+        budgetLimit,
+        agentClass,
+        environment,
+        connector,
+        consequenceTier,
+        sessionId,
+        agentId,
+        runtimeStack,
+      },
+      auth,
     );
   }
 
-  return withTraceId(Response.json({
-    result,
-    gatewayHint: {
-      trustScore,
-      contextBudget: contextTokens,
-      riskLevel: result.recommendedRiskLevel,
-    },
-    meta: makeMeta(traceId),
-  }), traceId);
+  return withTraceId(
+    Response.json({
+      result,
+      gatewayHint: {
+        trustScore,
+        contextBudget: contextTokens,
+        riskLevel: result.recommendedRiskLevel,
+      },
+      meta: makeMeta(traceId),
+    }),
+    traceId,
+  );
 }
 
 export { handlePostApiTrustEvaluate as POST };

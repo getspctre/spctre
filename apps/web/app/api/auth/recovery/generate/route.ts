@@ -13,7 +13,7 @@ async function handlePostApiAuthRecoveryGenerate() {
   if (isDemoTenant(session.tenantId)) {
     return NextResponse.json(
       { error: "Recovery code generation is not available in Demo Mode." },
-      { status: 403 }
+      { status: 403 },
     );
   }
 

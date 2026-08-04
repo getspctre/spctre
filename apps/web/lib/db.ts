@@ -61,7 +61,7 @@ async function resolveTenantContext(): Promise<string | null> {
     });
     throw new Error(
       "Bearer-token database work requires an explicit tenant context. " +
-        "Wrap tenant-scoped work in runWithTenantContext."
+        "Wrap tenant-scoped work in runWithTenantContext.",
     );
   }
 
@@ -73,9 +73,7 @@ async function resolveTenantContext(): Promise<string | null> {
     // multi-tenant RLS-binding bug can hide until an environment stops setting
     // a default tenant. Count usage so reliance on the fallback is observable
     // rather than invisible.
-    incrementCounter("spctre.db.single_tenant_fallback", 1, {
-      environment: runtimeConfig.mode,
-    });
+    incrementCounter("spctre.db.single_tenant_fallback", 1, { environment: runtimeConfig.mode });
     return runtimeConfig.defaultTenantId;
   }
 
@@ -84,7 +82,7 @@ async function resolveTenantContext(): Promise<string | null> {
     default_tenant_configured: String(Boolean(runtimeConfig.defaultTenantId)),
   });
   throw new Error(
-    "No tenant context is bound. Wrap tenant-scoped database work in runWithTenantContext."
+    "No tenant context is bound. Wrap tenant-scoped database work in runWithTenantContext.",
   );
 }
 
@@ -93,12 +91,26 @@ async function resolveTenantContext(): Promise<string | null> {
 // (constraint violations, bad SQL) are never retried.
 const TRANSIENT_DB_ERROR_CODES = new Set([
   // SQLSTATE class 08 (connection exceptions) + shutdown states.
-  "08000", "08001", "08003", "08004", "08006", "08007", "08P01",
-  "57P01", "57P02", "57P03",
+  "08000",
+  "08001",
+  "08003",
+  "08004",
+  "08006",
+  "08007",
+  "08P01",
+  "57P01",
+  "57P02",
+  "57P03",
   // postgres.js connection lifecycle errors.
-  "CONNECTION_CLOSED", "CONNECTION_ENDED", "CONNECTION_DESTROYED", "CONNECT_TIMEOUT",
+  "CONNECTION_CLOSED",
+  "CONNECTION_ENDED",
+  "CONNECTION_DESTROYED",
+  "CONNECT_TIMEOUT",
   // Socket-level errors surfaced by the driver.
-  "ECONNRESET", "ECONNREFUSED", "ETIMEDOUT", "EPIPE",
+  "ECONNRESET",
+  "ECONNREFUSED",
+  "ETIMEDOUT",
+  "EPIPE",
 ]);
 
 function isTransientDbError(err: unknown): boolean {
@@ -157,7 +169,7 @@ function createTenantAwareClient(client: SqlClient): SqlClient {
       raw.begin(async (tx: TransactionSql) => {
         await setTenant(tx, tenantId);
         return (tx as any)(strings, ...values);
-      })
+      }),
     );
   }) as unknown as SqlClient;
 
@@ -188,7 +200,9 @@ function createTenantAwareClient(client: SqlClient): SqlClient {
       }
 
       const value = Reflect.get(client, prop, receiver);
-      return typeof value === "function" ? value.bind(client) : value ?? Reflect.get(target, prop, receiver);
+      return typeof value === "function"
+        ? value.bind(client)
+        : (value ?? Reflect.get(target, prop, receiver));
     },
   });
 }
@@ -210,15 +224,12 @@ function createClient() {
   const rawClient = postgres(process.env.DATABASE_URL, {
     max,
     idle_timeout: 20,
-    max_lifetime: 60 * 30
+    max_lifetime: 60 * 30,
   });
-  const ownerClient = ownerUrl && ownerUrl !== process.env.DATABASE_URL
-    ? postgres(ownerUrl, {
-        max: Math.min(max, 2),
-        idle_timeout: 20,
-        max_lifetime: 60 * 30
-      })
-    : rawClient;
+  const ownerClient =
+    ownerUrl && ownerUrl !== process.env.DATABASE_URL
+      ? postgres(ownerUrl, { max: Math.min(max, 2), idle_timeout: 20, max_lifetime: 60 * 30 })
+      : rawClient;
   const client = createTenantAwareClient(rawClient);
 
   globalThis.__spctreSqlClient = {
@@ -226,13 +237,18 @@ function createClient() {
     ownerUrl,
     poolSize: max,
     client,
-    rawClient: ownerClient
+    rawClient: ownerClient,
   };
 
   const instrumented = rawClient as unknown as InstrumentedSqlClient;
   if (instrumented.counts !== undefined) {
     registerDbPoolMetrics("spctre-web", () => {
-      return { active: instrumented.counts.active, idle: instrumented.counts.idle, waiting: instrumented.counts.waiting, max };
+      return {
+        active: instrumented.counts.active,
+        idle: instrumented.counts.idle,
+        waiting: instrumented.counts.waiting,
+        max,
+      };
     });
   }
 
@@ -252,7 +268,7 @@ export const rawSql = (globalThis.__spctreSqlClient?.rawClient ?? sql) as SqlCli
  */
 export async function withTenant<T>(
   tenantId: string | null | undefined,
-  fn: (tx: TransactionSql) => Promise<T>
+  fn: (tx: TransactionSql) => Promise<T>,
 ): Promise<T> {
   assertTenantId(tenantId);
   if (!sql) throw new Error("Database not configured.");

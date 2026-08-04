@@ -22,12 +22,7 @@ import { swallow } from "@/lib/platform/swallow";
 
 export type QuickStartState = { error: string } | null;
 export type SetupTokenState =
-  | {
-      ok: true;
-      rawToken: string;
-      tokenPrefix: string;
-      error?: never;
-    }
+  | { ok: true; rawToken: string; tokenPrefix: string; error?: never }
   | { ok?: never; rawToken?: never; tokenPrefix?: never; error: string }
   | null;
 
@@ -67,7 +62,7 @@ const STARTER_RULES: PolicyRuleSummary[] = [
 async function fireStarterDecision(
   connector: string,
   action: string,
-  domains: string[]
+  domains: string[],
 ): Promise<{ decisionId: string; redirectPath: string } | { error: string }> {
   try {
     const workspaceContext = await getWorkspaceContext();
@@ -131,16 +126,14 @@ async function fireStarterDecision(
       tenantId,
       workspaceId,
       milestone: "sample_decision_sent",
-      metadata: {
-        connector,
-        action,
-        decisionId,
-        source: "quick_start_action",
-      },
+      metadata: { connector, action, decisionId, source: "quick_start_action" },
     });
 
     const evidencePath = buildWorkspacePath(workspaceSlug, "/evidence");
-    return { decisionId, redirectPath: `${evidencePath}?highlight=${encodeURIComponent(decisionId)}` };
+    return {
+      decisionId,
+      redirectPath: `${evidencePath}?highlight=${encodeURIComponent(decisionId)}`,
+    };
   } catch (err) {
     return { error: err instanceof Error ? err.message : "Something went wrong." };
   }
@@ -148,7 +141,7 @@ async function fireStarterDecision(
 
 export async function sendAllowedDecision(
   _prev: QuickStartState,
-  _formData: FormData
+  _formData: FormData,
 ): Promise<QuickStartState> {
   const result = await fireStarterDecision("sample", "event.register", ["onboarding"]);
   if ("error" in result) return { error: result.error };
@@ -157,7 +150,7 @@ export async function sendAllowedDecision(
 
 export async function sendBlockedDecision(
   _prev: QuickStartState,
-  _formData: FormData
+  _formData: FormData,
 ): Promise<QuickStartState> {
   const result = await fireStarterDecision("sample", "payment.create", ["finance"]);
   if ("error" in result) return { error: result.error };
@@ -166,7 +159,7 @@ export async function sendBlockedDecision(
 
 export async function generateOnboardingSetupToken(
   _prev: SetupTokenState,
-  _formData: FormData
+  _formData: FormData,
 ): Promise<SetupTokenState> {
   try {
     const workspaceContext = await getWorkspaceContext();

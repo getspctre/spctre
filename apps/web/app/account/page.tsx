@@ -25,13 +25,8 @@ export default async function AccountPage() {
     redirect("/login");
   }
 
-  const {
-    passkeys,
-    enrollments,
-    unusedRecoveryCodes,
-    linkedIdentities,
-    activeSessions,
-  } = await getAccountPageModel(session.principalId, session.tenantId);
+  const { passkeys, enrollments, unusedRecoveryCodes, linkedIdentities, activeSessions } =
+    await getAccountPageModel(session.principalId, session.tenantId);
 
   const googleEnabled = Boolean(process.env.GOOGLE_CLIENT_ID?.trim());
   const githubEnabled = Boolean(process.env.GITHUB_CLIENT_ID?.trim());
@@ -57,8 +52,15 @@ export default async function AccountPage() {
         <RecoveryCodesSection unusedCount={unusedRecoveryCodes} />
 
         {/* Variable-height lists that grow with entries last */}
-        <SocialLoginsSection googleEnabled={googleEnabled} githubEnabled={githubEnabled} linkedIdentities={linkedIdentities} />
-        <ActiveSessionsSection currentSessionId={session.sessionId} activeSessions={visibleSessions} />
+        <SocialLoginsSection
+          googleEnabled={googleEnabled}
+          githubEnabled={githubEnabled}
+          linkedIdentities={linkedIdentities}
+        />
+        <ActiveSessionsSection
+          currentSessionId={session.sessionId}
+          activeSessions={visibleSessions}
+        />
       </section>
     </>
   );

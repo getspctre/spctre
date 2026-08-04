@@ -31,14 +31,18 @@ describe("pack scaffold", () => {
     expect(fs.existsSync(path.join(generatedDir, "README.md"))).toBe(true);
     expect(fs.existsSync(path.join(generatedDir, "rules.yaml"))).toBe(true);
     expect(fs.existsSync(path.join(generatedDir, "schema.json"))).toBe(true);
-    expect(fs.existsSync(path.join(generatedDir, ".github", "workflows", "lint-pack.yml"))).toBe(true);
+    expect(fs.existsSync(path.join(generatedDir, ".github", "workflows", "lint-pack.yml"))).toBe(
+      true,
+    );
 
     const rulesContent = fs.readFileSync(path.join(generatedDir, "rules.yaml"), "utf8");
     expect(rulesContent).toContain('connector: "custom-connector"');
     expect(rulesContent).toContain('name: "custom-connector Governance Pack"');
     expect(rulesContent).toContain('version: "1.0.0"');
 
-    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining("Success! Governance pack scaffolded"));
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.stringContaining("Success! Governance pack scaffolded"),
+    );
   });
 
   it("should generate a connector pack with custom parameters", async () => {
@@ -59,7 +63,9 @@ describe("pack scaffold", () => {
     expect(fs.existsSync(path.join(generatedDir, "README.md"))).toBe(true);
     expect(fs.existsSync(path.join(generatedDir, "rules.yaml"))).toBe(true);
     expect(fs.existsSync(path.join(generatedDir, "schema.json"))).toBe(true);
-    expect(fs.existsSync(path.join(generatedDir, ".github", "workflows", "lint-pack.yml"))).toBe(true);
+    expect(fs.existsSync(path.join(generatedDir, ".github", "workflows", "lint-pack.yml"))).toBe(
+      true,
+    );
 
     const readmeContent = fs.readFileSync(path.join(generatedDir, "README.md"), "utf8");
     expect(readmeContent).toContain("# Spctre Connector Governance Pack: stripe");
@@ -69,12 +75,19 @@ describe("pack scaffold", () => {
     expect(rulesContent).toContain('name: "stripe Governance Pack"');
     expect(rulesContent).toContain('version: "2.1.3"');
 
-    const schemaContent = JSON.parse(fs.readFileSync(path.join(generatedDir, "schema.json"), "utf8"));
+    const schemaContent = JSON.parse(
+      fs.readFileSync(path.join(generatedDir, "schema.json"), "utf8"),
+    );
     expect(schemaContent.title).toBe("Spctre Governance Pack Schema");
 
-    const workflowContent = fs.readFileSync(path.join(generatedDir, ".github", "workflows", "lint-pack.yml"), "utf8");
+    const workflowContent = fs.readFileSync(
+      path.join(generatedDir, ".github", "workflows", "lint-pack.yml"),
+      "utf8",
+    );
     expect(workflowContent).toContain("name: Lint Spctre Governance Pack");
 
-    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining("Success! Governance pack scaffolded"));
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.stringContaining("Success! Governance pack scaffolded"),
+    );
   });
 });

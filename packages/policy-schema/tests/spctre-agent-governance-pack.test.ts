@@ -14,7 +14,8 @@ describe("Spctre Simulation Guidance Governance Pack", () => {
   });
 
   it("requires attribution and human decision gates for simulation guidance", () => {
-    const ruleText = pack?.rules.map((rule) => `${rule.stableRuleId} ${rule.title}`).join("\n") ?? "";
+    const ruleText =
+      pack?.rules.map((rule) => `${rule.stableRuleId} ${rule.title}`).join("\n") ?? "";
 
     expect(ruleText).toMatch(/unnamed_principal|named, versioned system principal/);
     expect(ruleText).toMatch(/require_agent_triage_log|SIMULATION_GUIDANCE/);
@@ -24,9 +25,7 @@ describe("Spctre Simulation Guidance Governance Pack", () => {
 
   it("denies system-initiated resolution, approval, publish, and policy mutation", () => {
     const denyActions = new Set(
-      pack?.rules
-        .filter((rule) => rule.effect === "DENY")
-        .flatMap((rule) => rule.actions) ?? []
+      pack?.rules.filter((rule) => rule.effect === "DENY").flatMap((rule) => rule.actions) ?? [],
     );
 
     expect(denyActions).toContain("escalation.resolve");

@@ -2,10 +2,7 @@ import { useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react";
 import { TabsRow, TabButton } from "../src/tabs";
 
-const meta = {
-  title: "Primitives/Tabs",
-  component: TabsRow
-} satisfies Meta<typeof TabsRow>;
+const meta = { title: "Primitives/Tabs", component: TabsRow } satisfies Meta<typeof TabsRow>;
 
 export default meta;
 
@@ -18,7 +15,7 @@ export const ReviewModes: Story = {
       <TabButton>Evidence</TabButton>
       <TabButton>Rule Authoring</TabButton>
     </TabsRow>
-  )
+  ),
 };
 
 const cardStyle: React.CSSProperties = {
@@ -47,9 +44,30 @@ function RetentionPlanDemo() {
   ];
 
   const decisions = [
-    { id: "dec_a1b2c3d4", connector: "openai", env: "production", disposition: "ACTIVE", until: "2025-09-12", days: 112 },
-    { id: "dec_e5f6a7b8", connector: "anthropic", env: "production", disposition: "EXPIRING", until: "2025-06-01", days: 9 },
-    { id: "dec_c9d0e1f2", connector: "openai", env: "staging", disposition: "EXPIRED", until: "2025-05-10", days: 0 },
+    {
+      id: "dec_a1b2c3d4",
+      connector: "openai",
+      env: "production",
+      disposition: "ACTIVE",
+      until: "2025-09-12",
+      days: 112,
+    },
+    {
+      id: "dec_e5f6a7b8",
+      connector: "anthropic",
+      env: "production",
+      disposition: "EXPIRING",
+      until: "2025-06-01",
+      days: 9,
+    },
+    {
+      id: "dec_c9d0e1f2",
+      connector: "openai",
+      env: "staging",
+      disposition: "EXPIRED",
+      until: "2025-05-10",
+      days: 0,
+    },
   ];
 
   return (
@@ -68,7 +86,9 @@ function RetentionPlanDemo() {
           {rules.map((r) => (
             <div key={r.id} style={cardStyle}>
               <strong style={{ fontSize: 14 }}>{r.label}</strong>
-              <span style={{ fontSize: 12, color: "#64748b" }}>{r.days} days · {r.scope}</span>
+              <span style={{ fontSize: 12, color: "#64748b" }}>
+                {r.days} days · {r.scope}
+              </span>
             </div>
           ))}
         </div>
@@ -76,20 +96,36 @@ function RetentionPlanDemo() {
         <div style={{ display: "grid", gap: 8 }}>
           {decisions.map((d) => (
             <div key={d.id} style={cardStyle}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div
+                style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}
+              >
                 <code style={{ fontSize: 12 }}>{d.id}</code>
-                <span style={{
-                  fontSize: 11,
-                  fontWeight: 700,
-                  padding: "2px 8px",
-                  borderRadius: 999,
-                  background: d.disposition === "EXPIRED" ? "#fee2e2" : d.disposition === "EXPIRING" ? "#fef9c3" : "#dcfce7",
-                  color: d.disposition === "EXPIRED" ? "#dc2626" : d.disposition === "EXPIRING" ? "#ca8a04" : "#16a34a",
-                }}>
+                <span
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 700,
+                    padding: "2px 8px",
+                    borderRadius: 999,
+                    background:
+                      d.disposition === "EXPIRED"
+                        ? "#fee2e2"
+                        : d.disposition === "EXPIRING"
+                          ? "#fef9c3"
+                          : "#dcfce7",
+                    color:
+                      d.disposition === "EXPIRED"
+                        ? "#dc2626"
+                        : d.disposition === "EXPIRING"
+                          ? "#ca8a04"
+                          : "#16a34a",
+                  }}
+                >
                   {d.disposition}
                 </span>
               </div>
-              <span style={{ fontSize: 12, color: "#64748b" }}>{d.connector} / {d.env} · until {d.until}</span>
+              <span style={{ fontSize: 12, color: "#64748b" }}>
+                {d.connector} / {d.env} · until {d.until}
+              </span>
             </div>
           ))}
         </div>
@@ -98,6 +134,4 @@ function RetentionPlanDemo() {
   );
 }
 
-export const WithContent: Story = {
-  render: () => <RetentionPlanDemo />
-};
+export const WithContent: Story = { render: () => <RetentionPlanDemo /> };

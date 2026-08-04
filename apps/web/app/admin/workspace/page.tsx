@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 function statusMessage(
   t: Awaited<ReturnType<typeof getTranslations>>,
   code: string | null,
-  params: Record<string, string | string[] | undefined>
+  params: Record<string, string | string[] | undefined>,
 ): string | null {
   if (!code) return null;
   const slug = typeof params.slug === "string" ? params.slug : "";
@@ -42,7 +42,7 @@ function statusMessage(
 }
 
 export default async function AdminWorkspacePage({
-  searchParams
+  searchParams,
 }: {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
@@ -50,7 +50,9 @@ export default async function AdminWorkspacePage({
   const params = searchParams ? await searchParams : {};
   const { workspaceContext, workspaces } = await getAdminWorkspacePageModel(await getActiveScope());
 
-  const localePreferences = await getLocalePreferencesForShell({ tenantId: workspaceContext.tenantId });
+  const localePreferences = await getLocalePreferencesForShell({
+    tenantId: workspaceContext.tenantId,
+  });
   const defaultLocale = normalizeLocale(localePreferences.tenantDefaultLocale);
 
   const message =
@@ -62,11 +64,7 @@ export default async function AdminWorkspacePage({
 
   return (
     <>
-      <SettingsHeader
-        eyebrow={t("eyebrow")}
-        title={t("title")}
-        description={t("description")}
-      />
+      <SettingsHeader eyebrow={t("eyebrow")} title={t("title")} description={t("description")} />
 
       <section className="adminAuthStack" aria-label={t("aria_label")}>
         <section className="panel adminWorkspacePanelCompact">
@@ -77,11 +75,20 @@ export default async function AdminWorkspacePage({
           <form action={createWorkspaceAdmin} className="adminWorkspaceForm">
             <label>
               <span>{t("create.name")}</span>
-              <input className="input" name="workspaceName" required placeholder={t("create.name_placeholder")} />
+              <input
+                className="input"
+                name="workspaceName"
+                required
+                placeholder={t("create.name_placeholder")}
+              />
             </label>
             <label>
               <span>{t("create.slug")}</span>
-              <input className="input" name="workspaceSlug" placeholder={t("create.slug_placeholder")} />
+              <input
+                className="input"
+                name="workspaceSlug"
+                placeholder={t("create.slug_placeholder")}
+              />
             </label>
             <button className="button buttonPrimary" type="submit">
               {t("create.submit")}
@@ -95,11 +102,12 @@ export default async function AdminWorkspacePage({
           <div>
             <p className="eyebrow">{t("language.eyebrow")}</p>
             <h2>{t("language.title")}</h2>
-            <p className="meta">
-              {t("language.description")}
-            </p>
+            <p className="meta">{t("language.description")}</p>
           </div>
-          <form action={setTenantDefaultLocaleAdmin} className="adminWorkspaceForm adminInlineSelectActionForm">
+          <form
+            action={setTenantDefaultLocaleAdmin}
+            className="adminWorkspaceForm adminInlineSelectActionForm"
+          >
             <label>
               <span>{t("language.field")}</span>
               <select className="input" name="locale" defaultValue={defaultLocale}>

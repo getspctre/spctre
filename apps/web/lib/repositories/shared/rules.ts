@@ -35,24 +35,30 @@ function mapPolicyRuleRow(row: PolicyRuleDbRow): PolicyRuleSummary {
 function parseRulesFromSourceDocument(
   sourceDocument: unknown,
   sourcePath: string | null,
-  revisionId: string
+  revisionId: string,
 ): PolicyRuleSummary[] | null {
   if (!sourceDocument) return null;
   try {
-    const docStr = typeof sourceDocument === "string" ? sourceDocument : JSON.stringify(sourceDocument);
-    const parsed = parseAgtPolicyDocument({ document: docStr, sourcePath: sourcePath ?? undefined });
+    const docStr =
+      typeof sourceDocument === "string" ? sourceDocument : JSON.stringify(sourceDocument);
+    const parsed = parseAgtPolicyDocument({
+      document: docStr,
+      sourcePath: sourcePath ?? undefined,
+    });
     if (parsed.rules && parsed.rules.length > 0) {
       return parsed.rules;
     }
   } catch (e) {
-    logger.error(`Failed to parse source_document for revision ${revisionId}:`, { error: e instanceof Error ? e.message : String(e) });
+    logger.error(`Failed to parse source_document for revision ${revisionId}:`, {
+      error: e instanceof Error ? e.message : String(e),
+    });
   }
   return null;
 }
 
 export async function listRulesForRevision(
   revisionId: string,
-  tenantId: string
+  tenantId: string,
 ): Promise<PolicyRuleSummary[]> {
   if (!sql) return [];
 
@@ -64,7 +70,9 @@ export async function listRulesForRevision(
     LIMIT 1
   `;
   const rev = revisionRows[0];
-  const parsed = rev ? parseRulesFromSourceDocument(rev.source_document, rev.source_path, revisionId) : null;
+  const parsed = rev
+    ? parseRulesFromSourceDocument(rev.source_document, rev.source_path, revisionId)
+    : null;
   if (parsed) return parsed;
 
   const rows = await sql<PolicyRuleDbRow[]>`
@@ -84,14 +92,16 @@ export async function listRulesForRevision(
 // policy_rule when that yields nothing. See database-optimizations-audit (Minor).
 export async function listRulesForRevisions(
   revisionIds: string[],
-  tenantId: string
+  tenantId: string,
 ): Promise<Map<string, PolicyRuleSummary[]>> {
   const result = new Map<string, PolicyRuleSummary[]>();
   if (!sql) return result;
   const uniqueIds = Array.from(new Set(revisionIds.filter((id): id is string => !!id)));
   if (uniqueIds.length === 0) return result;
 
-  const revisionRows = await sql<{ id: string; source_document: unknown; source_path: string | null }[]>`
+  const revisionRows = await sql<
+    { id: string; source_document: unknown; source_path: string | null }[]
+  >`
     SELECT id, source_document, source_path
     FROM policy_revision
     WHERE tenant_id = ${tenantId} AND id = ANY(${uniqueIds})
@@ -101,7 +111,9 @@ export async function listRulesForRevisions(
   const fallbackIds: string[] = [];
   for (const id of uniqueIds) {
     const rev = revById.get(id);
-    const parsed = rev ? parseRulesFromSourceDocument(rev.source_document, rev.source_path, id) : null;
+    const parsed = rev
+      ? parseRulesFromSourceDocument(rev.source_document, rev.source_path, id)
+      : null;
     if (parsed) {
       result.set(id, parsed);
     } else {

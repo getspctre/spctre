@@ -58,38 +58,34 @@ const TRANSCRIPT_PARAMETER_KEYS = new Set([
 
 // Ordered most-to-least specific. Each entry: [pattern, connector, domains]
 const BASH_CONNECTOR_PATTERNS: Array<[RegExp, string, string[]]> = [
-  [/\bstripe\b/i,                       "stripe",     ["billing"]],
-  [/github\.com\b|(?:^|\s|\/)gh\s/,     "github",     ["vcs"]],
-  [/gitlab\.com\b/i,                    "gitlab",     ["vcs"]],
-  [/\bslack\.com\b|\bslack\s/i,         "slack",      ["messaging"]],
-  [/\btwilio\b/i,                       "twilio",     ["messaging"]],
-  [/\bsendgrid\b/i,                     "sendgrid",   ["email"]],
-  [/\bsalesforce\b/i,                   "salesforce", ["crm"]],
-  [/\bzendesk\b/i,                      "zendesk",    ["support"]],
+  [/\bstripe\b/i, "stripe", ["billing"]],
+  [/github\.com\b|(?:^|\s|\/)gh\s/, "github", ["vcs"]],
+  [/gitlab\.com\b/i, "gitlab", ["vcs"]],
+  [/\bslack\.com\b|\bslack\s/i, "slack", ["messaging"]],
+  [/\btwilio\b/i, "twilio", ["messaging"]],
+  [/\bsendgrid\b/i, "sendgrid", ["email"]],
+  [/\bsalesforce\b/i, "salesforce", ["crm"]],
+  [/\bzendesk\b/i, "zendesk", ["support"]],
   [/\bpsql\b|\bpg_dump\b|\bpg_restore\b/i, "postgres", ["database"]],
-  [/\bmysql\b|\bmysqldump\b/i,          "mysql",      ["database"]],
-  [/\bmongo\b/i,                        "mongodb",    ["database"]],
-  [/(?:^|\s)aws\s|awscli\b|s3:\/\//i,  "aws",        ["infrastructure"]],
-  [/(?:^|\s)gcloud\s/i,                "gcp",        ["infrastructure"]],
-  [/(?:^|\s)kubectl\s/i,               "kubernetes", ["infrastructure"]],
-  [/\bterraform\b/i,                   "terraform",  ["infrastructure"]],
-  [/\bpulumi\b/i,                      "pulumi",     ["infrastructure"]],
-  [/(?:^|\s)az\s+[a-z]/i,             "azure",      ["infrastructure"]],
+  [/\bmysql\b|\bmysqldump\b/i, "mysql", ["database"]],
+  [/\bmongo\b/i, "mongodb", ["database"]],
+  [/(?:^|\s)aws\s|awscli\b|s3:\/\//i, "aws", ["infrastructure"]],
+  [/(?:^|\s)gcloud\s/i, "gcp", ["infrastructure"]],
+  [/(?:^|\s)kubectl\s/i, "kubernetes", ["infrastructure"]],
+  [/\bterraform\b/i, "terraform", ["infrastructure"]],
+  [/\bpulumi\b/i, "pulumi", ["infrastructure"]],
+  [/(?:^|\s)az\s+[a-z]/i, "azure", ["infrastructure"]],
 ];
 
 function resolveGovernedAction(
   toolName: string,
-  input: Record<string, unknown>
+  input: Record<string, unknown>,
 ): GovernedAction | null {
   // MCP tools: mcp__<server>__<tool> — always governed
   if (toolName.startsWith("mcp__")) {
     const parts = toolName.split("__");
     if (parts.length >= 3) {
-      return {
-        connector: parts[1],
-        action: parts.slice(2).join("."),
-        domains: ["external"],
-      };
+      return { connector: parts[1], action: parts.slice(2).join("."), domains: ["external"] };
     }
   }
 
@@ -100,16 +96,22 @@ function resolveGovernedAction(
     case "read_url_content":
     case "web_fetch":
     case "google_web_search": {
-      const isSearch = toolName === "WebSearch" || toolName === "search_web" || toolName === "google_web_search";
+      const isSearch =
+        toolName === "WebSearch" || toolName === "search_web" || toolName === "google_web_search";
       let raw = (isSearch ? input.query : (input.url ?? input.Url)) as string | undefined;
       if (!raw && toolName === "web_fetch") {
         // Gemini CLI's web_fetch embeds the target URL(s) inside a prompt string.
         raw = (((input.prompt as string | undefined) ?? "").match(/https?:\/\/[^\s"']+/) ?? [])[0];
       }
-      if (!raw) return { connector: "web", action: isSearch ? "search" : "fetch", domains: ["external"] };
+      if (!raw)
+        return { connector: "web", action: isSearch ? "search" : "fetch", domains: ["external"] };
       try {
         const u = new URL(raw.startsWith("http") ? raw : `https://${raw}`);
-        return { connector: u.hostname.replace(/^www\./, ""), action: "fetch", domains: ["external"] };
+        return {
+          connector: u.hostname.replace(/^www\./, ""),
+          action: "fetch",
+          domains: ["external"],
+        };
       } catch {
         return { connector: "web", action: "fetch", domains: ["external"] };
       }
@@ -134,7 +136,11 @@ function resolveGovernedAction(
       if (/\bcurl\b|\bwget\b|\bhttpie\b|\bhttp\s/i.test(cmd)) {
         const urlMatch = cmd.match(/https?:\/\/([^/\s"']+)/);
         if (urlMatch) {
-          return { connector: urlMatch[1].replace(/^www\./, ""), action: "http", domains: ["external"] };
+          return {
+            connector: urlMatch[1].replace(/^www\./, ""),
+            action: "http",
+            domains: ["external"],
+          };
         }
       }
       return null;
@@ -175,7 +181,8 @@ function currentHarness(options: PreToolUseOptions): HookHarness {
   if (options.harness === "antigravity" || options.harness === "agy") return "antigravity";
   if (process.env.SPCTRE_HARNESS === "codex") return "codex";
   if (process.env.SPCTRE_HARNESS === "gemini") return "gemini";
-  if (process.env.SPCTRE_HARNESS === "antigravity" || process.env.SPCTRE_HARNESS === "agy") return "antigravity";
+  if (process.env.SPCTRE_HARNESS === "antigravity" || process.env.SPCTRE_HARNESS === "agy")
+    return "antigravity";
   return "claude";
 }
 
@@ -183,12 +190,16 @@ export function parseHookMode(options: PreToolUseOptions): HookMode {
   if (options.enforce) return "enforce";
   if (options.mode === "enforce" || options.mode === "observe") return options.mode;
   if (options.mode) {
-    console.error(`Error: unsupported hook mode "${options.mode}". Expected "observe" or "enforce".`);
+    console.error(
+      `Error: unsupported hook mode "${options.mode}". Expected "observe" or "enforce".`,
+    );
     process.exit(1);
   }
   if (process.env.SPCTRE_HOOK_MODE === "enforce") return "enforce";
   if (process.env.SPCTRE_HOOK_MODE && process.env.SPCTRE_HOOK_MODE !== "observe") {
-    console.error(`Error: unsupported SPCTRE_HOOK_MODE "${process.env.SPCTRE_HOOK_MODE}". Expected "observe" or "enforce".`);
+    console.error(
+      `Error: unsupported SPCTRE_HOOK_MODE "${process.env.SPCTRE_HOOK_MODE}". Expected "observe" or "enforce".`,
+    );
     process.exit(1);
   }
   return "observe";
@@ -198,7 +209,7 @@ function buildHeartbeatPayload(
   config: SpctreCliConfig,
   toolName: string,
   harness: HookHarness,
-  mode: HookMode
+  mode: HookMode,
 ): AgtRuntimeDecisionInput {
   return {
     decisionId: `hb-${Date.now()}`,
@@ -220,7 +231,10 @@ function buildHeartbeatPayload(
   };
 }
 
-async function postEvidence(config: SpctreCliConfig, payload: AgtRuntimeDecisionInput): Promise<void> {
+async function postEvidence(
+  config: SpctreCliConfig,
+  payload: AgtRuntimeDecisionInput,
+): Promise<void> {
   const url = `${config.controlPlaneUrl.replace(/\/+$/, "")}/api/evidence`;
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 3000);
@@ -230,7 +244,7 @@ async function postEvidence(config: SpctreCliConfig, payload: AgtRuntimeDecision
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${config.token}`,
+        Authorization: `Bearer ${config.token}`,
         "x-spctre-source": "hook",
       },
       body: JSON.stringify(payload),
@@ -259,7 +273,9 @@ function normalizeParameterKey(key: string): string {
     .replace(/^_+|_+$/g, "");
 }
 
-export function filterGatewayToolParameters(input: Record<string, unknown>): Record<string, unknown> | undefined {
+export function filterGatewayToolParameters(
+  input: Record<string, unknown>,
+): Record<string, unknown> | undefined {
   function walk(value: unknown): unknown {
     if (Array.isArray(value)) {
       return value.map(walk);
@@ -287,7 +303,9 @@ async function readStdin(): Promise<string> {
   return new Promise((resolve) => {
     let buf = "";
     process.stdin.setEncoding("utf8");
-    process.stdin.on("data", (c) => { buf += c; });
+    process.stdin.on("data", (c) => {
+      buf += c;
+    });
     process.stdin.on("end", () => resolve(buf));
     process.stdin.on("error", () => resolve("{}"));
   });
@@ -298,11 +316,25 @@ function withTimeout<T>(p: Promise<T>, ms: number): Promise<T | undefined> {
 }
 
 const ALLOWED_CONNECTOR_PARAMETERS: Record<string, string[]> = {
-  stripe: ["apiKey", "token", "auth.token", "stripeKey", "stripe_key", "key", "auth.apiKey", "auth.api_key"],
+  stripe: [
+    "apiKey",
+    "token",
+    "auth.token",
+    "stripeKey",
+    "stripe_key",
+    "key",
+    "auth.apiKey",
+    "auth.api_key",
+  ],
   mock: ["token", "apiKey", "key", "stripeKey", "auth.token"],
 };
 
-export function injectParameter(obj: unknown, path: string, value: unknown, connector?: string): boolean {
+export function injectParameter(
+  obj: unknown,
+  path: string,
+  value: unknown,
+  connector?: string,
+): boolean {
   if (!obj || typeof obj !== "object" || !path) return false;
 
   const parts = path.split(".");
@@ -346,21 +378,29 @@ interface GatewayFlowContext {
 // modified payload on stdout) or 2 (blocked). Never returns.
 async function applyCredentialGrantAndExit(
   grant: CredentialGrant,
-  ctx: GatewayFlowContext
+  ctx: GatewayFlowContext,
 ): Promise<never> {
   if (activeHarness === "antigravity") {
     // Antigravity's hook contract cannot rewrite tool input, so JIT-required
     // actions fail closed rather than executing without the ephemeral credential.
-    const reason = "JIT credential injection is not supported by the Antigravity hook contract — blocked (fail-closed).";
+    const reason =
+      "JIT credential injection is not supported by the Antigravity hook contract — blocked (fail-closed).";
     await withTimeout(Promise.all([ctx.heartbeat, ctx.evidence]), 2000);
     blockAndExit(`Spctre policy DENY: ${reason}`, reason);
   }
-  const injected = injectParameter(ctx.toolInput, grant.injectedParameter, grant.credentialValue, ctx.governed.connector);
+  const injected = injectParameter(
+    ctx.toolInput,
+    grant.injectedParameter,
+    grant.credentialValue,
+    ctx.governed.connector,
+  );
   if (!injected) {
     const reason = `Failed to inject JIT credential into parameter "${grant.injectedParameter}" — blocked by security policy.`;
     blockAndExit(`Spctre policy DENY: ${reason}`, reason);
   }
-  console.error(`Spctre JIT: Injected ephemeral ${grant.credentialType} credential into parameter "${grant.injectedParameter}".`);
+  console.error(
+    `Spctre JIT: Injected ephemeral ${grant.credentialType} credential into parameter "${grant.injectedParameter}".`,
+  );
   process.stdout.write(JSON.stringify(ctx.payload) + "\n");
   await withTimeout(Promise.all([ctx.heartbeat, ctx.evidence]), 500);
   process.exit(0);
@@ -370,7 +410,7 @@ async function applyCredentialGrantAndExit(
 // fall through to the local decision (fail-open).
 async function handleGatewayOutage(
   gwConfig: GatewayConfig,
-  ctx: GatewayFlowContext
+  ctx: GatewayFlowContext,
 ): Promise<"continue"> {
   const isJitRequired = ctx.governed.connector === "stripe" || ctx.governed.connector === "mock";
   const isFailClosed = gwConfig.outagePolicy === "fail-closed" || isJitRequired;
@@ -392,12 +432,17 @@ async function handleGatewayOutage(
   };
 
   // Post degraded evidence (best-effort, 1s timeout)
-  await withTimeout(postEvidence(ctx.refreshed, degradedEvidence).catch(() => {}), 1000);
+  await withTimeout(
+    postEvidence(ctx.refreshed, degradedEvidence).catch(() => {}),
+    1000,
+  );
 
   if (isFailClosed) {
     blockAndExit(`Spctre policy DENY: ${outageReason}`, outageReason);
   }
-  console.error(`Spctre gateway WARN: Gateway decision failed (outage) — fail-open policy allowed execution.`);
+  console.error(
+    `Spctre gateway WARN: Gateway decision failed (outage) — fail-open policy allowed execution.`,
+  );
   return "continue"; // fall through to normal local decision/shadow checks
 }
 
@@ -406,11 +451,11 @@ async function handleGatewayOutage(
 async function handleGatewayEscalation(
   gwConfig: GatewayConfig,
   decision: GatewayDecisionResponse["decision"],
-  ctx: GatewayFlowContext
+  ctx: GatewayFlowContext,
 ): Promise<"allow"> {
   const slaHours = decision.slaHours ?? 4;
   console.error(
-    `Spctre ESCALATE: ${decision.reason} — waiting for human review (SLA: ${slaHours}h)…`
+    `Spctre ESCALATE: ${decision.reason} — waiting for human review (SLA: ${slaHours}h)…`,
   );
 
   // Post evidence immediately so audit trail is captured
@@ -435,16 +480,20 @@ async function handleGatewayEscalation(
     resolution.resolutionOutcome === "ESCALATE" ||
     resolution.status === "EXPIRED"
   ) {
-    const reason = resolution.status === "EXPIRED"
-      ? "Gateway escalation timed out — fail-closed."
-      : resolution.resolutionOutcome === "ESCALATE"
-        ? `Gateway escalation resolved: ESCALATE${resolution.resolutionNote ? ` — ${resolution.resolutionNote}` : " — Returned to queue for additional review. Please run the tool again to start a new decision cycle."}`
-        : `Gateway escalation resolved: ABORT${resolution.resolutionNote ? ` — ${resolution.resolutionNote}` : ""}`;
+    const reason =
+      resolution.status === "EXPIRED"
+        ? "Gateway escalation timed out — fail-closed."
+        : resolution.resolutionOutcome === "ESCALATE"
+          ? `Gateway escalation resolved: ESCALATE${resolution.resolutionNote ? ` — ${resolution.resolutionNote}` : " — Returned to queue for additional review. Please run the tool again to start a new decision cycle."}`
+          : `Gateway escalation resolved: ABORT${resolution.resolutionNote ? ` — ${resolution.resolutionNote}` : ""}`;
     blockAndExit(`Spctre policy DENY: ${reason}`, reason);
   }
 
   // Fallback block on unknown resolution outcome
-  blockAndExit("Spctre policy DENY: Unknown gateway resolution outcome.", "Unknown gateway resolution outcome.");
+  blockAndExit(
+    "Spctre policy DENY: Unknown gateway resolution outcome.",
+    "Unknown gateway resolution outcome.",
+  );
 }
 
 // Evaluate the governed action against the cloud gateway. Returns "continue"
@@ -452,7 +501,7 @@ async function handleGatewayEscalation(
 // resolved the action; exits the process on blocking outcomes.
 async function runGatewayFlow(
   gwConfig: GatewayConfig,
-  ctx: GatewayFlowContext
+  ctx: GatewayFlowContext,
 ): Promise<"continue" | "allow"> {
   const gwResponse = await requestGatewayDecision(gwConfig, ctx.refreshed, {
     decisionId: ctx.evidencePayload.decisionId,
@@ -503,7 +552,7 @@ function evaluateLocalDecision(
   toolName: string,
   mode: HookMode,
   shadowMode: boolean,
-  toolParameters: Record<string, unknown> | undefined
+  toolParameters: Record<string, unknown> | undefined,
 ): { result: ReturnType<typeof evaluateDecision>; evidencePayload: AgtRuntimeDecisionInput } {
   const t0 = Date.now();
   const result = evaluateDecision({
@@ -547,7 +596,12 @@ function evaluateLocalDecision(
     latencyMs,
     toolParameters,
     createdAt: new Date().toISOString(),
-    rawEvidence: { harness, tool: toolName, enforcementMode: shadowMode ? "shadow" : mode, shadowMode },
+    rawEvidence: {
+      harness,
+      tool: toolName,
+      enforcementMode: shadowMode ? "shadow" : mode,
+      shadowMode,
+    },
   };
 
   return { result, evidencePayload };
@@ -588,17 +642,32 @@ export async function pretooluse(options: PreToolUseOptions = {}): Promise<void>
 
   if (!bundle) {
     // No bundle: send heartbeat (best-effort, 500ms cap) and allow
-    await withTimeout(postEvidence(refreshed, buildHeartbeatPayload(refreshed, toolName, harness, mode)).catch(() => {}), 500);
+    await withTimeout(
+      postEvidence(refreshed, buildHeartbeatPayload(refreshed, toolName, harness, mode)).catch(
+        () => {},
+      ),
+      500,
+    );
     return emitAllowDecision();
   }
 
   const shadowMode = isShadowModeActive();
   const sanitizedToolParameters = filterGatewayToolParameters(toolInput);
   const { result, evidencePayload } = evaluateLocalDecision(
-    bundle, governed, refreshed, harness, toolName, mode, shadowMode, sanitizedToolParameters
+    bundle,
+    governed,
+    refreshed,
+    harness,
+    toolName,
+    mode,
+    shadowMode,
+    sanitizedToolParameters,
   );
 
-  const heartbeat = postEvidence(refreshed, buildHeartbeatPayload(refreshed, toolName, harness, mode)).catch(() => {});
+  const heartbeat = postEvidence(
+    refreshed,
+    buildHeartbeatPayload(refreshed, toolName, harness, mode),
+  ).catch(() => {});
   const evidence = postEvidence(refreshed, evidencePayload).catch(() => {});
 
   // Gateway integration: if configured, evaluate governed actions via cloud gateway
@@ -619,7 +688,9 @@ export async function pretooluse(options: PreToolUseOptions = {}): Promise<void>
   // Shadow mode: never block; log to stderr so the user sees it in their harness output
   if (shadowMode) {
     const ruleSuffix = result.matchedRefs.length > 0 ? ` (${result.matchedRefs[0]})` : "";
-    console.error(`[shadow] ${governed.connector}.${governed.action} → ${result.status}${ruleSuffix}`);
+    console.error(
+      `[shadow] ${governed.connector}.${governed.action} → ${result.status}${ruleSuffix}`,
+    );
     await withTimeout(Promise.all([heartbeat, evidence]), 500);
     return emitAllowDecision();
   }

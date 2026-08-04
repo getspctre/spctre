@@ -16,7 +16,9 @@ import type {
   IdentityLifecycleEventType,
 } from "@spctre/policy-schema";
 
-export async function recordIdentityEvent(params: Parameters<typeof recordIdentityLifecycleEvent>[0]) {
+export async function recordIdentityEvent(
+  params: Parameters<typeof recordIdentityLifecycleEvent>[0],
+) {
   return recordIdentityLifecycleEvent(params);
 }
 

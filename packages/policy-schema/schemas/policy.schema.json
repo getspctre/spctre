@@ -19,30 +19,16 @@
     "environment": { "type": "string", "minLength": 1 },
     "branch_id": { "type": "string", "minLength": 1 },
     "revision_id": { "type": "string", "minLength": 1 },
-    "scope": {
-      "enum": ["ORGANIZATION", "WORKSPACE", "ENVIRONMENT", "CONNECTOR"]
-    },
-    "source_format": {
-      "enum": ["AGT_YAML", "OPA_REGO", "CEDAR"]
-    },
+    "scope": { "enum": ["ORGANIZATION", "WORKSPACE", "ENVIRONMENT", "CONNECTOR"] },
+    "source_format": { "enum": ["AGT_YAML", "OPA_REGO", "CEDAR"] },
     "source_path": { "type": "string" },
     "source_hash": { "type": "string", "minLength": 1 },
     "artifact_hash": { "type": "string" },
     "generated_at": { "type": "string" },
-    "target_stacks": {
-      "type": "array",
-      "items": { "$ref": "#/$defs/runtimeTarget" }
-    },
-    "approvals": {
-      "type": "array",
-      "items": { "$ref": "#/$defs/approval" }
-    },
-    "rules": {
-      "type": "array",
-      "items": { "$ref": "#/$defs/ruleSummary" }
-    },
-    "metadata": { "type": "object" }
-    ,
+    "target_stacks": { "type": "array", "items": { "$ref": "#/$defs/runtimeTarget" } },
+    "approvals": { "type": "array", "items": { "$ref": "#/$defs/approval" } },
+    "rules": { "type": "array", "items": { "$ref": "#/$defs/ruleSummary" } },
+    "metadata": { "type": "object" },
     "source_document": { "type": "object" },
     "compatibility": { "$ref": "#/$defs/agtCompatibility" }
   },
@@ -79,9 +65,7 @@
       "properties": {
         "reviewer": { "type": "string", "minLength": 1 },
         "role": { "type": "string", "minLength": 1 },
-        "status": {
-          "enum": ["PENDING", "APPROVED", "CHANGES_REQUESTED"]
-        },
+        "status": { "enum": ["PENDING", "APPROVED", "CHANGES_REQUESTED"] },
         "reviewed_at": { "type": "string" }
       }
     },
@@ -93,19 +77,14 @@
         "stable_rule_id": { "type": "string", "minLength": 1 },
         "title": { "type": "string", "minLength": 1 },
         "effect": { "enum": ["ALLOW", "DENY", "WARN", "ESCALATE"] },
-        "source_format": {
-          "enum": ["AGT_YAML", "OPA_REGO", "CEDAR"]
-        },
+        "source_format": { "enum": ["AGT_YAML", "OPA_REGO", "CEDAR"] },
         "source_path": { "type": "string" },
         "domains": { "type": "array", "items": { "type": "string" } },
         "connectors": { "type": "array", "items": { "type": "string" } },
         "actions": { "type": "array", "items": { "type": "string" } },
         "immutable": { "type": "boolean" },
         "priority": { "type": "number" },
-        "conditions": {
-          "type": "array",
-          "items": { "type": "object" }
-        },
+        "conditions": { "type": "array", "items": { "type": "object" } },
         "semantic_checks": {
           "type": "array",
           "items": {
@@ -120,10 +99,7 @@
                   "effect": { "enum": ["ALLOW", "DENY", "WARN", "ESCALATE"] }
                 }
               },
-              {
-                "type": "string",
-                "minLength": 1
-              }
+              { "type": "string", "minLength": 1 }
             ]
           }
         },
@@ -143,25 +119,12 @@
       ],
       "additionalProperties": false,
       "properties": {
-        "dialect": {
-          "enum": ["AGT_YAML", "OPA_REGO", "CEDAR", "SPCTRE_MANAGED"]
-        },
-        "compatibility_level": {
-          "enum": ["NATIVE", "LOSSLESS_PRESERVED", "PARTIAL_SEMANTIC_MAP"]
-        },
-        "preserved_top_level_keys": {
-          "type": "array",
-          "items": { "type": "string" }
-        },
+        "dialect": { "enum": ["AGT_YAML", "OPA_REGO", "CEDAR", "SPCTRE_MANAGED"] },
+        "compatibility_level": { "enum": ["NATIVE", "LOSSLESS_PRESERVED", "PARTIAL_SEMANTIC_MAP"] },
+        "preserved_top_level_keys": { "type": "array", "items": { "type": "string" } },
         "preserved_rule_field_count": { "type": "number" },
-        "semantic_warnings": {
-          "type": "array",
-          "items": { "type": "string" }
-        },
-        "verification_targets": {
-          "type": "array",
-          "items": { "type": "string" }
-        }
+        "semantic_warnings": { "type": "array", "items": { "type": "string" } },
+        "verification_targets": { "type": "array", "items": { "type": "string" } }
       }
     }
   }

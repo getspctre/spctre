@@ -20,7 +20,10 @@ interface ActiveSessionsSectionProps {
 
 function RevokeButton({ sessionId }: { sessionId: string }) {
   const t = useTranslations("account.sessions");
-  const [state, action, pending] = useActionState<RevokeSessionState, FormData>(revokeSessionForm, null);
+  const [state, action, pending] = useActionState<RevokeSessionState, FormData>(
+    revokeSessionForm,
+    null,
+  );
   return (
     <div style={{ display: "grid", gap: "4px", alignItems: "end", justifyItems: "end" }}>
       <form action={action}>
@@ -47,7 +50,7 @@ interface UserAgentLabels {
 function parseUserAgent(
   ua: string | null,
   labels: UserAgentLabels,
-  t: (key: any, values?: any) => string
+  t: (key: any, values?: any) => string,
 ): string {
   if (!ua) return labels.unknownDevice;
   const uaLower = ua.toLowerCase();
@@ -118,9 +121,7 @@ export function ActiveSessionsSection({
               >
                 <div style={{ display: "grid", gap: "4px" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <h3 style={{ margin: 0, fontSize: "14px", fontWeight: 600 }}>
-                      {parsedDevice}
-                    </h3>
+                    <h3 style={{ margin: 0, fontSize: "14px", fontWeight: 600 }}>{parsedDevice}</h3>
                     {isCurrent && (
                       <span
                         style={{

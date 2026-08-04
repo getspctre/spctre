@@ -43,25 +43,40 @@ async function handlePostApiGatewayIngestNotion(request: Request) {
     route: "/api/gateway-ingest/notion",
     spanName: "api.gateway-ingest.notion",
     defaultPrincipalId: "gateway:notion",
-    invalidPayloadMessage: "Could not parse Notion event — missing required field 'id' or 'execution_id'.",
+    invalidPayloadMessage:
+      "Could not parse Notion event — missing required field 'id' or 'execution_id'.",
     normalize: normalizeNotionEvent,
     getEnvironment: (raw, request) =>
       String(
         objectField(raw, "metadata")?.environment ??
-        request.headers.get("x-spctre-environment") ??
-        "production"
+          request.headers.get("x-spctre-environment") ??
+          "production",
       ),
     acceptDelegatedResponse: (response) => response.ok,
     afterAuth: ({ tenantId, traceId }) => {
       if (!checkAndApplyRateLimit(tenantId)) return null;
-      incrementCounter("spctre.api.errors", 1, { "http.route": "/api/gateway-ingest/notion", "http.response.status_code": 429 });
-      return gatewayJsonError("Rate limit exceeded. Maximum 100 requests per minute.", 429, traceId);
+      incrementCounter("spctre.api.errors", 1, {
+        "http.route": "/api/gateway-ingest/notion",
+        "http.response.status_code": 429,
+      });
+      return gatewayJsonError(
+        "Rate limit exceeded. Maximum 100 requests per minute.",
+        429,
+        traceId,
+      );
     },
     beforeIngest: async ({ raw, event, tenantId, traceId }) => {
       const timestamp = raw.timestamp ?? raw.created_at ?? raw.event_timestamp;
       if (!validateWebhookTimestamp(timestamp)) {
-        incrementCounter("spctre.api.errors", 1, { "http.route": "/api/gateway-ingest/notion", "http.response.status_code": 400 });
-        return gatewayJsonError("Webhook timestamp invalid or too old (max 5 minutes).", 400, traceId);
+        incrementCounter("spctre.api.errors", 1, {
+          "http.route": "/api/gateway-ingest/notion",
+          "http.response.status_code": 400,
+        });
+        return gatewayJsonError(
+          "Webhook timestamp invalid or too old (max 5 minutes).",
+          400,
+          traceId,
+        );
       }
 
       // Durable replay check persisted to Postgres so it survives restarts and
@@ -73,10 +88,21 @@ async function handlePostApiGatewayIngestNotion(request: Request) {
       });
       if (isNew) return null;
 
-      incrementCounter("spctre.api.webhooks", 1, { "http.route": "/api/gateway-ingest/notion", reason: "replay_detected" });
+      incrementCounter("spctre.api.webhooks", 1, {
+        "http.route": "/api/gateway-ingest/notion",
+        reason: "replay_detected",
+      });
       return withTraceId(
-        Response.json({ decisionId: "cached", provenanceGap: false, deduplicated: true, meta: makeMeta(traceId) }, { status: 200 }),
-        traceId
+        Response.json(
+          {
+            decisionId: "cached",
+            provenanceGap: false,
+            deduplicated: true,
+            meta: makeMeta(traceId),
+          },
+          { status: 200 },
+        ),
+        traceId,
       );
     },
   });

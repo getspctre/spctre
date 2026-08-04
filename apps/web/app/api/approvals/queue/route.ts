@@ -16,15 +16,24 @@ async function handleGetApiApprovalsQueue(request: Request) {
     queue = await listPendingApprovals({ workspaceId, tenantId });
   } catch (err) {
     console.error("[approvals/queue] listPendingApprovalQueue failed", err);
-    return withTraceId(Response.json({ error: "Service temporarily unavailable.", meta: makeMeta(traceId) }, { status: 503 }), traceId);
+    return withTraceId(
+      Response.json(
+        { error: "Service temporarily unavailable.", meta: makeMeta(traceId) },
+        { status: 503 },
+      ),
+      traceId,
+    );
   }
 
-  return withTraceId(Response.json({
-    queue,
-    count: queue.length,
-    generatedAt: new Date().toISOString(),
-    meta: makeMeta(traceId),
-  }), traceId);
+  return withTraceId(
+    Response.json({
+      queue,
+      count: queue.length,
+      generatedAt: new Date().toISOString(),
+      meta: makeMeta(traceId),
+    }),
+    traceId,
+  );
 }
 
 export { handleGetApiApprovalsQueue as GET };

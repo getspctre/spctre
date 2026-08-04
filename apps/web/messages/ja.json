@@ -1,9 +1,5 @@
 {
-  "common": {
-    "cancel": "キャンセル",
-    "delete": "削除",
-    "save": "保存"
-  },
+  "common": { "cancel": "キャンセル", "delete": "削除", "save": "保存" },
   "shared": {
     "advisor_decision": {
       "accept": "承認",
@@ -23,9 +19,7 @@
       "reject": "ガイダンスを却下",
       "reviewer_rationale": "レビュアーの理由"
     },
-    "slide_out": {
-      "close": "パネルを閉じる"
-    }
+    "slide_out": { "close": "パネルを閉じる" }
   },
   "navigation": {
     "agents": "エージェント",
@@ -64,21 +58,10 @@
     "no_results": "「{query}」の結果はありません",
     "placeholder": "移動…",
     "search_aria_label": "ナビゲーションを検索",
-    "footer": {
-      "close": "閉じる",
-      "navigate": "移動",
-      "open": "開く",
-      "toggle": "切り替え"
-    },
+    "footer": { "close": "閉じる", "navigate": "移動", "open": "開く", "toggle": "切り替え" },
     "items": {
-      "advisors": {
-        "description": "Advisor のパフォーマンスと推奨",
-        "label": "アドバイザー"
-      },
-      "agents": {
-        "description": "エージェントフリートの健全性と状態",
-        "label": "エージェント"
-      },
+      "advisors": { "description": "Advisor のパフォーマンスと推奨", "label": "アドバイザー" },
+      "agents": { "description": "エージェントフリートの健全性と状態", "label": "エージェント" },
       "audit_ledger": {
         "description": "ハッシュチェーン化された改ざん耐性イベントログ",
         "label": "監査台帳"
@@ -87,18 +70,12 @@
         "description": "ランタイムエージェントの意思決定記録とシミュレーション",
         "label": "監査ログ"
       },
-      "billing": {
-        "description": "サブスクリプションプランと請求",
-        "label": "使用量と請求"
-      },
+      "billing": { "description": "サブスクリプションプランと請求", "label": "使用量と請求" },
       "compliance": {
         "description": "コンプライアンスパケット、保持、エクスポート",
         "label": "コンプライアンスレポート"
       },
-      "cost_usage": {
-        "description": "支出、使用量、予算、違反制御",
-        "label": "コストと使用量"
-      },
+      "cost_usage": { "description": "支出、使用量、予算、違反制御", "label": "コストと使用量" },
       "escalations": {
         "description": "Human-in-the-loop レビューキュー",
         "label": "エスカレーション"
@@ -107,26 +84,14 @@
         "description": "ポリシー違反とレビュアー通知をルーティング",
         "label": "エスカレーションルーティング"
       },
-      "packs": {
-        "description": "ポリシーパックを参照してインストール",
-        "label": "パック"
-      },
-      "policies": {
-        "description": "ポリシーブランチを管理",
-        "label": "ポリシー"
-      },
-      "review": {
-        "description": "差分をレビューして公開",
-        "label": "レビューと公開"
-      },
+      "packs": { "description": "ポリシーパックを参照してインストール", "label": "パック" },
+      "policies": { "description": "ポリシーブランチを管理", "label": "ポリシー" },
+      "review": { "description": "差分をレビューして公開", "label": "レビューと公開" },
       "siem_export": {
         "description": "ガバナンス対象ランタイムの証跡を Splunk または Sentinel にエクスポート",
         "label": "SIEM エクスポート"
       },
-      "rules": {
-        "description": "ルール一覧を参照",
-        "label": "ルール"
-      }
+      "rules": { "description": "ルール一覧を参照", "label": "ルール" }
     }
   },
   "import_policy_panel": {
@@ -190,9 +155,7 @@
         "chain_health": "チェーンの健全性"
       }
     },
-    "filters": {
-      "clear": "フィルターをクリア"
-    },
+    "filters": { "clear": "フィルターをクリア" },
     "events": {
       "eyebrow": "監査 · イベント",
       "title": "イベント",
@@ -228,10 +191,7 @@
       "actor": "アクター",
       "hash": "ハッシュ"
     },
-    "pagination": {
-      "previous": "前へ",
-      "next": "次へ"
-    }
+    "pagination": { "previous": "前へ", "next": "次へ" }
   },
   "account": {
     "eyebrow": "アカウント · セキュリティ",
@@ -380,10 +340,7 @@
       "provider_count": "{count} 件のプロバイダー",
       "state_aria_label": "認証状態",
       "title": "認証設定",
-      "access_section": {
-        "eyebrow": "管理 · テナント制御",
-        "title": "アクセスポリシー"
-      },
+      "access_section": { "eyebrow": "管理 · テナント制御", "title": "アクセスポリシー" },
       "idp": {
         "add_provider": "プロバイダーを追加",
         "add_title": "ID プロバイダーを追加",
@@ -425,14 +382,9 @@
         "saving": "保存中...",
         "submit": "テナント設定を保存",
         "title": "MFA 要件",
-        "status": {
-          "updated": "テナント MFA 設定を更新しました。"
-        }
+        "status": { "updated": "テナント MFA 設定を更新しました。" }
       },
-      "provider_section": {
-        "eyebrow": "管理 · ID フェデレーション",
-        "title": "プロバイダー接続"
-      },
+      "provider_section": { "eyebrow": "管理 · ID フェデレーション", "title": "プロバイダー接続" },
       "providers": {
         "client_id": "クライアント ID",
         "empty_description": "OIDC を追加して、コントロールプレーンのサインインを ID プロバイダー経由にします。",
@@ -446,9 +398,7 @@
         "remove": "プロバイダーを削除",
         "removed": "削除済み",
         "removing": "削除中...",
-        "status": {
-          "removed": "ID プロバイダーを削除しました。"
-        }
+        "status": { "removed": "ID プロバイダーを削除しました。" }
       },
       "scim": {
         "description": "ID プロバイダーからユーザー、グループ、ワークスペース権限を同期します。",
@@ -492,10 +442,7 @@
       "generate_aria_label": "新しいキーを生成",
       "never": "なし",
       "title": "サービスアカウントキー",
-      "active": {
-        "eyebrow": "サービスキー · 有効",
-        "title": "このワークスペースの API キー"
-      },
+      "active": { "eyebrow": "サービスキー · 有効", "title": "このワークスペースの API キー" },
       "empty": {
         "description": "キーを生成して、ヘッドレス CLI と CI/CD アクセスを有効にします。",
         "title": "有効なキーはありません"
@@ -525,10 +472,7 @@
           "scope_required": "少なくとも 1 つのスコープを選択してください。"
         }
       },
-      "new": {
-        "eyebrow": "サービスキー · 新規",
-        "title": "サービスアカウントキーを生成"
-      },
+      "new": { "eyebrow": "サービスキー · 新規", "title": "サービスアカウントキーを生成" },
       "revoke": {
         "confirm": "サービスキー {label} を取り消しますか？このキーを使用している既存の CI、CLI、自動化は認証できなくなります。",
         "revoke": "取り消し",
@@ -601,10 +545,7 @@
           "workspace_unavailable": "ワークスペースコンテキストを利用できません。"
         }
       },
-      "new": {
-        "eyebrow": "ゲートウェイ Webhook · 新規",
-        "title": "Webhook シークレットを生成"
-      },
+      "new": { "eyebrow": "ゲートウェイ Webhook · 新規", "title": "Webhook シークレットを生成" },
       "revoke": {
         "confirm": "Webhook シークレット {label} を取り消しますか？このシークレットを使用する受信 Webhook はすぐに認証できなくなります。",
         "revoke": "取り消し",
@@ -786,14 +727,8 @@
       "eyebrow": "管理 · ワークフロー",
       "sidebar_aria_label": "ワークフロー監査と管理コントロール",
       "title": "承認ワークフロー",
-      "counts": {
-        "enabled": "{count} 件が有効",
-        "workflows": "{count} 件のワークフロー"
-      },
-      "rules": {
-        "eyebrow": "ワークフロー · ゲート",
-        "title": "有効なワークフロールール"
-      },
+      "counts": { "enabled": "{count} 件が有効", "workflows": "{count} 件のワークフロー" },
+      "rules": { "eyebrow": "ワークフロー · ゲート", "title": "有効なワークフロールール" },
       "enforcement": {
         "description": "高リスクポリシーを自動的にルーティングし、古い承認を期限切れにし、レビュアーへ通知します。",
         "eyebrow": "ワークフロー · Enforcement",
@@ -828,10 +763,7 @@
         "saving": "保存中...",
         "tenant_default": "テナントデフォルト",
         "workspace_scope": "ワークスペーススコープ",
-        "review_modes": {
-          "parallel": "並列",
-          "sequential": "順次"
-        }
+        "review_modes": { "parallel": "並列", "sequential": "順次" }
       },
       "table": {
         "active_approval_gates": "有効な承認ゲート",
@@ -941,10 +873,7 @@
         "submit": "デフォルト言語を保存",
         "title": "デフォルト言語"
       },
-      "manage": {
-        "eyebrow": "ワークスペース · 管理",
-        "title": "既存のワークスペース"
-      },
+      "manage": { "eyebrow": "ワークスペース · 管理", "title": "既存のワークスペース" },
       "card": {
         "active": "アクティブ",
         "confirm_label": "確認のため DELETE と入力",
@@ -995,9 +924,7 @@
       "sign_in": "サインインして承認",
       "title": "CLI または CI エージェントを接続",
       "token_scope": "トークンスコープ",
-      "errors": {
-        "missing_code": "デバイスコードがありません。"
-      }
+      "errors": { "missing_code": "デバイスコードがありません。" }
     },
     "login": {
       "email": {
@@ -1205,11 +1132,7 @@
       "live_ingest": "ライブ取り込み",
       "demo_ingest": "デモ取り込み",
       "meta": "{mode} · {count} 件の決定を保持 (30日) · 直近 {shown} 件を表示。",
-      "stats": {
-        "total": "決定の合計",
-        "matches": "検索一致",
-        "statuses": "拒否 / 警告 / 許可"
-      }
+      "stats": { "total": "決定の合計", "matches": "検索一致", "statuses": "拒否 / 警告 / 許可" }
     },
     "stream": {
       "eyebrow": "監査 · 証跡ストリーム",
@@ -1412,10 +1335,7 @@
       "title": "アドバイザーデータがありません",
       "body": "推奨が生成されると、アドバイザーがここに表示されます。"
     },
-    "rate": {
-      "awaiting": "最初の推奨を待機中",
-      "no_data": "データがまだありません"
-    },
+    "rate": { "awaiting": "最初の推奨を待機中", "no_data": "データがまだありません" },
     "boundary": {
       "eyebrow": "公開済みポリシー境界",
       "revision": "リビジョン",
@@ -1471,10 +1391,7 @@
     }
   },
   "economic": {
-    "header": {
-      "title": "コストと使用量",
-      "manage_budgets": "予算を管理"
-    },
+    "header": { "title": "コストと使用量", "manage_budgets": "予算を管理" },
     "advisory": {
       "eyebrow": "ガバナンスに関する注意事項",
       "title": "ヒューリスティックおよびテレメトリの推定値",
@@ -1531,9 +1448,7 @@
       "name_required": "ポリシー名を指定してください。",
       "threshold_required": "コストまたはトークンのしきい値を少なくとも1つ定義する必要があります。"
     },
-    "scope": {
-      "wildcard": "すべてのイベント（ワイルドカード）"
-    },
+    "scope": { "wildcard": "すべてのイベント（ワイルドカード）" },
     "error": {
       "save_failed": "予算ポリシーの保存に失敗しました",
       "delete_failed": "予算ポリシーの削除に失敗しました",
@@ -1670,10 +1585,7 @@
     }
   },
   "alerting": {
-    "header": {
-      "eyebrow": "ワークスペース · アラート",
-      "title": "アラート"
-    },
+    "header": { "eyebrow": "ワークスペース · アラート", "title": "アラート" },
     "validate": {
       "channel_name": "チャネル名を指定してください。",
       "pagerduty_key": "PagerDuty のルーティングキーを指定してください。",

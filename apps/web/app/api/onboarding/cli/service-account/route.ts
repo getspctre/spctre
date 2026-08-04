@@ -15,31 +15,64 @@ async function handlePostApiOnboardingCliServiceAccount(request: Request) {
 
   const auth = await authenticateServiceToken(request, "bundle:read");
   if (!auth.ok) {
-    return withTraceId(Response.json({ error: "Invalid or expired service token.", meta: makeMeta(traceId) }, { status: 401 }), traceId);
+    return withTraceId(
+      Response.json(
+        { error: "Invalid or expired service token.", meta: makeMeta(traceId) },
+        { status: 401 },
+      ),
+      traceId,
+    );
   }
 
   if (isDemoTenant(auth.auth.tenantId)) {
-    return withTraceId(Response.json({ error: "CLI onboarding is not available on this instance.", meta: makeMeta(traceId) }, { status: 403 }), traceId);
+    return withTraceId(
+      Response.json(
+        { error: "CLI onboarding is not available on this instance.", meta: makeMeta(traceId) },
+        { status: 403 },
+      ),
+      traceId,
+    );
   }
 
   if (!isWorkspaceDatabaseConfigured()) {
-    return withTraceId(Response.json({ error: "Database not configured.", meta: makeMeta(traceId) }, { status: 503 }), traceId);
+    return withTraceId(
+      Response.json(
+        { error: "Database not configured.", meta: makeMeta(traceId) },
+        { status: 503 },
+      ),
+      traceId,
+    );
   }
 
-  let body: { workspaceSlug?: unknown; agentId?: unknown; environment?: unknown; bundlePath?: unknown };
+  let body: {
+    workspaceSlug?: unknown;
+    agentId?: unknown;
+    environment?: unknown;
+    bundlePath?: unknown;
+  };
   try {
-    body = await request.json() as typeof body;
+    body = (await request.json()) as typeof body;
   } catch {
-    return withTraceId(Response.json({ error: "Invalid JSON body.", meta: makeMeta(traceId) }, { status: 400 }), traceId);
+    return withTraceId(
+      Response.json({ error: "Invalid JSON body.", meta: makeMeta(traceId) }, { status: 400 }),
+      traceId,
+    );
   }
 
   const workspaceSlug = typeof body.workspaceSlug === "string" ? body.workspaceSlug.trim() : "";
   const agentId = typeof body.agentId === "string" ? body.agentId.trim() : "ci-agent";
   const environment = typeof body.environment === "string" ? body.environment.trim() : "production";
-  const bundlePath = typeof body.bundlePath === "string" ? body.bundlePath.trim() : "spctre-policy.json";
+  const bundlePath =
+    typeof body.bundlePath === "string" ? body.bundlePath.trim() : "spctre-policy.json";
 
   if (!workspaceSlug) {
-    return withTraceId(Response.json({ error: "workspaceSlug is required.", meta: makeMeta(traceId) }, { status: 400 }), traceId);
+    return withTraceId(
+      Response.json(
+        { error: "workspaceSlug is required.", meta: makeMeta(traceId) },
+        { status: 400 },
+      ),
+      traceId,
+    );
   }
 
   let workspace;
@@ -51,13 +84,25 @@ async function handlePostApiOnboardingCliServiceAccount(request: Request) {
     });
   } catch (err) {
     console.error("[onboarding/cli/service-account] verifyWorkspaceSlugForToken failed", err);
-    return withTraceId(Response.json({ error: "Service temporarily unavailable.", meta: makeMeta(traceId) }, { status: 503 }), traceId);
+    return withTraceId(
+      Response.json(
+        { error: "Service temporarily unavailable.", meta: makeMeta(traceId) },
+        { status: 503 },
+      ),
+      traceId,
+    );
   }
 
   if (!workspace) {
     return withTraceId(
-      Response.json({ error: "Workspace not found or token is not scoped to this workspace.", meta: makeMeta(traceId) }, { status: 404 }),
-      traceId
+      Response.json(
+        {
+          error: "Workspace not found or token is not scoped to this workspace.",
+          meta: makeMeta(traceId),
+        },
+        { status: 404 },
+      ),
+      traceId,
     );
   }
 
@@ -69,11 +114,17 @@ async function handlePostApiOnboardingCliServiceAccount(request: Request) {
         workspaceId: workspace.id,
         actorId: auth.auth.principalId,
         environment,
-      })
+      }),
     );
   } catch (err) {
     console.error("[onboarding/cli/service-account] ensureStarterPublishedBundle failed", err);
-    return withTraceId(Response.json({ error: "Service temporarily unavailable.", meta: makeMeta(traceId) }, { status: 503 }), traceId);
+    return withTraceId(
+      Response.json(
+        { error: "Service temporarily unavailable.", meta: makeMeta(traceId) },
+        { status: 503 },
+      ),
+      traceId,
+    );
   }
 
   return withTraceId(
@@ -97,7 +148,7 @@ async function handlePostApiOnboardingCliServiceAccount(request: Request) {
       ],
       meta: makeMeta(traceId),
     }),
-    traceId
+    traceId,
   );
 }
 

@@ -12,10 +12,9 @@ export type ComposeState =
   | { error: string; ok?: never; refreshedAt?: never }
   | null;
 
-
 export async function refreshReviewComposition(
   _prev: ComposeState,
-  formData: FormData
+  formData: FormData,
 ): Promise<ComposeState> {
   const branchId = String(formData.get("branchId") ?? "").trim();
   const revisionId = String(formData.get("revisionId") ?? "").trim();
@@ -30,7 +29,7 @@ export async function refreshReviewComposition(
       branchId,
       revisionId,
       workspaceContext.workspaceId,
-      workspaceContext.tenantId
+      workspaceContext.tenantId,
     ).catch(swallow("getReviewArtifacts", null));
 
     if (!reviewArtifacts) {

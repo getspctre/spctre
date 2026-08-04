@@ -9,7 +9,7 @@ export async function POST(request: Request) {
   if (plan === "oss") {
     return Response.json(
       { error: "Managed HITL background worker requires a commercial plan." },
-      { status: 403 }
+      { status: 403 },
     );
   }
 
@@ -28,7 +28,7 @@ export async function POST(request: Request) {
       workspacesProcessed: 0,
       breachesDetected: 0,
       notificationsDispatched: 0,
-      logs: [] as string[]
+      logs: [] as string[],
     };
 
     // 2. Scan each tenant for workspace-specific escalations
@@ -37,23 +37,23 @@ export async function POST(request: Request) {
 
       for (const workspace of workspaces) {
         summary.workspacesProcessed++;
-        
+
         // 3. Scan for active SLA breaches
         const breaches = await hitlService.checkSlaBreaches(workspace.id, tenant.id);
-        
+
         for (const breach of breaches) {
           summary.breachesDetected++;
-          
+
           // 4. Trigger auto-reassignment and notify PagerDuty/Slack alerting integrations
           try {
             await hitlService.notifyOnBreach(breach);
             summary.notificationsDispatched++;
             summary.logs.push(
-              `[SUCCESS] SLA Breach for decision ${breach.decisionId} processed in workspace ${workspace.name}`
+              `[SUCCESS] SLA Breach for decision ${breach.decisionId} processed in workspace ${workspace.name}`,
             );
           } catch (err) {
             summary.logs.push(
-              `[ERROR] Failed to notify breach for decision ${breach.decisionId}: ${(err as Error).message}`
+              `[ERROR] Failed to notify breach for decision ${breach.decisionId}: ${(err as Error).message}`,
             );
           }
         }
@@ -63,13 +63,13 @@ export async function POST(request: Request) {
     return Response.json({
       status: "OK",
       message: "Managed HITL SLA monitoring sweep complete.",
-      summary
+      summary,
     });
   } catch (err) {
     console.error("[HITL Worker Error]", err);
     return Response.json(
       { error: "SLA sweep failed.", detail: (err as Error).message },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

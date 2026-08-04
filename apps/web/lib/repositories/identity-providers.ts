@@ -36,9 +36,7 @@ function credentialKey(): string {
   return key;
 }
 
-export async function listIdentityProviders(
-  tenantId: string
-): Promise<IdentityProviderSummary[]> {
+export async function listIdentityProviders(tenantId: string): Promise<IdentityProviderSummary[]> {
   if (!sql) return [];
 
   const rows = await sql<
@@ -81,7 +79,7 @@ export async function listIdentityProviders(
     scope: row.scope,
     samlEntryPoint: row.saml_entry_point,
     samlCert: row.saml_cert,
-    createdAt: row.created_at.toISOString()
+    createdAt: row.created_at.toISOString(),
   }));
 }
 
@@ -120,9 +118,7 @@ export async function upsertDefaultOidcProvider(params: {
   `;
 }
 
-export async function findOidcProviderForTenant(
-  tenantId: string
-): Promise<OidcProviderRow | null> {
+export async function findOidcProviderForTenant(tenantId: string): Promise<OidcProviderRow | null> {
   if (!sql) return null;
   const key = credentialKey();
   const rows = await sql<OidcProviderRow[]>`
@@ -152,9 +148,7 @@ export async function findOidcProviderByIssuer(params: {
   return rows[0] ?? null;
 }
 
-export async function findSamlProviderForTenant(
-  tenantId: string
-): Promise<SamlProviderRow | null> {
+export async function findSamlProviderForTenant(tenantId: string): Promise<SamlProviderRow | null> {
   if (!sql) return null;
   const rows = await sql<SamlProviderRow[]>`
     SELECT id, tenant_id, issuer, saml_entry_point, saml_cert

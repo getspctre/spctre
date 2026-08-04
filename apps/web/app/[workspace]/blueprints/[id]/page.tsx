@@ -9,5 +9,11 @@ export default async function WorkspaceBlueprintReviewPage({
 }) {
   const { workspace, id } = await params;
   const { rev } = await searchParams;
-  return <BlueprintReviewContent workspaceSlug={workspace} blueprintId={id} selectedRevisionId={Array.isArray(rev) ? rev[0] : rev} />;
+  return (
+    <BlueprintReviewContent
+      workspaceSlug={workspace}
+      blueprintId={id}
+      selectedRevisionId={Array.isArray(rev) ? rev[0] : rev}
+    />
+  );
 }

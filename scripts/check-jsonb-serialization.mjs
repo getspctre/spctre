@@ -8,7 +8,8 @@ const checkedRoots = ["apps", "packages", "db", "scripts"];
 const forbidden = /\$\{\s*JSON\.stringify\([\s\S]*?\)\s*\}::jsonb/;
 const forbiddenWrappedJsonb = /\$\{[^}]*JSON\.stringify\([^}]*\)[^}]*\}::jsonb/;
 const forbiddenRepositoryBinding = /\$\{\s*JSON\.stringify\(/;
-const forbiddenSourceDocument = /\$\{\s*JSON\.stringify\((?:params\.)?sourceDocument(?:Json)?\)\s*\}/;
+const forbiddenSourceDocument =
+  /\$\{\s*JSON\.stringify\((?:params\.)?sourceDocument(?:Json)?\)\s*\}/;
 const repositoryRoot = "apps/web/lib/repositories/";
 const allowComment = "jsonb-serialization-allow";
 
@@ -18,7 +19,8 @@ function* walk(dir) {
     const fullPath = join(dir, entry);
     const stat = statSync(fullPath);
     if (stat.isDirectory()) yield* walk(fullPath);
-    else if (/\.(ts|tsx|mts|cts|js|jsx|mjs|cjs)$/.test(entry) && !/\.d\.ts$/.test(entry)) yield fullPath;
+    else if (/\.(ts|tsx|mts|cts|js|jsx|mjs|cjs)$/.test(entry) && !/\.d\.ts$/.test(entry))
+      yield fullPath;
   }
 }
 
@@ -27,7 +29,9 @@ for (const root of checkedRoots) {
   for (const file of walk(root)) {
     const source = readFileSync(file, "utf8");
     const lines = source.split("\n");
-    const preSerializedJsonNames = [...source.matchAll(/\b([A-Za-z_$][\w$]*Json)\s*=\s*JSON\.stringify\(/g)].map((match) => match[1]);
+    const preSerializedJsonNames = [
+      ...source.matchAll(/\b([A-Za-z_$][\w$]*Json)\s*=\s*JSON\.stringify\(/g),
+    ].map((match) => match[1]);
     if (file.startsWith(repositoryRoot) && /\bas never\b/.test(source)) {
       violations.push(`${file}: unsafe as never cast in repository code`);
     }
@@ -35,9 +39,16 @@ for (const root of checkedRoots) {
       if (!line.includes("${")) return;
       const sqlFragment = lines.slice(index, index + 8).join("\n");
       const isAllowed = sqlFragment.includes(allowComment);
-      const hasForbiddenJsonbBinding = forbidden.test(sqlFragment) || forbiddenWrappedJsonb.test(sqlFragment);
-      const hasForbiddenRepositoryBinding = file.startsWith(repositoryRoot) && forbiddenRepositoryBinding.test(sqlFragment);
-      if (!isAllowed && (hasForbiddenJsonbBinding || forbiddenSourceDocument.test(line) || hasForbiddenRepositoryBinding)) {
+      const hasForbiddenJsonbBinding =
+        forbidden.test(sqlFragment) || forbiddenWrappedJsonb.test(sqlFragment);
+      const hasForbiddenRepositoryBinding =
+        file.startsWith(repositoryRoot) && forbiddenRepositoryBinding.test(sqlFragment);
+      if (
+        !isAllowed &&
+        (hasForbiddenJsonbBinding ||
+          forbiddenSourceDocument.test(line) ||
+          hasForbiddenRepositoryBinding)
+      ) {
         violations.push(`${file}:${index + 1}`);
       }
     });
@@ -50,7 +61,9 @@ for (const root of checkedRoots) {
 }
 
 if (violations.length) {
-  console.error("JSONB serialization check failed. Use sql.json(value) or tx.json(value) for JSON document bindings; encrypted/text bindings require an inline jsonb-serialization-allow comment.");
+  console.error(
+    "JSONB serialization check failed. Use sql.json(value) or tx.json(value) for JSON document bindings; encrypted/text bindings require an inline jsonb-serialization-allow comment.",
+  );
   for (const violation of violations) console.error(`  - ${violation}`);
   process.exit(1);
 }

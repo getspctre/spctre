@@ -20,7 +20,13 @@ export const ZENDESK_PACK: PolicyPack = {
     riskLevel: "HIGH",
     riskTags: ["support", "tickets", "customers"],
     category: "customer support",
-    changelog: [{ version: "1.0.0", date: "2026-07-20", summary: "Hand-authored replacement for the generated Zendesk pack." }],
+    changelog: [
+      {
+        version: "1.0.0",
+        date: "2026-07-20",
+        summary: "Hand-authored replacement for the generated Zendesk pack.",
+      },
+    ],
   }),
   rules: [
     {
@@ -32,10 +38,19 @@ export const ZENDESK_PACK: PolicyPack = {
       actions: ["ticket.reply", "ticket.comment.public"],
       immutable: false,
       semanticChecks: [
-        { id: "zendesk-reply-sc-1", prompt: "check for pii or regulated data exposure in customer reply", effect: "WARN" },
+        {
+          id: "zendesk-reply-sc-1",
+          prompt: "check for pii or regulated data exposure in customer reply",
+          effect: "WARN",
+        },
       ],
       controlMappings: [
-        { framework: "HIPAA", controlId: "164.502", rationale: "Flags potential unauthorized disclosure of regulated data in a support reply." },
+        {
+          framework: "HIPAA",
+          controlId: "164.502",
+          rationale:
+            "Flags potential unauthorized disclosure of regulated data in a support reply.",
+        },
       ],
     },
     {
@@ -75,7 +90,13 @@ export const ZENDESK_SUPPORT_ADMIN_PACK: PolicyPack = {
     riskLevel: "HIGH",
     riskTags: ["support", "admin", "users"],
     category: "customer support administration",
-    changelog: [{ version: "1.0.0", date: "2026-07-20", summary: "Hand-authored replacement for the generated Zendesk Support Admin pack." }],
+    changelog: [
+      {
+        version: "1.0.0",
+        date: "2026-07-20",
+        summary: "Hand-authored replacement for the generated Zendesk Support Admin pack.",
+      },
+    ],
   }),
   rules: [
     {

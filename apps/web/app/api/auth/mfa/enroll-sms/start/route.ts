@@ -17,27 +17,39 @@ interface EnrollSmsStartPayload {
 async function handlePostApiAuthMfaEnrollSmsStart(request: Request) {
   const traceId = newTraceId();
   if (!isAuthDatabaseConfigured()) {
-    const response = NextResponse.json({ error: "Database not configured.", meta: makeMeta(traceId) }, { status: 503 });
+    const response = NextResponse.json(
+      { error: "Database not configured.", meta: makeMeta(traceId) },
+      { status: 503 },
+    );
     response.headers.set("x-request-id", traceId);
     return response;
   }
 
   // Commercial gate
   if (getSpctrePlan() === "oss") {
-    const response = NextResponse.json({ error: "SMS MFA is only available on Commercial / Cloud tiers.", meta: makeMeta(traceId) }, { status: 403 });
+    const response = NextResponse.json(
+      { error: "SMS MFA is only available on Commercial / Cloud tiers.", meta: makeMeta(traceId) },
+      { status: 403 },
+    );
     response.headers.set("x-request-id", traceId);
     return response;
   }
 
   const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (!session) {
-    const response = NextResponse.json({ error: "Authentication required.", meta: makeMeta(traceId) }, { status: 401 });
+    const response = NextResponse.json(
+      { error: "Authentication required.", meta: makeMeta(traceId) },
+      { status: 401 },
+    );
     response.headers.set("x-request-id", traceId);
     return response;
   }
 
   if (isDemoTenant(session.tenantId)) {
-    const response = NextResponse.json({ error: "SMS enrollment is not available in Demo Mode.", meta: makeMeta(traceId) }, { status: 403 });
+    const response = NextResponse.json(
+      { error: "SMS enrollment is not available in Demo Mode.", meta: makeMeta(traceId) },
+      { status: 403 },
+    );
     response.headers.set("x-request-id", traceId);
     return response;
   }
@@ -46,21 +58,31 @@ async function handlePostApiAuthMfaEnrollSmsStart(request: Request) {
   try {
     payload = (await request.json()) as EnrollSmsStartPayload;
   } catch {
-    const response = NextResponse.json({ error: "Request body must be JSON.", meta: makeMeta(traceId) }, { status: 400 });
+    const response = NextResponse.json(
+      { error: "Request body must be JSON.", meta: makeMeta(traceId) },
+      { status: 400 },
+    );
     response.headers.set("x-request-id", traceId);
     return response;
   }
 
   const phoneNumber = typeof payload.phoneNumber === "string" ? payload.phoneNumber.trim() : "";
   if (!phoneNumber || !/^\+?[1-9]\d{1,14}$/.test(phoneNumber)) {
-    const response = NextResponse.json({ error: "A valid phone number in E.164 format is required.", meta: makeMeta(traceId) }, { status: 400 });
+    const response = NextResponse.json(
+      { error: "A valid phone number in E.164 format is required.", meta: makeMeta(traceId) },
+      { status: 400 },
+    );
     response.headers.set("x-request-id", traceId);
     return response;
   }
 
-  const recaptchaToken = typeof payload.recaptchaToken === "string" ? payload.recaptchaToken.trim() : "";
+  const recaptchaToken =
+    typeof payload.recaptchaToken === "string" ? payload.recaptchaToken.trim() : "";
   if (!recaptchaToken && process.env.NODE_ENV === "production") {
-    const response = NextResponse.json({ error: "reCAPTCHA token is required.", meta: makeMeta(traceId) }, { status: 400 });
+    const response = NextResponse.json(
+      { error: "reCAPTCHA token is required.", meta: makeMeta(traceId) },
+      { status: 400 },
+    );
     response.headers.set("x-request-id", traceId);
     return response;
   }
@@ -72,7 +94,10 @@ async function handlePostApiAuthMfaEnrollSmsStart(request: Request) {
     tenantId: session.tenantId,
   });
   if (cooldown) {
-    const response = NextResponse.json({ error: "Please wait before requesting another SMS code.", meta: makeMeta(traceId) }, { status: 429 });
+    const response = NextResponse.json(
+      { error: "Please wait before requesting another SMS code.", meta: makeMeta(traceId) },
+      { status: 429 },
+    );
     response.headers.set("x-request-id", traceId);
     return response;
   }
@@ -82,13 +107,21 @@ async function handlePostApiAuthMfaEnrollSmsStart(request: Request) {
   try {
     sessionInfo = await sendSmsOtp(phoneNumber, effectiveRecaptchaToken);
   } catch (err) {
-    const response = NextResponse.json({ error: errorText(err) || "Failed to send SMS.", meta: makeMeta(traceId) }, { status: 502 });
+    const response = NextResponse.json(
+      { error: errorText(err) || "Failed to send SMS.", meta: makeMeta(traceId) },
+      { status: 502 },
+    );
     response.headers.set("x-request-id", traceId);
     return response;
   }
 
   const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString(); // 5 minutes expiry
-  const secretEnc = JSON.stringify({ sessionInfo, expiresAt, attempts: 0, sentAt: new Date().toISOString() });
+  const secretEnc = JSON.stringify({
+    sessionInfo,
+    expiresAt,
+    attempts: 0,
+    sentAt: new Date().toISOString(),
+  });
 
   // Create pending SMS enrollment using repository helper
   const enrollmentId = await createSmsEnrollment({
@@ -99,7 +132,10 @@ async function handlePostApiAuthMfaEnrollSmsStart(request: Request) {
   });
 
   if (!enrollmentId) {
-    const response = NextResponse.json({ error: "Database save failed.", meta: makeMeta(traceId) }, { status: 500 });
+    const response = NextResponse.json(
+      { error: "Database save failed.", meta: makeMeta(traceId) },
+      { status: 500 },
+    );
     response.headers.set("x-request-id", traceId);
     return response;
   }

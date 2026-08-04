@@ -39,9 +39,12 @@ export function SealAuditButton({
         method: "GET",
         headers: { Accept: "application/json" },
       });
-      const data = await response.json().catch(() => null) as
-        | { sealToken?: string; packetDigest?: string; sealedAt?: string; error?: string }
-        | null;
+      const data = (await response.json().catch(() => null)) as {
+        sealToken?: string;
+        packetDigest?: string;
+        sealedAt?: string;
+        error?: string;
+      } | null;
 
       if (!response.ok || !data?.sealToken || !data.packetDigest || !data.sealedAt) {
         setState({ status: "error", error: data?.error ?? "Unable to seal the audit packet." });
@@ -61,9 +64,9 @@ export function SealAuditButton({
 
   return (
     <div className="inlineResultAction">
-        <button
-          className="button"
-          disabled={state.status === "pending"}
+      <button
+        className="button"
+        disabled={state.status === "pending"}
         onClick={() => setConfirming(true)}
         title="Record this packet's digest in the audit ledger"
         type="button"
@@ -79,7 +82,9 @@ export function SealAuditButton({
         </span>
       ) : null}
       {state.status === "error" ? (
-        <span className="meta publishError" role="alert">{state.error}</span>
+        <span className="meta publishError" role="alert">
+          {state.error}
+        </span>
       ) : null}
       {confirming ? (
         <div className="sealConfirmation" role="dialog" aria-labelledby="seal-confirmation-title">
@@ -88,14 +93,23 @@ export function SealAuditButton({
             <h2 id="seal-confirmation-title">Seal this compliance packet?</h2>
             <p className="meta">
               This records a digest for packet <code>{packetId}</code>, revision{" "}
-              <code>{formatProvenanceId(revisionId, appViewMode, 16, hashToFingerprint)}</code>, and artifact{" "}
-              <code>{formatArtifactHash(artifactHash, appViewMode, hashToFingerprint)}</code> in the Audit Ledger.
+              <code>{formatProvenanceId(revisionId, appViewMode, 16, hashToFingerprint)}</code>, and
+              artifact{" "}
+              <code>{formatArtifactHash(artifactHash, appViewMode, hashToFingerprint)}</code> in the
+              Audit Ledger.
             </p>
-            <p className="meta">The sealed packet contains {evidenceCount} evidence records from branch <code>{formatProvenanceId(branchId, appViewMode, 16, hashToFingerprint)}</code>.</p>
+            <p className="meta">
+              The sealed packet contains {evidenceCount} evidence records from branch{" "}
+              <code>{formatProvenanceId(branchId, appViewMode, 16, hashToFingerprint)}</code>.
+            </p>
           </div>
           <div className="sealConfirmationActions">
-            <button className="button" type="button" onClick={() => setConfirming(false)}>Keep unsealed</button>
-            <button className="button buttonPrimary" type="button" onClick={sealAudit}>Seal packet</button>
+            <button className="button" type="button" onClick={() => setConfirming(false)}>
+              Keep unsealed
+            </button>
+            <button className="button buttonPrimary" type="button" onClick={sealAudit}>
+              Seal packet
+            </button>
           </div>
         </div>
       ) : null}

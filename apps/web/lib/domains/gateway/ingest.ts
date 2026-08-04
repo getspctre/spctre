@@ -72,11 +72,18 @@ const CONNECTOR_FRAGMENTS: Array<{ pattern: RegExp; connector: string }> = [
  * declared in an LLM gateway event. Returns the best match, or "llm-gateway"
  * as the fallback connector when no match is found.
  */
-function mapToolsToConnector(toolNames: string[]): { connector: string; action: string; provenanceGap: boolean } {
+function mapToolsToConnector(toolNames: string[]): {
+  connector: string;
+  action: string;
+  provenanceGap: boolean;
+} {
   for (const tool of toolNames) {
     for (const { pattern, connector } of CONNECTOR_FRAGMENTS) {
       if (pattern.test(tool)) {
-        const action = tool.toLowerCase().replace(/[^a-z0-9_]/g, "_").replace(/_+/g, "_");
+        const action = tool
+          .toLowerCase()
+          .replace(/[^a-z0-9_]/g, "_")
+          .replace(/_+/g, "_");
         return { connector, action, provenanceGap: false };
       }
     }
@@ -85,7 +92,10 @@ function mapToolsToConnector(toolNames: string[]): { connector: string; action: 
   // No connector match — fall back to a generic llm-gateway connector
   const primaryTool = toolNames[0];
   const action = primaryTool
-    ? primaryTool.toLowerCase().replace(/[^a-z0-9_]/g, "_").replace(/_+/g, "_")
+    ? primaryTool
+        .toLowerCase()
+        .replace(/[^a-z0-9_]/g, "_")
+        .replace(/_+/g, "_")
     : "llm_call";
   return { connector: "llm-gateway", action, provenanceGap: true };
 }
@@ -110,9 +120,7 @@ export function normalizePortkeyEvent(raw: Record<string, unknown>): GatewayEven
   const { connector, action } = mapToolsToConnector(toolDeclarations);
 
   const timestamp =
-    stringField(raw, "timestamp") ??
-    stringField(raw, "created_at") ??
-    new Date().toISOString();
+    stringField(raw, "timestamp") ?? stringField(raw, "created_at") ?? new Date().toISOString();
 
   return {
     provider: "portkey",
@@ -153,9 +161,7 @@ export function normalizeHeliconeEvent(raw: Record<string, unknown>): GatewayEve
   const { connector, action } = mapToolsToConnector(toolDeclarations);
 
   const timestamp =
-    stringField(data, "created_at") ??
-    stringField(raw, "created_at") ??
-    new Date().toISOString();
+    stringField(data, "created_at") ?? stringField(raw, "created_at") ?? new Date().toISOString();
 
   return {
     provider: "helicone",
@@ -195,9 +201,9 @@ export function normalizeLitellmEvent(raw: Record<string, unknown>): GatewayEven
       ? (messages as Record<string, unknown>[]).flatMap((m) =>
           Array.isArray((m as Record<string, unknown>).tool_calls)
             ? ((m as Record<string, unknown>).tool_calls as Record<string, unknown>[])
-            : []
+            : [],
         )
-      : undefined
+      : undefined,
   );
   const { connector, action } = mapToolsToConnector(toolDeclarations);
 
@@ -247,23 +253,19 @@ export function normalizeNotionEvent(raw: Record<string, unknown>): GatewayEvent
   const toolDeclarations = extractToolNames(Array.isArray(tools) ? tools : []);
 
   const timestamp =
-    stringField(raw, "created_at") ??
-    stringField(raw, "timestamp") ??
-    new Date().toISOString();
+    stringField(raw, "created_at") ?? stringField(raw, "timestamp") ?? new Date().toISOString();
 
   return {
     provider: "notion",
     gatewayEventId: id,
     model: stringField(raw, "model") ?? "unknown",
-    agentId:
-      stringField(raw, "agent_id") ??
-      stringField(raw, "worker_id") ??
-      "gateway-agent",
+    agentId: stringField(raw, "agent_id") ?? stringField(raw, "worker_id") ?? "gateway-agent",
     connector: "gateway-notion",
-    action: stringField(raw, "action") ?? (toolDeclarations[0] ?? "worker.execute"),
+    action: stringField(raw, "action") ?? toolDeclarations[0] ?? "worker.execute",
     toolDeclarations,
     promptTokens: numberField(usage, "prompt_tokens") ?? numberField(usage, "input_tokens") ?? 0,
-    completionTokens: numberField(usage, "completion_tokens") ?? numberField(usage, "output_tokens") ?? 0,
+    completionTokens:
+      numberField(usage, "completion_tokens") ?? numberField(usage, "output_tokens") ?? 0,
     latencyMs: numberField(raw, "latency_ms") ?? 0,
     costUsd: numberField(raw, "cost_usd") ?? undefined,
     eventTimestamp: timestamp,
@@ -291,13 +293,18 @@ export async function ingestNormalizedGatewayEvent(
   tenantId: string,
   workspaceId: string,
   principalId: string,
-  environment: string
+  environment: string,
 ): Promise<GatewayIngestResult> {
   const started = Date.now();
 
   const revision = await resolveRevisionAtTime(tenantId, workspaceId, event.eventTimestamp);
-  const provenanceGap = revision === null || (event.toolDeclarations.length > 0 && mapToolsToConnector(event.toolDeclarations).provenanceGap);
-  const policyContext: RuntimePolicyContext[] = revision ? [buildGatewayPolicyContext(revision)] : [];
+  const provenanceGap =
+    revision === null ||
+    (event.toolDeclarations.length > 0 &&
+      mapToolsToConnector(event.toolDeclarations).provenanceGap);
+  const policyContext: RuntimePolicyContext[] = revision
+    ? [buildGatewayPolicyContext(revision)]
+    : [];
 
   const artifactHash = revision?.artifactHash ?? "gateway-unresolved";
   const policyRefs = revision ? [`gateway.${event.provider}.ingest`] : ["gateway.provenance-gap"];
@@ -383,8 +390,16 @@ export async function ingestNormalizedGatewayEvent(
   }
 
   const outcome = deduplicated ? "deduplicated" : "created";
-  incrementCounter("spctre.evidence.ingested", 1, { source: "gateway", provider: event.provider, status, outcome });
-  recordDuration("spctre.evidence.ingest.duration", Date.now() - started, { source: "gateway", outcome });
+  incrementCounter("spctre.evidence.ingested", 1, {
+    source: "gateway",
+    provider: event.provider,
+    status,
+    outcome,
+  });
+  recordDuration("spctre.evidence.ingest.duration", Date.now() - started, {
+    source: "gateway",
+    outcome,
+  });
 
   if (provenanceGap) {
     logger.warn("Gateway event stored with provenance gap", {
@@ -400,19 +415,28 @@ export async function ingestNormalizedGatewayEvent(
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function stringField(obj: Record<string, unknown> | null | undefined, key: string): string | undefined {
+function stringField(
+  obj: Record<string, unknown> | null | undefined,
+  key: string,
+): string | undefined {
   if (!obj) return undefined;
   const v = obj[key];
   return typeof v === "string" && v.trim() ? v.trim() : undefined;
 }
 
-function numberField(obj: Record<string, unknown> | null | undefined, key: string): number | undefined {
+function numberField(
+  obj: Record<string, unknown> | null | undefined,
+  key: string,
+): number | undefined {
   if (!obj) return undefined;
   const v = obj[key];
   return typeof v === "number" && Number.isFinite(v) ? v : undefined;
 }
 
-function objectField(obj: Record<string, unknown> | null | undefined, key: string): Record<string, unknown> | null {
+function objectField(
+  obj: Record<string, unknown> | null | undefined,
+  key: string,
+): Record<string, unknown> | null {
   if (!obj) return null;
   const v = obj[key];
   return v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : null;

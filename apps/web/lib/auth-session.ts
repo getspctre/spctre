@@ -83,15 +83,18 @@ export async function createAuthSession(params: {
 
   const expiresAt = new Date(Date.now() + sessionTtlHours() * 60 * 60 * 1000).toISOString();
 
-  return createSessionRow({
-    principalId: params.principalId,
-    tenantId: params.tenantId,
-    expiresAt,
-    userAgent: params.userAgent,
-    ipAddress: params.ipAddress,
-    authMethod: params.authMethod ?? "SESSION",
-    mfaVerifiedAt: params.mfaVerifiedAt,
-  }, params.db);
+  return createSessionRow(
+    {
+      principalId: params.principalId,
+      tenantId: params.tenantId,
+      expiresAt,
+      userAgent: params.userAgent,
+      ipAddress: params.ipAddress,
+      authMethod: params.authMethod ?? "SESSION",
+      mfaVerifiedAt: params.mfaVerifiedAt,
+    },
+    params.db,
+  );
 }
 
 export async function revokeAuthSession(sessionId: string, tenantId: string): Promise<void> {

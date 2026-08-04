@@ -22,7 +22,7 @@ export interface RevisionMetadata {
 
 export async function getRevisionMetadata(
   revisionId: string,
-  tenantId: string
+  tenantId: string,
 ): Promise<RevisionMetadata | null> {
   if (!sql) return null;
   const rows = await sql<
@@ -67,7 +67,9 @@ export async function getRevisionMetadata(
     sourcePath: row.source_path ?? undefined,
     sourceHash: row.source_hash,
     sourceDocument:
-      row.source_document && typeof row.source_document === "object" && !Array.isArray(row.source_document)
+      row.source_document &&
+      typeof row.source_document === "object" &&
+      !Array.isArray(row.source_document)
         ? (row.source_document as Record<string, unknown>)
         : undefined,
     compatibility: sourceCompatibilityFromJson(row.source_document),
@@ -79,13 +81,14 @@ export async function getRevisionMetadata(
 function sourceCompatibilityFromJson(value: unknown): AgtCompatibilityReport | undefined {
   if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
   const compatibility = (value as Record<string, unknown>).spctre_agt_compatibility;
-  if (!compatibility || typeof compatibility !== "object" || Array.isArray(compatibility)) return undefined;
+  if (!compatibility || typeof compatibility !== "object" || Array.isArray(compatibility))
+    return undefined;
   return compatibility as AgtCompatibilityReport;
 }
 
 export async function getLatestRevisionMetadata(
   workspaceId: string | null,
-  tenantId: string
+  tenantId: string,
 ): Promise<RevisionMetadata | null> {
   if (!sql) return null;
   const rows = await sql<{ revision_id: string }[]>`
@@ -104,7 +107,7 @@ export async function getLatestRevisionMetadata(
 export async function getLatestRevisionMetadataForBranch(
   branchId: string,
   workspaceId: string | null,
-  tenantId: string
+  tenantId: string,
 ): Promise<RevisionMetadata | null> {
   if (!sql) return null;
   const rows = await sql<{ revision_id: string }[]>`
@@ -123,7 +126,7 @@ export async function getLatestRevisionMetadataForBranch(
 export async function revisionBelongsToWorkspace(
   revisionId: string,
   workspaceId: string | null,
-  tenantId: string
+  tenantId: string,
 ): Promise<boolean> {
   if (!sql) return false;
 
@@ -143,7 +146,7 @@ export async function revisionBelongsToWorkspace(
 export async function getBaseRevisionId(
   branchId: string,
   revisionId: string,
-  tenantId: string
+  tenantId: string,
 ): Promise<string | null> {
   if (!sql) return null;
   const rows = await sql<{ base_revision_id: string | null }[]>`
@@ -172,7 +175,7 @@ export async function getBaseRevisionId(
 export async function listApprovalTimelineEvents(
   branchId: string,
   revisionId: string,
-  tenantId: string
+  tenantId: string,
 ): Promise<PolicyTimelineEvent[]> {
   if (!sql) return [];
   const rows = await sql<
@@ -210,9 +213,19 @@ export function stableHash(value: string): string {
 }
 
 const VALID_RUNTIME_STACKS = new Set<RuntimeStack>([
-  "AWS_BEDROCK", "GOOGLE_ADK", "AZURE_AI", "LANGCHAIN",
-  "LANGGRAPH", "CREWAI", "AUTOGEN", "OPENAI_AGENTS",
-  "OMNIGENT", "OPENCODE", "CLAUDE_CODE", "LOCAL", "CUSTOM",
+  "AWS_BEDROCK",
+  "GOOGLE_ADK",
+  "AZURE_AI",
+  "LANGCHAIN",
+  "LANGGRAPH",
+  "CREWAI",
+  "AUTOGEN",
+  "OPENAI_AGENTS",
+  "OMNIGENT",
+  "OPENCODE",
+  "CLAUDE_CODE",
+  "LOCAL",
+  "CUSTOM",
 ]);
 
 export function targetStacksFromJson(value: unknown): RuntimeTarget[] {
@@ -237,7 +250,7 @@ export function targetStacksFromJson(value: unknown): RuntimeTarget[] {
           typeof (target as { environment?: unknown }).environment === "string"
             ? (target as { environment: string }).environment
             : undefined,
-      }
+      },
     ];
   });
 }

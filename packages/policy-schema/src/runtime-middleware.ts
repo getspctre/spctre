@@ -50,41 +50,76 @@ function denyOrProceed(middleware: SpctreRuntimeMiddleware, call: RuntimeToolCal
  * 1.49+). A caller supplies schema-valid output for a blocked invocation.
  */
 export function createMastraBeforeToolCallHook<TOutput>(params: {
-  middleware: SpctreRuntimeMiddleware; connector: string;
+  middleware: SpctreRuntimeMiddleware;
+  connector: string;
   denyOutput: (result: ReturnType<SpctreRuntimeMiddleware["evaluate"]>) => TOutput;
 }) {
   return ({ toolName, input }: { toolName: string; input: Record<string, unknown> }) => {
-    const result = params.middleware.evaluate({ connector: params.connector, action: toolName, toolIntent: toolName, toolParameters: input });
-    return result.status === "DENY" ? { proceed: false as const, output: params.denyOutput(result) } : undefined;
+    const result = params.middleware.evaluate({
+      connector: params.connector,
+      action: toolName,
+      toolIntent: toolName,
+      toolParameters: input,
+    });
+    return result.status === "DENY"
+      ? { proceed: false as const, output: params.denyOutput(result) }
+      : undefined;
   };
 }
 
 /** Wrap a Vercel AI SDK tool's documented `execute(input, options)` function. */
 export function wrapVercelAiToolExecute<TInput extends Record<string, unknown>, TResult>(params: {
-  middleware: SpctreRuntimeMiddleware; connector: string; toolName: string; execute: (input: TInput, options: unknown) => TResult | Promise<TResult>;
+  middleware: SpctreRuntimeMiddleware;
+  connector: string;
+  toolName: string;
+  execute: (input: TInput, options: unknown) => TResult | Promise<TResult>;
 }) {
   return async (input: TInput, options: unknown): Promise<TResult> => {
-    denyOrProceed(params.middleware, { connector: params.connector, action: params.toolName, toolIntent: params.toolName, toolParameters: input });
+    denyOrProceed(params.middleware, {
+      connector: params.connector,
+      action: params.toolName,
+      toolIntent: params.toolName,
+      toolParameters: input,
+    });
     return params.execute(input, options);
   };
 }
 
 /** Wrap a Genkit `defineTool` implementation before it reaches the tool body. */
 export function wrapGenkitToolExecute<TInput extends Record<string, unknown>, TResult>(params: {
-  middleware: SpctreRuntimeMiddleware; connector: string; toolName: string; execute: (input: TInput, context: unknown) => TResult | Promise<TResult>;
+  middleware: SpctreRuntimeMiddleware;
+  connector: string;
+  toolName: string;
+  execute: (input: TInput, context: unknown) => TResult | Promise<TResult>;
 }) {
   return async (input: TInput, context: unknown): Promise<TResult> => {
-    denyOrProceed(params.middleware, { connector: params.connector, action: params.toolName, toolIntent: params.toolName, toolParameters: input });
+    denyOrProceed(params.middleware, {
+      connector: params.connector,
+      action: params.toolName,
+      toolIntent: params.toolName,
+      toolParameters: input,
+    });
     return params.execute(input, context);
   };
 }
 
 /** Wrap a governance-sdk governed-tool executor. */
-export function wrapGovernanceSdkToolExecute<TInput extends Record<string, unknown>, TResult>(params: {
-  middleware: SpctreRuntimeMiddleware; connector: string; toolName: string; execute: (input: TInput, context: unknown) => TResult | Promise<TResult>;
+export function wrapGovernanceSdkToolExecute<
+  TInput extends Record<string, unknown>,
+  TResult,
+>(params: {
+  middleware: SpctreRuntimeMiddleware;
+  connector: string;
+  toolName: string;
+  execute: (input: TInput, context: unknown) => TResult | Promise<TResult>;
 }) {
   return async (input: TInput, context: unknown): Promise<TResult> => {
-    denyOrProceed(params.middleware, { connector: params.connector, action: params.toolName, toolIntent: params.toolName, toolParameters: input });
+    denyOrProceed(params.middleware, {
+      connector: params.connector,
+      action: params.toolName,
+      toolIntent: params.toolName,
+      toolParameters: input,
+    });
     return params.execute(input, context);
   };
 }
@@ -108,17 +143,22 @@ export function buildGatewayPayloadEvidence(params: {
     reason: result.reason,
     policyRefs: result.matchedPolicyRefs,
     artifactHash: params.middleware.provenance.artifactHash,
-    policyContext: [{
-      branchId: params.middleware.provenance.branchId,
-      revisionId: params.middleware.provenance.revisionId,
-      artifactHash: params.middleware.provenance.artifactHash,
-    }],
+    policyContext: [
+      {
+        branchId: params.middleware.provenance.branchId,
+        revisionId: params.middleware.provenance.revisionId,
+        artifactHash: params.middleware.provenance.artifactHash,
+      },
+    ],
     ingestMode: "gateway" as const,
     rawEvidence: { _source: "gateway", _payload_guardrail: true, payloadHash: result.payloadHash },
   };
 }
 
-function createRuntimeMiddleware(bundle: AgtCompatiblePolicyBundle, target: TypeScriptRuntimeTarget): SpctreRuntimeMiddleware {
+function createRuntimeMiddleware(
+  bundle: AgtCompatiblePolicyBundle,
+  target: TypeScriptRuntimeTarget,
+): SpctreRuntimeMiddleware {
   const compiled = {
     mastra: buildMastraRuntimePolicyConfig,
     "vercel-ai": buildVercelAiRuntimePolicyConfig,
@@ -126,7 +166,9 @@ function createRuntimeMiddleware(bundle: AgtCompatiblePolicyBundle, target: Type
     "governance-sdk": buildGovernanceSdkRuntimePolicyConfig,
   }[target](bundle);
   if (!compiled.ok || !compiled.artifact) {
-    throw new Error(`Cannot install ${target} middleware: reviewed policy export has blocking warnings.`);
+    throw new Error(
+      `Cannot install ${target} middleware: reviewed policy export has blocking warnings.`,
+    );
   }
   return {
     target,
@@ -136,10 +178,14 @@ function createRuntimeMiddleware(bundle: AgtCompatiblePolicyBundle, target: Type
 }
 
 /** Install at Mastra's tool middleware/pre-execution boundary. */
-export const createMastraMiddleware = (bundle: AgtCompatiblePolicyBundle) => createRuntimeMiddleware(bundle, "mastra");
+export const createMastraMiddleware = (bundle: AgtCompatiblePolicyBundle) =>
+  createRuntimeMiddleware(bundle, "mastra");
 /** Install before `execute` in a Vercel AI SDK tool. */
-export const createVercelAiMiddleware = (bundle: AgtCompatiblePolicyBundle) => createRuntimeMiddleware(bundle, "vercel-ai");
+export const createVercelAiMiddleware = (bundle: AgtCompatiblePolicyBundle) =>
+  createRuntimeMiddleware(bundle, "vercel-ai");
 /** Install in a Genkit action/tool interceptor. */
-export const createGenkitMiddleware = (bundle: AgtCompatiblePolicyBundle) => createRuntimeMiddleware(bundle, "genkit");
+export const createGenkitMiddleware = (bundle: AgtCompatiblePolicyBundle) =>
+  createRuntimeMiddleware(bundle, "genkit");
 /** Install in governance-sdk's governed-tool middleware. */
-export const createGovernanceSdkMiddleware = (bundle: AgtCompatiblePolicyBundle) => createRuntimeMiddleware(bundle, "governance-sdk");
+export const createGovernanceSdkMiddleware = (bundle: AgtCompatiblePolicyBundle) =>
+  createRuntimeMiddleware(bundle, "governance-sdk");

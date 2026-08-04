@@ -10,7 +10,11 @@ const sqlMock = vi.fn(async (strings: TemplateStringsArray, ...args: unknown[]) 
   }
   if (query.includes("SELECT translation_key")) {
     return [
-      { translation_key: "common.workspace", custom_value: "Division", updated_at: new Date("2026-07-09T00:00:00.000Z") },
+      {
+        translation_key: "common.workspace",
+        custom_value: "Division",
+        updated_at: new Date("2026-07-09T00:00:00.000Z"),
+      },
     ];
   }
   if (query.includes("INSERT INTO tenant_terminology_override")) return [];
@@ -19,13 +23,10 @@ const sqlMock = vi.fn(async (strings: TemplateStringsArray, ...args: unknown[]) 
   throw new Error(`unexpected query: ${query} args=${JSON.stringify(args)}`);
 });
 
-vi.mock("@/lib/db", () => ({
-  sql: sqlMock,
-}));
+vi.mock("@/lib/db", () => ({ sql: sqlMock }));
 
-const { createTenantTerminologyStore, resetTenantTerminologyTableCacheForTests } = await import(
-  "@/lib/repositories/i18n/terminology"
-);
+const { createTenantTerminologyStore, resetTenantTerminologyTableCacheForTests } =
+  await import("@/lib/repositories/i18n/terminology");
 
 describe("tenant terminology repository", () => {
   beforeEach(() => {
@@ -48,7 +49,9 @@ describe("tenant terminology repository", () => {
       },
     ]);
     const selectCall = sqlMock.mock.calls.find((call) =>
-      Array.from(call[0] as TemplateStringsArray).join(" ").includes("SELECT translation_key")
+      Array.from(call[0] as TemplateStringsArray)
+        .join(" ")
+        .includes("SELECT translation_key"),
     );
     expect(selectCall?.slice(1)).toEqual(["tenant-1", "ja"]);
   });
@@ -64,7 +67,9 @@ describe("tenant terminology repository", () => {
     });
 
     const insertCall = sqlMock.mock.calls.find((call) =>
-      Array.from(call[0] as TemplateStringsArray).join(" ").includes("INSERT INTO tenant_terminology_override")
+      Array.from(call[0] as TemplateStringsArray)
+        .join(" ")
+        .includes("INSERT INTO tenant_terminology_override"),
     );
     expect(insertCall?.slice(1)).toEqual(["tenant-1", "de", "common.connector", "Integration"]);
   });
@@ -74,7 +79,9 @@ describe("tenant terminology repository", () => {
     await store.deleteOverride!("tenant-1", "fr", "common.save");
 
     const deleteCall = sqlMock.mock.calls.find((call) =>
-      Array.from(call[0] as TemplateStringsArray).join(" ").includes("DELETE FROM tenant_terminology_override")
+      Array.from(call[0] as TemplateStringsArray)
+        .join(" ")
+        .includes("DELETE FROM tenant_terminology_override"),
     );
     expect(deleteCall?.slice(1)).toEqual(["tenant-1", "fr", "common.save"]);
   });
@@ -95,7 +102,7 @@ describe("tenant terminology repository", () => {
         translationKey: "common.connector",
         customValue: "Integration",
         updatedAt: "ignored",
-      })
+      }),
     ).rejects.toThrow(/migration 075/);
   });
 });

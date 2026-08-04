@@ -12,27 +12,35 @@ async function handleGetApiGatewayEscalations(request: Request) {
   const { workspaceId, tenantId } = scope;
 
   const url = new URL(request.url);
-  const limit = Math.max(1, Math.min(200, Number.parseInt(url.searchParams.get("limit") ?? "50", 10) || 50));
+  const limit = Math.max(
+    1,
+    Math.min(200, Number.parseInt(url.searchParams.get("limit") ?? "50", 10) || 50),
+  );
 
   let queue;
   try {
     queue = await listGatewayEscalationQueue({ workspaceId, tenantId, limit });
   } catch (err) {
     console.error("[gateway/escalations] listOpenEscalationQueue failed", err);
-    return withTraceId(Response.json({ error: "Service temporarily unavailable.", meta: makeMeta(traceId) }, { status: 503 }), traceId);
+    return withTraceId(
+      Response.json(
+        { error: "Service temporarily unavailable.", meta: makeMeta(traceId) },
+        { status: 503 },
+      ),
+      traceId,
+    );
   }
 
-  return withTraceId(Response.json({
-    queue,
-    count: queue.length,
-    generatedAt: new Date().toISOString(),
-    pagination: {
-      total: queue.length,
-      limit,
-      offset: 0,
-    },
-    meta: makeMeta(traceId),
-  }), traceId);
+  return withTraceId(
+    Response.json({
+      queue,
+      count: queue.length,
+      generatedAt: new Date().toISOString(),
+      pagination: { total: queue.length, limit, offset: 0 },
+      meta: makeMeta(traceId),
+    }),
+    traceId,
+  );
 }
 
 export { handleGetApiGatewayEscalations as GET };

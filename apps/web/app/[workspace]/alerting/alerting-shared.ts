@@ -7,12 +7,19 @@ export interface SharedHandlerContext {
 
 export function getBadgeClass(type: string) {
   switch (type) {
-    case "SLACK": return "badge badgeSlack";
-    case "TEAMS": return "badge badgeTeams";
-    case "PAGERDUTY": return "badge badgePagerduty";
-    case "EMAIL": return "badge badgeWebhook";
-    case "SPLUNK_HEC": return "badge badgeSiem";
-    case "SENTINEL": return "badge badgeSiem";
-    default: return "badge badgeWebhook";
+    case "SLACK":
+      return "badge badgeSlack";
+    case "TEAMS":
+      return "badge badgeTeams";
+    case "PAGERDUTY":
+      return "badge badgePagerduty";
+    case "EMAIL":
+      return "badge badgeWebhook";
+    case "SPLUNK_HEC":
+      return "badge badgeSiem";
+    case "SENTINEL":
+      return "badge badgeSiem";
+    default:
+      return "badge badgeWebhook";
   }
 }

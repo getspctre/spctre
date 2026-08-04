@@ -11,13 +11,14 @@ describe("Entire checkpoint adapter", () => {
     execFileSync.mockImplementation((_command: string, args: string[]) => {
       if (args[0] === "rev-parse") return "head-sha\n";
       if (args[0] === "ls-tree") return "ab/checkpoint/0/metadata.json\n";
-      if (args[0] === "show") return JSON.stringify({
-        checkpoint_id: "checkpoint-1",
-        session_id: "session-1",
-        created_at: "2026-07-20T14:30:00Z",
-        agent: "Codex",
-        files_touched: ["src/index.ts"],
-      });
+      if (args[0] === "show")
+        return JSON.stringify({
+          checkpoint_id: "checkpoint-1",
+          session_id: "session-1",
+          created_at: "2026-07-20T14:30:00Z",
+          agent: "Codex",
+          files_touched: ["src/index.ts"],
+        });
       throw new Error(`Unexpected git command: ${args.join(" ")}`);
     });
   });
@@ -32,23 +33,32 @@ describe("Entire checkpoint adapter", () => {
       fetch: fetchMock,
     });
 
-    expect(result).toEqual([{ checkpointId: "checkpoint-1", sessionId: "session-1", status: "ALLOW" }]);
-    expect(fetchMock).toHaveBeenCalledWith("https://spctre.example/api/v1/evidence/git-checkpoints", expect.objectContaining({
-      method: "POST",
-      headers: expect.objectContaining({ Authorization: "Bearer key" }),
-    }));
+    expect(result).toEqual([
+      { checkpointId: "checkpoint-1", sessionId: "session-1", status: "ALLOW" },
+    ]);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://spctre.example/api/v1/evidence/git-checkpoints",
+      expect.objectContaining({
+        method: "POST",
+        headers: expect.objectContaining({ Authorization: "Bearer key" }),
+      }),
+    );
     const body = JSON.parse(fetchMock.mock.calls[0][1].body as string);
     expect(body).toMatchObject({
       idempotencyKey: "entire:repo-1:checkpoint-1",
       connector: "entire-session",
-      checkpoint: { headCommit: "head-sha", diff: { files: [{ path: "src/index.ts", status: "modified" }] } },
+      checkpoint: {
+        headCommit: "head-sha",
+        diff: { files: [{ path: "src/index.ts", status: "modified" }] },
+      },
     });
   });
 
   it("reports skipped checkpoints instead of dropping them silently", async () => {
     execFileSync.mockImplementation((_command: string, args: string[]) => {
       if (args[0] === "rev-parse") return "head-sha\n";
-      if (args[0] === "ls-tree") return "aa/checkpoint/0/metadata.json\nbb/checkpoint/0/metadata.json\ncc/checkpoint/0/metadata.json\n";
+      if (args[0] === "ls-tree")
+        return "aa/checkpoint/0/metadata.json\nbb/checkpoint/0/metadata.json\ncc/checkpoint/0/metadata.json\n";
       if (args[0] === "show") {
         const ref = args[1];
         if (ref.includes("aa/")) throw new Error("fatal: bad object");
@@ -72,7 +82,11 @@ describe("Entire checkpoint adapter", () => {
     expect(result).toEqual([]);
     expect(fetchMock).not.toHaveBeenCalled();
     expect(onSkip).toHaveBeenCalledTimes(3);
-    expect(onSkip.mock.calls.map(([skip]) => skip.reason)).toEqual(["unreadable", "invalid-json", "missing-fields"]);
+    expect(onSkip.mock.calls.map(([skip]) => skip.reason)).toEqual([
+      "unreadable",
+      "invalid-json",
+      "missing-fields",
+    ]);
     expect(onSkip.mock.calls.map(([skip]) => skip.path)).toEqual([
       "aa/checkpoint/0/metadata.json",
       "bb/checkpoint/0/metadata.json",

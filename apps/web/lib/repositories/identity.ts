@@ -47,36 +47,40 @@ export async function recordIdentityLifecycleEvent(params: {
       )
     `;
   } catch (err) {
-    logger.error("[identity_lifecycle] record failed:", { error: err instanceof Error ? err.message : String(err) });
+    logger.error("[identity_lifecycle] record failed:", {
+      error: err instanceof Error ? err.message : String(err),
+    });
   }
 }
 
 export async function listIdentityLifecycleEvents(
   tenantId: string,
-  options: { principalId?: string; eventType?: IdentityLifecycleEventType; limit?: number } = {}
+  options: { principalId?: string; eventType?: IdentityLifecycleEventType; limit?: number } = {},
 ): Promise<IdentityLifecycleEvent[]> {
   if (!sql) return [];
   const limit = options.limit ?? 100;
   try {
-    const rows = await sql<{
-      id: string;
-      tenant_id: string;
-      workspace_id: string | null;
-      principal_id: string;
-      event_type: string;
-      actor_id: string;
-      source: string;
-      detail: unknown;
-      agent_did: string | null;
-      signature_algorithm: string | null;
-      signature_key_id: string | null;
-      payload_hash: string | null;
-      signature: string | null;
-      signature_verification_outcome: string | null;
-      signature_failure_reason: string | null;
-      signature_verified_at: Date | null;
-      created_at: Date;
-    }[]>`
+    const rows = await sql<
+      {
+        id: string;
+        tenant_id: string;
+        workspace_id: string | null;
+        principal_id: string;
+        event_type: string;
+        actor_id: string;
+        source: string;
+        detail: unknown;
+        agent_did: string | null;
+        signature_algorithm: string | null;
+        signature_key_id: string | null;
+        payload_hash: string | null;
+        signature: string | null;
+        signature_verification_outcome: string | null;
+        signature_failure_reason: string | null;
+        signature_verified_at: Date | null;
+        created_at: Date;
+      }[]
+    >`
       SELECT id, tenant_id, workspace_id, principal_id, event_type,
              actor_id, source, detail,
              agent_did, signature_algorithm, signature_key_id, payload_hash, signature,
@@ -103,7 +107,8 @@ export async function listIdentityLifecycleEvents(
       signatureKeyId: row.signature_key_id ?? undefined,
       payloadHash: row.payload_hash ?? undefined,
       signature: row.signature ?? undefined,
-      signatureVerificationOutcome: row.signature_verification_outcome as IdentityLifecycleEvent["signatureVerificationOutcome"] | undefined,
+      signatureVerificationOutcome: row.signature_verification_outcome as
+        IdentityLifecycleEvent["signatureVerificationOutcome"] | undefined,
       signatureFailureReason: row.signature_failure_reason ?? undefined,
       signatureVerifiedAt: row.signature_verified_at?.toISOString() ?? undefined,
       createdAt: row.created_at.toISOString(),
@@ -125,16 +130,18 @@ export async function createAgentSurfaceBinding(params: {
 }): Promise<AgentSurfaceBinding | null> {
   if (!sql) return null;
   try {
-    const rows = await sql<{
-      id: string;
-      tenant_id: string;
-      workspace_id: string;
-      canonical_agent_id: string;
-      surface_type: string;
-      surface_agent_id: string;
-      created_by: string;
-      created_at: Date;
-    }[]>`
+    const rows = await sql<
+      {
+        id: string;
+        tenant_id: string;
+        workspace_id: string;
+        canonical_agent_id: string;
+        surface_type: string;
+        surface_agent_id: string;
+        created_by: string;
+        created_at: Date;
+      }[]
+    >`
       INSERT INTO agt_agent_surface_binding (
         tenant_id, workspace_id, canonical_agent_id,
         surface_type, surface_agent_id, created_by
@@ -149,7 +156,9 @@ export async function createAgentSurfaceBinding(params: {
     if (!row) return null;
     return mapSurfaceBindingRow(row);
   } catch (err) {
-    logger.error("[agent_surface_binding] create failed:", { error: err instanceof Error ? err.message : String(err) });
+    logger.error("[agent_surface_binding] create failed:", {
+      error: err instanceof Error ? err.message : String(err),
+    });
     return null;
   }
 }
@@ -180,16 +189,18 @@ export async function listAgentSurfaceBindings(params: {
 }): Promise<AgentSurfaceBinding[]> {
   if (!sql) return [];
   try {
-    const rows = await sql<{
-      id: string;
-      tenant_id: string;
-      workspace_id: string;
-      canonical_agent_id: string;
-      surface_type: string;
-      surface_agent_id: string;
-      created_by: string;
-      created_at: Date;
-    }[]>`
+    const rows = await sql<
+      {
+        id: string;
+        tenant_id: string;
+        workspace_id: string;
+        canonical_agent_id: string;
+        surface_type: string;
+        surface_agent_id: string;
+        created_by: string;
+        created_at: Date;
+      }[]
+    >`
       SELECT id, tenant_id, workspace_id, canonical_agent_id,
              surface_type, surface_agent_id, created_by, created_at
       FROM agt_agent_surface_binding
@@ -210,16 +221,18 @@ export async function listAllSurfaceBindingsForWorkspace(params: {
 }): Promise<AgentSurfaceBinding[]> {
   if (!sql) return [];
   try {
-    const rows = await sql<{
-      id: string;
-      tenant_id: string;
-      workspace_id: string;
-      canonical_agent_id: string;
-      surface_type: string;
-      surface_agent_id: string;
-      created_by: string;
-      created_at: Date;
-    }[]>`
+    const rows = await sql<
+      {
+        id: string;
+        tenant_id: string;
+        workspace_id: string;
+        canonical_agent_id: string;
+        surface_type: string;
+        surface_agent_id: string;
+        created_by: string;
+        created_at: Date;
+      }[]
+    >`
       SELECT id, tenant_id, workspace_id, canonical_agent_id,
              surface_type, surface_agent_id, created_by, created_at
       FROM agt_agent_surface_binding
@@ -235,7 +248,9 @@ export async function listAllSurfaceBindingsForWorkspace(params: {
 
 /** Resolve a runtime-local identity to its workspace canonical agent identity. */
 export async function resolveCanonicalAgentId(params: {
-  tenantId: string; workspaceId: string; agentId: string;
+  tenantId: string;
+  workspaceId: string;
+  agentId: string;
 }): Promise<string> {
   if (!sql) return params.agentId;
   const rows = await sql<{ canonical_agent_id: string }[]>`
@@ -258,13 +273,22 @@ interface CrossSurfaceQueryContext {
   surfaceType: (agentId: string) => AgentSurfaceType | undefined;
 }
 
-async function crossSurfaceDecisionEvents(ctx: CrossSurfaceQueryContext): Promise<CrossSurfaceIdentityEvent[]> {
+async function crossSurfaceDecisionEvents(
+  ctx: CrossSurfaceQueryContext,
+): Promise<CrossSurfaceIdentityEvent[]> {
   if (!sql) return [];
   try {
-    const rows = await sql<{
-      decision_id: string; connector: string; action: string; status: string;
-      reason: string | null; agent_id: string; created_at: Date;
-    }[]>`
+    const rows = await sql<
+      {
+        decision_id: string;
+        connector: string;
+        action: string;
+        status: string;
+        reason: string | null;
+        agent_id: string;
+        created_at: Date;
+      }[]
+    >`
       SELECT decision_id, connector, action, status, reason, agent_id, created_at
       FROM runtime_evidence_event
       WHERE tenant_id = ${ctx.tenantId} AND workspace_id = ${ctx.workspaceId}
@@ -284,18 +308,29 @@ async function crossSurfaceDecisionEvents(ctx: CrossSurfaceQueryContext): Promis
       detail: row.reason ? { reason: row.reason } : undefined,
     }));
   } catch (err) {
-    logger.error("[cross_surface_history] decisions failed:", { error: err instanceof Error ? err.message : String(err) });
+    logger.error("[cross_surface_history] decisions failed:", {
+      error: err instanceof Error ? err.message : String(err),
+    });
     return [];
   }
 }
 
-async function crossSurfaceTrustEvents(ctx: CrossSurfaceQueryContext): Promise<CrossSurfaceIdentityEvent[]> {
+async function crossSurfaceTrustEvents(
+  ctx: CrossSurfaceQueryContext,
+): Promise<CrossSurfaceIdentityEvent[]> {
   if (!sql) return [];
   try {
-    const rows = await sql<{
-      id: string; agent_id: string; trust_score: string; delta: string | null;
-      source: string; reason: string | null; created_at: Date;
-    }[]>`
+    const rows = await sql<
+      {
+        id: string;
+        agent_id: string;
+        trust_score: string;
+        delta: string | null;
+        source: string;
+        reason: string | null;
+        created_at: Date;
+      }[]
+    >`
       SELECT id, agent_id, trust_score, delta, source, reason, created_at
       FROM agt_trust_score_event
       WHERE tenant_id = ${ctx.tenantId} AND workspace_id = ${ctx.workspaceId}
@@ -313,22 +348,30 @@ async function crossSurfaceTrustEvents(ctx: CrossSurfaceQueryContext): Promise<C
         summary: `Trust ${trustScore.toFixed(2)}${delta !== undefined ? ` (${delta >= 0 ? "+" : ""}${delta.toFixed(2)})` : ""}`,
         status: row.source,
         ref: row.id,
-        detail: { trustScore, ...(delta !== undefined ? { delta } : {}), ...(row.reason ? { reason: row.reason } : {}) },
+        detail: {
+          trustScore,
+          ...(delta !== undefined ? { delta } : {}),
+          ...(row.reason ? { reason: row.reason } : {}),
+        },
       };
     });
   } catch (err) {
-    logger.error("[cross_surface_history] trust failed:", { error: err instanceof Error ? err.message : String(err) });
+    logger.error("[cross_surface_history] trust failed:", {
+      error: err instanceof Error ? err.message : String(err),
+    });
     return [];
   }
 }
 
-async function crossSurfaceIdentityEvents(ctx: CrossSurfaceQueryContext): Promise<CrossSurfaceIdentityEvent[]> {
+async function crossSurfaceIdentityEvents(
+  ctx: CrossSurfaceQueryContext,
+): Promise<CrossSurfaceIdentityEvent[]> {
   if (!sql) return [];
   try {
     // Identity lifecycle events are recorded against the canonical principal.
-    const rows = await sql<{
-      id: string; principal_id: string; event_type: string; detail: unknown; created_at: Date;
-    }[]>`
+    const rows = await sql<
+      { id: string; principal_id: string; event_type: string; detail: unknown; created_at: Date }[]
+    >`
       SELECT id, principal_id, event_type, detail, created_at
       FROM agt_identity_lifecycle_event
       WHERE tenant_id = ${ctx.tenantId} AND principal_id = ${ctx.canonicalAgentId}
@@ -342,23 +385,35 @@ async function crossSurfaceIdentityEvents(ctx: CrossSurfaceQueryContext): Promis
       summary: row.event_type.replace(/_/g, " ").toLowerCase(),
       status: row.event_type,
       ref: row.id,
-      detail: row.detail && typeof row.detail === "object" && !Array.isArray(row.detail)
-        ? (row.detail as Record<string, unknown>)
-        : undefined,
+      detail:
+        row.detail && typeof row.detail === "object" && !Array.isArray(row.detail)
+          ? (row.detail as Record<string, unknown>)
+          : undefined,
     }));
   } catch (err) {
-    logger.error("[cross_surface_history] identity failed:", { error: err instanceof Error ? err.message : String(err) });
+    logger.error("[cross_surface_history] identity failed:", {
+      error: err instanceof Error ? err.message : String(err),
+    });
     return [];
   }
 }
 
-async function crossSurfaceReviewEvents(ctx: CrossSurfaceQueryContext): Promise<CrossSurfaceIdentityEvent[]> {
+async function crossSurfaceReviewEvents(
+  ctx: CrossSurfaceQueryContext,
+): Promise<CrossSurfaceIdentityEvent[]> {
   if (!sql) return [];
   try {
-    const rows = await sql<{
-      decision_id: string; agent_id: string | null; resolution_outcome: string | null;
-      resolution_note: string | null; connector: string | null; action: string | null; resolved_at: Date;
-    }[]>`
+    const rows = await sql<
+      {
+        decision_id: string;
+        agent_id: string | null;
+        resolution_outcome: string | null;
+        resolution_note: string | null;
+        connector: string | null;
+        action: string | null;
+        resolved_at: Date;
+      }[]
+    >`
       SELECT geq.decision_id, gd.agent_id,
              geq.resolution_outcome, geq.resolution_note, gd.connector, gd.action, geq.resolved_at
       FROM gateway_escalation_queue geq
@@ -384,7 +439,9 @@ async function crossSurfaceReviewEvents(ctx: CrossSurfaceQueryContext): Promise<
       };
     });
   } catch (err) {
-    logger.error("[cross_surface_history] reviews failed:", { error: err instanceof Error ? err.message : String(err) });
+    logger.error("[cross_surface_history] reviews failed:", {
+      error: err instanceof Error ? err.message : String(err),
+    });
     return [];
   }
 }
@@ -419,7 +476,9 @@ export async function listCrossSurfaceIdentityHistory(params: {
     workspaceId: params.workspaceId,
     canonicalAgentId,
   });
-  const surfaceTypeByAgentId = new Map(surfaces.map((binding) => [binding.surfaceAgentId, binding.surfaceType]));
+  const surfaceTypeByAgentId = new Map(
+    surfaces.map((binding) => [binding.surfaceAgentId, binding.surfaceType]),
+  );
 
   // Bound surface identities, resolved once and reused as an explicit id list so
   // each source query can match by canonical or any surface identity uniformly.
@@ -427,9 +486,12 @@ export async function listCrossSurfaceIdentityHistory(params: {
     tenantId: params.tenantId,
     workspaceId: params.workspaceId,
     canonicalAgentId,
-    boundAgentIds: Array.from(new Set([canonicalAgentId, ...surfaces.map((binding) => binding.surfaceAgentId)])),
+    boundAgentIds: Array.from(
+      new Set([canonicalAgentId, ...surfaces.map((binding) => binding.surfaceAgentId)]),
+    ),
     limit,
-    surfaceType: (agentId) => (agentId === canonicalAgentId ? undefined : surfaceTypeByAgentId.get(agentId)),
+    surfaceType: (agentId) =>
+      agentId === canonicalAgentId ? undefined : surfaceTypeByAgentId.get(agentId),
   };
 
   const sources = await Promise.all([
@@ -473,17 +535,8 @@ function mapSurfaceBindingRow(row: {
 export async function listApiKeysForWorkspace(params: {
   tenantId: string;
   workspaceId: string;
-}): Promise<{
-  id: string;
-  label: string;
-  token_prefix: string;
-  scopes: string[];
-  expires_at: string | null;
-  last_used_at: string | null;
-  created_at: string;
-}[]> {
-  if (!sql) return [];
-  return sql<{
+}): Promise<
+  {
     id: string;
     label: string;
     token_prefix: string;
@@ -491,7 +544,20 @@ export async function listApiKeysForWorkspace(params: {
     expires_at: string | null;
     last_used_at: string | null;
     created_at: string;
-  }[]>`
+  }[]
+> {
+  if (!sql) return [];
+  return sql<
+    {
+      id: string;
+      label: string;
+      token_prefix: string;
+      scopes: string[];
+      expires_at: string | null;
+      last_used_at: string | null;
+      created_at: string;
+    }[]
+  >`
     SELECT id, label, token_prefix, scopes, expires_at, last_used_at, created_at
     FROM service_token
     WHERE tenant_id = ${params.tenantId}

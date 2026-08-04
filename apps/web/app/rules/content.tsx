@@ -34,7 +34,8 @@ export async function RulesInventoryPageContent({
     // DB not available, keep demo fallback only for the demo tenant.
   }
 
-  const connectorCount = new Set(rules.flatMap((rule) => rule.connectors ?? []).filter(Boolean)).size;
+  const connectorCount = new Set(rules.flatMap((rule) => rule.connectors ?? []).filter(Boolean))
+    .size;
   const immutableRuleCount = rules.filter((rule) => rule.immutable).length;
   const denyRuleCount = rules.filter((rule) => rule.effect === "DENY").length;
   const warnRuleCount = rules.filter((rule) => rule.effect === "WARN").length;
@@ -78,7 +79,10 @@ export async function RulesInventoryPageContent({
               {t("hero.search_btn")}
             </button>
             {searchText ? (
-              <Link className="button" href={buildWorkspacePath(workspaceContext.workspaceSlug, "/rules")}>
+              <Link
+                className="button"
+                href={buildWorkspacePath(workspaceContext.workspaceSlug, "/rules")}
+              >
                 {t("hero.reset")}
               </Link>
             ) : null}

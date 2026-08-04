@@ -6,12 +6,7 @@
  * as executable third-party compatibility fixtures.
  */
 export const VENDOR_SDK_COMPATIBILITY_MATRIX = [
-  {
-    target: "vercel-ai",
-    packageName: "ai",
-    version: "7.0.22",
-    boundary: "tool execute wrapper",
-  },
+  { target: "vercel-ai", packageName: "ai", version: "7.0.22", boundary: "tool execute wrapper" },
   {
     target: "genkit",
     packageName: "genkit",
@@ -20,4 +15,5 @@ export const VENDOR_SDK_COMPATIBILITY_MATRIX = [
   },
 ] as const;
 
-export type VendorSdkCompatibilityTarget = (typeof VENDOR_SDK_COMPATIBILITY_MATRIX)[number]["target"];
+export type VendorSdkCompatibilityTarget =
+  (typeof VENDOR_SDK_COMPATIBILITY_MATRIX)[number]["target"];

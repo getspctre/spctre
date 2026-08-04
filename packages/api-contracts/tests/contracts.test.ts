@@ -120,11 +120,15 @@ describe("EvidenceIngestSchema", () => {
   });
 
   it("accepts new runtime stacks from integration landscape", () => {
-    for (const stack of ["HERMES", "OPENCLAW", "NEMOCLAW", "CLAUDE_COWORK", "ODYSSEUS", "PAPERCLIP"] as const) {
-      const result = parseBody(EvidenceIngestSchema, {
-        ...valid,
-        runtimeTarget: { stack },
-      });
+    for (const stack of [
+      "HERMES",
+      "OPENCLAW",
+      "NEMOCLAW",
+      "CLAUDE_COWORK",
+      "ODYSSEUS",
+      "PAPERCLIP",
+    ] as const) {
+      const result = parseBody(EvidenceIngestSchema, { ...valid, runtimeTarget: { stack } });
       expect(result.ok).toBe(true);
     }
   });
@@ -135,12 +139,26 @@ describe("EvidenceIngestSchema", () => {
       runtimeTarget: { stack: "CLAUDE_COWORK" },
       triggerKind: "mobile_dispatch",
       layer: "agent",
-      executionContext: { backend: "dispatch", sessionId: "ses-abc", sandboxName: "nemo-prod", inferenceProvider: "nim-local" },
+      executionContext: {
+        backend: "dispatch",
+        sessionId: "ses-abc",
+        sandboxName: "nemo-prod",
+        inferenceProvider: "nim-local",
+      },
       parentAgentId: "agent-parent-1",
       traceId: "trace-abc123",
-      orchestratorRef: { platform: "paperclip", companyId: "company-1", issueId: "issue-1", goalId: "goal-1" },
+      orchestratorRef: {
+        platform: "paperclip",
+        companyId: "company-1",
+        issueId: "issue-1",
+        goalId: "goal-1",
+      },
       pluginSource: "corporate_private",
-      skillContext: { activeSkills: ["skill-a"], promptPolicyRefs: ["prompt.rule"], promptSurface: "before_prompt_build" },
+      skillContext: {
+        activeSkills: ["skill-a"],
+        promptPolicyRefs: ["prompt.rule"],
+        promptSurface: "before_prompt_build",
+      },
       trustLevel: "low",
       catalogProvider: "paperclip",
     });
@@ -155,18 +173,12 @@ describe("EvidenceIngestSchema", () => {
   });
 
   it("rejects invalid triggerKind", () => {
-    const result = parseBody(EvidenceIngestSchema, {
-      ...valid,
-      triggerKind: "unknown_trigger",
-    });
+    const result = parseBody(EvidenceIngestSchema, { ...valid, triggerKind: "unknown_trigger" });
     expect(result.ok).toBe(false);
   });
 
   it("rejects invalid layer", () => {
-    const result = parseBody(EvidenceIngestSchema, {
-      ...valid,
-      layer: "kernel",
-    });
+    const result = parseBody(EvidenceIngestSchema, { ...valid, layer: "kernel" });
     expect(result.ok).toBe(false);
   });
 
@@ -195,11 +207,8 @@ describe("EvidenceIngestSchema", () => {
       toolParameters: {
         safeKey: "safe value",
         sensitiveKey: "supersecretpassword123",
-        nested: {
-          deepKey: "val",
-          apiKey: "sk-proj-abc123xyz"
-        }
-      }
+        nested: { deepKey: "val", apiKey: "sk-proj-abc123xyz" },
+      },
     });
     expect(result.ok).toBe(true);
     if (result.ok) {
@@ -207,7 +216,7 @@ describe("EvidenceIngestSchema", () => {
       expect(result.value.toolIntent).toContain("[Truncated]");
       expect(result.value.planSummary?.length).toBeLessThanOrEqual(2017); // 2000 + "... [Truncated]"
       expect(result.value.planSummary).toContain("[Truncated]");
-      
+
       const params = result.value.toolParameters as any;
       expect(params.safeKey).toBe("safe value");
       expect(params.sensitiveKey).toBe("[REDACTED]");
@@ -228,7 +237,10 @@ describe("GitCheckpointIngestSchema", () => {
       createdAt: "2026-07-20T14:30:00Z",
       repository: { id: "repo-1" },
       headCommit: "abc123",
-      diff: { format: "name-status" as const, files: [{ path: "src/index.ts", status: "modified" as const }] },
+      diff: {
+        format: "name-status" as const,
+        files: [{ path: "src/index.ts", status: "modified" as const }],
+      },
     },
   };
 
@@ -253,7 +265,11 @@ describe("SPCTRE_OPENAPI_SPEC", () => {
     const schemas = SPCTRE_OPENAPI_SPEC.components.schemas;
     const runtimeStack = schemas.RuntimeStack as { enum?: readonly string[] };
     const verification = schemas.VerificationIngestRequest as {
-      properties?: { verificationType?: { enum?: readonly string[] }; argumentsHash?: unknown; issuedAt?: unknown };
+      properties?: {
+        verificationType?: { enum?: readonly string[] };
+        argumentsHash?: unknown;
+        issuedAt?: unknown;
+      };
     };
 
     expect(runtimeStack.enum).toContain("OPENCODE");
@@ -267,7 +283,14 @@ describe("SPCTRE_OPENAPI_SPEC", () => {
     const schemas = SPCTRE_OPENAPI_SPEC.components.schemas;
     const runtimeStack = schemas.RuntimeStack as { enum?: readonly string[] };
 
-    for (const stack of ["HERMES", "OPENCLAW", "NEMOCLAW", "CLAUDE_COWORK", "ODYSSEUS", "PAPERCLIP"]) {
+    for (const stack of [
+      "HERMES",
+      "OPENCLAW",
+      "NEMOCLAW",
+      "CLAUDE_COWORK",
+      "ODYSSEUS",
+      "PAPERCLIP",
+    ]) {
       expect(runtimeStack.enum).toContain(stack);
     }
   });
@@ -319,10 +342,13 @@ describe("SPCTRE_OPENAPI_SPEC", () => {
   });
 
   it("keeps extensible response objects usable from generated SDKs", () => {
-    const schemas = SPCTRE_OPENAPI_SPEC.components.schemas as Record<string, {
-      properties?: Record<string, { additionalProperties?: boolean }>;
-      additionalProperties?: boolean;
-    }>;
+    const schemas = SPCTRE_OPENAPI_SPEC.components.schemas as Record<
+      string,
+      {
+        properties?: Record<string, { additionalProperties?: boolean }>;
+        additionalProperties?: boolean;
+      }
+    >;
 
     expect(schemas.EvidenceIngestResponse.properties?.evidence?.additionalProperties).toBe(true);
     expect(schemas.EvaluateResponse.properties?.result?.additionalProperties).toBe(true);
@@ -541,10 +567,7 @@ describe("AdapterDeclarationSchema", () => {
       adapterVersion: "  1.2.3  ",
       environment: "  production  ",
       supportedConnectors: [" stripe ", 42, "", "slack"],
-      capabilities: {
-        toolDiscovery: true,
-        limits: { maxTools: 25 },
-      },
+      capabilities: { toolDiscovery: true, limits: { maxTools: 25 } },
     });
 
     expect(result.ok).toBe(true);
@@ -553,10 +576,7 @@ describe("AdapterDeclarationSchema", () => {
       expect(result.value.adapterVersion).toBe("1.2.3");
       expect(result.value.environment).toBe("production");
       expect(result.value.supportedConnectors).toEqual(["stripe", "slack"]);
-      expect(result.value.capabilities).toEqual({
-        toolDiscovery: true,
-        limits: { maxTools: 25 },
-      });
+      expect(result.value.capabilities).toEqual({ toolDiscovery: true, limits: { maxTools: 25 } });
       expect(result.value.registeredBy).toBe("api");
     }
   });

@@ -40,7 +40,11 @@ import {
 } from "@/lib/repositories/identity-providers";
 import { ensureDefaultPublishedPolicyPack } from "@/lib/repositories/default-policy";
 import { upsertLocalDevWorkspaceGrant } from "@/lib/repositories/auth/grants";
-import { listActiveApiKeys, revokeApiKey, revokeServiceTokenAndRefresh } from "@/lib/repositories/auth/service-keys";
+import {
+  listActiveApiKeys,
+  revokeApiKey,
+  revokeServiceTokenAndRefresh,
+} from "@/lib/repositories/auth/service-keys";
 import { appendOperationsLog } from "@/lib/repositories/operations-log";
 import { recordConversionTelemetry } from "@/lib/repositories/onboarding/telemetry";
 import { swallow } from "@/lib/platform/swallow";
@@ -57,7 +61,7 @@ export interface AccountPageModel {
 
 export async function getAccountPageModel(
   principalId: string,
-  tenantId: string
+  tenantId: string,
 ): Promise<AccountPageModel> {
   if (!isDatabaseConfigured()) {
     return {
@@ -69,34 +73,27 @@ export async function getAccountPageModel(
     };
   }
 
-  const [passkeys, enrollments, unusedRecoveryCodes, linkedIdentities, activeSessions] = await Promise.all([
-    listPrincipalPasskeys(principalId, tenantId).catch(swallow("listPrincipalPasskeys", [])),
-    listMfaEnrollments(principalId, tenantId).catch(swallow("listMfaEnrollments", [])),
-    countUnusedRecoveryCodes({ principalId, tenantId }).catch(swallow("countUnusedRecoveryCodes", 0)),
-    listLinkedSocialIdentities({ principalId, tenantId }).catch(swallow("listLinkedSocialIdentities", [])),
-    listPrincipalSessions({ principalId, tenantId }).catch(swallow("listPrincipalSessions", [])),
-  ]);
+  const [passkeys, enrollments, unusedRecoveryCodes, linkedIdentities, activeSessions] =
+    await Promise.all([
+      listPrincipalPasskeys(principalId, tenantId).catch(swallow("listPrincipalPasskeys", [])),
+      listMfaEnrollments(principalId, tenantId).catch(swallow("listMfaEnrollments", [])),
+      countUnusedRecoveryCodes({ principalId, tenantId }).catch(
+        swallow("countUnusedRecoveryCodes", 0),
+      ),
+      listLinkedSocialIdentities({ principalId, tenantId }).catch(
+        swallow("listLinkedSocialIdentities", []),
+      ),
+      listPrincipalSessions({ principalId, tenantId }).catch(swallow("listPrincipalSessions", [])),
+    ]);
 
-  return {
-    passkeys,
-    enrollments,
-    unusedRecoveryCodes,
-    linkedIdentities,
-    activeSessions,
-  };
+  return { passkeys, enrollments, unusedRecoveryCodes, linkedIdentities, activeSessions };
 }
 
-export async function listPrincipalMfaMethods(params: {
-  principalId: string;
-  tenantId: string;
-}) {
+export async function listPrincipalMfaMethods(params: { principalId: string; tenantId: string }) {
   return listMfaEnrollments(params.principalId, params.tenantId);
 }
 
-export async function listServiceKeys(params: {
-  tenantId: string;
-  workspaceId: string;
-}) {
+export async function listServiceKeys(params: { tenantId: string; workspaceId: string }) {
   return listActiveApiKeys(params.tenantId, params.workspaceId);
 }
 
@@ -252,7 +249,10 @@ export async function unlinkSocialIdentity(params: {
   // Server-side guard: prevent removing last authentication method
   const [passkeys, identities] = await Promise.all([
     listPrincipalPasskeys(params.principalId, params.tenantId),
-    listLinkedSocialIdentities({ principalId: params.principalId, tenantId: params.tenantId }).catch(swallow("listLinkedSocialIdentities", [])),
+    listLinkedSocialIdentities({
+      principalId: params.principalId,
+      tenantId: params.tenantId,
+    }).catch(swallow("listLinkedSocialIdentities", [])),
   ]);
   const remainingIdentities = identities.filter((i) => i.provider !== params.provider);
   if (passkeys.length === 0 && remainingIdentities.length === 0) {
@@ -291,21 +291,17 @@ export interface AdminAuthPageModel {
 
 export async function getAdminAuthPageModel(tenantId: string): Promise<AdminAuthPageModel> {
   if (!isDatabaseConfigured()) {
-    return {
-      providers: [],
-      tenantMfa: { requireMfa: false, mfaGraceDays: 7 },
-    };
+    return { providers: [], tenantMfa: { requireMfa: false, mfaGraceDays: 7 } };
   }
 
   const [providers, tenantMfa] = await Promise.all([
     listIdentityProviders(tenantId).catch(swallow("listIdentityProviders", [])),
-    getTenantMfaSettings(tenantId).catch(swallow("getTenantMfaSettings", { requireMfa: false, mfaGraceDays: 7 })),
+    getTenantMfaSettings(tenantId).catch(
+      swallow("getTenantMfaSettings", { requireMfa: false, mfaGraceDays: 7 }),
+    ),
   ]);
 
-  return {
-    providers,
-    tenantMfa,
-  };
+  return { providers, tenantMfa };
 }
 
 export async function saveSamlIdentityProvider(params: {
@@ -379,7 +375,8 @@ export async function updateTenantMfaSettings(params: {
 
 export async function bootstrapDemoTenant(): Promise<{ ok: boolean } | { error: string }> {
   if (!isDatabaseConfigured()) return { error: "Database not configured." };
-  if (!await ensureAuthDemoTenant()) return { error: "Demo Cloud is disabled on this deployment." };
+  if (!(await ensureAuthDemoTenant()))
+    return { error: "Demo Cloud is disabled on this deployment." };
   return { ok: true };
 }
 
@@ -414,7 +411,7 @@ export async function provisionDefaultPolicyPackIfNeeded(params: {
 // stored enrollment state. Returns true on the first successful match.
 async function verifySmsEnrollments(
   enrollments: Awaited<ReturnType<typeof getVerifiedMfaEnrollments>>,
-  params: { tenantId: string; principalId: string; code: string }
+  params: { tenantId: string; principalId: string; code: string },
 ): Promise<boolean> {
   const { verifyFirebasePhoneAuth } = await import("@/lib/platform/sms");
   for (const enrollment of enrollments) {
@@ -505,10 +502,7 @@ export async function verifyMfaLoginCode(params: {
     return { error: "Invalid MFA code." };
   }
 
-  await markSessionMfaVerified({
-    sessionId: params.sessionId,
-    tenantId: params.tenantId,
-  });
+  await markSessionMfaVerified({ sessionId: params.sessionId, tenantId: params.tenantId });
 
   return { ok: true };
 }

@@ -48,7 +48,7 @@ export async function listScimTokens(params: {
   tenantId: string;
 }): Promise<ScimTokenRegistration[]> {
   return runWithTenantContext(params.tenantId, () =>
-    listScimTokenRegistrations({ tenantId: params.tenantId })
+    listScimTokenRegistrations({ tenantId: params.tenantId }),
   );
 }
 
@@ -76,10 +76,7 @@ export async function createScimToken(params: {
       sourceId: result.registration.id,
       sourceTable: "scim_token_registration",
       actorId: params.createdBy,
-      payload: {
-        keyType: "SCIM_PROVISIONING",
-        label: params.label ?? null,
-      },
+      payload: { keyType: "SCIM_PROVISIONING", label: params.label ?? null },
     }).catch(swallow("appendOperationsLog", undefined));
 
     return result;
@@ -93,10 +90,7 @@ export async function revokeScimToken(params: {
   actorId: string;
 }): Promise<boolean> {
   return runWithTenantContext(params.tenantId, async () => {
-    const revoked = await revokeScimTokenRegistration({
-      id: params.id,
-      tenantId: params.tenantId,
-    });
+    const revoked = await revokeScimTokenRegistration({ id: params.id, tenantId: params.tenantId });
 
     if (revoked) {
       await appendOperationsLog({

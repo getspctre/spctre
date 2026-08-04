@@ -17,7 +17,9 @@ import { swallow } from "@/lib/platform/swallow";
 
 export const dynamic = "force-dynamic";
 
-const PROVIDER_LABELS = new Map(GATEWAY_WEBHOOK_PROVIDERS.map((provider) => [provider.id, provider.label]));
+const PROVIDER_LABELS = new Map(
+  GATEWAY_WEBHOOK_PROVIDERS.map((provider) => [provider.id, provider.label]),
+);
 
 export default async function AdminWebhooksPage() {
   const t = await getTranslations("admin.webhooks");
@@ -86,17 +88,31 @@ export default async function AdminWebhooksPage() {
                           </span>
                         </td>
                         <td>
-                          {registration.label ? <strong>{registration.label}</strong> : <span className="auditHash">—</span>}
+                          {registration.label ? (
+                            <strong>{registration.label}</strong>
+                          ) : (
+                            <span className="auditHash">—</span>
+                          )}
                         </td>
                         <td>
                           <code>{registration.id.slice(0, 8)}…</code>
                         </td>
-                        <td><span className="auditHash">{registration.createdBy}</span></td>
-                        <td><span className="auditHash">{formatAdminDate(registration.createdAt)}</span></td>
+                        <td>
+                          <span className="auditHash">{registration.createdBy}</span>
+                        </td>
+                        <td>
+                          <span className="auditHash">
+                            {formatAdminDate(registration.createdAt)}
+                          </span>
+                        </td>
                         <td>
                           <RevokeWebhookForm
                             registrationId={registration.id}
-                            label={registration.label ?? PROVIDER_LABELS.get(registration.provider) ?? registration.provider}
+                            label={
+                              registration.label ??
+                              PROVIDER_LABELS.get(registration.provider) ??
+                              registration.provider
+                            }
                           />
                         </td>
                       </tr>

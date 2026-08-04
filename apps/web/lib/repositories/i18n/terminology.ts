@@ -43,11 +43,16 @@ function toIso(value: unknown): string {
 
 export function createTenantTerminologyStore(): TenantTerminologyStore {
   return {
-    async listOverrides(tenantId: string, locale: SupportedLocale): Promise<TenantTerminologyOverride[]> {
+    async listOverrides(
+      tenantId: string,
+      locale: SupportedLocale,
+    ): Promise<TenantTerminologyOverride[]> {
       if (!sql) return [];
       if (!(await detectTable())) return [];
 
-      const rows = await sql<{ translation_key: string; custom_value: string; updated_at: unknown }[]>`
+      const rows = await sql<
+        { translation_key: string; custom_value: string; updated_at: unknown }[]
+      >`
         SELECT translation_key, custom_value, updated_at
         FROM tenant_terminology_override
         WHERE tenant_id = ${tenantId}
@@ -77,7 +82,11 @@ export function createTenantTerminologyStore(): TenantTerminologyStore {
       `;
     },
 
-    async deleteOverride(tenantId: string, locale: SupportedLocale, translationKey: string): Promise<void> {
+    async deleteOverride(
+      tenantId: string,
+      locale: SupportedLocale,
+      translationKey: string,
+    ): Promise<void> {
       if (!sql) throw new Error("Database unavailable; cannot delete terminology override.");
       if (!(await detectTable())) return;
 

@@ -46,12 +46,8 @@ vi.mock("@/lib/repositories/auth/session", () => ({
 vi.mock("@/lib/repositories/default-policy", () => ({
   ensureDefaultPublishedPolicyPack: ensureDefaultPublishedPolicyPackSpy,
 }));
-vi.mock("@/lib/actors", () => ({
-  findActorById: findActorByIdSpy,
-}));
-vi.mock("@/lib/demo-guard", () => ({
-  verifyWriteAccess: verifyWriteAccessSpy,
-}));
+vi.mock("@/lib/actors", () => ({ findActorById: findActorByIdSpy }));
+vi.mock("@/lib/demo-guard", () => ({ verifyWriteAccess: verifyWriteAccessSpy }));
 vi.mock("@/lib/repositories/shared/database", () => ({
   isDatabaseConfigured: isDatabaseConfiguredSpy,
 }));
@@ -95,7 +91,12 @@ describe("workspace domain service", () => {
         workspaceName: "My Ws",
       });
 
-      expect(result).toEqual(expect.objectContaining({ error: "Your current plan (HOSTED_TRIAL) is limited to 1 workspace(s). Upgrade your plan to create more workspaces." }));
+      expect(result).toEqual(
+        expect.objectContaining({
+          error:
+            "Your current plan (HOSTED_TRIAL) is limited to 1 workspace(s). Upgrade your plan to create more workspaces.",
+        }),
+      );
     });
 
     it("requires admin permissions", async () => {
@@ -108,7 +109,9 @@ describe("workspace domain service", () => {
       });
 
       expect(result).toEqual({ error: "Admin permission is required to create workspaces." });
-      expect(insertAdminAuditEventSpy).toHaveBeenCalledWith(expect.objectContaining({ outcome: "DENIED" }));
+      expect(insertAdminAuditEventSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ outcome: "DENIED" }),
+      );
     });
   });
 
@@ -120,7 +123,9 @@ describe("workspace domain service", () => {
         activeWorkspaceId: "ws1",
       });
 
-      expect(result).toEqual({ error: "Cannot delete the active workspace. Switch to another workspace first." });
+      expect(result).toEqual({
+        error: "Cannot delete the active workspace. Switch to another workspace first.",
+      });
     });
 
     it("guards deleting the last workspace", async () => {

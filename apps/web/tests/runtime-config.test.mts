@@ -1,5 +1,9 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { getRuntimeConfig, resetRuntimeConfigCacheForTests, validateRuntimeConfig } from "../lib/config/runtime";
+import {
+  getRuntimeConfig,
+  resetRuntimeConfigCacheForTests,
+  validateRuntimeConfig,
+} from "../lib/config/runtime";
 
 const productionEnvironment = {
   NODE_ENV: "production",
@@ -29,17 +33,21 @@ afterEach(() => {
 
 describe("runtime configuration", () => {
   it("rejects a production Node process without an explicit runtime mode", () => {
-    expect(() => getRuntimeConfig({ NODE_ENV: "production" })).toThrow("SPCTRE_RUNTIME_MODE is required");
+    expect(() => getRuntimeConfig({ NODE_ENV: "production" })).toThrow(
+      "SPCTRE_RUNTIME_MODE is required",
+    );
   });
 
   it("rejects an invalid plan before production starts", () => {
-    expect(() => getRuntimeConfig({ ...productionEnvironment, SPCTRE_PLAN: "ent" })).toThrow("SPCTRE_PLAN must be");
+    expect(() => getRuntimeConfig({ ...productionEnvironment, SPCTRE_PLAN: "ent" })).toThrow(
+      "SPCTRE_PLAN must be",
+    );
   });
 
   it("rejects a production runtime without a session guard secret", () => {
-    expect(() => getRuntimeConfig({ NODE_ENV: "production", SPCTRE_RUNTIME_MODE: "production" })).toThrow(
-      "SPCTRE_SESSION_GUARD_SECRET is required"
-    );
+    expect(() =>
+      getRuntimeConfig({ NODE_ENV: "production", SPCTRE_RUNTIME_MODE: "production" }),
+    ).toThrow("SPCTRE_SESSION_GUARD_SECRET is required");
   });
 
   it("allows explicit production demo and single-tenant configuration", () => {
@@ -64,6 +72,8 @@ describe("runtime configuration", () => {
     process.env.SPCTRE_PLAN = "enterprise";
 
     expect(getRuntimeConfig().plan).toBe("cloud");
-    expect(getRuntimeConfig({ ...productionEnvironment, SPCTRE_PLAN: "enterprise" }).plan).toBe("enterprise");
+    expect(getRuntimeConfig({ ...productionEnvironment, SPCTRE_PLAN: "enterprise" }).plan).toBe(
+      "enterprise",
+    );
   });
 });

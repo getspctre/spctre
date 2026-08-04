@@ -11,16 +11,26 @@ async function handlePostApiOnboardingDeviceToken(request: Request) {
   try {
     payload = await request.json();
   } catch {
-    return withTraceId(Response.json({ error: "Request body must be JSON.", meta: makeMeta(traceId) }, { status: 400 }), traceId);
+    return withTraceId(
+      Response.json(
+        { error: "Request body must be JSON.", meta: makeMeta(traceId) },
+        { status: 400 },
+      ),
+      traceId,
+    );
   }
 
-  const record = payload && typeof payload === "object" && !Array.isArray(payload)
-    ? (payload as Record<string, unknown>)
-    : {};
+  const record =
+    payload && typeof payload === "object" && !Array.isArray(payload)
+      ? (payload as Record<string, unknown>)
+      : {};
   const deviceCode = typeof record.deviceCode === "string" ? record.deviceCode.trim() : "";
 
   if (!deviceCode) {
-    return withTraceId(Response.json({ error: "deviceCode is required.", meta: makeMeta(traceId) }, { status: 400 }), traceId);
+    return withTraceId(
+      Response.json({ error: "deviceCode is required.", meta: makeMeta(traceId) }, { status: 400 }),
+      traceId,
+    );
   }
 
   try {
@@ -28,20 +38,41 @@ async function handlePostApiOnboardingDeviceToken(request: Request) {
 
     switch (result.status) {
       case "pending":
-        return withTraceId(Response.json({ error: "authorization_pending", meta: makeMeta(traceId) }, { status: 428 }), traceId);
+        return withTraceId(
+          Response.json(
+            { error: "authorization_pending", meta: makeMeta(traceId) },
+            { status: 428 },
+          ),
+          traceId,
+        );
       case "slow_down":
-        return withTraceId(Response.json({ error: "slow_down", meta: makeMeta(traceId) }, { status: 429 }), traceId);
+        return withTraceId(
+          Response.json({ error: "slow_down", meta: makeMeta(traceId) }, { status: 429 }),
+          traceId,
+        );
       case "expired":
-        return withTraceId(Response.json({ error: "expired_token", meta: makeMeta(traceId) }, { status: 400 }), traceId);
+        return withTraceId(
+          Response.json({ error: "expired_token", meta: makeMeta(traceId) }, { status: 400 }),
+          traceId,
+        );
       case "authorized":
         return withTraceId(
-          Response.json({ ...result.exchange, meta: makeMeta(traceId) }, { headers: { "cache-control": "no-store" } }),
-          traceId
+          Response.json(
+            { ...result.exchange, meta: makeMeta(traceId) },
+            { headers: { "cache-control": "no-store" } },
+          ),
+          traceId,
         );
     }
   } catch (error) {
     console.error("[onboarding/device/token] exchange failed", error);
-    return withTraceId(Response.json({ error: "Service temporarily unavailable.", meta: makeMeta(traceId) }, { status: 503 }), traceId);
+    return withTraceId(
+      Response.json(
+        { error: "Service temporarily unavailable.", meta: makeMeta(traceId) },
+        { status: 503 },
+      ),
+      traceId,
+    );
   }
 }
 

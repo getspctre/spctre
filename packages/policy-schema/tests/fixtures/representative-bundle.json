@@ -7,8 +7,8 @@
   "sourcePath": "policies/github-access.yaml",
   "sourceHash": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
   "artifactHash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
-  "targetStacks": [{"stack": "LOCAL", "adapter": "spctre-cli", "environment": "production"}],
-  "approvals": [{"reviewer": "security@example.com", "role": "security", "status": "APPROVED"}],
+  "targetStacks": [{ "stack": "LOCAL", "adapter": "spctre-cli", "environment": "production" }],
+  "approvals": [{ "reviewer": "security@example.com", "role": "security", "status": "APPROVED" }],
   "rules": [
     {
       "stableRuleId": "github.repo.block_delete",

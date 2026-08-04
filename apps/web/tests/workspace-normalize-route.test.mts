@@ -5,35 +5,29 @@ const cookiesSpy = vi.fn(async () => ({ set: cookieSetSpy }));
 const ensureDemoTenantSpy = vi.fn(async () => undefined);
 const sqlSpy = vi.fn();
 
-vi.mock("next/headers", () => ({
-  cookies: cookiesSpy
-}));
+vi.mock("next/headers", () => ({ cookies: cookiesSpy }));
 
 vi.mock("@/lib/workspace/cookies", () => ({
   ACTIVE_TENANT_COOKIE: "spctre_tenant_id",
-  ACTIVE_WORKSPACE_COOKIE: "spctre_workspace_id"
+  ACTIVE_WORKSPACE_COOKIE: "spctre_workspace_id",
 }));
 
 vi.mock("@/lib/auth-session", () => ({
   getAuthSession: vi.fn(async () => ({
     tenantId: "tenant-demo",
     principalId: "principal-demo",
-    subject: "dev@example.com"
-  }))
+    subject: "dev@example.com",
+  })),
 }));
 
-vi.mock("@/lib/db", () => ({
-  sql: sqlSpy
-}));
+vi.mock("@/lib/db", () => ({ sql: sqlSpy }));
 
 vi.mock("@/lib/demo", () => ({
   DEMO_TENANT_ID: "tenant-demo",
-  DEMO_WORKSPACE_ID: "workspace-demo"
+  DEMO_WORKSPACE_ID: "workspace-demo",
 }));
 
-vi.mock("@/lib/repositories/seed/local-dev", () => ({
-  ensureDemoTenant: ensureDemoTenantSpy
-}));
+vi.mock("@/lib/repositories/seed/local-dev", () => ({ ensureDemoTenant: ensureDemoTenantSpy }));
 
 const { POST } = await import("../app/api/workspace/normalize/route");
 
@@ -62,10 +56,8 @@ describe("POST /api/workspace/normalize", () => {
 
     const request = new Request("http://localhost/api/workspace/normalize", {
       method: "POST",
-      headers: {
-        "content-type": "application/json"
-      },
-      body: JSON.stringify({ workspaceId: "workspace-2" })
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ workspaceId: "workspace-2" }),
     });
 
     const response = await POST(request);
@@ -75,13 +67,13 @@ describe("POST /api/workspace/normalize", () => {
       path: "/",
       sameSite: "lax",
       httpOnly: true,
-      secure: false
+      secure: false,
     });
     expect(cookieSetSpy).toHaveBeenCalledWith("spctre_workspace_id", "workspace-2", {
       path: "/",
       sameSite: "lax",
       httpOnly: true,
-      secure: false
+      secure: false,
     });
   });
 
@@ -102,10 +94,8 @@ describe("POST /api/workspace/normalize", () => {
 
     const request = new Request("http://localhost/api/workspace/normalize", {
       method: "POST",
-      headers: {
-        "content-type": "application/json"
-      },
-      body: JSON.stringify({ workspaceId: "missing-workspace" })
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ workspaceId: "missing-workspace" }),
     });
 
     const response = await POST(request);
@@ -115,13 +105,13 @@ describe("POST /api/workspace/normalize", () => {
       path: "/",
       sameSite: "lax",
       httpOnly: true,
-      secure: false
+      secure: false,
     });
     expect(cookieSetSpy).toHaveBeenCalledWith("spctre_workspace_id", "workspace-1", {
       path: "/",
       sameSite: "lax",
       httpOnly: true,
-      secure: false
+      secure: false,
     });
   });
 });

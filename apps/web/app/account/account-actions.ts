@@ -19,11 +19,7 @@ export async function deletePasskeyForm(formData: FormData): Promise<void> {
   const passkeyId = String(formData.get("passkeyId") ?? "").trim();
   if (!passkeyId) return;
 
-  await deletePasskey({
-    passkeyId,
-    tenantId: session.tenantId,
-    principalId: session.principalId,
-  });
+  await deletePasskey({ passkeyId, tenantId: session.tenantId, principalId: session.principalId });
 
   revalidatePath("/account");
 }
@@ -81,7 +77,7 @@ export type RevokeSessionState = { errorCode: "demo_unavailable" } | null;
 
 export async function revokeSessionForm(
   _prevState: RevokeSessionState,
-  formData: FormData
+  formData: FormData,
 ): Promise<RevokeSessionState> {
   const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (!session) return null;

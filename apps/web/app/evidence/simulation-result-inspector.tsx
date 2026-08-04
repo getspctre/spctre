@@ -35,8 +35,7 @@ export function SimulationResultInspector({ result, branchId, revisionId, worksp
                   {result.connector}.{result.action}
                 </h3>
                 <p className="meta">
-                  <code>{result.eventId}</code> / {result.previousStatus} →{" "}
-                  {result.proposedStatus}
+                  <code>{result.eventId}</code> / {result.previousStatus} → {result.proposedStatus}
                 </p>
               </div>
               <span className={deltaClass}>{result.delta}</span>
@@ -65,7 +64,10 @@ export function SimulationResultInspector({ result, branchId, revisionId, worksp
         <p className="eyebrow">Event context</p>
         <a
           className="button buttonSmall"
-          href={buildWorkspacePath(workspaceSlug ?? "", `/review?branch=${encodeURIComponent(branchId)}#diff`)}
+          href={buildWorkspacePath(
+            workspaceSlug ?? "",
+            `/review?branch=${encodeURIComponent(branchId)}#diff`,
+          )}
         >
           Review this policy
         </a>
@@ -77,7 +79,10 @@ export function SimulationResultInspector({ result, branchId, revisionId, worksp
           <div>
             <span className="meta">Branch</span>
             <a
-              href={buildWorkspacePath(workspaceSlug ?? "", `/review?branch=${encodeURIComponent(branchId)}`)}
+              href={buildWorkspacePath(
+                workspaceSlug ?? "",
+                `/review?branch=${encodeURIComponent(branchId)}`,
+              )}
               style={{ fontSize: 12 }}
               title="Review this policy"
             >
@@ -87,7 +92,10 @@ export function SimulationResultInspector({ result, branchId, revisionId, worksp
           <div>
             <span className="meta">Revision</span>
             <a
-              href={buildWorkspacePath(workspaceSlug ?? "", `/review?branch=${encodeURIComponent(branchId)}#diff`)}
+              href={buildWorkspacePath(
+                workspaceSlug ?? "",
+                `/review?branch=${encodeURIComponent(branchId)}#diff`,
+              )}
               style={{ fontSize: 12 }}
               title="Review this revision"
             >

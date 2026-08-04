@@ -31,19 +31,35 @@ function statusPill(status: Assurance["inventory"][number]["status"]) {
 
 function HeartbeatLedger({ assurance }: { assurance: Assurance }) {
   if (!assurance.expected) {
-    return <p className="assuranceEmpty">Publish a policy bundle before Spctre can compare production reports with the current policy.</p>;
+    return (
+      <p className="assuranceEmpty">
+        Publish a policy bundle before Spctre can compare production reports with the current
+        policy.
+      </p>
+    );
   }
   if (!assurance.inventory.length) {
-    return <p className="assuranceEmpty">No production agents are reporting yet. Run <code>spctre watch --heartbeat</code> from a production runner to start runtime reporting.</p>;
+    return (
+      <p className="assuranceEmpty">
+        No production agents are reporting yet. Run <code>spctre watch --heartbeat</code> from a
+        production runner to start runtime reporting.
+      </p>
+    );
   }
   return (
     <div className="assuranceLedger" role="region" aria-label="Production heartbeat assurance">
       <div className="assuranceLedgerHead" aria-hidden="true">
-        <span>Runtime</span><span>Artifact</span><span>Last heartbeat</span><span>Status</span>
+        <span>Runtime</span>
+        <span>Artifact</span>
+        <span>Last heartbeat</span>
+        <span>Status</span>
       </div>
       {assurance.inventory.map((heartbeat) => (
         <div className="assuranceLedgerRow" key={`${heartbeat.agentId}-${heartbeat.runtimeTarget}`}>
-          <div><code>{heartbeat.agentId}</code><span>{heartbeat.runtimeTarget}</span></div>
+          <div>
+            <code>{heartbeat.agentId}</code>
+            <span>{heartbeat.runtimeTarget}</span>
+          </div>
           <code>{heartbeat.artifactHash}</code>
           <time dateTime={heartbeat.observedAt}>{relativeTime(heartbeat.observedAt)}</time>
           {statusPill(heartbeat.status)}
@@ -55,20 +71,40 @@ function HeartbeatLedger({ assurance }: { assurance: Assurance }) {
 
 function DiscoveryLedger({ discovery }: { discovery: Discovery }) {
   if (!discovery.length) {
-    return <p className="assuranceEmpty">No runtime candidates need review from policy-linked production evidence in the last 30 days.</p>;
+    return (
+      <p className="assuranceEmpty">
+        No runtime candidates need review from policy-linked production evidence in the last 30
+        days.
+      </p>
+    );
   }
   return (
     <div className="assuranceLedger" role="region" aria-label="Policy-scoped discovery candidates">
       <div className="assuranceLedgerHead" aria-hidden="true">
-        <span>Candidate</span><span>Policy-relevant connectors</span><span>Last seen</span><span>Finding</span>
+        <span>Candidate</span>
+        <span>Policy-relevant connectors</span>
+        <span>Last seen</span>
+        <span>Finding</span>
       </div>
       {discovery.map((candidate) => (
-        <div className="assuranceLedgerRow" key={`${candidate.agentId}-${candidate.runtimeTarget}-${candidate.kind}`}>
-          <div><code>{candidate.agentId}</code><span>{candidate.runtimeTarget}</span></div>
+        <div
+          className="assuranceLedgerRow"
+          key={`${candidate.agentId}-${candidate.runtimeTarget}-${candidate.kind}`}
+        >
+          <div>
+            <code>{candidate.agentId}</code>
+            <span>{candidate.runtimeTarget}</span>
+          </div>
           <span>{candidate.connectors.join(", ")}</span>
           <time dateTime={candidate.lastSeenAt}>{relativeTime(candidate.lastSeenAt)}</time>
-          <span className={candidate.kind === "UNMANAGED_RUNTIME_CANDIDATE" ? "pill pillWarn" : "pill pillBlock"}>
-            {candidate.kind === "UNMANAGED_RUNTIME_CANDIDATE" ? "Unmanaged runtime candidate" : "Stale policy artifact"}
+          <span
+            className={
+              candidate.kind === "UNMANAGED_RUNTIME_CANDIDATE" ? "pill pillWarn" : "pill pillBlock"
+            }
+          >
+            {candidate.kind === "UNMANAGED_RUNTIME_CANDIDATE"
+              ? "Unmanaged runtime candidate"
+              : "Stale policy artifact"}
           </span>
         </div>
       ))}
@@ -78,16 +114,35 @@ function DiscoveryLedger({ discovery }: { discovery: Discovery }) {
 
 function CoverageLedger({ coverage }: { coverage: Coverage }) {
   if (!coverage.length) {
-    return <p className="assuranceEmpty">No connector activity has been reported in the last 30 days.</p>;
+    return (
+      <p className="assuranceEmpty">No connector activity has been reported in the last 30 days.</p>
+    );
   }
   return (
-    <div className="assuranceLedger" role="region" aria-label="Production connector and action coverage">
+    <div
+      className="assuranceLedger"
+      role="region"
+      aria-label="Production connector and action coverage"
+    >
       <div className="assuranceLedgerHead" aria-hidden="true">
-        <span>Connector</span><span>Observed decisions</span><span>Agents</span><span>Coverage</span>
+        <span>Connector</span>
+        <span>Observed decisions</span>
+        <span>Agents</span>
+        <span>Coverage</span>
       </div>
       {coverage.map((entry) => {
-        const label = entry.status === "GOVERNED" ? "Governed" : entry.status === "AUDIT_ONLY" ? "Audit-only" : "Provenance gap";
-        const className = entry.status === "GOVERNED" ? "pill pillAllow" : entry.status === "AUDIT_ONLY" ? "pill pillNeutral" : "pill pillWarn";
+        const label =
+          entry.status === "GOVERNED"
+            ? "Governed"
+            : entry.status === "AUDIT_ONLY"
+              ? "Audit-only"
+              : "Provenance gap";
+        const className =
+          entry.status === "GOVERNED"
+            ? "pill pillAllow"
+            : entry.status === "AUDIT_ONLY"
+              ? "pill pillNeutral"
+              : "pill pillWarn";
         return (
           <SlideOutPanel
             description={`Last observed ${relativeTime(entry.lastSeenAt)}.`}
@@ -96,8 +151,17 @@ function CoverageLedger({ coverage }: { coverage: Coverage }) {
             title={entry.connector}
             width="wide"
             trigger={({ open, triggerId }) => (
-              <button aria-label={`Inspect ${entry.connector} coverage`} className="assuranceLedgerRow assuranceLedgerRowButton" id={triggerId} onClick={open} type="button">
-                <div><code>{entry.connector}</code><span>Last seen {relativeTime(entry.lastSeenAt)}</span></div>
+              <button
+                aria-label={`Inspect ${entry.connector} coverage`}
+                className="assuranceLedgerRow assuranceLedgerRowButton"
+                id={triggerId}
+                onClick={open}
+                type="button"
+              >
+                <div>
+                  <code>{entry.connector}</code>
+                  <span>Last seen {relativeTime(entry.lastSeenAt)}</span>
+                </div>
                 <strong>{entry.decisions}</strong>
                 <strong>{entry.agents}</strong>
                 <span className={className}>{label}</span>
@@ -105,15 +169,31 @@ function CoverageLedger({ coverage }: { coverage: Coverage }) {
             )}
           >
             <div className="packDrawerSummary">
-              <div><span className="meta">Coverage</span><span className={className}>{label}</span></div>
-              <div><span className="meta">Observed decisions</span><strong>{entry.decisions}</strong></div>
-              <div><span className="meta">Reporting agents</span><strong>{entry.agents}</strong></div>
-              <div><span className="meta">Last observed</span><strong>{relativeTime(entry.lastSeenAt)}</strong></div>
+              <div>
+                <span className="meta">Coverage</span>
+                <span className={className}>{label}</span>
+              </div>
+              <div>
+                <span className="meta">Observed decisions</span>
+                <strong>{entry.decisions}</strong>
+              </div>
+              <div>
+                <span className="meta">Reporting agents</span>
+                <strong>{entry.agents}</strong>
+              </div>
+              <div>
+                <span className="meta">Last observed</span>
+                <strong>{relativeTime(entry.lastSeenAt)}</strong>
+              </div>
             </div>
             <div className="packRuleDetail">
               <p className="eyebrow">Observed actions</p>
               <div className="packDrawerTags">
-                {entry.actions.map((action) => <code className="smallCode" key={action}>{action}</code>)}
+                {entry.actions.map((action) => (
+                  <code className="smallCode" key={action}>
+                    {action}
+                  </code>
+                ))}
               </div>
             </div>
             <p className="meta agentMutedBlock">
@@ -150,30 +230,89 @@ export function RuntimeAssurancePanel({
         <div>
           <p className="eyebrow">Production reporting</p>
           <h2 id={`${id}-title`}>Production coverage</h2>
-          <p className="meta">Check whether production agents are reporting, review policy-linked runtime candidates, and confirm that observed connector actions are covered.</p>
+          <p className="meta">
+            Check whether production agents are reporting, review policy-linked runtime candidates,
+            and confirm that observed connector actions are covered.
+          </p>
         </div>
       </div>
       <div className="assuranceTabs" role="tablist" aria-label="Production coverage views">
-        <button aria-controls={heartbeatPanel} aria-selected={tab === "heartbeat"} className={tab === "heartbeat" ? "isActive" : ""} id={`${id}-heartbeat-tab`} onClick={() => setTab("heartbeat")} role="tab" type="button">
-          Runtime reporting <span>{assurance.assured}/{assurance.total} current{assurance.drifted ? ` · ${assurance.drifted} drifted` : ""}{assurance.stale ? ` · ${assurance.stale} not reporting` : ""}</span>
+        <button
+          aria-controls={heartbeatPanel}
+          aria-selected={tab === "heartbeat"}
+          className={tab === "heartbeat" ? "isActive" : ""}
+          id={`${id}-heartbeat-tab`}
+          onClick={() => setTab("heartbeat")}
+          role="tab"
+          type="button"
+        >
+          Runtime reporting{" "}
+          <span>
+            {assurance.assured}/{assurance.total} current
+            {assurance.drifted ? ` · ${assurance.drifted} drifted` : ""}
+            {assurance.stale ? ` · ${assurance.stale} not reporting` : ""}
+          </span>
         </button>
-        <button aria-controls={discoveryPanel} aria-selected={tab === "discovery"} className={tab === "discovery" ? "isActive" : ""} id={`${id}-discovery-tab`} onClick={() => setTab("discovery")} role="tab" type="button">
+        <button
+          aria-controls={discoveryPanel}
+          aria-selected={tab === "discovery"}
+          className={tab === "discovery" ? "isActive" : ""}
+          id={`${id}-discovery-tab`}
+          onClick={() => setTab("discovery")}
+          role="tab"
+          type="button"
+        >
           Review candidates <span>{discovery.length}</span>
         </button>
-        <button aria-controls={coveragePanel} aria-selected={tab === "coverage"} className={tab === "coverage" ? "isActive" : ""} id={`${id}-coverage-tab`} onClick={() => setTab("coverage")} role="tab" type="button">
+        <button
+          aria-controls={coveragePanel}
+          aria-selected={tab === "coverage"}
+          className={tab === "coverage" ? "isActive" : ""}
+          id={`${id}-coverage-tab`}
+          onClick={() => setTab("coverage")}
+          role="tab"
+          type="button"
+        >
           Connector coverage <span>{coverage.length}</span>
         </button>
       </div>
-      <div aria-labelledby={`${id}-heartbeat-tab`} hidden={tab !== "heartbeat"} id={heartbeatPanel} role="tabpanel" tabIndex={0}>
-        <p className="assuranceScope">Compares each production report with the branch, revision, and artifact in the currently published policy bundle.</p>
+      <div
+        aria-labelledby={`${id}-heartbeat-tab`}
+        hidden={tab !== "heartbeat"}
+        id={heartbeatPanel}
+        role="tabpanel"
+        tabIndex={0}
+      >
+        <p className="assuranceScope">
+          Compares each production report with the branch, revision, and artifact in the currently
+          published policy bundle.
+        </p>
         <HeartbeatLedger assurance={assurance} />
       </div>
-      <div aria-labelledby={`${id}-discovery-tab`} hidden={tab !== "discovery"} id={discoveryPanel} role="tabpanel" tabIndex={0}>
-        <p className="assuranceScope">Candidates come only from policy-referencing production evidence, not an infrastructure scan. A runtime here isn&apos;t necessarily unmanaged — review each before acting.</p>
+      <div
+        aria-labelledby={`${id}-discovery-tab`}
+        hidden={tab !== "discovery"}
+        id={discoveryPanel}
+        role="tabpanel"
+        tabIndex={0}
+      >
+        <p className="assuranceScope">
+          Candidates come only from policy-referencing production evidence, not an infrastructure
+          scan. A runtime here isn&apos;t necessarily unmanaged — review each before acting.
+        </p>
         <DiscoveryLedger discovery={discovery} />
       </div>
-      <div aria-labelledby={`${id}-coverage-tab`} hidden={tab !== "coverage"} id={coveragePanel} role="tabpanel" tabIndex={0}>
-        <p className="assuranceScope">Covered means every observed action matches the active published policy. Audit-only activity has policy evidence but at least one action without a matching active rule.</p>
+      <div
+        aria-labelledby={`${id}-coverage-tab`}
+        hidden={tab !== "coverage"}
+        id={coveragePanel}
+        role="tabpanel"
+        tabIndex={0}
+      >
+        <p className="assuranceScope">
+          Covered means every observed action matches the active published policy. Audit-only
+          activity has policy evidence but at least one action without a matching active rule.
+        </p>
         <CoverageLedger coverage={coverage} />
       </div>
     </section>

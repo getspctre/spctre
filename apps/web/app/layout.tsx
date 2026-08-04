@@ -19,9 +19,7 @@ export const metadata: Metadata = {
   title: "Spctre Control Plane",
   description:
     "Stack-neutral policy operations and runtime evidence for AGT-compatible agent governance",
-  icons: {
-    icon: "/icon.svg",
-  }
+  icons: { icon: "/icon.svg" },
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
@@ -56,11 +54,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   const workspaceContext = await getWorkspaceContext();
   const appViewMode = await getAppViewMode();
-  const { branchCount, escalationCount, escalationPreview, isAdmin, degraded } = await getShellPageModel({
-    tenantId: workspaceContext.tenantId,
-    workspaceId: workspaceContext.workspaceId,
-    principalId: session.principalId,
-  });
+  const { branchCount, escalationCount, escalationPreview, isAdmin, degraded } =
+    await getShellPageModel({
+      tenantId: workspaceContext.tenantId,
+      workspaceId: workspaceContext.workspaceId,
+      principalId: session.principalId,
+    });
   return (
     <html lang={i18n.locale}>
       <body>

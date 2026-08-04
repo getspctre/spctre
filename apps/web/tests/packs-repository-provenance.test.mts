@@ -5,13 +5,13 @@ import { describe, expect, it, vi } from "vitest";
 // parameter catalog actually survives into what's persisted — not just what
 // the domain service *intends* to pass.
 const { state, sqlMock } = vi.hoisted(() => {
-  const state = {
-    capturedSourceDocument: null as Record<string, unknown> | null,
-  };
+  const state = { capturedSourceDocument: null as Record<string, unknown> | null };
 
   const fn = (...args: unknown[]): Promise<unknown[]> => {
     const strings = args[0] as TemplateStringsArray;
-    const joined = Array.isArray(strings) ? Array.from(strings).join(" ").replace(/\s+/g, " ").trim().toUpperCase() : "";
+    const joined = Array.isArray(strings)
+      ? Array.from(strings).join(" ").replace(/\s+/g, " ").trim().toUpperCase()
+      : "";
 
     if (joined.includes("SELECT ID FROM WORKSPACE")) {
       return Promise.resolve([{ id: "workspace-1" }]);
@@ -35,14 +35,9 @@ const { state, sqlMock } = vi.hoisted(() => {
   return { state, sqlMock };
 });
 
-vi.mock("@/lib/db", () => ({
-  sql: sqlMock,
-  rawSql: sqlMock,
-}));
+vi.mock("@/lib/db", () => ({ sql: sqlMock, rawSql: sqlMock }));
 
-vi.mock("@/lib/repositories/seed/local-dev", () => ({
-  ensureDemoTenant: vi.fn(async () => {}),
-}));
+vi.mock("@/lib/repositories/seed/local-dev", () => ({ ensureDemoTenant: vi.fn(async () => {}) }));
 
 const { persistPackInstallBranch } = await import("../lib/repositories/packs");
 
@@ -54,7 +49,8 @@ describe("persistPackInstallBranch provenance metadata", () => {
         label: "Refund amount requiring review (cents)",
         type: "number",
         default: 50000,
-        description: "Refunds at or above this amount escalate for review instead of auto-allowing.",
+        description:
+          "Refunds at or above this amount escalate for review instead of auto-allowing.",
       },
     ];
 

@@ -29,7 +29,7 @@ const FIRST_OCCURRENCE_EVENTS = new Set<ConversionTelemetryEventType>([
 export async function recordConversionTelemetry(
   tenantId: string,
   eventType: ConversionTelemetryEventType,
-  metadata: Record<string, unknown> = {}
+  metadata: Record<string, unknown> = {},
 ): Promise<void> {
   if (!sql) return;
   try {
@@ -63,6 +63,8 @@ export async function recordConversionTelemetry(
       VALUES (${tenantId}, ${eventType}, ${sql.json(metadata as JSONValue)})
     `;
   } catch (err) {
-    logger.error(`[telemetry] failed to record conversion event ${eventType}:`, { error: err instanceof Error ? err.message : String(err) });
+    logger.error(`[telemetry] failed to record conversion event ${eventType}:`, {
+      error: err instanceof Error ? err.message : String(err),
+    });
   }
 }

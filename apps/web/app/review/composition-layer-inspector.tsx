@@ -12,7 +12,13 @@ interface Props {
   viewMode: AppViewMode;
 }
 
-function LayerRuleCard({ rule, layerScope }: { rule: CompositionLayer["rules"][number]; layerScope: CompositionLayer["scope"] }) {
+function LayerRuleCard({
+  rule,
+  layerScope,
+}: {
+  rule: CompositionLayer["rules"][number];
+  layerScope: CompositionLayer["scope"];
+}) {
   return (
     <article className="packRuleDetail">
       <div className="rowHeader">
@@ -42,7 +48,7 @@ function LayerRuleCard({ rule, layerScope }: { rule: CompositionLayer["rules"][n
           {rule.effect}
         </span>
       </div>
-      {(rule.connectors?.length || rule.actions?.length || rule.domains?.length) ? (
+      {rule.connectors?.length || rule.actions?.length || rule.domains?.length ? (
         <div className="packRuleMeta">
           {rule.connectors?.length ? (
             <div>
@@ -69,8 +75,8 @@ function LayerRuleCard({ rule, layerScope }: { rule: CompositionLayer["rules"][n
 }
 
 export function CompositionLayerInspector({ layer, conflictNotes, viewMode }: Props) {
-  const layerConflicts = conflictNotes.filter(
-    (note) => note.toLowerCase().includes(layer.branchId.toLowerCase())
+  const layerConflicts = conflictNotes.filter((note) =>
+    note.toLowerCase().includes(layer.branchId.toLowerCase()),
   );
 
   return (
@@ -92,7 +98,8 @@ export function CompositionLayerInspector({ layer, conflictNotes, viewMode }: Pr
               <span className="meta">{layer.scope}</span>
               <h3>{layer.branchId}</h3>
               <p className="meta">
-                <code>{formatProvenanceId(layer.revisionId, viewMode, 12, hashToFingerprint)}</code> / {layer.ruleCount} rules
+                <code>{formatProvenanceId(layer.revisionId, viewMode, 12, hashToFingerprint)}</code>{" "}
+                / {layer.ruleCount} rules
               </p>
             </div>
             <div className="compositionLayerBadges">

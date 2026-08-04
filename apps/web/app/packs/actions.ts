@@ -10,7 +10,7 @@ export type { ImportState } from "@/app/policy/actions";
 
 export async function importPolicyPack(
   _prev: ImportState,
-  formData: FormData
+  formData: FormData,
 ): Promise<ImportState> {
   const context = await getWorkspaceContext();
   const writeCheck = verifyWriteAccess(context.tenantId);

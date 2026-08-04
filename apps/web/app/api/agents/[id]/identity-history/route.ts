@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 async function handleGetAgentIdentityHistory(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const traceId = extractTraceId(request);
 
@@ -17,14 +17,20 @@ async function handleGetAgentIdentityHistory(
 
   if (!isFeatureEnabled("crossSurfaceAgentIdentity")) {
     return withTraceId(
-      Response.json({ error: "Cross-surface agent identity requires a Cloud plan.", meta: makeMeta(traceId) }, { status: 402 }),
-      traceId
+      Response.json(
+        { error: "Cross-surface agent identity requires a Cloud plan.", meta: makeMeta(traceId) },
+        { status: 402 },
+      ),
+      traceId,
     );
   }
 
   const { id: agentId } = await params;
   const url = new URL(request.url);
-  const limit = Math.max(1, Math.min(500, Number.parseInt(url.searchParams.get("limit") ?? "100", 10) || 100));
+  const limit = Math.max(
+    1,
+    Math.min(500, Number.parseInt(url.searchParams.get("limit") ?? "100", 10) || 100),
+  );
 
   let history;
   try {
@@ -32,8 +38,11 @@ async function handleGetAgentIdentityHistory(
   } catch (err) {
     console.error("[agents/[id]/identity-history] listCrossSurfaceHistory failed", err);
     return withTraceId(
-      Response.json({ error: "Service temporarily unavailable.", meta: makeMeta(traceId) }, { status: 503 }),
-      traceId
+      Response.json(
+        { error: "Service temporarily unavailable.", meta: makeMeta(traceId) },
+        { status: 503 },
+      ),
+      traceId,
     );
   }
 

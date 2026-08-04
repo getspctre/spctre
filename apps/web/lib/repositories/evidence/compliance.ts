@@ -17,7 +17,7 @@ export interface PublishedRevisionRow {
 
 export async function getLatestPublishAndRevision(
   workspaceId: string | null,
-  tenantId: string
+  tenantId: string,
 ): Promise<PublishedRevisionRow | null> {
   if (!sql) return null;
 
@@ -61,7 +61,7 @@ export async function eraseEvidencePiiEvents(
   tenantId: string,
   workspaceId: string | null,
   filters: EvidenceErasureFilters,
-  erasedBy: string
+  erasedBy: string,
 ): Promise<{ erasedDecisionIds: string[] }> {
   if (!sql) return { erasedDecisionIds: [] };
   if (!filters.decisionIds?.length && !filters.agentId && !filters.before) {
@@ -116,7 +116,7 @@ export async function eraseEvidencePiiEvents(
 export async function deleteExpiredEvidenceEvents(
   tenantId: string,
   workspaceId: string | null,
-  expiredIds: string[]
+  expiredIds: string[],
 ): Promise<string[]> {
   if (!sql || !expiredIds.length) return [];
 

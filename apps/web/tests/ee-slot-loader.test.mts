@@ -5,8 +5,9 @@ import { commercialSlotModuleUrl } from "../lib/ee-adapters/slot-loader";
 
 describe("commercial slot loader", () => {
   it("resolves slots from the standalone image root instead of a Next chunk", () => {
-    expect(fileURLToPath(commercialSlotModuleUrl("web/hitl/index.js")))
-      .toBe(join(process.cwd(), "ee", "web", "hitl", "index.js"));
+    expect(fileURLToPath(commercialSlotModuleUrl("web/hitl/index.js"))).toBe(
+      join(process.cwd(), "ee", "web", "hitl", "index.js"),
+    );
   });
 
   it("honors the hosted image's commercial-slot root", () => {
@@ -14,8 +15,9 @@ describe("commercial slot loader", () => {
     process.env.SPCTRE_COMMERCIAL_SLOTS_ROOT = "/app/ee";
 
     try {
-      expect(fileURLToPath(commercialSlotModuleUrl("web/simulation/index.js")))
-        .toBe("/app/ee/web/simulation/index.js");
+      expect(fileURLToPath(commercialSlotModuleUrl("web/simulation/index.js"))).toBe(
+        "/app/ee/web/simulation/index.js",
+      );
     } finally {
       if (previous === undefined) {
         delete process.env.SPCTRE_COMMERCIAL_SLOTS_ROOT;

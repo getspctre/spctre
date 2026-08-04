@@ -16,7 +16,7 @@ import { getCommercialProfile } from "@/lib/repositories/workspace";
 
 export async function countRuntimeEvidence(
   workspaceId: string | null,
-  tenantId: string
+  tenantId: string,
 ): Promise<number> {
   if (!sql) return 0;
   const rows = await sql<{ count: string }[]>`
@@ -81,7 +81,7 @@ export async function listRuntimeEvidence(
   workspaceId: string | null,
   tenantId: string,
   limit = 50,
-  offset = 0
+  offset = 0,
 ): Promise<RuntimeDecisionEvidenceRecord[]> {
   if (!sql) return [];
   const rows = await sql<RuntimeEvidenceRow[]>`
@@ -97,7 +97,10 @@ export async function listRuntimeEvidence(
     LIMIT ${limit} OFFSET ${offset}
   `;
 
-  const packByRevisionId = await loadRevisionPackMetadata(tenantId, revisionIdsFromEvidenceRows(rows));
+  const packByRevisionId = await loadRevisionPackMetadata(
+    tenantId,
+    revisionIdsFromEvidenceRows(rows),
+  );
   return rows.map((row) => mapRuntimeEvidenceRow(row, packByRevisionId));
 }
 
@@ -107,7 +110,7 @@ export async function listRuntimeEvidence(
 export async function listObservedConnectorActions(
   workspaceId: string | null,
   tenantId: string,
-  limit = 200
+  limit = 200,
 ): Promise<{ connector: string; action: string }[]> {
   if (!sql) return [];
   const rows = await sql<{ connector: string; action: string }[]>`
@@ -140,7 +143,7 @@ export async function listRuntimeEvidenceKeyset(
   workspaceId: string | null,
   tenantId: string,
   limit: number,
-  cursor: KeysetCursor | null
+  cursor: KeysetCursor | null,
 ): Promise<RuntimeEvidenceKeysetRow[]> {
   if (!sql) return [];
   const ascending = cursor?.dir === "prev";
@@ -149,7 +152,9 @@ export async function listRuntimeEvidenceKeyset(
       ? rawSql`AND (event.created_at > ${cursor.ts}::timestamptz OR (event.created_at = ${cursor.ts}::timestamptz AND event.id > ${cursor.id}::uuid))`
       : rawSql`AND (event.created_at < ${cursor.ts}::timestamptz OR (event.created_at = ${cursor.ts}::timestamptz AND event.id < ${cursor.id}::uuid))`
     : rawSql``;
-  const ordering = ascending ? rawSql`ORDER BY event.created_at ASC, event.id ASC` : rawSql`ORDER BY event.created_at DESC, event.id DESC`;
+  const ordering = ascending
+    ? rawSql`ORDER BY event.created_at ASC, event.id ASC`
+    : rawSql`ORDER BY event.created_at DESC, event.id DESC`;
 
   const rows = await sql<(RuntimeEvidenceRow & { id: string })[]>`
     SELECT
@@ -169,7 +174,10 @@ export async function listRuntimeEvidenceKeyset(
     LIMIT ${limit + 1}
   `;
 
-  const packByRevisionId = await loadRevisionPackMetadata(tenantId, revisionIdsFromEvidenceRows(rows));
+  const packByRevisionId = await loadRevisionPackMetadata(
+    tenantId,
+    revisionIdsFromEvidenceRows(rows),
+  );
   return rows.map((row) => ({
     record: mapRuntimeEvidenceRow(row, packByRevisionId),
     cursor: { ts: row.created_at.toISOString(), id: row.id },
@@ -183,16 +191,19 @@ function revisionIdsFromEvidenceRows(rows: RuntimeEvidenceRow[]): string[] {
         Array.isArray(row.policy_context)
           ? (row.policy_context as RuntimePolicyContext[])
               .map((context) => context.revisionId)
-              .filter((revisionId): revisionId is string => typeof revisionId === "string" && !!revisionId)
-          : []
-      )
-    )
+              .filter(
+                (revisionId): revisionId is string =>
+                  typeof revisionId === "string" && !!revisionId,
+              )
+          : [],
+      ),
+    ),
   );
 }
 
 async function loadRevisionPackMetadata(
   tenantId: string,
-  revisionIds: string[]
+  revisionIds: string[],
 ): Promise<Map<string, RevisionPackMetadata>> {
   const packByRevisionId = new Map<string, RevisionPackMetadata>();
   if (!sql || revisionIds.length === 0) return packByRevisionId;
@@ -260,7 +271,7 @@ function mapRevisionMetadataRow(revisionRow: RevisionMetadataRow): RevisionPackM
 
 function mapRuntimeEvidenceRow(
   row: RuntimeEvidenceRow,
-  packByRevisionId: Map<string, RevisionPackMetadata>
+  packByRevisionId: Map<string, RevisionPackMetadata>,
 ): RuntimeDecisionEvidenceRecord {
   const rawEvidence = objectRecord(row.raw_evidence);
   const rawRuntimeTarget = objectField(rawEvidence.runtimeTarget);
@@ -274,8 +285,11 @@ function mapRuntimeEvidenceRow(
       stack: row.runtime_stack as RuntimeStack,
       adapter: row.runtime_adapter ?? undefined,
       environment: stringField(rawRuntimeTarget?.environment),
-      sandboxName: stringField(rawRuntimeTarget?.sandboxName) ?? stringField(rawExecutionContext?.sandboxName),
-      inferenceProvider: stringField(rawRuntimeTarget?.inferenceProvider) ?? stringField(rawExecutionContext?.inferenceProvider),
+      sandboxName:
+        stringField(rawRuntimeTarget?.sandboxName) ?? stringField(rawExecutionContext?.sandboxName),
+      inferenceProvider:
+        stringField(rawRuntimeTarget?.inferenceProvider) ??
+        stringField(rawExecutionContext?.inferenceProvider),
     },
     agentId: row.agent_id,
     connector: row.connector,
@@ -291,24 +305,34 @@ function mapRuntimeEvidenceRow(
     toolIntent: stringField(rawEvidence.toolIntent),
     planSummary: stringField(rawEvidence.planSummary),
     toolParameters: objectField(rawEvidence.toolParameters),
-    triggerKind: stringField(rawEvidence.triggerKind) as RuntimeDecisionEvidenceRecord["triggerKind"],
+    triggerKind: stringField(
+      rawEvidence.triggerKind,
+    ) as RuntimeDecisionEvidenceRecord["triggerKind"],
     layer: stringField(rawEvidence.layer) as RuntimeDecisionEvidenceRecord["layer"],
     executionContext: rawExecutionContext as RuntimeDecisionEvidenceRecord["executionContext"],
     parentAgentId: stringField(rawEvidence.parentAgentId),
     traceId: stringField(rawEvidence.traceId),
-    orchestratorRef: objectField(rawEvidence.orchestratorRef) as RuntimeDecisionEvidenceRecord["orchestratorRef"],
-    pluginSource: stringField(rawEvidence.pluginSource) as RuntimeDecisionEvidenceRecord["pluginSource"],
-    skillContext: objectField(rawEvidence.skillContext) as RuntimeDecisionEvidenceRecord["skillContext"],
+    orchestratorRef: objectField(
+      rawEvidence.orchestratorRef,
+    ) as RuntimeDecisionEvidenceRecord["orchestratorRef"],
+    pluginSource: stringField(
+      rawEvidence.pluginSource,
+    ) as RuntimeDecisionEvidenceRecord["pluginSource"],
+    skillContext: objectField(
+      rawEvidence.skillContext,
+    ) as RuntimeDecisionEvidenceRecord["skillContext"],
     webhookSource: stringField(rawEvidence.webhookSource),
     trustLevel: stringField(rawEvidence.trustLevel),
     catalogProvider: stringField(rawEvidence.catalogProvider),
-    blueprintContext: objectField(rawEvidence.blueprintContext) as RuntimeDecisionEvidenceRecord["blueprintContext"],
+    blueprintContext: objectField(
+      rawEvidence.blueprintContext,
+    ) as RuntimeDecisionEvidenceRecord["blueprintContext"],
   };
 }
 
 function enrichPolicyContext(
   policyContext: unknown,
-  packByRevisionId: Map<string, RevisionPackMetadata>
+  packByRevisionId: Map<string, RevisionPackMetadata>,
 ): RuntimePolicyContext[] {
   if (!Array.isArray(policyContext)) return [];
   return (policyContext as RuntimePolicyContext[]).map((context) => {
@@ -351,7 +375,7 @@ function canonicalizeEvidenceValue(value: unknown): unknown {
     return Object.fromEntries(
       Object.entries(value as Record<string, unknown>)
         .sort(([a], [b]) => a.localeCompare(b))
-        .map(([key, child]) => [key, canonicalizeEvidenceValue(child)])
+        .map(([key, child]) => [key, canonicalizeEvidenceValue(child)]),
     );
   }
   return value;
@@ -382,7 +406,7 @@ export async function ensureEvidenceDemoTenant(): Promise<void> {
 
 export async function validateEvidenceWorkspaceBoundary(
   tenantId: string,
-  workspaceId: string
+  workspaceId: string,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   if (!sql) return { ok: false, error: "Database not configured." };
 
@@ -402,7 +426,7 @@ export async function validateEvidenceWorkspaceBoundary(
 export async function validateEvidencePolicyContextBoundary(
   policyContext: RuntimePolicyContext[],
   tenantId: string,
-  workspaceId: string
+  workspaceId: string,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   if (!sql) return { ok: false, error: "Database not configured." };
   if (policyContext.length === 0) return { ok: true };
@@ -426,13 +450,13 @@ export async function validateEvidencePolicyContextBoundary(
 
   const allowedPairs = new Set(rows.map((row) => `${row.id}:${row.branch_id}`));
   const everyPairAllowed = policyContext.every((context) =>
-    allowedPairs.has(`${context.revisionId}:${context.branchId}`)
+    allowedPairs.has(`${context.revisionId}:${context.branchId}`),
   );
 
   if (!everyPairAllowed) {
     return {
       ok: false,
-      error: "Policy context contains a branch or revision outside this tenant/workspace."
+      error: "Policy context contains a branch or revision outside this tenant/workspace.",
     };
   }
 
@@ -547,10 +571,12 @@ export async function insertRuntimeEvidenceWithDedup(params: {
           workspaceId: params.workspaceId,
           tenantId: params.tenantId,
           payload: params.rawEvidenceWithSource,
-          retainUntil
+          retainUntil,
         });
       } catch (err) {
-        logger.error("[Forensic Archival Error] Failed to archive record:", { error: err instanceof Error ? err.message : String(err) });
+        logger.error("[Forensic Archival Error] Failed to archive record:", {
+          error: err instanceof Error ? err.message : String(err),
+        });
       }
     }
   }
@@ -686,7 +712,7 @@ export async function countTotalEvidenceEvents(tenantId: string): Promise<number
 
 export async function getConnectorActionByDecisionId(
   tenantId: string,
-  decisionId: string
+  decisionId: string,
 ): Promise<{ connector: string; action: string } | null> {
   if (!sql || !decisionId) return null;
   try {
@@ -706,24 +732,14 @@ export async function getConnectorActionByDecisionId(
 
 export async function getRawEvidenceForArchival(
   tenantId: string,
-  decisionIds: string[]
+  decisionIds: string[],
 ): Promise<
-  {
-    decision_id: string;
-    workspace_id: string;
-    tenant_id: string;
-    raw_evidence: unknown;
-  }[]
+  { decision_id: string; workspace_id: string; tenant_id: string; raw_evidence: unknown }[]
 > {
   if (!sql || !decisionIds.length) return [];
   try {
     const rows = await sql<
-      {
-        decision_id: string;
-        workspace_id: string;
-        tenant_id: string;
-        raw_evidence: unknown;
-      }[]
+      { decision_id: string; workspace_id: string; tenant_id: string; raw_evidence: unknown }[]
     >`
       SELECT decision_id, workspace_id, tenant_id, raw_evidence
       FROM runtime_evidence_event

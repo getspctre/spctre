@@ -29,10 +29,7 @@ describe("evaluateRuntimePolicyDecision", () => {
         issueId: "issue-456",
         goalId: "goal-789",
       },
-      skillContext: {
-        activeSkills: ["risk-review"],
-        promptSurface: "before_prompt_build",
-      },
+      skillContext: { activeSkills: ["risk-review"], promptSurface: "before_prompt_build" },
       triggerKind: "mobile_dispatch",
       layer: "sandbox",
       pluginSource: "corporate_private",
@@ -68,16 +65,8 @@ describe("evaluateRuntimePolicyDecision", () => {
     const result = evaluateRuntimePolicyDecision({
       connector: "runtime",
       action: "tool.call",
-      orchestratorRef: {
-        platform: "paperclip",
-        companyId: "company-other",
-      },
-      rules: [
-        {
-          ...baseRule,
-          companyIds: ["company-123"],
-        },
-      ],
+      orchestratorRef: { platform: "paperclip", companyId: "company-other" },
+      rules: [{ ...baseRule, companyIds: ["company-123"] }],
     });
 
     expect(result.status).toBe("ALLOW");

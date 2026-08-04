@@ -16,7 +16,7 @@ describe("web onboarding contract", () => {
           actions: ["payment.create"],
           domains: ["finance"],
         }),
-      ])
+      ]),
     );
   });
 

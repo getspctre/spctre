@@ -34,7 +34,8 @@ export function buildWorkspaceSwitchPath(params: {
 }): string {
   const segments = params.pathname.split("/").filter(Boolean);
   const currentPathIsWorkspaceScoped = params.knownWorkspaceSlugs.includes(segments[0] ?? "");
-  const barePathIsWorkspaceScoped = !segments.length || WORKSPACE_SCOPED_ROOT_SEGMENTS.has(segments[0] ?? "");
+  const barePathIsWorkspaceScoped =
+    !segments.length || WORKSPACE_SCOPED_ROOT_SEGMENTS.has(segments[0] ?? "");
   const path = currentPathIsWorkspaceScoped
     ? `/${segments.slice(1).join("/")}`
     : barePathIsWorkspaceScoped

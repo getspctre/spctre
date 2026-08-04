@@ -4,7 +4,19 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Search, X, Bot, GitBranch, Activity, SquareCheck, ScrollText, PackageCheck, Boxes, AlertTriangle, CreditCard } from "lucide-react";
+import {
+  Search,
+  X,
+  Bot,
+  GitBranch,
+  Activity,
+  SquareCheck,
+  ScrollText,
+  PackageCheck,
+  Boxes,
+  AlertTriangle,
+  CreditCard,
+} from "lucide-react";
 import { buildWorkspacePath } from "@/lib/workspace/path";
 
 interface CommandItem {
@@ -18,18 +30,90 @@ interface CommandItem {
 function buildItems(workspaceSlug: string, t: (key: string) => string): CommandItem[] {
   const p = (path: string) => buildWorkspacePath(workspaceSlug, path);
   return [
-    { label: t("items.policies.label"), description: t("items.policies.description"), href: p("/"), icon: <GitBranch size={15} />, keywords: ["branch", "import", "policy"] },
-    { label: t("items.rules.label"), description: t("items.rules.description"), href: p("/rules"), icon: <Search size={15} />, keywords: ["rule", "deny", "warn", "allow", "connector"] },
-    { label: t("items.review.label"), description: t("items.review.description"), href: p("/review"), icon: <SquareCheck size={15} />, keywords: ["review", "publish", "compose", "diff"] },
-    { label: t("items.audit_log.label"), description: t("items.audit_log.description"), href: p("/evidence"), icon: <Activity size={15} />, keywords: ["evidence", "audit", "log", "decision", "simulation"] },
-    { label: t("items.agents.label"), description: t("items.agents.description"), href: p("/agents"), icon: <Bot size={15} />, keywords: ["agent", "fleet", "stale", "outdated", "current"] },
-    { label: t("items.compliance.label"), description: t("items.compliance.description"), href: p("/compliance"), icon: <PackageCheck size={15} />, keywords: ["compliance", "report", "export", "timeline", "seal", "retention"] },
-    { label: t("items.packs.label"), description: t("items.packs.description"), href: p("/packs"), icon: <Boxes size={15} />, keywords: ["pack", "install", "catalog"] },
-    { label: t("items.audit_ledger.label"), description: t("items.audit_ledger.description"), href: p("/operations"), icon: <ScrollText size={15} />, keywords: ["operations", "audit", "ledger", "log", "hash", "chain"] },
-    { label: t("items.escalations.label"), description: t("items.escalations.description"), href: p("/escalations"), icon: <AlertTriangle size={15} />, keywords: ["escalation", "hitl", "review", "sla", "queue"] },
-    { label: t("items.escalation_routing.label"), description: t("items.escalation_routing.description"), href: p("/escalation-routing"), icon: <AlertTriangle size={15} />, keywords: ["routing", "notification", "pagerduty", "slack", "teams"] },
-    { label: t("items.siem_export.label"), description: t("items.siem_export.description"), href: p("/siem-export"), icon: <ScrollText size={15} />, keywords: ["siem", "splunk", "sentinel", "export", "stream"] },
-    { label: t("items.billing.label"), description: t("items.billing.description"), href: "/usage-billing", icon: <CreditCard size={15} />, keywords: ["billing", "plan", "usage", "subscription"] },
+    {
+      label: t("items.policies.label"),
+      description: t("items.policies.description"),
+      href: p("/"),
+      icon: <GitBranch size={15} />,
+      keywords: ["branch", "import", "policy"],
+    },
+    {
+      label: t("items.rules.label"),
+      description: t("items.rules.description"),
+      href: p("/rules"),
+      icon: <Search size={15} />,
+      keywords: ["rule", "deny", "warn", "allow", "connector"],
+    },
+    {
+      label: t("items.review.label"),
+      description: t("items.review.description"),
+      href: p("/review"),
+      icon: <SquareCheck size={15} />,
+      keywords: ["review", "publish", "compose", "diff"],
+    },
+    {
+      label: t("items.audit_log.label"),
+      description: t("items.audit_log.description"),
+      href: p("/evidence"),
+      icon: <Activity size={15} />,
+      keywords: ["evidence", "audit", "log", "decision", "simulation"],
+    },
+    {
+      label: t("items.agents.label"),
+      description: t("items.agents.description"),
+      href: p("/agents"),
+      icon: <Bot size={15} />,
+      keywords: ["agent", "fleet", "stale", "outdated", "current"],
+    },
+    {
+      label: t("items.compliance.label"),
+      description: t("items.compliance.description"),
+      href: p("/compliance"),
+      icon: <PackageCheck size={15} />,
+      keywords: ["compliance", "report", "export", "timeline", "seal", "retention"],
+    },
+    {
+      label: t("items.packs.label"),
+      description: t("items.packs.description"),
+      href: p("/packs"),
+      icon: <Boxes size={15} />,
+      keywords: ["pack", "install", "catalog"],
+    },
+    {
+      label: t("items.audit_ledger.label"),
+      description: t("items.audit_ledger.description"),
+      href: p("/operations"),
+      icon: <ScrollText size={15} />,
+      keywords: ["operations", "audit", "ledger", "log", "hash", "chain"],
+    },
+    {
+      label: t("items.escalations.label"),
+      description: t("items.escalations.description"),
+      href: p("/escalations"),
+      icon: <AlertTriangle size={15} />,
+      keywords: ["escalation", "hitl", "review", "sla", "queue"],
+    },
+    {
+      label: t("items.escalation_routing.label"),
+      description: t("items.escalation_routing.description"),
+      href: p("/escalation-routing"),
+      icon: <AlertTriangle size={15} />,
+      keywords: ["routing", "notification", "pagerduty", "slack", "teams"],
+    },
+    {
+      label: t("items.siem_export.label"),
+      description: t("items.siem_export.description"),
+      href: p("/siem-export"),
+      icon: <ScrollText size={15} />,
+      keywords: ["siem", "splunk", "sentinel", "export", "stream"],
+    },
+    {
+      label: t("items.billing.label"),
+      description: t("items.billing.description"),
+      href: "/usage-billing",
+      icon: <CreditCard size={15} />,
+      keywords: ["billing", "plan", "usage", "subscription"],
+    },
   ];
 }
 
@@ -97,14 +181,24 @@ export function CommandPalette({ workspaceSlug }: CommandPaletteProps) {
 
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === "Tab") {
-      const focusable = [...(e.currentTarget.closest(".cmdPaletteModal")?.querySelectorAll<HTMLElement>('button:not([disabled]), input:not([disabled])') ?? [])];
-      const first = focusable[0]; const last = focusable.at(-1);
+      const focusable = [
+        ...(e.currentTarget
+          .closest(".cmdPaletteModal")
+          ?.querySelectorAll<HTMLElement>("button:not([disabled]), input:not([disabled])") ?? []),
+      ];
+      const first = focusable[0];
+      const last = focusable.at(-1);
       if (first && last) {
         // Index-based wrap keeps focus inside the palette even when the active
         // element is not in the focusable set (index -1).
         const index = focusable.indexOf(document.activeElement as HTMLElement);
-        if (e.shiftKey && index <= 0) { e.preventDefault(); last.focus(); }
-        else if (!e.shiftKey && (index === -1 || index === focusable.length - 1)) { e.preventDefault(); first.focus(); }
+        if (e.shiftKey && index <= 0) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && (index === -1 || index === focusable.length - 1)) {
+          e.preventDefault();
+          first.focus();
+        }
       }
       return;
     }
@@ -129,12 +223,7 @@ export function CommandPalette({ workspaceSlug }: CommandPaletteProps) {
         onClick={() => setOpen(false)}
         type="button"
       />
-      <div
-        className="cmdPaletteModal"
-        role="dialog"
-        aria-label={t("aria_label")}
-        aria-modal="true"
-      >
+      <div className="cmdPaletteModal" role="dialog" aria-label={t("aria_label")} aria-modal="true">
         <div className="cmdPaletteSearch">
           <Search size={16} style={{ color: "var(--muted)", flexShrink: 0 }} />
           <input
@@ -185,13 +274,21 @@ export function CommandPalette({ workspaceSlug }: CommandPaletteProps) {
         )}
 
         <div className="cmdPaletteFooter">
-          <span><kbd>↑↓</kbd> {t("footer.navigate")}</span>
-          <span><kbd>↵</kbd> {t("footer.open")}</span>
-          <span><kbd>Esc</kbd> {t("footer.close")}</span>
-          <span style={{ marginLeft: "auto" }}><kbd>⌘K</kbd> {t("footer.toggle")}</span>
+          <span>
+            <kbd>↑↓</kbd> {t("footer.navigate")}
+          </span>
+          <span>
+            <kbd>↵</kbd> {t("footer.open")}
+          </span>
+          <span>
+            <kbd>Esc</kbd> {t("footer.close")}
+          </span>
+          <span style={{ marginLeft: "auto" }}>
+            <kbd>⌘K</kbd> {t("footer.toggle")}
+          </span>
         </div>
       </div>
     </div>,
-    document.body
+    document.body,
   );
 }

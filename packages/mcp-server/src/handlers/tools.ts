@@ -40,7 +40,17 @@ function buildMcpEvidencePayload(
   },
   bundle: PublishedBundleMeta,
 ): Record<string, unknown> {
-  const { decision_id, connector, action, agent_context, outcome, result, raw_evidence, audit_seal, tags } = parsed;
+  const {
+    decision_id,
+    connector,
+    action,
+    agent_context,
+    outcome,
+    result,
+    raw_evidence,
+    audit_seal,
+    tags,
+  } = parsed;
   const mappedStatus = MCP_OUTCOME_STATUS[String(outcome || "")] || "WARN";
 
   return {
@@ -81,9 +91,13 @@ function buildMcpEvidencePayload(
   };
 }
 
-export async function evaluatePolicy(ctx: McpServerContext, args: Record<string, unknown>): Promise<{ content: Array<{ type: string; text: string }> }> {
+export async function evaluatePolicy(
+  ctx: McpServerContext,
+  args: Record<string, unknown>,
+): Promise<{ content: Array<{ type: string; text: string }> }> {
   try {
-    const { connector, action, agent_context, tool_context, risk_level } = validateToolArgs<EvaluatePolicyArgs>("evaluate_policy", args);
+    const { connector, action, agent_context, tool_context, risk_level } =
+      validateToolArgs<EvaluatePolicyArgs>("evaluate_policy", args);
 
     ctx.assertConnectorAllowed(connector);
 
@@ -91,12 +105,17 @@ export async function evaluatePolicy(ctx: McpServerContext, args: Record<string,
       throw new Error("Workspace mismatch");
     }
 
-    const { branchId, revisionId, artifactHash } = await ctx.fetchPublishedBundleRefs(agent_context.workspace_id);
+    const { branchId, revisionId, artifactHash } = await ctx.fetchPublishedBundleRefs(
+      agent_context.workspace_id,
+    );
     const rawArgs = tool_context?.raw_args ?? {};
-    const normalizedRiskLevel = typeof risk_level === "string" ? risk_level.toUpperCase() : "MEDIUM";
+    const normalizedRiskLevel =
+      typeof risk_level === "string" ? risk_level.toUpperCase() : "MEDIUM";
     const consequence =
       rawArgs.consequence ??
-      (normalizedRiskLevel === "HIGH" || normalizedRiskLevel === "CRITICAL" ? normalizedRiskLevel : undefined);
+      (normalizedRiskLevel === "HIGH" || normalizedRiskLevel === "CRITICAL"
+        ? normalizedRiskLevel
+        : undefined);
 
     const decisionId = `mcp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     const response = await ctx.postWithAuth("/api/gateway/decide", {
@@ -106,12 +125,7 @@ export async function evaluatePolicy(ctx: McpServerContext, args: Record<string,
       agentId: agent_context.agent_id,
       workspaceId: agent_context.workspace_id,
       artifactHash,
-      policyContext: [{
-        scope: "WORKSPACE",
-        branchId,
-        revisionId,
-        artifactHash,
-      }],
+      policyContext: [{ scope: "WORKSPACE", branchId, revisionId, artifactHash }],
       consequence,
       dataSensitivity: rawArgs.dataSensitivity,
       amountUsd: rawArgs.amountUsd,
@@ -140,14 +154,35 @@ export async function evaluatePolicy(ctx: McpServerContext, args: Record<string,
     };
   } catch (error: unknown) {
     return {
-      content: [{ type: "text", text: JSON.stringify({ error: `Policy evaluation failed: ${errorMessage(error)}`, decision: "ERROR" }) }],
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify({
+            error: `Policy evaluation failed: ${errorMessage(error)}`,
+            decision: "ERROR",
+          }),
+        },
+      ],
     };
   }
 }
 
-export async function createEvidenceRecord(ctx: McpServerContext, args: Record<string, unknown>): Promise<{ content: Array<{ type: string; text: string }> }> {
+export async function createEvidenceRecord(
+  ctx: McpServerContext,
+  args: Record<string, unknown>,
+): Promise<{ content: Array<{ type: string; text: string }> }> {
   try {
-    const { decision_id, connector, action, agent_context, outcome, result, raw_evidence, audit_seal, tags } = validateToolArgs<CreateEvidenceArgs>("create_evidence_record", args);
+    const {
+      decision_id,
+      connector,
+      action,
+      agent_context,
+      outcome,
+      result,
+      raw_evidence,
+      audit_seal,
+      tags,
+    } = validateToolArgs<CreateEvidenceArgs>("create_evidence_record", args);
 
     ctx.assertConnectorAllowed(connector);
 
@@ -171,7 +206,20 @@ export async function createEvidenceRecord(ctx: McpServerContext, args: Record<s
 
     const response = await ctx.postWithAuth(
       "/api/evidence",
-      buildMcpEvidencePayload({ decision_id, connector, action, agent_context, outcome, result, raw_evidence, audit_seal, tags }, bundle),
+      buildMcpEvidencePayload(
+        {
+          decision_id,
+          connector,
+          action,
+          agent_context,
+          outcome,
+          result,
+          raw_evidence,
+          audit_seal,
+          tags,
+        },
+        bundle,
+      ),
       { "x-spctre-source": "mcp" },
     );
 
@@ -194,16 +242,27 @@ export async function createEvidenceRecord(ctx: McpServerContext, args: Record<s
     };
   } catch (error: unknown) {
     return {
-      content: [{ type: "text", text: JSON.stringify({ error: `Evidence creation failed: ${errorMessage(error)}` }) }],
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify({ error: `Evidence creation failed: ${errorMessage(error)}` }),
+        },
+      ],
     };
   }
 }
 
-export async function escalateToReview(ctx: McpServerContext, args: Record<string, unknown>): Promise<{ content: Array<{ type: string; text: string }> }> {
+export async function escalateToReview(
+  ctx: McpServerContext,
+  args: Record<string, unknown>,
+): Promise<{ content: Array<{ type: string; text: string }> }> {
   // Validate once, before the try: invalid args must surface, not fall through
   // to the synthetic-escalation fallback (which only exists to degrade
   // gracefully when the upstream POST fails, not on malformed input).
-  const { decision_id, reason, priority, assignee } = validateToolArgs<EscalateToReviewArgs>("escalate_to_review", args);
+  const { decision_id, reason, priority, assignee } = validateToolArgs<EscalateToReviewArgs>(
+    "escalate_to_review",
+    args,
+  );
   try {
     const response = await ctx.postWithAuth("/api/gateway/escalations", {
       decisionId: decision_id,
@@ -251,16 +310,25 @@ export async function escalateToReview(ctx: McpServerContext, args: Record<strin
   }
 }
 
-export async function getPolicyStatus(ctx: McpServerContext, args: Record<string, unknown>): Promise<{ content: Array<{ type: string; text: string }> }> {
+export async function getPolicyStatus(
+  ctx: McpServerContext,
+  args: Record<string, unknown>,
+): Promise<{ content: Array<{ type: string; text: string }> }> {
   try {
-    const { workspace_id, environment } = validateToolArgs<GetPolicyStatusArgs>("get_policy_status", args);
+    const { workspace_id, environment } = validateToolArgs<GetPolicyStatusArgs>(
+      "get_policy_status",
+      args,
+    );
 
     const [adaptersResponse, bundleResponse] = await Promise.allSettled([
       ctx.getWithAuth("/api/adapters", { workspace_id, environment }),
-      ctx.getWithAuth("/api/bundle/latest", { workspace_id: workspace_id || ctx.config.workspaceId }),
+      ctx.getWithAuth("/api/bundle/latest", {
+        workspace_id: workspace_id || ctx.config.workspaceId,
+      }),
     ]);
 
-    const connectors = adaptersResponse.status === "fulfilled" ? (adaptersResponse.value.data || []) : [];
+    const connectors =
+      adaptersResponse.status === "fulfilled" ? adaptersResponse.value.data || [] : [];
     const bundleHeaders = bundleResponse.status === "fulfilled" ? bundleResponse.value.headers : {};
     const revisionId = bundleHeaders["x-spctre-revision-id"] ?? null;
     const artifactHash = bundleHeaders["x-spctre-artifact-hash"] ?? null;
@@ -284,14 +352,25 @@ export async function getPolicyStatus(ctx: McpServerContext, args: Record<string
     };
   } catch (error: unknown) {
     return {
-      content: [{ type: "text", text: JSON.stringify({ error: `Policy status query failed: ${errorMessage(error)}` }) }],
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify({ error: `Policy status query failed: ${errorMessage(error)}` }),
+        },
+      ],
     };
   }
 }
 
-export async function getEffectivePolicy(ctx: McpServerContext, args: Record<string, unknown>): Promise<{ content: Array<{ type: string; text: string }> }> {
+export async function getEffectivePolicy(
+  ctx: McpServerContext,
+  args: Record<string, unknown>,
+): Promise<{ content: Array<{ type: string; text: string }> }> {
   try {
-    const { connector, environment, agent_id } = validateToolArgs<GetEffectivePolicyArgs>("get_effective_policy", args);
+    const { connector, environment, agent_id } = validateToolArgs<GetEffectivePolicyArgs>(
+      "get_effective_policy",
+      args,
+    );
     ctx.assertConnectorAllowed(connector);
 
     const bundleResponse = await ctx.getWithAuth("/api/bundle/latest", {
@@ -303,11 +382,12 @@ export async function getEffectivePolicy(ctx: McpServerContext, args: Record<str
     const allRules: Array<Record<string, unknown>> = bundle.rules ?? [];
 
     const matchingRules = connector
-      ? allRules.filter((r: Record<string, unknown>) =>
-          !Array.isArray(r.connectors) ||
-          r.connectors.length === 0 ||
-          r.connectors.includes(connector) ||
-          r.connectors.includes("*")
+      ? allRules.filter(
+          (r: Record<string, unknown>) =>
+            !Array.isArray(r.connectors) ||
+            r.connectors.length === 0 ||
+            r.connectors.includes(connector) ||
+            r.connectors.includes("*"),
         )
       : allRules;
 
@@ -332,12 +412,22 @@ export async function getEffectivePolicy(ctx: McpServerContext, args: Record<str
     };
   } catch (error: unknown) {
     return {
-      content: [{ type: "text", text: JSON.stringify({ error: `Effective policy resolution failed: ${errorMessage(error)}` }) }],
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify({
+            error: `Effective policy resolution failed: ${errorMessage(error)}`,
+          }),
+        },
+      ],
     };
   }
 }
 
-export async function listPendingEscalations(ctx: McpServerContext, args: Record<string, unknown>): Promise<{ content: Array<{ type: string; text: string }> }> {
+export async function listPendingEscalations(
+  ctx: McpServerContext,
+  args: Record<string, unknown>,
+): Promise<{ content: Array<{ type: string; text: string }> }> {
   try {
     const limit = Math.max(1, Math.min(100, Number(args?.limit ?? 20)));
     const response = await ctx.getWithAuth("/api/gateway/escalations", { limit });
@@ -357,25 +447,42 @@ export async function listPendingEscalations(ctx: McpServerContext, args: Record
     };
   } catch (error: unknown) {
     return {
-      content: [{ type: "text", text: JSON.stringify({ error: `Escalation list failed: ${errorMessage(error)}`, queue: [], count: 0 }) }],
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify({
+            error: `Escalation list failed: ${errorMessage(error)}`,
+            queue: [],
+            count: 0,
+          }),
+        },
+      ],
     };
   }
 }
 
-export async function getComplianceStatus(ctx: McpServerContext): Promise<{ content: Array<{ type: string; text: string }> }> {
+export async function getComplianceStatus(
+  ctx: McpServerContext,
+): Promise<{ content: Array<{ type: string; text: string }> }> {
   try {
     const response = await ctx.getWithAuth("/api/compliance/status");
-    return {
-      content: [{ type: "text", text: JSON.stringify(response.data) }],
-    };
+    return { content: [{ type: "text", text: JSON.stringify(response.data) }] };
   } catch (error: unknown) {
     return {
-      content: [{ type: "text", text: JSON.stringify({ error: `Compliance status unavailable: ${errorMessage(error)}` }) }],
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify({ error: `Compliance status unavailable: ${errorMessage(error)}` }),
+        },
+      ],
     };
   }
 }
 
-export async function ingestGatewayEvent(ctx: McpServerContext, args: Record<string, unknown>): Promise<{ content: Array<{ type: string; text: string }> }> {
+export async function ingestGatewayEvent(
+  ctx: McpServerContext,
+  args: Record<string, unknown>,
+): Promise<{ content: Array<{ type: string; text: string }> }> {
   try {
     const response = await ctx.postWithAuth("/api/gateway-ingest/mcp", args, {
       "x-spctre-source": "mcp",
@@ -396,12 +503,20 @@ export async function ingestGatewayEvent(ctx: McpServerContext, args: Record<str
     };
   } catch (error: unknown) {
     return {
-      content: [{ type: "text", text: JSON.stringify({ error: `Gateway event ingest failed: ${errorMessage(error)}` }) }],
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify({ error: `Gateway event ingest failed: ${errorMessage(error)}` }),
+        },
+      ],
     };
   }
 }
 
-export async function discoverMcpTools(ctx: McpServerContext, args: Record<string, unknown>): Promise<{ content: Array<{ type: string; text: string }> }> {
+export async function discoverMcpTools(
+  ctx: McpServerContext,
+  args: Record<string, unknown>,
+): Promise<{ content: Array<{ type: string; text: string }> }> {
   try {
     await ctx.ensureMcpPolicyLoaded({
       agentId: typeof args?.agent_id === "string" ? args.agent_id : undefined,
@@ -424,12 +539,23 @@ export async function discoverMcpTools(ctx: McpServerContext, args: Record<strin
     };
   } catch (error: unknown) {
     return {
-      content: [{ type: "text", text: JSON.stringify({ error: `MCP discovery failed: ${errorMessage(error)}`, tools: [] }) }],
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify({
+            error: `MCP discovery failed: ${errorMessage(error)}`,
+            tools: [],
+          }),
+        },
+      ],
     };
   }
 }
 
-function parseAuthorizeArgs(ctx: McpServerContext, args: Record<string, unknown>): {
+function parseAuthorizeArgs(
+  ctx: McpServerContext,
+  args: Record<string, unknown>,
+): {
   serverName: string;
   toolName: string;
   workspaceId: string;
@@ -442,11 +568,18 @@ function parseAuthorizeArgs(ctx: McpServerContext, args: Record<string, unknown>
     throw new Error("server_name and tool_name are required.");
   }
 
-  const agentContext = args?.agent_context && typeof args.agent_context === "object" && !Array.isArray(args.agent_context)
-    ? args.agent_context as Record<string, unknown>
-    : {};
-  const workspaceId = typeof agentContext.workspace_id === "string" ? agentContext.workspace_id : ctx.config.workspaceId;
-  const agentId = typeof agentContext.agent_id === "string" ? agentContext.agent_id : ctx.config.agentId;
+  const agentContext =
+    args?.agent_context &&
+    typeof args.agent_context === "object" &&
+    !Array.isArray(args.agent_context)
+      ? (args.agent_context as Record<string, unknown>)
+      : {};
+  const workspaceId =
+    typeof agentContext.workspace_id === "string"
+      ? agentContext.workspace_id
+      : ctx.config.workspaceId;
+  const agentId =
+    typeof agentContext.agent_id === "string" ? agentContext.agent_id : ctx.config.agentId;
   if (workspaceId !== ctx.config.workspaceId) {
     throw new Error("Workspace mismatch");
   }
@@ -456,14 +589,15 @@ function parseAuthorizeArgs(ctx: McpServerContext, args: Record<string, unknown>
     toolName,
     workspaceId,
     agentId,
-    environment: typeof agentContext.environment === "string" ? agentContext.environment : undefined,
+    environment:
+      typeof agentContext.environment === "string" ? agentContext.environment : undefined,
   };
 }
 
 async function fetchArtifactHashBestEffort(ctx: McpServerContext): Promise<string | null> {
-  const bundleResponse = await ctx.getWithAuth("/api/bundle/latest", {
-    workspace_id: ctx.config.workspaceId,
-  }).catch(() => null);
+  const bundleResponse = await ctx
+    .getWithAuth("/api/bundle/latest", { workspace_id: ctx.config.workspaceId })
+    .catch(() => null);
   return (
     bundleResponse?.headers?.["x-spctre-artifact-hash"] ??
     bundleResponse?.data?.artifactHash ??
@@ -471,9 +605,15 @@ async function fetchArtifactHashBestEffort(ctx: McpServerContext): Promise<strin
   );
 }
 
-export async function authorizeMcpToolCall(ctx: McpServerContext, args: Record<string, unknown>): Promise<{ content: Array<{ type: string; text: string }> }> {
+export async function authorizeMcpToolCall(
+  ctx: McpServerContext,
+  args: Record<string, unknown>,
+): Promise<{ content: Array<{ type: string; text: string }> }> {
   try {
-    const { serverName, toolName, workspaceId, agentId, environment } = parseAuthorizeArgs(ctx, args);
+    const { serverName, toolName, workspaceId, agentId, environment } = parseAuthorizeArgs(
+      ctx,
+      args,
+    );
 
     await ctx.ensureMcpPolicyLoaded({ agentId, environment });
 
@@ -481,7 +621,9 @@ export async function authorizeMcpToolCall(ctx: McpServerContext, args: Record<s
 
     const secret = ctx.config.auditSealSecret;
     if (!secret) {
-      throw new Error("SPCTRE_MCP_AUDIT_SEAL_SECRET is required to seal MCP authorization decisions.");
+      throw new Error(
+        "SPCTRE_MCP_AUDIT_SEAL_SECRET is required to seal MCP authorization decisions.",
+      );
     }
     const authorization = authorizeGovernedMcpTool({
       capabilities: ctx.governedMcpCapabilities,
@@ -522,7 +664,15 @@ export async function authorizeMcpToolCall(ctx: McpServerContext, args: Record<s
     };
   } catch (error: unknown) {
     return {
-      content: [{ type: "text", text: JSON.stringify({ error: `MCP authorization failed: ${errorMessage(error)}`, outcome: "DENY" }) }],
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify({
+            error: `MCP authorization failed: ${errorMessage(error)}`,
+            outcome: "DENY",
+          }),
+        },
+      ],
     };
   }
 }

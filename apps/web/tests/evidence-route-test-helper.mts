@@ -31,7 +31,7 @@ export function makeEvidenceSqlMock(resolveInsertResult: InsertResultResolver) {
 export function buildEvidenceRequest(
   overrides: Record<string, unknown> = {},
   source: EvidenceSource = "hook",
-  options: { includeSourceHeader?: boolean } = {}
+  options: { includeSourceHeader?: boolean } = {},
 ): Request {
   const includeSourceHeader = options.includeSourceHeader ?? true;
   const headers: Record<string, string> = {
@@ -53,7 +53,9 @@ export function buildEvidenceRequest(
     reason: "allowed",
     policyRefs: ["rule-1"],
     artifactHash: "sha256:abc",
-    policyContext: [{ scope: "WORKSPACE", branchId: "b-1", revisionId: "r-1", artifactHash: "sha256:abc" }],
+    policyContext: [
+      { scope: "WORKSPACE", branchId: "b-1", revisionId: "r-1", artifactHash: "sha256:abc" },
+    ],
     latencyMs: 5,
     createdAt: new Date().toISOString(),
     ...overrides,
@@ -66,14 +68,18 @@ export function buildEvidenceRequest(
   });
 }
 
-export function findDedupTelemetry(consoleSpy: { mock: { calls: unknown[][] } }): Record<string, unknown> | undefined {
-  return consoleSpy.mock.calls
-    .map(([msg]) => {
-      try {
-        return JSON.parse(msg as string) as Record<string, unknown>;
-      } catch {
-        return null;
-      }
-    })
-    .find((obj) => obj?.message === "evidence.dedup_suppressed") ?? undefined;
+export function findDedupTelemetry(consoleSpy: {
+  mock: { calls: unknown[][] };
+}): Record<string, unknown> | undefined {
+  return (
+    consoleSpy.mock.calls
+      .map(([msg]) => {
+        try {
+          return JSON.parse(msg as string) as Record<string, unknown>;
+        } catch {
+          return null;
+        }
+      })
+      .find((obj) => obj?.message === "evidence.dedup_suppressed") ?? undefined
+  );
 }

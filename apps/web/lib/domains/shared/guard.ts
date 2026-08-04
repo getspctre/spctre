@@ -7,12 +7,11 @@ import { swallow } from "@/lib/platform/swallow";
 
 export type GuardError = { error: string };
 
-export async function requireAdminActor(workspaceId?: string): Promise<
+export async function requireAdminActor(
+  workspaceId?: string,
+): Promise<
   | GuardError
-  | {
-      session: NonNullable<Awaited<ReturnType<typeof getAuthSession>>>;
-      workspaceId: string;
-    }
+  | { session: NonNullable<Awaited<ReturnType<typeof getAuthSession>>>; workspaceId: string }
 > {
   if (!isDatabaseConfigured()) {
     return { error: "Database is not configured." };

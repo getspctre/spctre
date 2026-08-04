@@ -31,13 +31,23 @@ export function ImportPolicyPanel({
       title={t("new_branch.title")}
       width="wide"
       trigger={({ open, triggerId }) => (
-        <button className={variant === "primary" ? "button buttonPrimary" : "button buttonSmall"} id={triggerId} onClick={open} type="button">
+        <button
+          className={variant === "primary" ? "button buttonPrimary" : "button buttonSmall"}
+          id={triggerId}
+          onClick={open}
+          type="button"
+        >
           <GitBranch size={16} />
           {label}
         </button>
       )}
     >
-      <ImportForm workspaceId={workspaceId} workspaceSlug={workspaceSlug} initialScope={initialScope} initialEnvironment={initialEnvironment} />
+      <ImportForm
+        workspaceId={workspaceId}
+        workspaceSlug={workspaceSlug}
+        initialScope={initialScope}
+        initialEnvironment={initialEnvironment}
+      />
     </SlideOutPanel>
   );
 }

@@ -1,4 +1,8 @@
-import type { ContextBudgetEventType, CrossSurfaceTrustSummary, TrustCalibrationPolicy } from "@spctre/policy-schema";
+import type {
+  ContextBudgetEventType,
+  CrossSurfaceTrustSummary,
+  TrustCalibrationPolicy,
+} from "@spctre/policy-schema";
 import { runWithTenantContext } from "@/lib/tenant-context";
 import { appendOperationsLog } from "@/lib/repositories/operations-log";
 import {
@@ -27,11 +31,13 @@ export async function listTrustPolicies(params: {
     listTrustCalibrationPolicies(params.tenantId, params.workspaceId, {
       enabledOnly: params.enabledOnly,
       limit: params.limit,
-    })
+    }),
   );
 }
 
-export async function createTrustPolicy(params: Parameters<typeof createTrustCalibrationPolicy>[0]) {
+export async function createTrustPolicy(
+  params: Parameters<typeof createTrustCalibrationPolicy>[0],
+) {
   return createTrustCalibrationPolicy(params);
 }
 
@@ -43,10 +49,7 @@ export async function updateTrustPolicy(params: {
   return updateTrustCalibrationPolicy(params.id, params.tenantId, params.patch);
 }
 
-export async function deleteTrustPolicy(params: {
-  id: string;
-  tenantId: string;
-}) {
+export async function deleteTrustPolicy(params: { id: string; tenantId: string }) {
   return deleteTrustCalibrationPolicy(params.id, params.tenantId);
 }
 
@@ -81,7 +84,7 @@ export async function listContextBudget(params: {
       agentId: params.agentId,
       eventType: params.eventType,
       limit: params.limit,
-    })
+    }),
   );
 }
 
@@ -114,15 +117,15 @@ export async function listCrossSurfaceTrustHistory(params: {
         tenantId: params.tenantId,
         workspaceId: params.workspaceId,
         canonicalAgentId: params.canonicalAgentId,
-      })
+      }),
     ),
     runWithTenantContext(params.tenantId, () =>
       listTrustScoreHistoryCrossSurface(
         params.canonicalAgentId,
         params.workspaceId,
         params.tenantId,
-        params.limit
-      )
+        params.limit,
+      ),
     ),
   ]);
   const latestScore = history[0]?.trustScore;

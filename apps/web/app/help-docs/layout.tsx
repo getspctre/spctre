@@ -16,14 +16,7 @@ export default async function HelpDocsLayout({ children }: { children: ReactNode
         githubUrl="https://github.com/spctre/spctre"
         containerProps={{ className: "spctre-docs-layout" }}
         nav={{ title: "Spctre Help Docs" }}
-        links={[
-          {
-            type: "main",
-            text: "API Reference",
-            url: "/api-docs",
-            external: true,
-          },
-        ]}
+        links={[{ type: "main", text: "API Reference", url: "/api-docs", external: true }]}
       >
         {children}
       </DocsLayout>

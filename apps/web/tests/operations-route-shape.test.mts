@@ -5,17 +5,11 @@ const getAuthSessionSpy = vi.fn();
 const getWorkspaceContextSpy = vi.fn();
 const listOperationsLogSpy = vi.fn();
 
-vi.mock("@/lib/auth-session", () => ({
-  getAuthSession: getAuthSessionSpy,
-}));
+vi.mock("@/lib/auth-session", () => ({ getAuthSession: getAuthSessionSpy }));
 
-vi.mock("@/lib/workspace/scope", () => ({
-  getActiveScope: getWorkspaceContextSpy,
-}));
+vi.mock("@/lib/workspace/scope", () => ({ getActiveScope: getWorkspaceContextSpy }));
 
-vi.mock("@/lib/repositories/operations-log", () => ({
-  listOperationsLog: listOperationsLogSpy,
-}));
+vi.mock("@/lib/repositories/operations-log", () => ({ listOperationsLog: listOperationsLogSpy }));
 
 vi.mock("@/lib/db", () => ({
   runWithTenantContext: vi.fn((_tenantId: string, fn: () => Promise<unknown>) => fn()),
@@ -51,10 +45,8 @@ describe("operations route response shape", () => {
 
     const response = await route.GET(
       new Request("http://localhost:3000/api/operations?limit=25&offset=5", {
-        headers: {
-          "x-request-id": "trace-operations",
-        },
-      })
+        headers: { "x-request-id": "trace-operations" },
+      }),
     );
 
     const body = await response.json();
@@ -69,14 +61,7 @@ describe("operations route response shape", () => {
     expect(body.count).toBe(1);
     expect(body.limit).toBe(25);
     expect(body.offset).toBe(5);
-    expect(body.pagination).toEqual({
-      total: 1,
-      limit: 25,
-      offset: 5,
-    });
-    expect(body.meta).toMatchObject({
-      traceId: "trace-operations",
-      version: API_VERSION,
-    });
+    expect(body.pagination).toEqual({ total: 1, limit: 25, offset: 5 });
+    expect(body.meta).toMatchObject({ traceId: "trace-operations", version: API_VERSION });
   });
 });

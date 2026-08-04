@@ -14,7 +14,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   ]);
   if (!session || !scope) {
     return withTraceId(
-      Response.json({ error: "Authentication and workspace context are required.", meta: makeMeta(traceId) }, { status: 401 }),
+      Response.json(
+        { error: "Authentication and workspace context are required.", meta: makeMeta(traceId) },
+        { status: 401 },
+      ),
       traceId,
     );
   }
@@ -26,7 +29,13 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     simulationRunId: id,
   }).catch(swallow("getSimulationRunReview", null));
   if (!simulation) {
-    return withTraceId(Response.json({ error: "Simulation run not found.", meta: makeMeta(traceId) }, { status: 404 }), traceId);
+    return withTraceId(
+      Response.json(
+        { error: "Simulation run not found.", meta: makeMeta(traceId) },
+        { status: 404 },
+      ),
+      traceId,
+    );
   }
   return withTraceId(Response.json({ simulation, meta: makeMeta(traceId) }), traceId);
 }

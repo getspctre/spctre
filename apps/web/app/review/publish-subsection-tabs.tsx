@@ -35,7 +35,11 @@ interface PublishSubsectionTabsProps {
   exportHref: string;
 }
 
-function CoverageTabContent({ compatibilityReport }: { compatibilityReport: BundleCompatibilityReport | null }) {
+function CoverageTabContent({
+  compatibilityReport,
+}: {
+  compatibilityReport: BundleCompatibilityReport | null;
+}) {
   return (
     <>
       <div className="rowHeader">
@@ -79,7 +83,9 @@ function CoverageTabContent({ compatibilityReport }: { compatibilityReport: Bund
                   </p>
                   <div className="exportRules">
                     {gap.uncoveredConnectors.map((c) => (
-                      <span className="ruleRef" key={c}>{c}</span>
+                      <span className="ruleRef" key={c}>
+                        {c}
+                      </span>
                     ))}
                   </div>
                 </div>
@@ -88,14 +94,18 @@ function CoverageTabContent({ compatibilityReport }: { compatibilityReport: Bund
           ) : (
             <div className="exportRules">
               {compatibilityReport.coveredConnectors.map((c) => (
-                <span className="ruleRef" key={c}>{c}</span>
+                <span className="ruleRef" key={c}>
+                  {c}
+                </span>
               ))}
             </div>
           )}
         </>
       ) : (
         <div className="emptyState">
-          <p className="meta">No adapters registered. Register one to validate this bundle on publish.</p>
+          <p className="meta">
+            No adapters registered. Register one to validate this bundle on publish.
+          </p>
         </div>
       )}
     </>
@@ -126,16 +136,17 @@ function VerificationTabContent({
             !verificationSummary.hasResults
               ? "pill pillNeutral"
               : verificationSummary.overallOutcome === "PASS" && !verificationSummary.isStale
-              ? "pill pillAllow"
-              : verificationSummary.overallOutcome === "FAIL"
-              ? "pill pillBlock"
-              : "pill pillWarn"
+                ? "pill pillAllow"
+                : verificationSummary.overallOutcome === "FAIL"
+                  ? "pill pillBlock"
+                  : "pill pillWarn"
           }
         >
           {verificationLabel}
         </span>
       </div>
-      {verificationSummary.hasResults && Object.keys(verificationSummary.resultsByType).length > 0 ? (
+      {verificationSummary.hasResults &&
+      Object.keys(verificationSummary.resultsByType).length > 0 ? (
         <table className="table">
           <thead>
             <tr>
@@ -145,23 +156,42 @@ function VerificationTabContent({
             </tr>
           </thead>
           <tbody>
-            {(Object.entries(verificationSummary.resultsByType) as [string, { outcome: string; createdAt: string }][]).map(
-              ([type, result]) => (
-                <tr key={type}>
-                  <td><code>{type}</code></td>
-                  <td>
-                    <span className={result.outcome === "PASS" ? "pill pillAllow" : result.outcome === "FAIL" ? "pill pillBlock" : "pill pillWarn"}>
-                      {result.outcome}
-                    </span>
-                  </td>
-                  <td className="meta">{new Date(result.createdAt).toLocaleString()}</td>
-                </tr>
-              )
-            )}
+            {(
+              Object.entries(verificationSummary.resultsByType) as [
+                string,
+                { outcome: string; createdAt: string },
+              ][]
+            ).map(([type, result]) => (
+              <tr key={type}>
+                <td>
+                  <code>{type}</code>
+                </td>
+                <td>
+                  <span
+                    className={
+                      result.outcome === "PASS"
+                        ? "pill pillAllow"
+                        : result.outcome === "FAIL"
+                          ? "pill pillBlock"
+                          : "pill pillWarn"
+                    }
+                  >
+                    {result.outcome}
+                  </span>
+                </td>
+                <td className="meta">{new Date(result.createdAt).toLocaleString()}</td>
+              </tr>
+            ))}
           </tbody>
         </table>
       ) : null}
-      <p className="meta">Verification evidence is attached by your delivery workflow. <a href="/help-docs/ui-guides/reviewer/reviewing-a-branch">Review verification requirements</a>.</p>
+      <p className="meta">
+        Verification evidence is attached by your delivery workflow.{" "}
+        <a href="/help-docs/ui-guides/reviewer/reviewing-a-branch">
+          Review verification requirements
+        </a>
+        .
+      </p>
     </>
   );
 }
@@ -175,7 +205,10 @@ function ExportTabContent({
   activeArtifact: PolicyArtifactExport;
   activeBundle: AgtCompatiblePolicyBundle;
   viewMode: AppViewMode;
-  readinessByFormat: Map<PolicyBundleExportFormat, ReturnType<typeof buildPolicyBundleExports>[number]>;
+  readinessByFormat: Map<
+    PolicyBundleExportFormat,
+    ReturnType<typeof buildPolicyBundleExports>[number]
+  >;
 }) {
   const reviewedBundleHref = `/api/bundle/revision/${activeArtifact.revisionId}?branch=${activeBundle.branchId}`;
   return (
@@ -184,9 +217,14 @@ function ExportTabContent({
         <div>
           <p className="eyebrow">Artifact tools</p>
           <h3>
-            Reviewed bundle <code>{formatArtifactHash(activeArtifact.artifactHash, viewMode, hashToFingerprint)}</code>
+            Reviewed bundle{" "}
+            <code>
+              {formatArtifactHash(activeArtifact.artifactHash, viewMode, hashToFingerprint)}
+            </code>
           </h3>
-          <p className="meta">Every download in this section is generated from the revision currently under review.</p>
+          <p className="meta">
+            Every download in this section is generated from the revision currently under review.
+          </p>
         </div>
         <a className="button" href={reviewedBundleHref}>
           <Cloud size={16} />
@@ -198,7 +236,9 @@ function ExportTabContent({
           <Cloud size={18} />
           <div>
             <span className="meta">Revision</span>
-            <strong>{formatProvenanceId(activeArtifact.revisionId, viewMode, 12, hashToFingerprint)}</strong>
+            <strong>
+              {formatProvenanceId(activeArtifact.revisionId, viewMode, 12, hashToFingerprint)}
+            </strong>
           </div>
           <div>
             <span className="meta">Source</span>
@@ -215,7 +255,9 @@ function ExportTabContent({
               <Cloud size={17} />
               <div>
                 <h3>{runtimeLabels[target.stack]}</h3>
-                <p className="meta">{target.adapter} / {target.environment}</p>
+                <p className="meta">
+                  {target.adapter} / {target.environment}
+                </p>
               </div>
             </article>
           ))}
@@ -232,7 +274,9 @@ function ExportTabContent({
         </div>
         <div>
           <span className="meta">Source hash</span>
-          <strong>{formatArtifactHash(activeBundle.sourceHash, viewMode, hashToFingerprint)}</strong>
+          <strong>
+            {formatArtifactHash(activeBundle.sourceHash, viewMode, hashToFingerprint)}
+          </strong>
         </div>
       </div>
       <div className="targetList" aria-label="Export target downloads">
@@ -263,11 +307,15 @@ function ExportTabContent({
       </div>
       <div className="exportRules">
         {activeBundle.rules.map((rule) => (
-          <span className="ruleRef" key={rule.stableRuleId}>{rule.stableRuleId}</span>
+          <span className="ruleRef" key={rule.stableRuleId}>
+            {rule.stableRuleId}
+          </span>
         ))}
       </div>
       <p className="meta">
-        Need the deployed artifact instead? <a href="/api/bundle/latest">Download latest published bundle</a>. It may be a different revision.
+        Need the deployed artifact instead?{" "}
+        <a href="/api/bundle/latest">Download latest published bundle</a>. It may be a different
+        revision.
       </p>
     </>
   );
@@ -287,8 +335,8 @@ export function PublishSubsectionTabs({
   const verificationLabel = !verificationSummary?.hasResults
     ? "—"
     : verificationSummary.isStale
-    ? "STALE"
-    : verificationSummary.overallOutcome;
+      ? "STALE"
+      : verificationSummary.overallOutcome;
   const exportReadiness = buildPolicyBundleExports({
     bundle: activeBundle,
     formats: EXPORT_TARGETS.map((target) => target.format),
@@ -299,42 +347,42 @@ export function PublishSubsectionTabs({
   return (
     <section className="panel reviewPanel" id="publish">
       <nav aria-label="Readiness details">
-      <TabsRow>
-        <a
-          className={activeTab === "coverage" ? "uiTab uiTabActive" : "uiTab"}
-          href={coverageHref}
-        >
-          Coverage
-          {compatibilityReport ? (
-            <span className="headCount">
-              {compatibilityReport.compatible
-                ? "ok"
-                : `${compatibilityReport.gaps.length} gap${compatibilityReport.gaps.length !== 1 ? "s" : ""}`}
-            </span>
-          ) : null}
-        </a>
-        {verificationSummary ? (
+        <TabsRow>
           <a
-            className={activeTab === "verification" ? "uiTab uiTabActive" : "uiTab"}
-            href={verificationHref}
+            className={activeTab === "coverage" ? "uiTab uiTabActive" : "uiTab"}
+            href={coverageHref}
           >
-            Verification
-            <span className="headCount">{verificationLabel}</span>
+            Coverage
+            {compatibilityReport ? (
+              <span className="headCount">
+                {compatibilityReport.compatible
+                  ? "ok"
+                  : `${compatibilityReport.gaps.length} gap${compatibilityReport.gaps.length !== 1 ? "s" : ""}`}
+              </span>
+            ) : null}
           </a>
-        ) : null}
-        <a
-          className={activeTab === "export" ? "uiTab uiTabActive" : "uiTab"}
-          href={exportHref}
-        >
-          Artifact tools
-        </a>
-      </TabsRow>
+          {verificationSummary ? (
+            <a
+              className={activeTab === "verification" ? "uiTab uiTabActive" : "uiTab"}
+              href={verificationHref}
+            >
+              Verification
+              <span className="headCount">{verificationLabel}</span>
+            </a>
+          ) : null}
+          <a className={activeTab === "export" ? "uiTab uiTabActive" : "uiTab"} href={exportHref}>
+            Artifact tools
+          </a>
+        </TabsRow>
       </nav>
 
       {activeTab === "coverage" && <CoverageTabContent compatibilityReport={compatibilityReport} />}
 
       {activeTab === "verification" && verificationSummary && (
-        <VerificationTabContent verificationSummary={verificationSummary} verificationLabel={verificationLabel} />
+        <VerificationTabContent
+          verificationSummary={verificationSummary}
+          verificationLabel={verificationLabel}
+        />
       )}
 
       {activeTab === "export" && (

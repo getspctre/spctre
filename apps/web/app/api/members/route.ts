@@ -16,7 +16,13 @@ async function handleGetApiMembers(request: Request) {
     members = await listOrganizationMembersForApi(tenantId);
   } catch (err) {
     console.error("[members] listOrganizationMembers failed", err);
-    return withTraceId(Response.json({ error: "Service temporarily unavailable.", meta: makeMeta(traceId) }, { status: 503 }), traceId);
+    return withTraceId(
+      Response.json(
+        { error: "Service temporarily unavailable.", meta: makeMeta(traceId) },
+        { status: 503 },
+      ),
+      traceId,
+    );
   }
 
   const summary = members.map((m) => ({
@@ -33,12 +39,15 @@ async function handleGetApiMembers(request: Request) {
     })),
   }));
 
-  return withTraceId(Response.json({
-    members: summary,
-    count: summary.length,
-    generatedAt: new Date().toISOString(),
-    meta: makeMeta(traceId),
-  }), traceId);
+  return withTraceId(
+    Response.json({
+      members: summary,
+      count: summary.length,
+      generatedAt: new Date().toISOString(),
+      meta: makeMeta(traceId),
+    }),
+    traceId,
+  );
 }
 
 export { handleGetApiMembers as GET };

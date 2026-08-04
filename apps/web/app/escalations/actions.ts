@@ -1,9 +1,6 @@
 "use server";
 
-import {
-  claimEscalationDecision,
-  resolveEscalationDecision,
-} from "@/lib/domains/gateway/service";
+import { claimEscalationDecision, resolveEscalationDecision } from "@/lib/domains/gateway/service";
 import { revalidatePaths } from "@/lib/platform/cache";
 import { verifyWriteAccess } from "@/lib/demo-guard";
 import { getActiveScope, getWorkspaceContext } from "@/lib/workspace";
@@ -19,13 +16,16 @@ async function verifyActiveWorkspaceWriteAccess(): Promise<{ error: string } | n
 
 export async function claimEscalation(
   _prevState: ClaimEscalationState,
-  formData: FormData
+  formData: FormData,
 ): Promise<ClaimEscalationState> {
   const denied = await verifyActiveWorkspaceWriteAccess();
   if (denied) return denied;
 
   const queueId = String(formData.get("queueId") ?? "").trim();
-  const result = await claimEscalationDecision({ queueId }, await getActiveScope().catch(swallow("getActiveScope", null)));
+  const result = await claimEscalationDecision(
+    { queueId },
+    await getActiveScope().catch(swallow("getActiveScope", null)),
+  );
   if ("error" in result) return result;
   revalidatePaths(["/escalations"]);
   return result;
@@ -35,7 +35,7 @@ export type ResolveEscalationState = { error: string } | { ok: true } | null;
 
 export async function resolveEscalation(
   _prevState: ResolveEscalationState,
-  formData: FormData
+  formData: FormData,
 ): Promise<ResolveEscalationState> {
   const denied = await verifyActiveWorkspaceWriteAccess();
   if (denied) return denied;
@@ -45,12 +45,10 @@ export async function resolveEscalation(
   const resolutionNote = String(formData.get("resolutionNote") ?? "").trim() || undefined;
   const agentGuidance = String(formData.get("agentGuidance") ?? "").trim() || undefined;
 
-  const result = await resolveEscalationDecision({
-    queueId,
-    resolutionOutcome,
-    resolutionNote,
-    agentGuidance,
-  }, await getActiveScope().catch(swallow("getActiveScope", null)));
+  const result = await resolveEscalationDecision(
+    { queueId, resolutionOutcome, resolutionNote, agentGuidance },
+    await getActiveScope().catch(swallow("getActiveScope", null)),
+  );
   if ("error" in result) {
     return result;
   }

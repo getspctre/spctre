@@ -14,8 +14,7 @@ export interface McpToolSchema {
 export const TOOL_SCHEMAS: McpToolSchema[] = [
   {
     name: "evaluate_policy",
-    description:
-      "Evaluate whether a tool execution is allowed based on current policies",
+    description: "Evaluate whether a tool execution is allowed based on current policies",
     inputSchema: {
       type: "object",
       properties: {
@@ -26,10 +25,7 @@ export const TOOL_SCHEMAS: McpToolSchema[] = [
           properties: {
             agent_id: { type: "string" },
             workspace_id: { type: "string" },
-            environment: {
-              type: "string",
-              enum: ["dev", "staging", "prod", "production"],
-            },
+            environment: { type: "string", enum: ["dev", "staging", "prod", "production"] },
           },
           required: ["agent_id", "workspace_id"],
         },
@@ -62,23 +58,14 @@ export const TOOL_SCHEMAS: McpToolSchema[] = [
         action: { type: "string" },
         agent_context: {
           type: "object",
-          properties: {
-            agent_id: { type: "string" },
-            workspace_id: { type: "string" },
-          },
+          properties: { agent_id: { type: "string" }, workspace_id: { type: "string" } },
           required: ["agent_id", "workspace_id"],
         },
-        outcome: {
-          type: "string",
-          enum: ["EXECUTED", "BLOCKED", "SKIPPED", "ERROR"],
-        },
+        outcome: { type: "string", enum: ["EXECUTED", "BLOCKED", "SKIPPED", "ERROR"] },
         result: { type: "object" },
         raw_evidence: { type: "object" },
         audit_seal: { type: "string" },
-        tags: {
-          type: "array",
-          items: { type: "string" },
-        },
+        tags: { type: "array", items: { type: "string" } },
       },
       required: ["decision_id", "connector", "action", "agent_context"],
     },
@@ -91,11 +78,7 @@ export const TOOL_SCHEMAS: McpToolSchema[] = [
       properties: {
         decision_id: { type: "string" },
         reason: { type: "string" },
-        priority: {
-          type: "string",
-          enum: ["LOW", "NORMAL", "HIGH", "URGENT"],
-          default: "NORMAL",
-        },
+        priority: { type: "string", enum: ["LOW", "NORMAL", "HIGH", "URGENT"], default: "NORMAL" },
         assignee: { type: "string" },
       },
       required: ["decision_id", "reason"],
@@ -108,10 +91,7 @@ export const TOOL_SCHEMAS: McpToolSchema[] = [
       type: "object",
       properties: {
         workspace_id: { type: "string" },
-        environment: {
-          type: "string",
-          enum: ["dev", "staging", "prod", "production"],
-        },
+        environment: { type: "string", enum: ["dev", "staging", "prod", "production"] },
         connector: { type: "string" },
       },
       required: ["workspace_id"],
@@ -119,7 +99,8 @@ export const TOOL_SCHEMAS: McpToolSchema[] = [
   },
   {
     name: "get_effective_policy",
-    description: "Resolve the composed runtime policy for a given agent, connector, and environment — returns the same bundle the decision gateway would evaluate",
+    description:
+      "Resolve the composed runtime policy for a given agent, connector, and environment — returns the same bundle the decision gateway would evaluate",
     inputSchema: {
       type: "object",
       properties: {
@@ -136,25 +117,23 @@ export const TOOL_SCHEMAS: McpToolSchema[] = [
   },
   {
     name: "list_pending_escalations",
-    description: "Surface open HITL queue items with SLA elapsed time, for AI agents that need to surface governance blockers to their operators",
+    description:
+      "Surface open HITL queue items with SLA elapsed time, for AI agents that need to surface governance blockers to their operators",
     inputSchema: {
       type: "object",
-      properties: {
-        limit: { type: "integer", minimum: 1, maximum: 100, default: 20 },
-      },
+      properties: { limit: { type: "integer", minimum: 1, maximum: 100, default: 20 } },
     },
   },
   {
     name: "get_compliance_status",
-    description: "Return the latest compliance packet summary (evidence count, approval count, pass/fail, staleness) for the current workspace",
-    inputSchema: {
-      type: "object",
-      properties: {},
-    },
+    description:
+      "Return the latest compliance packet summary (evidence count, approval count, pass/fail, staleness) for the current workspace",
+    inputSchema: { type: "object", properties: {} },
   },
   {
     name: "ingest_gateway_event",
-    description: "Ingest a spctre.gateway.event.v1 payload into the evidence pipeline; intended for LiteLLM, Portkey, and Helicone gateway adapters acting as the MCP client",
+    description:
+      "Ingest a spctre.gateway.event.v1 payload into the evidence pipeline; intended for LiteLLM, Portkey, and Helicone gateway adapters acting as the MCP client",
     inputSchema: {
       type: "object",
       properties: {
@@ -178,7 +157,8 @@ export const TOOL_SCHEMAS: McpToolSchema[] = [
   },
   {
     name: "discover_mcp_tools",
-    description: "Discover approved downstream MCP tools for this workspace and agent without taking over planning or execution",
+    description:
+      "Discover approved downstream MCP tools for this workspace and agent without taking over planning or execution",
     inputSchema: {
       type: "object",
       properties: {
@@ -189,7 +169,8 @@ export const TOOL_SCHEMAS: McpToolSchema[] = [
   },
   {
     name: "authorize_mcp_tool_call",
-    description: "Authorize a downstream MCP tool call and return a cryptographic audit seal for the runtime wrapper to attach to evidence",
+    description:
+      "Authorize a downstream MCP tool call and return a cryptographic audit seal for the runtime wrapper to attach to evidence",
     inputSchema: {
       type: "object",
       properties: {

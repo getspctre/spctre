@@ -1,4 +1,1 @@
-{
-  "title": "Operations",
-  "pages": ["token-lifecycle", "escalation-handling", "health-checks"]
-}
+{ "title": "Operations", "pages": ["token-lifecycle", "escalation-handling", "health-checks"] }

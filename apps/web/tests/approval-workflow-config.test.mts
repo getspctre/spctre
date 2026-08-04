@@ -7,7 +7,10 @@ import {
 
 describe("approval workflow configuration", () => {
   it("preserves the existing default Security and Platform gate", () => {
-    const workflow = defaultApprovalWorkflowSnapshot({ workspaceId: "ws-1", environment: "production" });
+    const workflow = defaultApprovalWorkflowSnapshot({
+      workspaceId: "ws-1",
+      environment: "production",
+    });
     expect(workflow).toMatchObject({
       name: "Default approval workflow",
       reviewMode: "PARALLEL",
@@ -21,12 +24,13 @@ describe("approval workflow configuration", () => {
   });
 
   it("uses an eligible reviewer role for an unconfigured workspace", () => {
-    const workflow = defaultApprovalWorkflowSnapshot({ workspaceId: "ws-1", eligibleReviewerRole: "Security" });
+    const workflow = defaultApprovalWorkflowSnapshot({
+      workspaceId: "ws-1",
+      eligibleReviewerRole: "Security",
+    });
 
     expect(workflow.name).toBe("Default reviewer workflow");
-    expect(approvalRulesFromWorkflow(workflow)).toEqual([
-      { role: "Security", requiredCount: 1 },
-    ]);
+    expect(approvalRulesFromWorkflow(workflow)).toEqual([{ role: "Security", requiredCount: 1 }]);
   });
 
   it("attaches the workflow snapshot to publish readiness and blocks missing configured roles", () => {
@@ -45,7 +49,14 @@ describe("approval workflow configuration", () => {
       branchId: "branch-1",
       revisionId: "rev-1",
       approvalRules: approvalRulesFromWorkflow(workflow),
-      approvals: [{ reviewer: "sec-1", role: "Security", status: "APPROVED", reviewedAt: "2026-05-13T00:00:00Z" }],
+      approvals: [
+        {
+          reviewer: "sec-1",
+          role: "Security",
+          status: "APPROVED",
+          reviewedAt: "2026-05-13T00:00:00Z",
+        },
+      ],
       approvalWorkflow: workflow,
     });
 

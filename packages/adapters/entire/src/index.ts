@@ -47,20 +47,43 @@ export interface EntireIngestResult {
   status: CheckpointStatus;
 }
 
-const SENSITIVE_PATH = [/\.env(\.|$)/i, /\.secret/i, /secrets?\//i, /credentials?\//i, /private[_-]?key/i, /id_rsa/, /\.(pem|key|p12|pfx)$/i];
+const SENSITIVE_PATH = [
+  /\.env(\.|$)/i,
+  /\.secret/i,
+  /secrets?\//i,
+  /credentials?\//i,
+  /private[_-]?key/i,
+  /id_rsa/,
+  /\.(pem|key|p12|pfx)$/i,
+];
 const SAFE_REF = /^[\w./-]+$/;
-const KNOWN_AGENTS = new Set(["claude-code", "codex", "cursor", "gemini-cli", "antigravity-cli", "antigravity", "github-copilot", "windsurf"]);
+const KNOWN_AGENTS = new Set([
+  "claude-code",
+  "codex",
+  "cursor",
+  "gemini-cli",
+  "antigravity-cli",
+  "antigravity",
+  "github-copilot",
+  "windsurf",
+]);
 
 /**
  * Reads Entire's checkpoint branch and submits normalized checkpoints to the
  * public Git checkpoint endpoint. This package deliberately owns Entire's
  * private branch layout; the core Spctre CLI and server do not.
  */
-export async function ingestEntireCheckpoints(options: EntireCheckpointAdapterOptions): Promise<EntireIngestResult[]> {
+export async function ingestEntireCheckpoints(
+  options: EntireCheckpointAdapterOptions,
+): Promise<EntireIngestResult[]> {
   const branch = options.branch ?? "entire/checkpoints/v1";
-  if (!SAFE_REF.test(branch) || branch.startsWith("-")) throw new Error(`Unsafe Git ref: ${branch}`);
+  if (!SAFE_REF.test(branch) || branch.startsWith("-"))
+    throw new Error(`Unsafe Git ref: ${branch}`);
 
-  const onSkip = options.onSkip ?? ((skip: EntireCheckpointSkip) => console.warn(`[entire-checkpoints] skipped ${skip.path}: ${skip.reason} — ${skip.detail}`));
+  const onSkip =
+    options.onSkip ??
+    ((skip: EntireCheckpointSkip) =>
+      console.warn(`[entire-checkpoints] skipped ${skip.path}: ${skip.reason} — ${skip.detail}`));
   const headCommit = git(["rev-parse", branch]).trim();
   const checkpoints = readCheckpoints(branch, onSkip);
   const fetchImpl = options.fetch ?? globalThis.fetch;
@@ -78,7 +101,10 @@ export async function ingestEntireCheckpoints(options: EntireCheckpointAdapterOp
         environment: options.environment,
         status,
         reason: reasonFor(metadata, status),
-        agent: { id: options.agentId ?? `entire/${slug(metadata.agent)}`, adapter: "entire-checkpoints" },
+        agent: {
+          id: options.agentId ?? `entire/${slug(metadata.agent)}`,
+          adapter: "entire-checkpoints",
+        },
         connector: "entire-session",
         action: `session.${metadata.kind ?? "standard"}`,
         checkpoint: {
@@ -88,23 +114,44 @@ export async function ingestEntireCheckpoints(options: EntireCheckpointAdapterOp
           ref: metadata.branch ?? branch,
           headCommit,
           diff: metadata.files_touched?.length
-            ? { format: "name-status", files: metadata.files_touched.map((path) => ({ path, status: "modified" })) }
+            ? {
+                format: "name-status",
+                files: metadata.files_touched.map((path) => ({ path, status: "modified" })),
+              }
             : { format: "none" },
         },
-        metadata: { source: "entire", sessionId, agent: metadata.agent, model: metadata.model, strategy: metadata.strategy, tokenUsage: metadata.token_usage, agentPercentage: metadata.initial_attribution?.agent_percentage },
+        metadata: {
+          source: "entire",
+          sessionId,
+          agent: metadata.agent,
+          model: metadata.model,
+          strategy: metadata.strategy,
+          tokenUsage: metadata.token_usage,
+          agentPercentage: metadata.initial_attribution?.agent_percentage,
+        },
       }),
     });
-    if (!response.ok) throw new Error(`Spctre Git checkpoint ingest failed: ${response.status} ${await response.text()}`);
+    if (!response.ok)
+      throw new Error(
+        `Spctre Git checkpoint ingest failed: ${response.status} ${await response.text()}`,
+      );
     results.push({ checkpointId: metadata.checkpoint_id, sessionId, status });
   }
   return results;
 }
 
 function git(args: string[]): string {
-  return execFileSync("git", args, { encoding: "utf8", stdio: ["pipe", "pipe", "pipe"], timeout: 10_000 });
+  return execFileSync("git", args, {
+    encoding: "utf8",
+    stdio: ["pipe", "pipe", "pipe"],
+    timeout: 10_000,
+  });
 }
 
-function readCheckpoints(branch: string, onSkip: (skip: EntireCheckpointSkip) => void): EntireSessionMetadata[] {
+function readCheckpoints(
+  branch: string,
+  onSkip: (skip: EntireCheckpointSkip) => void,
+): EntireSessionMetadata[] {
   const paths = git(["ls-tree", "-r", "--name-only", branch]).trim().split("\n");
   return paths
     .filter((path) => path.endsWith("/metadata.json") && path.split("/").length === 4)
@@ -124,7 +171,11 @@ function readCheckpoints(branch: string, onSkip: (skip: EntireCheckpointSkip) =>
         return [];
       }
       if (!metadata.checkpoint_id || !metadata.created_at) {
-        onSkip({ path, reason: "missing-fields", detail: "checkpoint_id and created_at are required" });
+        onSkip({
+          path,
+          reason: "missing-fields",
+          detail: "checkpoint_id and created_at are required",
+        });
         return [];
       }
       return [metadata];
@@ -137,13 +188,22 @@ function errorMessage(error: unknown): string {
 
 function statusFor(metadata: EntireSessionMetadata): CheckpointStatus {
   if (!metadata.agent) return "DENY";
-  if ((metadata.files_touched ?? []).some((path) => SENSITIVE_PATH.some((pattern) => pattern.test(path))) || !KNOWN_AGENTS.has(slug(metadata.agent)) || (metadata.initial_attribution?.agent_percentage ?? 0) > 80) return "WARN";
+  if (
+    (metadata.files_touched ?? []).some((path) =>
+      SENSITIVE_PATH.some((pattern) => pattern.test(path)),
+    ) ||
+    !KNOWN_AGENTS.has(slug(metadata.agent)) ||
+    (metadata.initial_attribution?.agent_percentage ?? 0) > 80
+  )
+    return "WARN";
   return "ALLOW";
 }
 
 function reasonFor(metadata: EntireSessionMetadata, status: CheckpointStatus): string {
-  if (status === "DENY") return "Session record has no agent attribution — provenance cannot be established.";
-  if (status === "WARN") return "Entire checkpoint requires review because it has sensitive paths, an unknown agent, or high AI authorship.";
+  if (status === "DENY")
+    return "Session record has no agent attribution — provenance cannot be established.";
+  if (status === "WARN")
+    return "Entire checkpoint requires review because it has sensitive paths, an unknown agent, or high AI authorship.";
   return "Entire checkpoint passed pre-deployment governance checks.";
 }
 

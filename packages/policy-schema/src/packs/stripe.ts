@@ -36,7 +36,8 @@ export const STRIPE_PACK: PolicyPack = {
       {
         version: "1.0.0",
         date: "2026-07-20",
-        summary: "Hand-authored replacement for the generated Stripe pack: refund threshold escalation, payout-destination lockdown, and PCI-scoped export controls.",
+        summary:
+          "Hand-authored replacement for the generated Stripe pack: refund threshold escalation, payout-destination lockdown, and PCI-scoped export controls.",
       },
     ],
   }),
@@ -58,7 +59,11 @@ export const STRIPE_PACK: PolicyPack = {
         },
       ],
       controlMappings: [
-        { framework: "SOC2", controlId: "CC6.1", rationale: "Reviews high-value financial transactions before execution." },
+        {
+          framework: "SOC2",
+          controlId: "CC6.1",
+          rationale: "Reviews high-value financial transactions before execution.",
+        },
       ],
     },
     {
@@ -70,7 +75,11 @@ export const STRIPE_PACK: PolicyPack = {
       actions: ["payout.update_destination", "account.update_external_account"],
       immutable: true,
       controlMappings: [
-        { framework: "SOC2", controlId: "CC6.1", rationale: "Prevents unreviewed redirection of outbound funds." },
+        {
+          framework: "SOC2",
+          controlId: "CC6.1",
+          rationale: "Prevents unreviewed redirection of outbound funds.",
+        },
       ],
     },
     {
@@ -82,7 +91,11 @@ export const STRIPE_PACK: PolicyPack = {
       actions: ["customer.bulk_export", "data.bulk_export", "report.export"],
       immutable: true,
       controlMappings: [
-        { framework: "SOC2", controlId: "CC6.7", rationale: "Restricts bulk export of cardholder-adjacent customer data." },
+        {
+          framework: "SOC2",
+          controlId: "CC6.7",
+          rationale: "Restricts bulk export of cardholder-adjacent customer data.",
+        },
       ],
     },
     {
@@ -112,7 +125,8 @@ export const STRIPE_BILLING_PACK: PolicyPack = {
       label: "Price increase ratio requiring review",
       type: "number",
       default: 2,
-      description: "A price change at or above this multiple of the prior price escalates for review.",
+      description:
+        "A price change at or above this multiple of the prior price escalates for review.",
     },
   ],
   metadata: makePackMetadata({
@@ -122,7 +136,11 @@ export const STRIPE_BILLING_PACK: PolicyPack = {
     riskTags: ["billing", "subscriptions", "invoices"],
     category: "subscription billing",
     changelog: [
-      { version: "1.0.0", date: "2026-07-20", summary: "Hand-authored replacement for the generated Stripe Billing pack." },
+      {
+        version: "1.0.0",
+        date: "2026-07-20",
+        summary: "Hand-authored replacement for the generated Stripe Billing pack.",
+      },
     ],
   }),
   rules: [
@@ -135,7 +153,12 @@ export const STRIPE_BILLING_PACK: PolicyPack = {
       actions: ["price.update"],
       immutable: false,
       parameterConstraints: [
-        { field: "increase_ratio", operator: "gte", value: 2, parameterKey: "stripe-billing.price_increase_review_ratio" },
+        {
+          field: "increase_ratio",
+          operator: "gte",
+          value: 2,
+          parameterKey: "stripe-billing.price_increase_review_ratio",
+        },
       ],
     },
     {
@@ -148,7 +171,11 @@ export const STRIPE_BILLING_PACK: PolicyPack = {
       immutable: true,
       parameterConstraints: [{ field: "status", operator: "eq", value: "paid" }],
       controlMappings: [
-        { framework: "SOC2", controlId: "CC7.2", rationale: "Prevents retroactive financial record alteration after payment." },
+        {
+          framework: "SOC2",
+          controlId: "CC7.2",
+          rationale: "Prevents retroactive financial record alteration after payment.",
+        },
       ],
     },
   ],
@@ -179,7 +206,11 @@ export const STRIPE_CONNECT_PACK: PolicyPack = {
     riskTags: ["billing", "marketplace", "payouts"],
     category: "marketplace platform billing",
     changelog: [
-      { version: "1.0.0", date: "2026-07-20", summary: "Hand-authored replacement for the generated Stripe Connect pack." },
+      {
+        version: "1.0.0",
+        date: "2026-07-20",
+        summary: "Hand-authored replacement for the generated Stripe Connect pack.",
+      },
     ],
   }),
   rules: [
@@ -192,7 +223,12 @@ export const STRIPE_CONNECT_PACK: PolicyPack = {
       actions: ["transfer.create"],
       immutable: false,
       parameterConstraints: [
-        { field: "amount_cents", operator: "gte", value: 100000, parameterKey: "stripe-connect.transfer_review_threshold_cents" },
+        {
+          field: "amount_cents",
+          operator: "gte",
+          value: 100000,
+          parameterKey: "stripe-connect.transfer_review_threshold_cents",
+        },
       ],
     },
     {
@@ -231,7 +267,11 @@ export const STRIPE_ISSUING_PACK: PolicyPack = {
     riskTags: ["finance", "cards", "spending"],
     category: "corporate card operations",
     changelog: [
-      { version: "1.0.0", date: "2026-07-20", summary: "Hand-authored replacement for the generated Stripe Issuing pack." },
+      {
+        version: "1.0.0",
+        date: "2026-07-20",
+        summary: "Hand-authored replacement for the generated Stripe Issuing pack.",
+      },
     ],
   }),
   rules: [
@@ -244,7 +284,12 @@ export const STRIPE_ISSUING_PACK: PolicyPack = {
       actions: ["card.update_spending_limit"],
       immutable: false,
       parameterConstraints: [
-        { field: "new_limit_cents", operator: "gte", value: 500000, parameterKey: "stripe-issuing.spending_limit_review_cents" },
+        {
+          field: "new_limit_cents",
+          operator: "gte",
+          value: 500000,
+          parameterKey: "stripe-issuing.spending_limit_review_cents",
+        },
       ],
     },
     {

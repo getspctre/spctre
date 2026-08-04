@@ -1,6 +1,10 @@
 import { getAuthSession } from "@/lib/auth-session";
 import { getActiveScope } from "@/lib/workspace";
-import { createTrustPolicy, listTrustPolicies, recordTrustOperation } from "@/lib/domains/trust/service";
+import {
+  createTrustPolicy,
+  listTrustPolicies,
+  recordTrustOperation,
+} from "@/lib/domains/trust/service";
 import { isDemoTenant } from "@/lib/demo-guard";
 
 import { extractTraceId, makeMeta, withTraceId } from "@spctre/api-contracts";
@@ -13,56 +17,131 @@ export const dynamic = "force-dynamic";
 async function handleGetApiTrustPolicy(request: Request) {
   const traceId = extractTraceId(request);
   const session = await getAuthSession().catch(swallow("getAuthSession", null));
-  if (!session) return withTraceId(Response.json({ error: "Authentication required.", meta: makeMeta(traceId) }, { status: 401 }), traceId);
+  if (!session)
+    return withTraceId(
+      Response.json(
+        { error: "Authentication required.", meta: makeMeta(traceId) },
+        { status: 401 },
+      ),
+      traceId,
+    );
 
   const ctx = await getActiveScope().catch(swallow("getActiveScope", null));
-  if (!ctx) return withTraceId(Response.json({ error: "Workspace context unavailable.", meta: makeMeta(traceId) }, { status: 400 }), traceId);
+  if (!ctx)
+    return withTraceId(
+      Response.json(
+        { error: "Workspace context unavailable.", meta: makeMeta(traceId) },
+        { status: 400 },
+      ),
+      traceId,
+    );
 
   const url = new URL(request.url);
   const enabledOnly = url.searchParams.get("enabled") === "true";
-  const limit = Math.max(1, Math.min(200, Number.parseInt(url.searchParams.get("limit") ?? "100", 10) || 100));
+  const limit = Math.max(
+    1,
+    Math.min(200, Number.parseInt(url.searchParams.get("limit") ?? "100", 10) || 100),
+  );
 
   let policies;
   try {
-    policies = await listTrustPolicies({ tenantId: ctx.tenantId, workspaceId: ctx.workspaceId, enabledOnly, limit });
+    policies = await listTrustPolicies({
+      tenantId: ctx.tenantId,
+      workspaceId: ctx.workspaceId,
+      enabledOnly,
+      limit,
+    });
   } catch (err) {
     console.error("[trust/policy] listTrustCalibrationPolicies failed", err);
-    return withTraceId(Response.json({ error: "Service temporarily unavailable.", meta: makeMeta(traceId) }, { status: 503 }), traceId);
+    return withTraceId(
+      Response.json(
+        { error: "Service temporarily unavailable.", meta: makeMeta(traceId) },
+        { status: 503 },
+      ),
+      traceId,
+    );
   }
 
-  return withTraceId(Response.json({
-    policies,
-    count: policies.length,
-    generatedAt: new Date().toISOString(),
-    meta: makeMeta(traceId),
-  }), traceId);
+  return withTraceId(
+    Response.json({
+      policies,
+      count: policies.length,
+      generatedAt: new Date().toISOString(),
+      meta: makeMeta(traceId),
+    }),
+    traceId,
+  );
 }
 
 async function handlePostApiTrustPolicy(request: Request) {
   const traceId = extractTraceId(request);
   const session = await getAuthSession().catch(swallow("getAuthSession", null));
-  if (!session) return withTraceId(Response.json({ error: "Authentication required.", meta: makeMeta(traceId) }, { status: 401 }), traceId);
+  if (!session)
+    return withTraceId(
+      Response.json(
+        { error: "Authentication required.", meta: makeMeta(traceId) },
+        { status: 401 },
+      ),
+      traceId,
+    );
 
   const ctx = await getActiveScope().catch(swallow("getActiveScope", null));
-  if (!ctx) return withTraceId(Response.json({ error: "Workspace context unavailable.", meta: makeMeta(traceId) }, { status: 400 }), traceId);
+  if (!ctx)
+    return withTraceId(
+      Response.json(
+        { error: "Workspace context unavailable.", meta: makeMeta(traceId) },
+        { status: 400 },
+      ),
+      traceId,
+    );
 
   if (isDemoTenant(ctx.tenantId)) {
-    return withTraceId(Response.json({ error: "Trust policy management is not available in Demo Mode.", meta: makeMeta(traceId) }, { status: 403 }), traceId);
+    return withTraceId(
+      Response.json(
+        {
+          error: "Trust policy management is not available in Demo Mode.",
+          meta: makeMeta(traceId),
+        },
+        { status: 403 },
+      ),
+      traceId,
+    );
   }
 
   const body = await request.json().catch(() => null);
   if (!body || typeof body !== "object" || Array.isArray(body)) {
-    return withTraceId(Response.json({ error: "Request body must be an object.", meta: makeMeta(traceId) }, { status: 400 }), traceId);
+    return withTraceId(
+      Response.json(
+        { error: "Request body must be an object.", meta: makeMeta(traceId) },
+        { status: 400 },
+      ),
+      traceId,
+    );
   }
 
   const rec = body as Record<string, unknown>;
   const name = asString(rec.name);
-  if (!name) return withTraceId(Response.json({ error: "name is required.", meta: makeMeta(traceId) }, { status: 400 }), traceId);
+  if (!name)
+    return withTraceId(
+      Response.json({ error: "name is required.", meta: makeMeta(traceId) }, { status: 400 }),
+      traceId,
+    );
 
-  const consequenceTier = asString(rec.consequenceTier) as TrustCalibrationPolicy["consequenceTier"];
+  const consequenceTier = asString(
+    rec.consequenceTier,
+  ) as TrustCalibrationPolicy["consequenceTier"];
   const VALID_CONSEQUENCE_TIERS = new Set(["LOW", "MEDIUM", "HIGH", "CRITICAL"]);
   if (consequenceTier && !VALID_CONSEQUENCE_TIERS.has(consequenceTier)) {
-    return withTraceId(Response.json({ error: "consequenceTier must be LOW, MEDIUM, HIGH, or CRITICAL.", meta: makeMeta(traceId) }, { status: 400 }), traceId);
+    return withTraceId(
+      Response.json(
+        {
+          error: "consequenceTier must be LOW, MEDIUM, HIGH, or CRITICAL.",
+          meta: makeMeta(traceId),
+        },
+        { status: 400 },
+      ),
+      traceId,
+    );
   }
 
   let policy;
@@ -89,11 +168,23 @@ async function handlePostApiTrustPolicy(request: Request) {
     });
   } catch (err) {
     console.error("[trust/policy] createTrustCalibrationPolicy failed", err);
-    return withTraceId(Response.json({ error: "Service temporarily unavailable.", meta: makeMeta(traceId) }, { status: 503 }), traceId);
+    return withTraceId(
+      Response.json(
+        { error: "Service temporarily unavailable.", meta: makeMeta(traceId) },
+        { status: 503 },
+      ),
+      traceId,
+    );
   }
 
   if (!policy) {
-    return withTraceId(Response.json({ error: "Failed to create trust calibration policy.", meta: makeMeta(traceId) }, { status: 500 }), traceId);
+    return withTraceId(
+      Response.json(
+        { error: "Failed to create trust calibration policy.", meta: makeMeta(traceId) },
+        { status: 500 },
+      ),
+      traceId,
+    );
   }
 
   recordTrustOperation({

@@ -27,11 +27,14 @@ describe("framework governance packs", () => {
   it("covers rate limits, data sensitivity, consequence tiers, and provenance for every framework", () => {
     for (const connector of frameworkConnectors) {
       const pack = POLICY_PACKS.find((candidate) => candidate.connector === connector);
-      const searchableRules = pack?.rules.map((rule) => `${rule.stableRuleId} ${rule.title}`).join("\n") ?? "";
+      const searchableRules =
+        pack?.rules.map((rule) => `${rule.stableRuleId} ${rule.title}`).join("\n") ?? "";
 
       expect(searchableRules, `${connector} rate limits`).toMatch(/rate.limit|rate-limit/i);
       expect(searchableRules, `${connector} data sensitivity`).toMatch(/sensitivity|unclassified/i);
-      expect(searchableRules, `${connector} consequence tier`).toMatch(/consequence.tier|consequence tier/i);
+      expect(searchableRules, `${connector} consequence tier`).toMatch(
+        /consequence.tier|consequence tier/i,
+      );
       expect(searchableRules, `${connector} provenance`).toMatch(/provenance/i);
     }
   });

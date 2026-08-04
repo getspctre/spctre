@@ -77,26 +77,14 @@ describe("filterGatewayToolParameters", () => {
       command: "gh issue create --title bug",
       prompt: "full user prompt should not leave the hook",
       messages: [{ role: "user", content: "private transcript" }],
-      nested: {
-        safe: true,
-        chatHistory: ["private"],
-        resource_id: "repo-1",
-      },
-      parameters: {
-        SystemPrompt: "private system prompt",
-        amount: 42,
-      },
+      nested: { safe: true, chatHistory: ["private"], resource_id: "repo-1" },
+      parameters: { SystemPrompt: "private system prompt", amount: 42 },
     });
 
     expect(filtered).toEqual({
       command: "gh issue create --title bug",
-      nested: {
-        safe: true,
-        resource_id: "repo-1",
-      },
-      parameters: {
-        amount: 42,
-      },
+      nested: { safe: true, resource_id: "repo-1" },
+      parameters: { amount: 42 },
     });
   });
 });
@@ -158,10 +146,7 @@ describe("pretooluse Hook Credential Injection", () => {
   it("injects credential value, prints JIT notice, outputs JSON, and exits cleanly on immediate PROCEED", async () => {
     const payload = {
       tool_name: "mcp__stripe__charge",
-      tool_input: {
-        amount: 100,
-        auth: { token: "old" },
-      },
+      tool_input: { amount: 100, auth: { token: "old" } },
     };
 
     vi.spyOn(process.stdin, "on").mockImplementation((event, callback: any) => {
@@ -200,7 +185,9 @@ describe("pretooluse Hook Credential Injection", () => {
     await pretooluse({ enforce: true });
 
     expect(stderrSpy).toHaveBeenCalledWith(
-      expect.stringContaining("Spctre JIT: Injected ephemeral MOCK credential into parameter \"auth.token\".")
+      expect.stringContaining(
+        'Spctre JIT: Injected ephemeral MOCK credential into parameter "auth.token".',
+      ),
     );
     expect(stdoutSpy).toHaveBeenCalled();
     const stdoutCall = stdoutSpy.mock.calls[0][0] as string;
@@ -238,19 +225,14 @@ describe("pretooluse offline/local parameter-constrained enforcement", () => {
   }
 
   it("denies a force push to a protected branch — tool parameters now reach evaluateDecision", async () => {
-    stubStdin({
-      tool_name: "mcp__github__branch.push",
-      tool_input: { ref: "main", force: true },
-    });
+    stubStdin({ tool_name: "mcp__github__branch.push", tool_input: { ref: "main", force: true } });
     vi.spyOn(process.stdout, "write").mockImplementation(() => true);
     const stderrSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const exitSpy = vi.spyOn(process, "exit").mockImplementation((() => {}) as any);
 
     await pretooluse({ enforce: true });
 
-    expect(stderrSpy).toHaveBeenCalledWith(
-      expect.stringContaining("Spctre policy DENY")
-    );
+    expect(stderrSpy).toHaveBeenCalledWith(expect.stringContaining("Spctre policy DENY"));
     expect(exitSpy).toHaveBeenCalledWith(2);
   });
 
@@ -298,7 +280,10 @@ describe("pretooluse Antigravity hook contract", () => {
   });
 
   it("governs Gemini CLI's run_shell_command tool name with exit-code blocking on gateway ABORT", async () => {
-    stubStdin({ tool_name: "run_shell_command", tool_input: { command: "gh pr create --title x" } });
+    stubStdin({
+      tool_name: "run_shell_command",
+      tool_input: { command: "gh pr create --title x" },
+    });
     vi.mocked(requestGatewayDecision).mockResolvedValue({
       gatewayEnabled: true,
       mode: "enforce",
@@ -322,7 +307,12 @@ describe("pretooluse Antigravity hook contract", () => {
   });
 
   it("maps run_command CommandLine to a governed connector and emits deny JSON with exit 0 on gateway ABORT", async () => {
-    stubStdin({ toolCall: { name: "run_command", args: { CommandLine: "gh pr create --title x", Cwd: "/workspace" } } });
+    stubStdin({
+      toolCall: {
+        name: "run_command",
+        args: { CommandLine: "gh pr create --title x", Cwd: "/workspace" },
+      },
+    });
     vi.mocked(requestGatewayDecision).mockResolvedValue({
       gatewayEnabled: true,
       mode: "enforce",

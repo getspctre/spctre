@@ -17,9 +17,7 @@ export interface ApprovalWorkflowConfigSummary {
   reviewMode: ReviewMode;
   enabled: boolean;
   riskTags: string[];
-  verificationPolicy: {
-    requireVerification: boolean;
-  };
+  verificationPolicy: { requireVerification: boolean };
   allowImmediatePackPublish: boolean;
   updatedAt: string;
   rules: ApprovalWorkflowRuleSummary[];
@@ -34,11 +32,13 @@ interface ApprovalWorkflowRuleSummary {
   sequence: number;
 }
 
-export function defaultApprovalWorkflowSnapshot(params: {
-  workspaceId?: string | null;
-  environment?: string | null;
-  eligibleReviewerRole?: string;
-} = {}): ApprovalWorkflowSnapshot {
+export function defaultApprovalWorkflowSnapshot(
+  params: {
+    workspaceId?: string | null;
+    environment?: string | null;
+    eligibleReviewerRole?: string;
+  } = {},
+): ApprovalWorkflowSnapshot {
   const rules = params.eligibleReviewerRole
     ? [{ role: params.eligibleReviewerRole, requiredCount: 1 }]
     : REQUIRED_APPROVAL_RULES;
@@ -54,9 +54,7 @@ export function defaultApprovalWorkflowSnapshot(params: {
       eligibleRoles: [rule.role],
       sequence: index + 1,
     })),
-    verificationPolicy: {
-      requireVerification: false,
-    },
+    verificationPolicy: { requireVerification: false },
     generatedAt: new Date().toISOString(),
   };
 }
@@ -98,30 +96,30 @@ async function getDefaultEligibleReviewerRole(params: {
 }
 
 function verificationPolicyFromRiskTags(riskTags: string[]) {
-  return {
-    requireVerification: riskTags.includes(REQUIRE_AGT_VERIFICATION_TAG),
-  };
+  return { requireVerification: riskTags.includes(REQUIRE_AGT_VERIFICATION_TAG) };
 }
 
-function mapWorkflowRows(rows: {
-  workflow_id: string;
-  tenant_id: string;
-  workspace_id: string | null;
-  workspace_slug: string | null;
-  workspace_name: string | null;
-  environment: string | null;
-  name: string;
-  review_mode: ReviewMode;
-  enabled: boolean;
-  risk_tags: string[];
-  updated_at: Date;
-  rule_id: string | null;
-  role: string | null;
-  required_count: number | null;
-  eligible_roles: string[] | null;
-  named_reviewers: string[] | null;
-  sequence: number | null;
-}[]): ApprovalWorkflowConfigSummary[] {
+function mapWorkflowRows(
+  rows: {
+    workflow_id: string;
+    tenant_id: string;
+    workspace_id: string | null;
+    workspace_slug: string | null;
+    workspace_name: string | null;
+    environment: string | null;
+    name: string;
+    review_mode: ReviewMode;
+    enabled: boolean;
+    risk_tags: string[];
+    updated_at: Date;
+    rule_id: string | null;
+    role: string | null;
+    required_count: number | null;
+    eligible_roles: string[] | null;
+    named_reviewers: string[] | null;
+    sequence: number | null;
+  }[],
+): ApprovalWorkflowConfigSummary[] {
   const byWorkflow = new Map<string, ApprovalWorkflowConfigSummary>();
   for (const row of rows) {
     const existing = byWorkflow.get(row.workflow_id) ?? {
@@ -177,18 +175,17 @@ function workflowToSnapshot(workflow: ApprovalWorkflowConfigSummary): ApprovalWo
   };
 }
 
-export function approvalRulesFromWorkflow(workflow: ApprovalWorkflowSnapshot): PolicyApprovalRule[] {
+export function approvalRulesFromWorkflow(
+  workflow: ApprovalWorkflowSnapshot,
+): PolicyApprovalRule[] {
   if (!workflow.rules.length) {
     return [{ role: "Admin", requiredCount: 1 }];
   }
-  return workflow.rules.map((rule) => ({
-    role: rule.role,
-    requiredCount: rule.requiredCount,
-  }));
+  return workflow.rules.map((rule) => ({ role: rule.role, requiredCount: rule.requiredCount }));
 }
 
 export async function listApprovalWorkflows(
-  tenantId: string
+  tenantId: string,
 ): Promise<ApprovalWorkflowConfigSummary[]> {
   if (!sql) return [];
   const rows = await sql<Parameters<typeof mapWorkflowRows>[0]>`
@@ -285,7 +282,11 @@ export async function getApprovalWorkflowForContext(params: {
   const workflow = mapWorkflowRows(rows)[0];
   if (!workflow) {
     const eligibleReviewerRole = await getDefaultEligibleReviewerRole({ tenantId, workspaceId });
-    return defaultApprovalWorkflowSnapshot({ workspaceId, environment, eligibleReviewerRole: eligibleReviewerRole ?? undefined });
+    return defaultApprovalWorkflowSnapshot({
+      workspaceId,
+      environment,
+      eligibleReviewerRole: eligibleReviewerRole ?? undefined,
+    });
   }
   return workflowToSnapshot(workflow);
 }
@@ -392,7 +393,9 @@ export async function getWorkflowForDisable(params: {
   workflowId: string;
 }): Promise<{ enabled: boolean; workspace_id: string | null; environment: string | null } | null> {
   if (!sql) return null;
-  const rows = await sql<{ enabled: boolean; workspace_id: string | null; environment: string | null }[]>`
+  const rows = await sql<
+    { enabled: boolean; workspace_id: string | null; environment: string | null }[]
+  >`
     SELECT enabled, workspace_id, environment
     FROM approval_workflow_config
     WHERE id = ${params.workflowId} AND tenant_id = ${params.tenantId} LIMIT 1

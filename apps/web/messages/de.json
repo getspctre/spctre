@@ -1,9 +1,5 @@
 {
-  "common": {
-    "cancel": "Abbrechen",
-    "delete": "Löschen",
-    "save": "Speichern"
-  },
+  "common": { "cancel": "Abbrechen", "delete": "Löschen", "save": "Speichern" },
   "shared": {
     "advisor_decision": {
       "accept": "Akzeptieren",
@@ -23,9 +19,7 @@
       "reject": "Hinweis verwerfen",
       "reviewer_rationale": "Reviewer-Begründung"
     },
-    "slide_out": {
-      "close": "Panel schließen"
-    }
+    "slide_out": { "close": "Panel schließen" }
   },
   "navigation": {
     "agents": "Agenten",
@@ -71,14 +65,8 @@
       "toggle": "umschalten"
     },
     "items": {
-      "advisors": {
-        "description": "Advisor-Performance und Empfehlungen",
-        "label": "Berater"
-      },
-      "agents": {
-        "description": "Zustand und Status der Agent-Flotte",
-        "label": "Agenten"
-      },
+      "advisors": { "description": "Advisor-Performance und Empfehlungen", "label": "Berater" },
+      "agents": { "description": "Zustand und Status der Agent-Flotte", "label": "Agenten" },
       "audit_ledger": {
         "description": "Hash-verkettetes manipulationssicheres Ereignislog",
         "label": "Audit-Ledger"
@@ -99,22 +87,13 @@
         "description": "Ausgaben, Nutzung, Budgets und Breach-Enforcement",
         "label": "Kosten & Nutzung"
       },
-      "escalations": {
-        "description": "Human-in-the-loop Review-Queue",
-        "label": "Eskalationen"
-      },
+      "escalations": { "description": "Human-in-the-loop Review-Queue", "label": "Eskalationen" },
       "escalation_routing": {
         "description": "Policy-Verstöße und Prüferbenachrichtigungen weiterleiten",
         "label": "Eskalationsrouting"
       },
-      "packs": {
-        "description": "Policy Packs durchsuchen und installieren",
-        "label": "Packs"
-      },
-      "policies": {
-        "description": "Policy-Branches verwalten",
-        "label": "Richtlinien"
-      },
+      "packs": { "description": "Policy Packs durchsuchen und installieren", "label": "Packs" },
+      "policies": { "description": "Policy-Branches verwalten", "label": "Richtlinien" },
       "review": {
         "description": "Diffs prüfen und veröffentlichen",
         "label": "Review & Veröffentlichung"
@@ -123,10 +102,7 @@
         "description": "Governance-Laufzeitnachweise an Splunk oder Sentinel exportieren",
         "label": "SIEM-Export"
       },
-      "rules": {
-        "description": "Regelinventar durchsuchen",
-        "label": "Regeln"
-      }
+      "rules": { "description": "Regelinventar durchsuchen", "label": "Regeln" }
     }
   },
   "import_policy_panel": {
@@ -190,9 +166,7 @@
         "chain_health": "Kettenzustand"
       }
     },
-    "filters": {
-      "clear": "Filter löschen"
-    },
+    "filters": { "clear": "Filter löschen" },
     "events": {
       "eyebrow": "Audit · Ereignisse",
       "title": "Ereignisse",
@@ -228,10 +202,7 @@
       "actor": "Akteur",
       "hash": "Hash"
     },
-    "pagination": {
-      "previous": "Zurück",
-      "next": "Weiter"
-    }
+    "pagination": { "previous": "Zurück", "next": "Weiter" }
   },
   "account": {
     "eyebrow": "Konto · Sicherheit",
@@ -380,10 +351,7 @@
       "provider_count": "{count, plural, one {# Provider} other {# Provider}}",
       "state_aria_label": "Authentifizierungsstatus",
       "title": "Authentifizierungseinstellungen",
-      "access_section": {
-        "eyebrow": "Admin · Tenant-Steuerung",
-        "title": "Zugriffsrichtlinie"
-      },
+      "access_section": { "eyebrow": "Admin · Tenant-Steuerung", "title": "Zugriffsrichtlinie" },
       "idp": {
         "add_provider": "Provider hinzufügen",
         "add_title": "Identity Provider hinzufügen",
@@ -425,9 +393,7 @@
         "saving": "Speichern...",
         "submit": "Tenant-Einstellungen speichern",
         "title": "MFA-Anforderungen",
-        "status": {
-          "updated": "Tenant-MFA-Einstellungen aktualisiert."
-        }
+        "status": { "updated": "Tenant-MFA-Einstellungen aktualisiert." }
       },
       "provider_section": {
         "eyebrow": "Admin · Identitätsföderation",
@@ -446,9 +412,7 @@
         "remove": "Provider entfernen",
         "removed": "Entfernt",
         "removing": "Entfernen...",
-        "status": {
-          "removed": "Identity Provider entfernt."
-        }
+        "status": { "removed": "Identity Provider entfernt." }
       },
       "scim": {
         "description": "Halten Sie Benutzer, Gruppen und Workspace-Berechtigungen mit Ihrem Identity Provider synchron.",
@@ -525,10 +489,7 @@
           "scope_required": "Wählen Sie mindestens einen Scope aus."
         }
       },
-      "new": {
-        "eyebrow": "Service-Schlüssel · Neu",
-        "title": "Servicekonto-Schlüssel generieren"
-      },
+      "new": { "eyebrow": "Service-Schlüssel · Neu", "title": "Servicekonto-Schlüssel generieren" },
       "revoke": {
         "confirm": "Service-Schlüssel {label} widerrufen? Bestehende CI-, CLI- und Automatisierungsprozesse mit diesem Schlüssel können sich nicht mehr authentifizieren.",
         "revoke": "Widerrufen",
@@ -601,10 +562,7 @@
           "workspace_unavailable": "Workspace-Kontext ist nicht verfügbar."
         }
       },
-      "new": {
-        "eyebrow": "Gateway-Webhooks · Neu",
-        "title": "Webhook-Secret generieren"
-      },
+      "new": { "eyebrow": "Gateway-Webhooks · Neu", "title": "Webhook-Secret generieren" },
       "revoke": {
         "confirm": "Webhook-Secret {label} widerrufen? Eingehende Webhooks, die dieses Secret verwenden, können sich sofort nicht mehr authentifizieren.",
         "revoke": "Widerrufen",
@@ -790,10 +748,7 @@
         "enabled": "{count} aktiviert",
         "workflows": "{count, plural, one {# Workflow} other {# Workflows}}"
       },
-      "rules": {
-        "eyebrow": "Workflow · Gates",
-        "title": "Aktive Workflow-Regeln"
-      },
+      "rules": { "eyebrow": "Workflow · Gates", "title": "Aktive Workflow-Regeln" },
       "enforcement": {
         "description": "Leiten Sie Hochrisiko-Policies automatisch weiter, lassen Sie veraltete Freigaben ablaufen und benachrichtigen Sie Reviewer.",
         "eyebrow": "Workflow · Durchsetzung",
@@ -828,10 +783,7 @@
         "saving": "Speichern...",
         "tenant_default": "Tenant-Standard",
         "workspace_scope": "Workspace-Scope",
-        "review_modes": {
-          "parallel": "Parallel",
-          "sequential": "Sequenziell"
-        }
+        "review_modes": { "parallel": "Parallel", "sequential": "Sequenziell" }
       },
       "table": {
         "active_approval_gates": "Aktive Approval-Gates",
@@ -941,10 +893,7 @@
         "submit": "Standardsprache speichern",
         "title": "Standardsprache"
       },
-      "manage": {
-        "eyebrow": "Workspace · Verwalten",
-        "title": "Bestehende Workspaces"
-      },
+      "manage": { "eyebrow": "Workspace · Verwalten", "title": "Bestehende Workspaces" },
       "card": {
         "active": "AKTIV",
         "confirm_label": "DELETE zur Bestätigung eingeben",
@@ -995,9 +944,7 @@
       "sign_in": "Zum Genehmigen anmelden",
       "title": "CLI- oder CI-Agent verbinden",
       "token_scope": "Token-Scope",
-      "errors": {
-        "missing_code": "Gerätecode fehlt."
-      }
+      "errors": { "missing_code": "Gerätecode fehlt." }
     },
     "login": {
       "email": {
@@ -1412,10 +1359,7 @@
       "title": "Keine Berater-Daten",
       "body": "Berater erscheinen hier, sobald Empfehlungen generiert wurden."
     },
-    "rate": {
-      "awaiting": "Warten auf erste Empfehlung",
-      "no_data": "Noch keine Daten"
-    },
+    "rate": { "awaiting": "Warten auf erste Empfehlung", "no_data": "Noch keine Daten" },
     "boundary": {
       "eyebrow": "Veröffentlichte Richtliniengrenze",
       "revision": "Revision",
@@ -1471,10 +1415,7 @@
     }
   },
   "economic": {
-    "header": {
-      "title": "Kosten & Nutzung",
-      "manage_budgets": "Budgets verwalten"
-    },
+    "header": { "title": "Kosten & Nutzung", "manage_budgets": "Budgets verwalten" },
     "advisory": {
       "eyebrow": "Governance-Hinweis",
       "title": "Heuristik- & Telemetrie-Schätzungen",
@@ -1531,9 +1472,7 @@
       "name_required": "Bitte geben Sie einen Richtliniennamen an.",
       "threshold_required": "Es muss mindestens ein Kosten- oder Token-Schwellenwert definiert werden."
     },
-    "scope": {
-      "wildcard": "Alle Ereignisse (Wildcard)"
-    },
+    "scope": { "wildcard": "Alle Ereignisse (Wildcard)" },
     "error": {
       "save_failed": "Budget-Richtlinie konnte nicht gespeichert werden",
       "delete_failed": "Budget-Richtlinie konnte nicht gelöscht werden",
@@ -1670,10 +1609,7 @@
     }
   },
   "alerting": {
-    "header": {
-      "eyebrow": "Workspace · Alarmierung",
-      "title": "Alarmierung"
-    },
+    "header": { "eyebrow": "Workspace · Alarmierung", "title": "Alarmierung" },
     "validate": {
       "channel_name": "Bitte geben Sie einen Kanalnamen an.",
       "pagerduty_key": "Bitte geben Sie einen PagerDuty-Routing-Key an.",

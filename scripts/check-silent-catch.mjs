@@ -49,7 +49,9 @@ for (const root of checkedRoots) {
       const after = source.slice(match.index + match[0].length);
       if (isSilentCatchHandler(after)) {
         const line = before.split("\n").length;
-        violations.push(`${file}:${line}: bare .catch(() => …) — degrade through swallow(op, fallback)`);
+        violations.push(
+          `${file}:${line}: bare .catch(() => …) — degrade through swallow(op, fallback)`,
+        );
       }
     }
   }

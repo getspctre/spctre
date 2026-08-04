@@ -30,10 +30,7 @@ export function ImportPackButton({
   immediatePublishAllowed,
 }: ImportPackButtonProps) {
   const router = useRouter();
-  const [state, action, isPending] = useActionState<ImportState, FormData>(
-    importPolicyPack,
-    null
-  );
+  const [state, action, isPending] = useActionState<ImportState, FormData>(importPolicyPack, null);
   const [showConfirm, setShowConfirm] = useState(false);
   const [submittedPublish, setSubmittedPublish] = useState(false);
   const packStatusChanged =
@@ -141,7 +138,10 @@ export function ImportPackButton({
           }}
         >
           <p style={{ margin: 0, fontSize: 13, lineHeight: 1.5, color: "var(--text-muted)" }}>
-            <strong>Confirm Immediate Activation:</strong> This will {mode === "upgrade" ? "upgrade" : "install"} and publish the pack, {mode === "upgrade" ? "updating" : "adding"} {rulesCount} rules to your active workspace policy immediately.
+            <strong>Confirm Immediate Activation:</strong> This will{" "}
+            {mode === "upgrade" ? "upgrade" : "install"} and publish the pack,{" "}
+            {mode === "upgrade" ? "updating" : "adding"} {rulesCount} rules to your active workspace
+            policy immediately.
           </p>
           <div style={{ display: "flex", gap: 8 }}>
             <button
@@ -152,12 +152,19 @@ export function ImportPackButton({
               onClick={() => setSubmittedPublish(true)}
               disabled={isPending}
             >
-              {isPending && submittedPublish ? <Loader size={14} className="spin" /> : "Confirm & Publish"}
+              {isPending && submittedPublish ? (
+                <Loader size={14} className="spin" />
+              ) : (
+                "Confirm & Publish"
+              )}
             </button>
             <button
               className="button"
               type="button"
-              onClick={() => { setShowConfirm(false); setSubmittedPublish(false); }}
+              onClick={() => {
+                setShowConfirm(false);
+                setSubmittedPublish(false);
+              }}
               disabled={isPending}
             >
               Cancel

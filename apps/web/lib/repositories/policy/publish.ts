@@ -2,10 +2,7 @@ import { sql } from "@/lib/db";
 import { composePolicyLayers, toAgtCompatiblePolicyBundle } from "@spctre/policy-schema";
 import type { AgtCompatiblePolicyBundle } from "@spctre/policy-schema";
 import { listPublishedCompositionLayers } from "@/lib/repositories/shared/composition";
-import {
-  getRevisionMetadata,
-  stableHash,
-} from "@/lib/repositories/shared/revisions";
+import { getRevisionMetadata, stableHash } from "@/lib/repositories/shared/revisions";
 import { getApprovals } from "./review";
 
 export interface PublishedBundle {
@@ -29,7 +26,7 @@ export interface PublishedBundleSummary {
 }
 
 export async function listLatestPublishedBundleSummariesForTenant(
-  tenantId: string
+  tenantId: string,
 ): Promise<Map<string, PublishedBundleSummary>> {
   if (!sql) return new Map();
 
@@ -80,13 +77,13 @@ export async function listLatestPublishedBundleSummariesForTenant(
         publishedBy: row.published_by,
         publishedAt: row.published_at.toISOString(),
       },
-    ])
+    ]),
   );
 }
 
 export async function getLatestPublishedBundle(
   workspaceId: string | null,
-  tenantId: string
+  tenantId: string,
 ): Promise<PublishedBundle | null> {
   if (!sql) return null;
 
@@ -121,7 +118,7 @@ export async function getLatestPublishedBundle(
   const [revision, layers, approvals] = await Promise.all([
     getRevisionMetadata(latest.revision_id, tenantId),
     listPublishedCompositionLayers(workspaceId, tenantId),
-    getApprovals(latest.revision_id, tenantId)
+    getApprovals(latest.revision_id, tenantId),
   ]);
 
   if (!revision || !layers.length) return null;
@@ -141,11 +138,11 @@ export async function getLatestPublishedBundle(
           branchId: layer.branchId,
           revisionId: layer.revisionId,
           artifactHash: layer.artifactHash,
-          rules: layer.rules.map((rule) => rule.stableRuleId)
-        }))
-      })
+          rules: layer.rules.map((rule) => rule.stableRuleId),
+        })),
+      }),
     ),
-    composedAt: generatedAt
+    composedAt: generatedAt,
   });
 
   const targetStacks = revision.targetStacks.length
@@ -180,9 +177,9 @@ export async function getLatestPublishedBundle(
         conflict_notes: composition.conflictNotes,
         publish_id: latest.publish_id,
         published_at: latest.published_at.toISOString(),
-        published_by: latest.published_by
-      }
-    })
+        published_by: latest.published_by,
+      },
+    }),
   };
 }
 

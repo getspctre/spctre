@@ -6,9 +6,7 @@ const getActiveActorSpy = vi.fn();
 const ensureStarterPublishedBundleSpy = vi.fn();
 const insertRuntimeEvidenceWithDedupSpy = vi.fn();
 
-vi.mock("next/cache", () => ({
-  revalidatePath: vi.fn(),
-}));
+vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 
 vi.mock("next/navigation", () => ({
   redirect: vi.fn((target: string) => {
@@ -16,9 +14,7 @@ vi.mock("next/navigation", () => ({
   }),
 }));
 
-vi.mock("@/lib/workspace", () => ({
-  getWorkspaceContext: getWorkspaceContextSpy,
-}));
+vi.mock("@/lib/workspace", () => ({ getWorkspaceContext: getWorkspaceContextSpy }));
 
 vi.mock("@/lib/actors", () => ({
   getActiveActor: getActiveActorSpy,
@@ -36,13 +32,9 @@ vi.mock("@/lib/repositories/evidence/runtime", () => ({
   insertRuntimeEvidenceWithDedup: insertRuntimeEvidenceWithDedupSpy,
 }));
 
-vi.mock("@/lib/service-tokens", () => ({
-  issueServiceAccountKey: vi.fn(),
-}));
+vi.mock("@/lib/service-tokens", () => ({ issueServiceAccountKey: vi.fn() }));
 
-vi.mock("@/lib/domains/auth/service", () => ({
-  recordAuthOperation: vi.fn(),
-}));
+vi.mock("@/lib/domains/auth/service", () => ({ recordAuthOperation: vi.fn() }));
 
 const quickStartActions = await import("../app/quick-start-actions");
 
@@ -63,7 +55,8 @@ describe("quick-start demo boundary", () => {
     const result = await quickStartActions.sendAllowedDecision(null, new FormData());
 
     expect(result).toEqual({
-      error: "This action is read-only in Demo Mode. Create a free Spctre Cloud account to save changes!",
+      error:
+        "This action is read-only in Demo Mode. Create a free Spctre Cloud account to save changes!",
     });
     expect(getActiveActorSpy).not.toHaveBeenCalled();
     expect(ensureStarterPublishedBundleSpy).not.toHaveBeenCalled();
@@ -74,7 +67,8 @@ describe("quick-start demo boundary", () => {
     const result = await quickStartActions.sendBlockedDecision(null, new FormData());
 
     expect(result).toEqual({
-      error: "This action is read-only in Demo Mode. Create a free Spctre Cloud account to save changes!",
+      error:
+        "This action is read-only in Demo Mode. Create a free Spctre Cloud account to save changes!",
     });
     expect(getActiveActorSpy).not.toHaveBeenCalled();
     expect(ensureStarterPublishedBundleSpy).not.toHaveBeenCalled();

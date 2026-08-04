@@ -8,7 +8,7 @@ export async function GET() {
       const text = await page.getText("processed");
       const title = page.title ?? page.info.path;
       return `# ${title}\n\nURL: /help-docs/${page.info.path}\n\n${text}`;
-    })
+    }),
   );
 
   return new Response(sections.join("\n\n---\n\n"), {

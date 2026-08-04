@@ -22,14 +22,22 @@ export const GATEWAY_PORTKEY_PACK: PolicyPack = {
     riskTags: ["llm", "gateway", "cost", "tokens"],
     generated: false,
     category: "LLM gateway governance",
-    compatibilityTargets: ["AGT_PREVIEW", "CREWAI", "LANGCHAIN", "OPENAI_AGENTS", "AUTOGEN", "CUSTOM"],
+    compatibilityTargets: [
+      "AGT_PREVIEW",
+      "CREWAI",
+      "LANGCHAIN",
+      "OPENAI_AGENTS",
+      "AUTOGEN",
+      "CUSTOM",
+    ],
     reviewRoles: ["SECURITY", "COMPLIANCE"],
     minimumApprovals: 1,
     changelog: [
       {
         version: "1.0.0",
         date: "2026-05-11",
-        summary: "Initial pack: spend cap, token budget, tool blast-radius, provenance gap, and virtual-key audit rules.",
+        summary:
+          "Initial pack: spend cap, token budget, tool blast-radius, provenance gap, and virtual-key audit rules.",
       },
     ],
   },
@@ -101,14 +109,22 @@ export const GATEWAY_HELICONE_PACK: PolicyPack = {
     riskTags: ["llm", "gateway", "cost", "sessions"],
     generated: false,
     category: "LLM gateway governance",
-    compatibilityTargets: ["AGT_PREVIEW", "CREWAI", "LANGCHAIN", "OPENAI_AGENTS", "AUTOGEN", "CUSTOM"],
+    compatibilityTargets: [
+      "AGT_PREVIEW",
+      "CREWAI",
+      "LANGCHAIN",
+      "OPENAI_AGENTS",
+      "AUTOGEN",
+      "CUSTOM",
+    ],
     reviewRoles: ["SECURITY", "COMPLIANCE"],
     minimumApprovals: 1,
     changelog: [
       {
         version: "1.0.0",
         date: "2026-05-11",
-        summary: "Initial pack: spend cap, token budget, tool blast-radius, long-running session escalation, and provenance gap rules.",
+        summary:
+          "Initial pack: spend cap, token budget, tool blast-radius, long-running session escalation, and provenance gap rules.",
       },
     ],
   },
@@ -180,14 +196,22 @@ export const GATEWAY_LITELLM_PACK: PolicyPack = {
     riskTags: ["llm", "gateway", "spend", "routing"],
     generated: false,
     category: "LLM gateway governance",
-    compatibilityTargets: ["AGT_PREVIEW", "CREWAI", "LANGCHAIN", "OPENAI_AGENTS", "AUTOGEN", "CUSTOM"],
+    compatibilityTargets: [
+      "AGT_PREVIEW",
+      "CREWAI",
+      "LANGCHAIN",
+      "OPENAI_AGENTS",
+      "AUTOGEN",
+      "CUSTOM",
+    ],
     reviewRoles: ["SECURITY", "COMPLIANCE"],
     minimumApprovals: 1,
     changelog: [
       {
         version: "1.0.0",
         date: "2026-05-11",
-        summary: "Initial pack: spend cap, token budget, tool blast-radius, fallback model routing, and provenance gap rules.",
+        summary:
+          "Initial pack: spend cap, token budget, tool blast-radius, fallback model routing, and provenance gap rules.",
       },
     ],
   },
@@ -259,14 +283,22 @@ export const GATEWAY_NOTION_PACK: PolicyPack = {
     riskTags: ["notion", "gateway", "webhook", "cost", "tokens"],
     generated: false,
     category: "LLM gateway governance",
-    compatibilityTargets: ["AGT_PREVIEW", "CREWAI", "LANGCHAIN", "OPENAI_AGENTS", "AUTOGEN", "CUSTOM"],
+    compatibilityTargets: [
+      "AGT_PREVIEW",
+      "CREWAI",
+      "LANGCHAIN",
+      "OPENAI_AGENTS",
+      "AUTOGEN",
+      "CUSTOM",
+    ],
     reviewRoles: ["SECURITY", "COMPLIANCE"],
     minimumApprovals: 1,
     changelog: [
       {
         version: "1.0.0",
         date: "2026-05-18",
-        summary: "Initial pack: spend cap, token budget, tool blast-radius, and provenance gap rules for the Notion webhook receiver surface.",
+        summary:
+          "Initial pack: spend cap, token budget, tool blast-radius, and provenance gap rules for the Notion webhook receiver surface.",
       },
     ],
   },

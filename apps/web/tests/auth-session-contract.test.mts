@@ -118,6 +118,10 @@ describe("auth session contract", () => {
       requireMfa: true,
       mfaVerified: true,
     });
-    expect(updateSessionAndPrincipalActivitySpy).toHaveBeenCalledWith("session-1", "principal-1", "tenant-1");
+    expect(updateSessionAndPrincipalActivitySpy).toHaveBeenCalledWith(
+      "session-1",
+      "principal-1",
+      "tenant-1",
+    );
   });
 });

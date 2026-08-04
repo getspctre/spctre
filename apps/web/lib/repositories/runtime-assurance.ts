@@ -22,15 +22,17 @@ export async function listProductionHeartbeatObservations(params: {
   workspaceId: string | null;
 }): Promise<ProductionHeartbeatObservation[]> {
   if (!sql) return [];
-  const rows = await sql<{
-    agent_id: string;
-    environment: string;
-    runtime_stack: string;
-    runtime_adapter: string | null;
-    artifact_hash: string;
-    policy_context: unknown;
-    created_at: Date;
-  }[]>`
+  const rows = await sql<
+    {
+      agent_id: string;
+      environment: string;
+      runtime_stack: string;
+      runtime_adapter: string | null;
+      artifact_hash: string;
+      policy_context: unknown;
+      created_at: Date;
+    }[]
+  >`
     SELECT DISTINCT ON (agent_id, environment, runtime_stack, COALESCE(runtime_adapter, ''))
       agent_id, environment, runtime_stack, runtime_adapter, artifact_hash, policy_context, created_at
     FROM runtime_evidence_event
@@ -77,14 +79,16 @@ export async function listProductionConnectorActionObservations(params: {
   workspaceId: string | null;
 }): Promise<ProductionConnectorActionObservation[]> {
   if (!sql) return [];
-  const rows = await sql<{
-    connector: string;
+  const rows = await sql<
+    {
+      connector: string;
       actions: string[];
-    decisions: string;
-    agents: string;
-    decisions_with_policy_refs: string;
-    last_seen_at: Date;
-  }[]>`
+      decisions: string;
+      agents: string;
+      decisions_with_policy_refs: string;
+      last_seen_at: Date;
+    }[]
+  >`
     SELECT
       connector,
       array_agg(DISTINCT action ORDER BY action) AS actions,
@@ -120,16 +124,18 @@ export async function listPolicyScopedRuntimeObservations(params: {
   workspaceId: string | null;
 }): Promise<PolicyScopedRuntimeObservation[]> {
   if (!sql) return [];
-  const rows = await sql<{
-    agent_id: string;
-    environment: string;
-    runtime_stack: string;
-    runtime_adapter: string | null;
-    artifact_hash: string;
-    connectors: string[];
-    first_seen_at: Date;
-    last_seen_at: Date;
-  }[]>`
+  const rows = await sql<
+    {
+      agent_id: string;
+      environment: string;
+      runtime_stack: string;
+      runtime_adapter: string | null;
+      artifact_hash: string;
+      connectors: string[];
+      first_seen_at: Date;
+      last_seen_at: Date;
+    }[]
+  >`
     WITH latest_artifact AS (
       SELECT DISTINCT ON (agent_id, environment, runtime_stack, COALESCE(runtime_adapter, ''))
         agent_id, environment, runtime_stack, runtime_adapter, artifact_hash
@@ -182,7 +188,12 @@ export interface RuntimeAssuranceHistoryPoint {
 }
 
 /** Bounded evidence-derived artifact history; not an infrastructure telemetry feed. */
-export async function listRuntimeAssuranceHistory(params: { tenantId: string; workspaceId: string; agentId: string; limit?: number }): Promise<RuntimeAssuranceHistoryPoint[]> {
+export async function listRuntimeAssuranceHistory(params: {
+  tenantId: string;
+  workspaceId: string;
+  agentId: string;
+  limit?: number;
+}): Promise<RuntimeAssuranceHistoryPoint[]> {
   if (!sql) return [];
   const limit = Math.max(1, Math.min(params.limit ?? 168, 720));
   const rows = await sql<{ observed_at: Date; artifact_hash: string; decisions: string }[]>`
@@ -191,5 +202,9 @@ export async function listRuntimeAssuranceHistory(params: { tenantId: string; wo
     WHERE tenant_id = ${params.tenantId} AND workspace_id = ${params.workspaceId} AND agent_id = ${params.agentId}
     GROUP BY date_trunc('hour', created_at), artifact_hash
     ORDER BY observed_at DESC LIMIT ${limit}`;
-  return rows.map((row) => ({ observedAt: row.observed_at.toISOString(), artifactHash: row.artifact_hash, decisions: Number(row.decisions) }));
+  return rows.map((row) => ({
+    observedAt: row.observed_at.toISOString(),
+    artifactHash: row.artifact_hash,
+    decisions: Number(row.decisions),
+  }));
 }

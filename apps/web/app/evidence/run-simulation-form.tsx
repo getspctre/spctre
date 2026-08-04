@@ -21,7 +21,7 @@ interface RunSimulationFormProps {
 }
 
 function isSimulationSuccess(
-  state: SimulationState
+  state: SimulationState,
 ): state is {
   newlyDenied: number;
   newlyAllowed: number;
@@ -35,10 +35,7 @@ function isSimulationSuccess(
 }
 
 export function RunSimulationForm({ branches, viewMode }: RunSimulationFormProps) {
-  const [state, action, isPending] = useActionState<SimulationState, FormData>(
-    runSimulation,
-    null
-  );
+  const [state, action, isPending] = useActionState<SimulationState, FormData>(runSimulation, null);
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -78,8 +75,8 @@ export function RunSimulationForm({ branches, viewMode }: RunSimulationFormProps
           <CheckCircle2 size={14} className="allowIcon" />
           <span className="meta">
             Simulation complete — revision{" "}
-            <code>{formatProvenanceId(state.revisionId, viewMode, 12, hashToFingerprint)}</code> against{" "}
-            {state.total} events:{" "}
+            <code>{formatProvenanceId(state.revisionId, viewMode, 12, hashToFingerprint)}</code>{" "}
+            against {state.total} events:{" "}
           </span>
           {state.newlyDenied > 0 && (
             <span className="pill pillBlock">{state.newlyDenied} newly denied</span>

@@ -1,7 +1,10 @@
 import { evaluatePublishReadiness } from "@spctre/policy-schema";
 import { getBooleanEnv } from "@/lib/platform/config";
 import { getApprovals, getPublishBranchScope } from "@/lib/repositories/policy";
-import { getApprovalWorkflowForContext, approvalRulesFromWorkflow } from "@/lib/repositories/approval-workflow";
+import {
+  getApprovalWorkflowForContext,
+  approvalRulesFromWorkflow,
+} from "@/lib/repositories/approval-workflow";
 import { getOpenEscalationSummaryForRevision } from "@/lib/repositories/gateway";
 import { getLatestVerificationStatus } from "@/lib/repositories/verification";
 import { extractTraceId, makeMeta, withTraceId } from "@spctre/api-contracts";
@@ -23,7 +26,13 @@ export const dynamic = "force-dynamic";
 async function handleGetApiE2ePolicyReadiness(request: Request) {
   const traceId = extractTraceId(request);
   if (!getBooleanEnv("SPCTRE_E2E_API_ENABLED", false)) {
-    return withTraceId(Response.json({ error: "E2E support API is disabled.", meta: makeMeta(traceId) }, { status: 404 }), traceId);
+    return withTraceId(
+      Response.json(
+        { error: "E2E support API is disabled.", meta: makeMeta(traceId) },
+        { status: 404 },
+      ),
+      traceId,
+    );
   }
 
   const scope = await resolveRouteScope(request, { serviceTokenScope: "bundle:read", traceId });
@@ -34,12 +43,31 @@ async function handleGetApiE2ePolicyReadiness(request: Request) {
   const branchId = url.searchParams.get("branchId")?.trim() ?? "";
   const revisionId = url.searchParams.get("revisionId")?.trim() ?? "";
 
-  if (!branchId) return withTraceId(Response.json({ error: "branchId query param is required.", meta: makeMeta(traceId) }, { status: 400 }), traceId);
-  if (!revisionId) return withTraceId(Response.json({ error: "revisionId query param is required.", meta: makeMeta(traceId) }, { status: 400 }), traceId);
+  if (!branchId)
+    return withTraceId(
+      Response.json(
+        { error: "branchId query param is required.", meta: makeMeta(traceId) },
+        { status: 400 },
+      ),
+      traceId,
+    );
+  if (!revisionId)
+    return withTraceId(
+      Response.json(
+        { error: "revisionId query param is required.", meta: makeMeta(traceId) },
+        { status: 400 },
+      ),
+      traceId,
+    );
 
-  const branchRow = await getPublishBranchScope({ tenantId, branchId }).catch(swallow("getPublishBranchScope", null));
+  const branchRow = await getPublishBranchScope({ tenantId, branchId }).catch(
+    swallow("getPublishBranchScope", null),
+  );
   if (!branchRow) {
-    return withTraceId(Response.json({ error: "Branch not found.", meta: makeMeta(traceId) }, { status: 404 }), traceId);
+    return withTraceId(
+      Response.json({ error: "Branch not found.", meta: makeMeta(traceId) }, { status: 404 }),
+      traceId,
+    );
   }
 
   const approvals = await getApprovals(revisionId, tenantId);
@@ -52,11 +80,9 @@ async function handleGetApiE2ePolicyReadiness(request: Request) {
   const approvalRules = approvalRulesFromWorkflow(approvalWorkflow);
   const verificationPolicy = approvalWorkflow.verificationPolicy ?? { requireVerification: false };
   const verificationSummary = verificationPolicy.requireVerification
-    ? await getLatestVerificationStatus(
-        branchRow.workspace_id ?? workspaceId,
-        tenantId,
-        { revisionId }
-      ).catch(swallow("getLatestVerificationStatus", null))
+    ? await getLatestVerificationStatus(branchRow.workspace_id ?? workspaceId, tenantId, {
+        revisionId,
+      }).catch(swallow("getLatestVerificationStatus", null))
     : null;
 
   const readiness = evaluatePublishReadiness({
@@ -90,15 +116,18 @@ async function handleGetApiE2ePolicyReadiness(request: Request) {
   const requiredRoles = approvalRules.map((rule) => rule.role);
   const status = blockers.length > 0 ? "NOT_READY" : readiness.status;
 
-  return withTraceId(Response.json({
-    status,
-    approvals,
-    blockingReasons: blockers.map((b) => b.message),
-    requiredRoles,
-    verificationRequired: verificationPolicy.requireVerification,
-    escalationsBlocking,
-    meta: makeMeta(traceId),
-  }), traceId);
+  return withTraceId(
+    Response.json({
+      status,
+      approvals,
+      blockingReasons: blockers.map((b) => b.message),
+      requiredRoles,
+      verificationRequired: verificationPolicy.requireVerification,
+      escalationsBlocking,
+      meta: makeMeta(traceId),
+    }),
+    traceId,
+  );
 }
 
 export { handleGetApiE2ePolicyReadiness as GET };

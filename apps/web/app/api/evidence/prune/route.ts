@@ -11,8 +11,11 @@ async function handlePostApiEvidencePrune(request: Request) {
   const auth = await authenticateServiceToken(request, "evidence:write");
   if (!auth.ok) {
     return withTraceId(
-      Response.json({ error: "Invalid or expired service token.", meta: makeMeta(traceId) }, { status: 401 }),
-      traceId
+      Response.json(
+        { error: "Invalid or expired service token.", meta: makeMeta(traceId) },
+        { status: 401 },
+      ),
+      traceId,
     );
   }
 
@@ -26,7 +29,7 @@ async function handlePostApiEvidencePrune(request: Request) {
   if (!result) {
     return withTraceId(
       Response.json({ error: "Prune operation failed.", meta: makeMeta(traceId) }, { status: 500 }),
-      traceId
+      traceId,
     );
   }
 
@@ -37,7 +40,7 @@ async function handlePostApiEvidencePrune(request: Request) {
       prunedDecisionIds: result.prunedDecisionIds,
       meta: makeMeta(traceId),
     }),
-    traceId
+    traceId,
   );
 }
 

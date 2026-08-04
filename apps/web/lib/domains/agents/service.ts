@@ -38,8 +38,18 @@ export interface AgentsPageModel {
     governed: number;
     provenanceGaps: number;
     drifted: number;
-    inventory: Array<{ agentId: string; runtimeTarget: string; coverage: "GOVERNED" | "PROVENANCE_GAP"; driftStatus: "CURRENT" | "DRIFTED" | "PROVENANCE_GAP" }>;
-    alerts: Array<{ agentId: string; runtimeTarget: string; severity: "HIGH" | "MEDIUM"; message: string }>;
+    inventory: Array<{
+      agentId: string;
+      runtimeTarget: string;
+      coverage: "GOVERNED" | "PROVENANCE_GAP";
+      driftStatus: "CURRENT" | "DRIFTED" | "PROVENANCE_GAP";
+    }>;
+    alerts: Array<{
+      agentId: string;
+      runtimeTarget: string;
+      severity: "HIGH" | "MEDIUM";
+      message: string;
+    }>;
   };
   productionHeartbeatAssurance: {
     expected: { branchId: string; revisionId: string; artifactHash: string } | null;
@@ -78,11 +88,23 @@ export interface AgentsPageModel {
 
 const HEARTBEAT_STALE_MS = 60 * 60 * 1000;
 
-function runtimeKey(params: { agentId: string; environment: string; runtimeStack: string; runtimeAdapter: string | null }) {
-  return [params.agentId, params.environment, params.runtimeStack, params.runtimeAdapter ?? ""].join("\u0000");
+function runtimeKey(params: {
+  agentId: string;
+  environment: string;
+  runtimeStack: string;
+  runtimeAdapter: string | null;
+}) {
+  return [
+    params.agentId,
+    params.environment,
+    params.runtimeStack,
+    params.runtimeAdapter ?? "",
+  ].join("\u0000");
 }
 
-function firstPolicyContext(value: unknown): { branchId?: string; revisionId?: string; artifactHash?: string } | null {
+function firstPolicyContext(
+  value: unknown,
+): { branchId?: string; revisionId?: string; artifactHash?: string } | null {
   if (!Array.isArray(value) || !value[0] || typeof value[0] !== "object") return null;
   const context = value[0] as Record<string, unknown>;
   return {
@@ -100,45 +122,74 @@ export function classifyProductionHeartbeat(params: {
   now?: number;
 }): ProductionHeartbeatDriftStatus {
   const observedAt = new Date(params.observedAt).getTime();
-  if (!Number.isFinite(observedAt) || (params.now ?? Date.now()) - observedAt > HEARTBEAT_STALE_MS) return "STALE";
+  if (!Number.isFinite(observedAt) || (params.now ?? Date.now()) - observedAt > HEARTBEAT_STALE_MS)
+    return "STALE";
   if (!params.expected) return "PROVENANCE_GAP";
   const context = firstPolicyContext(params.policyContext);
   if (!context?.branchId || !context.revisionId || !context.artifactHash) return "PROVENANCE_GAP";
-  return context.branchId === params.expected.branchId
-    && context.revisionId === params.expected.revisionId
-    && context.artifactHash === params.expected.artifactHash
-    && params.artifactHash === params.expected.artifactHash
+  return context.branchId === params.expected.branchId &&
+    context.revisionId === params.expected.revisionId &&
+    context.artifactHash === params.expected.artifactHash &&
+    params.artifactHash === params.expected.artifactHash
     ? "CURRENT"
     : "DRIFTED";
 }
 
 export async function getAgentsPageModel({
   workspaceSlug,
-}: {
-  workspaceSlug?: string;
-} = {}): Promise<AgentsPageModel> {
+}: { workspaceSlug?: string } = {}): Promise<AgentsPageModel> {
   const workspaceContext = await getWorkspaceContext({ workspaceSlug });
   const { tenantId, workspaceId } = workspaceContext;
   let degraded = false;
-  const degrade = <T,>(op: string, value: T) => (error: unknown): T => {
-    degraded = true;
-    return swallow(op, value)(error);
-  };
+  const degrade =
+    <T>(op: string, value: T) =>
+    (error: unknown): T => {
+      degraded = true;
+      return swallow(op, value)(error);
+    };
 
-  const [dbAgents, allSurfaces, blueprints, published, heartbeats, policyScopedObservations, connectorActionObservations] = await Promise.all([
+  const [
+    dbAgents,
+    allSurfaces,
+    blueprints,
+    published,
+    heartbeats,
+    policyScopedObservations,
+    connectorActionObservations,
+  ] = await Promise.all([
     runWithTenantContext(tenantId, () =>
-      listAgentSummaries(workspaceId, tenantId).catch(degrade("listAgentSummaries", []))
+      listAgentSummaries(workspaceId, tenantId).catch(degrade("listAgentSummaries", [])),
     ),
     isFeatureEnabled("crossSurfaceAgentIdentity")
       ? runWithTenantContext(tenantId, () =>
-          listAllSurfaceBindingsForWorkspace({ tenantId, workspaceId }).catch(degrade("listAllSurfaceBindingsForWorkspace", []))
+          listAllSurfaceBindingsForWorkspace({ tenantId, workspaceId }).catch(
+            degrade("listAllSurfaceBindingsForWorkspace", []),
+          ),
         )
       : Promise.resolve([] as AgentSurfaceBinding[]),
-    runWithTenantContext(tenantId, () => listAgentBlueprints({ tenantId, workspaceId }).catch(degrade("listAgentBlueprints", []))),
-    runWithTenantContext(tenantId, () => getLatestPublishedBundle(workspaceId, tenantId).catch(degrade("getLatestPublishedBundle", null))),
-    runWithTenantContext(tenantId, () => listProductionHeartbeatObservations({ tenantId, workspaceId }).catch(degrade("listProductionHeartbeatObservations", []))),
-    runWithTenantContext(tenantId, () => listPolicyScopedRuntimeObservations({ tenantId, workspaceId }).catch(degrade("listPolicyScopedRuntimeObservations", []))),
-    runWithTenantContext(tenantId, () => listProductionConnectorActionObservations({ tenantId, workspaceId }).catch(degrade("listProductionConnectorActionObservations", []))),
+    runWithTenantContext(tenantId, () =>
+      listAgentBlueprints({ tenantId, workspaceId }).catch(degrade("listAgentBlueprints", [])),
+    ),
+    runWithTenantContext(tenantId, () =>
+      getLatestPublishedBundle(workspaceId, tenantId).catch(
+        degrade("getLatestPublishedBundle", null),
+      ),
+    ),
+    runWithTenantContext(tenantId, () =>
+      listProductionHeartbeatObservations({ tenantId, workspaceId }).catch(
+        degrade("listProductionHeartbeatObservations", []),
+      ),
+    ),
+    runWithTenantContext(tenantId, () =>
+      listPolicyScopedRuntimeObservations({ tenantId, workspaceId }).catch(
+        degrade("listPolicyScopedRuntimeObservations", []),
+      ),
+    ),
+    runWithTenantContext(tenantId, () =>
+      listProductionConnectorActionObservations({ tenantId, workspaceId }).catch(
+        degrade("listProductionConnectorActionObservations", []),
+      ),
+    ),
   ]);
 
   const agents = dbAgents.length ? dbAgents : getAgentDemoFallbackData(tenantId);
@@ -153,18 +204,22 @@ export async function getAgentsPageModel({
   for (const binding of allSurfaces) {
     (surfacesByAgent[binding.canonicalAgentId] ??= []).push(binding);
   }
-  const blueprintsByAgent = Object.fromEntries(blueprints.map((blueprint) => [blueprint.agentId, blueprint]));
+  const blueprintsByAgent = Object.fromEntries(
+    blueprints.map((blueprint) => [blueprint.agentId, blueprint]),
+  );
   // This is an inventory of declared/reporting runtimes only. It deliberately
   // does not scan infrastructure or infer unmanaged agents.
   const inventory = agents.map((agent) => {
     const driftStatus = agent.latestPublishedHash
-      ? agent.currentArtifactHash === agent.latestPublishedHash ? "CURRENT" as const : "DRIFTED" as const
-      : "PROVENANCE_GAP" as const;
+      ? agent.currentArtifactHash === agent.latestPublishedHash
+        ? ("CURRENT" as const)
+        : ("DRIFTED" as const)
+      : ("PROVENANCE_GAP" as const);
     return {
       agentId: agent.agentId,
       runtimeTarget: agent.runtimeAdapter ?? agent.runtimeStack,
       driftStatus,
-      coverage: driftStatus === "CURRENT" ? "GOVERNED" as const : "PROVENANCE_GAP" as const,
+      coverage: driftStatus === "CURRENT" ? ("GOVERNED" as const) : ("PROVENANCE_GAP" as const),
     };
   });
   const runtimeCoverage = {
@@ -173,18 +228,47 @@ export async function getAgentsPageModel({
     provenanceGaps: inventory.filter((runtime) => runtime.coverage === "PROVENANCE_GAP").length,
     drifted: inventory.filter((runtime) => runtime.driftStatus === "DRIFTED").length,
     inventory,
-    alerts: inventory.flatMap<{ agentId: string; runtimeTarget: string; severity: "HIGH" | "MEDIUM"; message: string }>((runtime) => runtime.driftStatus === "DRIFTED"
-      ? [{ agentId: runtime.agentId, runtimeTarget: runtime.runtimeTarget, severity: "HIGH" as const, message: "Runtime artifact differs from the published policy." }]
-      : runtime.driftStatus === "PROVENANCE_GAP"
-        ? [{ agentId: runtime.agentId, runtimeTarget: runtime.runtimeTarget, severity: "MEDIUM" as const, message: "Runtime has no published artifact provenance." }]
-        : []),
+    alerts: inventory.flatMap<{
+      agentId: string;
+      runtimeTarget: string;
+      severity: "HIGH" | "MEDIUM";
+      message: string;
+    }>((runtime) =>
+      runtime.driftStatus === "DRIFTED"
+        ? [
+            {
+              agentId: runtime.agentId,
+              runtimeTarget: runtime.runtimeTarget,
+              severity: "HIGH" as const,
+              message: "Runtime artifact differs from the published policy.",
+            },
+          ]
+        : runtime.driftStatus === "PROVENANCE_GAP"
+          ? [
+              {
+                agentId: runtime.agentId,
+                runtimeTarget: runtime.runtimeTarget,
+                severity: "MEDIUM" as const,
+                message: "Runtime has no published artifact provenance.",
+              },
+            ]
+          : [],
+    ),
   };
 
   const expected = published
-    ? { branchId: published.branchId, revisionId: published.revisionId, artifactHash: published.artifactHash }
+    ? {
+        branchId: published.branchId,
+        revisionId: published.revisionId,
+        artifactHash: published.artifactHash,
+      }
     : null;
   const publishedRules = published
-    ? await runWithTenantContext(tenantId, () => getRulesForRevision(published.revisionId, tenantId).catch(degrade("getRulesForRevision", [])))
+    ? await runWithTenantContext(tenantId, () =>
+        getRulesForRevision(published.revisionId, tenantId).catch(
+          degrade("getRulesForRevision", []),
+        ),
+      )
     : [];
   const heartbeatInventory = heartbeats.map((heartbeat) => ({
     agentId: heartbeat.agentId,
@@ -203,7 +287,8 @@ export async function getAgentsPageModel({
     total: heartbeatInventory.length,
     assured: heartbeatInventory.filter((heartbeat) => heartbeat.status === "CURRENT").length,
     drifted: heartbeatInventory.filter((heartbeat) => heartbeat.status === "DRIFTED").length,
-    provenanceGaps: heartbeatInventory.filter((heartbeat) => heartbeat.status === "PROVENANCE_GAP").length,
+    provenanceGaps: heartbeatInventory.filter((heartbeat) => heartbeat.status === "PROVENANCE_GAP")
+      .length,
     stale: heartbeatInventory.filter((heartbeat) => heartbeat.status === "STALE").length,
     inventory: heartbeatInventory,
   };
@@ -237,11 +322,17 @@ export async function getAgentsPageModel({
     }
   }
   const connectorActionCoverage = connectorActionObservations.map((observation) => {
-    const status = observation.decisionsWithPolicyRefs === 0
-      ? "PROVENANCE_GAP" as const
-      : observation.actions.every((action) => publishedRules.some((rule) => rule.connectors.includes(observation.connector) && rule.actions.includes(action)))
-        ? "GOVERNED" as const
-        : "AUDIT_ONLY" as const;
+    const status =
+      observation.decisionsWithPolicyRefs === 0
+        ? ("PROVENANCE_GAP" as const)
+        : observation.actions.every((action) =>
+              publishedRules.some(
+                (rule) =>
+                  rule.connectors.includes(observation.connector) && rule.actions.includes(action),
+              ),
+            )
+          ? ("GOVERNED" as const)
+          : ("AUDIT_ONLY" as const);
     return {
       connector: observation.connector,
       actions: observation.actions,
@@ -276,6 +367,6 @@ export async function listAgentAuditDecisions(params: {
   limit: number;
 }) {
   return runWithTenantContext(params.tenantId, () =>
-    listAgentEvidenceDecisions(params.agentId, params.workspaceId, params.tenantId, params.limit)
+    listAgentEvidenceDecisions(params.agentId, params.workspaceId, params.tenantId, params.limit),
   );
 }

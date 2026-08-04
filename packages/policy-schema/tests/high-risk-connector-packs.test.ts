@@ -44,7 +44,7 @@ describe("hand-authored high-risk connector packs", () => {
     for (const connector of highRiskConnectors) {
       const pack = POLICY_PACKS.find((candidate) => candidate.connector === connector);
       const issues = validatePolicyControlMappings(
-        (pack?.rules ?? []).map((rule) => ({ ...rule, sourceFormat: "SPCTRE_MANAGED" }))
+        (pack?.rules ?? []).map((rule) => ({ ...rule, sourceFormat: "SPCTRE_MANAGED" })),
       );
       expect(issues, connector).toEqual([]);
     }
@@ -57,7 +57,10 @@ describe("hand-authored high-risk connector packs", () => {
       for (const rule of pack?.rules ?? []) {
         for (const constraint of rule.parameterConstraints ?? []) {
           if (constraint.parameterKey) {
-            expect(definedKeys.has(constraint.parameterKey), `${connector}: ${constraint.parameterKey}`).toBe(true);
+            expect(
+              definedKeys.has(constraint.parameterKey),
+              `${connector}: ${constraint.parameterKey}`,
+            ).toBe(true);
           }
         }
       }

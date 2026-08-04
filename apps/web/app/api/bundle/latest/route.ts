@@ -3,7 +3,11 @@ import { getLatestPublishedPolicyBundle } from "@/lib/domains/policy/service";
 import { extractTraceId, makeMeta, withTraceId } from "@spctre/api-contracts";
 import { resolveRouteScope } from "../../_route-scope";
 import { getSpctrePlan } from "@/lib/feature-flags-server";
-import { buildPolicyBundleExport, buildPolicyBundleExports, verifyPolicyBundleExport } from "@spctre/policy-schema";
+import {
+  buildPolicyBundleExport,
+  buildPolicyBundleExports,
+  verifyPolicyBundleExport,
+} from "@spctre/policy-schema";
 import type { PolicyBundleExportFormat } from "@spctre/policy-schema";
 import { appendOperationsLog } from "@/lib/repositories/operations-log/log";
 import { insertBundleExportLog } from "@/lib/repositories/bundle-export-log";
@@ -23,7 +27,7 @@ function parseExportFormat(request: Request): PolicyBundleExportFormat | null | 
   const raw = new URL(request.url).searchParams.get("format");
   if (!raw) return undefined;
   return EXPORT_FORMATS.has(raw as PolicyBundleExportFormat)
-    ? raw as PolicyBundleExportFormat
+    ? (raw as PolicyBundleExportFormat)
     : null;
 }
 
@@ -37,11 +41,17 @@ async function handleGetApiBundleLatest(request: Request) {
   const format = parseExportFormat(request);
   const preview = isPreviewRequest(request);
   if (format === null) {
-    return withTraceId(Response.json({
-      error: "Unsupported bundle export format.",
-      supportedFormats: Array.from(EXPORT_FORMATS),
-      meta: makeMeta(traceId),
-    }, { status: 400 }), traceId);
+    return withTraceId(
+      Response.json(
+        {
+          error: "Unsupported bundle export format.",
+          supportedFormats: Array.from(EXPORT_FORMATS),
+          meta: makeMeta(traceId),
+        },
+        { status: 400 },
+      ),
+      traceId,
+    );
   }
 
   const scope = await resolveRouteScope(request, { serviceTokenScope: "bundle:read", traceId });
@@ -56,18 +66,30 @@ async function handleGetApiBundleLatest(request: Request) {
   try {
     published = await getLatestPublishedPolicyBundle({
       workspaceId: workspaceContext.workspaceId,
-      tenantId: workspaceContext.tenantId
+      tenantId: workspaceContext.tenantId,
     });
   } catch (err) {
     console.error("[bundle/latest] getLatestPublishedBundle failed", err);
-    return withTraceId(Response.json({ error: "Service temporarily unavailable.", meta: makeMeta(traceId) }, { status: 503 }), traceId);
+    return withTraceId(
+      Response.json(
+        { error: "Service temporarily unavailable.", meta: makeMeta(traceId) },
+        { status: 503 },
+      ),
+      traceId,
+    );
   }
 
   if (!published) {
-    return withTraceId(Response.json(
-      { error: "No published policy bundle is available for this workspace.", meta: makeMeta(traceId) },
-      { status: 404 }
-    ), traceId);
+    return withTraceId(
+      Response.json(
+        {
+          error: "No published policy bundle is available for this workspace.",
+          meta: makeMeta(traceId),
+        },
+        { status: 404 },
+      ),
+      traceId,
+    );
   }
 
   if (preview && !format) {
@@ -84,18 +106,21 @@ async function handleGetApiBundleLatest(request: Request) {
       blockingWarnings: formats.flatMap((manifest) => manifest.blockingWarnings),
       verified: null,
     });
-    return withTraceId(Response.json({
-      formats,
-      meta: makeMeta(traceId),
-    }, {
-      headers: {
-        "cache-control": "no-store",
-        "x-spctre-branch-id": published.branchId,
-        "x-spctre-revision-id": published.revisionId,
-        "x-spctre-artifact-hash": published.artifactHash,
-        "x-spctre-plan": getSpctrePlan(),
-      }
-    }), traceId);
+    return withTraceId(
+      Response.json(
+        { formats, meta: makeMeta(traceId) },
+        {
+          headers: {
+            "cache-control": "no-store",
+            "x-spctre-branch-id": published.branchId,
+            "x-spctre-revision-id": published.revisionId,
+            "x-spctre-artifact-hash": published.artifactHash,
+            "x-spctre-plan": getSpctrePlan(),
+          },
+        },
+      ),
+      traceId,
+    );
   }
 
   if (format) {
@@ -109,12 +134,18 @@ async function handleGetApiBundleLatest(request: Request) {
       manifest: exported.manifest,
     });
     if (exported.ok && !verification.ok) {
-      return withTraceId(Response.json({
-        error: "Bundle export verification failed.",
-        verification,
-        manifest: exported.manifest,
-        meta: makeMeta(traceId),
-      }, { status: 500 }), traceId);
+      return withTraceId(
+        Response.json(
+          {
+            error: "Bundle export verification failed.",
+            verification,
+            manifest: exported.manifest,
+            meta: makeMeta(traceId),
+          },
+          { status: 500 },
+        ),
+        traceId,
+      );
     }
     const status = exported.ok ? 200 : 409;
     recordBundleExport({
@@ -133,50 +164,51 @@ async function handleGetApiBundleLatest(request: Request) {
           manifest: exported.manifest,
           meta: makeMeta(traceId),
         };
-    return withTraceId(Response.json(body, {
-      status,
-      headers: {
-        "cache-control": "no-store",
-        "content-disposition": `attachment; filename="${exported.fileName}.export.json"`,
-        "x-spctre-branch-id": published.branchId,
-        "x-spctre-revision-id": published.revisionId,
-        "x-spctre-artifact-hash": published.artifactHash,
-        "x-spctre-export-format": exported.format,
-        "x-spctre-export-ok": String(exported.ok),
-        "x-spctre-export-verified": String(verification.ok),
-        "x-spctre-plan": getSpctrePlan(),
-      }
-    }), traceId);
+    return withTraceId(
+      Response.json(body, {
+        status,
+        headers: {
+          "cache-control": "no-store",
+          "content-disposition": `attachment; filename="${exported.fileName}.export.json"`,
+          "x-spctre-branch-id": published.branchId,
+          "x-spctre-revision-id": published.revisionId,
+          "x-spctre-artifact-hash": published.artifactHash,
+          "x-spctre-export-format": exported.format,
+          "x-spctre-export-ok": String(exported.ok),
+          "x-spctre-export-verified": String(verification.ok),
+          "x-spctre-plan": getSpctrePlan(),
+        },
+      }),
+      traceId,
+    );
   }
 
   const body = JSON.stringify(published.bundle, null, 2);
   const safeArtifactHash = published.artifactHash.replace(/[^a-zA-Z0-9]/g, "-");
   const filename = `spctre-${published.revisionId.slice(0, 8)}-${safeArtifactHash}.json`;
 
-  return withTraceId(new Response(body, {
-    headers: {
-      "content-type": "application/json; charset=utf-8",
-      "content-disposition": `attachment; filename="${filename}"`,
-      "cache-control": "no-store",
-      "x-spctre-branch-id": published.branchId,
-      "x-spctre-revision-id": published.revisionId,
-      "x-spctre-artifact-hash": published.artifactHash,
-      "x-spctre-published-at": published.publishedAt,
-      "x-spctre-plan": getSpctrePlan(),
-    }
-  }), traceId);
+  return withTraceId(
+    new Response(body, {
+      headers: {
+        "content-type": "application/json; charset=utf-8",
+        "content-disposition": `attachment; filename="${filename}"`,
+        "cache-control": "no-store",
+        "x-spctre-branch-id": published.branchId,
+        "x-spctre-revision-id": published.revisionId,
+        "x-spctre-artifact-hash": published.artifactHash,
+        "x-spctre-published-at": published.publishedAt,
+        "x-spctre-plan": getSpctrePlan(),
+      },
+    }),
+    traceId,
+  );
 }
 
 export { handleGetApiBundleLatest as GET };
 
 function recordBundleExport(params: {
   workspaceContext: { workspaceId: string; tenantId: string; principalId: string } | null;
-  published: {
-    branchId: string;
-    revisionId: string;
-    artifactHash: string;
-    publishId: string;
-  };
+  published: { branchId: string; revisionId: string; artifactHash: string; publishId: string };
   format: string;
   outcome: "PREVIEW" | "EXPORTED" | "BLOCKED";
   blockingWarnings: string[];

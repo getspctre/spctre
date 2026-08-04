@@ -46,7 +46,8 @@ export function Drawer({
   useEffect(() => {
     if (!open) return;
 
-    previousFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    previousFocusRef.current =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
     document.body.style.overflow = "hidden";
     panelRef.current?.focus();
 
@@ -101,9 +102,16 @@ export function Drawer({
           <div>
             {eyebrow ? <p className="eyebrow">{eyebrow}</p> : null}
             <h2 id={titleId}>{title}</h2>
-            {description ? <p className="meta" id={descriptionId}>{description}</p> : null}
+            {description ? (
+              <p className="meta" id={descriptionId}>
+                {description}
+              </p>
+            ) : null}
           </div>
-          <div className="drawerHeaderActions" style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+          <div
+            className="drawerHeaderActions"
+            style={{ display: "flex", alignItems: "flex-start", gap: 8 }}
+          >
             {headerActions}
             <button aria-label={closeLabel} className="iconButton" onClick={onClose} type="button">
               <span aria-hidden="true">×</span>

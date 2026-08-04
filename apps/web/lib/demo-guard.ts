@@ -12,7 +12,8 @@ export function verifyWriteAccess(tenantId: string): { allowed: boolean; error?:
   if (isDemoTenant(tenantId)) {
     return {
       allowed: false,
-      error: "This action is read-only in Demo Mode. Create a free Spctre Cloud account to save changes!"
+      error:
+        "This action is read-only in Demo Mode. Create a free Spctre Cloud account to save changes!",
     };
   }
   return { allowed: true };

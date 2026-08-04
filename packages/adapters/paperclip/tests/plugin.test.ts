@@ -28,10 +28,7 @@ describe("SpctrePaperclipPlugin", () => {
 
   it("emits evidence with stack=PAPERCLIP and orchestratorRef.platform=paperclip", async () => {
     const plugin = makePlugin();
-    const ctx: DispatchContext = {
-      toolName: "bash",
-      toolArgs: { command: "ls" },
-    };
+    const ctx: DispatchContext = { toolName: "bash", toolArgs: { command: "ls" } };
 
     const result = await plugin.beforeToolDispatch(ctx);
     expect(result.action).toBe("allow");
@@ -102,9 +99,7 @@ describe("SpctrePaperclipPlugin", () => {
   it("register() wires beforeToolDispatch into the dispatcher", () => {
     const plugin = makePlugin();
     const registered: unknown[] = [];
-    const dispatcher = {
-      registerBeforeToolDispatch: (fn: unknown) => registered.push(fn),
-    };
+    const dispatcher = { registerBeforeToolDispatch: (fn: unknown) => registered.push(fn) };
 
     plugin.register(dispatcher);
 

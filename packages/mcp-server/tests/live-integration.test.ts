@@ -33,10 +33,7 @@ function liveContext(): McpServerContext {
   const client = axios.create({
     baseURL: config.apiBaseUrl,
     timeout: 10_000,
-    headers: {
-      Authorization: `Bearer ${config.apiToken}`,
-      "Content-Type": "application/json",
-    },
+    headers: { Authorization: `Bearer ${config.apiToken}`, "Content-Type": "application/json" },
   });
 
   return {
@@ -45,7 +42,9 @@ function liveContext(): McpServerContext {
     postWithAuth: (path, body, extraHeaders) => client.post(path, body, { headers: extraHeaders }),
     assertConnectorAllowed: () => {},
     fetchPublishedBundleRefs: async (workspaceId: string) => {
-      const response: AxiosResponse = await client.get("/api/bundle/latest", { params: { workspace_id: workspaceId } });
+      const response: AxiosResponse = await client.get("/api/bundle/latest", {
+        params: { workspace_id: workspaceId },
+      });
       const body = response.data ?? {};
       return {
         branchId: body.branchId ?? response.headers["x-spctre-branch-id"],
@@ -64,34 +63,38 @@ describeLive("live MCP gateway/evidence integration", () => {
     const ctx = liveContext();
     const decisionId = `mcp-live-${Date.now()}`;
 
-    const decision = parseToolText(await evaluatePolicy(ctx, {
-      connector: process.env.SPCTRE_MCP_LIVE_CONNECTOR || "mcp-live",
-      action: "live.integration.check",
-      agent_context: {
-        agent_id: ctx.config.agentId,
-        workspace_id: ctx.config.workspaceId,
-        environment: "production",
-      },
-      risk_level: "LOW",
-    }));
+    const decision = parseToolText(
+      await evaluatePolicy(ctx, {
+        connector: process.env.SPCTRE_MCP_LIVE_CONNECTOR || "mcp-live",
+        action: "live.integration.check",
+        agent_context: {
+          agent_id: ctx.config.agentId,
+          workspace_id: ctx.config.workspaceId,
+          environment: "production",
+        },
+        risk_level: "LOW",
+      }),
+    );
 
     expect(decision.decision).toBeTruthy();
     expect(decision.decision_id).toMatch(/^mcp-/);
 
-    const evidence = parseToolText(await createEvidenceRecord(ctx, {
-      decision_id: decisionId,
-      connector: process.env.SPCTRE_MCP_LIVE_CONNECTOR || "mcp-live",
-      action: "live.integration.check",
-      agent_context: {
-        agent_id: ctx.config.agentId,
-        workspace_id: ctx.config.workspaceId,
-        environment: "production",
-      },
-      outcome: "EXECUTED",
-      result: { latency_ms: decision.latency_ms ?? 0 },
-      raw_evidence: { liveIntegration: true, gatewayDecisionId: decision.decision_id },
-      tags: ["mcp-live-integration"],
-    }));
+    const evidence = parseToolText(
+      await createEvidenceRecord(ctx, {
+        decision_id: decisionId,
+        connector: process.env.SPCTRE_MCP_LIVE_CONNECTOR || "mcp-live",
+        action: "live.integration.check",
+        agent_context: {
+          agent_id: ctx.config.agentId,
+          workspace_id: ctx.config.workspaceId,
+          environment: "production",
+        },
+        outcome: "EXECUTED",
+        result: { latency_ms: decision.latency_ms ?? 0 },
+        raw_evidence: { liveIntegration: true, gatewayDecisionId: decision.decision_id },
+        tags: ["mcp-live-integration"],
+      }),
+    );
 
     expect(evidence.evidence_id).toBe(decisionId);
     expect(evidence.audit_ready).toBe(true);

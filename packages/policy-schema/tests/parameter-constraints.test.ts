@@ -1,21 +1,23 @@
 import { describe, it, expect } from "vitest";
-import { evaluateParameterConstraints, applyPackParameterOverrides, evaluateDecision } from "../src/index";
+import {
+  evaluateParameterConstraints,
+  applyPackParameterOverrides,
+  evaluateDecision,
+} from "../src/index";
 import type { PolicyRuleSummary } from "../src/index";
 
 describe("evaluateParameterConstraints", () => {
   it("matches a single gte constraint", () => {
     expect(
-      evaluateParameterConstraints(
-        [{ field: "amount_cents", operator: "gte", value: 50000 }],
-        { amount_cents: 75000 }
-      ).matched
+      evaluateParameterConstraints([{ field: "amount_cents", operator: "gte", value: 50000 }], {
+        amount_cents: 75000,
+      }).matched,
     ).toBe(true);
 
     expect(
-      evaluateParameterConstraints(
-        [{ field: "amount_cents", operator: "gte", value: 50000 }],
-        { amount_cents: 100 }
-      ).matched
+      evaluateParameterConstraints([{ field: "amount_cents", operator: "gte", value: 50000 }], {
+        amount_cents: 100,
+      }).matched,
     ).toBe(false);
   });
 
@@ -24,37 +26,44 @@ describe("evaluateParameterConstraints", () => {
       { field: "ref", operator: "in" as const, value: ["main", "master"] },
       { field: "force", operator: "eq" as const, value: true },
     ];
-    expect(evaluateParameterConstraints(constraints, { ref: "main", force: true }).matched).toBe(true);
-    expect(evaluateParameterConstraints(constraints, { ref: "main", force: false }).matched).toBe(false);
-    expect(evaluateParameterConstraints(constraints, { ref: "feature/x", force: true }).matched).toBe(false);
+    expect(evaluateParameterConstraints(constraints, { ref: "main", force: true }).matched).toBe(
+      true,
+    );
+    expect(evaluateParameterConstraints(constraints, { ref: "main", force: false }).matched).toBe(
+      false,
+    );
+    expect(
+      evaluateParameterConstraints(constraints, { ref: "feature/x", force: true }).matched,
+    ).toBe(false);
   });
 
   it("resolves dot-path nested fields", () => {
     expect(
-      evaluateParameterConstraints(
-        [{ field: "branch.protected", operator: "eq", value: true }],
-        { branch: { protected: true } }
-      ).matched
+      evaluateParameterConstraints([{ field: "branch.protected", operator: "eq", value: true }], {
+        branch: { protected: true },
+      }).matched,
     ).toBe(true);
   });
 
   it("supports contains and not_in operators", () => {
     expect(
-      evaluateParameterConstraints([{ field: "destination_cluster", operator: "contains", value: "prod" }], {
-        destination_cluster: "prod-us-east",
-      }).matched
+      evaluateParameterConstraints(
+        [{ field: "destination_cluster", operator: "contains", value: "prod" }],
+        { destination_cluster: "prod-us-east" },
+      ).matched,
     ).toBe(true);
     expect(
-      evaluateParameterConstraints([{ field: "environment", operator: "not_in", value: ["staging"] }], {
-        environment: "production",
-      }).matched
+      evaluateParameterConstraints(
+        [{ field: "environment", operator: "not_in", value: ["staging"] }],
+        { environment: "production" },
+      ).matched,
     ).toBe(true);
   });
 
   it("returns the constraint effect override when matched", () => {
     const result = evaluateParameterConstraints(
       [{ field: "amount_cents", operator: "gte", value: 50000, effect: "ESCALATE" }],
-      { amount_cents: 75000 }
+      { amount_cents: 75000 },
     );
     expect(result.matched).toBe(true);
     expect(result.effectOverride).toBe("ESCALATE");
@@ -75,7 +84,9 @@ describe("evaluateDecision with parameterConstraints", () => {
     connectors: ["stripe"],
     actions: ["refund.create"],
     immutable: false,
-    parameterConstraints: [{ field: "amount_cents", operator: "gte", value: 50000, parameterKey: "test.threshold" }],
+    parameterConstraints: [
+      { field: "amount_cents", operator: "gte", value: 50000, parameterKey: "test.threshold" },
+    ],
   };
 
   it("escalates when the parameter constraint matches", () => {
@@ -114,7 +125,9 @@ describe("applyPackParameterOverrides", () => {
       connectors: ["stripe"],
       actions: ["refund.create"],
       immutable: false,
-      parameterConstraints: [{ field: "amount_cents", operator: "gte", value: 50000, parameterKey: "test.threshold" }],
+      parameterConstraints: [
+        { field: "amount_cents", operator: "gte", value: 50000, parameterKey: "test.threshold" },
+      ],
     },
   ];
 

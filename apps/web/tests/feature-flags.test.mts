@@ -16,7 +16,7 @@ describe("normalizeSpctrePlan", () => {
 
     expect(normalizeSpctrePlan("ent-production-typo")).toBe("oss");
     expect(error).toHaveBeenCalledWith(
-      expect.stringContaining('Unrecognized SPCTRE_PLAN "ent-production-typo"')
+      expect.stringContaining('Unrecognized SPCTRE_PLAN "ent-production-typo"'),
     );
   });
 });

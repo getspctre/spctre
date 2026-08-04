@@ -59,9 +59,14 @@ function resolveImport(file: string, options: PolicyImportOptions): ResolvedImpo
   const config = readConfig();
   const key = options.key ?? config?.token;
   if (!key) {
-    fail("Error: an operator API key is required. Pass --key (a policy:import service key) or run from a configured .spctre directory.");
+    fail(
+      "Error: an operator API key is required. Pass --key (a policy:import service key) or run from a configured .spctre directory.",
+    );
   }
-  const url = (options.url ?? config?.controlPlaneUrl ?? "http://localhost:3000").replace(/\/+$/, "");
+  const url = (options.url ?? config?.controlPlaneUrl ?? "http://localhost:3000").replace(
+    /\/+$/,
+    "",
+  );
 
   const branchName = resolveBranchName(options, filePath);
   const connector = (options.connector ?? "").trim();
@@ -70,7 +75,8 @@ function resolveImport(file: string, options: PolicyImportOptions): ResolvedImpo
   // The token binds the target workspace; --workspace is an advisory assertion
   // echoed for the operator's clarity — it is not authoritative.
   const assertedWorkspace = (options.workspace ?? "").trim();
-  const sourcePath = options.sourcePath ?? (path.relative(process.cwd(), filePath) || path.basename(filePath));
+  const sourcePath =
+    options.sourcePath ?? (path.relative(process.cwd(), filePath) || path.basename(filePath));
 
   const summary =
     `Importing ${path.basename(filePath)} → branch "${branchName}" ` +
@@ -81,12 +87,23 @@ function resolveImport(file: string, options: PolicyImportOptions): ResolvedImpo
     url,
     key,
     summary,
-    body: { source, branchName, scope, connector: connector || undefined, environment: environment || undefined, sourcePath },
+    body: {
+      source,
+      branchName,
+      scope,
+      connector: connector || undefined,
+      environment: environment || undefined,
+      sourcePath,
+    },
   };
 }
 
 function reportSuccess(payload: ImportResponse, format: OutputFormat): void {
-  const status = payload.alreadyCurrent ? "already current" : payload.created ? "created" : "updated";
+  const status = payload.alreadyCurrent
+    ? "already current"
+    : payload.created
+      ? "created"
+      : "updated";
   if (format === "json") {
     printJson({ ok: true, status, ...payload });
     return;
@@ -96,7 +113,9 @@ function reportSuccess(payload: ImportResponse, format: OutputFormat): void {
   console.log(`  revision: ${payload.revisionId}`);
   console.log(`  source:   ${payload.sourceHash}`);
   if (!payload.alreadyCurrent) {
-    console.log("\nThis is an unapproved draft. Review, approve, and publish it in the Spctre control plane.");
+    console.log(
+      "\nThis is an unapproved draft. Review, approve, and publish it in the Spctre control plane.",
+    );
   }
 }
 
@@ -106,7 +125,10 @@ function reportSuccess(payload: ImportResponse, format: OutputFormat): void {
  * it drafts a branch/revision that a human then reviews and publishes in the
  * Spctre UI. Re-running with unchanged source is a no-op.
  */
-export async function policyImport(file: string | undefined, options: PolicyImportOptions): Promise<void> {
+export async function policyImport(
+  file: string | undefined,
+  options: PolicyImportOptions,
+): Promise<void> {
   const format = getOutputFormat(options.format);
   if (!file) fail("Error: a policy file path is required. Usage: spctre policy import <file>");
 
@@ -117,14 +139,19 @@ export async function policyImport(file: string | undefined, options: PolicyImpo
   try {
     response = await fetch(`${url}/api/v1/policy/imports`, {
       method: "POST",
-      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json", Accept: "application/json" },
+      headers: {
+        Authorization: `Bearer ${key}`,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
       body: JSON.stringify(body),
     });
   } catch (error) {
     return fail(`Import failed: ${String(error)}`);
   }
 
-  const payload = (await response.json().catch(() => null)) as (ImportResponse & { error?: string }) | null;
+  const payload = (await response.json().catch(() => null)) as
+    (ImportResponse & { error?: string }) | null;
 
   if (!response.ok || !payload || payload.error) {
     const message = payload?.error ?? `HTTP ${response.status}`;

@@ -34,7 +34,12 @@ export function SimulationHistorySection({
       ) : (
         <div className="simulationHistoryList">
           {simulationHistory.map((run) => (
-            <SimulationHistoryRow key={run.id} run={run} viewMode={viewMode} workspaceSlug={workspaceSlug} />
+            <SimulationHistoryRow
+              key={run.id}
+              run={run}
+              viewMode={viewMode}
+              workspaceSlug={workspaceSlug}
+            />
           ))}
         </div>
       )}
@@ -42,24 +47,51 @@ export function SimulationHistorySection({
   );
 }
 
-function SimulationHistoryRow({ run, viewMode, workspaceSlug }: { run: SimulationRunSummary; viewMode: AppViewMode; workspaceSlug: string }) {
+function SimulationHistoryRow({
+  run,
+  viewMode,
+  workspaceSlug,
+}: {
+  run: SimulationRunSummary;
+  viewMode: AppViewMode;
+  workspaceSlug: string;
+}) {
   return (
     <article className="row">
       <div className="rowHeader">
         <div>
           <h3>{run.branchName ?? run.branchId}</h3>
           <p className="meta">
-            <code>{formatProvenanceId(run.revisionId, viewMode, 12, hashToFingerprint)}</code> / {isForensicViewMode(viewMode) ? run.createdBy : (run.createdByEmail ?? run.createdBy)} / {run.createdAt.slice(0, 10)}
+            <code>{formatProvenanceId(run.revisionId, viewMode, 12, hashToFingerprint)}</code> /{" "}
+            {isForensicViewMode(viewMode) ? run.createdBy : (run.createdByEmail ?? run.createdBy)} /{" "}
+            {run.createdAt.slice(0, 10)}
           </p>
         </div>
         <div className="rowActions">
           {run.regressionSummary ? (
-            <span className={run.regressionSummary.coverage === "RETAINED_LOG" && run.regressionSummary.blockingCount === 0 ? "pill pillAllow" : run.regressionSummary.coverage === "RETAINED_LOG" ? "pill pillBlock" : "pill pillWarn"}>
-              {run.regressionSummary.coverage === "RETAINED_LOG" ? `${run.regressionSummary.blockingCount} blockers` : "Sampled"}
+            <span
+              className={
+                run.regressionSummary.coverage === "RETAINED_LOG" &&
+                run.regressionSummary.blockingCount === 0
+                  ? "pill pillAllow"
+                  : run.regressionSummary.coverage === "RETAINED_LOG"
+                    ? "pill pillBlock"
+                    : "pill pillWarn"
+              }
+            >
+              {run.regressionSummary.coverage === "RETAINED_LOG"
+                ? `${run.regressionSummary.blockingCount} blockers`
+                : "Sampled"}
             </span>
           ) : null}
           <span className="pill">{run.sourceEventCount} events</span>
-          <a className="button buttonSmall" href={buildWorkspacePath(workspaceSlug, `/simulate?sim_run=${encodeURIComponent(run.id)}`)}>
+          <a
+            className="button buttonSmall"
+            href={buildWorkspacePath(
+              workspaceSlug,
+              `/simulate?sim_run=${encodeURIComponent(run.id)}`,
+            )}
+          >
             Inspect replay
           </a>
         </div>

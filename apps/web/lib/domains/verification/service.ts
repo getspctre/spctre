@@ -1,8 +1,5 @@
 import { appendOperationsLog } from "@/lib/repositories/operations-log";
-import {
-  ingestVerificationResult,
-  listVerificationResults,
-} from "@/lib/repositories/verification";
+import { ingestVerificationResult, listVerificationResults } from "@/lib/repositories/verification";
 import { runWithTenantContext } from "@/lib/tenant-context";
 
 export async function ingestVerification(params: Parameters<typeof ingestVerificationResult>[0]) {
@@ -21,10 +18,12 @@ export async function listVerificationRuns(params: {
       revisionId: params.revisionId,
       artifactHash: params.artifactHash,
       limit: params.limit,
-    })
+    }),
   );
 }
 
-export async function recordVerificationOperation(params: Parameters<typeof appendOperationsLog>[0]) {
+export async function recordVerificationOperation(
+  params: Parameters<typeof appendOperationsLog>[0],
+) {
   return appendOperationsLog(params);
 }

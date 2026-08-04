@@ -82,23 +82,25 @@ export async function listOrganizationMembers(tenantId: string): Promise<Organiz
   if (!sql) return [];
 
   const [principalRows, grantRows] = await Promise.all([
-    sql<{
-      id: string;
-      display_name: string;
-      email: string | null;
-      subject: string;
-      org_role: string | null;
-      invite_status: "PENDING" | "ACCEPTED" | "REVOKED";
-      auth_method: string | null;
-      created_at: Date;
-      invited_at: Date | null;
-      invite_accepted_at: Date | null;
-      disabled_at: Date | null;
-      last_active_at: Date | null;
-      session_last_seen_at: Date | null;
-      passkey_count: number;
-      mfa_count: number;
-    }[]>`
+    sql<
+      {
+        id: string;
+        display_name: string;
+        email: string | null;
+        subject: string;
+        org_role: string | null;
+        invite_status: "PENDING" | "ACCEPTED" | "REVOKED";
+        auth_method: string | null;
+        created_at: Date;
+        invited_at: Date | null;
+        invite_accepted_at: Date | null;
+        disabled_at: Date | null;
+        last_active_at: Date | null;
+        session_last_seen_at: Date | null;
+        passkey_count: number;
+        mfa_count: number;
+      }[]
+    >`
       SELECT
         p.id,
         p.display_name,
@@ -126,17 +128,19 @@ export async function listOrganizationMembers(tenantId: string): Promise<Organiz
         p.auth_method, p.created_at, p.invited_at, p.invite_accepted_at, p.disabled_at, p.last_active_at
       ORDER BY p.created_at ASC
     `,
-    sql<{
-      id: string;
-      principal_id: string;
-      workspace_id: string | null;
-      workspace_slug: string | null;
-      workspace_name: string | null;
-      grant_role: string | null;
-      reviewer_roles: string[];
-      publish_scopes: string[];
-      allowed_environments: string[];
-    }[]>`
+    sql<
+      {
+        id: string;
+        principal_id: string;
+        workspace_id: string | null;
+        workspace_slug: string | null;
+        workspace_name: string | null;
+        grant_role: string | null;
+        reviewer_roles: string[];
+        publish_scopes: string[];
+        allowed_environments: string[];
+      }[]
+    >`
       SELECT
         g.id,
         g.principal_id,
@@ -151,7 +155,7 @@ export async function listOrganizationMembers(tenantId: string): Promise<Organiz
       LEFT JOIN workspace w ON w.id = g.workspace_id AND w.tenant_id = g.tenant_id
       WHERE g.tenant_id = ${tenantId}
       ORDER BY g.created_at ASC
-    `
+    `,
   ]);
 
   const grantsByPrincipal = new Map<string, MemberGrantSummary[]>();
@@ -193,34 +197,38 @@ export async function listOrganizationMembers(tenantId: string): Promise<Organiz
       lastActiveAt: lastActive?.toISOString() ?? null,
       mfaEnrolled: row.mfa_count > 0,
       passkeyCount: row.passkey_count,
-      grants: grantsByPrincipal.get(row.id) ?? [{
-        id: "derived-org-role",
-        workspaceId: null,
-        workspaceSlug: null,
-        workspaceName: null,
-        role: orgRole,
-        reviewerRoles: roleDefinition(orgRole).reviewerRoles,
-        publishScopes: roleDefinition(orgRole).publishScopes,
-        allowedEnvironments: roleDefinition(orgRole).allowedEnvironments,
-      }],
+      grants: grantsByPrincipal.get(row.id) ?? [
+        {
+          id: "derived-org-role",
+          workspaceId: null,
+          workspaceSlug: null,
+          workspaceName: null,
+          role: orgRole,
+          reviewerRoles: roleDefinition(orgRole).reviewerRoles,
+          publishScopes: roleDefinition(orgRole).publishScopes,
+          allowedEnvironments: roleDefinition(orgRole).allowedEnvironments,
+        },
+      ],
     };
   });
 }
 
 export async function listRecentRbacAuditEvents(
   tenantId: string,
-  limit = 20
+  limit = 20,
 ): Promise<RbacAuditEvent[]> {
   if (!sql) return [];
-  const rows = await sql<{
-    id: string;
-    workspace_id: string | null;
-    actor_id: string | null;
-    target_principal_id: string | null;
-    action: string;
-    detail: unknown;
-    created_at: Date;
-  }[]>`
+  const rows = await sql<
+    {
+      id: string;
+      workspace_id: string | null;
+      actor_id: string | null;
+      target_principal_id: string | null;
+      action: string;
+      detail: unknown;
+      created_at: Date;
+    }[]
+  >`
     SELECT id, workspace_id, actor_id, target_principal_id, action, detail, created_at
     FROM rbac_audit_event
     WHERE tenant_id = ${tenantId}
@@ -234,9 +242,10 @@ export async function listRecentRbacAuditEvents(
     actorId: row.actor_id,
     targetPrincipalId: row.target_principal_id,
     action: row.action,
-    detail: row.detail && typeof row.detail === "object" && !Array.isArray(row.detail)
-      ? (row.detail as Record<string, unknown>)
-      : {},
+    detail:
+      row.detail && typeof row.detail === "object" && !Array.isArray(row.detail)
+        ? (row.detail as Record<string, unknown>)
+        : {},
     createdAt: row.created_at.toISOString(),
   }));
 }
@@ -251,7 +260,7 @@ export async function getActorOrgRole(params: {
     WHERE id = ${params.principalId} AND tenant_id = ${params.tenantId} AND disabled_at IS NULL
     LIMIT 1
   `;
-  return isOrgRole(rows[0]?.org_role ?? "") ? rows[0].org_role as OrgRole : "ADMIN" as const;
+  return isOrgRole(rows[0]?.org_role ?? "") ? (rows[0].org_role as OrgRole) : ("ADMIN" as const);
 }
 
 export async function getPrincipalBySubject(params: {

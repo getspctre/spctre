@@ -18,7 +18,10 @@ export { ACTIVE_TENANT_COOKIE, ACTIVE_WORKSPACE_COOKIE } from "@/lib/workspace/c
 export { createSessionGuardToken, SESSION_GUARD_COOKIE } from "@/lib/session-guard";
 export { DEMO_TENANT_ID } from "@/lib/demo";
 export { ensurePrincipalGrantAndCheckAccess } from "@/lib/repositories/auth/grants";
-export { upsertSamlPrincipal, upsertPrincipalExternalIdentity } from "@/lib/repositories/auth/principal";
+export {
+  upsertSamlPrincipal,
+  upsertPrincipalExternalIdentity,
+} from "@/lib/repositories/auth/principal";
 export {
   saveSamlAuthnRequestId,
   claimSamlAuthnRequestValue,

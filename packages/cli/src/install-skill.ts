@@ -15,9 +15,7 @@ const HARNESS_CONFIG: Record<SkillHarness, SkillHarnessConfig> = {
   claude: {
     displayName: "Claude Code",
     baseDir: (global) =>
-      global
-        ? path.join(os.homedir(), ".claude")
-        : path.join(process.cwd(), ".claude"),
+      global ? path.join(os.homedir(), ".claude") : path.join(process.cwd(), ".claude"),
     activationFile: "CLAUDE.md",
     activationNeedle: ".claude/skills/spctre",
   },
@@ -94,10 +92,16 @@ export async function installSkill(options: InstallSkillOptions) {
     if (harness === "antigravity") {
       console.log("");
       if (options.global) {
-        console.log("Installed into agy's staged plugin directory (auto-discovered by the agy CLI).");
-        console.log("The Antigravity IDE's global skills directory is ~/.gemini/antigravity/skills/ if you also want it there.");
+        console.log(
+          "Installed into agy's staged plugin directory (auto-discovered by the agy CLI).",
+        );
+        console.log(
+          "The Antigravity IDE's global skills directory is ~/.gemini/antigravity/skills/ if you also want it there.",
+        );
       } else {
-        console.log("Workspace skills in .agents/skills/ are auto-read by the Antigravity IDE and agy CLI.");
+        console.log(
+          "Workspace skills in .agents/skills/ are auto-read by the Antigravity IDE and agy CLI.",
+        );
       }
     }
     return;
@@ -134,17 +138,28 @@ function ensureAntigravityPlugin(pluginDir: string) {
   if (fs.existsSync(manifestPath)) return;
 
   fs.mkdirSync(pluginDir, { recursive: true });
-  fs.writeFileSync(manifestPath, `${JSON.stringify({
-    $schema: "https://antigravity.google/schemas/v1/plugin.json",
-    name: "spctre",
-    description: "Spctre policy governance for agent actions",
-  }, null, 2)}\n`);
+  fs.writeFileSync(
+    manifestPath,
+    `${JSON.stringify(
+      {
+        $schema: "https://antigravity.google/schemas/v1/plugin.json",
+        name: "spctre",
+        description: "Spctre policy governance for agent actions",
+      },
+      null,
+      2,
+    )}\n`,
+  );
 }
 
 function parseHarness(options: InstallSkillOptions): SkillHarness {
-  const selectedFlags = [options.claude, options.codex, options.gemini, options.antigravity].filter(Boolean).length;
+  const selectedFlags = [options.claude, options.codex, options.gemini, options.antigravity].filter(
+    Boolean,
+  ).length;
   if (selectedFlags > 1) {
-    console.error('Error: choose only one harness flag: "--claude", "--codex", "--gemini", or "--antigravity".');
+    console.error(
+      'Error: choose only one harness flag: "--claude", "--codex", "--gemini", or "--antigravity".',
+    );
     process.exit(1);
   }
   if (options.claude) return "claude";
@@ -154,8 +169,16 @@ function parseHarness(options: InstallSkillOptions): SkillHarness {
 
   const harness = options.harness;
   if (!harness) return "claude";
-  if (harness === "claude" || harness === "codex" || harness === "gemini" || harness === "antigravity") return harness;
+  if (
+    harness === "claude" ||
+    harness === "codex" ||
+    harness === "gemini" ||
+    harness === "antigravity"
+  )
+    return harness;
   if (harness === "agy") return "antigravity";
-  console.error(`Error: unsupported harness "${harness}". Expected "claude", "codex", "gemini", or "antigravity".`);
+  console.error(
+    `Error: unsupported harness "${harness}". Expected "claude", "codex", "gemini", or "antigravity".`,
+  );
   process.exit(1);
 }

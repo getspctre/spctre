@@ -275,12 +275,13 @@ export async function upsertSocialPrincipal(params: {
     return { principalId, tenantId, workspaceId: wsRows[0]?.id ?? "" };
   }
 
-  const slugified = params.email
-    .split("@")[0]
-    ?.toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 36) ?? "user";
+  const slugified =
+    params.email
+      .split("@")[0]
+      ?.toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 36) ?? "user";
 
   const emailHash = createHash("sha256").update(params.email).digest("hex").slice(0, 8);
   const providerPrefix = params.provider.toLowerCase();
@@ -394,14 +395,13 @@ export async function listLinkedSocialIdentities(params: {
       const parts = row.external_subject.split(":");
       const provider = parts[0]?.toUpperCase();
       if (provider === "GOOGLE" || provider === "GITHUB") {
-        return {
-          provider: provider as "GOOGLE" | "GITHUB",
-          externalEmail: row.external_email
-        };
+        return { provider: provider as "GOOGLE" | "GITHUB", externalEmail: row.external_email };
       }
       return null;
     })
-    .filter((v): v is { provider: "GOOGLE" | "GITHUB"; externalEmail: string | null } => v !== null);
+    .filter(
+      (v): v is { provider: "GOOGLE" | "GITHUB"; externalEmail: string | null } => v !== null,
+    );
 }
 
 function slugifyLocalDev(input: string): string {

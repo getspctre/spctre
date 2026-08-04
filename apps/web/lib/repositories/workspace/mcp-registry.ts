@@ -55,7 +55,8 @@ const FALLBACK_CAPABILITIES: GovernedMcpCapability[] = [
     toolName: "create_evidence_record",
     connector: "mcp",
     action: "create_evidence_record",
-    description: "Record governed MCP tool-use evidence after the underlying runtime executes or blocks.",
+    description:
+      "Record governed MCP tool-use evidence after the underlying runtime executes or blocks.",
     inputSchema: {},
     metadata: { firstParty: true },
     grantScope: "FALLBACK",
@@ -63,7 +64,9 @@ const FALLBACK_CAPABILITIES: GovernedMcpCapability[] = [
 ];
 
 function asRecord(value: unknown): Record<string, unknown> {
-  return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
 }
 
 export async function listGovernedMcpCapabilities(params: {

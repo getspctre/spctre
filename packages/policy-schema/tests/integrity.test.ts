@@ -1,8 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  buildOperationsContentHash,
-  validateOperationsLogChain,
-} from "../src/index";
+import { buildOperationsContentHash, validateOperationsLogChain } from "../src/index";
 
 describe("operations integrity", () => {
   it("builds deterministic sha256-prefixed hashes", () => {
@@ -16,7 +13,9 @@ describe("operations integrity", () => {
     };
 
     expect(buildOperationsContentHash(input)).toBe(buildOperationsContentHash(input));
-    expect(buildOperationsContentHash(input)).toBe("sha256:a19a83ee12d8df3f1fc7b5228b17278a63b03eade7a2a216ecdb7681f44bf9ad");
+    expect(buildOperationsContentHash(input)).toBe(
+      "sha256:a19a83ee12d8df3f1fc7b5228b17278a63b03eade7a2a216ecdb7681f44bf9ad",
+    );
   });
 
   it("detects content and prev hash tampering", () => {
@@ -42,10 +41,12 @@ describe("operations integrity", () => {
       createdAt: "2026-05-13T18:01:00.000Z",
     };
 
-    expect(validateOperationsLogChain([
-      { ...first, contentHash: firstHash },
-      { ...second, contentHash: buildOperationsContentHash(second) },
-    ])).toEqual({ verified: true, issues: [] });
+    expect(
+      validateOperationsLogChain([
+        { ...first, contentHash: firstHash },
+        { ...second, contentHash: buildOperationsContentHash(second) },
+      ]),
+    ).toEqual({ verified: true, issues: [] });
 
     const tampered = validateOperationsLogChain([
       { ...first, contentHash: firstHash },

@@ -9,14 +9,33 @@ export const dynamic = "force-dynamic";
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const traceId = extractTraceId(request);
-  const [session, scope] = await Promise.all([getAuthSession().catch(swallow("getAuthSession", null)), getActiveScope().catch(swallow("getActiveScope", null))]);
+  const [session, scope] = await Promise.all([
+    getAuthSession().catch(swallow("getAuthSession", null)),
+    getActiveScope().catch(swallow("getActiveScope", null)),
+  ]);
   if (!session || !scope) {
-    return withTraceId(Response.json({ error: "Authentication and workspace context are required.", meta: makeMeta(traceId) }, { status: 401 }), traceId);
+    return withTraceId(
+      Response.json(
+        { error: "Authentication and workspace context are required.", meta: makeMeta(traceId) },
+        { status: 401 },
+      ),
+      traceId,
+    );
   }
   const { id } = await params;
-  const published = await getPublishedAgentBlueprintRuntime({ tenantId: scope.tenantId, workspaceId: scope.workspaceId, blueprintId: id });
+  const published = await getPublishedAgentBlueprintRuntime({
+    tenantId: scope.tenantId,
+    workspaceId: scope.workspaceId,
+    blueprintId: id,
+  });
   if (!published) {
-    return withTraceId(Response.json({ error: "No published Blueprint revision is available.", meta: makeMeta(traceId) }, { status: 404 }), traceId);
+    return withTraceId(
+      Response.json(
+        { error: "No published Blueprint revision is available.", meta: makeMeta(traceId) },
+        { status: 404 },
+      ),
+      traceId,
+    );
   }
   const artifact = buildAgentBlueprintRuntimeArtifact({
     revision: published.revision,
@@ -24,12 +43,18 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     policyArtifactHash: published.policyArtifactHash,
     generatedAt: new Date().toISOString(),
   });
-  return withTraceId(Response.json({ artifact, meta: makeMeta(traceId) }, {
-    headers: {
-      "cache-control": "no-store",
-      "x-spctre-blueprint-id": artifact.blueprint.blueprintId,
-      "x-spctre-blueprint-revision-id": artifact.blueprint.revisionId,
-      "x-spctre-blueprint-definition-hash": artifact.blueprint.definitionHash,
-    },
-  }), traceId);
+  return withTraceId(
+    Response.json(
+      { artifact, meta: makeMeta(traceId) },
+      {
+        headers: {
+          "cache-control": "no-store",
+          "x-spctre-blueprint-id": artifact.blueprint.blueprintId,
+          "x-spctre-blueprint-revision-id": artifact.blueprint.revisionId,
+          "x-spctre-blueprint-definition-hash": artifact.blueprint.definitionHash,
+        },
+      },
+    ),
+    traceId,
+  );
 }

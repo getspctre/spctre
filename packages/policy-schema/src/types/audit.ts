@@ -10,7 +10,15 @@ import type {
 
 export interface PolicyTimelineEvent {
   id: string;
-  kind: "IMPORT" | "APPROVAL" | "EXPORT" | "EVIDENCE" | "COMPOSE" | "DIFF" | "SIMULATION" | "ESCALATION";
+  kind:
+    | "IMPORT"
+    | "APPROVAL"
+    | "EXPORT"
+    | "EVIDENCE"
+    | "COMPOSE"
+    | "DIFF"
+    | "SIMULATION"
+    | "ESCALATION";
   branchId: string;
   revisionId: string;
   title: string;
@@ -52,7 +60,9 @@ export interface AgtVerificationSummary {
   latestPolicyEngineVersion?: string;
   compatibilityCheckedAt?: string;
   compatibilityCheckOutcome?: "PASS" | "FAIL" | "WARN";
-  resultsByType: Partial<Record<AgtVerificationType, { outcome: AgtVerificationOutcome; createdAt: string }>>;
+  resultsByType: Partial<
+    Record<AgtVerificationType, { outcome: AgtVerificationOutcome; createdAt: string }>
+  >;
 }
 
 export interface PublishBlocker {
@@ -94,7 +104,9 @@ export interface PolicyComplianceEvidenceExport {
   deniedDecisionCount: number;
   warnedDecisionCount: number;
   /** Rule-to-control provenance for external evidence consumers. */
-  controlMappings?: Array<PolicyControlMapping & { stableRuleId: string; effect: RuntimeDecisionStatus }>;
+  controlMappings?: Array<
+    PolicyControlMapping & { stableRuleId: string; effect: RuntimeDecisionStatus }
+  >;
   escalationDecisionCount?: number;
 }
 
@@ -107,7 +119,15 @@ export interface GrcEvidenceBridgeDelivery {
     schemaVersion: "spctre.grc-evidence-bridge.v1";
     generatedAt: string;
     provenance: { artifactHash: string; branchId: string; revisionId: string };
-    evidence: { packageId: string; evidenceCount: number; deniedDecisionCount: number; warnedDecisionCount: number; controlMappings: Array<PolicyControlMapping & { stableRuleId: string; effect: RuntimeDecisionStatus }> };
+    evidence: {
+      packageId: string;
+      evidenceCount: number;
+      deniedDecisionCount: number;
+      warnedDecisionCount: number;
+      controlMappings: Array<
+        PolicyControlMapping & { stableRuleId: string; effect: RuntimeDecisionStatus }
+      >;
+    };
   };
 }
 
@@ -172,11 +192,7 @@ export interface ComplianceFrameworkAnnotation {
   frameworkLabel: string;
   generatedAt: string;
   controls: ComplianceControl[];
-  summary: {
-    addressedCount: number;
-    partialCount: number;
-    notApplicableCount: number;
-  };
+  summary: { addressedCount: number; partialCount: number; notApplicableCount: number };
 }
 
 export interface AgtVerificationResult {
@@ -276,10 +292,7 @@ export interface OperationsLogChainVerification {
 export interface AgtVerificationEvidencePacket {
   schemaVersion: "spctre.agt.evidence.v1";
   generatedAt: string;
-  verifier: {
-    command: "agt verify --evidence";
-    strictCommand: "agt verify --evidence --strict";
-  };
+  verifier: { command: "agt verify --evidence"; strictCommand: "agt verify --evidence --strict" };
   artifact: PolicyArtifactExport;
   bundle: AgtCompatiblePolicyBundle;
   evidence: RuntimeDecisionEvidenceRecord[];

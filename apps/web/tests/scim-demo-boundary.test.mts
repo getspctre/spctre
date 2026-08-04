@@ -4,15 +4,9 @@ const getSpctrePlanSpy = vi.fn();
 const handleRequestSpy = vi.fn();
 const resolveScimTokenBindingSpy = vi.fn();
 
-vi.mock("@/lib/feature-flags-server", () => ({
-  getSpctrePlan: getSpctrePlanSpy,
-}));
+vi.mock("@/lib/feature-flags-server", () => ({ getSpctrePlan: getSpctrePlanSpy }));
 
-vi.mock("@/lib/ee-adapters/scim", () => ({
-  scimService: {
-    handleRequest: handleRequestSpy,
-  },
-}));
+vi.mock("@/lib/ee-adapters/scim", () => ({ scimService: { handleRequest: handleRequestSpy } }));
 
 vi.mock("@/lib/domains/scim-token/service", () => ({
   resolveScimTokenBinding: resolveScimTokenBindingSpy,
@@ -21,10 +15,7 @@ vi.mock("@/lib/domains/scim-token/service", () => ({
 const scimRoute = await import("../app/api/scim/v2/[...scimPath]/route");
 
 function scimUsersRequest(headers?: HeadersInit) {
-  return new Request("http://localhost:3000/api/scim/v2/Users", {
-    method: "GET",
-    headers,
-  });
+  return new Request("http://localhost:3000/api/scim/v2/Users", { method: "GET", headers });
 }
 
 function scimParams() {
@@ -38,9 +29,7 @@ describe("SCIM OSS boundary (auth, tenant binding, and entitlement before the ee
     handleRequestSpy.mockReset();
     resolveScimTokenBindingSpy.mockReset();
     getSpctrePlanSpy.mockReturnValue("enterprise");
-    handleRequestSpy.mockResolvedValue(
-      Response.json({ totalResults: 0, Resources: [] })
-    );
+    handleRequestSpy.mockResolvedValue(Response.json({ totalResults: 0, Resources: [] }));
     resolveScimTokenBindingSpy.mockResolvedValue({ ok: false, reason: "unknown_token" });
   });
 
@@ -70,7 +59,7 @@ describe("SCIM OSS boundary (auth, tenant binding, and entitlement before the ee
 
     const response = await scimRoute.GET(
       scimUsersRequest({ authorization: "Bearer wrong" }),
-      scimParams()
+      scimParams(),
     );
 
     expect(response.status).toBe(401);
@@ -95,7 +84,7 @@ describe("SCIM OSS boundary (auth, tenant binding, and entitlement before the ee
 
     const response = await scimRoute.GET(
       scimUsersRequest({ authorization: "Bearer secret" }),
-      scimParams()
+      scimParams(),
     );
 
     expect(response.status).toBe(403);
@@ -127,7 +116,7 @@ describe("SCIM OSS boundary (auth, tenant binding, and entitlement before the ee
 
     const response = await scimRoute.GET(
       scimUsersRequest({ authorization: "Bearer scim_abc" }),
-      scimParams()
+      scimParams(),
     );
 
     expect(response.status).toBe(403);

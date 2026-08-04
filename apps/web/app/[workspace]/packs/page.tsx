@@ -1,7 +1,7 @@
 import { PacksPageContent } from "../../packs/content";
 
 export default async function WorkspacePacksPage({
-  params
+  params,
 }: {
   params: Promise<{ workspace: string }>;
 }) {

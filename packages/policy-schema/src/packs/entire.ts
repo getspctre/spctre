@@ -10,7 +10,14 @@ export const ENTIRE_SESSION_AUDIT_PACK: PolicyPack = {
   description:
     "Pre-deployment AI code-generation governance for Entire sessions. An Entire adapter submits normalized checkpoints and diffs through the framework-agnostic Git checkpoint ingestion API. Blocks sessions with no agent attribution, warns on sensitive file touches, high AI authorship percentage, high token usage, and high-blast-radius tool calls — closing the governance gap between AI-assisted code authorship and runtime agent enforcement.",
   riskLevel: "HIGH",
-  tags: ["entire", "pre-deployment", "code-generation", "tool-calls", "session-audit", "ai-authorship"],
+  tags: [
+    "entire",
+    "pre-deployment",
+    "code-generation",
+    "tool-calls",
+    "session-audit",
+    "ai-authorship",
+  ],
   domains: ["tool-calls", "sessions", "files", "authorship", "audit"],
   metadata: {
     name: "Entire CLI Session Audit Pack",

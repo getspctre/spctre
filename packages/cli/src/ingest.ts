@@ -18,17 +18,21 @@ interface IngestOptions {
   output?: string;
 }
 
-async function resolveIngestSettings(options: IngestOptions): Promise<{
-  key: string;
-  url: string;
-  resolved: ReturnType<typeof readConfig>;
-}> {
+async function resolveIngestSettings(
+  options: IngestOptions,
+): Promise<{ key: string; url: string; resolved: ReturnType<typeof readConfig> }> {
   const config = readConfig();
-  const needsConfig = !options.key || !options.url || (options.heartbeat && (!options.agent || !options.workspace || !options.hash));
+  const needsConfig =
+    !options.key ||
+    !options.url ||
+    (options.heartbeat && (!options.agent || !options.workspace || !options.hash));
   let resolved = needsConfig ? requireConfig() : config;
   if (resolved && !options.key) resolved = await refreshIfNeeded(resolved);
   const key = options.key ?? resolved?.token;
-  const url = (options.url ?? resolved?.controlPlaneUrl ?? "http://localhost:3000").replace(/\/+$/, "");
+  const url = (options.url ?? resolved?.controlPlaneUrl ?? "http://localhost:3000").replace(
+    /\/+$/,
+    "",
+  );
 
   if (!key) {
     console.error("Error: --key is required. Run spctre init first or pass --key.");
@@ -46,10 +50,7 @@ export async function ingest(options: IngestOptions) {
   try {
     const response = await fetch(`${url}/api/evidence`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${key}`,
-      },
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
       body: JSON.stringify(evidence),
     });
 
@@ -85,7 +86,9 @@ function buildHeartbeatEvidence(params: {
   policyContext: RuntimePolicyContext[];
 }): AgtRuntimeDecisionInput {
   if (!params.policyContext.length) {
-    console.error("Error: heartbeat requires policy context. Run spctre init or pass a payload with policyContext.");
+    console.error(
+      "Error: heartbeat requires policy context. Run spctre init or pass a payload with policyContext.",
+    );
     process.exit(1);
   }
 
@@ -118,7 +121,10 @@ type ParseEvidenceConfig = {
   policyContext: RuntimePolicyContext[];
 };
 
-function parseHeartbeatEvidence(options: IngestOptions, config?: ParseEvidenceConfig): AgtRuntimeDecisionInput {
+function parseHeartbeatEvidence(
+  options: IngestOptions,
+  config?: ParseEvidenceConfig,
+): AgtRuntimeDecisionInput {
   const agent = options.agent ?? config?.agentId;
   const workspace = options.workspace ?? config?.workspaceId;
   const hash = options.hash ?? config?.artifactHash;
@@ -141,7 +147,10 @@ function parseHeartbeatEvidence(options: IngestOptions, config?: ParseEvidenceCo
   });
 }
 
-function parseEvidence(options: IngestOptions, config?: ParseEvidenceConfig): AgtRuntimeDecisionInput {
+function parseEvidence(
+  options: IngestOptions,
+  config?: ParseEvidenceConfig,
+): AgtRuntimeDecisionInput {
   if (options.heartbeat) {
     return parseHeartbeatEvidence(options, config);
   }

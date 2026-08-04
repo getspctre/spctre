@@ -13,23 +13,36 @@ async function handleGetApiTokenRevocations(request: Request) {
   const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (!session) {
     return withTraceId(
-      Response.json({ error: "Authentication required.", meta: makeMeta(traceId) }, { status: 401 }),
-      traceId
+      Response.json(
+        { error: "Authentication required.", meta: makeMeta(traceId) },
+        { status: 401 },
+      ),
+      traceId,
     );
   }
 
   const ctx = await getActiveScope().catch(swallow("getActiveScope", null));
   if (!ctx) {
     return withTraceId(
-      Response.json({ error: "Workspace context unavailable.", meta: makeMeta(traceId) }, { status: 400 }),
-      traceId
+      Response.json(
+        { error: "Workspace context unavailable.", meta: makeMeta(traceId) },
+        { status: 400 },
+      ),
+      traceId,
     );
   }
 
   const url = new URL(request.url);
-  const limit = Math.max(1, Math.min(500, Number.parseInt(url.searchParams.get("limit") ?? "100", 10) || 100));
+  const limit = Math.max(
+    1,
+    Math.min(500, Number.parseInt(url.searchParams.get("limit") ?? "100", 10) || 100),
+  );
 
-  const revocations = await listTokenRevocations({ tenantId: ctx.tenantId, workspaceId: ctx.workspaceId, limit });
+  const revocations = await listTokenRevocations({
+    tenantId: ctx.tenantId,
+    workspaceId: ctx.workspaceId,
+    limit,
+  });
 
   return withTraceId(
     Response.json({
@@ -39,7 +52,7 @@ async function handleGetApiTokenRevocations(request: Request) {
       pagination: { total: revocations.length, limit, offset: 0 },
       meta: makeMeta(traceId),
     }),
-    traceId
+    traceId,
   );
 }
 

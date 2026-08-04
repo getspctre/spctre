@@ -21,7 +21,13 @@ async function handleGetApiComplianceSeal(request: Request) {
   if (hasBearer) {
     const auth = await authenticateServiceToken(request, "compliance:read");
     if (!auth.ok) {
-      return withTraceId(Response.json({ error: "Invalid or expired service token.", meta: makeMeta(traceId) }, { status: 401 }), traceId);
+      return withTraceId(
+        Response.json(
+          { error: "Invalid or expired service token.", meta: makeMeta(traceId) },
+          { status: 401 },
+        ),
+        traceId,
+      );
     }
     tenantId = auth.auth.tenantId;
     workspaceId = auth.auth.workspaceId;
@@ -29,7 +35,13 @@ async function handleGetApiComplianceSeal(request: Request) {
   } else {
     const session = await getAuthSession().catch(swallow("getAuthSession", null));
     if (!session) {
-      return withTraceId(Response.json({ error: "Authentication required.", meta: makeMeta(traceId) }, { status: 401 }), traceId);
+      return withTraceId(
+        Response.json(
+          { error: "Authentication required.", meta: makeMeta(traceId) },
+          { status: 401 },
+        ),
+        traceId,
+      );
     }
     const workspaceContext = await getActiveScope();
     tenantId = workspaceContext.tenantId;
@@ -38,7 +50,13 @@ async function handleGetApiComplianceSeal(request: Request) {
   }
 
   if (!workspaceId || !tenantId) {
-    return withTraceId(Response.json({ error: "Workspace context unavailable.", meta: makeMeta(traceId) }, { status: 400 }), traceId);
+    return withTraceId(
+      Response.json(
+        { error: "Workspace context unavailable.", meta: makeMeta(traceId) },
+        { status: 400 },
+      ),
+      traceId,
+    );
   }
 
   let packet;
@@ -46,10 +64,16 @@ async function handleGetApiComplianceSeal(request: Request) {
     packet = await getCompliancePacket(workspaceId, tenantId);
 
     if (!packet) {
-      return withTraceId(Response.json(
-        { error: "No published compliance packet available. Publish a policy revision first.", meta: makeMeta(traceId) },
-        { status: 404 }
-      ), traceId);
+      return withTraceId(
+        Response.json(
+          {
+            error: "No published compliance packet available. Publish a policy revision first.",
+            meta: makeMeta(traceId),
+          },
+          { status: 404 },
+        ),
+        traceId,
+      );
     }
 
     const sealedAt = new Date().toISOString();
@@ -66,21 +90,30 @@ async function handleGetApiComplianceSeal(request: Request) {
       payload: { action: "SEAL", sealToken, packetDigest, sealedAt },
     }).catch(swallow("recordComplianceOperation", undefined));
 
-    return withTraceId(Response.json({
-      sealToken,
-      packetDigest: `sha256:${packetDigest}`,
-      sealedAt,
-      branchId: packet.export.artifact.branchId,
-      revisionId: packet.export.artifact.revisionId,
-      approvalCount: packet.export.approvalCount,
-      evidenceCount: packet.export.evidenceCount,
-      message:
-        "Audit sealed. The seal token and packet digest are recorded in the tamper-evident operations log.",
-      meta: makeMeta(traceId),
-    }), traceId);
+    return withTraceId(
+      Response.json({
+        sealToken,
+        packetDigest: `sha256:${packetDigest}`,
+        sealedAt,
+        branchId: packet.export.artifact.branchId,
+        revisionId: packet.export.artifact.revisionId,
+        approvalCount: packet.export.approvalCount,
+        evidenceCount: packet.export.evidenceCount,
+        message:
+          "Audit sealed. The seal token and packet digest are recorded in the tamper-evident operations log.",
+        meta: makeMeta(traceId),
+      }),
+      traceId,
+    );
   } catch (err) {
     console.error("[compliance/seal] seal operation failed", err);
-    return withTraceId(Response.json({ error: "Service temporarily unavailable.", meta: makeMeta(traceId) }, { status: 503 }), traceId);
+    return withTraceId(
+      Response.json(
+        { error: "Service temporarily unavailable.", meta: makeMeta(traceId) },
+        { status: 503 },
+      ),
+      traceId,
+    );
   }
 }
 

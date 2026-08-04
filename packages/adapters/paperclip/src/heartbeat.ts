@@ -6,18 +6,14 @@ export async function emitHeartbeatEvidence(
   payload: HeartbeatPayload,
   workspaceId: string,
   tenantId: string,
-  environment?: string
+  environment?: string,
 ): Promise<void> {
   const record: HeartbeatRecord = {
     type: "HEARTBEAT",
     agentId: payload.agentId,
     workspaceId,
     tenantId,
-    runtimeTarget: {
-      stack: "PAPERCLIP",
-      adapter: "@spctre/paperclip",
-      environment,
-    },
+    runtimeTarget: { stack: "PAPERCLIP", adapter: "@spctre/paperclip", environment },
     companyId: payload.companyId,
     issueId: payload.issueId,
     goalId: payload.goalId,

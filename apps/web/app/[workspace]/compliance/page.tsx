@@ -2,7 +2,7 @@ import { CompliancePageContent } from "../../compliance/content";
 
 export default async function WorkspaceCompliancePage({
   params,
-  searchParams
+  searchParams,
 }: {
   params: Promise<{ workspace: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;

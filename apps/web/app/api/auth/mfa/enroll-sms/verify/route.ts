@@ -2,7 +2,10 @@ import { NextResponse } from "next/server";
 import { getAuthSession } from "@/lib/auth-session";
 import { verifyFirebasePhoneAuth } from "@/lib/platform/sms";
 import { setControlPlaneSessionCookies } from "@/lib/auth-session-cookies";
-import { getPrimaryWorkspaceIdForTenant, isAuthDatabaseConfigured } from "@/lib/domains/auth/service";
+import {
+  getPrimaryWorkspaceIdForTenant,
+  isAuthDatabaseConfigured,
+} from "@/lib/domains/auth/service";
 import {
   markSessionMfaVerified,
   getSmsEnrollment,
@@ -23,27 +26,39 @@ interface EnrollSmsVerifyPayload {
 async function handlePostApiAuthMfaEnrollSmsVerify(request: Request) {
   const traceId = extractTraceId(request);
   if (!isAuthDatabaseConfigured()) {
-    const response = NextResponse.json({ error: "Database not configured.", meta: makeMeta(traceId) }, { status: 503 });
+    const response = NextResponse.json(
+      { error: "Database not configured.", meta: makeMeta(traceId) },
+      { status: 503 },
+    );
     response.headers.set("x-request-id", traceId);
     return response;
   }
 
   // Commercial gate
   if (getSpctrePlan() === "oss") {
-    const response = NextResponse.json({ error: "SMS MFA is only available on Commercial / Cloud tiers.", meta: makeMeta(traceId) }, { status: 403 });
+    const response = NextResponse.json(
+      { error: "SMS MFA is only available on Commercial / Cloud tiers.", meta: makeMeta(traceId) },
+      { status: 403 },
+    );
     response.headers.set("x-request-id", traceId);
     return response;
   }
 
   const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (!session) {
-    const response = NextResponse.json({ error: "Authentication required.", meta: makeMeta(traceId) }, { status: 401 });
+    const response = NextResponse.json(
+      { error: "Authentication required.", meta: makeMeta(traceId) },
+      { status: 401 },
+    );
     response.headers.set("x-request-id", traceId);
     return response;
   }
 
   if (isDemoTenant(session.tenantId)) {
-    const response = NextResponse.json({ error: "SMS enrollment is not available in Demo Mode.", meta: makeMeta(traceId) }, { status: 403 });
+    const response = NextResponse.json(
+      { error: "SMS enrollment is not available in Demo Mode.", meta: makeMeta(traceId) },
+      { status: 403 },
+    );
     response.headers.set("x-request-id", traceId);
     return response;
   }
@@ -52,7 +67,10 @@ async function handlePostApiAuthMfaEnrollSmsVerify(request: Request) {
   try {
     payload = (await request.json()) as EnrollSmsVerifyPayload;
   } catch {
-    const response = NextResponse.json({ error: "Request body must be JSON.", meta: makeMeta(traceId) }, { status: 400 });
+    const response = NextResponse.json(
+      { error: "Request body must be JSON.", meta: makeMeta(traceId) },
+      { status: 400 },
+    );
     response.headers.set("x-request-id", traceId);
     return response;
   }
@@ -61,7 +79,10 @@ async function handlePostApiAuthMfaEnrollSmsVerify(request: Request) {
   const code = typeof payload.code === "string" ? payload.code.trim() : "";
 
   if (!enrollmentId || !/^\d{6}$/.test(code)) {
-    const response = NextResponse.json({ error: "enrollmentId and a valid 6-digit code are required.", meta: makeMeta(traceId) }, { status: 400 });
+    const response = NextResponse.json(
+      { error: "enrollmentId and a valid 6-digit code are required.", meta: makeMeta(traceId) },
+      { status: 400 },
+    );
     response.headers.set("x-request-id", traceId);
     return response;
   }
@@ -74,13 +95,19 @@ async function handlePostApiAuthMfaEnrollSmsVerify(request: Request) {
   });
 
   if (!enrollment) {
-    const response = NextResponse.json({ error: "SMS MFA enrollment not found.", meta: makeMeta(traceId) }, { status: 404 });
+    const response = NextResponse.json(
+      { error: "SMS MFA enrollment not found.", meta: makeMeta(traceId) },
+      { status: 404 },
+    );
     response.headers.set("x-request-id", traceId);
     return response;
   }
 
   if (enrollment.verified_at) {
-    const response = NextResponse.json({ error: "This SMS MFA enrollment is already verified.", meta: makeMeta(traceId) }, { status: 400 });
+    const response = NextResponse.json(
+      { error: "This SMS MFA enrollment is already verified.", meta: makeMeta(traceId) },
+      { status: 400 },
+    );
     response.headers.set("x-request-id", traceId);
     return response;
   }
@@ -89,7 +116,10 @@ async function handlePostApiAuthMfaEnrollSmsVerify(request: Request) {
   try {
     state = JSON.parse(enrollment.secret_enc);
   } catch {
-    const response = NextResponse.json({ error: "Invalid enrollment state.", meta: makeMeta(traceId) }, { status: 500 });
+    const response = NextResponse.json(
+      { error: "Invalid enrollment state.", meta: makeMeta(traceId) },
+      { status: 500 },
+    );
     response.headers.set("x-request-id", traceId);
     return response;
   }
@@ -101,7 +131,10 @@ async function handlePostApiAuthMfaEnrollSmsVerify(request: Request) {
       tenantId: session.tenantId,
       principalId: session.principalId,
     });
-    const response = NextResponse.json({ error: "Verification code has expired. Please try again.", meta: makeMeta(traceId) }, { status: 400 });
+    const response = NextResponse.json(
+      { error: "Verification code has expired. Please try again.", meta: makeMeta(traceId) },
+      { status: 400 },
+    );
     response.headers.set("x-request-id", traceId);
     return response;
   }
@@ -113,7 +146,10 @@ async function handlePostApiAuthMfaEnrollSmsVerify(request: Request) {
       tenantId: session.tenantId,
       principalId: session.principalId,
     });
-    const response = NextResponse.json({ error: "Too many incorrect attempts. Enrollment restarted.", meta: makeMeta(traceId) }, { status: 400 });
+    const response = NextResponse.json(
+      { error: "Too many incorrect attempts. Enrollment restarted.", meta: makeMeta(traceId) },
+      { status: 400 },
+    );
     response.headers.set("x-request-id", traceId);
     return response;
   }
@@ -132,7 +168,10 @@ async function handlePostApiAuthMfaEnrollSmsVerify(request: Request) {
         tenantId: session.tenantId,
         principalId: session.principalId,
       });
-      const response = NextResponse.json({ error: "Too many incorrect attempts. Enrollment restarted.", meta: makeMeta(traceId) }, { status: 400 });
+      const response = NextResponse.json(
+        { error: "Too many incorrect attempts. Enrollment restarted.", meta: makeMeta(traceId) },
+        { status: 400 },
+      );
       response.headers.set("x-request-id", traceId);
       return response;
     } else {
@@ -143,7 +182,10 @@ async function handlePostApiAuthMfaEnrollSmsVerify(request: Request) {
         principalId: session.principalId,
         secretEnc: nextSecretEnc,
       });
-      const response = NextResponse.json({ error: "Invalid verification code.", meta: makeMeta(traceId) }, { status: 400 });
+      const response = NextResponse.json(
+        { error: "Invalid verification code.", meta: makeMeta(traceId) },
+        { status: 400 },
+      );
       response.headers.set("x-request-id", traceId);
       return response;
     }
@@ -156,10 +198,7 @@ async function handlePostApiAuthMfaEnrollSmsVerify(request: Request) {
     principalId: session.principalId,
   });
 
-  await markSessionMfaVerified({
-    sessionId: session.sessionId,
-    tenantId: session.tenantId,
-  });
+  await markSessionMfaVerified({ sessionId: session.sessionId, tenantId: session.tenantId });
 
   const workspaceId = await getPrimaryWorkspaceIdForTenant(session.tenantId);
 
@@ -172,7 +211,7 @@ async function handlePostApiAuthMfaEnrollSmsVerify(request: Request) {
     workspaceId: workspaceId ?? "",
     principalId: session.principalId,
     subject: session.subject,
-    mfaVerified: true
+    mfaVerified: true,
   });
 
   return response;

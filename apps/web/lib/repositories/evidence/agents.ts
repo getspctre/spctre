@@ -19,7 +19,7 @@ export interface AgentSummary {
 
 export async function listAgentSummaries(
   workspaceId: string | null,
-  tenantId: string
+  tenantId: string,
 ): Promise<AgentSummary[]> {
   if (!sql) return [];
 
@@ -107,7 +107,7 @@ export async function listAgentSummaries(
       warnCount: row.warn_count,
       totalDecisions: row.total_decisions,
       connectors: row.connectors ?? [],
-      lastSeen: row.last_seen.toISOString()
+      lastSeen: row.last_seen.toISOString(),
     };
   });
 }
@@ -116,24 +116,28 @@ export async function listAgentEvidenceDecisions(
   agentId: string,
   workspaceId: string | null,
   tenantId: string,
-  limit = 50
-): Promise<Array<{
-  decisionId: string;
-  connector: string;
-  action: string;
-  status: string;
-  reason: string;
-  createdAt: string;
-}>> {
-  if (!sql) return [];
-  const rows = await sql<{
-    decision_id: string;
+  limit = 50,
+): Promise<
+  Array<{
+    decisionId: string;
     connector: string;
     action: string;
     status: string;
     reason: string;
-    created_at: Date;
-  }[]>`
+    createdAt: string;
+  }>
+> {
+  if (!sql) return [];
+  const rows = await sql<
+    {
+      decision_id: string;
+      connector: string;
+      action: string;
+      status: string;
+      reason: string;
+      created_at: Date;
+    }[]
+  >`
     SELECT decision_id, connector, action, status, reason, created_at
     FROM runtime_evidence_event
     WHERE tenant_id = ${tenantId}

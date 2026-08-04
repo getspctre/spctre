@@ -6,7 +6,11 @@ const packageRoot = new URL("../", import.meta.url).pathname;
 
 function childEnvironment(): Record<string, string> {
   return {
-    ...Object.fromEntries(Object.entries(process.env).filter((entry): entry is [string, string] => typeof entry[1] === "string")),
+    ...Object.fromEntries(
+      Object.entries(process.env).filter(
+        (entry): entry is [string, string] => typeof entry[1] === "string",
+      ),
+    ),
     OTEL_SDK_DISABLED: "true",
     SPCTRE_API_URL: "http://127.0.0.1:3000",
     SPCTRE_API_TOKEN: "test-token",

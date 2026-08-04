@@ -14,17 +14,6 @@
     "packages/sdk/src/schema.ts"
   ],
   "tags": ["-eeBoundary"],
-  "ignoreDependencies": [
-    "@spctre/design-tokens",
-    "@openapitools/openapi-generator-cli"
-  ],
-  "ignoreBinaries": [
-    "uv",
-    "gitleaks",
-    "osv-scanner",
-    "python3",
-    "opa",
-    "cedar",
-    "du"
-  ]
+  "ignoreDependencies": ["@spctre/design-tokens", "@openapitools/openapi-generator-cli"],
+  "ignoreBinaries": ["uv", "gitleaks", "osv-scanner", "python3", "opa", "cedar", "du"]
 }

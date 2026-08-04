@@ -50,33 +50,51 @@ function planCodeFrom(object: Record<string, unknown>): string | null {
   const customData = customDataFrom(object);
   // The marketing-site checkout writes "planCode"; "plan" is kept for
   // compatibility with its provisioning webhook payloads.
-  return asString(customData.planCode) ?? asString(customData.spctrePlanCode) ?? asString(customData.plan);
+  return (
+    asString(customData.planCode) ??
+    asString(customData.spctrePlanCode) ??
+    asString(customData.plan)
+  );
 }
 
 function customerIdFrom(object: Record<string, unknown>): string | null {
   return asString(object.customer_id);
 }
 
-async function effectiveTenantIdFrom(tenantId: string | null, customerId: string | null): Promise<string | null> {
-  return tenantId ?? (customerId
-    ? await resolveTenantIdByBillingCustomerId("PADDLE", customerId).catch(swallow("resolveTenantIdByBillingCustomerId", null))
-    : null);
+async function effectiveTenantIdFrom(
+  tenantId: string | null,
+  customerId: string | null,
+): Promise<string | null> {
+  return (
+    tenantId ??
+    (customerId
+      ? await resolveTenantIdByBillingCustomerId("PADDLE", customerId).catch(
+          swallow("resolveTenantIdByBillingCustomerId", null),
+        )
+      : null)
+  );
 }
 
-function parsePaddleSignature(signatureHeader: string | null): { timestamp: string; signature: string } | null {
+function parsePaddleSignature(
+  signatureHeader: string | null,
+): { timestamp: string; signature: string } | null {
   if (!signatureHeader) return null;
   const parts = new Map(
     signatureHeader.split(";").map((part) => {
       const [key, ...rest] = part.trim().split("=");
       return [key, rest.join("=")];
-    })
+    }),
   );
   const timestamp = parts.get("ts");
   const signature = parts.get("h1");
   return timestamp && signature ? { timestamp, signature } : null;
 }
 
-function verifyPaddleSignature(rawBody: string, signatureHeader: string | null, secret: string): boolean {
+function verifyPaddleSignature(
+  rawBody: string,
+  signatureHeader: string | null,
+  secret: string,
+): boolean {
   const parsed = parsePaddleSignature(signatureHeader);
   if (!parsed) return false;
 
@@ -90,12 +108,14 @@ function verifyPaddleSignature(rawBody: string, signatureHeader: string | null, 
 
   const actualBuffer = Buffer.from(parsed.signature, "hex");
   const expectedBuffer = Buffer.from(expected, "hex");
-  return actualBuffer.length === expectedBuffer.length && timingSafeEqual(actualBuffer, expectedBuffer);
+  return (
+    actualBuffer.length === expectedBuffer.length && timingSafeEqual(actualBuffer, expectedBuffer)
+  );
 }
 
 async function recordPaddleBillingLifecycle(
   paddleEventType: string,
-  event: Parameters<typeof recordBillingLifecycleEvent>[0]
+  event: Parameters<typeof recordBillingLifecycleEvent>[0],
 ): Promise<EventOutcome> {
   const result = await recordBillingLifecycleEvent(event);
   if (!result) {
@@ -112,25 +132,30 @@ async function recordPaddleBillingLifecycle(
 
 async function cancellationTelemetryEventFor(
   tenantId: string | null,
-  customerId: string | null
+  customerId: string | null,
 ): Promise<{ tenantId: string | null; eventType: CancellationTelemetryEvent }> {
   const effectiveTenantId = await effectiveTenantIdFrom(tenantId, customerId);
   const priorProfile = effectiveTenantId
-    ? await getCommercialProfileWithContext(effectiveTenantId).catch(swallow("getCommercialProfileWithContext", null))
+    ? await getCommercialProfileWithContext(effectiveTenantId).catch(
+        swallow("getCommercialProfileWithContext", null),
+      )
     : null;
   return {
     tenantId: effectiveTenantId,
-    eventType: priorProfile?.planCode === "HOSTED_TRIAL" ? "TRIAL_CANCELLED" : "SUBSCRIPTION_CANCELLED",
+    eventType:
+      priorProfile?.planCode === "HOSTED_TRIAL" ? "TRIAL_CANCELLED" : "SUBSCRIPTION_CANCELLED",
   };
 }
 
 async function activationTelemetryEventFor(
   tenantId: string | null,
-  customerId: string | null
+  customerId: string | null,
 ): Promise<{ tenantId: string | null; eventType: "TRIAL_CONVERTED" | "PLAN_CHANGED" }> {
   const effectiveTenantId = await effectiveTenantIdFrom(tenantId, customerId);
   const priorProfile = effectiveTenantId
-    ? await getCommercialProfileWithContext(effectiveTenantId).catch(swallow("getCommercialProfileWithContext", null))
+    ? await getCommercialProfileWithContext(effectiveTenantId).catch(
+        swallow("getCommercialProfileWithContext", null),
+      )
     : null;
   return {
     tenantId: effectiveTenantId,
@@ -146,7 +171,10 @@ interface PaddleEventContext {
   aggregateMetadata: Record<string, unknown>;
 }
 
-async function handleSubscriptionActiveEvent(type: string, ctx: PaddleEventContext): Promise<EventOutcome> {
+async function handleSubscriptionActiveEvent(
+  type: string,
+  ctx: PaddleEventContext,
+): Promise<EventOutcome> {
   const { tenantId, planCode, customerId, aggregateMetadata } = ctx;
   const activation = await activationTelemetryEventFor(tenantId, customerId);
 
@@ -165,7 +193,10 @@ async function handleSubscriptionActiveEvent(type: string, ctx: PaddleEventConte
   });
 }
 
-async function handleSubscriptionStatusEvent(type: string, ctx: PaddleEventContext): Promise<EventOutcome> {
+async function handleSubscriptionStatusEvent(
+  type: string,
+  ctx: PaddleEventContext,
+): Promise<EventOutcome> {
   const { tenantId, planCode, customerId, status, aggregateMetadata } = ctx;
 
   if (type === "subscription.activated" || status === "active") {
@@ -173,8 +204,10 @@ async function handleSubscriptionStatusEvent(type: string, ctx: PaddleEventConte
   }
 
   if (
-    type === "subscription.past_due" || status === "past_due" ||
-    type === "subscription.paused" || status === "paused"
+    type === "subscription.past_due" ||
+    status === "past_due" ||
+    type === "subscription.paused" ||
+    status === "paused"
   ) {
     return recordPaddleBillingLifecycle(type, {
       tenantId,
@@ -269,7 +302,13 @@ async function handlePaddleEvent(event: PaddleWebhookEvent): Promise<EventOutcom
   }
 
   if (type.startsWith("subscription.")) {
-    return handleSubscriptionStatusEvent(type, { tenantId, planCode, customerId, status, aggregateMetadata });
+    return handleSubscriptionStatusEvent(type, {
+      tenantId,
+      planCode,
+      customerId,
+      status,
+      aggregateMetadata,
+    });
   }
 
   return "ignored";
@@ -279,20 +318,39 @@ async function handlePostApiBillingPaddleWebhook(request: Request) {
   const traceId = extractTraceId(request);
   const secret = process.env.PADDLE_WEBHOOK_SECRET?.trim();
   if (!secret) {
-    return withTraceId(Response.json({ error: "Paddle webhook secret is not configured.", meta: makeMeta(traceId) }, { status: 503 }), traceId);
+    return withTraceId(
+      Response.json(
+        { error: "Paddle webhook secret is not configured.", meta: makeMeta(traceId) },
+        { status: 503 },
+      ),
+      traceId,
+    );
   }
 
   const rawBody = await request.text();
-  const signatureHeader = request.headers.get("paddle-signature") || request.headers.get("Paddle-Signature");
+  const signatureHeader =
+    request.headers.get("paddle-signature") || request.headers.get("Paddle-Signature");
   if (!verifyPaddleSignature(rawBody, signatureHeader, secret)) {
-    return withTraceId(Response.json({ error: "Invalid Paddle signature.", meta: makeMeta(traceId) }, { status: 401 }), traceId);
+    return withTraceId(
+      Response.json(
+        { error: "Invalid Paddle signature.", meta: makeMeta(traceId) },
+        { status: 401 },
+      ),
+      traceId,
+    );
   }
 
   let event: PaddleWebhookEvent;
   try {
     event = JSON.parse(rawBody) as PaddleWebhookEvent;
   } catch {
-    return withTraceId(Response.json({ error: "Request body must be JSON.", meta: makeMeta(traceId) }, { status: 400 }), traceId);
+    return withTraceId(
+      Response.json(
+        { error: "Request body must be JSON.", meta: makeMeta(traceId) },
+        { status: 400 },
+      ),
+      traceId,
+    );
   }
 
   try {
@@ -301,12 +359,27 @@ async function handlePostApiBillingPaddleWebhook(request: Request) {
       // Paddle delivers to the marketing site and this endpoint concurrently;
       // the tenant may not be provisioned yet. Non-2xx makes Paddle retry on
       // its backoff schedule instead of dropping the event.
-      return withTraceId(Response.json({ error: "Tenant not resolved for billing event yet.", meta: makeMeta(traceId) }, { status: 503 }), traceId);
+      return withTraceId(
+        Response.json(
+          { error: "Tenant not resolved for billing event yet.", meta: makeMeta(traceId) },
+          { status: 503 },
+        ),
+        traceId,
+      );
     }
-    return withTraceId(Response.json({ ok: true, handled: outcome === "handled", meta: makeMeta(traceId) }), traceId);
+    return withTraceId(
+      Response.json({ ok: true, handled: outcome === "handled", meta: makeMeta(traceId) }),
+      traceId,
+    );
   } catch (error) {
     console.error("[billing/paddle/webhook] failed to process event", error);
-    return withTraceId(Response.json({ error: "Service temporarily unavailable.", meta: makeMeta(traceId) }, { status: 503 }), traceId);
+    return withTraceId(
+      Response.json(
+        { error: "Service temporarily unavailable.", meta: makeMeta(traceId) },
+        { status: 503 },
+      ),
+      traceId,
+    );
   }
 }
 

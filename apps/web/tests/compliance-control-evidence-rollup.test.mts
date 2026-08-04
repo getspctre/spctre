@@ -26,10 +26,14 @@ const controlMappedRule: PolicyRuleSummary = {
   connectors: ["github"],
   actions: ["branch.push"],
   immutable: true,
-  controlMappings: [{ framework: "SOC2", controlId: "CC6.1", rationale: "Prevents unreviewed history rewrite." }],
+  controlMappings: [
+    { framework: "SOC2", controlId: "CC6.1", rationale: "Prevents unreviewed history rewrite." },
+  ],
 };
 
-function evidenceRecord(overrides: Partial<RuntimeDecisionEvidenceRecord>): RuntimeDecisionEvidenceRecord {
+function evidenceRecord(
+  overrides: Partial<RuntimeDecisionEvidenceRecord>,
+): RuntimeDecisionEvidenceRecord {
   return {
     decisionId: "decision-1",
     tenantId: "tenant-1",
@@ -79,7 +83,9 @@ vi.mock("@/lib/repositories/approval-workflow", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/repositories/approval-workflow")>();
   return {
     ...actual,
-    getApprovalWorkflowForContext: vi.fn(async (params) => actual.defaultApprovalWorkflowSnapshot(params)),
+    getApprovalWorkflowForContext: vi.fn(async (params) =>
+      actual.defaultApprovalWorkflowSnapshot(params),
+    ),
   };
 });
 vi.mock("@/lib/repositories/evidence/runtime", async (importOriginal) => {
@@ -107,18 +113,39 @@ describe("getCompliancePacket controlEvidenceRollup", () => {
       // Governed by the currently published branch/revision — should count.
       evidenceRecord({
         decisionId: "decision-current",
-        policyContext: [{ scope: "CONNECTOR", branchId: "br-1", revisionId: "rev-2", artifactHash: "sha256:art2" }],
+        policyContext: [
+          {
+            scope: "CONNECTOR",
+            branchId: "br-1",
+            revisionId: "rev-2",
+            artifactHash: "sha256:art2",
+          },
+        ],
       }),
       // Same stable rule ID, but from a prior/different revision on the same
       // branch — must NOT be counted as proof the current control operated.
       evidenceRecord({
         decisionId: "decision-old-revision",
-        policyContext: [{ scope: "CONNECTOR", branchId: "br-1", revisionId: "rev-1", artifactHash: "sha256:art1" }],
+        policyContext: [
+          {
+            scope: "CONNECTOR",
+            branchId: "br-1",
+            revisionId: "rev-1",
+            artifactHash: "sha256:art1",
+          },
+        ],
       }),
       // Same stable rule ID, different branch entirely — must NOT count.
       evidenceRecord({
         decisionId: "decision-other-branch",
-        policyContext: [{ scope: "CONNECTOR", branchId: "br-other", revisionId: "rev-2", artifactHash: "sha256:artX" }],
+        policyContext: [
+          {
+            scope: "CONNECTOR",
+            branchId: "br-other",
+            revisionId: "rev-2",
+            artifactHash: "sha256:artX",
+          },
+        ],
       }),
     ]);
 
@@ -127,6 +154,11 @@ describe("getCompliancePacket controlEvidenceRollup", () => {
     expect(packet).not.toBeNull();
     const rollup = packet!.controlEvidenceRollup;
     expect(rollup).toHaveLength(1);
-    expect(rollup[0]).toMatchObject({ framework: "SOC2", controlId: "CC6.1", decisionCount: 1, deniedCount: 1 });
+    expect(rollup[0]).toMatchObject({
+      framework: "SOC2",
+      controlId: "CC6.1",
+      decisionCount: 1,
+      deniedCount: 1,
+    });
   });
 });

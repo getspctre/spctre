@@ -79,15 +79,20 @@ const { state, sqlMock } = vi.hoisted(() => {
   return { state, sqlMock };
 });
 
-vi.mock("@/lib/db", () => ({
-  sql: sqlMock,
-}));
+vi.mock("@/lib/db", () => ({ sql: sqlMock }));
 
 vi.mock("@/lib/service-tokens", () => ({
-  authenticateServiceToken: vi.fn().mockResolvedValue({
-    ok: true,
-    auth: { tenantId: "22222222-2222-4222-8222-222222222222", workspaceId: "regular-workspace", principalId: "svc-gateway-test", scopes: ["evidence:write", "operations:read"] },
-  }),
+  authenticateServiceToken: vi
+    .fn()
+    .mockResolvedValue({
+      ok: true,
+      auth: {
+        tenantId: "22222222-2222-4222-8222-222222222222",
+        workspaceId: "regular-workspace",
+        principalId: "svc-gateway-test",
+        scopes: ["evidence:write", "operations:read"],
+      },
+    }),
   hasBearerToken: vi.fn().mockReturnValue(true),
 }));
 
@@ -99,9 +104,7 @@ vi.mock("@/lib/workspace/scope", () => ({
   getActiveScope: vi.fn().mockRejectedValue(new Error("No scope")),
 }));
 
-vi.mock("@/lib/repositories/shared/database", () => ({
-  isDatabaseConfigured: () => true,
-}));
+vi.mock("@/lib/repositories/shared/database", () => ({ isDatabaseConfigured: () => true }));
 
 vi.mock("@/lib/platform/config", () => ({
   isGatewayEnabled: () => true,
@@ -226,7 +229,9 @@ describe("JIT Ephemeral Credentials Brokering", () => {
       const requestBody = {
         decisionId: "dec-decide-1",
         artifactHash: "hash-123",
-        policyContext: [{ scope: "WORKSPACE", branchId: "b-1", revisionId: "r-1", artifactHash: "hash-123" }],
+        policyContext: [
+          { scope: "WORKSPACE", branchId: "b-1", revisionId: "r-1", artifactHash: "hash-123" },
+        ],
         consequence: "LOW",
         connector: "stripe",
         action: "charge",
@@ -234,10 +239,7 @@ describe("JIT Ephemeral Credentials Brokering", () => {
 
       const req = new Request("http://localhost:3000/api/gateway/decide", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": "Bearer some-token",
-        },
+        headers: { "Content-Type": "application/json", Authorization: "Bearer some-token" },
         body: JSON.stringify(requestBody),
       });
 
@@ -262,7 +264,9 @@ describe("JIT Ephemeral Credentials Brokering", () => {
       const requestBody = {
         decisionId: "dec-decide-2",
         artifactHash: "hash-123",
-        policyContext: [{ scope: "WORKSPACE", branchId: "b-1", revisionId: "r-1", artifactHash: "hash-123" }],
+        policyContext: [
+          { scope: "WORKSPACE", branchId: "b-1", revisionId: "r-1", artifactHash: "hash-123" },
+        ],
         consequence: "LOW",
         connector: "stripe",
         action: "charge",
@@ -270,10 +274,7 @@ describe("JIT Ephemeral Credentials Brokering", () => {
 
       const req = new Request("http://localhost:3000/api/gateway/decide", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": "Bearer some-token",
-        },
+        headers: { "Content-Type": "application/json", Authorization: "Bearer some-token" },
         body: JSON.stringify(requestBody),
       });
 
@@ -301,7 +302,9 @@ describe("JIT Ephemeral Credentials Brokering", () => {
       const requestBody = {
         decisionId: "dec-decide-concurrent",
         artifactHash: "hash-123",
-        policyContext: [{ scope: "WORKSPACE", branchId: "b-1", revisionId: "r-1", artifactHash: "hash-123" }],
+        policyContext: [
+          { scope: "WORKSPACE", branchId: "b-1", revisionId: "r-1", artifactHash: "hash-123" },
+        ],
         consequence: "LOW",
         connector: "stripe",
         action: "charge",
@@ -309,10 +312,7 @@ describe("JIT Ephemeral Credentials Brokering", () => {
 
       const req = new Request("http://localhost:3000/api/gateway/decide", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": "Bearer some-token",
-        },
+        headers: { "Content-Type": "application/json", Authorization: "Bearer some-token" },
         body: JSON.stringify(requestBody),
       });
 
@@ -350,12 +350,10 @@ describe("JIT Ephemeral Credentials Brokering", () => {
         broker_config: {},
       };
 
-      const req = new Request("http://localhost:3000/api/gateway/escalations/status?decisionId=dec-status-1", {
-        method: "GET",
-        headers: {
-          "Authorization": "Bearer some-token",
-        },
-      });
+      const req = new Request(
+        "http://localhost:3000/api/gateway/escalations/status?decisionId=dec-status-1",
+        { method: "GET", headers: { Authorization: "Bearer some-token" } },
+      );
 
       const resp = await handleGetStatus(req);
       expect(resp.status).toBe(200);
@@ -391,12 +389,10 @@ describe("JIT Ephemeral Credentials Brokering", () => {
         broker_config: {},
       };
 
-      const req = new Request("http://localhost:3000/api/gateway/escalations/status?decisionId=dec-status-2", {
-        method: "GET",
-        headers: {
-          "Authorization": "Bearer some-token",
-        },
-      });
+      const req = new Request(
+        "http://localhost:3000/api/gateway/escalations/status?decisionId=dec-status-2",
+        { method: "GET", headers: { Authorization: "Bearer some-token" } },
+      );
 
       const resp = await handleGetStatus(req);
       expect(resp.status).toBe(200);
@@ -435,12 +431,10 @@ describe("JIT Ephemeral Credentials Brokering", () => {
 
       state.grantIssuedMock = true;
 
-      const req = new Request("http://localhost:3000/api/gateway/escalations/status?decisionId=dec-status-3", {
-        method: "GET",
-        headers: {
-          "Authorization": "Bearer some-token",
-        },
-      });
+      const req = new Request(
+        "http://localhost:3000/api/gateway/escalations/status?decisionId=dec-status-3",
+        { method: "GET", headers: { Authorization: "Bearer some-token" } },
+      );
 
       const resp = await handleGetStatus(req);
       expect(resp.status).toBe(200);
@@ -475,12 +469,10 @@ describe("JIT Ephemeral Credentials Brokering", () => {
       };
       state.forceGrantInsertConflict = true;
 
-      const req = new Request("http://localhost:3000/api/gateway/escalations/status?decisionId=dec-status-4", {
-        method: "GET",
-        headers: {
-          "Authorization": "Bearer some-token",
-        },
-      });
+      const req = new Request(
+        "http://localhost:3000/api/gateway/escalations/status?decisionId=dec-status-4",
+        { method: "GET", headers: { Authorization: "Bearer some-token" } },
+      );
 
       const resp = await handleGetStatus(req);
       expect(resp.status).toBe(200);
@@ -501,7 +493,9 @@ describe("JIT Ephemeral Credentials Brokering", () => {
       const requestBody = {
         decisionId: "dec-decide-3",
         artifactHash: "hash-123",
-        policyContext: [{ scope: "WORKSPACE", branchId: "b-1", revisionId: "r-1", artifactHash: "hash-123" }],
+        policyContext: [
+          { scope: "WORKSPACE", branchId: "b-1", revisionId: "r-1", artifactHash: "hash-123" },
+        ],
         consequence: "LOW",
         connector: "stripe",
         action: "charge",
@@ -509,10 +503,7 @@ describe("JIT Ephemeral Credentials Brokering", () => {
 
       const req = new Request("http://localhost:3000/api/gateway/decide", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": "Bearer some-token",
-        },
+        headers: { "Content-Type": "application/json", Authorization: "Bearer some-token" },
         body: JSON.stringify(requestBody),
       });
 

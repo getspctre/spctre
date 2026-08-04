@@ -43,7 +43,7 @@ export async function pollDeviceToken(
   baseUrl: string,
   deviceCode: string,
   intervalSeconds: number,
-  timeoutMs: number
+  timeoutMs: number,
 ): Promise<CloudSessionExchange> {
   const startedAt = Date.now();
   let currentInterval = intervalSeconds * 1000;
@@ -95,7 +95,8 @@ export function configFromCloudExchange(params: {
   };
 
   if (params.exchange.refreshToken) config.refreshToken = params.exchange.refreshToken;
-  if (params.exchange.refreshTokenExpiresAt) config.refreshTokenExpiresAt = params.exchange.refreshTokenExpiresAt;
+  if (params.exchange.refreshTokenExpiresAt)
+    config.refreshTokenExpiresAt = params.exchange.refreshTokenExpiresAt;
   if (params.serviceAccountMode) config.serviceAccountMode = true;
 
   return config;
@@ -103,7 +104,7 @@ export function configFromCloudExchange(params: {
 
 export async function persistAndSyncCloudSession(
   config: SpctreCliConfig,
-  options: { heartbeat?: boolean; refreshBundle?: boolean; sampleSource?: string } = {}
+  options: { heartbeat?: boolean; refreshBundle?: boolean; sampleSource?: string } = {},
 ) {
   writeConfig(config);
 

@@ -8,7 +8,10 @@ const warnings = [];
 
 function walk(dir) {
   for (const entry of readdirSync(dir)) {
-    if ([".git", ".next", ".pnpm-store", ".turbo", "dist", "node_modules", "target"].includes(entry)) continue;
+    if (
+      [".git", ".next", ".pnpm-store", ".turbo", "dist", "node_modules", "target"].includes(entry)
+    )
+      continue;
     const path = join(dir, entry);
     let stat;
     try {
@@ -32,7 +35,7 @@ const violations = [];
 function packageJsonPathForDependency(name, manifestDir) {
   const candidates = [
     join(manifestDir, "node_modules", name, "package.json"),
-    join(root, "node_modules", name, "package.json")
+    join(root, "node_modules", name, "package.json"),
   ];
   return candidates.find((candidate) => existsSync(candidate)) ?? null;
 }
@@ -65,7 +68,7 @@ for (const file of packageJsons) {
     ...manifest.dependencies,
     ...manifest.devDependencies,
     ...manifest.optionalDependencies,
-    ...manifest.peerDependencies
+    ...manifest.peerDependencies,
   };
 
   for (const [name, spec] of Object.entries(allDeps)) {
@@ -75,14 +78,18 @@ for (const file of packageJsons) {
 
     const installedLicense = installedLicenseForDependency(name, dirname(file));
     if (!installedLicense) {
-      warnings.push(`${relative(root, file)} could not resolve installed license for ${name}@${spec}`);
+      warnings.push(
+        `${relative(root, file)} could not resolve installed license for ${name}@${spec}`,
+      );
       continue;
     }
 
     const licenseText = licenseToText(installedLicense);
 
     if (blockedLicensePattern.test(licenseText)) {
-      violations.push(`${relative(root, file)} depends on ${name}@${spec} with blocked license "${licenseText}"`);
+      violations.push(
+        `${relative(root, file)} depends on ${name}@${spec} with blocked license "${licenseText}"`,
+      );
     }
   }
 }

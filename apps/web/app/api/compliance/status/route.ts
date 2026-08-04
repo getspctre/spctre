@@ -18,16 +18,25 @@ async function handleGetApiComplianceStatus(request: Request) {
     packet = await getCompliancePacket(workspaceId, tenantId);
   } catch (err) {
     console.error("[compliance/status] getCompliancePacket failed", err);
-    return withTraceId(Response.json({ error: "Service temporarily unavailable.", meta: makeMeta(traceId) }, { status: 503 }), traceId);
+    return withTraceId(
+      Response.json(
+        { error: "Service temporarily unavailable.", meta: makeMeta(traceId) },
+        { status: 503 },
+      ),
+      traceId,
+    );
   }
 
   if (!packet) {
-    return withTraceId(Response.json({
-      workspaceId,
-      available: false,
-      message: "No published compliance packet available. Publish a policy revision first.",
-      meta: makeMeta(traceId),
-    }), traceId);
+    return withTraceId(
+      Response.json({
+        workspaceId,
+        available: false,
+        message: "No published compliance packet available. Publish a policy revision first.",
+        meta: makeMeta(traceId),
+      }),
+      traceId,
+    );
   }
 
   let verification = null;
@@ -42,29 +51,32 @@ async function handleGetApiComplianceStatus(request: Request) {
     });
   }
 
-  return withTraceId(Response.json({
-    workspaceId,
-    available: true,
-    revisionId: packet.export.artifact.revisionId,
-    artifactHash: packet.export.artifactHash,
-    summary: {
-      evidenceCount: packet.export.evidenceCount,
-      approvalCount: packet.export.approvalCount,
-      deniedDecisionCount: packet.export.deniedDecisionCount,
-      warnedDecisionCount: packet.export.warnedDecisionCount,
-      escalationCount: packet.escalations.length,
-    },
-    verification: verification
-      ? {
-          overallOutcome: verification.overallOutcome,
-          isStale: verification.isStale,
-          staleThresholdDays: verification.staleThresholdDays,
-          latestRunAt: verification.latestRunAt,
-        }
-      : null,
-    generatedAt: new Date().toISOString(),
-    meta: makeMeta(traceId),
-  }), traceId);
+  return withTraceId(
+    Response.json({
+      workspaceId,
+      available: true,
+      revisionId: packet.export.artifact.revisionId,
+      artifactHash: packet.export.artifactHash,
+      summary: {
+        evidenceCount: packet.export.evidenceCount,
+        approvalCount: packet.export.approvalCount,
+        deniedDecisionCount: packet.export.deniedDecisionCount,
+        warnedDecisionCount: packet.export.warnedDecisionCount,
+        escalationCount: packet.escalations.length,
+      },
+      verification: verification
+        ? {
+            overallOutcome: verification.overallOutcome,
+            isStale: verification.isStale,
+            staleThresholdDays: verification.staleThresholdDays,
+            latestRunAt: verification.latestRunAt,
+          }
+        : null,
+      generatedAt: new Date().toISOString(),
+      meta: makeMeta(traceId),
+    }),
+    traceId,
+  );
 }
 
 export { handleGetApiComplianceStatus as GET };

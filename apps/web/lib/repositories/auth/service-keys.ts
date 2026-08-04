@@ -11,7 +11,9 @@ export interface ApiServiceKeySummary {
   createdBy: string | null;
 }
 
-export async function revokeServiceTokenAndRefresh(tokenId: string): Promise<"ok" | "db-unavailable"> {
+export async function revokeServiceTokenAndRefresh(
+  tokenId: string,
+): Promise<"ok" | "db-unavailable"> {
   if (!sql || !tokenId) {
     return "db-unavailable";
   }
@@ -35,20 +37,22 @@ export async function revokeServiceTokenAndRefresh(tokenId: string): Promise<"ok
 
 export async function listActiveApiKeys(
   tenantId: string,
-  workspaceId: string
+  workspaceId: string,
 ): Promise<ApiServiceKeySummary[] | null> {
   if (!sql) return null;
 
-  const rows = await sql<{
-    id: string;
-    label: string;
-    token_prefix: string;
-    scopes: string[];
-    expires_at: Date | null;
-    last_used_at: Date | null;
-    created_at: Date;
-    created_by: string | null;
-  }[]>`
+  const rows = await sql<
+    {
+      id: string;
+      label: string;
+      token_prefix: string;
+      scopes: string[];
+      expires_at: Date | null;
+      last_used_at: Date | null;
+      created_at: Date;
+      created_by: string | null;
+    }[]
+  >`
     SELECT id, label, token_prefix, scopes, expires_at, last_used_at, created_at, created_by
     FROM service_token
     WHERE tenant_id = ${tenantId}

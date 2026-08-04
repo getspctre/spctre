@@ -5,30 +5,21 @@ export const RETENTION_RULES: EvidenceRetentionRule[] = [
     id: "ret-deny-production",
     label: "Production deny evidence",
     retentionDays: 1095,
-    appliesTo: {
-      statuses: ["DENY"],
-      environments: ["production"],
-    },
+    appliesTo: { statuses: ["DENY"], environments: ["production"] },
     exportable: true,
   },
   {
     id: "ret-warning-production",
     label: "Production warnings",
     retentionDays: 365,
-    appliesTo: {
-      statuses: ["WARN"],
-      environments: ["production"],
-    },
+    appliesTo: { statuses: ["WARN"], environments: ["production"] },
     exportable: true,
   },
   {
     id: "ret-local-staging",
     label: "Staging replay evidence",
     retentionDays: 2,
-    appliesTo: {
-      environments: ["staging"],
-      runtimeStacks: ["LOCAL"],
-    },
+    appliesTo: { environments: ["staging"], runtimeStacks: ["LOCAL"] },
     exportable: false,
   },
 ];

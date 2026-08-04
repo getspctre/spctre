@@ -8,7 +8,11 @@ import {
   parseAgtPolicyDocument,
   POLICY_PACKS,
 } from "@spctre/policy-schema";
-import type { PolicyImportResult, PolicyRuleSummary, PolicyPackParameterDefinition } from "@spctre/policy-schema";
+import type {
+  PolicyImportResult,
+  PolicyRuleSummary,
+  PolicyPackParameterDefinition,
+} from "@spctre/policy-schema";
 import { getActiveActor, requireActorAdminWorkspace } from "@/lib/actors";
 import { getWorkspaceContext } from "@/lib/workspace";
 import { runWithTenantContext } from "@/lib/tenant-context";
@@ -22,7 +26,10 @@ import {
   persistPackUpgradeRevision,
   upsertAdapterDeclaration,
 } from "@/lib/repositories/packs";
-import { insertAuthorizationDenialEvent, resolveWorkspaceForAction } from "@/lib/repositories/workspace";
+import {
+  insertAuthorizationDenialEvent,
+  resolveWorkspaceForAction,
+} from "@/lib/repositories/workspace";
 import { listObservedConnectorActions } from "@/lib/repositories/evidence/runtime";
 import { isDatabaseConfigured } from "@/lib/repositories/shared/database";
 import { insertPolicyPublish } from "@/lib/repositories/policy/publish";
@@ -42,7 +49,10 @@ function stableStringify(value: unknown): string {
   if (value === null || typeof value !== "object") return JSON.stringify(value) ?? "null";
   if (Array.isArray(value)) return `[${value.map(stableStringify).join(",")}]`;
   const record = value as Record<string, unknown>;
-  return `{${Object.keys(record).sort().map((key) => `${JSON.stringify(key)}:${stableStringify(record[key])}`).join(",")}}`;
+  return `{${Object.keys(record)
+    .sort()
+    .map((key) => `${JSON.stringify(key)}:${stableStringify(record[key])}`)
+    .join(",")}}`;
 }
 
 // Excluded from equivalence: document-location metadata (sourceFormat/sourcePath
@@ -82,7 +92,7 @@ export function areRulesEquivalent(left: PolicyRuleSummary, right: PolicyRuleSum
 // gets enforced, not just the six structural fields.
 export function buildRuleSourceDocument(
   rules: PolicyRuleSummary[],
-  baseSourceDocument?: Record<string, unknown>
+  baseSourceDocument?: Record<string, unknown>,
 ): { sourceDocument: Record<string, unknown>; source: string } {
   const sourceDocument = {
     ...(baseSourceDocument ?? {}),
@@ -116,7 +126,10 @@ export function buildRuleSourceDocument(
   return { sourceDocument, source: JSON.stringify(sourceDocument, null, 2) };
 }
 
-function buildUpgradeSummary(installedRules: PolicyRuleSummary[], packRules: PolicyRuleSummary[]): PackUpgradeSummary {
+function buildUpgradeSummary(
+  installedRules: PolicyRuleSummary[],
+  packRules: PolicyRuleSummary[],
+): PackUpgradeSummary {
   const installedById = new Map(installedRules.map((rule) => [rule.stableRuleId, rule]));
   const packById = new Map(packRules.map((rule) => [rule.stableRuleId, rule]));
 
@@ -143,34 +156,41 @@ function buildUpgradeSummary(installedRules: PolicyRuleSummary[], packRules: Pol
     }
   }
 
-  return {
-    addedFromUpstream,
-    removedFromUpstream,
-    modifiedFromUpstream,
-    localOnlyRules,
-  };
+  return { addedFromUpstream, removedFromUpstream, modifiedFromUpstream, localOnlyRules };
 }
 
 export async function getPacksCatalogModel(params: {
   workspaceId: string;
   tenantId: string;
 }): Promise<{
-  installedByConnector: Record<string, { branchId: string; revisionId: string; installedVersion: string; installedAt: string; hasCustomizations: boolean }>;
+  installedByConnector: Record<
+    string,
+    {
+      branchId: string;
+      revisionId: string;
+      installedVersion: string;
+      installedAt: string;
+      hasCustomizations: boolean;
+    }
+  >;
   upgradeSummaryByConnector: Record<string, PackUpgradeSummary>;
 }> {
-  const { statuses, installedRulesByConnector } = await runWithTenantContext(params.tenantId, async () => {
-    const statuses = await listPackInstallStatuses(params.workspaceId, params.tenantId);
-    // One batched query for every installed pack's rules instead of one per pack.
-    // See database-optimizations-audit (Minor).
-    const rulesByRevision = await listRulesForRevisions({
-      revisionIds: statuses.map((status) => status.revisionId),
-      tenantId: params.tenantId,
-    }).catch(swallow("listRulesForRevisions", new Map<string, PolicyRuleSummary[]>()));
-    const installedRulesByConnector = Object.fromEntries(
-      statuses.map((status) => [status.connector, rulesByRevision.get(status.revisionId) ?? []])
-    ) as Record<string, PolicyRuleSummary[]>;
-    return { statuses, installedRulesByConnector };
-  });
+  const { statuses, installedRulesByConnector } = await runWithTenantContext(
+    params.tenantId,
+    async () => {
+      const statuses = await listPackInstallStatuses(params.workspaceId, params.tenantId);
+      // One batched query for every installed pack's rules instead of one per pack.
+      // See database-optimizations-audit (Minor).
+      const rulesByRevision = await listRulesForRevisions({
+        revisionIds: statuses.map((status) => status.revisionId),
+        tenantId: params.tenantId,
+      }).catch(swallow("listRulesForRevisions", new Map<string, PolicyRuleSummary[]>()));
+      const installedRulesByConnector = Object.fromEntries(
+        statuses.map((status) => [status.connector, rulesByRevision.get(status.revisionId) ?? []]),
+      ) as Record<string, PolicyRuleSummary[]>;
+      return { statuses, installedRulesByConnector };
+    },
+  );
 
   const installedByConnector = Object.fromEntries(
     statuses.map((status) => [
@@ -182,7 +202,7 @@ export async function getPacksCatalogModel(params: {
         installedAt: status.installedAt,
         hasCustomizations: status.hasCustomizations,
       },
-    ])
+    ]),
   );
 
   const upgradeSummaryByConnector = Object.fromEntries(
@@ -194,7 +214,7 @@ export async function getPacksCatalogModel(params: {
       }));
       const summary = installedRules ? buildUpgradeSummary(installedRules, packRules) : undefined;
       return [pack.connector, summary];
-    }).filter((entry): entry is [string, PackUpgradeSummary] => Boolean(entry[1]))
+    }).filter((entry): entry is [string, PackUpgradeSummary] => Boolean(entry[1])),
   );
 
   return { installedByConnector, upgradeSummaryByConnector };
@@ -228,24 +248,36 @@ function uniqueSorted(values: readonly (string | undefined | null)[]): string[] 
 
 // Pure: map a set of installed connector names to the vocabulary carried by the
 // canonical pack definitions. Multiple packs on one connector are merged.
-export function buildAuthoringVocabulary(installedConnectors: readonly string[]): AuthoringVocabularyEntry[] {
+export function buildAuthoringVocabulary(
+  installedConnectors: readonly string[],
+): AuthoringVocabularyEntry[] {
   const installed = new Set(installedConnectors);
-  const byConnector = new Map<string, {
-    domains: string[];
-    actions: string[];
-    parameters: PolicyPackParameterDefinition[];
-    constraintFields: string[];
-  }>();
+  const byConnector = new Map<
+    string,
+    {
+      domains: string[];
+      actions: string[];
+      parameters: PolicyPackParameterDefinition[];
+      constraintFields: string[];
+    }
+  >();
 
   for (const pack of POLICY_PACKS) {
     if (isHiddenAuthoringConnector(pack.connector)) continue;
     if (!installed.has(pack.connector)) continue;
-    const entry = byConnector.get(pack.connector) ?? { domains: [], actions: [], parameters: [], constraintFields: [] };
+    const entry = byConnector.get(pack.connector) ?? {
+      domains: [],
+      actions: [],
+      parameters: [],
+      constraintFields: [],
+    };
     entry.domains.push(...pack.domains);
     entry.actions.push(...pack.rules.flatMap((rule) => rule.actions ?? []));
     entry.parameters.push(...(pack.parameters ?? []));
     entry.constraintFields.push(
-      ...pack.rules.flatMap((rule) => (rule.parameterConstraints ?? []).map((constraint) => constraint.field))
+      ...pack.rules.flatMap((rule) =>
+        (rule.parameterConstraints ?? []).map((constraint) => constraint.field),
+      ),
     );
     byConnector.set(pack.connector, entry);
   }
@@ -273,24 +305,32 @@ export function buildAuthoringVocabulary(installedConnectors: readonly string[])
 // installed pack covers. Suggestions only — sources are intentionally merged.
 export function mergeObservedVocabulary(
   packVocab: AuthoringVocabularyEntry[],
-  observed: readonly { connector: string; action: string }[]
+  observed: readonly { connector: string; action: string }[],
 ): AuthoringVocabularyEntry[] {
   const byConnector = new Map(
     packVocab
       .filter((entry) => !isHiddenAuthoringConnector(entry.connector))
-      .map((entry) => [entry.connector, { ...entry, actions: [...entry.actions] }])
+      .map((entry) => [entry.connector, { ...entry, actions: [...entry.actions] }]),
   );
 
   for (const { connector, action } of observed) {
     const key = connector.trim();
     const value = action.trim();
     if (!key || isHiddenAuthoringConnector(key)) continue;
-    const entry = byConnector.get(key) ?? { connector: key, domains: [], actions: [], parameters: [], constraintFields: [] };
+    const entry = byConnector.get(key) ?? {
+      connector: key,
+      domains: [],
+      actions: [],
+      parameters: [],
+      constraintFields: [],
+    };
     if (value) entry.actions = uniqueSorted([...entry.actions, value]);
     byConnector.set(key, entry);
   }
 
-  return Array.from(byConnector.values()).sort((left, right) => left.connector.localeCompare(right.connector));
+  return Array.from(byConnector.values()).sort((left, right) =>
+    left.connector.localeCompare(right.connector),
+  );
 }
 
 export async function getAuthoringVocabulary(params: {
@@ -299,9 +339,13 @@ export async function getAuthoringVocabulary(params: {
 }): Promise<AuthoringVocabularyEntry[]> {
   const [statuses, observed] = await runWithTenantContext(params.tenantId, () =>
     Promise.all([
-      listPackInstallStatuses(params.workspaceId, params.tenantId).catch(swallow("listPackInstallStatuses", [])),
-      listObservedConnectorActions(params.workspaceId, params.tenantId).catch(swallow("listObservedConnectorActions", [])),
-    ])
+      listPackInstallStatuses(params.workspaceId, params.tenantId).catch(
+        swallow("listPackInstallStatuses", []),
+      ),
+      listObservedConnectorActions(params.workspaceId, params.tenantId).catch(
+        swallow("listObservedConnectorActions", []),
+      ),
+    ]),
   ).catch(swallow("runWithTenantContext", [[], []] as const));
 
   const packVocab = buildAuthoringVocabulary(statuses.map((status) => status.connector));
@@ -318,10 +362,7 @@ export async function listAdapterDeclarationsForWorkspace(params: {
 
 export async function upsertAdapterDeclarationForWorkspace(
   declaration: Parameters<typeof upsertAdapterDeclaration>[0],
-  params: {
-    workspaceId: string;
-    tenantId: string;
-  }
+  params: { workspaceId: string; tenantId: string },
 ) {
   return upsertAdapterDeclaration(declaration, params.workspaceId, params.tenantId);
 }
@@ -359,8 +400,7 @@ function mergePackRulesWithCustomizations(params: {
 }
 
 export type ImportPolicyPackResult =
-  | { result: PolicyImportResult; workspaceSlug?: string }
-  | { error: string };
+  { result: PolicyImportResult; workspaceSlug?: string } | { error: string };
 
 interface PersistedPackRevision {
   branchId: string;
@@ -404,7 +444,7 @@ async function persistPackUpgrade(args: {
 
   const { sourceDocument: mergedSourceDocument, source: mergedSource } = buildRuleSourceDocument(
     rulesWithOverrides,
-    parsed.sourceDocument
+    parsed.sourceDocument,
   );
 
   const persisted = await persistPackUpgradeRevision({
@@ -479,7 +519,11 @@ async function publishPackImmediately(args: {
 function buildPackProvenanceMetadata(
   pack: (typeof POLICY_PACKS)[number],
   packMetadata: ReturnType<typeof getPackMetadata>,
-  input: { mode: string; preserveCustomizations: boolean; parameterOverrides?: Record<string, unknown> }
+  input: {
+    mode: string;
+    preserveCustomizations: boolean;
+    parameterOverrides?: Record<string, unknown>;
+  },
 ): Record<string, unknown> {
   return {
     ...pack.metadata,
@@ -575,10 +619,7 @@ export async function importPolicyPackDecision(input: {
     });
     if (!targetWorkspace) return { error: "Workspace not found." };
 
-    const { actor } = await getActiveActor({
-      workspaceId: targetWorkspace.id,
-      tenantId,
-    });
+    const { actor } = await getActiveActor({ workspaceId: targetWorkspace.id, tenantId });
     const adminCheck = requireActorAdminWorkspace(actor, targetWorkspace.slug);
     if (!adminCheck.allowed) {
       await insertAuthorizationDenialEvent({
@@ -669,7 +710,9 @@ export async function importPolicyPackDecision(input: {
       }),
     };
   } catch (error) {
-    logger.error("[importPolicyPackDecision] database error:", { error: error instanceof Error ? error.message : String(error) });
+    logger.error("[importPolicyPackDecision] database error:", {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return { error: "An unexpected error occurred. Please try again." };
   }
 }

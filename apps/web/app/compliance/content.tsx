@@ -15,7 +15,11 @@ function getRetentionTab(params: ComplianceSearchParams): RetentionTab {
   return firstParam(params.retentionTab) === "decisions" ? "decisions" : "rules";
 }
 
-function buildRetentionHref(path: string, params: ComplianceSearchParams, tab: RetentionTab): string {
+function buildRetentionHref(
+  path: string,
+  params: ComplianceSearchParams,
+  tab: RetentionTab,
+): string {
   const urlParams = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {
     if (key === "retentionTab" || value === undefined) continue;
@@ -33,10 +37,7 @@ function buildRetentionHref(path: string, params: ComplianceSearchParams, tab: R
 export async function CompliancePageContent({
   workspaceSlug,
   searchParams = Promise.resolve({}),
-}: {
-  workspaceSlug?: string;
-  searchParams?: Promise<ComplianceSearchParams>;
-} = {}) {
+}: { workspaceSlug?: string; searchParams?: Promise<ComplianceSearchParams> } = {}) {
   const params = await searchParams;
   const model = await getCompliancePageModel({ workspaceSlug, loadPosture: getPostureModel });
   const onboardingStatus = await getWebOnboardingStatus({

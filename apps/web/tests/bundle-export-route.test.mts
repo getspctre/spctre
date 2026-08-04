@@ -5,13 +5,9 @@ const getActiveScopeSpy = vi.fn();
 const getLatestPublishedPolicyBundleSpy = vi.fn();
 const appendOperationsLogSpy = vi.fn();
 
-vi.mock("@/lib/auth-session", () => ({
-  getAuthSession: getAuthSessionSpy,
-}));
+vi.mock("@/lib/auth-session", () => ({ getAuthSession: getAuthSessionSpy }));
 
-vi.mock("@/lib/workspace", () => ({
-  getActiveScope: getActiveScopeSpy,
-}));
+vi.mock("@/lib/workspace", () => ({ getActiveScope: getActiveScopeSpy }));
 
 vi.mock("@/lib/service-tokens", () => ({
   authenticateServiceToken: vi.fn(),
@@ -22,9 +18,7 @@ vi.mock("@/lib/domains/policy/service", () => ({
   getLatestPublishedPolicyBundle: getLatestPublishedPolicyBundleSpy,
 }));
 
-vi.mock("@/lib/feature-flags-server", () => ({
-  getSpctrePlan: () => "OSS",
-}));
+vi.mock("@/lib/feature-flags-server", () => ({ getSpctrePlan: () => "OSS" }));
 
 vi.mock("@/lib/repositories/operations-log/log", () => ({
   appendOperationsLog: appendOperationsLogSpy,
@@ -57,7 +51,9 @@ describe("bundle latest export route", () => {
   });
 
   it("returns an export envelope for supported target formats", async () => {
-    const response = await route.GET(new Request("http://localhost:3000/api/bundle/latest?format=opa-bundle"));
+    const response = await route.GET(
+      new Request("http://localhost:3000/api/bundle/latest?format=opa-bundle"),
+    );
 
     expect(response.status).toBe(200);
     expect(response.headers.get("x-spctre-export-format")).toBe("opa-bundle");
@@ -76,22 +72,26 @@ describe("bundle latest export route", () => {
     });
     expect(body.artifact["policy.rego"]).toContain("package spctre.policy");
     expect(body.artifact["data.json"].spctre.provenance.artifact_hash).toBe("sha256:artifact");
-    expect(appendOperationsLogSpy).toHaveBeenCalledWith(expect.objectContaining({
-      tenantId: "tenant-1",
-      workspaceId: "workspace-1",
-      eventType: "BUNDLE_EXPORT",
-      actorId: "user-1",
-      payload: expect.objectContaining({
-        format: "opa-bundle",
-        outcome: "EXPORTED",
-        verified: true,
-        artifactHash: "sha256:artifact",
+    expect(appendOperationsLogSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tenantId: "tenant-1",
+        workspaceId: "workspace-1",
+        eventType: "BUNDLE_EXPORT",
+        actorId: "user-1",
+        payload: expect.objectContaining({
+          format: "opa-bundle",
+          outcome: "EXPORTED",
+          verified: true,
+          artifactHash: "sha256:artifact",
+        }),
       }),
-    }));
+    );
   });
 
   it("returns preview manifests for all supported target formats", async () => {
-    const response = await route.GET(new Request("http://localhost:3000/api/bundle/latest?preview=true"));
+    const response = await route.GET(
+      new Request("http://localhost:3000/api/bundle/latest?preview=true"),
+    );
 
     expect(response.status).toBe(200);
     const body = await response.json();
@@ -103,18 +103,23 @@ describe("bundle latest export route", () => {
       "cedar",
       "mcp-proxy-config",
     ]);
-    expect(body.formats.every((manifest: { artifactHash: string }) => manifest.artifactHash === "sha256:artifact")).toBe(true);
-    expect(appendOperationsLogSpy).toHaveBeenCalledWith(expect.objectContaining({
-      eventType: "BUNDLE_EXPORT",
-      payload: expect.objectContaining({
-        format: "preview",
-        outcome: "PREVIEW",
+    expect(
+      body.formats.every(
+        (manifest: { artifactHash: string }) => manifest.artifactHash === "sha256:artifact",
+      ),
+    ).toBe(true);
+    expect(appendOperationsLogSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: "BUNDLE_EXPORT",
+        payload: expect.objectContaining({ format: "preview", outcome: "PREVIEW" }),
       }),
-    }));
+    );
   });
 
   it("returns 400 for unsupported formats", async () => {
-    const response = await route.GET(new Request("http://localhost:3000/api/bundle/latest?format=wasm"));
+    const response = await route.GET(
+      new Request("http://localhost:3000/api/bundle/latest?format=wasm"),
+    );
 
     expect(response.status).toBe(400);
     const body = await response.json();
@@ -122,22 +127,26 @@ describe("bundle latest export route", () => {
   });
 
   it("returns 409 with manifest when export is blocked", async () => {
-    getLatestPublishedPolicyBundleSpy.mockResolvedValue(publishedBundle({
-      rules: [
-        {
-          stableRuleId: "github.repo.escalate_write",
-          title: "Escalate repository writes",
-          effect: "ESCALATE",
-          sourceFormat: "SPCTRE_MANAGED",
-          domains: ["source-control"],
-          connectors: ["github"],
-          actions: ["repo.write"],
-          immutable: false,
-        },
-      ],
-    }));
+    getLatestPublishedPolicyBundleSpy.mockResolvedValue(
+      publishedBundle({
+        rules: [
+          {
+            stableRuleId: "github.repo.escalate_write",
+            title: "Escalate repository writes",
+            effect: "ESCALATE",
+            sourceFormat: "SPCTRE_MANAGED",
+            domains: ["source-control"],
+            connectors: ["github"],
+            actions: ["repo.write"],
+            immutable: false,
+          },
+        ],
+      }),
+    );
 
-    const response = await route.GET(new Request("http://localhost:3000/api/bundle/latest?format=cedar"));
+    const response = await route.GET(
+      new Request("http://localhost:3000/api/bundle/latest?format=cedar"),
+    );
 
     expect(response.status).toBe(409);
     expect(response.headers.get("x-spctre-export-ok")).toBe("false");
@@ -145,19 +154,21 @@ describe("bundle latest export route", () => {
     const body = await response.json();
     expect(body.artifact).toBeUndefined();
     expect(body.manifest.blockingWarnings).toContain(
-      "Cedar cannot enforce ESCALATE semantics for rule github.repo.escalate_write."
+      "Cedar cannot enforce ESCALATE semantics for rule github.repo.escalate_write.",
     );
-    expect(appendOperationsLogSpy).toHaveBeenCalledWith(expect.objectContaining({
-      eventType: "BUNDLE_EXPORT",
-      payload: expect.objectContaining({
-        format: "cedar",
-        outcome: "BLOCKED",
-        verified: false,
-        blockingWarnings: [
-          "Cedar cannot enforce ESCALATE semantics for rule github.repo.escalate_write.",
-        ],
+    expect(appendOperationsLogSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: "BUNDLE_EXPORT",
+        payload: expect.objectContaining({
+          format: "cedar",
+          outcome: "BLOCKED",
+          verified: false,
+          blockingWarnings: [
+            "Cedar cannot enforce ESCALATE semantics for rule github.repo.escalate_write.",
+          ],
+        }),
       }),
-    }));
+    );
   });
 });
 

@@ -9,11 +9,9 @@ const preview: Preview = {
     controls: { expanded: true },
     backgrounds: {
       default: "surface",
-      values: [
-        { name: "surface", value: "oklch(0.973 0.006 236)" }
-      ]
-    }
-  }
+      values: [{ name: "surface", value: "oklch(0.973 0.006 236)" }],
+    },
+  },
 };
 
 export default preview;

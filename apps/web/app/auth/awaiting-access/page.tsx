@@ -11,9 +11,7 @@ export default async function AwaitingAccessPage() {
         <div>
           <p className="eyebrow">{t("eyebrow")}</p>
           <h1>{t("title")}</h1>
-          <p className="meta">
-            {t("description")}
-          </p>
+          <p className="meta">{t("description")}</p>
         </div>
         <Link className="button" href="/login">
           {t("back")}

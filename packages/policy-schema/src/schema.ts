@@ -65,7 +65,7 @@ export function buildPolicyBranchTimeline(params: {
   events: PolicyTimelineEvent[];
 }): PolicyBranchTimeline {
   const events = [...params.events].sort(
-    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
   );
   return {
     ...params,
@@ -108,7 +108,9 @@ export function buildComplianceEvidenceExport(params: {
 }
 
 /** Portable hand-off envelope for external GRC/compliance evidence consumers. */
-export function buildGrcEvidenceBridgeExport(packet: PolicyComplianceEvidenceExport): GrcEvidenceBridgeDelivery["payload"] {
+export function buildGrcEvidenceBridgeExport(
+  packet: PolicyComplianceEvidenceExport,
+): GrcEvidenceBridgeDelivery["payload"] {
   return {
     schemaVersion: "spctre.grc-evidence-bridge.v1",
     generatedAt: packet.generatedAt,
@@ -151,9 +153,13 @@ export function buildEvidenceRetentionPlan(params: {
   const decisions: RetentionDecision[] = params.evidence.map((record) => {
     let bestRule: EvidenceRetentionRule | undefined;
     for (const rule of params.rules) {
-      const statusMatch = !rule.appliesTo.statuses || rule.appliesTo.statuses.includes(record.status);
-      const envMatch = !rule.appliesTo.environments || rule.appliesTo.environments.includes(record.environment);
-      const stackMatch = !rule.appliesTo.runtimeStacks || rule.appliesTo.runtimeStacks.includes(record.runtimeTarget.stack);
+      const statusMatch =
+        !rule.appliesTo.statuses || rule.appliesTo.statuses.includes(record.status);
+      const envMatch =
+        !rule.appliesTo.environments || rule.appliesTo.environments.includes(record.environment);
+      const stackMatch =
+        !rule.appliesTo.runtimeStacks ||
+        rule.appliesTo.runtimeStacks.includes(record.runtimeTarget.stack);
 
       if (statusMatch && envMatch && stackMatch) {
         if (!bestRule || rule.retentionDays > bestRule.retentionDays) {
@@ -194,7 +200,8 @@ export function buildEvidenceRetentionPlan(params: {
     expiringCount: decisions.filter((d) => d.disposition === "EXPIRING").length,
     expiredCount: decisions.filter((d) => d.disposition === "EXPIRED").length,
     exportableCount: decisions.filter((d) => d.exportable).length,
-    longestRetentionDays: params.rules.length > 0 ? Math.max(...params.rules.map((r) => r.retentionDays)) : 0,
+    longestRetentionDays:
+      params.rules.length > 0 ? Math.max(...params.rules.map((r) => r.retentionDays)) : 0,
     decisions,
   };
 }
@@ -235,8 +242,10 @@ export interface AgentBlueprintSourceEnvelope {
  * `definition` is raw; the control plane validates it with
  * parseAgentBlueprintDefinition before persisting a draft.
  */
-export function parseAgentBlueprintSource(params: { document: string; sourcePath?: string }):
-  { envelope: AgentBlueprintSourceEnvelope } | { error: string } {
+export function parseAgentBlueprintSource(params: {
+  document: string;
+  sourcePath?: string;
+}): { envelope: AgentBlueprintSourceEnvelope } | { error: string } {
   const content = params.document.trim();
   if (!content) return { error: "Blueprint source is required." };
 
@@ -255,7 +264,10 @@ export function parseAgentBlueprintSource(params: { document: string; sourcePath
   const doc = parsed as Record<string, unknown>;
   const name = typeof doc.name === "string" ? doc.name.trim() : "";
   const agentId = typeof doc.agentId === "string" ? doc.agentId.trim() : "";
-  const message = typeof doc.message === "string" && doc.message.trim() ? doc.message.trim() : "Imported Blueprint revision";
+  const message =
+    typeof doc.message === "string" && doc.message.trim()
+      ? doc.message.trim()
+      : "Imported Blueprint revision";
   if (!name) return { error: "Blueprint source is missing 'name'." };
   if (!agentId) return { error: "Blueprint source is missing 'agentId'." };
   if (!doc.definition || typeof doc.definition !== "object" || Array.isArray(doc.definition)) {
@@ -264,7 +276,10 @@ export function parseAgentBlueprintSource(params: { document: string; sourcePath
 
   const definition = doc.definition as Record<string, unknown>;
   if (definition.policyRevisionId !== undefined) {
-    return { error: "Blueprint source must not set definition.policyRevisionId; the import resolves the published revision." };
+    return {
+      error:
+        "Blueprint source must not set definition.policyRevisionId; the import resolves the published revision.",
+    };
   }
 
   return { envelope: { name, agentId, message, definition } };
@@ -294,13 +309,14 @@ export function buildAgentBlueprintRuntimeArtifact(params: {
     runtimeTargets: definition.runtimeTargets,
     budgets: definition.budgets,
     approvalPath: definition.approvalPath,
-    policy: definition.policyBranchId || definition.policyRevisionId || params.policyArtifactHash
-      ? {
-          branchId: definition.policyBranchId,
-          revisionId: definition.policyRevisionId,
-          artifactHash: params.policyArtifactHash,
-        }
-      : undefined,
+    policy:
+      definition.policyBranchId || definition.policyRevisionId || params.policyArtifactHash
+        ? {
+            branchId: definition.policyBranchId,
+            revisionId: definition.policyRevisionId,
+            artifactHash: params.policyArtifactHash,
+          }
+        : undefined,
     generatedAt: params.generatedAt,
   };
 }
@@ -310,22 +326,32 @@ export function diffAgentBlueprintRevisions(params: {
   compare: AgentBlueprintRevision;
 }): AgentBlueprintRevisionDiff {
   const fields: Array<keyof AgentBlueprintRevision["definition"]> = [
-    "purpose", "allowedTaskClasses", "tools", "connectors", "services",
-    "environments", "runtimeTargets", "budgets", "approvalPath",
-    "policyBranchId", "policyRevisionId",
+    "purpose",
+    "allowedTaskClasses",
+    "tools",
+    "connectors",
+    "services",
+    "environments",
+    "runtimeTargets",
+    "budgets",
+    "approvalPath",
+    "policyBranchId",
+    "policyRevisionId",
   ];
-  const changedFields = fields.filter((field) =>
-    JSON.stringify(sortJsonValue(params.base.definition[field])) !==
-    JSON.stringify(sortJsonValue(params.compare.definition[field]))
+  const changedFields = fields.filter(
+    (field) =>
+      JSON.stringify(sortJsonValue(params.base.definition[field])) !==
+      JSON.stringify(sortJsonValue(params.compare.definition[field])),
   );
   return {
     blueprintId: params.compare.blueprintId,
     baseRevisionId: params.base.id,
     compareRevisionId: params.compare.id,
     changedFields,
-    summary: changedFields.length === 0
-      ? "No declared operating-envelope fields changed."
-      : `${changedFields.length} declared operating-envelope field${changedFields.length === 1 ? "" : "s"} changed.`,
+    summary:
+      changedFields.length === 0
+        ? "No declared operating-envelope fields changed."
+        : `${changedFields.length} declared operating-envelope field${changedFields.length === 1 ? "" : "s"} changed.`,
   };
 }
 
@@ -347,9 +373,10 @@ export function buildCrossSurfaceIdentityHistory(params: {
   generatedAt?: string;
 }): CrossSurfaceIdentityHistory {
   const sorted = [...params.events].sort(
-    (a, b) => new Date(b.at).getTime() - new Date(a.at).getTime()
+    (a, b) => new Date(b.at).getTime() - new Date(a.at).getTime(),
   );
-  const limited = typeof params.limit === "number" ? sorted.slice(0, Math.max(0, params.limit)) : sorted;
+  const limited =
+    typeof params.limit === "number" ? sorted.slice(0, Math.max(0, params.limit)) : sorted;
   const counts = { decisions: 0, trust: 0, identity: 0, reviews: 0 };
   for (const event of limited) {
     if (event.kind === "DECISION") counts.decisions += 1;
@@ -385,7 +412,7 @@ function sortJsonValue(value: unknown): unknown {
   return Object.fromEntries(
     Object.entries(value as Record<string, unknown>)
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([key, child]) => [key, sortJsonValue(child)])
+      .map(([key, child]) => [key, sortJsonValue(child)]),
   );
 }
 
@@ -434,7 +461,10 @@ function contentTypeForExport(format: PolicyBundleExportFormat): string {
   }
 }
 
-function fileNameForExport(bundle: AgtCompatiblePolicyBundle, format: PolicyBundleExportFormat): string {
+function fileNameForExport(
+  bundle: AgtCompatiblePolicyBundle,
+  format: PolicyBundleExportFormat,
+): string {
   const prefix = `${bundle.branchId}-${bundle.revisionId}`;
   switch (format) {
     case "spctre-json":
@@ -466,7 +496,7 @@ function hasSecretMaterial(value: unknown, path = ""): string[] {
 function blockingDynamicConditionWarnings(
   bundle: AgtCompatiblePolicyBundle,
   format: PolicyBundleExportFormat,
-  supportedKinds: Set<string>
+  supportedKinds: Set<string>,
 ): string[] {
   if (format === "spctre-json") return [];
   const blockingEffects = new Set(["DENY", "ESCALATE"]);
@@ -474,42 +504,62 @@ function blockingDynamicConditionWarnings(
     if (!blockingEffects.has(rule.effect)) return [];
     return (rule.dynamicConditions ?? [])
       .filter((condition) => !supportedKinds.has(condition.kind))
-      .map((condition) =>
-        `${format} cannot enforce ${condition.kind} for blocking rule ${rule.stableRuleId}.`
+      .map(
+        (condition) =>
+          `${format} cannot enforce ${condition.kind} for blocking rule ${rule.stableRuleId}.`,
       );
   });
 }
 
-function baseSemanticWarnings(bundle: AgtCompatiblePolicyBundle, format: PolicyBundleExportFormat): string[] {
+function baseSemanticWarnings(
+  bundle: AgtCompatiblePolicyBundle,
+  format: PolicyBundleExportFormat,
+): string[] {
   const warnings = [...(bundle.compatibility?.semanticWarnings ?? [])];
   if (format === "cedar" && bundle.rules.some((rule) => rule.effect === "WARN")) {
-    warnings.push("Cedar has no native WARN effect; WARN rules are exported as advisory comments only.");
+    warnings.push(
+      "Cedar has no native WARN effect; WARN rules are exported as advisory comments only.",
+    );
   }
   if (format === "mcp-proxy-config" && bundle.rules.some((rule) => rule.semanticChecks?.length)) {
-    warnings.push("MCP proxy configuration cannot execute semantic prompt checks without a runtime evaluator.");
+    warnings.push(
+      "MCP proxy configuration cannot execute semantic prompt checks without a runtime evaluator.",
+    );
   }
   return Array.from(new Set(warnings));
 }
 
-function baseBlockingWarnings(bundle: AgtCompatiblePolicyBundle, format: PolicyBundleExportFormat): string[] {
+function baseBlockingWarnings(
+  bundle: AgtCompatiblePolicyBundle,
+  format: PolicyBundleExportFormat,
+): string[] {
   const secretPaths = [
     ...hasSecretMaterial(bundle.metadata, "metadata"),
     ...hasSecretMaterial(bundle.sourceDocument, "sourceDocument"),
     ...bundle.rules.flatMap((rule, index) => hasSecretMaterial(rule, `rules[${index}]`)),
   ];
-  const secretWarnings = secretPaths.map((path) => `Export input contains secret-like field ${path}.`);
+  const secretWarnings = secretPaths.map(
+    (path) => `Export input contains secret-like field ${path}.`,
+  );
   const dynamicWarnings = blockingDynamicConditionWarnings(
     bundle,
     format,
     format === "opa-rego" || format === "opa-bundle"
-      ? new Set(["TIME_WINDOW", "DAILY_SPEND_LIMIT", "PER_CALL_COST_LIMIT", "SESSION_CUMULATIVE_COST_LIMIT", "BUDGET_UTILIZATION_THRESHOLD"])
-      : new Set()
+      ? new Set([
+          "TIME_WINDOW",
+          "DAILY_SPEND_LIMIT",
+          "PER_CALL_COST_LIMIT",
+          "SESSION_CUMULATIVE_COST_LIMIT",
+          "BUDGET_UTILIZATION_THRESHOLD",
+        ])
+      : new Set(),
   );
-  const cedarWarnings = format === "cedar"
-    ? bundle.rules
-        .filter((rule) => rule.effect === "ESCALATE")
-        .map((rule) => `Cedar cannot enforce ESCALATE semantics for rule ${rule.stableRuleId}.`)
-    : [];
+  const cedarWarnings =
+    format === "cedar"
+      ? bundle.rules
+          .filter((rule) => rule.effect === "ESCALATE")
+          .map((rule) => `Cedar cannot enforce ESCALATE semantics for rule ${rule.stableRuleId}.`)
+      : [];
   return Array.from(new Set([...secretWarnings, ...dynamicWarnings, ...cedarWarnings]));
 }
 
@@ -568,7 +618,7 @@ function buildOpaRego(bundle: AgtCompatiblePolicyBundle): string {
     `# revision_id: ${bundle.revisionId}`,
     `# artifact_hash: ${bundle.artifactHash}`,
     "",
-    "default decision := {\"effect\": \"ALLOW\", \"matched_policy_refs\": [], \"reason\": \"No Spctre rule matched.\"}",
+    'default decision := {"effect": "ALLOW", "matched_policy_refs": [], "reason": "No Spctre rule matched."}',
     "",
     "decision := result if {",
     "  some rule in data.spctre.rules",
@@ -576,12 +626,12 @@ function buildOpaRego(bundle: AgtCompatiblePolicyBundle): string {
     "  input.action == rule.action",
     "  spctre_conditions_ok(rule)",
     "  result := {",
-    "    \"effect\": rule.effect,",
-    "    \"matched_policy_refs\": [rule.stable_rule_id],",
-    "    \"reason\": sprintf(\"Matched Spctre rule %s\", [rule.stable_rule_id]),",
-    "    \"branch_id\": data.spctre.provenance.branch_id,",
-    "    \"revision_id\": data.spctre.provenance.revision_id,",
-    "    \"artifact_hash\": data.spctre.provenance.artifact_hash,",
+    '    "effect": rule.effect,',
+    '    "matched_policy_refs": [rule.stable_rule_id],',
+    '    "reason": sprintf("Matched Spctre rule %s", [rule.stable_rule_id]),',
+    '    "branch_id": data.spctre.provenance.branch_id,',
+    '    "revision_id": data.spctre.provenance.revision_id,',
+    '    "artifact_hash": data.spctre.provenance.artifact_hash,',
     "  }",
     "}",
     "",
@@ -592,31 +642,34 @@ function buildOpaRego(bundle: AgtCompatiblePolicyBundle): string {
     "}",
     "",
     "spctre_condition_ok(cond) if {",
-    "  cond.kind == \"TIME_WINDOW\"",
+    '  cond.kind == "TIME_WINDOW"',
     "  input.context.hour_of_day >= cond.window.start_hour",
     "  input.context.hour_of_day <= cond.window.end_hour",
     "}",
     "spctre_condition_ok(cond) if {",
-    "  cond.kind == \"DAILY_SPEND_LIMIT\"",
+    '  cond.kind == "DAILY_SPEND_LIMIT"',
     "  input.context.daily_spend_usd <= cond.value",
     "}",
     "spctre_condition_ok(cond) if {",
-    "  cond.kind == \"PER_CALL_COST_LIMIT\"",
+    '  cond.kind == "PER_CALL_COST_LIMIT"',
     "  input.context.call_cost_usd <= cond.value",
     "}",
     "spctre_condition_ok(cond) if {",
-    "  cond.kind == \"SESSION_CUMULATIVE_COST_LIMIT\"",
+    '  cond.kind == "SESSION_CUMULATIVE_COST_LIMIT"',
     "  input.context.session_cumulative_cost_usd <= cond.value",
     "}",
     "spctre_condition_ok(cond) if {",
-    "  cond.kind == \"BUDGET_UTILIZATION_THRESHOLD\"",
+    '  cond.kind == "BUDGET_UTILIZATION_THRESHOLD"',
     "  input.context.budget_utilization_pct <= cond.value",
     "}",
     "",
   ].join("\n");
 }
 
-function buildOpaData(bundle: AgtCompatiblePolicyBundle, generatedAt: string): Record<string, unknown> {
+function buildOpaData(
+  bundle: AgtCompatiblePolicyBundle,
+  generatedAt: string,
+): Record<string, unknown> {
   return {
     spctre: {
       provenance: {
@@ -639,7 +692,7 @@ function buildOpaData(bundle: AgtCompatiblePolicyBundle, generatedAt: string): R
             action,
             conditions: rule.conditions ?? [],
             dynamic_conditions: rule.dynamicConditions ?? [],
-          }))
+          })),
         );
       }),
     },
@@ -658,28 +711,34 @@ function buildCedarPolicy(bundle: AgtCompatiblePolicyBundle): string {
     "//",
     "// Entity mapping:",
     "//   Principal namespace: Agent",
-    "//   Action namespace:    Action::\"<connector>.<action>\"",
-    "//   Resource namespace:  Connector::\"<connector>\"",
+    '//   Action namespace:    Action::"<connector>.<action>"',
+    '//   Resource namespace:  Connector::"<connector>"',
     "//   Provision these entity types in your Cedar schema before deploying.",
     "",
   ];
   for (const rule of bundle.rules) {
     if (rule.effect === "WARN") {
-      lines.push(`// Rule: ${rule.title} [${rule.stableRuleId}] (WARN — advisory, not enforced by Cedar)`);
+      lines.push(
+        `// Rule: ${rule.title} [${rule.stableRuleId}] (WARN — advisory, not enforced by Cedar)`,
+      );
       lines.push("");
       continue;
     }
     if (rule.effect === "ESCALATE") {
-      lines.push(`// ${rule.effect} rule ${rule.stableRuleId} is advisory/blocking in manifest warnings.`);
+      lines.push(
+        `// ${rule.effect} rule ${rule.stableRuleId} is advisory/blocking in manifest warnings.`,
+      );
       lines.push("");
       continue;
     }
     const connectors = rule.connectors.length ? rule.connectors : ["*"];
     const actions = rule.actions.length ? rule.actions : ["*"];
     const actionEntries = connectors.flatMap((connector) =>
-      actions.map((action) => `Action::"${connector}.${cedarIdent(action)}"`)
+      actions.map((action) => `Action::"${connector}.${cedarIdent(action)}"`),
     );
-    const resourceEntries = Array.from(new Set(connectors)).map((connector) => `Connector::"${connector}"`);
+    const resourceEntries = Array.from(new Set(connectors)).map(
+      (connector) => `Connector::"${connector}"`,
+    );
     const cedarEffect = rule.effect === "DENY" ? "forbid" : "permit";
     lines.push(`// Rule: ${rule.title} [${rule.stableRuleId}]`);
     lines.push(`${cedarEffect}(`);
@@ -692,7 +751,10 @@ function buildCedarPolicy(bundle: AgtCompatiblePolicyBundle): string {
   return lines.join("\n");
 }
 
-function buildMcpProxyConfig(bundle: AgtCompatiblePolicyBundle, generatedAt: string): Record<string, unknown> {
+function buildMcpProxyConfig(
+  bundle: AgtCompatiblePolicyBundle,
+  generatedAt: string,
+): Record<string, unknown> {
   return {
     schemaVersion: "spctre.mcp.proxy.config.v1",
     generatedAt,
@@ -709,11 +771,12 @@ function buildMcpProxyConfig(bundle: AgtCompatiblePolicyBundle, generatedAt: str
       effect: rule.effect,
       connectors: rule.connectors,
       actions: rule.actions,
-      parameterSchemas: rule.preservedFields?.parameterSchemas ?? rule.preservedFields?.parameters ?? null,
+      parameterSchemas:
+        rule.preservedFields?.parameterSchemas ?? rule.preservedFields?.parameters ?? null,
       parameterConstraints: rule.parameterConstraints ?? [],
       rawConditions: rule.conditions ?? [],
       advisoryDynamicConditions: (rule.dynamicConditions ?? []).filter(
-        (c) => rule.effect === "ALLOW" || rule.effect === "WARN"
+        (c) => rule.effect === "ALLOW" || rule.effect === "WARN",
       ),
       policyRefs: [rule.stableRuleId],
     })),
@@ -723,7 +786,7 @@ function buildMcpProxyConfig(bundle: AgtCompatiblePolicyBundle, generatedAt: str
 function artifactForFormat(
   bundle: AgtCompatiblePolicyBundle,
   format: PolicyBundleExportFormat,
-  generatedAt: string
+  generatedAt: string,
 ): ExportArtifact {
   switch (format) {
     case "spctre-json":
@@ -751,7 +814,9 @@ export function buildPolicyBundleExport(params: {
   const semanticWarnings = baseSemanticWarnings(params.bundle, params.format);
   const blockingWarnings = baseBlockingWarnings(params.bundle, params.format);
   const artifact = artifactForFormat(params.bundle, params.format, generatedAt);
-  const compiledArtifactHash = sha256(typeof artifact === "string" ? artifact : stableJson(artifact));
+  const compiledArtifactHash = sha256(
+    typeof artifact === "string" ? artifact : stableJson(artifact),
+  );
   const manifest = buildManifest({
     bundle: params.bundle,
     format: params.format,
@@ -777,7 +842,7 @@ export function buildPolicyBundleExports(params: {
   generatedAt?: string;
 }): PolicyBundleExportResult[] {
   return params.formats.map((format) =>
-    buildPolicyBundleExport({ bundle: params.bundle, format, generatedAt: params.generatedAt })
+    buildPolicyBundleExport({ bundle: params.bundle, format, generatedAt: params.generatedAt }),
   );
 }
 
@@ -786,17 +851,24 @@ export function buildPolicyBundleExports(params: {
  * for a Mastra tool middleware. The runtime still emits decisions back to
  * Spctre; this is an adapter, not a second policy source of truth.
  */
-export function buildTypeScriptRuntimePolicyConfig(bundle: AgtCompatiblePolicyBundle, target: "mastra" | "vercel-ai" | "genkit" | "governance-sdk") {
+export function buildTypeScriptRuntimePolicyConfig(
+  bundle: AgtCompatiblePolicyBundle,
+  target: "mastra" | "vercel-ai" | "genkit" | "governance-sdk",
+) {
   const blocked = baseBlockingWarnings(bundle, "spctre-json");
   const artifact = {
     schemaVersion: `spctre.${target}-policy.v1`,
     provenance: {
-      branchId: bundle.branchId, revisionId: bundle.revisionId,
-      artifactHash: bundle.artifactHash, sourceHash: bundle.sourceHash,
+      branchId: bundle.branchId,
+      revisionId: bundle.revisionId,
+      artifactHash: bundle.artifactHash,
+      sourceHash: bundle.sourceHash,
     },
     rules: bundle.rules.map((rule) => ({
-      id: rule.stableRuleId, effect: rule.effect,
-      connectors: rule.connectors, actions: rule.actions,
+      id: rule.stableRuleId,
+      effect: rule.effect,
+      connectors: rule.connectors,
+      actions: rule.actions,
       semanticChecks: rule.semanticChecks ?? [],
     })),
   };
@@ -890,10 +962,7 @@ export function buildAgtVerificationEvidencePacket(params: {
   return {
     schemaVersion: "spctre.agt.evidence.v1",
     generatedAt: params.generatedAt,
-    verifier: {
-      command: "agt verify --evidence",
-      strictCommand: "agt verify --evidence --strict",
-    },
+    verifier: { command: "agt verify --evidence", strictCommand: "agt verify --evidence --strict" },
     artifact,
     bundle: params.bundle,
     evidence: params.evidence,
@@ -924,16 +993,15 @@ export function buildSimulationRun(params: {
   regressionSummary?: SimulationRegressionSummary;
 }): SimulationRun {
   const results = params.results;
-  const newlyDeniedCount = results.filter(r => r.previousStatus !== 'DENY' && r.proposedStatus === 'DENY').length;
-  const newlyAllowedCount = results.filter(r => r.previousStatus === 'DENY' && r.proposedStatus === 'ALLOW').length;
-  const unchangedCount = results.filter(r => r.previousStatus === r.proposedStatus).length;
+  const newlyDeniedCount = results.filter(
+    (r) => r.previousStatus !== "DENY" && r.proposedStatus === "DENY",
+  ).length;
+  const newlyAllowedCount = results.filter(
+    (r) => r.previousStatus === "DENY" && r.proposedStatus === "ALLOW",
+  ).length;
+  const unchangedCount = results.filter((r) => r.previousStatus === r.proposedStatus).length;
 
-  return {
-    ...params,
-    newlyDeniedCount,
-    newlyAllowedCount,
-    unchangedCount
-  };
+  return { ...params, newlyDeniedCount, newlyAllowedCount, unchangedCount };
 }
 
 export function buildSimulationRegressionSummary(params: {
@@ -942,21 +1010,25 @@ export function buildSimulationRegressionSummary(params: {
   coverage: SimulationRegressionSummary["coverage"];
 }): SimulationRegressionSummary {
   const highRiskEventIds = new Set(params.highRiskEventIds);
-  const newlyDeniedExpectedWorkCount = params.results.filter((result) =>
-    result.previousStatus !== "DENY" && result.proposedStatus === "DENY"
+  const newlyDeniedExpectedWorkCount = params.results.filter(
+    (result) => result.previousStatus !== "DENY" && result.proposedStatus === "DENY",
   ).length;
-  const removedEscalationCoverageCount = params.results.filter((result) =>
-    result.previousStatus === "ESCALATE" && result.proposedStatus !== "ESCALATE"
+  const removedEscalationCoverageCount = params.results.filter(
+    (result) => result.previousStatus === "ESCALATE" && result.proposedStatus !== "ESCALATE",
   ).length;
-  const newlyAllowedHighRiskCount = params.results.filter((result) =>
-    highRiskEventIds.has(result.eventId) && result.previousStatus === "DENY" && result.proposedStatus !== "DENY"
+  const newlyAllowedHighRiskCount = params.results.filter(
+    (result) =>
+      highRiskEventIds.has(result.eventId) &&
+      result.previousStatus === "DENY" &&
+      result.proposedStatus !== "DENY",
   ).length;
   return {
     coverage: params.coverage,
     newlyDeniedExpectedWorkCount,
     removedEscalationCoverageCount,
     newlyAllowedHighRiskCount,
-    blockingCount: newlyDeniedExpectedWorkCount + removedEscalationCoverageCount + newlyAllowedHighRiskCount,
+    blockingCount:
+      newlyDeniedExpectedWorkCount + removedEscalationCoverageCount + newlyAllowedHighRiskCount,
   };
 }
 
@@ -982,7 +1054,7 @@ export function composePolicyLayers(params: {
         // lower layers cannot override or modify it.
         if (existing.rule.immutable) {
           conflictNotes.push(
-            `Conflict in ${layer.scope} layer: Rule "${rule.stableRuleId}" is immutable in ${existing.layerScope} and cannot be overridden.`
+            `Conflict in ${layer.scope} layer: Rule "${rule.stableRuleId}" is immutable in ${existing.layerScope} and cannot be overridden.`,
           );
           continue;
         }
@@ -990,7 +1062,7 @@ export function composePolicyLayers(params: {
         // Note overrides for transparency
         if (existing.layerScope !== layer.scope) {
           conflictNotes.push(
-            `Override: ${layer.scope} layer has updated rule "${rule.stableRuleId}" from ${existing.layerScope}.`
+            `Override: ${layer.scope} layer has updated rule "${rule.stableRuleId}" from ${existing.layerScope}.`,
           );
         }
       }
@@ -1035,18 +1107,27 @@ export function diffPolicyRules(params: {
       if (before.title !== after.title) changedFields.push("title");
       if (before.effect !== after.effect) changedFields.push("effect");
       if (before.immutable !== after.immutable) changedFields.push("immutable");
-      if (JSON.stringify(before.actions) !== JSON.stringify(after.actions)) changedFields.push("actions");
-      if (JSON.stringify(before.connectors) !== JSON.stringify(after.connectors)) changedFields.push("connectors");
-      if (JSON.stringify(before.domains) !== JSON.stringify(after.domains)) changedFields.push("domains");
-      if (JSON.stringify(before.conditions) !== JSON.stringify(after.conditions)) changedFields.push("conditions");
-      if (JSON.stringify(before.semanticChecks) !== JSON.stringify(after.semanticChecks)) changedFields.push("semanticChecks");
-      if (JSON.stringify(before.controlMappings) !== JSON.stringify(after.controlMappings)) changedFields.push("controlMappings");
+      if (JSON.stringify(before.actions) !== JSON.stringify(after.actions))
+        changedFields.push("actions");
+      if (JSON.stringify(before.connectors) !== JSON.stringify(after.connectors))
+        changedFields.push("connectors");
+      if (JSON.stringify(before.domains) !== JSON.stringify(after.domains))
+        changedFields.push("domains");
+      if (JSON.stringify(before.conditions) !== JSON.stringify(after.conditions))
+        changedFields.push("conditions");
+      if (JSON.stringify(before.semanticChecks) !== JSON.stringify(after.semanticChecks))
+        changedFields.push("semanticChecks");
+      if (JSON.stringify(before.controlMappings) !== JSON.stringify(after.controlMappings))
+        changedFields.push("controlMappings");
       // parameterConstraints carry the typed thresholds a pack override rewrites
       // (e.g. a refund review limit). Omitting them meant a pack upgrade — or an
       // authored change — that only moved a threshold rendered as UNCHANGED: a
       // silent replace, the opposite of the reviewable-diff contract. Detect them
       // so a threshold change surfaces in the same operational diff as any other.
-      if (JSON.stringify(before.parameterConstraints) !== JSON.stringify(after.parameterConstraints)) changedFields.push("parameterConstraints");
+      if (
+        JSON.stringify(before.parameterConstraints) !== JSON.stringify(after.parameterConstraints)
+      )
+        changedFields.push("parameterConstraints");
 
       if (changedFields.length > 0) {
         rules.push({ stableRuleId: id, status: "MODIFIED", before, after, changedFields });
@@ -1058,28 +1139,25 @@ export function diffPolicyRules(params: {
     }
   }
 
-  return {
-    ...params,
-    rules,
-    summary: {
-      added,
-      modified,
-      removed,
-      unchanged,
-    },
-  };
+  return { ...params, rules, summary: { added, modified, removed, unchanged } };
 }
 
 /** Groups rule-level control mappings for review and evidence export surfaces. */
 export function buildRuleControlMappingIndex(rules: PolicyRuleSummary[]) {
-  const mappings = rules.flatMap((rule) => (rule.controlMappings ?? []).map((mapping) => ({
-    stableRuleId: rule.stableRuleId,
-    effect: rule.effect,
-    ...mapping,
-  })));
+  const mappings = rules.flatMap((rule) =>
+    (rule.controlMappings ?? []).map((mapping) => ({
+      stableRuleId: rule.stableRuleId,
+      effect: rule.effect,
+      ...mapping,
+    })),
+  );
   const seen = new Set<string>();
   return mappings
-    .sort((a, b) => `${a.framework}:${a.controlId}:${a.stableRuleId}`.localeCompare(`${b.framework}:${b.controlId}:${b.stableRuleId}`))
+    .sort((a, b) =>
+      `${a.framework}:${a.controlId}:${a.stableRuleId}`.localeCompare(
+        `${b.framework}:${b.controlId}:${b.stableRuleId}`,
+      ),
+    )
     .filter((mapping) => {
       const key = `${mapping.stableRuleId}:${mapping.framework}:${mapping.controlId}`;
       if (seen.has(key)) return false;
@@ -1110,7 +1188,15 @@ export function buildControlEvidenceRollup(params: {
   evidence: Pick<RuntimeDecisionEvidenceRecord, "policyRefs" | "status" | "createdAt">[];
 }): ControlEvidenceRollupEntry[] {
   const mappingIndex = buildRuleControlMappingIndex(params.rules);
-  const ruleIdsByControl = new Map<string, { framework: PolicyControlMapping["framework"]; controlId: string; rationale?: string; stableRuleIds: Set<string> }>();
+  const ruleIdsByControl = new Map<
+    string,
+    {
+      framework: PolicyControlMapping["framework"];
+      controlId: string;
+      rationale?: string;
+      stableRuleIds: Set<string>;
+    }
+  >();
 
   for (const mapping of mappingIndex) {
     const key = `${mapping.framework}:${mapping.controlId}`;
@@ -1162,13 +1248,18 @@ export function buildControlEvidenceRollup(params: {
       entry.decisionCount += 1;
       if (record.status === "DENY") entry.deniedCount += 1;
       if (record.status === "WARN") entry.warnedCount += 1;
-      if (!entry.latestEvidenceAt || new Date(record.createdAt).getTime() > new Date(entry.latestEvidenceAt).getTime()) {
+      if (
+        !entry.latestEvidenceAt ||
+        new Date(record.createdAt).getTime() > new Date(entry.latestEvidenceAt).getTime()
+      ) {
         entry.latestEvidenceAt = record.createdAt;
       }
     }
   }
 
-  return [...rollup.values()].sort((a, b) => `${a.framework}:${a.controlId}`.localeCompare(`${b.framework}:${b.controlId}`));
+  return [...rollup.values()].sort((a, b) =>
+    `${a.framework}:${a.controlId}`.localeCompare(`${b.framework}:${b.controlId}`),
+  );
 }
 
 /** Validation used by pack fixtures and authoring clients before publish. */
@@ -1179,9 +1270,17 @@ export function validatePolicyControlMappings(rules: PolicyRuleSummary[]) {
     for (const mapping of rule.controlMappings ?? []) {
       const controlId = typeof mapping.controlId === "string" ? mapping.controlId.trim() : "";
       const framework = typeof mapping.framework === "string" ? mapping.framework : "";
-      if (!controlId) issues.push({ stableRuleId: rule.stableRuleId, message: "Control mapping requires a control ID." });
+      if (!controlId)
+        issues.push({
+          stableRuleId: rule.stableRuleId,
+          message: "Control mapping requires a control ID.",
+        });
       const key = `${framework}:${controlId}`;
-      if (seen.has(key)) issues.push({ stableRuleId: rule.stableRuleId, message: `Duplicate control mapping ${key}.` });
+      if (seen.has(key))
+        issues.push({
+          stableRuleId: rule.stableRuleId,
+          message: `Duplicate control mapping ${key}.`,
+        });
       seen.add(key);
     }
   }
@@ -1233,14 +1332,14 @@ export function evaluatePublishReadiness(params: {
         cta: "Open verification",
       });
     } else {
-      if ((vp.blockOnFail !== false) && vs.overallOutcome === "FAIL") {
+      if (vp.blockOnFail !== false && vs.overallOutcome === "FAIL") {
         blockingReasons.push({
           message: "AGT verification failed. Address verification issues before publishing.",
           href: "#verification",
           cta: "Open verification",
         });
       }
-      if ((vp.blockOnStale !== false) && vs.isStale) {
+      if (vp.blockOnStale !== false && vs.isStale) {
         blockingReasons.push({
           message: `AGT verification results are stale (>${vs.staleThresholdDays} days). Re-run verification before publishing.`,
           href: "#verification",
@@ -1269,11 +1368,11 @@ export function buildPolicyReviewQueue(params: {
   readiness: PublishReadiness;
   createdAt: string;
 }): PolicyReviewTask[] {
-  return params.readiness.approvals.map(a => ({
+  return params.readiness.approvals.map((a) => ({
     role: a.role,
     status: a.status,
     requiredCount: 1,
-    satisfiedCount: a.status === 'APPROVED' ? 1 : 0
+    satisfiedCount: a.status === "APPROVED" ? 1 : 0,
   }));
 }
 
@@ -1281,7 +1380,16 @@ export function buildPolicyImportResult(params: PolicyImportResult): PolicyImpor
   return { ...params };
 }
 
-const EFFECT_WORDS = new Set(["ALLOW", "DENY", "WARN", "ESCALATE", "ALLOWED", "DENIED", "WARNING", "ESCALATED"]);
+const EFFECT_WORDS = new Set([
+  "ALLOW",
+  "DENY",
+  "WARN",
+  "ESCALATE",
+  "ALLOWED",
+  "DENIED",
+  "WARNING",
+  "ESCALATED",
+]);
 const NORMALIZED_EFFECTS: Record<string, RuntimeDecisionStatus> = {
   ALLOW: "ALLOW",
   ALLOWED: "ALLOW",
@@ -1331,7 +1439,16 @@ const KNOWN_RULE_FIELDS = new Set([
   "budget_utilization_threshold",
   "budgetUtilizationThreshold",
 ]);
-const KNOWN_TOP_LEVEL_FIELDS = new Set(["metadata", "rules", "policies", "defaults", "name", "version", "description", "disclaimer"]);
+const KNOWN_TOP_LEVEL_FIELDS = new Set([
+  "metadata",
+  "rules",
+  "policies",
+  "defaults",
+  "name",
+  "version",
+  "description",
+  "disclaimer",
+]);
 const AGT_NATIVE_DYNAMIC_CONDITION_FIELDS: Array<[string, PolicyDynamicCondition["kind"]]> = [
   ["time_window", "TIME_WINDOW"],
   ["timeWindow", "TIME_WINDOW"],
@@ -1345,7 +1462,10 @@ const AGT_NATIVE_DYNAMIC_CONDITION_FIELDS: Array<[string, PolicyDynamicCondition
   ["budgetUtilizationThreshold", "BUDGET_UTILIZATION_THRESHOLD"],
 ];
 
-export function parseAgtPolicyDocument(params: { document: string; sourcePath?: string }): PolicyImportResult {
+export function parseAgtPolicyDocument(params: {
+  document: string;
+  sourcePath?: string;
+}): PolicyImportResult {
   const content = params.document.trim();
   const diagnostics: PolicyRuleDiagnostic[] = [];
   const rules: PolicyRuleSummary[] = [];
@@ -1357,19 +1477,26 @@ export function parseAgtPolicyDocument(params: { document: string; sourcePath?: 
     const isJson = content.startsWith("{") || content.startsWith("[");
     parsed = isJson ? JSON.parse(content) : yaml.load(content);
   } catch (e) {
-    diagnostics.push({ severity: "ERROR", message: `Failed to parse policy document: ${String(e)}` });
+    diagnostics.push({
+      severity: "ERROR",
+      message: `Failed to parse policy document: ${String(e)}`,
+    });
     return { sourceHash: "pending", rules, diagnostics, metadata, warnings };
   }
 
   if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-    diagnostics.push({ severity: "ERROR", message: "Policy document must be an object with metadata and rules." });
+    diagnostics.push({
+      severity: "ERROR",
+      message: "Policy document must be an object with metadata and rules.",
+    });
     return { sourceHash: "pending", rules, diagnostics, metadata, warnings };
   }
 
   const doc = parsed as Record<string, unknown>;
-  metadata = (doc.metadata && typeof doc.metadata === "object" && !Array.isArray(doc.metadata))
-    ? (doc.metadata as Record<string, unknown>)
-    : {};
+  metadata =
+    doc.metadata && typeof doc.metadata === "object" && !Array.isArray(doc.metadata)
+      ? (doc.metadata as Record<string, unknown>)
+      : {};
 
   const rawRules = collectRawRules(doc);
   if (!rawRules.length) {
@@ -1382,31 +1509,41 @@ export function parseAgtPolicyDocument(params: { document: string; sourcePath?: 
       continue;
     }
     const rule = r as Record<string, unknown>;
-    const stableRuleId = (typeof rule.stable_rule_id === "string" && rule.stable_rule_id)
-      || (typeof rule.stableRuleId === "string" && rule.stableRuleId)
-      || (typeof rule.id === "string" && rule.id)
-      || (typeof rule.name === "string" && rule.name);
+    const stableRuleId =
+      (typeof rule.stable_rule_id === "string" && rule.stable_rule_id) ||
+      (typeof rule.stableRuleId === "string" && rule.stableRuleId) ||
+      (typeof rule.id === "string" && rule.id) ||
+      (typeof rule.name === "string" && rule.name);
     if (!stableRuleId) {
-      diagnostics.push({ severity: "ERROR", message: "Rule missing stable_rule_id — skipped.", ruleId: undefined });
+      diagnostics.push({
+        severity: "ERROR",
+        message: "Rule missing stable_rule_id — skipped.",
+        ruleId: undefined,
+      });
       continue;
     }
     const rawEffect = inferEffect(rule);
     const effect = NORMALIZED_EFFECTS[rawEffect] ?? "ALLOW";
     if (!NORMALIZED_EFFECTS[rawEffect]) {
-      diagnostics.push({ severity: "WARNING", message: `Rule "${stableRuleId}" has unrecognised effect "${rule.effect}", defaulting to ALLOW.`, ruleId: stableRuleId });
+      diagnostics.push({
+        severity: "WARNING",
+        message: `Rule "${stableRuleId}" has unrecognised effect "${rule.effect}", defaulting to ALLOW.`,
+        ruleId: stableRuleId,
+      });
     }
     const preservedFields = Object.fromEntries(
-      Object.entries(rule).filter(([key]) => !KNOWN_RULE_FIELDS.has(key))
+      Object.entries(rule).filter(([key]) => !KNOWN_RULE_FIELDS.has(key)),
     );
     const conditions = collectConditions(rule);
     const dynamicConditions = collectDynamicConditions(rule, conditions);
     rules.push({
       stableRuleId,
-      title: typeof rule.title === "string"
-        ? rule.title
-        : typeof rule.description === "string"
-          ? rule.description
-          : stableRuleId,
+      title:
+        typeof rule.title === "string"
+          ? rule.title
+          : typeof rule.description === "string"
+            ? rule.description
+            : stableRuleId,
       effect,
       sourceFormat: "AGT_YAML",
       sourcePath: params.sourcePath,
@@ -1425,15 +1562,12 @@ export function parseAgtPolicyDocument(params: { document: string; sourcePath?: 
     });
   }
 
-  const compatibility = buildAgtCompatibilityReport({
-    doc,
-    rules,
-    warnings,
-  });
+  const compatibility = buildAgtCompatibilityReport({ doc, rules, warnings });
   if (compatibility.preservedTopLevelKeys.length || compatibility.preservedRuleFieldCount > 0) {
     diagnostics.push({
       severity: "INFO",
-      message: "Preserved AGT-native fields for round-trip export and verification even when Spctre does not edit them directly.",
+      message:
+        "Preserved AGT-native fields for round-trip export and verification even when Spctre does not edit them directly.",
     });
   }
 
@@ -1500,7 +1634,7 @@ function collectConditions(rule: Record<string, unknown>): Record<string, unknow
 
 function collectDynamicConditions(
   rule: Record<string, unknown>,
-  conditions: Record<string, unknown>[]
+  conditions: Record<string, unknown>[],
 ): PolicyDynamicCondition[] | undefined {
   const dynamicConditions: PolicyDynamicCondition[] = [];
   const seenNativeKinds = new Set<PolicyDynamicCondition["kind"]>();
@@ -1518,7 +1652,7 @@ function collectDynamicConditions(
         kind,
         source: "AGT_NATIVE_FIELD",
         value,
-        window: kind === "TIME_WINDOW" ? value as Record<string, unknown> : undefined,
+        window: kind === "TIME_WINDOW" ? (value as Record<string, unknown>) : undefined,
         originalCondition: { [field]: value },
       });
     } else if (value !== undefined) {
@@ -1535,8 +1669,12 @@ function collectDynamicConditions(
   return dynamicConditions.length ? dynamicConditions : undefined;
 }
 
-function classifyDynamicCondition(condition: Record<string, unknown>): PolicyDynamicCondition | undefined {
-  const explicitType = stringValue(condition.type ?? condition.kind ?? condition.condition_type ?? condition.conditionType);
+function classifyDynamicCondition(
+  condition: Record<string, unknown>,
+): PolicyDynamicCondition | undefined {
+  const explicitType = stringValue(
+    condition.type ?? condition.kind ?? condition.condition_type ?? condition.conditionType,
+  );
   const field = stringValue(condition.field);
   const operator = stringValue(condition.operator);
   const value = condition.value;
@@ -1558,10 +1696,13 @@ function classifyDynamicCondition(condition: Record<string, unknown>): PolicyDyn
     kind = "BUDGET_UTILIZATION_THRESHOLD";
   }
   if (!kind && typeof field === "string") {
-    if (["estimated_cost_usd", "cost_usd", "cost", "amount_usd"].includes(field)) kind = "PER_CALL_COST_LIMIT";
-    if (["session_cost_usd", "session_spend_usd", "cumulative_cost_usd"].includes(field)) kind = "SESSION_CUMULATIVE_COST_LIMIT";
+    if (["estimated_cost_usd", "cost_usd", "cost", "amount_usd"].includes(field))
+      kind = "PER_CALL_COST_LIMIT";
+    if (["session_cost_usd", "session_spend_usd", "cumulative_cost_usd"].includes(field))
+      kind = "SESSION_CUMULATIVE_COST_LIMIT";
     if (["daily_spend_usd", "daily_cost_usd"].includes(field)) kind = "DAILY_SPEND_LIMIT";
-    if (["budget_utilization", "budget_utilization_percent"].includes(field)) kind = "BUDGET_UTILIZATION_THRESHOLD";
+    if (["budget_utilization", "budget_utilization_percent"].includes(field))
+      kind = "BUDGET_UTILIZATION_THRESHOLD";
   }
   if (!kind) return undefined;
   return {
@@ -1570,9 +1711,10 @@ function classifyDynamicCondition(condition: Record<string, unknown>): PolicyDyn
     field,
     operator,
     value,
-    window: kind === "TIME_WINDOW" && value && typeof value === "object" && !Array.isArray(value)
-      ? value as Record<string, unknown>
-      : undefined,
+    window:
+      kind === "TIME_WINDOW" && value && typeof value === "object" && !Array.isArray(value)
+        ? (value as Record<string, unknown>)
+        : undefined,
     originalCondition: condition,
   };
 }
@@ -1584,20 +1726,53 @@ function stringValue(value: unknown): string | undefined {
 function collectControlMappings(rule: Record<string, unknown>): PolicyControlMapping[] | undefined {
   const raw = rule.control_mappings ?? rule.controlMappings;
   if (!Array.isArray(raw)) return undefined;
-  const frameworks = new Set(["SOC2", "HIPAA", "ISO_27001", "ISO_42001", "EU_AI_ACT", "NIST_AI_RMF", "OWASP_AGENTIC"]);
+  const frameworks = new Set([
+    "SOC2",
+    "HIPAA",
+    "ISO_27001",
+    "ISO_42001",
+    "EU_AI_ACT",
+    "NIST_AI_RMF",
+    "OWASP_AGENTIC",
+  ]);
   const mappings = raw.flatMap((item) => {
     if (!item || typeof item !== "object" || Array.isArray(item)) return [];
     const value = item as Record<string, unknown>;
     const framework = typeof value.framework === "string" ? value.framework : "";
-    const controlId = typeof value.control_id === "string" ? value.control_id : typeof value.controlId === "string" ? value.controlId : "";
-    return frameworks.has(framework) && controlId ? [{ framework: framework as PolicyControlMapping["framework"], controlId, rationale: typeof value.rationale === "string" ? value.rationale : undefined }] : [];
+    const controlId =
+      typeof value.control_id === "string"
+        ? value.control_id
+        : typeof value.controlId === "string"
+          ? value.controlId
+          : "";
+    return frameworks.has(framework) && controlId
+      ? [
+          {
+            framework: framework as PolicyControlMapping["framework"],
+            controlId,
+            rationale: typeof value.rationale === "string" ? value.rationale : undefined,
+          },
+        ]
+      : [];
   });
   return mappings.length ? mappings : undefined;
 }
 
-const PARAMETER_CONSTRAINT_OPERATORS = new Set(["gt", "gte", "lt", "lte", "eq", "neq", "in", "not_in", "contains"]);
+const PARAMETER_CONSTRAINT_OPERATORS = new Set([
+  "gt",
+  "gte",
+  "lt",
+  "lte",
+  "eq",
+  "neq",
+  "in",
+  "not_in",
+  "contains",
+]);
 
-function collectParameterConstraints(rule: Record<string, unknown>): PolicyParameterConstraint[] | undefined {
+function collectParameterConstraints(
+  rule: Record<string, unknown>,
+): PolicyParameterConstraint[] | undefined {
   const raw = rule.parameter_constraints ?? rule.parameterConstraints;
   if (!Array.isArray(raw)) return undefined;
   const constraints = raw.flatMap((item) => {
@@ -1607,47 +1782,49 @@ function collectParameterConstraints(rule: Record<string, unknown>): PolicyParam
     const operator = typeof value.operator === "string" ? value.operator : "";
     if (!field || !PARAMETER_CONSTRAINT_OPERATORS.has(operator)) return [];
     const rawEffect = typeof value.effect === "string" ? value.effect.toUpperCase() : undefined;
-    const effect = rawEffect && NORMALIZED_EFFECTS[rawEffect] ? NORMALIZED_EFFECTS[rawEffect] : undefined;
-    const parameterKey = typeof value.parameter_key === "string"
-      ? value.parameter_key
-      : typeof value.parameterKey === "string"
-        ? value.parameterKey
-        : undefined;
-    return [{
-      field,
-      operator: operator as PolicyParameterConstraint["operator"],
-      value: value.value,
-      parameterKey,
-      effect,
-    }];
+    const effect =
+      rawEffect && NORMALIZED_EFFECTS[rawEffect] ? NORMALIZED_EFFECTS[rawEffect] : undefined;
+    const parameterKey =
+      typeof value.parameter_key === "string"
+        ? value.parameter_key
+        : typeof value.parameterKey === "string"
+          ? value.parameterKey
+          : undefined;
+    return [
+      {
+        field,
+        operator: operator as PolicyParameterConstraint["operator"],
+        value: value.value,
+        parameterKey,
+        effect,
+      },
+    ];
   });
   return constraints.length ? constraints : undefined;
 }
 
-function collectSemanticChecks(rule: Record<string, unknown>, stableRuleId: string): SemanticCheck[] | undefined {
+function collectSemanticChecks(
+  rule: Record<string, unknown>,
+  stableRuleId: string,
+): SemanticCheck[] | undefined {
   const raw = rule.semantic_checks ?? rule.semanticChecks;
   if (!Array.isArray(raw)) return undefined;
 
   const checks: SemanticCheck[] = [];
   raw.forEach((item, index) => {
     if (typeof item === "string" && item.trim()) {
-      checks.push({
-        id: `sem-${stableRuleId}-${index}`,
-        prompt: item.trim(),
-      });
+      checks.push({ id: `sem-${stableRuleId}-${index}`, prompt: item.trim() });
     } else if (item && typeof item === "object" && !Array.isArray(item)) {
       const prompt = typeof item.prompt === "string" ? item.prompt.trim() : "";
       if (prompt) {
-        const id = typeof item.id === "string" && item.id.trim()
-          ? item.id.trim()
-          : `sem-${stableRuleId}-${index}`;
+        const id =
+          typeof item.id === "string" && item.id.trim()
+            ? item.id.trim()
+            : `sem-${stableRuleId}-${index}`;
         const rawEffect = typeof item.effect === "string" ? item.effect.toUpperCase() : undefined;
-        const effect = rawEffect && NORMALIZED_EFFECTS[rawEffect] ? NORMALIZED_EFFECTS[rawEffect] : undefined;
-        checks.push({
-          id,
-          prompt,
-          effect,
-        });
+        const effect =
+          rawEffect && NORMALIZED_EFFECTS[rawEffect] ? NORMALIZED_EFFECTS[rawEffect] : undefined;
+        checks.push({ id, prompt, effect });
       }
     }
   });
@@ -1655,11 +1832,15 @@ function collectSemanticChecks(rule: Record<string, unknown>, stableRuleId: stri
   return checks.length ? checks : undefined;
 }
 
-function inferActions(rule: Record<string, unknown>, conditions: Record<string, unknown>[]): string[] {
+function inferActions(
+  rule: Record<string, unknown>,
+  conditions: Record<string, unknown>[],
+): string[] {
   const explicitActions = stringArray(rule.actions);
-  const rawAction = typeof rule.action === "string" && !EFFECT_WORDS.has(rule.action.toUpperCase())
-    ? [rule.action]
-    : [];
+  const rawAction =
+    typeof rule.action === "string" && !EFFECT_WORDS.has(rule.action.toUpperCase())
+      ? [rule.action]
+      : [];
   const conditionActions = conditions.flatMap((condition) => {
     const field = typeof condition.field === "string" ? condition.field : "";
     if (!["action", "tool_name", "tool", "resource", "operation"].includes(field)) return [];
@@ -1675,24 +1856,30 @@ function buildAgtCompatibilityReport(params: {
   rules: PolicyRuleSummary[];
   warnings: string[];
 }): AgtCompatibilityReport {
-  const preservedTopLevelKeys = Object.keys(params.doc).filter((key) => !KNOWN_TOP_LEVEL_FIELDS.has(key));
+  const preservedTopLevelKeys = Object.keys(params.doc).filter(
+    (key) => !KNOWN_TOP_LEVEL_FIELDS.has(key),
+  );
   const preservedRuleFieldCount = params.rules.reduce(
     (acc, rule) => acc + Object.keys(rule.preservedFields ?? {}).length,
-    0
+    0,
   );
   const hasConditions = params.rules.some((rule) => (rule.conditions?.length ?? 0) > 0);
   const dynamicConditionCount = params.rules.reduce(
     (acc, rule) => acc + (rule.dynamicConditions?.length ?? 0),
-    0
+    0,
   );
   const provenance = extractAgtEngineProvenance(params.doc);
   const semanticWarnings = [
     ...params.warnings,
     ...(hasConditions
-      ? ["AGT conditions are preserved losslessly; Spctre maps common action/tool conditions for preview evaluation."]
+      ? [
+          "AGT conditions are preserved losslessly; Spctre maps common action/tool conditions for preview evaluation.",
+        ]
       : []),
     ...(dynamicConditionCount > 0
-      ? ["AGT v4.1.0 dynamic time and cost conditions are typed for review and preserved for runtime verification."]
+      ? [
+          "AGT v4.1.0 dynamic time and cost conditions are typed for review and preserved for runtime verification.",
+        ]
       : []),
   ];
 
@@ -1711,34 +1898,57 @@ function buildAgtCompatibilityReport(params: {
     preservedRuleFieldCount,
     dynamicConditionCount,
     semanticWarnings,
-    verificationTargets: ["agt lint-policy", "agt verify --evidence", "agt verify --evidence --strict"],
+    verificationTargets: [
+      "agt lint-policy",
+      "agt verify --evidence",
+      "agt verify --evidence --strict",
+    ],
   };
 }
 
 function extractAgtEngineProvenance(doc: Record<string, unknown>): Partial<AgtCompatibilityReport> {
-  const agt = doc.agt && typeof doc.agt === "object" && !Array.isArray(doc.agt)
-    ? doc.agt as Record<string, unknown>
-    : {};
-  const metadata = doc.metadata && typeof doc.metadata === "object" && !Array.isArray(doc.metadata)
-    ? doc.metadata as Record<string, unknown>
-    : {};
-  const engine = agt.engine && typeof agt.engine === "object" && !Array.isArray(agt.engine)
-    ? agt.engine as Record<string, unknown>
-    : {};
+  const agt =
+    doc.agt && typeof doc.agt === "object" && !Array.isArray(doc.agt)
+      ? (doc.agt as Record<string, unknown>)
+      : {};
+  const metadata =
+    doc.metadata && typeof doc.metadata === "object" && !Array.isArray(doc.metadata)
+      ? (doc.metadata as Record<string, unknown>)
+      : {};
+  const engine =
+    agt.engine && typeof agt.engine === "object" && !Array.isArray(agt.engine)
+      ? (agt.engine as Record<string, unknown>)
+      : {};
   return {
     agtVersion: stringValue(agt.version ?? metadata.agtVersion ?? metadata.agt_version),
-    agtPoliciesVersion: stringValue(agt.policies_version ?? agt.agt_policies_version ?? metadata.agtPoliciesVersion ?? metadata.agt_policies_version),
-    cedarPolicyVersion: stringValue(agt.cedar_policy_version ?? metadata.cedarPolicyVersion ?? metadata.cedar_policy_version),
-    policyEngineVersion: stringValue(agt.policy_engine_version ?? engine.version ?? metadata.policyEngineVersion ?? metadata.policy_engine_version),
+    agtPoliciesVersion: stringValue(
+      agt.policies_version ??
+        agt.agt_policies_version ??
+        metadata.agtPoliciesVersion ??
+        metadata.agt_policies_version,
+    ),
+    cedarPolicyVersion: stringValue(
+      agt.cedar_policy_version ?? metadata.cedarPolicyVersion ?? metadata.cedar_policy_version,
+    ),
+    policyEngineVersion: stringValue(
+      agt.policy_engine_version ??
+        engine.version ??
+        metadata.policyEngineVersion ??
+        metadata.policy_engine_version,
+    ),
   };
 }
 
-export function toAgtCompatiblePolicyBundle(params: AgtCompatiblePolicyBundle): AgtCompatiblePolicyBundle {
-  const compatibility = params.compatibility ?? buildAgtCompatibilityReport({
-    doc: params.sourceDocument ?? { metadata: params.metadata, rules: params.rules },
-    rules: params.rules,
-    warnings: [],
-  });
+export function toAgtCompatiblePolicyBundle(
+  params: AgtCompatiblePolicyBundle,
+): AgtCompatiblePolicyBundle {
+  const compatibility =
+    params.compatibility ??
+    buildAgtCompatibilityReport({
+      doc: params.sourceDocument ?? { metadata: params.metadata, rules: params.rules },
+      rules: params.rules,
+      warnings: [],
+    });
   return {
     ...params,
     compatibility,
@@ -1755,19 +1965,25 @@ export function toAgtCompatiblePolicyBundle(params: AgtCompatiblePolicyBundle): 
   };
 }
 
-export function ingestAgtRuntimeDecision(input: AgtRuntimeDecisionInput): RuntimeDecisionEvidenceRecord {
+export function ingestAgtRuntimeDecision(
+  input: AgtRuntimeDecisionInput,
+): RuntimeDecisionEvidenceRecord {
   return input;
 }
 
 export function evaluateGatewayDecision(input: GatewayDecisionInput): GatewayDecisionResult {
-  return JSON.parse(jsEvaluateGatewayDecision(JSON.stringify({
-    reason: input.reason ?? null,
-    consequence: input.consequence ?? null,
-    confidence: input.confidence ?? null,
-    amountUsd: input.amountUsd ?? null,
-    dataSensitivity: input.dataSensitivity ?? null,
-    trustScore: input.trustScore ?? null,
-  }))) as GatewayDecisionResult;
+  return JSON.parse(
+    jsEvaluateGatewayDecision(
+      JSON.stringify({
+        reason: input.reason ?? null,
+        consequence: input.consequence ?? null,
+        confidence: input.confidence ?? null,
+        amountUsd: input.amountUsd ?? null,
+        dataSensitivity: input.dataSensitivity ?? null,
+        trustScore: input.trustScore ?? null,
+      }),
+    ),
+  ) as GatewayDecisionResult;
 }
 
 export function evaluateRuntimePolicyDecision(input: {
@@ -1786,43 +2002,47 @@ export function evaluateRuntimePolicyDecision(input: {
   rules: PolicyRuleSummary[];
   evaluatedAt?: string;
 }): EvaluationResult {
-  return JSON.parse(jsEvaluatePolicyDecision(JSON.stringify({
-    connector: input.connector,
-    action: input.action,
-    domains: input.domains ?? [],
-    runtimeTarget: input.runtimeTarget ?? null,
-    executionContext: input.executionContext ?? null,
-    orchestratorRef: input.orchestratorRef ?? null,
-    skillContext: input.skillContext ?? null,
-    triggerKind: input.triggerKind ?? null,
-    layer: input.layer ?? null,
-    trustLevel: input.trustLevel ?? null,
-    pluginSource: input.pluginSource ?? null,
-    catalogProvider: input.catalogProvider ?? null,
-    rules: input.rules.map((rule) => ({
-      stableRuleId: rule.stableRuleId,
-      title: rule.title,
-      effect: rule.effect,
-      domains: rule.domains,
-      connectors: rule.connectors,
-      actions: rule.actions,
-      runtimeStacks: rule.runtimeStacks ?? [],
-      sandboxNames: rule.sandboxNames ?? [],
-      inferenceProviders: rule.inferenceProviders ?? [],
-      orchestratorPlatforms: rule.orchestratorPlatforms ?? [],
-      companyIds: rule.companyIds ?? [],
-      issueIds: rule.issueIds ?? [],
-      goalIds: rule.goalIds ?? [],
-      triggerKind: rule.triggerKind ?? null,
-      layer: rule.layer ?? null,
-      trustLevels: rule.trustLevels ?? [],
-      pluginSources: rule.pluginSources ?? [],
-      skillIds: rule.skillIds ?? [],
-      promptSurfaces: rule.promptSurfaces ?? [],
-      catalogProviders: rule.catalogProviders ?? [],
-    })),
-    evaluatedAt: input.evaluatedAt ?? null,
-  }))) as EvaluationResult;
+  return JSON.parse(
+    jsEvaluatePolicyDecision(
+      JSON.stringify({
+        connector: input.connector,
+        action: input.action,
+        domains: input.domains ?? [],
+        runtimeTarget: input.runtimeTarget ?? null,
+        executionContext: input.executionContext ?? null,
+        orchestratorRef: input.orchestratorRef ?? null,
+        skillContext: input.skillContext ?? null,
+        triggerKind: input.triggerKind ?? null,
+        layer: input.layer ?? null,
+        trustLevel: input.trustLevel ?? null,
+        pluginSource: input.pluginSource ?? null,
+        catalogProvider: input.catalogProvider ?? null,
+        rules: input.rules.map((rule) => ({
+          stableRuleId: rule.stableRuleId,
+          title: rule.title,
+          effect: rule.effect,
+          domains: rule.domains,
+          connectors: rule.connectors,
+          actions: rule.actions,
+          runtimeStacks: rule.runtimeStacks ?? [],
+          sandboxNames: rule.sandboxNames ?? [],
+          inferenceProviders: rule.inferenceProviders ?? [],
+          orchestratorPlatforms: rule.orchestratorPlatforms ?? [],
+          companyIds: rule.companyIds ?? [],
+          issueIds: rule.issueIds ?? [],
+          goalIds: rule.goalIds ?? [],
+          triggerKind: rule.triggerKind ?? null,
+          layer: rule.layer ?? null,
+          trustLevels: rule.trustLevels ?? [],
+          pluginSources: rule.pluginSources ?? [],
+          skillIds: rule.skillIds ?? [],
+          promptSurfaces: rule.promptSurfaces ?? [],
+          catalogProviders: rule.catalogProviders ?? [],
+        })),
+        evaluatedAt: input.evaluatedAt ?? null,
+      }),
+    ),
+  ) as EvaluationResult;
 }
 
 export function buildHeartbeatEvidence(params: {
@@ -1852,26 +2072,64 @@ export function buildHeartbeatEvidence(params: {
 
 /** Compare a runtime heartbeat with the artifact currently published for it. */
 export function evaluateRuntimePolicyDrift(params: {
-  agentId: string; runtimeArtifactHash?: string; publishedArtifactHash: string;
+  agentId: string;
+  runtimeArtifactHash?: string;
+  publishedArtifactHash: string;
 }) {
   const runtimeArtifactHash = params.runtimeArtifactHash?.trim();
-  if (!runtimeArtifactHash) return { status: "PROVENANCE_GAP" as const, agentId: params.agentId, reason: "Runtime heartbeat did not report a policy artifact hash." };
-  if (runtimeArtifactHash !== params.publishedArtifactHash) return { status: "DRIFTED" as const, agentId: params.agentId, reason: "Runtime artifact hash differs from the published artifact.", runtimeArtifactHash, publishedArtifactHash: params.publishedArtifactHash };
-  return { status: "CURRENT" as const, agentId: params.agentId, reason: "Runtime is enforcing the published artifact.", runtimeArtifactHash, publishedArtifactHash: params.publishedArtifactHash };
+  if (!runtimeArtifactHash)
+    return {
+      status: "PROVENANCE_GAP" as const,
+      agentId: params.agentId,
+      reason: "Runtime heartbeat did not report a policy artifact hash.",
+    };
+  if (runtimeArtifactHash !== params.publishedArtifactHash)
+    return {
+      status: "DRIFTED" as const,
+      agentId: params.agentId,
+      reason: "Runtime artifact hash differs from the published artifact.",
+      runtimeArtifactHash,
+      publishedArtifactHash: params.publishedArtifactHash,
+    };
+  return {
+    status: "CURRENT" as const,
+    agentId: params.agentId,
+    reason: "Runtime is enforcing the published artifact.",
+    runtimeArtifactHash,
+    publishedArtifactHash: params.publishedArtifactHash,
+  };
 }
 
 /** Bounded inventory classification; it deliberately does not discover assets. */
 export function mapRuntimeProvenanceGaps(params: {
   publishedArtifactHash: string;
-  runtimes: Array<{ agentId: string; runtimeTarget: string; artifactHash?: string; policyContextPresent: boolean }>;
+  runtimes: Array<{
+    agentId: string;
+    runtimeTarget: string;
+    artifactHash?: string;
+    policyContextPresent: boolean;
+  }>;
 }) {
   return params.runtimes.map((runtime) => {
-    const drift = evaluateRuntimePolicyDrift({ agentId: runtime.agentId, runtimeArtifactHash: runtime.artifactHash, publishedArtifactHash: params.publishedArtifactHash });
-    return { ...runtime, coverage: runtime.policyContextPresent && drift.status === "CURRENT" ? "GOVERNED" as const : "PROVENANCE_GAP" as const, driftStatus: drift.status };
+    const drift = evaluateRuntimePolicyDrift({
+      agentId: runtime.agentId,
+      runtimeArtifactHash: runtime.artifactHash,
+      publishedArtifactHash: params.publishedArtifactHash,
+    });
+    return {
+      ...runtime,
+      coverage:
+        runtime.policyContextPresent && drift.status === "CURRENT"
+          ? ("GOVERNED" as const)
+          : ("PROVENANCE_GAP" as const),
+      driftStatus: drift.status,
+    };
   });
 }
 
-export function summarizeRuntimePolicyCoverage(params: Parameters<typeof mapRuntimeProvenanceGaps>[0]) {
+export function summarizeRuntimePolicyCoverage(
+  params: Parameters<typeof mapRuntimeProvenanceGaps>[0],
+) {
   const runtimes = mapRuntimeProvenanceGaps(params);
   return {
     runtimes,
@@ -1891,19 +2149,27 @@ export function evaluateDecision(params: {
   planSummary?: string;
   toolParameters?: Record<string, unknown>;
 }): EvaluationResult {
-  const { connector, action, domains = [], toolIntent = "", planSummary = "", toolParameters = {} } = params;
+  const {
+    connector,
+    action,
+    domains = [],
+    toolIntent = "",
+    planSummary = "",
+    toolParameters = {},
+  } = params;
   const trace: EvaluationTraceStep[] = [];
   const matchedRefs: string[] = [];
-  const matchedRulesInfo: { rule: PolicyRuleSummary; effect: RuntimeDecisionStatus; matchedPrompt?: string }[] = [];
+  const matchedRulesInfo: {
+    rule: PolicyRuleSummary;
+    effect: RuntimeDecisionStatus;
+    matchedPrompt?: string;
+  }[] = [];
 
   for (const rule of params.rules) {
-    const connectorMatch =
-      rule.connectors.length === 0 || rule.connectors.includes(connector);
+    const connectorMatch = rule.connectors.length === 0 || rule.connectors.includes(connector);
     const actionMatch =
       rule.actions.length === 0 ||
-      rule.actions.some(
-        (a) => a === action || action.startsWith(a.replace(/\.\*$/, "."))
-      );
+      rule.actions.some((a) => a === action || action.startsWith(a.replace(/\.\*$/, ".")));
     const domainMatch =
       rule.domains.length === 0 ||
       domains.length === 0 ||
@@ -1912,8 +2178,14 @@ export function evaluateDecision(params: {
     let matched = connectorMatch && actionMatch && domainMatch;
 
     let matchReason = "no match";
-    let semanticMatchResult: { matched: boolean; promptMatched?: string; effectOverride?: RuntimeDecisionStatus } = { matched: false };
-    let parameterMatchResult: { matched: boolean; effectOverride?: RuntimeDecisionStatus } = { matched: false };
+    let semanticMatchResult: {
+      matched: boolean;
+      promptMatched?: string;
+      effectOverride?: RuntimeDecisionStatus;
+    } = { matched: false };
+    let parameterMatchResult: { matched: boolean; effectOverride?: RuntimeDecisionStatus } = {
+      matched: false,
+    };
 
     if (matched) {
       if (rule.semanticChecks && rule.semanticChecks.length > 0) {
@@ -1921,7 +2193,7 @@ export function evaluateDecision(params: {
           rule.semanticChecks,
           toolIntent,
           planSummary,
-          toolParameters
+          toolParameters,
         );
         if (evaluation.matched) {
           semanticMatchResult = {
@@ -1973,7 +2245,8 @@ export function evaluateDecision(params: {
       matchedRefs.push(rule.stableRuleId);
       matchedRulesInfo.push({
         rule,
-        effect: parameterMatchResult.effectOverride ?? semanticMatchResult.effectOverride ?? rule.effect,
+        effect:
+          parameterMatchResult.effectOverride ?? semanticMatchResult.effectOverride ?? rule.effect,
         matchedPrompt: semanticMatchResult.promptMatched,
       });
     }
@@ -2011,33 +2284,46 @@ export function evaluateDecision(params: {
 
 /** Deterministic bounded inspection for connector tool payloads. */
 export function evaluateConnectorPayloadGuardrail(params: {
-  connector: string; action: string; domains?: string[]; rules: PolicyRuleSummary[];
-  toolIntent?: string; planSummary?: string; toolParameters?: Record<string, unknown>;
+  connector: string;
+  action: string;
+  domains?: string[];
+  rules: PolicyRuleSummary[];
+  toolIntent?: string;
+  planSummary?: string;
+  toolParameters?: Record<string, unknown>;
 }) {
   const parameters = params.toolParameters ?? {};
   const serialized = JSON.stringify(parameters);
   if (serialized.length > 32_768) {
-    return { status: "DENY" as const, reason: "Connector payload exceeds the 32 KiB governed inspection limit.", matchedPolicyRefs: ["system.payload_size_limit"], payloadHash: sha256(serialized) };
+    return {
+      status: "DENY" as const,
+      reason: "Connector payload exceeds the 32 KiB governed inspection limit.",
+      matchedPolicyRefs: ["system.payload_size_limit"],
+      payloadHash: sha256(serialized),
+    };
   }
   const result = evaluateDecision({ ...params, toolParameters: parameters });
-  return { status: result.status, reason: result.reason, matchedPolicyRefs: result.matchedRefs, payloadHash: sha256(serialized) };
+  return {
+    status: result.status,
+    reason: result.reason,
+    matchedPolicyRefs: result.matchedRefs,
+    payloadHash: sha256(serialized),
+  };
 }
 
 export function classifySemanticIntent(
   prompt: string,
   toolIntent = "",
   planSummary = "",
-  toolParameters: Record<string, unknown> = {}
+  toolParameters: Record<string, unknown> = {},
 ): boolean {
   // This is deliberately a deterministic heuristic, not an LLM classifier.
   // It favors exact quoted matches and narrow safety-topic keyword sets so
   // semantic checks are cheap, explainable, and regression-testable.
   const cleanPrompt = prompt.trim().toLowerCase();
-  const searchSpace = [
-    toolIntent,
-    planSummary,
-    JSON.stringify(toolParameters)
-  ].join(" ").toLowerCase();
+  const searchSpace = [toolIntent, planSummary, JSON.stringify(toolParameters)]
+    .join(" ")
+    .toLowerCase();
 
   // 1. Quoted patterns (exact matching)
   const quotedRegex = /"([^"]+)"/g;
@@ -2065,48 +2351,200 @@ export function classifySemanticIntent(
     cleanPrompt.includes("token") ||
     cleanPrompt.includes("auth")
   ) {
-    const credentialKeywords = ["password", "token", "secret", "credentials", "api_key", "api key", "private_key", "private key", ".env", "passwd", "shadow", "auth_token", "auth_headers", "authorization"];
-    if (credentialKeywords.some(kw => searchSpace.includes(kw))) return true;
+    const credentialKeywords = [
+      "password",
+      "token",
+      "secret",
+      "credentials",
+      "api_key",
+      "api key",
+      "private_key",
+      "private key",
+      ".env",
+      "passwd",
+      "shadow",
+      "auth_token",
+      "auth_headers",
+      "authorization",
+    ];
+    if (credentialKeywords.some((kw) => searchSpace.includes(kw))) return true;
   }
 
   // Topic: unprofessional / behavior
-  if (cleanPrompt.includes("unprofessional") || cleanPrompt.includes("behavior") || cleanPrompt.includes("harassment") || cleanPrompt.includes("rude") || cleanPrompt.includes("swear") || cleanPrompt.includes("insult")) {
-    const unprofessionalKeywords = ["stupid", "dumb", "idiot", "annoy", "swear", "insult", "lazy", "ignore policy", "bypass safety", "shut up"];
-    if (unprofessionalKeywords.some(kw => searchSpace.includes(kw))) return true;
+  if (
+    cleanPrompt.includes("unprofessional") ||
+    cleanPrompt.includes("behavior") ||
+    cleanPrompt.includes("harassment") ||
+    cleanPrompt.includes("rude") ||
+    cleanPrompt.includes("swear") ||
+    cleanPrompt.includes("insult")
+  ) {
+    const unprofessionalKeywords = [
+      "stupid",
+      "dumb",
+      "idiot",
+      "annoy",
+      "swear",
+      "insult",
+      "lazy",
+      "ignore policy",
+      "bypass safety",
+      "shut up",
+    ];
+    if (unprofessionalKeywords.some((kw) => searchSpace.includes(kw))) return true;
   }
 
   // Topic: destructive / dangerous
-  if (cleanPrompt.includes("destructive") || cleanPrompt.includes("danger") || cleanPrompt.includes("delete") || cleanPrompt.includes("drop") || cleanPrompt.includes("destroy") || cleanPrompt.includes("remove")) {
-    const destructiveKeywords = ["delete", "drop", "truncate", "destroy", "rm -rf", "wipe", "format", "shutdown", "terminate", "uninstall", "purge", "remove"];
-    if (destructiveKeywords.some(kw => searchSpace.includes(kw))) return true;
+  if (
+    cleanPrompt.includes("destructive") ||
+    cleanPrompt.includes("danger") ||
+    cleanPrompt.includes("delete") ||
+    cleanPrompt.includes("drop") ||
+    cleanPrompt.includes("destroy") ||
+    cleanPrompt.includes("remove")
+  ) {
+    const destructiveKeywords = [
+      "delete",
+      "drop",
+      "truncate",
+      "destroy",
+      "rm -rf",
+      "wipe",
+      "format",
+      "shutdown",
+      "terminate",
+      "uninstall",
+      "purge",
+      "remove",
+    ];
+    if (destructiveKeywords.some((kw) => searchSpace.includes(kw))) return true;
   }
 
   // Topic: fraud / financial safety
-  if (cleanPrompt.includes("fraud") || cleanPrompt.includes("scam") || cleanPrompt.includes("steal") || cleanPrompt.includes("exfiltrate") || cleanPrompt.includes("leak")) {
-    const fraudKeywords = ["fraud", "scam", "transfer", "bypass", "hack", "exploit", "steal", "drain", "exfiltrate", "leak", "compromise"];
-    if (fraudKeywords.some(kw => searchSpace.includes(kw))) return true;
+  if (
+    cleanPrompt.includes("fraud") ||
+    cleanPrompt.includes("scam") ||
+    cleanPrompt.includes("steal") ||
+    cleanPrompt.includes("exfiltrate") ||
+    cleanPrompt.includes("leak")
+  ) {
+    const fraudKeywords = [
+      "fraud",
+      "scam",
+      "transfer",
+      "bypass",
+      "hack",
+      "exploit",
+      "steal",
+      "drain",
+      "exfiltrate",
+      "leak",
+      "compromise",
+    ];
+    if (fraudKeywords.some((kw) => searchSpace.includes(kw))) return true;
   }
 
   // Topic: PII / regulated data exposure
-  if (cleanPrompt.includes("pii") || cleanPrompt.includes("personal data") || cleanPrompt.includes("regulated data") || cleanPrompt.includes("sensitive data") || cleanPrompt.includes("phi") || cleanPrompt.includes("ssn")) {
-    const piiKeywords = ["ssn", "social security", "date of birth", "date_of_birth", "passport", "driver's license", "drivers license", "credit card", "card number", "cvv", "phi", "medical record", "diagnosis", "bank account", "routing number", "national id", "tax id"];
-    if (piiKeywords.some(kw => searchSpace.includes(kw))) return true;
+  if (
+    cleanPrompt.includes("pii") ||
+    cleanPrompt.includes("personal data") ||
+    cleanPrompt.includes("regulated data") ||
+    cleanPrompt.includes("sensitive data") ||
+    cleanPrompt.includes("phi") ||
+    cleanPrompt.includes("ssn")
+  ) {
+    const piiKeywords = [
+      "ssn",
+      "social security",
+      "date of birth",
+      "date_of_birth",
+      "passport",
+      "driver's license",
+      "drivers license",
+      "credit card",
+      "card number",
+      "cvv",
+      "phi",
+      "medical record",
+      "diagnosis",
+      "bank account",
+      "routing number",
+      "national id",
+      "tax id",
+    ];
+    if (piiKeywords.some((kw) => searchSpace.includes(kw))) return true;
   }
 
   // 3. Fallback: Word token set inclusion (requires at least 50% of prompt keywords to match)
-  const stopWords = new Set(["a", "an", "the", "of", "in", "to", "for", "on", "with", "at", "by", "from", "and", "or", "but", "is", "are", "was", "were", "be", "been", "have", "has", "had", "do", "does", "did", "should", "would", "could", "will", "shall", "can", "may", "might", "must"]);
+  const stopWords = new Set([
+    "a",
+    "an",
+    "the",
+    "of",
+    "in",
+    "to",
+    "for",
+    "on",
+    "with",
+    "at",
+    "by",
+    "from",
+    "and",
+    "or",
+    "but",
+    "is",
+    "are",
+    "was",
+    "were",
+    "be",
+    "been",
+    "have",
+    "has",
+    "had",
+    "do",
+    "does",
+    "did",
+    "should",
+    "would",
+    "could",
+    "will",
+    "shall",
+    "can",
+    "may",
+    "might",
+    "must",
+  ]);
   const words = cleanPrompt
     .split(/[^a-zA-Z0-9]/)
-    .map(w => w.trim())
-    .filter(w => w.length > 1 && !stopWords.has(w));
+    .map((w) => w.trim())
+    .filter((w) => w.length > 1 && !stopWords.has(w));
 
   if (words.length > 0) {
-    const matchedWords = words.filter(word => searchSpace.includes(word));
+    const matchedWords = words.filter((word) => searchSpace.includes(word));
     const ratio = matchedWords.length / words.length;
     if (ratio >= 0.5) {
-      const genericWords = new Set(["read", "write", "file", "call", "run", "execute", "command", "tool", "show", "get", "list", "view", "open", "close", "input", "output", "data", "value"]);
-      const nonGenericPromptWords = words.filter(w => !genericWords.has(w));
-      const matchedNonGeneric = matchedWords.filter(w => !genericWords.has(w));
+      const genericWords = new Set([
+        "read",
+        "write",
+        "file",
+        "call",
+        "run",
+        "execute",
+        "command",
+        "tool",
+        "show",
+        "get",
+        "list",
+        "view",
+        "open",
+        "close",
+        "input",
+        "output",
+        "data",
+        "value",
+      ]);
+      const nonGenericPromptWords = words.filter((w) => !genericWords.has(w));
+      const matchedNonGeneric = matchedWords.filter((w) => !genericWords.has(w));
       if (nonGenericPromptWords.length > 0 && matchedNonGeneric.length === 0) {
         return false;
       }
@@ -2127,7 +2565,7 @@ function readDotPath(source: Record<string, unknown>, path: string): unknown {
 function compareConstraintValue(
   operator: PolicyParameterConstraint["operator"],
   actual: unknown,
-  expected: unknown
+  expected: unknown,
 ): boolean {
   switch (operator) {
     case "eq":
@@ -2147,7 +2585,9 @@ function compareConstraintValue(
     case "not_in":
       return Array.isArray(expected) && !expected.includes(actual);
     case "contains":
-      return typeof actual === "string" && typeof expected === "string" && actual.includes(expected);
+      return (
+        typeof actual === "string" && typeof expected === "string" && actual.includes(expected)
+      );
     default:
       return false;
   }
@@ -2161,7 +2601,7 @@ function compareConstraintValue(
  */
 export function evaluateParameterConstraints(
   constraints: PolicyParameterConstraint[],
-  toolParameters: Record<string, unknown> = {}
+  toolParameters: Record<string, unknown> = {},
 ): { matched: boolean; effectOverride?: RuntimeDecisionStatus } {
   if (constraints.length === 0) return { matched: false };
   let effectOverride: RuntimeDecisionStatus | undefined;
@@ -2182,7 +2622,7 @@ export function evaluateParameterConstraints(
  */
 export function applyPackParameterOverrides(
   rules: PolicyRuleSummary[],
-  overrides: Record<string, unknown>
+  overrides: Record<string, unknown>,
 ): PolicyRuleSummary[] {
   if (!overrides || Object.keys(overrides).length === 0) return rules;
   return rules.map((rule) => {
@@ -2201,15 +2641,11 @@ export function evaluateSemanticChecks(
   checks: SemanticCheck[],
   toolIntent = "",
   planSummary = "",
-  toolParameters: Record<string, unknown> = {}
+  toolParameters: Record<string, unknown> = {},
 ): { matched: boolean; prompt?: string; effectOverride?: RuntimeDecisionStatus } {
   for (const check of checks) {
     if (classifySemanticIntent(check.prompt, toolIntent, planSummary, toolParameters)) {
-      return {
-        matched: true,
-        prompt: check.prompt,
-        effectOverride: check.effect,
-      };
+      return { matched: true, prompt: check.prompt, effectOverride: check.effect };
     }
   }
   return { matched: false };
@@ -2224,9 +2660,7 @@ export function validateBundleCompatibility(params: {
   const gaps: BundleCompatibilityGap[] = [];
 
   for (const adapter of adapters) {
-    const uncovered = adapter.supportedConnectors.filter(
-      (c) => !bundleConnectors.has(c)
-    );
+    const uncovered = adapter.supportedConnectors.filter((c) => !bundleConnectors.has(c));
     if (uncovered.length > 0) {
       gaps.push({
         adapterId: adapter.adapterId,
@@ -2239,9 +2673,7 @@ export function validateBundleCompatibility(params: {
   }
 
   const coveredConnectors = Array.from(bundleConnectors);
-  const uncoveredConnectors = Array.from(
-    new Set(gaps.flatMap((g) => g.uncoveredConnectors))
-  );
+  const uncoveredConnectors = Array.from(new Set(gaps.flatMap((g) => g.uncoveredConnectors)));
 
   return {
     compatible: gaps.length === 0,
@@ -2273,8 +2705,9 @@ export function searchRuntimeDecisionEvidence(params: {
         (r.orchestratorRef?.companyId?.toLowerCase().includes(text) ?? false) ||
         (r.trustLevel?.toLowerCase().includes(text) ?? false) ||
         (r.pluginSource?.toLowerCase().includes(text) ?? false) ||
-        (r.skillContext?.activeSkills.some((skill) => skill.toLowerCase().includes(text)) ?? false) ||
-        (r.catalogProvider?.toLowerCase().includes(text) ?? false)
+        (r.skillContext?.activeSkills.some((skill) => skill.toLowerCase().includes(text)) ??
+          false) ||
+        (r.catalogProvider?.toLowerCase().includes(text) ?? false),
     );
   }
 
@@ -2291,7 +2724,9 @@ export function searchRuntimeDecisionEvidence(params: {
   }
 
   if (query.triggerKinds?.length) {
-    results = results.filter((r) => r.triggerKind !== undefined && query.triggerKinds!.includes(r.triggerKind));
+    results = results.filter(
+      (r) => r.triggerKind !== undefined && query.triggerKinds!.includes(r.triggerKind),
+    );
   }
 
   if (query.layers?.length) {
@@ -2299,27 +2734,45 @@ export function searchRuntimeDecisionEvidence(params: {
   }
 
   if (query.sandboxNames?.length) {
-    results = results.filter((r) => r.runtimeTarget.sandboxName !== undefined && query.sandboxNames!.includes(r.runtimeTarget.sandboxName));
+    results = results.filter(
+      (r) =>
+        r.runtimeTarget.sandboxName !== undefined &&
+        query.sandboxNames!.includes(r.runtimeTarget.sandboxName),
+    );
   }
 
   if (query.inferenceProviders?.length) {
-    results = results.filter((r) => r.runtimeTarget.inferenceProvider !== undefined && query.inferenceProviders!.includes(r.runtimeTarget.inferenceProvider));
+    results = results.filter(
+      (r) =>
+        r.runtimeTarget.inferenceProvider !== undefined &&
+        query.inferenceProviders!.includes(r.runtimeTarget.inferenceProvider),
+    );
   }
 
   if (query.trustLevels?.length) {
-    results = results.filter((r) => r.trustLevel !== undefined && query.trustLevels!.includes(r.trustLevel));
+    results = results.filter(
+      (r) => r.trustLevel !== undefined && query.trustLevels!.includes(r.trustLevel),
+    );
   }
 
   if (query.pluginSources?.length) {
-    results = results.filter((r) => r.pluginSource !== undefined && query.pluginSources!.includes(r.pluginSource));
+    results = results.filter(
+      (r) => r.pluginSource !== undefined && query.pluginSources!.includes(r.pluginSource),
+    );
   }
 
   if (query.skillIds?.length) {
-    results = results.filter((r) => r.skillContext?.activeSkills.some((skill) => query.skillIds!.includes(skill)) ?? false);
+    results = results.filter(
+      (r) => r.skillContext?.activeSkills.some((skill) => query.skillIds!.includes(skill)) ?? false,
+    );
   }
 
   if (query.companyIds?.length) {
-    results = results.filter((r) => r.orchestratorRef?.companyId !== undefined && query.companyIds!.includes(r.orchestratorRef.companyId));
+    results = results.filter(
+      (r) =>
+        r.orchestratorRef?.companyId !== undefined &&
+        query.companyIds!.includes(r.orchestratorRef.companyId),
+    );
   }
 
   if (query.branchId) {
@@ -2359,7 +2812,7 @@ export function searchRuntimeDecisionEvidence(params: {
     deniedCount,
     warnedCount,
     allowedCount,
-    policyRefCount
+    policyRefCount,
   };
 }
 
@@ -2395,7 +2848,8 @@ export function buildComplianceFrameworkAnnotation(params: {
       {
         controlId: "CC6.1",
         controlName: "Logical and physical access controls",
-        status: evCount("TOKEN_ISSUED") > 0 || evCount("IDENTITY_CHANGE") > 0 ? "ADDRESSED" : "PARTIAL",
+        status:
+          evCount("TOKEN_ISSUED") > 0 || evCount("IDENTITY_CHANGE") > 0 ? "ADDRESSED" : "PARTIAL",
         evidence: [
           `${evCount("TOKEN_ISSUED")} token issuance events`,
           `${evCount("TOKEN_REVOKED")} token revocation events`,
@@ -2432,7 +2886,12 @@ export function buildComplianceFrameworkAnnotation(params: {
       {
         controlId: "CC4.1",
         controlName: "Continuous monitoring of controls",
-        status: evidenceCount > 0 && evCount("VERIFICATION_RUN") > 0 ? "ADDRESSED" : evidenceCount > 0 ? "PARTIAL" : "NOT_APPLICABLE",
+        status:
+          evidenceCount > 0 && evCount("VERIFICATION_RUN") > 0
+            ? "ADDRESSED"
+            : evidenceCount > 0
+              ? "PARTIAL"
+              : "NOT_APPLICABLE",
         evidence: [
           `${evidenceCount} runtime evidence records`,
           `${evCount("VERIFICATION_RUN")} AGT verification runs`,
@@ -2472,7 +2931,12 @@ export function buildComplianceFrameworkAnnotation(params: {
       {
         controlId: "Art.14",
         controlName: "Human oversight",
-        status: resolvedEscalationCount > 0 ? "ADDRESSED" : escalationCount > 0 ? "PARTIAL" : "NOT_APPLICABLE",
+        status:
+          resolvedEscalationCount > 0
+            ? "ADDRESSED"
+            : escalationCount > 0
+              ? "PARTIAL"
+              : "NOT_APPLICABLE",
         evidence: [
           `${resolvedEscalationCount} escalations resolved by human reviewers with documented outcomes`,
           `${escalationCount - resolvedEscalationCount} escalations pending review`,
@@ -2521,7 +2985,12 @@ export function buildComplianceFrameworkAnnotation(params: {
       {
         controlId: "§164.308(a)(1)",
         controlName: "Security management process — risk analysis",
-        status: deniedDecisionCount > 0 && escalationCount > 0 ? "ADDRESSED" : deniedDecisionCount > 0 ? "PARTIAL" : "NOT_APPLICABLE",
+        status:
+          deniedDecisionCount > 0 && escalationCount > 0
+            ? "ADDRESSED"
+            : deniedDecisionCount > 0
+              ? "PARTIAL"
+              : "NOT_APPLICABLE",
         evidence: [
           `${deniedDecisionCount} DENY decisions — policy engine enforcing access restrictions`,
           `${escalationCount} escalations raised for high-risk or restricted data sensitivity actions`,
@@ -2547,7 +3016,10 @@ export function buildComplianceFrameworkAnnotation(params: {
       },
     ];
   } else {
-    const frameworkLabels: Record<Exclude<ComplianceFramework, "soc2" | "eu-ai-act" | "hipaa">, string> = {
+    const frameworkLabels: Record<
+      Exclude<ComplianceFramework, "soc2" | "eu-ai-act" | "hipaa">,
+      string
+    > = {
       iso27001: "ISO/IEC 27001:2022",
       gdpr: "GDPR accountability and security controls",
       "pci-dss": "PCI DSS v4.0",
@@ -2558,11 +3030,15 @@ export function buildComplianceFrameworkAnnotation(params: {
     controls = [
       {
         controlId:
-          params.framework === "iso27001" ? "A.5.1/A.8.15" :
-          params.framework === "gdpr" ? "Art.5(2)/Art.32" :
-          params.framework === "pci-dss" ? "Req.10" :
-          params.framework === "nist-ai-rmf" ? "MAP-5/GOV-4" :
-          "Auditability",
+          params.framework === "iso27001"
+            ? "A.5.1/A.8.15"
+            : params.framework === "gdpr"
+              ? "Art.5(2)/Art.32"
+              : params.framework === "pci-dss"
+                ? "Req.10"
+                : params.framework === "nist-ai-rmf"
+                  ? "MAP-5/GOV-4"
+                  : "Auditability",
         controlName: "Tamper-evident auditability and accountability",
         status: evidenceCount > 0 ? "ADDRESSED" : "PARTIAL",
         evidence: [
@@ -2573,13 +3049,18 @@ export function buildComplianceFrameworkAnnotation(params: {
       },
       {
         controlId:
-          params.framework === "iso27001" ? "A.5.15/A.5.18" :
-          params.framework === "gdpr" ? "Art.25/Art.32" :
-          params.framework === "pci-dss" ? "Req.7/Req.8" :
-          params.framework === "nist-ai-rmf" ? "GOV-1/MANAGE-2" :
-          "Access control",
+          params.framework === "iso27001"
+            ? "A.5.15/A.5.18"
+            : params.framework === "gdpr"
+              ? "Art.25/Art.32"
+              : params.framework === "pci-dss"
+                ? "Req.7/Req.8"
+                : params.framework === "nist-ai-rmf"
+                  ? "GOV-1/MANAGE-2"
+                  : "Access control",
         controlName: "Access control and credential lifecycle",
-        status: evCount("TOKEN_ISSUED") > 0 || evCount("IDENTITY_CHANGE") > 0 ? "ADDRESSED" : "PARTIAL",
+        status:
+          evCount("TOKEN_ISSUED") > 0 || evCount("IDENTITY_CHANGE") > 0 ? "ADDRESSED" : "PARTIAL",
         evidence: [
           `${evCount("TOKEN_ISSUED")} token issuance events`,
           `${evCount("TOKEN_REVOKED")} token revocation events`,
@@ -2588,11 +3069,15 @@ export function buildComplianceFrameworkAnnotation(params: {
       },
       {
         controlId:
-          params.framework === "iso27001" ? "A.8.8/A.8.9" :
-          params.framework === "gdpr" ? "Art.35" :
-          params.framework === "pci-dss" ? "Req.12" :
-          params.framework === "nist-ai-rmf" ? "MEASURE-2/MANAGE-4" :
-          "Risk review",
+          params.framework === "iso27001"
+            ? "A.8.8/A.8.9"
+            : params.framework === "gdpr"
+              ? "Art.35"
+              : params.framework === "pci-dss"
+                ? "Req.12"
+                : params.framework === "nist-ai-rmf"
+                  ? "MEASURE-2/MANAGE-4"
+                  : "Risk review",
         controlName: "Policy risk management and human review",
         status: deniedDecisionCount > 0 || escalationCount > 0 ? "ADDRESSED" : "PARTIAL",
         evidence: [
@@ -2603,11 +3088,15 @@ export function buildComplianceFrameworkAnnotation(params: {
       },
       {
         controlId:
-          params.framework === "iso27001" ? "A.5.37/A.8.32" :
-          params.framework === "gdpr" ? "Art.24" :
-          params.framework === "pci-dss" ? "Req.6" :
-          params.framework === "nist-ai-rmf" ? "GOV-3" :
-          "Change governance",
+          params.framework === "iso27001"
+            ? "A.5.37/A.8.32"
+            : params.framework === "gdpr"
+              ? "Art.24"
+              : params.framework === "pci-dss"
+                ? "Req.6"
+                : params.framework === "nist-ai-rmf"
+                  ? "GOV-3"
+                  : "Change governance",
         controlName: "Controlled policy change management",
         status: approvalCount > 0 && evCount("POLICY_PUBLISH") > 0 ? "ADDRESSED" : "PARTIAL",
         evidence: [

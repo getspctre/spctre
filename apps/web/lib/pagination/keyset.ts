@@ -66,7 +66,7 @@ export function buildKeysetPage<T>(
   fetched: T[],
   limit: number,
   cursor: KeysetCursor | null,
-  boundary: (row: T) => { ts: string; id: string }
+  boundary: (row: T) => { ts: string; id: string },
 ): KeysetPage<T> {
   const dir: KeysetDirection = cursor?.dir ?? "next";
   const overflow = fetched.length > limit;
@@ -86,8 +86,10 @@ export function buildKeysetPage<T>(
 
   return {
     items,
-    nextCursor: hasNext && oldest ? encodeCursor({ ts: oldest.ts, id: oldest.id, dir: "next" }) : null,
-    prevCursor: hasPrev && newest ? encodeCursor({ ts: newest.ts, id: newest.id, dir: "prev" }) : null,
+    nextCursor:
+      hasNext && oldest ? encodeCursor({ ts: oldest.ts, id: oldest.id, dir: "next" }) : null,
+    prevCursor:
+      hasPrev && newest ? encodeCursor({ ts: newest.ts, id: newest.id, dir: "prev" }) : null,
     hasNext,
     hasPrev,
   };

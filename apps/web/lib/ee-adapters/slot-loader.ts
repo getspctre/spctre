@@ -14,5 +14,5 @@ export function commercialSlotModuleUrl(slotPath: string): string {
 
 export async function loadCommercialSlot<T>(slotPath: string): Promise<T> {
   const moduleUrl = commercialSlotModuleUrl(slotPath);
-  return await import(/* webpackIgnore: true */ moduleUrl) as T;
+  return (await import(/* webpackIgnore: true */ moduleUrl)) as T;
 }

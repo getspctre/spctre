@@ -26,7 +26,11 @@ describe("parseRulesPayload lossless normalization", () => {
           },
         ],
         controlMappings: [
-          { framework: "SOC2", controlId: "CC6.1", rationale: "Reviews high-value financial transactions." },
+          {
+            framework: "SOC2",
+            controlId: "CC6.1",
+            rationale: "Reviews high-value financial transactions.",
+          },
         ],
         // Unmodeled fields that must survive the round-trip.
         priority: 7,
@@ -49,7 +53,11 @@ describe("parseRulesPayload lossless normalization", () => {
       },
     ]);
     expect(rule.controlMappings).toEqual([
-      { framework: "SOC2", controlId: "CC6.1", rationale: "Reviews high-value financial transactions." },
+      {
+        framework: "SOC2",
+        controlId: "CC6.1",
+        rationale: "Reviews high-value financial transactions.",
+      },
     ]);
     // Unmodeled fields pass through untouched.
     expect(rule.priority).toBe(7);
@@ -76,7 +84,9 @@ describe("parseRulesPayload lossless normalization", () => {
     const result = parseRulesPayload(payload);
     expect("rules" in result).toBe(true);
     if (!("rules" in result)) return;
-    expect(result.rules[0].parameterConstraints).toEqual([{ field: "y", operator: "lt", value: 10 }]);
+    expect(result.rules[0].parameterConstraints).toEqual([
+      { field: "y", operator: "lt", value: 10 },
+    ]);
   });
 });
 
@@ -118,13 +128,19 @@ describe("unmodeledRuleFieldsMatch (immutability guard)", () => {
 
   it("rejects a tampered AGT-native / nested field", () => {
     expect(
-      unmodeledRuleFieldsMatch(baseline, { ...baseline, originalRule: { stable_rule_id: "org.baseline.lock", agt_native: false } })
+      unmodeledRuleFieldsMatch(baseline, {
+        ...baseline,
+        originalRule: { stable_rule_id: "org.baseline.lock", agt_native: false },
+      }),
     ).toBe(false);
   });
 
   it("rejects a mutated deterministic condition", () => {
     expect(
-      unmodeledRuleFieldsMatch(baseline, { ...baseline, conditions: [{ field: "region", op: "eq", value: "us" }] })
+      unmodeledRuleFieldsMatch(baseline, {
+        ...baseline,
+        conditions: [{ field: "region", op: "eq", value: "us" }],
+      }),
     ).toBe(false);
   });
 
@@ -134,6 +150,8 @@ describe("unmodeledRuleFieldsMatch (immutability guard)", () => {
 
   it("ignores differences in modeled fields (those are covered by isSameRule)", () => {
     // Only unmodeled fields matter here; a modeled-field change must not affect this check.
-    expect(unmodeledRuleFieldsMatch(baseline, { ...baseline, effect: "ALLOW", title: "Changed" })).toBe(true);
+    expect(
+      unmodeledRuleFieldsMatch(baseline, { ...baseline, effect: "ALLOW", title: "Changed" }),
+    ).toBe(true);
   });
 });

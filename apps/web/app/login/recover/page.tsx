@@ -33,9 +33,8 @@ export default function RecoverPage() {
       }
 
       const body = (await res.json().catch(() => null)) as { error?: string } | null;
-      const message = body?.error === "invalid_code"
-        ? t("errors.invalid_code")
-        : t("errors.verify");
+      const message =
+        body?.error === "invalid_code" ? t("errors.invalid_code") : t("errors.verify");
       setErrorMessage(message);
       setStatus("error");
     } catch {
@@ -57,9 +56,7 @@ export default function RecoverPage() {
               <p className="metadata loginBrandMeta">{t("brand_meta")}</p>
             </div>
           </div>
-          <p className="metadata loginAccessHeaderNote">
-            {t("header_note")}
-          </p>
+          <p className="metadata loginAccessHeaderNote">{t("header_note")}</p>
         </header>
 
         <div className="loginAccessGrid">
@@ -69,14 +66,14 @@ export default function RecoverPage() {
                 <KeyRound size={16} color="var(--accent)" />
                 <h2>{t("title")}</h2>
               </div>
-              <p className="meta">
-                {t("description")}
-              </p>
+              <p className="meta">{t("description")}</p>
             </div>
 
             <form className="loginForm" onSubmit={handleSubmit}>
               <div className="loginFieldGroup">
-                <label className="metadata" htmlFor="recover-email">{t("email")}</label>
+                <label className="metadata" htmlFor="recover-email">
+                  {t("email")}
+                </label>
                 <input
                   id="recover-email"
                   className="input"
@@ -90,7 +87,9 @@ export default function RecoverPage() {
                 />
               </div>
               <div className="loginFieldGroup">
-                <label className="metadata" htmlFor="recover-code">{t("code")}</label>
+                <label className="metadata" htmlFor="recover-code">
+                  {t("code")}
+                </label>
                 <input
                   id="recover-code"
                   className="input"

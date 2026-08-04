@@ -23,7 +23,9 @@ export function MockApprovalSummary({ readiness }: { readiness: PublishReadiness
       </div>
       <div className="publishGate">
         {readiness.blockingReasons.map((blocker) => (
-          <p className="meta" key={blocker.message}>{blocker.message}</p>
+          <p className="meta" key={blocker.message}>
+            {blocker.message}
+          </p>
         ))}
       </div>
     </>

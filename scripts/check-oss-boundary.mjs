@@ -12,7 +12,7 @@ const ignoredDirs = new Set([
   "dist",
   "node_modules",
   "storybook-static",
-  "target"
+  "target",
 ]);
 
 function extname(path) {
@@ -63,9 +63,7 @@ function isEePath(path) {
 }
 
 function stripJsonComments(source) {
-  return source
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .replace(/(^|[^:])\/\/.*$/gm, "$1");
+  return source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:])\/\/.*$/gm, "$1");
 }
 
 function checkTsconfigAliases(file, violations) {

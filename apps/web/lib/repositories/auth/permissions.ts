@@ -13,7 +13,7 @@ export interface Principal {
 
 export async function loadPersistedActorsFromDatabase(
   targetWorkspaceId: string,
-  targetTenantId: string
+  targetTenantId: string,
 ): Promise<Principal[]> {
   if (!sql) return [];
 
@@ -66,21 +66,23 @@ export async function loadPersistedActorsFromDatabase(
         reviewerRoles,
         publishScopes,
         allowedEnvironments: envs.length ? envs : "ALL",
-        allowedWorkspaceSlugs: workspaceScopes.length ? workspaceScopes : "ALL"
+        allowedWorkspaceSlugs: workspaceScopes.length ? workspaceScopes : "ALL",
       });
       continue;
     }
 
     existing.reviewerRoles = Array.from(new Set([...existing.reviewerRoles, ...reviewerRoles]));
     existing.publishScopes = Array.from(
-      new Set([...existing.publishScopes, ...publishScopes])
+      new Set([...existing.publishScopes, ...publishScopes]),
     ) as PolicyBranch["scope"][];
     if (existing.allowedEnvironments !== "ALL") {
-      existing.allowedEnvironments = Array.from(new Set([...existing.allowedEnvironments, ...envs]));
+      existing.allowedEnvironments = Array.from(
+        new Set([...existing.allowedEnvironments, ...envs]),
+      );
     }
     if (existing.allowedWorkspaceSlugs !== "ALL" && workspaceScopes.length) {
       existing.allowedWorkspaceSlugs = Array.from(
-        new Set([...existing.allowedWorkspaceSlugs, ...workspaceScopes])
+        new Set([...existing.allowedWorkspaceSlugs, ...workspaceScopes]),
       );
     }
   }

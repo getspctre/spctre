@@ -18,11 +18,19 @@ export const AdapterDeclarationSchema = z.object({
   environment: OptionalTrimmedStringSchema,
   supportedConnectors: z
     .array(z.unknown())
-    .transform((values) => values.filter((value): value is string => typeof value === "string").map((value) => value.trim()).filter(Boolean))
-    .refine((values) => values.length > 0, "supportedConnectors must include at least one connector."),
+    .transform((values) =>
+      values
+        .filter((value): value is string => typeof value === "string")
+        .map((value) => value.trim())
+        .filter(Boolean),
+    )
+    .refine(
+      (values) => values.length > 0,
+      "supportedConnectors must include at least one connector.",
+    ),
   capabilities: z.preprocess(
     (value) => (isRecord(value) ? value : {}),
-    z.record(z.string(), z.unknown()).default({})
+    z.record(z.string(), z.unknown()).default({}),
   ),
   registeredBy: z
     .string()

@@ -24,15 +24,21 @@ async function loadLoginOptions(session: LoginSession) {
   const configuredUserLoginEnabled = isConfiguredUserLoginEnabled();
   const demoPrincipalIds = new Set<string>(Object.values(DEMO_PRINCIPAL_IDS));
   const principals = configuredUserLoginEnabled
-    ? (await listAllLoginPrincipals().catch(swallow("listAllLoginPrincipals", [])))
-      .filter((principal) => principal.tenant_id !== DEMO_TENANT_ID && !demoPrincipalIds.has(principal.id))
+    ? (await listAllLoginPrincipals().catch(swallow("listAllLoginPrincipals", []))).filter(
+        (principal) =>
+          principal.tenant_id !== DEMO_TENANT_ID && !demoPrincipalIds.has(principal.id),
+      )
     : [];
   const oidcEnabled = Boolean(getOidcConfig());
   const localSignupEnabled = process.env.LOCAL_SIGNUP_ENABLED === "true";
   const samlEnvConfigured = Boolean(getSamlConfig());
   const samlProviderConfigured =
     samlEnvConfigured &&
-    Boolean(await getSamlProviderForTenant(DEMO_TENANT_ID).catch(swallow("getSamlProviderForTenant", null)));
+    Boolean(
+      await getSamlProviderForTenant(DEMO_TENANT_ID).catch(
+        swallow("getSamlProviderForTenant", null),
+      ),
+    );
   const googleEnabled = Boolean(process.env.GOOGLE_CLIENT_ID?.trim());
   const githubEnabled = Boolean(process.env.GITHUB_CLIENT_ID?.trim());
 
@@ -66,13 +72,7 @@ function SsoButtons({
   labels,
 }: {
   options: LoginOptions;
-  labels: {
-    github: string;
-    google: string;
-    oidc: string;
-    or: string;
-    saml: string;
-  };
+  labels: { github: string; google: string; oidc: string; or: string; saml: string };
 }) {
   return (
     <>
@@ -116,13 +116,7 @@ function LocalAccountForm({
   next,
   principals,
 }: {
-  labels: {
-    empty: string;
-    field: string;
-    hint: string;
-    select: string;
-    submit: string;
-  };
+  labels: { empty: string; field: string; hint: string; select: string; submit: string };
   next: string;
   principals: LoginOptions["principals"];
 }) {
@@ -130,9 +124,20 @@ function LocalAccountForm({
     <form action={loginWithPrincipalForm} className="loginForm">
       <input type="hidden" name="next" value={next} />
       <div className="loginFieldGroup">
-        <label className="metadata" htmlFor="principalId">{labels.field}</label>
-        <p className="meta" style={{ marginBottom: 4, fontSize: 12 }}>{labels.hint}</p>
-        <select id="principalId" name="principalId" className="input" defaultValue="" required disabled={!principals.length}>
+        <label className="metadata" htmlFor="principalId">
+          {labels.field}
+        </label>
+        <p className="meta" style={{ marginBottom: 4, fontSize: 12 }}>
+          {labels.hint}
+        </p>
+        <select
+          id="principalId"
+          name="principalId"
+          className="input"
+          defaultValue=""
+          required
+          disabled={!principals.length}
+        >
           <option value="" disabled>
             {principals.length ? labels.select : labels.empty}
           </option>
@@ -171,9 +176,7 @@ function DemoCloudPanel({
           <ShieldCheck size={16} color="var(--accent)" />
           <h2>{labels.title}</h2>
         </div>
-        <p className="meta">
-          {labels.description}
-        </p>
+        <p className="meta">{labels.description}</p>
       </div>
 
       <div className="loginDemoDetails">
@@ -198,15 +201,13 @@ function DemoCloudPanel({
           <ArrowRight size={15} />
         </button>
       </form>
-      <p className="meta">
-        {labels.warning}
-      </p>
+      <p className="meta">{labels.warning}</p>
     </section>
   );
 }
 
 export default async function LoginPage({
-  searchParams
+  searchParams,
 }: {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
@@ -219,12 +220,12 @@ export default async function LoginPage({
   }
 
   const options = await loadLoginOptions(session);
-  const { configuredUserLoginEnabled, principals, localSignupEnabled, ssoConfigured, hasSmsMfa } = options;
+  const { configuredUserLoginEnabled, principals, localSignupEnabled, ssoConfigured, hasSmsMfa } =
+    options;
 
   return (
     <main className="loginPage">
       <div className="loginAccessShell">
-
         <header className="loginAccessHeader">
           <div className="loginBrandLockup">
             <div className="loginBrandMark">
@@ -236,9 +237,7 @@ export default async function LoginPage({
             </div>
           </div>
           <p className="metadata loginAccessHeaderNote">
-            {ssoConfigured
-              ? t("header_note_sso")
-              : t("header_note")}
+            {ssoConfigured ? t("header_note_sso") : t("header_note")}
           </p>
         </header>
 
@@ -249,11 +248,7 @@ export default async function LoginPage({
                 <KeyRound size={16} color="var(--accent)" />
                 <h2>{t("title")}</h2>
               </div>
-              <p className="meta">
-                {ssoConfigured
-                  ? t("description_sso")
-                  : t("description")}
-              </p>
+              <p className="meta">{ssoConfigured ? t("description_sso") : t("description")}</p>
             </div>
 
             <SsoButtons
@@ -274,7 +269,9 @@ export default async function LoginPage({
                 <input type="hidden" name="next" value={next} />
                 {hasSmsMfa && <SmsMfaTrigger />}
                 <div className="loginFieldGroup">
-                  <label className="metadata" htmlFor="mfaCode">{t("mfa.code")}</label>
+                  <label className="metadata" htmlFor="mfaCode">
+                    {t("mfa.code")}
+                  </label>
                   <input
                     id="mfaCode"
                     name="code"
@@ -301,9 +298,7 @@ export default async function LoginPage({
             ) : null}
             {typeof params.ok === "string" ? (
               <p className="loginMessage">
-                {params.ok === "local_signup_created"
-                  ? t("local_signup_created")
-                  : params.ok}
+                {params.ok === "local_signup_created" ? t("local_signup_created") : params.ok}
               </p>
             ) : null}
 
@@ -333,7 +328,6 @@ export default async function LoginPage({
             <Link className="loginSecondaryAction" href="/login/recover">
               {t("recover")}
             </Link>
-
           </section>
           <DemoCloudPanel
             labels={{

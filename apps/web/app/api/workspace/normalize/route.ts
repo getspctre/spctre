@@ -56,13 +56,13 @@ async function handlePostApiWorkspaceNormalize(request: Request) {
     path: "/",
     sameSite: "lax",
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production"
+    secure: process.env.NODE_ENV === "production",
   });
   cookieStore.set(ACTIVE_WORKSPACE_COOKIE, workspaceId, {
     path: "/",
     sameSite: "lax",
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production"
+    secure: process.env.NODE_ENV === "production",
   });
 
   return withTraceId(new Response(null, { status: 204 }), traceId);

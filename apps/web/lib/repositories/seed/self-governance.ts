@@ -25,10 +25,12 @@ async function ensureSelfGovernancePackRevision(): Promise<SelfGovernancePackIns
   if (!pack || !sql) return null;
 
   const artifactHash = computeShortHash(
-    `${DEMO_TENANT_ID}:${DEMO_WORKSPACE_ID}:${pack.id}:${pack.metadata.version ?? "1.0.0"}`
+    `${DEMO_TENANT_ID}:${DEMO_WORKSPACE_ID}:${pack.id}:${pack.metadata.version ?? "1.0.0"}`,
   );
 
-  const existingRows = await sql<{ id: string; active_revision_id: string | null; artifact_hash: string | null }[]>`
+  const existingRows = await sql<
+    { id: string; active_revision_id: string | null; artifact_hash: string | null }[]
+  >`
     SELECT pb.id, pb.active_revision_id, pr.artifact_hash
     FROM policy_branch pb
     LEFT JOIN policy_revision pr ON pr.id = pb.active_revision_id AND pr.tenant_id = pb.tenant_id
@@ -54,7 +56,7 @@ async function ensureSelfGovernancePackRevision(): Promise<SelfGovernancePackIns
       return {
         branchId: existingRows[0].id,
         revisionId: activeRevisionId,
-        artifactHash: existingRows[0].artifact_hash ?? artifactHash
+        artifactHash: existingRows[0].artifact_hash ?? artifactHash,
       };
     }
   }
@@ -68,8 +70,8 @@ async function ensureSelfGovernancePackRevision(): Promise<SelfGovernancePackIns
       domains: rule.domains,
       connectors: rule.connectors,
       actions: rule.actions,
-      immutable: rule.immutable
-    }))
+      immutable: rule.immutable,
+    })),
   };
   const source = JSON.stringify(sourceDocument, null, 2);
   const sourceHash = computeShortHash(source);
@@ -106,13 +108,13 @@ async function ensureSelfGovernancePackRevision(): Promise<SelfGovernancePackIns
           {
             stack: "LOCAL",
             adapter: LOCAL_DEV_SELF_GOVERNANCE_ADAPTER,
-            environment: LOCAL_DEV_SELF_GOVERNANCE_ENVIRONMENT
+            environment: LOCAL_DEV_SELF_GOVERNANCE_ENVIRONMENT,
           },
           {
             stack: "CUSTOM",
             adapter: PRODUCTION_SELF_GOVERNANCE_ADAPTER,
-            environment: PRODUCTION_SELF_GOVERNANCE_ENVIRONMENT
-          }
+            environment: PRODUCTION_SELF_GOVERNANCE_ENVIRONMENT,
+          },
         ] as JSONValue)}::jsonb
       )
     `;
@@ -130,7 +132,7 @@ async function ensureSelfGovernancePackRevision(): Promise<SelfGovernancePackIns
         domains: rule.domains,
         connectors: rule.connectors,
         actions: rule.actions,
-        immutable: rule.immutable
+        immutable: rule.immutable,
       })),
       "tenant_id",
       "workspace_id",
@@ -143,7 +145,7 @@ async function ensureSelfGovernancePackRevision(): Promise<SelfGovernancePackIns
       "domains",
       "connectors",
       "actions",
-      "immutable"
+      "immutable",
     )}`;
 
     await tx`

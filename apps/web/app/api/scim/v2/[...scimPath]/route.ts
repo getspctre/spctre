@@ -14,7 +14,9 @@ function safeSecretEqual(actual: string, expected: string): boolean {
 }
 
 function canBypassScimAuthForLocalDev(): boolean {
-  return process.env.NODE_ENV !== "production" && process.env.SCIM_ALLOW_UNAUTHENTICATED_DEV === "true";
+  return (
+    process.env.NODE_ENV !== "production" && process.env.SCIM_ALLOW_UNAUTHENTICATED_DEV === "true"
+  );
 }
 
 // OSS boundary: authentication, tenant binding, and entitlement live here; the
@@ -25,13 +27,13 @@ function canBypassScimAuthForLocalDev(): boolean {
 //   the token identifies the tenant and the tenant's plan is entitlement-checked.
 async function handleScimRequest(
   request: Request,
-  { params }: { params: Promise<{ scimPath: string[] }> }
+  { params }: { params: Promise<{ scimPath: string[] }> },
 ) {
   const plan = getSpctrePlan();
   if (plan === "oss") {
     return Response.json(
       { error: "SCIM 2.0 Directory Sync is an Enterprise-only feature." },
-      { status: 403 }
+      { status: 403 },
     );
   }
 
@@ -43,8 +45,11 @@ async function handleScimRequest(
   if (envSecret && safeSecretEqual(authHeader, `Bearer ${envSecret}`)) {
     if (plan !== "enterprise") {
       return Response.json(
-        { error: "The deployment-wide SCIM token is limited to Enterprise deployments; use a per-tenant SCIM token." },
-        { status: 403 }
+        {
+          error:
+            "The deployment-wide SCIM token is limited to Enterprise deployments; use a per-tenant SCIM token.",
+        },
+        { status: 403 },
       );
     }
     return scimService.handleRequest(request, scimPath, { mode: "env" });
@@ -56,7 +61,7 @@ async function handleScimRequest(
       if (binding.reason === "not_entitled") {
         return Response.json(
           { error: "SCIM 2.0 Directory Sync requires an Enterprise subscription." },
-          { status: 403 }
+          { status: 403 },
         );
       }
       return Response.json({ error: "Unauthorized SCIM request." }, { status: 401 });
@@ -79,5 +84,5 @@ export {
   handleScimRequest as POST,
   handleScimRequest as PUT,
   handleScimRequest as PATCH,
-  handleScimRequest as DELETE
+  handleScimRequest as DELETE,
 };

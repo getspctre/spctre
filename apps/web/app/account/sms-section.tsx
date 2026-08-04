@@ -46,7 +46,10 @@ export function SmsSection({ existingEnrollments }: SmsSectionProps) {
         body: JSON.stringify({ phoneNumber: phoneNumber.trim(), recaptchaToken }),
       });
 
-      const data = (await res.json().catch(() => null)) as { enrollmentId?: string; error?: string } | null;
+      const data = (await res.json().catch(() => null)) as {
+        enrollmentId?: string;
+        error?: string;
+      } | null;
       if (!res.ok || !data?.enrollmentId) {
         setError(data?.error || t("errors.start"));
         setStatus("idle");
@@ -148,23 +151,45 @@ export function SmsSection({ existingEnrollments }: SmsSectionProps) {
       )}
 
       {status === "done" && <p className="meta">{t("verified")}</p>}
-      {error && <p className="meta workspaceError" role="alert">{error}</p>}
+      {error && (
+        <p className="meta workspaceError" role="alert">
+          {error}
+        </p>
+      )}
 
       <div style={{ display: "grid", gap: "10px" }}>
         {smsEnrollments.length > 0 && (
           <>
             <h3>{t("verified_channels")}</h3>
             {smsEnrollments.map((enrollment) => (
-              <article className="row" key={enrollment.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <article
+                className="row"
+                key={enrollment.id}
+                style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}
+              >
                 <div>
                   <h3 style={{ margin: 0 }}>
-                    {t("channel", { phone: enrollment.phoneNumber ? maskPhoneNumber(enrollment.phoneNumber) : t("channel_fallback") })}
+                    {t("channel", {
+                      phone: enrollment.phoneNumber
+                        ? maskPhoneNumber(enrollment.phoneNumber)
+                        : t("channel_fallback"),
+                    })}
                   </h3>
                   <p className="meta" style={{ margin: 0 }}>
-                    {t("verified_at", { date: new Date(enrollment.verifiedAt ?? enrollment.createdAt).toLocaleString() })}
+                    {t("verified_at", {
+                      date: new Date(
+                        enrollment.verifiedAt ?? enrollment.createdAt,
+                      ).toLocaleString(),
+                    })}
                   </p>
                 </div>
-                <form action={deleteMfaEnrollmentForm} onSubmit={(event) => { if (!window.confirm(t("remove_confirm", { name: enrollment.mfaType }))) event.preventDefault(); }}>
+                <form
+                  action={deleteMfaEnrollmentForm}
+                  onSubmit={(event) => {
+                    if (!window.confirm(t("remove_confirm", { name: enrollment.mfaType })))
+                      event.preventDefault();
+                  }}
+                >
                   <input type="hidden" name="enrollmentId" value={enrollment.id} />
                   <button className="button" type="submit">
                     {t("remove")}

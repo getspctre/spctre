@@ -30,10 +30,9 @@ describe("magic-link principal lookup", () => {
       },
     ]);
 
-    await expect(getPrincipalForLogin("principal-1", ownerSqlMock as never)).resolves.toMatchObject({
-      id: "principal-1",
-      tenant_id: "tenant-1",
-    });
+    await expect(getPrincipalForLogin("principal-1", ownerSqlMock as never)).resolves.toMatchObject(
+      { id: "principal-1", tenant_id: "tenant-1" },
+    );
 
     expect(ownerSqlMock).toHaveBeenCalledOnce();
     expect(tenantSqlMock).not.toHaveBeenCalled();
@@ -64,12 +63,17 @@ describe("magic-link principal lookup", () => {
       .mockResolvedValueOnce([{ id: "principal-1" }])
       .mockResolvedValueOnce([{ id: "session-1" }]);
 
-    await expect(createSessionRow({
-      principalId: "principal-1",
-      tenantId: "tenant-1",
-      expiresAt: "2026-07-31T00:00:00.000Z",
-      authMethod: "SESSION",
-    }, ownerSqlMock as never)).resolves.toBe("session-1");
+    await expect(
+      createSessionRow(
+        {
+          principalId: "principal-1",
+          tenantId: "tenant-1",
+          expiresAt: "2026-07-31T00:00:00.000Z",
+          authMethod: "SESSION",
+        },
+        ownerSqlMock as never,
+      ),
+    ).resolves.toBe("session-1");
 
     expect(ownerSqlMock).toHaveBeenCalledTimes(2);
     expect(tenantSqlMock).not.toHaveBeenCalled();

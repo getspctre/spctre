@@ -1,7 +1,12 @@
 import { randomUUID } from "crypto";
 import type { JSONValue } from "postgres";
 import { computeShortHash } from "@spctre/platform";
-import { getPackMetadata, packToDocument, parseAgtPolicyDocument, POLICY_PACKS } from "@spctre/policy-schema";
+import {
+  getPackMetadata,
+  packToDocument,
+  parseAgtPolicyDocument,
+  POLICY_PACKS,
+} from "@spctre/policy-schema";
 import { DEMO_TENANT_ID } from "@/lib/demo";
 import { sql } from "@/lib/db";
 
@@ -14,7 +19,7 @@ type DefaultPack = (typeof POLICY_PACKS)[number];
 function buildDefaultPackSourceDocument(
   pack: DefaultPack,
   packMetadata: ReturnType<typeof getPackMetadata>,
-  parsed: ReturnType<typeof parseAgtPolicyDocument>
+  parsed: ReturnType<typeof parseAgtPolicyDocument>,
 ) {
   return {
     ...(parsed.sourceDocument ?? {}),
@@ -42,7 +47,9 @@ export async function ensureDefaultPublishedPolicyPack(params: {
 }): Promise<{ branchId: string; revisionId: string; artifactHash: string } | null> {
   if (!sql || params.tenantId === DEMO_TENANT_ID) return null;
 
-  const pack = POLICY_PACKS.find((candidate) => candidate.id === ADVISOR_GOVERNANCE_BASELINE_PACK_ID);
+  const pack = POLICY_PACKS.find(
+    (candidate) => candidate.id === ADVISOR_GOVERNANCE_BASELINE_PACK_ID,
+  );
   if (!pack) return null;
 
   const packMetadata = getPackMetadata(pack);
@@ -98,7 +105,7 @@ export async function ensureDefaultPublishedPolicyPack(params: {
     } else {
       revisionId = randomUUID();
       artifactHash = computeShortHash(
-        `${params.tenantId}:${params.workspaceId}:${pack.id}:${packMetadata.version}:${revisionId}`
+        `${params.tenantId}:${params.workspaceId}:${pack.id}:${packMetadata.version}:${revisionId}`,
       );
 
       await tx`
@@ -148,7 +155,7 @@ export async function ensureDefaultPublishedPolicyPack(params: {
           "domains",
           "connectors",
           "actions",
-          "immutable"
+          "immutable",
         )}`;
       }
 
@@ -162,7 +169,9 @@ export async function ensureDefaultPublishedPolicyPack(params: {
 
     artifactHash =
       artifactHash ??
-      computeShortHash(`${params.tenantId}:${params.workspaceId}:${pack.id}:${packMetadata.version}:${revisionId}`);
+      computeShortHash(
+        `${params.tenantId}:${params.workspaceId}:${pack.id}:${packMetadata.version}:${revisionId}`,
+      );
 
     await tx`
       INSERT INTO policy_publish (

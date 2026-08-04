@@ -31,9 +31,20 @@ export const GatewayDecisionSchema = z.object({
   contextBudget: z.number().int().optional(),
   riskLevel: z.enum(["LOW", "MEDIUM", "HIGH", "CRITICAL"]).optional(),
   // Pre-flight intent fields (Phase 1)
-  toolIntent: z.string().max(100000).optional().transform((val) => sanitizeText(val, 1000)),
-  planSummary: z.string().max(100000).optional().transform((val) => sanitizeText(val, 2000)),
-  toolParameters: z.record(z.string(), z.unknown()).optional().transform((val) => redactAndBoundParameters(val)),
+  toolIntent: z
+    .string()
+    .max(100000)
+    .optional()
+    .transform((val) => sanitizeText(val, 1000)),
+  planSummary: z
+    .string()
+    .max(100000)
+    .optional()
+    .transform((val) => sanitizeText(val, 2000)),
+  toolParameters: z
+    .record(z.string(), z.unknown())
+    .optional()
+    .transform((val) => redactAndBoundParameters(val)),
   connector: z.string().optional(),
   action: z.string().optional(),
   agentId: z.string().optional(),
@@ -47,7 +58,10 @@ export type GatewayDecisionInput = z.infer<typeof GatewayDecisionSchema>;
  */
 export const GatewayResolveSchema = z.object({
   queueId: z.string("queueId is required.").min(1, "queueId is required."),
-  resolutionOutcome: z.enum(["PROCEED", "ESCALATE", "ABORT"], "resolutionOutcome must be PROCEED, ESCALATE, or ABORT."),
+  resolutionOutcome: z.enum(
+    ["PROCEED", "ESCALATE", "ABORT"],
+    "resolutionOutcome must be PROCEED, ESCALATE, or ABORT.",
+  ),
   resolutionNote: z.string().optional(),
   agentGuidance: z.string().max(2000).optional(),
 });

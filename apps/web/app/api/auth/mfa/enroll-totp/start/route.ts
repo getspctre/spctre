@@ -10,20 +10,29 @@ import { swallow } from "@/lib/platform/swallow";
 async function handlePostApiAuthMfaEnrollTotpStart() {
   const traceId = newTraceId();
   if (!isAuthDatabaseConfigured()) {
-    const response = NextResponse.json({ error: "Database not configured.", meta: makeMeta(traceId) }, { status: 503 });
+    const response = NextResponse.json(
+      { error: "Database not configured.", meta: makeMeta(traceId) },
+      { status: 503 },
+    );
     response.headers.set("x-request-id", traceId);
     return response;
   }
 
   const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (!session) {
-    const response = NextResponse.json({ error: "Authentication required.", meta: makeMeta(traceId) }, { status: 401 });
+    const response = NextResponse.json(
+      { error: "Authentication required.", meta: makeMeta(traceId) },
+      { status: 401 },
+    );
     response.headers.set("x-request-id", traceId);
     return response;
   }
 
   if (isDemoTenant(session.tenantId)) {
-    const response = NextResponse.json({ error: "TOTP enrollment is not available in Demo Mode.", meta: makeMeta(traceId) }, { status: 403 });
+    const response = NextResponse.json(
+      { error: "TOTP enrollment is not available in Demo Mode.", meta: makeMeta(traceId) },
+      { status: 403 },
+    );
     response.headers.set("x-request-id", traceId);
     return response;
   }
@@ -35,7 +44,10 @@ async function handlePostApiAuthMfaEnrollTotpStart() {
     secret,
   });
   if (!enrollmentId) {
-    const response = NextResponse.json({ error: "Database not configured.", meta: makeMeta(traceId) }, { status: 503 });
+    const response = NextResponse.json(
+      { error: "Database not configured.", meta: makeMeta(traceId) },
+      { status: 503 },
+    );
     response.headers.set("x-request-id", traceId);
     return response;
   }
@@ -45,7 +57,7 @@ async function handlePostApiAuthMfaEnrollTotpStart() {
 
   const response = NextResponse.json(
     { enrollmentId, secret, otpauthUrl, meta: makeMeta(traceId) },
-    { status: 201, headers: { "cache-control": "no-store" } }
+    { status: 201, headers: { "cache-control": "no-store" } },
   );
   response.headers.set("x-request-id", traceId);
   return response;

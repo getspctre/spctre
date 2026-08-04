@@ -36,19 +36,18 @@ export class SpctreClient {
     try {
       const response = await this.fetchImpl(`${this.baseUrl}${path}`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${this.apiKey}`,
-        },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${this.apiKey}` },
         body: JSON.stringify(payload),
         signal: controller.signal,
       });
 
       const responseText = await response.text();
-      const responseBody = responseText ? JSON.parse(responseText) as unknown : {};
+      const responseBody = responseText ? (JSON.parse(responseText) as unknown) : {};
 
       if (!response.ok) {
-        throw new Error(`Spctre request failed with HTTP ${response.status}: ${responseText || response.statusText}`);
+        throw new Error(
+          `Spctre request failed with HTTP ${response.status}: ${responseText || response.statusText}`,
+        );
       }
 
       return responseBody;
@@ -75,8 +74,10 @@ function normalizeEvaluationResult(body: unknown): EvaluationResult {
   return {
     status,
     reason,
-    matchedRefs: Array.isArray(result.matchedRefs) ? result.matchedRefs.filter((item): item is string => typeof item === "string") : undefined,
-    trace: Array.isArray(result.trace) ? result.trace as EvaluationResult["trace"] : undefined,
+    matchedRefs: Array.isArray(result.matchedRefs)
+      ? result.matchedRefs.filter((item): item is string => typeof item === "string")
+      : undefined,
+    trace: Array.isArray(result.trace) ? (result.trace as EvaluationResult["trace"]) : undefined,
     ruleCount: typeof result.ruleCount === "number" ? result.ruleCount : undefined,
     evaluatedAt: typeof result.evaluatedAt === "string" ? result.evaluatedAt : undefined,
     artifactHash: typeof response.artifactHash === "string" ? response.artifactHash : undefined,

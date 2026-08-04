@@ -11,7 +11,9 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminWorkflowsPage() {
   const t = await getTranslations("admin.workflows");
-  const { workflows, workspaces, auditEvents, enabledCount } = await getWorkflowsPageModel(await getActiveScope());
+  const { workflows, workspaces, auditEvents, enabledCount } = await getWorkflowsPageModel(
+    await getActiveScope(),
+  );
 
   return (
     <>
@@ -21,7 +23,9 @@ export default async function AdminWorkflowsPage() {
         description={t("description")}
         actions={
           <>
-            <span className="pill pillNeutral">{t("counts.workflows", { count: workflows.length })}</span>
+            <span className="pill pillNeutral">
+              {t("counts.workflows", { count: workflows.length })}
+            </span>
             <span className="pill pillAllow">{t("counts.enabled", { count: enabledCount })}</span>
           </>
         }
@@ -37,7 +41,11 @@ export default async function AdminWorkflowsPage() {
             </div>
           </div>
 
-          <WorkflowInspectorTable workflows={workflows} enabledCount={enabledCount} workspaces={workspaces} />
+          <WorkflowInspectorTable
+            workflows={workflows}
+            enabledCount={enabledCount}
+            workspaces={workspaces}
+          />
         </section>
 
         <aside className="adminAuthSidebar" aria-label={t("sidebar_aria_label")}>
@@ -50,9 +58,7 @@ export default async function AdminWorkflowsPage() {
                 </div>
                 <span className="pill pillAllow">{t("cloud")}</span>
               </div>
-              <p className="meta">
-                {t("enforcement.description")}
-              </p>
+              <p className="meta">{t("enforcement.description")}</p>
             </section>
           </PlanGate>
 

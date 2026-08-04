@@ -43,8 +43,8 @@ export async function init(options: InitOptions) {
   if (isNonInteractive()) {
     console.error(
       "Error: spctre init requires a browser in interactive mode.\n" +
-      "In CI, generate a service account key in the Spctre UI and run:\n" +
-      "  spctre init --token <key> --workspace <slug>"
+        "In CI, generate a service account key in the Spctre UI and run:\n" +
+        "  spctre init --token <key> --workspace <slug>",
     );
     process.exit(1);
   }
@@ -59,8 +59,8 @@ export async function init(options: InitOptions) {
       workspaceSlug: options.workspace,
       agentId: options.agent,
       environment: options.environment,
-      bundlePath
-    })
+      bundlePath,
+    }),
   });
 
   if (!startResponse.ok) {
@@ -96,14 +96,18 @@ export async function init(options: InitOptions) {
   console.log(`Evidence: ${baseUrl}/${config.workspaceSlug}/evidence`);
 }
 
-async function pollExchange(baseUrl: string, code: string, timeoutMs: number): Promise<ExchangeResponse> {
+async function pollExchange(
+  baseUrl: string,
+  code: string,
+  timeoutMs: number,
+): Promise<ExchangeResponse> {
   const startedAt = Date.now();
 
   while (Date.now() - startedAt < timeoutMs) {
     const response = await fetch(`${baseUrl}/api/onboarding/cli/exchange`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code })
+      body: JSON.stringify({ code }),
     });
 
     if (response.status === 200) return (await response.json()) as ExchangeResponse;
@@ -130,12 +134,14 @@ interface ServiceAccountExchangeResponse {
   policyContext: SpctreCliConfig["policyContext"];
 }
 
-async function initWithServiceAccount(options: InitOptions & { baseUrl: string; bundlePath: string; resolvedToken: string }) {
+async function initWithServiceAccount(
+  options: InitOptions & { baseUrl: string; bundlePath: string; resolvedToken: string },
+) {
   const workspaceSlug = options.workspace;
   if (!workspaceSlug || workspaceSlug === "default") {
     console.error(
       "Error: --workspace <slug> is required when using --token.\n" +
-      "Example: spctre init --token spctre_svc_... --workspace my-workspace"
+        "Example: spctre init --token spctre_svc_... --workspace my-workspace",
     );
     process.exit(1);
   }
@@ -222,7 +228,12 @@ async function initWithDeviceCode(options: InitOptions & { baseUrl: string; bund
 
   const timeoutMs = parseTimeoutMs(options.timeout);
 
-  const exchanged = await pollDeviceToken(options.baseUrl, started.deviceCode, started.interval, timeoutMs);
+  const exchanged = await pollDeviceToken(
+    options.baseUrl,
+    started.deviceCode,
+    started.interval,
+    timeoutMs,
+  );
 
   const config = configFromCloudExchange({ baseUrl: options.baseUrl, exchange: exchanged });
 

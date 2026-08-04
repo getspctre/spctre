@@ -20,7 +20,8 @@ import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } from "@opentelemetry/semantic
 type LogLevel = "info" | "warn" | "error";
 
 const SERVICE_NAME = "spctre-mcp-server";
-const SENSITIVE_KEY = /token|secret|password|authorization|cookie|access.?key|refresh.?key|e.?mail|phone/i;
+const SENSITIVE_KEY =
+  /token|secret|password|authorization|cookie|access.?key|refresh.?key|e.?mail|phone/i;
 const MAX_ATTRIBUTE_LENGTH = 300;
 
 let serviceName = SERVICE_NAME;
@@ -33,7 +34,12 @@ function redact(value: unknown, key = "", depth = 0): unknown {
   if (value === null || value === undefined || typeof value !== "object") return value;
   if (depth >= 8) return "[MaxDepth]";
   if (Array.isArray(value)) return value.map((entry) => redact(entry, "", depth + 1));
-  return Object.fromEntries(Object.entries(value as Record<string, unknown>).map(([childKey, childValue]) => [childKey, redact(childValue, childKey, depth + 1)]));
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>).map(([childKey, childValue]) => [
+      childKey,
+      redact(childValue, childKey, depth + 1),
+    ]),
+  );
 }
 
 function attributes(input: Record<string, unknown> = {}): Attributes {
@@ -41,7 +47,9 @@ function attributes(input: Record<string, unknown> = {}): Attributes {
   for (const [key, value] of Object.entries(input)) {
     const safe = redact(value, key);
     if (safe === null || safe === undefined) continue;
-    if (typeof safe === "string") output[key] = safe.length > MAX_ATTRIBUTE_LENGTH ? `${safe.slice(0, MAX_ATTRIBUTE_LENGTH)}...` : safe;
+    if (typeof safe === "string")
+      output[key] =
+        safe.length > MAX_ATTRIBUTE_LENGTH ? `${safe.slice(0, MAX_ATTRIBUTE_LENGTH)}...` : safe;
     else if (typeof safe === "number" || typeof safe === "boolean") output[key] = safe;
     else output[key] = JSON.stringify(safe).slice(0, MAX_ATTRIBUTE_LENGTH);
   }
@@ -50,7 +58,14 @@ function attributes(input: Record<string, unknown> = {}): Attributes {
 
 function writeLog(level: LogLevel, message: string, fields: Record<string, unknown> = {}): void {
   const span = trace.getActiveSpan()?.spanContext();
-  const payload = { ts: new Date().toISOString(), level, message, "service.name": serviceName, ...(span ? { trace_id: span.traceId, span_id: span.spanId } : {}), ...attributes(fields) };
+  const payload = {
+    ts: new Date().toISOString(),
+    level,
+    message,
+    "service.name": serviceName,
+    ...(span ? { trace_id: span.traceId, span_id: span.spanId } : {}),
+    ...attributes(fields),
+  };
   const line = JSON.stringify(payload);
   // In stdio mode stdout is the MCP JSON-RPC wire, so the composition root sets
   // SPCTRE_LOG_STDERR to divert every operational log (info included) to stderr
@@ -68,7 +83,11 @@ export const logger = {
   error: (message: string, fields?: Record<string, unknown>) => writeLog("error", message, fields),
 };
 
-export function incrementCounter(name: string, value = 1, attrs: Record<string, unknown> = {}): void {
+export function incrementCounter(
+  name: string,
+  value = 1,
+  attrs: Record<string, unknown> = {},
+): void {
   let counter = counters.get(name);
   if (!counter) {
     counter = metrics.getMeter(serviceName).createCounter(name);
@@ -77,7 +96,11 @@ export function incrementCounter(name: string, value = 1, attrs: Record<string, 
   counter.add(value, attributes(attrs));
 }
 
-export function recordDuration(name: string, valueMs: number, attrs: Record<string, unknown> = {}): void {
+export function recordDuration(
+  name: string,
+  valueMs: number,
+  attrs: Record<string, unknown> = {},
+): void {
   let histogram = histograms.get(name);
   if (!histogram) {
     histogram = metrics.getMeter(serviceName).createHistogram(name, { unit: "ms" });
@@ -86,16 +109,30 @@ export function recordDuration(name: string, valueMs: number, attrs: Record<stri
   histogram.record(valueMs, attributes(attrs));
 }
 
-export async function withSpan<T>(name: string, attrs: Record<string, unknown>, fn: (span: Span) => Promise<T> | T): Promise<T> {
-  const span = trace.getTracer(serviceName).startSpan(name, { kind: SpanKind.INTERNAL, attributes: attributes(attrs) });
+export async function withSpan<T>(
+  name: string,
+  attrs: Record<string, unknown>,
+  fn: (span: Span) => Promise<T> | T,
+): Promise<T> {
+  const span = trace
+    .getTracer(serviceName)
+    .startSpan(name, { kind: SpanKind.INTERNAL, attributes: attributes(attrs) });
   return context.with(trace.setSpan(context.active(), span), async () => {
     try {
       const result = await fn(span);
-      span.setStatus({ code: result instanceof Response && result.status >= 400 ? SpanStatusCode.ERROR : SpanStatusCode.OK });
+      span.setStatus({
+        code:
+          result instanceof Response && result.status >= 400
+            ? SpanStatusCode.ERROR
+            : SpanStatusCode.OK,
+      });
       return result;
     } catch (error) {
       span.recordException(error as Error);
-      span.setStatus({ code: SpanStatusCode.ERROR, message: error instanceof Error ? error.message : String(error) });
+      span.setStatus({
+        code: SpanStatusCode.ERROR,
+        message: error instanceof Error ? error.message : String(error),
+      });
       throw error;
     } finally {
       span.end();
@@ -107,10 +144,21 @@ export function initTelemetry(name = process.env.OTEL_SERVICE_NAME?.trim() || SE
   if (telemetry || process.env.OTEL_SDK_DISABLED?.trim().toLowerCase() === "true") return;
   serviceName = name;
   telemetry = new NodeSDK({
-    resource: resourceFromAttributes({ [ATTR_SERVICE_NAME]: serviceName, [ATTR_SERVICE_VERSION]: process.env.npm_package_version ?? "0.1.0" }),
+    resource: resourceFromAttributes({
+      [ATTR_SERVICE_NAME]: serviceName,
+      [ATTR_SERVICE_VERSION]: process.env.npm_package_version ?? "0.1.0",
+    }),
     traceExporter: new OTLPTraceExporter(),
-    metricReaders: [new PeriodicExportingMetricReader({ exporter: new OTLPMetricExporter(), exportIntervalMillis: Number.parseInt(process.env.OTEL_METRIC_EXPORT_INTERVAL ?? "60000", 10) || 60000 })],
-    instrumentations: [getNodeAutoInstrumentations({ "@opentelemetry/instrumentation-fs": { enabled: false } })],
+    metricReaders: [
+      new PeriodicExportingMetricReader({
+        exporter: new OTLPMetricExporter(),
+        exportIntervalMillis:
+          Number.parseInt(process.env.OTEL_METRIC_EXPORT_INTERVAL ?? "60000", 10) || 60000,
+      }),
+    ],
+    instrumentations: [
+      getNodeAutoInstrumentations({ "@opentelemetry/instrumentation-fs": { enabled: false } }),
+    ],
   });
   telemetry.start();
   logger.info("Telemetry SDK started", { serviceName });

@@ -7,9 +7,7 @@ import { StatusPill } from "../src/status-pill";
 import { DataTable, TableCell, TableHeaderCell, TableShell } from "../src/table";
 import { TabButton, TabsRow } from "../src/tabs";
 
-const meta = {
-  title: "Patterns/Workflow Inspector"
-} satisfies Meta;
+const meta = { title: "Patterns/Workflow Inspector" } satisfies Meta;
 
 export default meta;
 
@@ -24,7 +22,9 @@ export const ActiveRulesWithEditPanel: Story = {
         actions={<Button tone="primary">Create workflow</Button>}
       />
 
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+      <div
+        style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}
+      >
         <TabsRow>
           <TabButton active>Active workflow rules</TabButton>
           <TabButton>Audit history</TabButton>
@@ -37,7 +37,7 @@ export const ActiveRulesWithEditPanel: Story = {
           display: "grid",
           gap: 16,
           gridTemplateColumns: "minmax(0, 1.35fr) minmax(360px, 0.9fr)",
-          alignItems: "start"
+          alignItems: "start",
         }}
       >
         <TableShell>
@@ -98,8 +98,14 @@ export const ActiveRulesWithEditPanel: Story = {
                   <option value="3">3 reviewers</option>
                 </SelectInput>
               </FormField>
-              <FormField label="Change rationale" hint="Required for recommendation disposition and audit trace.">
-                <TextArea rows={3} defaultValue="Require Security + Finance for payment policy changes." />
+              <FormField
+                label="Change rationale"
+                hint="Required for recommendation disposition and audit trace."
+              >
+                <TextArea
+                  rows={3}
+                  defaultValue="Require Security + Finance for payment policy changes."
+                />
               </FormField>
               <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
                 <Button tone="subtle">Cancel</Button>
@@ -110,5 +116,5 @@ export const ActiveRulesWithEditPanel: Story = {
         />
       </div>
     </div>
-  )
+  ),
 };

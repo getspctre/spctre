@@ -1,12 +1,10 @@
 const DEFAULT_TIMEOUT_MS = 10_000;
 
-type FetchInitWithTimeout = RequestInit & {
-  timeoutMs?: number;
-};
+type FetchInitWithTimeout = RequestInit & { timeoutMs?: number };
 
 export async function fetchWithTimeout(
   input: RequestInfo | URL,
-  init: FetchInitWithTimeout = {}
+  init: FetchInitWithTimeout = {},
 ): Promise<Response> {
   const { timeoutMs = DEFAULT_TIMEOUT_MS, signal, ...fetchInit } = init;
   const controller = new AbortController();
@@ -24,10 +22,7 @@ export async function fetchWithTimeout(
   }
 
   try {
-    return await fetch(input, {
-      ...fetchInit,
-      signal: controller.signal,
-    });
+    return await fetch(input, { ...fetchInit, signal: controller.signal });
   } finally {
     clearTimeout(timeout);
     signal?.removeEventListener("abort", abortFromCaller);

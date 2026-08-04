@@ -71,17 +71,38 @@
   text-decoration: none;
 }
 
-.packetReadinessGate svg { flex: 0 0 auto; margin-top: 2px; }
-.packetReadinessGate span { display: grid; gap: 3px; min-width: 0; }
+.packetReadinessGate svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+.packetReadinessGate span {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
 .packetReadinessGate strong,
-.packetReadinessGate small { overflow-wrap: anywhere; }
-.packetReadinessGate small { color: var(--muted); line-height: 1.35; white-space: normal; }
-.packetReadinessGateready svg { color: var(--allow); }
+.packetReadinessGate small {
+  overflow-wrap: anywhere;
+}
+.packetReadinessGate small {
+  color: var(--muted);
+  line-height: 1.35;
+  white-space: normal;
+}
+.packetReadinessGateready svg {
+  color: var(--allow);
+}
 .packetReadinessGateattention svg,
-.packetReadinessGateunavailable svg { color: var(--warn); }
-.packetReadinessGate:hover { background: oklch(0.984 0.007 236); }
+.packetReadinessGateunavailable svg {
+  color: var(--warn);
+}
+.packetReadinessGate:hover {
+  background: oklch(0.984 0.007 236);
+}
 
-.packetReadiness > .button { justify-self: start; }
+.packetReadiness > .button {
+  justify-self: start;
+}
 
 .complianceTaskNav {
   display: flex;
@@ -99,8 +120,14 @@
   text-decoration: none;
 }
 
-.complianceTaskNav a { padding: 7px 10px; }
-.complianceTaskNav a:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+.complianceTaskNav a {
+  padding: 7px 10px;
+}
+.complianceTaskNav a:hover {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
 
 .complianceHeroActions {
   display: flex;
@@ -350,8 +377,13 @@
   border-bottom: 1px solid var(--line);
 }
 
-.deliveryRow:last-child { border-bottom: 0; }
-.deliveryRow > div { display: grid; gap: 3px; }
+.deliveryRow:last-child {
+  border-bottom: 0;
+}
+.deliveryRow > div {
+  display: grid;
+  gap: 3px;
+}
 
 .sealConfirmation {
   position: fixed;
@@ -375,8 +407,13 @@
   gap: 8px;
 }
 
-.sealSuccess a { font-size: 13px; }
-.sealSuccess code { color: var(--muted); font-size: 12px; }
+.sealSuccess a {
+  font-size: 13px;
+}
+.sealSuccess code {
+  color: var(--muted);
+  font-size: 12px;
+}
 
 .exportLayout {
   display: grid;

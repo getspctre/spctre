@@ -43,9 +43,9 @@ function numberFromEnv(value: string | undefined, fallback: number): number {
 }
 
 export function getBaseConfigFromEnv(): SpctreConfig {
-  const transport = ((process.env.SPCTRE_MCP_TRANSPORT || "stdio").toLowerCase() === "http"
-    ? "http"
-    : "stdio") as TransportMode;
+  const transport = (
+    (process.env.SPCTRE_MCP_TRANSPORT || "stdio").toLowerCase() === "http" ? "http" : "stdio"
+  ) as TransportMode;
 
   return {
     apiBaseUrl: process.env.SPCTRE_API_URL || "http://localhost:3000",
@@ -56,7 +56,8 @@ export function getBaseConfigFromEnv(): SpctreConfig {
     transport,
     httpPort: Number(process.env.SPCTRE_MCP_HTTP_PORT || 8090),
     httpPath: process.env.SPCTRE_MCP_HTTP_PATH || "/mcp",
-    requireBearerAuth: (process.env.SPCTRE_MCP_REQUIRE_BEARER_AUTH || "true").toLowerCase() !== "false",
+    requireBearerAuth:
+      (process.env.SPCTRE_MCP_REQUIRE_BEARER_AUTH || "true").toLowerCase() !== "false",
     httpRateLimitPerSecond: numberFromEnv(process.env.SPCTRE_MCP_HTTP_RATE_LIMIT_PER_SECOND, 25),
     httpRateLimitBurst: numberFromEnv(process.env.SPCTRE_MCP_HTTP_RATE_LIMIT_BURST, 50),
     oauthIssuer: process.env.SPCTRE_MCP_OAUTH_ISSUER || process.env.SPCTRE_API_URL || undefined,

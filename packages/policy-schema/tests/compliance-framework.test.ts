@@ -71,7 +71,8 @@ describe("buildComplianceFrameworkAnnotation — SOC2", () => {
 
   it("summary counts are consistent with controls", () => {
     const ann = buildComplianceFrameworkAnnotation({ ...base, framework: "soc2" });
-    const total = ann.summary.addressedCount + ann.summary.partialCount + ann.summary.notApplicableCount;
+    const total =
+      ann.summary.addressedCount + ann.summary.partialCount + ann.summary.notApplicableCount;
     expect(total).toBe(ann.controls.length);
   });
 
@@ -128,7 +129,8 @@ describe("buildComplianceFrameworkAnnotation — EU AI Act", () => {
 
   it("summary counts are consistent with controls", () => {
     const ann = buildComplianceFrameworkAnnotation({ ...base, framework: "eu-ai-act" });
-    const total = ann.summary.addressedCount + ann.summary.partialCount + ann.summary.notApplicableCount;
+    const total =
+      ann.summary.addressedCount + ann.summary.partialCount + ann.summary.notApplicableCount;
     expect(total).toBe(ann.controls.length);
   });
 });
@@ -175,7 +177,8 @@ describe("buildComplianceFrameworkAnnotation — HIPAA", () => {
 
   it("summary counts are consistent with controls", () => {
     const ann = buildComplianceFrameworkAnnotation({ ...base, framework: "hipaa" });
-    const total = ann.summary.addressedCount + ann.summary.partialCount + ann.summary.notApplicableCount;
+    const total =
+      ann.summary.addressedCount + ann.summary.partialCount + ann.summary.notApplicableCount;
     expect(total).toBe(ann.controls.length);
   });
 });

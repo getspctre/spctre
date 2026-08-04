@@ -9,7 +9,7 @@ import { getOutputFormat, printJson, printProgress } from "./output";
 function printTextReport(
   lintResult: Awaited<ReturnType<typeof lintFile>>,
   testReport: Awaited<ReturnType<typeof runTests>> | null,
-  passed: boolean
+  passed: boolean,
 ) {
   if (lintResult.parseErrors.length) {
     for (const err of lintResult.parseErrors) console.error(`  error: ${err}`);
@@ -20,7 +20,9 @@ function printTextReport(
   if (testReport) {
     console.log(`\nTests: ${testReport.passed}/${testReport.results.length} passed`);
     for (const r of testReport.results.filter((r) => !r.pass)) {
-      console.log(`  FAIL ${r.fixture.connector}/${r.fixture.action}: expected ${r.fixture.expect}, got ${r.actual}`);
+      console.log(
+        `  FAIL ${r.fixture.connector}/${r.fixture.action}: expected ${r.fixture.expect}, got ${r.actual}`,
+      );
       if (r.reason) console.log(`       ${r.reason}`);
     }
   }
@@ -31,18 +33,13 @@ function printTextReport(
 
 export async function check(
   policyArg: string | undefined,
-  options: {
-    output?: string;
-    tests?: string;
-    noSync?: boolean;
-    workspace?: string;
-  }
+  options: { output?: string; tests?: string; noSync?: boolean; workspace?: string },
 ) {
   const format = getOutputFormat(options.output);
   const config = readConfig();
   const policyPath = path.resolve(
     process.cwd(),
-    policyArg ?? config?.bundlePath ?? "spctre-policy.json"
+    policyArg ?? config?.bundlePath ?? "spctre-policy.json",
   );
 
   if (!options.noSync) {

@@ -36,7 +36,11 @@ function makeContext(overrides: Partial<McpServerContext> = {}): McpServerContex
     getWithAuth: async () => axiosResponse({}),
     postWithAuth: async () => axiosResponse({}),
     assertConnectorAllowed: () => {},
-    fetchPublishedBundleRefs: async () => ({ branchId: "b1", revisionId: "r1", artifactHash: "h1" }),
+    fetchPublishedBundleRefs: async () => ({
+      branchId: "b1",
+      revisionId: "r1",
+      artifactHash: "h1",
+    }),
     ensureMcpPolicyLoaded: async () => {},
     governedMcpCapabilities: [],
     mcpRegistrySource: "api",
@@ -64,7 +68,11 @@ describe("evaluatePolicy", () => {
     const ctx = makeContext({
       assertConnectorAllowed,
       postWithAuth: async () =>
-        axiosResponse({ decision: { outcome: "ALLOW", reason: "ok" }, matchedRules: ["r1"], policyRefs: ["p1"] }),
+        axiosResponse({
+          decision: { outcome: "ALLOW", reason: "ok" },
+          matchedRules: ["r1"],
+          policyRefs: ["p1"],
+        }),
     });
 
     const parsed = parseToolText(await evaluatePolicy(ctx, evalArgs));
@@ -79,7 +87,10 @@ describe("evaluatePolicy", () => {
   it("returns an ERROR envelope when the workspace does not match", async () => {
     const ctx = makeContext();
     const parsed = parseToolText(
-      await evaluatePolicy(ctx, { ...evalArgs, agent_context: { agent_id: "a", workspace_id: "other-ws" } }),
+      await evaluatePolicy(ctx, {
+        ...evalArgs,
+        agent_context: { agent_id: "a", workspace_id: "other-ws" },
+      }),
     );
     expect(parsed.decision).toBe("ERROR");
     expect(parsed.error).toContain("Workspace mismatch");
@@ -101,31 +112,44 @@ describe("evaluatePolicy", () => {
       axiosResponse({ decision: { outcome: "ESCALATE", reason: "review" }, latencyMs: 12 }),
     );
     const ctx = makeContext({
-      fetchPublishedBundleRefs: async () => ({ branchId: "branch-real", revisionId: "rev-real", artifactHash: "sha256:real" }),
-      postWithAuth,
-    });
-
-    const parsed = parseToolText(await evaluatePolicy(ctx, {
-      ...evalArgs,
-      risk_level: "HIGH",
-      tool_context: { raw_args: { amountUsd: 500, dataSensitivity: "restricted", trustScore: 0.3 } },
-    }));
-
-    expect(postWithAuth).toHaveBeenCalledWith("/api/gateway/decide", expect.objectContaining({
-      connector: "slack",
-      action: "send",
-      artifactHash: "sha256:real",
-      policyContext: [{
-        scope: "WORKSPACE",
+      fetchPublishedBundleRefs: async () => ({
         branchId: "branch-real",
         revisionId: "rev-real",
         artifactHash: "sha256:real",
-      }],
-      consequence: "HIGH",
-      amountUsd: 500,
-      dataSensitivity: "restricted",
-      trustScore: 0.3,
-    }));
+      }),
+      postWithAuth,
+    });
+
+    const parsed = parseToolText(
+      await evaluatePolicy(ctx, {
+        ...evalArgs,
+        risk_level: "HIGH",
+        tool_context: {
+          raw_args: { amountUsd: 500, dataSensitivity: "restricted", trustScore: 0.3 },
+        },
+      }),
+    );
+
+    expect(postWithAuth).toHaveBeenCalledWith(
+      "/api/gateway/decide",
+      expect.objectContaining({
+        connector: "slack",
+        action: "send",
+        artifactHash: "sha256:real",
+        policyContext: [
+          {
+            scope: "WORKSPACE",
+            branchId: "branch-real",
+            revisionId: "rev-real",
+            artifactHash: "sha256:real",
+          },
+        ],
+        consequence: "HIGH",
+        amountUsd: 500,
+        dataSensitivity: "restricted",
+        trustScore: 0.3,
+      }),
+    );
     expect(parsed.decision).toBe("ESCALATE");
     expect(parsed.latency_ms).toBe(12);
   });
@@ -141,21 +165,34 @@ describe("createEvidenceRecord", () => {
   };
 
   it("persists evidence and reports audit_ready on success", async () => {
-    const postWithAuth = vi.fn(async () => axiosResponse({ evidence: { decisionId: "d1", tenantId: "t1" } }));
+    const postWithAuth = vi.fn(async () =>
+      axiosResponse({ evidence: { decisionId: "d1", tenantId: "t1" } }),
+    );
     const ctx = makeContext({
-      getWithAuth: async () => axiosResponse({ branchId: "b1", revisionId: "r1", artifactHash: "h1", tenantId: "t1" }),
+      getWithAuth: async () =>
+        axiosResponse({ branchId: "b1", revisionId: "r1", artifactHash: "h1", tenantId: "t1" }),
       postWithAuth,
     });
     const parsed = parseToolText(await createEvidenceRecord(ctx, args));
-    expect(postWithAuth).toHaveBeenCalledWith("/api/evidence", expect.anything(), { "x-spctre-source": "mcp" });
+    expect(postWithAuth).toHaveBeenCalledWith("/api/evidence", expect.anything(), {
+      "x-spctre-source": "mcp",
+    });
     expect(parsed.evidence_id).toBe("d1");
     expect(parsed.audit_ready).toBe(true);
   });
 
   it("builds a gateway-compatible evidence payload with MCP source metadata", async () => {
-    const postWithAuth = vi.fn(async () => axiosResponse({ evidence: { decisionId: "d1", tenantId: "tenant-real" } }));
+    const postWithAuth = vi.fn(async () =>
+      axiosResponse({ evidence: { decisionId: "d1", tenantId: "tenant-real" } }),
+    );
     const ctx = makeContext({
-      getWithAuth: async () => axiosResponse({ branchId: "branch-real", revisionId: "rev-real", artifactHash: "sha256:real", tenantId: "tenant-real" }),
+      getWithAuth: async () =>
+        axiosResponse({
+          branchId: "branch-real",
+          revisionId: "rev-real",
+          artifactHash: "sha256:real",
+          tenantId: "tenant-real",
+        }),
       postWithAuth,
     });
 
@@ -167,24 +204,27 @@ describe("createEvidenceRecord", () => {
       tags: ["mcp", "composition"],
     });
 
-    expect(postWithAuth).toHaveBeenCalledWith("/api/evidence", expect.objectContaining({
-      decisionId: "d1",
-      sourceType: "mcp",
-      tenantId: "tenant-real",
-      workspaceId: "ws-test",
-      runtimeTarget: expect.objectContaining({ stack: "CUSTOM", adapter: "agt-compatible" }),
-      policyContext: [{
-        scope: "WORKSPACE",
-        branchId: "branch-real",
-        revisionId: "rev-real",
-        artifactHash: "sha256:real",
-      }],
-      latencyMs: 44,
-      rawEvidence: expect.objectContaining({
-        auditSeal: "seal-1",
-        tags: ["mcp", "composition"],
+    expect(postWithAuth).toHaveBeenCalledWith(
+      "/api/evidence",
+      expect.objectContaining({
+        decisionId: "d1",
+        sourceType: "mcp",
+        tenantId: "tenant-real",
+        workspaceId: "ws-test",
+        runtimeTarget: expect.objectContaining({ stack: "CUSTOM", adapter: "agt-compatible" }),
+        policyContext: [
+          {
+            scope: "WORKSPACE",
+            branchId: "branch-real",
+            revisionId: "rev-real",
+            artifactHash: "sha256:real",
+          },
+        ],
+        latencyMs: 44,
+        rawEvidence: expect.objectContaining({ auditSeal: "seal-1", tags: ["mcp", "composition"] }),
       }),
-    }), { "x-spctre-source": "mcp" });
+      { "x-spctre-source": "mcp" },
+    );
   });
 
   it("returns an error envelope when published bundle metadata is missing", async () => {
@@ -197,18 +237,19 @@ describe("createEvidenceRecord", () => {
 describe("multi-client composition", () => {
   it("keeps concurrent client evaluations scoped by workspace and token context", async () => {
     const calls: Array<{ workspaceId: string; path: string; body: unknown }> = [];
-    const makeScopedContext = (workspaceId: string, token: string) => makeContext({
-      config: { ...baseConfig, workspaceId, apiToken: token, agentId: `agent-${workspaceId}` },
-      fetchPublishedBundleRefs: async (requestedWorkspaceId) => ({
-        branchId: `branch-${requestedWorkspaceId}`,
-        revisionId: `rev-${requestedWorkspaceId}`,
-        artifactHash: `sha256:${requestedWorkspaceId}`,
-      }),
-      postWithAuth: async (path, body) => {
-        calls.push({ workspaceId, path, body });
-        return axiosResponse({ decision: { outcome: "ALLOW", reason: `ok-${workspaceId}` } });
-      },
-    });
+    const makeScopedContext = (workspaceId: string, token: string) =>
+      makeContext({
+        config: { ...baseConfig, workspaceId, apiToken: token, agentId: `agent-${workspaceId}` },
+        fetchPublishedBundleRefs: async (requestedWorkspaceId) => ({
+          branchId: `branch-${requestedWorkspaceId}`,
+          revisionId: `rev-${requestedWorkspaceId}`,
+          artifactHash: `sha256:${requestedWorkspaceId}`,
+        }),
+        postWithAuth: async (path, body) => {
+          calls.push({ workspaceId, path, body });
+          return axiosResponse({ decision: { outcome: "ALLOW", reason: `ok-${workspaceId}` } });
+        },
+      });
 
     const [a, b] = await Promise.all([
       evaluatePolicy(makeScopedContext("ws-a", "token-a"), {
@@ -227,8 +268,14 @@ describe("multi-client composition", () => {
     expect(parseToolText(b).reason).toBe("ok-ws-b");
     expect(calls).toHaveLength(2);
     expect(calls.map((call) => call.path)).toEqual(["/api/gateway/decide", "/api/gateway/decide"]);
-    expect(calls.map((call) => (call.body as Record<string, unknown>).workspaceId)).toEqual(["ws-a", "ws-b"]);
-    expect(calls.map((call) => (call.body as Record<string, unknown>).artifactHash)).toEqual(["sha256:ws-a", "sha256:ws-b"]);
+    expect(calls.map((call) => (call.body as Record<string, unknown>).workspaceId)).toEqual([
+      "ws-a",
+      "ws-b",
+    ]);
+    expect(calls.map((call) => (call.body as Record<string, unknown>).artifactHash)).toEqual([
+      "sha256:ws-a",
+      "sha256:ws-b",
+    ]);
   });
 });
 
@@ -237,7 +284,8 @@ describe("escalateToReview", () => {
 
   it("returns the upstream escalation on success", async () => {
     const ctx = makeContext({
-      postWithAuth: async () => axiosResponse({ escalationId: "esc-upstream", status: "QUEUED", queuePosition: 3 }),
+      postWithAuth: async () =>
+        axiosResponse({ escalationId: "esc-upstream", status: "QUEUED", queuePosition: 3 }),
     });
     const parsed = parseToolText(await escalateToReview(ctx, args));
     expect(parsed.escalation_id).toBe("esc-upstream");
@@ -281,26 +329,36 @@ describe("getComplianceStatus", () => {
 
 describe("ingestGatewayEvent", () => {
   it("calls the MCP gateway ingest route with gateway mode headers", async () => {
-    const postWithAuth = vi.fn(async () => axiosResponse({ decisionId: "gw-1", provenanceGap: false, deduplicated: true }));
+    const postWithAuth = vi.fn(async () =>
+      axiosResponse({ decisionId: "gw-1", provenanceGap: false, deduplicated: true }),
+    );
     const ctx = makeContext({ postWithAuth });
 
-    const parsed = parseToolText(await ingestGatewayEvent(ctx, {
-      provider: "portkey",
-      gateway_event_id: "event-1",
-      agent_id: "agent-test",
-      connector: "openai",
-      action: "chat.completions.create",
-    }));
+    const parsed = parseToolText(
+      await ingestGatewayEvent(ctx, {
+        provider: "portkey",
+        gateway_event_id: "event-1",
+        agent_id: "agent-test",
+        connector: "openai",
+        action: "chat.completions.create",
+      }),
+    );
 
-    expect(postWithAuth).toHaveBeenCalledWith("/api/gateway-ingest/mcp", expect.objectContaining({
-      provider: "portkey",
-      gateway_event_id: "event-1",
-      agent_id: "agent-test",
-    }), {
-      "x-spctre-source": "mcp",
-      "ingest-mode": "gateway",
+    expect(postWithAuth).toHaveBeenCalledWith(
+      "/api/gateway-ingest/mcp",
+      expect.objectContaining({
+        provider: "portkey",
+        gateway_event_id: "event-1",
+        agent_id: "agent-test",
+      }),
+      { "x-spctre-source": "mcp", "ingest-mode": "gateway" },
+    );
+    expect(parsed).toEqual({
+      decision_id: "gw-1",
+      provenance_gap: false,
+      deduplicated: true,
+      ingest_mode: "gateway",
     });
-    expect(parsed).toEqual({ decision_id: "gw-1", provenance_gap: false, deduplicated: true, ingest_mode: "gateway" });
   });
 });
 
@@ -309,7 +367,9 @@ describe("discoverMcpTools", () => {
     const ensureMcpPolicyLoaded = vi.fn(async () => {});
     const ctx = makeContext({
       ensureMcpPolicyLoaded,
-      governedMcpCapabilities: [{ connector: "slack" }] as unknown as McpServerContext["governedMcpCapabilities"],
+      governedMcpCapabilities: [
+        { connector: "slack" },
+      ] as unknown as McpServerContext["governedMcpCapabilities"],
       mcpRegistrySource: "workspace",
     });
     const parsed = parseToolText(await discoverMcpTools(ctx, { agent_id: "agent-test" }));
@@ -365,7 +425,10 @@ describe("authorizeMcpToolCall", () => {
       }),
     );
 
-    expect(ensureMcpPolicyLoaded).toHaveBeenCalledWith({ agentId: "agent-test", environment: "staging" });
+    expect(ensureMcpPolicyLoaded).toHaveBeenCalledWith({
+      agentId: "agent-test",
+      environment: "staging",
+    });
     expect(parsed.outcome).toBe("ALLOW");
     expect(parsed.registry_source).toBe("registry");
     expect(parsed.capability.id).toBe("cap-github-pr");

@@ -31,10 +31,15 @@ async function resolveSyncSettings(options: {
   const workspace = options.workspace ?? resolved?.workspaceId;
   const key = options.key ?? resolved?.token;
   const output = options.output ?? resolved?.bundlePath ?? "spctre-policy.json";
-  const url = (options.url ?? resolved?.controlPlaneUrl ?? "http://localhost:3000").replace(/\/+$/, "");
+  const url = (options.url ?? resolved?.controlPlaneUrl ?? "http://localhost:3000").replace(
+    /\/+$/,
+    "",
+  );
 
   if (!workspace || !key) {
-    console.error("Error: workspace and key are required. Run spctre init first or pass --workspace and --key.");
+    console.error(
+      "Error: workspace and key are required. Run spctre init first or pass --workspace and --key.",
+    );
     process.exit(1);
   }
 
@@ -42,14 +47,25 @@ async function resolveSyncSettings(options: {
 }
 
 async function syncBlueprint(url: string, key: string, agentId: string, outputPath: string) {
-  const response = await fetch(`${url}/api/agent-blueprints/runtime?agentId=${encodeURIComponent(agentId)}`, { headers: { Authorization: `Bearer ${key}`, Accept: "application/json" } });
+  const response = await fetch(
+    `${url}/api/agent-blueprints/runtime?agentId=${encodeURIComponent(agentId)}`,
+    { headers: { Authorization: `Bearer ${key}`, Accept: "application/json" } },
+  );
   if (response.status === 404) return;
   if (!response.ok) throw new Error(`Failed to fetch Blueprint artifact (${response.status}).`);
-  const payload = await response.json() as { artifact: { blueprint: { revisionId: string; definitionHash: string } } };
+  const payload = (await response.json()) as {
+    artifact: { blueprint: { revisionId: string; definitionHash: string } };
+  };
   const blueprintPath = `${outputPath}.blueprint.json`;
   fs.writeFileSync(blueprintPath, JSON.stringify(payload.artifact, null, 2) + "\n");
   const config = readConfig();
-  if (config) writeConfig({ ...config, blueprintPath, blueprintRevisionId: payload.artifact.blueprint.revisionId, blueprintDefinitionHash: payload.artifact.blueprint.definitionHash });
+  if (config)
+    writeConfig({
+      ...config,
+      blueprintPath,
+      blueprintRevisionId: payload.artifact.blueprint.revisionId,
+      blueprintDefinitionHash: payload.artifact.blueprint.definitionHash,
+    });
 }
 
 interface FetchedBundle {
@@ -61,15 +77,14 @@ interface FetchedBundle {
 
 async function fetchBundle(targetUrl: string, key: string): Promise<FetchedBundle> {
   const response = await fetch(targetUrl, {
-    headers: {
-      Authorization: `Bearer ${key}`,
-      Accept: "application/json",
-    },
+    headers: { Authorization: `Bearer ${key}`, Accept: "application/json" },
   });
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`Failed to fetch policy bundle (${response.status}): ${errorText || response.statusText}`);
+    throw new Error(
+      `Failed to fetch policy bundle (${response.status}): ${errorText || response.statusText}`,
+    );
   }
 
   return {
@@ -133,7 +148,11 @@ export async function sync(options: {
 
     // Write a sidecar file agents can poll to detect bundle changes cheaply.
     if (changed || !fs.existsSync(lastSyncPath())) {
-      writeLastSync({ artifactHash: newHash || previousHash || "", branchId: newBranchId, revisionId: newRevisionId });
+      writeLastSync({
+        artifactHash: newHash || previousHash || "",
+        branchId: newBranchId,
+        revisionId: newRevisionId,
+      });
     }
 
     return { outputPath, artifactHash: newHash || previousHash || "", previousHash, changed };
@@ -156,7 +175,7 @@ function writeLastSync(data: { artifactHash: string; branchId: string; revisionI
     fs.mkdirSync(path.dirname(lastSyncPath()), { recursive: true });
     fs.writeFileSync(
       lastSyncPath(),
-      JSON.stringify({ ...data, syncedAt: new Date().toISOString() }, null, 2) + "\n"
+      JSON.stringify({ ...data, syncedAt: new Date().toISOString() }, null, 2) + "\n",
     );
   } catch {
     // non-fatal

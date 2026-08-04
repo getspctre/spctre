@@ -23,6 +23,6 @@ export function logSecurityEvent(event: SecurityEventType, ctx: SecurityEventCon
       eventType: event,
       timestamp: new Date().toISOString(),
       ...ctx,
-    })
+    }),
   );
 }

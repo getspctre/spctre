@@ -74,7 +74,11 @@ export async function listWorkspaceApiSummaries(tenantId: string) {
         id: workspace.id,
         slug: workspace.slug,
         name: workspace.name,
-        publicationStatus: bundle ? "PUBLISHED" : branchSummary?.hasInReview ? "IN_REVIEW" : "DRAFT",
+        publicationStatus: bundle
+          ? "PUBLISHED"
+          : branchSummary?.hasInReview
+            ? "IN_REVIEW"
+            : "DRAFT",
         activeBranchId: bundle?.branchId ?? branchSummary?.firstBranchId ?? null,
         revisionId: bundle?.revisionId ?? null,
         artifactHash: bundle?.artifactHash ?? null,
@@ -128,9 +132,13 @@ export async function createWorkspace(params: {
   await ensureAuthDemoTenant();
 
   // Enforce plan-aware workspace limits
-  const profile = await getCommercialProfile(params.tenantId).catch(swallow("getCommercialProfile", null));
+  const profile = await getCommercialProfile(params.tenantId).catch(
+    swallow("getCommercialProfile", null),
+  );
   const planCode = profile?.planCode ?? "HOSTED_TRIAL";
-  const wsCount = await countTenantWorkspaces(params.tenantId).catch(swallow("countTenantWorkspaces", 0));
+  const wsCount = await countTenantWorkspaces(params.tenantId).catch(
+    swallow("countTenantWorkspaces", 0),
+  );
 
   let limit = 1;
   if (planCode === "TEAM") limit = 3;
@@ -138,13 +146,17 @@ export async function createWorkspace(params: {
   else if (planCode === "ENTERPRISE") limit = 50;
 
   if (wsCount >= limit) {
-    return { error: `Your current plan (${planCode}) is limited to ${limit} workspace(s). Upgrade your plan to create more workspaces.` };
+    return {
+      error: `Your current plan (${planCode}) is limited to ${limit} workspace(s). Upgrade your plan to create more workspaces.`,
+    };
   }
 
   const writeCheck = verifyWriteAccess(params.tenantId);
   if (!writeCheck.allowed) return { error: writeCheck.error || "Write access denied." };
 
-  const actor = await findActorById(params.principalId, { tenantId: params.tenantId }).catch(swallow("findActorById", null));
+  const actor = await findActorById(params.principalId, { tenantId: params.tenantId }).catch(
+    swallow("findActorById", null),
+  );
   if (!actor || !actor.reviewerRoles.includes("Admin")) {
     await insertAdminAuditEvent({
       tenantId: params.tenantId,
@@ -152,7 +164,7 @@ export async function createWorkspace(params: {
       action: "workspace.create",
       targetType: "workspace",
       outcome: "DENIED",
-      reason: "Admin permission is required to create workspaces."
+      reason: "Admin permission is required to create workspaces.",
     }).catch(swallow("insertAdminAuditEvent", undefined));
     return { error: "Admin permission is required to create workspaces." };
   }
@@ -163,7 +175,10 @@ export async function createWorkspace(params: {
   const baseSlug = slugify(workspaceName);
   if (!baseSlug) return { error: "Workspace name must include letters or numbers." };
 
-  const existingSlugs = await listWorkspaceSlugsWithPrefix({ tenantId: params.tenantId, prefix: baseSlug });
+  const existingSlugs = await listWorkspaceSlugsWithPrefix({
+    tenantId: params.tenantId,
+    prefix: baseSlug,
+  });
 
   const used = new Set(existingSlugs);
   let slug = baseSlug;
@@ -189,7 +204,7 @@ export async function createWorkspace(params: {
     targetType: "workspace",
     targetId: workspaceId,
     outcome: "ALLOWED",
-    metadata: { slug, workspaceName }
+    metadata: { slug, workspaceName },
   }).catch(swallow("insertAdminAuditEvent", undefined));
 
   return { ok: true, workspaceId, slug };
@@ -201,11 +216,23 @@ export async function switchTenant(params: {
   principalId: string;
   subject: string;
   sessionId: string | undefined;
-}): Promise<{ ok: true; firstWorkspaceId: string | null; firstWorkspaceSlug: string | null; requiresMfa?: boolean; targetPrincipalId?: string; targetPrincipalSubject?: string } | { error: string }> {
+}): Promise<
+  | {
+      ok: true;
+      firstWorkspaceId: string | null;
+      firstWorkspaceSlug: string | null;
+      requiresMfa?: boolean;
+      targetPrincipalId?: string;
+      targetPrincipalSubject?: string;
+    }
+  | { error: string }
+> {
   if (isDatabaseConfigured()) {
     await ensureAuthDemoTenant();
 
-    const actor = await findActorById(params.principalId, { tenantId: params.currentTenantId }).catch(swallow("findActorById", null));
+    const actor = await findActorById(params.principalId, {
+      tenantId: params.currentTenantId,
+    }).catch(swallow("findActorById", null));
     if (!actor || !actor.reviewerRoles.includes("Admin")) {
       await insertAdminAuditEvent({
         tenantId: params.currentTenantId,
@@ -214,12 +241,15 @@ export async function switchTenant(params: {
         targetType: "tenant",
         targetId: params.tenantId,
         outcome: "DENIED",
-        reason: "Admin permission is required to switch tenants."
+        reason: "Admin permission is required to switch tenants.",
       }).catch(swallow("insertAdminAuditEvent", undefined));
       return { error: "Admin permission is required to switch tenants." };
     }
 
-    const targetTenant = await getTenantPrincipalBySubject({ tenantId: params.tenantId, subject: params.subject });
+    const targetTenant = await getTenantPrincipalBySubject({
+      tenantId: params.tenantId,
+      subject: params.subject,
+    });
     if (!targetTenant) return { error: "Tenant is not available to the signed-in principal." };
 
     // `listWorkspacesForTenant` and `getFirstWorkspaceId` both order by created_at ASC,
@@ -247,7 +277,7 @@ export async function switchTenant(params: {
       action: "tenant.switch",
       targetType: "tenant",
       targetId: params.tenantId,
-      outcome: "ALLOWED"
+      outcome: "ALLOWED",
     }).catch(swallow("insertAdminAuditEvent", undefined));
 
     return {
@@ -275,7 +305,10 @@ export async function switchActor(params: {
   const { DEMO_TENANT_ID } = await import("@/lib/demo");
   const isDemo = params.tenantId === DEMO_TENANT_ID;
   if (!isDemo) {
-    const adminActor = await findActorById(params.currentPrincipalId, { tenantId: params.tenantId, workspaceId: params.workspaceId }).catch(swallow("findActorById", null));
+    const adminActor = await findActorById(params.currentPrincipalId, {
+      tenantId: params.tenantId,
+      workspaceId: params.workspaceId,
+    }).catch(swallow("findActorById", null));
     if (!adminActor || !adminActor.reviewerRoles.includes("Admin")) {
       await insertAdminAuditEvent({
         tenantId: params.tenantId,
@@ -285,21 +318,31 @@ export async function switchActor(params: {
         targetType: "principal",
         targetId: params.actorId,
         outcome: "DENIED",
-        reason: "Admin permission is required to switch active actor."
+        reason: "Admin permission is required to switch active actor.",
       }).catch(swallow("insertAdminAuditEvent", undefined));
       return { error: "Admin permission is required to switch active actor." };
     }
   }
 
-  const actor = await findActorById(params.actorId, { tenantId: params.tenantId, workspaceId: params.workspaceId }).catch(swallow("findActorById", null));
+  const actor = await findActorById(params.actorId, {
+    tenantId: params.tenantId,
+    workspaceId: params.workspaceId,
+  }).catch(swallow("findActorById", null));
   if (!actor) return { error: "Actor is not available for this tenant/workspace." };
 
-  const actorSubject = await getPrincipalSubject({ tenantId: params.tenantId, principalId: params.actorId });
+  const actorSubject = await getPrincipalSubject({
+    tenantId: params.tenantId,
+    principalId: params.actorId,
+  });
   if (!actorSubject) return { error: "Actor subject is not available for this tenant." };
 
   if (!params.sessionId) return { error: "No active session." };
 
-  await updateSessionForActorSwitch({ sessionId: params.sessionId, tenantId: params.tenantId, principalId: params.actorId });
+  await updateSessionForActorSwitch({
+    sessionId: params.sessionId,
+    tenantId: params.tenantId,
+    principalId: params.actorId,
+  });
 
   await insertAdminAuditEvent({
     tenantId: params.tenantId,
@@ -308,7 +351,7 @@ export async function switchActor(params: {
     action: "actor.switch",
     targetType: "principal",
     targetId: params.actorId,
-    outcome: "ALLOWED"
+    outcome: "ALLOWED",
   }).catch(swallow("insertAdminAuditEvent", undefined));
 
   return { ok: true, actorSubject };
@@ -380,10 +423,19 @@ export async function updateWorkspaceAdmin(params: {
   const slug = normalizeSlug(requestedSlug);
   if (!slug) return { error: "Workspace slug must include letters or numbers." };
 
-  const slugTaken = await checkSlugInUse({ tenantId: params.tenantId, slug, excludeWorkspaceId: workspaceId });
+  const slugTaken = await checkSlugInUse({
+    tenantId: params.tenantId,
+    slug,
+    excludeWorkspaceId: workspaceId,
+  });
   if (slugTaken) return { error: "Workspace slug is already in use." };
 
-  await updateWorkspaceDetails({ tenantId: params.tenantId, workspaceId, name: workspaceName, slug });
+  await updateWorkspaceDetails({
+    tenantId: params.tenantId,
+    workspaceId,
+    name: workspaceName,
+    slug,
+  });
 
   return { ok: true, slug };
 }
@@ -408,7 +460,10 @@ export async function deleteWorkspaceAdmin(params: {
     return { error: "Cannot delete the last workspace." };
   }
 
-  const deleted = await deleteWorkspaceById({ tenantId: params.tenantId, workspaceId: params.workspaceId });
+  const deleted = await deleteWorkspaceById({
+    tenantId: params.tenantId,
+    workspaceId: params.workspaceId,
+  });
   if (!deleted) return { error: "Workspace not found." };
 
   let fallbackWorkspaceId: string | undefined;
@@ -493,13 +548,7 @@ export async function getShellPageModel(params: {
     }
   }
 
-  return {
-    branchCount,
-    escalationCount,
-    escalationPreview,
-    isAdmin,
-    degraded,
-  };
+  return { branchCount, escalationCount, escalationPreview, isAdmin, degraded };
 }
 
 export interface AdminWorkspacePageModel {
@@ -507,7 +556,9 @@ export interface AdminWorkspacePageModel {
   workspaces: Awaited<ReturnType<typeof listWorkspacesForTenant>>;
 }
 
-export async function getAdminWorkspacePageModel(scope: ActiveScope): Promise<AdminWorkspacePageModel> {
+export async function getAdminWorkspacePageModel(
+  scope: ActiveScope,
+): Promise<AdminWorkspacePageModel> {
   const workspaceContext = scope;
   const session = await getAuthSession().catch(swallow("getAuthSession", null));
 
@@ -530,8 +581,5 @@ export async function getAdminWorkspacePageModel(scope: ActiveScope): Promise<Ad
 
   const workspaces = await listWorkspacesForTenant(session.tenantId);
 
-  return {
-    workspaceContext,
-    workspaces,
-  };
+  return { workspaceContext, workspaces };
 }

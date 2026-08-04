@@ -5,11 +5,7 @@ export interface HeartbeatRecord {
   agentId: string;
   workspaceId: string;
   tenantId: string;
-  runtimeTarget: {
-    stack: "PAPERCLIP";
-    adapter: "@spctre/paperclip";
-    environment?: string;
-  };
+  runtimeTarget: { stack: "PAPERCLIP"; adapter: "@spctre/paperclip"; environment?: string };
   companyId?: string;
   issueId?: string;
   goalId?: string;
@@ -31,10 +27,7 @@ export class SpctreClient {
     const url = `${this.baseUrl}/api/v1/evidence`;
     const resp = await fetch(url, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${this.apiKey}`,
-      },
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${this.apiKey}` },
       body: JSON.stringify(record),
     });
     if (!resp.ok) {
@@ -69,10 +62,7 @@ export class SpctreClient {
     };
     const resp = await fetch(url, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${this.apiKey}`,
-      },
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${this.apiKey}` },
       body: JSON.stringify(payload),
     });
     if (!resp.ok) {

@@ -89,7 +89,7 @@ export function verifyTotpCode(params: {
     const candidate = generateTotpCode(
       params.secretBase32,
       now + delta * stepSeconds * 1000,
-      stepSeconds
+      stepSeconds,
     );
     // Constant-time compare; both values are exactly six ASCII digits.
     const candidateBytes = Buffer.from(candidate, "utf8");

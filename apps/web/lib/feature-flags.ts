@@ -18,64 +18,61 @@ export interface FeatureFlagDefinition {
   description: string;
 }
 
-const planRank: Record<SpctrePlan, number> = {
-  oss: 0,
-  cloud: 1,
-  business: 2,
-  enterprise: 3
-};
+const planRank: Record<SpctrePlan, number> = { oss: 0, cloud: 1, business: 2, enterprise: 3 };
 
 export const FEATURE_FLAGS: Record<FeatureFlag, FeatureFlagDefinition> = {
   multiTenantWorkspaceIsolation: {
     label: "Multi-tenant workspace isolation",
     minimumPlan: "enterprise",
-    description: "Attribute-aware workspace access controls across tenants and workspaces."
+    description: "Attribute-aware workspace access controls across tenants and workspaces.",
   },
   samlScimProvisioning: {
     label: "SAML and SCIM provisioning",
     minimumPlan: "enterprise",
-    description: "Enterprise identity provider setup and automated user provisioning."
+    description: "Enterprise identity provider setup and automated user provisioning.",
   },
   slaTrackedHitlQueue: {
     label: "SLA-tracked HITL queue",
     minimumPlan: "cloud",
-    description: "Managed assignment, SLA timers, and reviewer triage for escalations."
+    description: "Managed assignment, SLA timers, and reviewer triage for escalations.",
   },
   longTermForensicArchival: {
     label: "Long-term forensic archival",
     minimumPlan: "cloud",
-    description: "Extended tamper-evident evidence retention beyond the OSS local store."
+    description: "Extended tamper-evident evidence retention beyond the OSS local store.",
   },
   compliancePdfExport: {
     label: "Compliance PDF export",
     minimumPlan: "business",
-    description: "Auditor-ready PDF compliance packet generation."
+    description: "Auditor-ready PDF compliance packet generation.",
   },
   bulkProductionSimulation: {
     label: "Bulk production simulation",
     minimumPlan: "cloud",
-    description: "What-if policy analysis across the full retained production event log."
+    description: "What-if policy analysis across the full retained production event log.",
   },
   enterpriseRbacAudit: {
     label: "Custom roles and granular grants",
     minimumPlan: "enterprise",
-    description: "Granular reviewer lanes, publish scopes, environment bounds, and immutable access audit trails."
+    description:
+      "Granular reviewer lanes, publish scopes, environment bounds, and immutable access audit trails.",
   },
   managedWorkflowEnforcement: {
     label: "Managed workflow enforcement",
     minimumPlan: "cloud",
-    description: "Risk-aware routing, expiring approvals, delegation, and reviewer notifications."
+    description: "Risk-aware routing, expiring approvals, delegation, and reviewer notifications.",
   },
   siemEventStreaming: {
     label: "SIEM event streaming",
     minimumPlan: "cloud",
-    description: "Stream all policy evidence events to Splunk or Microsoft Sentinel in real time."
+    description: "Stream all policy evidence events to Splunk or Microsoft Sentinel in real time.",
   },
   crossSurfaceAgentIdentity: {
     label: "Cross-surface agent identity",
     minimumPlan: "cloud",
-    description: "Correlate decisions, trust changes, reviewer resolutions, and identity events across surface bindings into one unified history for a single logical agent."
-  }
+    description:
+      "Correlate decisions, trust changes, reviewer resolutions, and identity events across surface bindings into one unified history for a single logical agent.",
+  },
 };
 
 export type FeatureFlagSnapshot = Record<FeatureFlag, boolean>;
@@ -84,12 +81,13 @@ const warnedPlanValues = new Set<string>();
 
 export function normalizeSpctrePlan(value?: string | null): SpctrePlan {
   const normalized = value?.trim().toLowerCase();
-  if (normalized === "cloud" || normalized === "business" || normalized === "enterprise") return normalized;
+  if (normalized === "cloud" || normalized === "business" || normalized === "enterprise")
+    return normalized;
   if (normalized && normalized !== "oss") {
     if (!warnedPlanValues.has(normalized)) {
       warnedPlanValues.add(normalized);
       console.error(
-        `Unrecognized SPCTRE_PLAN "${value}". Falling back to "oss"; expected "oss", "cloud", "business", or "enterprise".`
+        `Unrecognized SPCTRE_PLAN "${value}". Falling back to "oss"; expected "oss", "cloud", "business", or "enterprise".`,
       );
     }
   }
@@ -104,7 +102,7 @@ export function getFeatureFlagSnapshot(plan: SpctrePlan): FeatureFlagSnapshot {
   return Object.fromEntries(
     (Object.keys(FEATURE_FLAGS) as FeatureFlag[]).map((flag) => [
       flag,
-      isFeatureEnabledForPlan(flag, plan)
-    ])
+      isFeatureEnabledForPlan(flag, plan),
+    ]),
   ) as FeatureFlagSnapshot;
 }

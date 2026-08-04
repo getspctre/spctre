@@ -10,9 +10,9 @@ import { writePythonAdapterFromTemplate } from "./template";
  *
  * No changes to agent source code are required.
  */
-export function writeCrewAiAdapter(config: SpctreCliConfig): { adapterPath: string; launchHint: string } {
-  return writePythonAdapterFromTemplate(config, {
-    framework: "crewai",
-    templateName: "crewai.py",
-  });
+export function writeCrewAiAdapter(config: SpctreCliConfig): {
+  adapterPath: string;
+  launchHint: string;
+} {
+  return writePythonAdapterFromTemplate(config, { framework: "crewai", templateName: "crewai.py" });
 }

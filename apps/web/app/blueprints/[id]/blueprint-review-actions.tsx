@@ -1,6 +1,14 @@
 "use client";
 
-import { CheckCircle2, Clock3, PlayCircle, RotateCcw, Send, ShieldCheck, XCircle } from "lucide-react";
+import {
+  CheckCircle2,
+  Clock3,
+  PlayCircle,
+  RotateCcw,
+  Send,
+  ShieldCheck,
+  XCircle,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { AgentBlueprintStatus, PolicyApproval } from "@spctre/policy-schema";
@@ -14,7 +22,10 @@ const statusClass: Record<string, string> = {
 
 async function postJson(url: string, body: unknown): Promise<{ error?: string }> {
   const response = await fetch(url, {
-    method: url.includes("/revisions/") || url.endsWith("/simulate") || url.endsWith("/rollback") ? "POST" : "PATCH",
+    method:
+      url.includes("/revisions/") || url.endsWith("/simulate") || url.endsWith("/rollback")
+        ? "POST"
+        : "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
@@ -36,7 +47,9 @@ export function getBlueprintApprovalRoleSummary({
 }) {
   const roleApprovals = approvals.filter((approval) => approval.role === role);
   return {
-    actorApproval: actorId ? roleApprovals.find((approval) => approval.reviewer === actorId) : undefined,
+    actorApproval: actorId
+      ? roleApprovals.find((approval) => approval.reviewer === actorId)
+      : undefined,
     approvedCount: roleApprovals.filter((approval) => approval.status === "APPROVED").length,
     requiredCount,
   };
@@ -71,9 +84,15 @@ export function BlueprintLifecycleActions({
   async function transition(next: "IN_REVIEW" | "PUBLISHED") {
     setError(null);
     setPending(next);
-    const result = await postJson(`/api/agent-blueprints/${blueprintId}`, { revisionId, status: next });
+    const result = await postJson(`/api/agent-blueprints/${blueprintId}`, {
+      revisionId,
+      status: next,
+    });
     setPending(null);
-    if (result.error) { setError(result.error); return; }
+    if (result.error) {
+      setError(result.error);
+      return;
+    }
     router.refresh();
   }
 
@@ -89,7 +108,13 @@ export function BlueprintLifecycleActions({
   return (
     <div className="blueprintLifecycleActions">
       {status === "DRAFT" ? (
-        <button className="button buttonPrimary" type="button" disabled={pending !== null || !canTransition} title={canTransition ? "Submit this Blueprint for review" : transitionBlockedReason} onClick={() => transition("IN_REVIEW")}>
+        <button
+          className="button buttonPrimary"
+          type="button"
+          disabled={pending !== null || !canTransition}
+          title={canTransition ? "Submit this Blueprint for review" : transitionBlockedReason}
+          onClick={() => transition("IN_REVIEW")}
+        >
           <Send size={15} />
           {pending === "IN_REVIEW" ? "Submitting…" : "Submit for review"}
         </button>
@@ -98,14 +123,24 @@ export function BlueprintLifecycleActions({
           className="button buttonPrimary"
           type="button"
           disabled={pending !== null || !canPublish || !canTransition}
-          title={!canTransition ? transitionBlockedReason : canPublish ? "Publish this Blueprint revision" : publishBlockedReason}
+          title={
+            !canTransition
+              ? transitionBlockedReason
+              : canPublish
+                ? "Publish this Blueprint revision"
+                : publishBlockedReason
+          }
           onClick={() => transition("PUBLISHED")}
         >
           <ShieldCheck size={15} />
           {pending === "PUBLISHED" ? "Publishing…" : "Publish revision"}
         </button>
       )}
-      {error ? <p className="meta publishError" role="alert">{error}</p> : null}
+      {error ? (
+        <p className="meta publishError" role="alert">
+          {error}
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -137,20 +172,32 @@ function ApprovalRoleCard({
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState("");
-  const { actorApproval, approvedCount } = getBlueprintApprovalRoleSummary({ approvals, role, actorId, requiredCount });
+  const { actorApproval, approvedCount } = getBlueprintApprovalRoleSummary({
+    approvals,
+    role,
+    actorId,
+    requiredCount,
+  });
   const Icon = statusIcon[actorApproval?.status ?? "PENDING"];
 
   async function submit(nextStatus: "APPROVED" | "CHANGES_REQUESTED") {
-    if (nextStatus === "CHANGES_REQUESTED" && actorApproval?.status === "APPROVED"
-      && !window.confirm(`Withdraw your ${role} approval? Publish will be blocked until re-approved.`)) return;
+    if (
+      nextStatus === "CHANGES_REQUESTED" &&
+      actorApproval?.status === "APPROVED" &&
+      !window.confirm(`Withdraw your ${role} approval? Publish will be blocked until re-approved.`)
+    )
+      return;
     setError(null);
     setPending(true);
     const result = await postJson(
       `/api/agent-blueprints/${blueprintId}/revisions/${revisionId}/approvals`,
-      { role, status: nextStatus, note: note.trim() || null }
+      { role, status: nextStatus, note: note.trim() || null },
     );
     setPending(false);
-    if (result.error) { setError(result.error); return; }
+    if (result.error) {
+      setError(result.error);
+      return;
+    }
     setNote("");
     router.refresh();
   }
@@ -161,7 +208,10 @@ function ApprovalRoleCard({
     <article className="approvalCard">
       <div className="approvalCardHeader">
         <div>
-          <h3>{role}{isRequired ? ` · ${approvedCount} of ${requiredCount ?? 1} approved` : ""}</h3>
+          <h3>
+            {role}
+            {isRequired ? ` · ${approvedCount} of ${requiredCount ?? 1} approved` : ""}
+          </h3>
           {isRequired ? <span className="approvalRequired">required</span> : null}
         </div>
         <span className={statusClass[actorApproval?.status ?? "PENDING"]}>
@@ -170,21 +220,37 @@ function ApprovalRoleCard({
         </span>
       </div>
 
-      {actorApproval?.reviewedAt ? <p className="meta">Your decision: {actorApproval.reviewedAt.slice(0, 10)}</p> : null}
+      {actorApproval?.reviewedAt ? (
+        <p className="meta">Your decision: {actorApproval.reviewedAt.slice(0, 10)}</p>
+      ) : null}
 
       {!disabled ? (
         actorApproval?.status === "APPROVED" ? (
           <div className="approvalActions">
-            <button className="button buttonSmall" type="button" disabled={!actionable} title={reviewReason} onClick={() => submit("CHANGES_REQUESTED")}>
+            <button
+              className="button buttonSmall"
+              type="button"
+              disabled={!actionable}
+              title={reviewReason}
+              onClick={() => submit("CHANGES_REQUESTED")}
+            >
               {pending ? "Withdrawing…" : "Withdraw"}
             </button>
           </div>
         ) : (
           <div className="approvalActions">
-            <button className="button buttonSmall buttonAllow" type="button" disabled={!actionable} title={reviewReason} onClick={() => submit("APPROVED")}>
+            <button
+              className="button buttonSmall buttonAllow"
+              type="button"
+              disabled={!actionable}
+              title={reviewReason}
+              onClick={() => submit("APPROVED")}
+            >
               {pending ? "Recording…" : "Approve"}
             </button>
-            <label className="srOnly" htmlFor={`bp-review-note-${role}`}>Reason for requested changes</label>
+            <label className="srOnly" htmlFor={`bp-review-note-${role}`}>
+              Reason for requested changes
+            </label>
             <input
               className="input"
               id={`bp-review-note-${role}`}
@@ -193,7 +259,13 @@ function ApprovalRoleCard({
               placeholder="Reason for requested changes"
               disabled={!actionable}
             />
-            <button className="button buttonSmall" type="button" disabled={!actionable} title={reviewReason} onClick={() => submit("CHANGES_REQUESTED")}>
+            <button
+              className="button buttonSmall"
+              type="button"
+              disabled={!actionable}
+              title={reviewReason}
+              onClick={() => submit("CHANGES_REQUESTED")}
+            >
               Request changes
             </button>
           </div>
@@ -201,7 +273,11 @@ function ApprovalRoleCard({
       ) : null}
 
       {!canReview && !disabled ? <p className="meta publishError">{reviewReason}</p> : null}
-      {error ? <p className="meta publishError" role="alert">{error}</p> : null}
+      {error ? (
+        <p className="meta publishError" role="alert">
+          {error}
+        </p>
+      ) : null}
     </article>
   );
 }
@@ -253,7 +329,11 @@ export function BlueprintApprovalGrid({
         approvals={role.approvals}
         actorId={actorId}
         canReview={canReview}
-        reviewReason={canReview ? undefined : reviewBlockedReason ?? `${actorName} cannot review as ${role.role}.`}
+        reviewReason={
+          canReview
+            ? undefined
+            : (reviewBlockedReason ?? `${actorName} cannot review as ${role.role}.`)
+        }
         disabled={actionsDisabled}
       />
     );
@@ -261,7 +341,9 @@ export function BlueprintApprovalGrid({
 
   return (
     <>
-      <div className="approvalGrid" id="reviews">{required.map(card)}</div>
+      <div className="approvalGrid" id="reviews">
+        {required.map(card)}
+      </div>
       {optional.length ? (
         <details className="optionalReviewers">
           <summary>Additional reviewers</summary>
@@ -284,7 +366,13 @@ type Simulation = {
  * runtime evidence, surfacing how many observed actions this definition would
  * newly block. Read-only; the route persists only an operations-log entry.
  */
-export function BlueprintSimulatePanel({ blueprintId, revisionId }: { blueprintId: string; revisionId: string }) {
+export function BlueprintSimulatePanel({
+  blueprintId,
+  revisionId,
+}: {
+  blueprintId: string;
+  revisionId: string;
+}) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [simulation, setSimulation] = useState<Simulation | null>(null);
@@ -297,9 +385,15 @@ export function BlueprintSimulatePanel({ blueprintId, revisionId }: { blueprintI
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ revisionId }),
     });
-    const result = (await response.json().catch(() => null)) as { simulation?: Simulation; error?: string } | null;
+    const result = (await response.json().catch(() => null)) as {
+      simulation?: Simulation;
+      error?: string;
+    } | null;
     setPending(false);
-    if (!response.ok || !result?.simulation) { setError(result?.error || "Simulation failed."); return; }
+    if (!response.ok || !result?.simulation) {
+      setError(result?.error || "Simulation failed.");
+      return;
+    }
     setSimulation(result.simulation);
   }
 
@@ -312,21 +406,34 @@ export function BlueprintSimulatePanel({ blueprintId, revisionId }: { blueprintI
         </button>
         {simulation ? (
           <p className="meta">
-            {simulation.newlyBlockedCount} of {simulation.sourceEventCount} recent action{simulation.sourceEventCount === 1 ? "" : "s"} would be newly blocked.
+            {simulation.newlyBlockedCount} of {simulation.sourceEventCount} recent action
+            {simulation.sourceEventCount === 1 ? "" : "s"} would be newly blocked.
           </p>
         ) : (
           <p className="meta">Replays this revision against the agent’s recent runtime evidence.</p>
         )}
       </div>
-      {error ? <p className="meta publishError" role="alert">{error}</p> : null}
+      {error ? (
+        <p className="meta publishError" role="alert">
+          {error}
+        </p>
+      ) : null}
       {simulation && simulation.examples.length ? (
         <div className="auditTableWrapper">
           <table className="auditTable">
-            <thead><tr><th>Decision</th><th>Connector</th><th>Action</th></tr></thead>
+            <thead>
+              <tr>
+                <th>Decision</th>
+                <th>Connector</th>
+                <th>Action</th>
+              </tr>
+            </thead>
             <tbody>
               {simulation.examples.map((example) => (
                 <tr className="auditRow" key={example.decisionId}>
-                  <td><code className="smallCode">{example.decisionId.slice(0, 12)}</code></td>
+                  <td>
+                    <code className="smallCode">{example.decisionId.slice(0, 12)}</code>
+                  </td>
                   <td>{example.connector}</td>
                   <td>{example.action}</td>
                 </tr>
@@ -365,9 +472,14 @@ export function BlueprintRollbackButton({
     if (!window.confirm("Restore this published revision as the active Blueprint?")) return;
     setError(null);
     setPending(true);
-    const result = await postJson(`/api/agent-blueprints/${blueprintId}/rollback`, { targetRevisionId });
+    const result = await postJson(`/api/agent-blueprints/${blueprintId}/rollback`, {
+      targetRevisionId,
+    });
     setPending(false);
-    if (result.error) { setError(result.error); return; }
+    if (result.error) {
+      setError(result.error);
+      return;
+    }
     router.refresh();
   }
 
@@ -383,7 +495,11 @@ export function BlueprintRollbackButton({
         <RotateCcw size={13} />
         {pending ? "Restoring…" : "Restore"}
       </button>
-      {error ? <p className="meta publishError" role="alert">{error}</p> : null}
+      {error ? (
+        <p className="meta publishError" role="alert">
+          {error}
+        </p>
+      ) : null}
     </>
   );
 }

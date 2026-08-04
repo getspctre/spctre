@@ -1,10 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  ORG_ROLES,
-  ROLE_DEFINITIONS,
-  inferRoleFromGrant,
-  roleDefinition,
-} from "../lib/rbac";
+import { ORG_ROLES, ROLE_DEFINITIONS, inferRoleFromGrant, roleDefinition } from "../lib/rbac";
 import { grantForRole, normalizeOrgRole } from "../lib/repositories/members";
 
 describe("organization RBAC role matrix", () => {
@@ -32,6 +27,8 @@ describe("organization RBAC role matrix", () => {
     expect(roleDefinition("NOPE").role).toBe("VIEWER");
     expect(inferRoleFromGrant({ reviewerRoles: ["Admin"], publishScopes: [] })).toBe("ADMIN");
     expect(inferRoleFromGrant({ reviewerRoles: ["Security"], publishScopes: [] })).toBe("REVIEWER");
-    expect(inferRoleFromGrant({ reviewerRoles: [], publishScopes: ["WORKSPACE"] })).toBe("CONTRIBUTOR");
+    expect(inferRoleFromGrant({ reviewerRoles: [], publishScopes: ["WORKSPACE"] })).toBe(
+      "CONTRIBUTOR",
+    );
   });
 });

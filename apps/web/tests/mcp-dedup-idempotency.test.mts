@@ -1,5 +1,9 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
-import { buildEvidenceRequest, findDedupTelemetry, makeEvidenceSqlMock } from "./evidence-route-test-helper";
+import {
+  buildEvidenceRequest,
+  findDedupTelemetry,
+  makeEvidenceSqlMock,
+} from "./evidence-route-test-helper";
 
 // ── Mock external dependencies ─────────────────────────────────────────────
 
@@ -9,24 +13,27 @@ const revalidatePathSpy = vi.fn();
 let nextInsertResult: unknown[] = [{ decision_id: "dec-1" }];
 const sqlMock = makeEvidenceSqlMock(() => nextInsertResult);
 
-vi.mock("@/lib/db", () => ({
-  sql: sqlMock,
-}));
+vi.mock("@/lib/db", () => ({ sql: sqlMock }));
 
 vi.mock("@/lib/demo", () => ({
   DEMO_TENANT_ID: "00000000-0000-0000-0000-000000000001",
-  DEMO_WORKSPACE_ID: "demo-workspace"
+  DEMO_WORKSPACE_ID: "demo-workspace",
 }));
 
-vi.mock("@/lib/repositories/seed/local-dev", () => ({
-  ensureDemoTenant: ensureDemoTenantSpy,
-}));
+vi.mock("@/lib/repositories/seed/local-dev", () => ({ ensureDemoTenant: ensureDemoTenantSpy }));
 
 vi.mock("@/lib/service-tokens", () => ({
-  authenticateServiceToken: vi.fn().mockResolvedValue({
-    ok: true,
-    auth: { tenantId: "00000000-0000-0000-0000-000000000001", workspaceId: "demo-workspace", principalId: "svc-1", scopes: ["evidence:write"] },
-  }),
+  authenticateServiceToken: vi
+    .fn()
+    .mockResolvedValue({
+      ok: true,
+      auth: {
+        tenantId: "00000000-0000-0000-0000-000000000001",
+        workspaceId: "demo-workspace",
+        principalId: "svc-1",
+        scopes: ["evidence:write"],
+      },
+    }),
   hasBearerToken: () => true,
 }));
 
@@ -77,7 +84,7 @@ describe("Evidence route – dedup and idempotency (R1)", () => {
     const res = await route.POST(buildEvidenceRequest());
 
     expect(res.status).toBe(201);
-    const body = await res.json() as { evidence: unknown; deduplicated?: boolean };
+    const body = (await res.json()) as { evidence: unknown; deduplicated?: boolean };
     expect(body.deduplicated).toBeUndefined();
   });
 
@@ -87,7 +94,7 @@ describe("Evidence route – dedup and idempotency (R1)", () => {
     const res = await route.POST(buildEvidenceRequest({}, "hook"));
 
     expect(res.status).toBe(200);
-    const body = await res.json() as { deduplicated: boolean };
+    const body = (await res.json()) as { deduplicated: boolean };
     expect(body.deduplicated).toBe(true);
   });
 
@@ -97,7 +104,7 @@ describe("Evidence route – dedup and idempotency (R1)", () => {
     const res = await route.POST(buildEvidenceRequest({}, "mcp"));
 
     expect(res.status).toBe(200);
-    const body = await res.json() as { deduplicated: boolean };
+    const body = (await res.json()) as { deduplicated: boolean };
     expect(body.deduplicated).toBe(true);
   });
 
@@ -149,13 +156,9 @@ describe("Evidence route – dedup and idempotency (R1)", () => {
     nextInsertResult = [];
 
     const reqWithoutHeader = buildEvidenceRequest(
-      {
-        decisionId: "dec-1",
-        reason: "ok",
-        status: "ALLOW",
-      },
+      { decisionId: "dec-1", reason: "ok", status: "ALLOW" },
       "hook",
-      { includeSourceHeader: false }
+      { includeSourceHeader: false },
     );
 
     await route.POST(reqWithoutHeader);

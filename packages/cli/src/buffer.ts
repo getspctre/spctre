@@ -3,11 +3,7 @@ import * as path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { configPath, type SpctreCliConfig } from "./config.js";
 
-type OutboxRow = {
-  id: number;
-  payload_type: string;
-  payload_json: string;
-};
+type OutboxRow = { id: number; payload_type: string; payload_json: string };
 
 function getLegacyBufferDir(): string {
   return path.join(path.dirname(configPath()), "telemetry-buffer");
@@ -44,7 +40,10 @@ function migrateLegacyBuffer(): void {
 
   let files: string[];
   try {
-    files = fs.readdirSync(dir).filter(file => file.endsWith(".json")).sort();
+    files = fs
+      .readdirSync(dir)
+      .filter((file) => file.endsWith(".json"))
+      .sort();
   } catch {
     return;
   }
@@ -58,7 +57,9 @@ function migrateLegacyBuffer(): void {
       if (payloadJson === undefined) throw new Error("Missing payload");
     } catch {
       // Preserve the current behavior: corrupted legacy entries cannot block FIFO delivery.
-      try { fs.unlinkSync(filePath); } catch {}
+      try {
+        fs.unlinkSync(filePath);
+      } catch {}
       continue;
     }
 
@@ -67,16 +68,21 @@ function migrateLegacyBuffer(): void {
       const db = openOutbox();
       try {
         db.exec("BEGIN IMMEDIATE");
-        const seen = db.prepare("SELECT 1 FROM legacy_buffer_migration WHERE filename = ?").get(filename);
+        const seen = db
+          .prepare("SELECT 1 FROM legacy_buffer_migration WHERE filename = ?")
+          .get(filename);
         if (!seen) {
-          db.prepare("INSERT INTO outbox (payload_type, payload_json, created_at) VALUES (?, ?, ?)")
-            .run("evidence", payloadJson, new Date().toISOString());
+          db.prepare(
+            "INSERT INTO outbox (payload_type, payload_json, created_at) VALUES (?, ?, ?)",
+          ).run("evidence", payloadJson, new Date().toISOString());
           db.prepare("INSERT INTO legacy_buffer_migration (filename) VALUES (?)").run(filename);
         }
         db.exec("COMMIT");
         migrated = true;
       } catch (error) {
-        try { db.exec("ROLLBACK"); } catch {}
+        try {
+          db.exec("ROLLBACK");
+        } catch {}
         throw error;
       } finally {
         db.close();
@@ -87,7 +93,9 @@ function migrateLegacyBuffer(): void {
     }
 
     if (migrated) {
-      try { fs.unlinkSync(filePath); } catch {}
+      try {
+        fs.unlinkSync(filePath);
+      } catch {}
     }
   }
 }
@@ -104,8 +112,9 @@ export function pushToBuffer(payloadTypeOrPayload: string | unknown, maybePayloa
     migrateLegacyBuffer();
     const db = openOutbox();
     try {
-      db.prepare("INSERT INTO outbox (payload_type, payload_json, created_at) VALUES (?, ?, ?)")
-        .run(payloadType, payloadJson, new Date().toISOString());
+      db.prepare(
+        "INSERT INTO outbox (payload_type, payload_json, created_at) VALUES (?, ?, ?)",
+      ).run(payloadType, payloadJson, new Date().toISOString());
     } finally {
       db.close();
     }
@@ -126,7 +135,9 @@ function deleteOutboxRow(id: number): void {
 function recordRetry(id: number, error: string): void {
   const db = openOutbox();
   try {
-    db.prepare("UPDATE outbox SET attempt_count = attempt_count + 1, last_error = ? WHERE id = ?").run(error, id);
+    db.prepare(
+      "UPDATE outbox SET attempt_count = attempt_count + 1, last_error = ? WHERE id = ?",
+    ).run(error, id);
   } finally {
     db.close();
   }
@@ -135,7 +146,9 @@ function recordRetry(id: number, error: string): void {
 function readOldestOutboxRow(): OutboxRow | undefined {
   const db = openOutbox();
   try {
-    return db.prepare("SELECT id, payload_type, payload_json FROM outbox ORDER BY id ASC LIMIT 1").get() as OutboxRow | undefined;
+    return db
+      .prepare("SELECT id, payload_type, payload_json FROM outbox ORDER BY id ASC LIMIT 1")
+      .get() as OutboxRow | undefined;
   } finally {
     db.close();
   }
@@ -172,7 +185,7 @@ export async function flushBuffer(config: SpctreCliConfig): Promise<void> {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${config.token}`,
+          Authorization: `Bearer ${config.token}`,
           "x-spctre-source": "hook",
         },
         body: JSON.stringify(payload),
@@ -183,7 +196,9 @@ export async function flushBuffer(config: SpctreCliConfig): Promise<void> {
       if (response.status < 400) {
         deleteOutboxRow(row.id);
       } else if (response.status < 500) {
-        console.error(`[Spctre Buffer] Discarding invalid telemetry payload: HTTP ${response.status}`);
+        console.error(
+          `[Spctre Buffer] Discarding invalid telemetry payload: HTTP ${response.status}`,
+        );
         deleteOutboxRow(row.id);
       } else {
         recordRetry(row.id, `HTTP ${response.status}`);
@@ -191,7 +206,9 @@ export async function flushBuffer(config: SpctreCliConfig): Promise<void> {
       }
     } catch (error) {
       clearTimeout(timeoutId);
-      try { recordRetry(row.id, String(error)); } catch {}
+      try {
+        recordRetry(row.id, String(error));
+      } catch {}
       return;
     }
   }

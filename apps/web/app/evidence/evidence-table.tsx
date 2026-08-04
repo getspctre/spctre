@@ -35,7 +35,13 @@ interface Props {
   controlMappingIndex?: ControlMappingEntry[];
 }
 
-export function EvidenceTable({ evidence, viewMode, highlightId, workspaceSlug, controlMappingIndex = [] }: Props) {
+export function EvidenceTable({
+  evidence,
+  viewMode,
+  highlightId,
+  workspaceSlug,
+  controlMappingIndex = [],
+}: Props) {
   const [selected, setSelected] = useState<RuntimeDecisionEvidenceRecord | null>(null);
   const highlightRowRef = useRef<HTMLTableRowElement>(null);
 
@@ -68,8 +74,7 @@ export function EvidenceTable({ evidence, viewMode, highlightId, workspaceSlug, 
           </thead>
           <tbody>
             {evidence.map((audit, index) => {
-              const isHeartbeat =
-                audit.connector === "system" && audit.action === "heartbeat";
+              const isHeartbeat = audit.connector === "system" && audit.action === "heartbeat";
               const isHighlighted = audit.decisionId === highlightId;
               return (
                 <tr
@@ -100,7 +105,9 @@ export function EvidenceTable({ evidence, viewMode, highlightId, workspaceSlug, 
                     )}
                   </td>
                   <td>
-                    <StatusPill tone={statusToneFromDecision(audit.status)}>{audit.status}</StatusPill>
+                    <StatusPill tone={statusToneFromDecision(audit.status)}>
+                      {audit.status}
+                    </StatusPill>
                   </td>
                   <td>
                     <code>{audit.agentId}</code>
@@ -128,11 +135,20 @@ export function EvidenceTable({ evidence, viewMode, highlightId, workspaceSlug, 
           open
           onClose={() => setSelected(null)}
           width="wide"
-          eyebrow={selected.connector === "system" && selected.action === "heartbeat" ? "Runtime heartbeat" : `${selected.connector}.${selected.action}`}
+          eyebrow={
+            selected.connector === "system" && selected.action === "heartbeat"
+              ? "Runtime heartbeat"
+              : `${selected.connector}.${selected.action}`
+          }
           title={selected.decisionId}
           description={selected.reason}
         >
-          <EvidencePanelBody audit={selected} viewMode={viewMode} workspaceSlug={workspaceSlug} controlMappingIndex={controlMappingIndex} />
+          <EvidencePanelBody
+            audit={selected}
+            viewMode={viewMode}
+            workspaceSlug={workspaceSlug}
+            controlMappingIndex={controlMappingIndex}
+          />
         </Drawer>
       ) : null}
     </>
@@ -154,13 +170,18 @@ function PreFlightIntentSection({ audit }: { audit: RuntimeDecisionEvidenceRecor
         {audit.planSummary ? (
           <div>
             <span className="meta">Plan Summary</span>
-            <p className="meta evidenceSourceText" style={{ marginTop: 4 }}>{audit.planSummary}</p>
+            <p className="meta evidenceSourceText" style={{ marginTop: 4 }}>
+              {audit.planSummary}
+            </p>
           </div>
         ) : null}
         {audit.toolParameters ? (
           <div>
             <span className="meta">Tool Parameters</span>
-            <pre className="smallCode" style={{ marginTop: 4, whiteSpace: "pre-wrap", overflow: "auto", maxHeight: 200 }}>
+            <pre
+              className="smallCode"
+              style={{ marginTop: 4, whiteSpace: "pre-wrap", overflow: "auto", maxHeight: 200 }}
+            >
               {JSON.stringify(redactAndBoundParameters(audit.toolParameters), null, 2)}
             </pre>
           </div>
@@ -195,7 +216,8 @@ function GatewayMetadataSection({ audit }: { audit: RuntimeDecisionEvidenceRecor
           <div>
             <span className="meta">Tokens (prompt / completion)</span>
             <strong>
-              {String(audit.rawEvidence._prompt_tokens)} / {String(audit.rawEvidence._completion_tokens ?? 0)}
+              {String(audit.rawEvidence._prompt_tokens)} /{" "}
+              {String(audit.rawEvidence._completion_tokens ?? 0)}
             </strong>
           </div>
         ) : null}
@@ -205,12 +227,15 @@ function GatewayMetadataSection({ audit }: { audit: RuntimeDecisionEvidenceRecor
             <strong>${Number(audit.rawEvidence._cost_usd).toFixed(4)}</strong>
           </div>
         ) : null}
-        {Array.isArray(audit.rawEvidence._tool_declarations) && audit.rawEvidence._tool_declarations.length > 0 ? (
+        {Array.isArray(audit.rawEvidence._tool_declarations) &&
+        audit.rawEvidence._tool_declarations.length > 0 ? (
           <div>
             <span className="meta">Tool declarations</span>
             <div className="packDrawerTags evidenceSourceText">
               {(audit.rawEvidence._tool_declarations as string[]).map((t) => (
-                <span className="ruleRef" key={t}>{t}</span>
+                <span className="ruleRef" key={t}>
+                  {t}
+                </span>
               ))}
             </div>
           </div>
@@ -220,16 +245,35 @@ function GatewayMetadataSection({ audit }: { audit: RuntimeDecisionEvidenceRecor
   );
 }
 
-function BlueprintProvenanceSection({ audit, viewMode }: { audit: RuntimeDecisionEvidenceRecord; viewMode: AppViewMode }) {
+function BlueprintProvenanceSection({
+  audit,
+  viewMode,
+}: {
+  audit: RuntimeDecisionEvidenceRecord;
+  viewMode: AppViewMode;
+}) {
   const blueprint = audit.blueprintContext;
   if (!blueprint) return null;
   return (
     <div className="packRuleDetail">
       <p className="eyebrow">Blueprint provenance</p>
       <div className="packRuleMeta">
-        <div><span className="meta">Blueprint</span><strong>{blueprint.name}</strong></div>
-        <div><span className="meta">Revision</span><code className="smallCode">{formatProvenanceId(blueprint.revisionId, viewMode, 18)}</code></div>
-        <div><span className="meta">Definition hash</span><code className="smallCode">{formatArtifactHash(blueprint.definitionHash, viewMode, hashToFingerprint)}</code></div>
+        <div>
+          <span className="meta">Blueprint</span>
+          <strong>{blueprint.name}</strong>
+        </div>
+        <div>
+          <span className="meta">Revision</span>
+          <code className="smallCode">
+            {formatProvenanceId(blueprint.revisionId, viewMode, 18)}
+          </code>
+        </div>
+        <div>
+          <span className="meta">Definition hash</span>
+          <code className="smallCode">
+            {formatArtifactHash(blueprint.definitionHash, viewMode, hashToFingerprint)}
+          </code>
+        </div>
       </div>
     </div>
   );
@@ -241,14 +285,17 @@ function EntireSessionSection({ audit }: { audit: RuntimeDecisionEvidenceRecord 
     <div className="packRuleDetail">
       <p className="eyebrow">
         Entire CLI session
-        {Array.isArray(audit.rawEvidence._scope_violations) && (audit.rawEvidence._scope_violations as string[]).length > 0 ? (
+        {Array.isArray(audit.rawEvidence._scope_violations) &&
+        (audit.rawEvidence._scope_violations as string[]).length > 0 ? (
           <span className="pill pillDeny pillTiny headCountInline">Scope violation</span>
         ) : null}
       </p>
       <div className="packRuleMeta">
         <div>
           <span className="meta">Session ID</span>
-          <code className="smallCode">{String(audit.rawEvidence._session_id ?? audit.rawEvidence._checkpoint_id ?? "—")}</code>
+          <code className="smallCode">
+            {String(audit.rawEvidence._session_id ?? audit.rawEvidence._checkpoint_id ?? "—")}
+          </code>
         </div>
         <div>
           <span className="meta">Agent</span>
@@ -276,26 +323,33 @@ function EntireSessionSection({ audit }: { audit: RuntimeDecisionEvidenceRecord 
           <div>
             <span className="meta">Tokens (input / output)</span>
             <strong>
-              {String(audit.rawEvidence._input_tokens ?? 0)} / {String(audit.rawEvidence._output_tokens ?? 0)}
+              {String(audit.rawEvidence._input_tokens ?? 0)} /{" "}
+              {String(audit.rawEvidence._output_tokens ?? 0)}
             </strong>
           </div>
         ) : null}
-        {Array.isArray(audit.rawEvidence._tool_calls) && (audit.rawEvidence._tool_calls as string[]).length > 0 ? (
+        {Array.isArray(audit.rawEvidence._tool_calls) &&
+        (audit.rawEvidence._tool_calls as string[]).length > 0 ? (
           <div>
             <span className="meta">Tool calls</span>
             <div className="packDrawerTags evidenceSourceText">
               {(audit.rawEvidence._tool_calls as string[]).map((t) => (
-                <span className="ruleRef" key={t}>{t}</span>
+                <span className="ruleRef" key={t}>
+                  {t}
+                </span>
               ))}
             </div>
           </div>
         ) : null}
-        {Array.isArray(audit.rawEvidence._scope_violations) && (audit.rawEvidence._scope_violations as string[]).length > 0 ? (
+        {Array.isArray(audit.rawEvidence._scope_violations) &&
+        (audit.rawEvidence._scope_violations as string[]).length > 0 ? (
           <div>
             <span className="meta">Scope violations</span>
             <div className="packDrawerTags evidenceSourceText">
               {(audit.rawEvidence._scope_violations as string[]).map((v) => (
-                <span className="ruleRef" key={v}>{v}</span>
+                <span className="ruleRef" key={v}>
+                  {v}
+                </span>
               ))}
             </div>
           </div>
@@ -441,9 +495,7 @@ function EvidencePanelBody({
         </div>
         <div>
           <span className="meta">Runtime</span>
-          <strong>
-            {runtimeLabels[audit.runtimeTarget.stack] ?? audit.runtimeTarget.stack}
-          </strong>
+          <strong>{runtimeLabels[audit.runtimeTarget.stack] ?? audit.runtimeTarget.stack}</strong>
         </div>
       </div>
 
@@ -505,9 +557,7 @@ function EvidencePanelBody({
       <div className="packDrawerRules">
         <p className="eyebrow">
           Policy refs
-          <span className="headCount headCountInline">
-            {audit.policyRefs.length}
-          </span>
+          <span className="headCount headCountInline">{audit.policyRefs.length}</span>
         </p>
         {audit.policyRefs.length ? (
           <div className="packDrawerTags">
@@ -528,9 +578,7 @@ function EvidencePanelBody({
       <div className="packDrawerRules">
         <p className="eyebrow">
           Context chain
-          <span className="headCount headCountInline">
-            {audit.policyContext.length}
-          </span>
+          <span className="headCount headCountInline">{audit.policyContext.length}</span>
         </p>
         {audit.policyContext.length ? (
           <div className="contextChain">

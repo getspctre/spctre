@@ -31,22 +31,28 @@ export function TotpSection({ existingEnrollments }: TotpSectionProps) {
     setError(null);
 
     setBusy(true);
-    try { const res = await fetch("/api/auth/mfa/enroll-totp/start", {
-      method: "POST",
-      headers: { "content-type": "application/json" }
-    });
+    try {
+      const res = await fetch("/api/auth/mfa/enroll-totp/start", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+      });
 
-    const data = (await res.json().catch(() => null)) as TotpStartResponse | { error?: string } | null;
-    if (!res.ok || !data || !("enrollmentId" in data)) {
-      setError((data && "error" in data && data.error) || t("errors.start"));
-      return;
+      const data = (await res.json().catch(() => null)) as
+        TotpStartResponse | { error?: string } | null;
+      if (!res.ok || !data || !("enrollmentId" in data)) {
+        setError((data && "error" in data && data.error) || t("errors.start"));
+        return;
+      }
+
+      setEnrollmentId(data.enrollmentId);
+      setSecret(data.secret);
+      setOtpauthUrl(data.otpauthUrl);
+      setStatus("enrolling");
+    } catch {
+      setError(t("errors.start"));
+    } finally {
+      setBusy(false);
     }
-
-    setEnrollmentId(data.enrollmentId);
-    setSecret(data.secret);
-    setOtpauthUrl(data.otpauthUrl);
-    setStatus("enrolling");
-    } catch { setError(t("errors.start")); } finally { setBusy(false); }
   }
 
   async function verifyEnrollment(event: FormEvent<HTMLFormElement>) {
@@ -60,21 +66,26 @@ export function TotpSection({ existingEnrollments }: TotpSectionProps) {
     }
 
     setBusy(true);
-    try { const res = await fetch("/api/auth/mfa/enroll-totp/verify", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ enrollmentId, code: normalizedCode })
-    });
+    try {
+      const res = await fetch("/api/auth/mfa/enroll-totp/verify", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ enrollmentId, code: normalizedCode }),
+      });
 
-    const data = (await res.json().catch(() => null)) as { ok?: boolean; error?: string } | null;
-    if (!res.ok || !data?.ok) {
-      setError(data?.error || t("errors.verify"));
-      return;
+      const data = (await res.json().catch(() => null)) as { ok?: boolean; error?: string } | null;
+      if (!res.ok || !data?.ok) {
+        setError(data?.error || t("errors.verify"));
+        return;
+      }
+
+      setStatus("done");
+      window.location.reload();
+    } catch {
+      setError(t("errors.verify"));
+    } finally {
+      setBusy(false);
     }
-
-    setStatus("done");
-    window.location.reload();
-    } catch { setError(t("errors.verify")); } finally { setBusy(false); }
   }
 
   return (
@@ -86,7 +97,12 @@ export function TotpSection({ existingEnrollments }: TotpSectionProps) {
       </div>
 
       {status === "idle" ? (
-        <button className="button buttonPrimary accountAction" type="button" onClick={startEnrollment} disabled={busy}>
+        <button
+          className="button buttonPrimary accountAction"
+          type="button"
+          onClick={startEnrollment}
+          disabled={busy}
+        >
           {t("enroll")}
         </button>
       ) : null}
@@ -120,7 +136,11 @@ export function TotpSection({ existingEnrollments }: TotpSectionProps) {
       ) : null}
 
       {status === "done" ? <p className="meta">{t("verified")}</p> : null}
-      {error ? <p className="meta workspaceError" role="alert">{error}</p> : null}
+      {error ? (
+        <p className="meta workspaceError" role="alert">
+          {error}
+        </p>
+      ) : null}
 
       <div style={{ display: "grid", gap: "10px" }}>
         <h3>{t("verified_enrollments")}</h3>
@@ -132,9 +152,17 @@ export function TotpSection({ existingEnrollments }: TotpSectionProps) {
                 <span className="pill pillAllow">{t("verified_badge")}</span>
               </div>
               <p className="meta">
-                {t("verified_at", { date: new Date(enrollment.verifiedAt ?? enrollment.createdAt).toLocaleString() })}
+                {t("verified_at", {
+                  date: new Date(enrollment.verifiedAt ?? enrollment.createdAt).toLocaleString(),
+                })}
               </p>
-              <form action={deleteMfaEnrollmentForm} onSubmit={(event) => { if (!window.confirm(t("remove_confirm", { name: enrollment.mfaType }))) event.preventDefault(); }}>
+              <form
+                action={deleteMfaEnrollmentForm}
+                onSubmit={(event) => {
+                  if (!window.confirm(t("remove_confirm", { name: enrollment.mfaType })))
+                    event.preventDefault();
+                }}
+              >
                 <input type="hidden" name="enrollmentId" value={enrollment.id} />
                 <button className="button" type="submit">
                   {t("remove")}

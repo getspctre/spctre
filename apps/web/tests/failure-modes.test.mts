@@ -45,15 +45,17 @@ vi.mock("@/lib/repositories/workspace", () => ({
   insertAuthorizationDenialEvent: insertAuthorizationDenialEventMock,
 }));
 vi.mock("@/lib/repositories/approval-workflow", () => ({
-  getApprovalWorkflowForContext: vi.fn().mockResolvedValue({
-    id: "default-static-approval-workflow",
-    name: "Default approval workflow",
-    reviewMode: "PARALLEL",
-    workspaceId: undefined,
-    environment: undefined,
-    rules: [],
-    generatedAt: new Date().toISOString(),
-  }),
+  getApprovalWorkflowForContext: vi
+    .fn()
+    .mockResolvedValue({
+      id: "default-static-approval-workflow",
+      name: "Default approval workflow",
+      reviewMode: "PARALLEL",
+      workspaceId: undefined,
+      environment: undefined,
+      rules: [],
+      generatedAt: new Date().toISOString(),
+    }),
   approvalRulesFromWorkflow: vi.fn().mockReturnValue([]),
 }));
 vi.mock("@/lib/repositories/operations-log", () => ({
@@ -65,27 +67,26 @@ vi.mock("@/lib/repositories/evidence", () => ({
 }));
 
 vi.mock("@/lib/workspace/scope", () => ({
-  getActiveScope: vi.fn().mockResolvedValue({
-    tenantId: "t-1",
-    workspaceId: "ws-1",
-    workspaceSlug: "ws-one",
-    tenantSlug: "t-one",
-  }),
+  getActiveScope: vi
+    .fn()
+    .mockResolvedValue({
+      tenantId: "t-1",
+      workspaceId: "ws-1",
+      workspaceSlug: "ws-one",
+      tenantSlug: "t-one",
+    }),
 }));
 
 vi.mock("@/lib/actors", () => ({
   canActorReviewRole: vi.fn(),
-  getActiveActor: vi.fn().mockResolvedValue({
-    actor: { id: "actor-1", role: "OWNER", name: "Owner" },
-  }),
+  getActiveActor: vi
+    .fn()
+    .mockResolvedValue({ actor: { id: "actor-1", role: "OWNER", name: "Owner" } }),
   getBranchPermissions: vi.fn().mockReturnValue({ canPublish: true }),
   requireActorAdminWorkspace: vi.fn().mockReturnValue({ allowed: true }),
 }));
 
-vi.mock("@/lib/approval-config", () => ({
-  REQUIRED_APPROVAL_RULES: [],
-  ALL_REVIEWER_ROLES: [],
-}));
+vi.mock("@/lib/approval-config", () => ({ REQUIRED_APPROVAL_RULES: [], ALL_REVIEWER_ROLES: [] }));
 
 const evaluatePublishReadinessMock = vi.fn();
 
@@ -128,11 +129,20 @@ describe("Publish gating — approval not satisfied", () => {
       status: "PENDING_APPROVAL",
       satisfiedRoles: [],
       missingRoles: ["Security"],
-      blockingReasons: [{ message: "Missing approval from Security reviewer.", href: "#reviews", cta: "Open reviews" }],
+      blockingReasons: [
+        {
+          message: "Missing approval from Security reviewer.",
+          href: "#reviews",
+          cta: "Open reviews",
+        },
+      ],
       approvals: [],
     });
 
-    const result = await publishRevisionDecision({ branchId: "branch-1", revisionId: "rev-1" }, { tenantId: "t-1", workspaceId: "ws-1" });
+    const result = await publishRevisionDecision(
+      { branchId: "branch-1", revisionId: "rev-1" },
+      { tenantId: "t-1", workspaceId: "ws-1" },
+    );
     expect(result).toHaveProperty("error");
     if ("error" in result) {
       expect(result.error).toMatch(/missing approval/i);
@@ -148,13 +158,20 @@ describe("Publish gating — approval not satisfied", () => {
       satisfiedRoles: [],
       missingRoles: ["Security", "Legal"],
       blockingReasons: [
-        { message: "Missing approval from Security reviewer.", href: "#reviews", cta: "Open reviews" },
+        {
+          message: "Missing approval from Security reviewer.",
+          href: "#reviews",
+          cta: "Open reviews",
+        },
         { message: "Missing approval from Legal reviewer.", href: "#reviews", cta: "Open reviews" },
       ],
       approvals: [],
     });
 
-    const result = await publishRevisionDecision({ branchId: "branch-1", revisionId: "rev-1" }, { tenantId: "t-1", workspaceId: "ws-1" });
+    const result = await publishRevisionDecision(
+      { branchId: "branch-1", revisionId: "rev-1" },
+      { tenantId: "t-1", workspaceId: "ws-1" },
+    );
     if ("error" in result) {
       expect(result.error).toContain("Security");
       expect(result.error).toContain("Legal");
@@ -194,7 +211,10 @@ describe("Publish gating — open gateway escalations", () => {
       nearestSlaDueAt: "2026-05-11T20:00:00.000Z",
     });
 
-    const result = await publishRevisionDecision({ branchId: "branch-1", revisionId: "rev-1" }, { tenantId: "t-1", workspaceId: "ws-1" });
+    const result = await publishRevisionDecision(
+      { branchId: "branch-1", revisionId: "rev-1" },
+      { tenantId: "t-1", workspaceId: "ws-1" },
+    );
     expect(result).toHaveProperty("error");
     if ("error" in result) {
       expect(result.error).toMatch(/escalation/i);
@@ -205,9 +225,14 @@ describe("Publish gating — open gateway escalations", () => {
   it("blocks publication of an empty policy revision", async () => {
     getRulesForRevisionMock.mockResolvedValue([]);
 
-    const result = await publishRevisionDecision({ branchId: "branch-1", revisionId: "rev-1" }, { tenantId: "t-1", workspaceId: "ws-1" });
+    const result = await publishRevisionDecision(
+      { branchId: "branch-1", revisionId: "rev-1" },
+      { tenantId: "t-1", workspaceId: "ws-1" },
+    );
 
-    expect(result).toEqual({ error: "Publish is blocked: a policy revision must contain at least one rule." });
+    expect(result).toEqual({
+      error: "Publish is blocked: a policy revision must contain at least one rule.",
+    });
     expect(insertPolicyPublishMock).not.toHaveBeenCalled();
   });
 
@@ -215,7 +240,10 @@ describe("Publish gating — open gateway escalations", () => {
     delete process.env.GATEWAY_ENABLED;
     getOpenEscalationSummaryMock.mockResolvedValue({ count: 5, nearestSlaDueAt: null });
 
-    const result = await publishRevisionDecision({ branchId: "branch-1", revisionId: "rev-1" }, { tenantId: "t-1", workspaceId: "ws-1" });
+    const result = await publishRevisionDecision(
+      { branchId: "branch-1", revisionId: "rev-1" },
+      { tenantId: "t-1", workspaceId: "ws-1" },
+    );
     expect(result).toHaveProperty("artifactHash");
   });
 
@@ -223,7 +251,10 @@ describe("Publish gating — open gateway escalations", () => {
     process.env.GATEWAY_ENABLED = "true";
     getOpenEscalationSummaryMock.mockResolvedValue({ count: 0, nearestSlaDueAt: null });
 
-    const result = await publishRevisionDecision({ branchId: "branch-1", revisionId: "rev-1" }, { tenantId: "t-1", workspaceId: "ws-1" });
+    const result = await publishRevisionDecision(
+      { branchId: "branch-1", revisionId: "rev-1" },
+      { tenantId: "t-1", workspaceId: "ws-1" },
+    );
     expect(result).toHaveProperty("artifactHash");
   });
 
@@ -232,7 +263,10 @@ describe("Publish gating — open gateway escalations", () => {
     getLatestManagedSimulationRegressionMock.mockResolvedValue(null);
     countRuntimeEvidenceMock.mockResolvedValue(4);
 
-    const result = await publishRevisionDecision({ branchId: "branch-1", revisionId: "rev-1" }, { tenantId: "t-1", workspaceId: "ws-1" });
+    const result = await publishRevisionDecision(
+      { branchId: "branch-1", revisionId: "rev-1" },
+      { tenantId: "t-1", workspaceId: "ws-1" },
+    );
 
     expect(result).toEqual({ error: expect.stringMatching(/managed retained-log simulation/i) });
   });
@@ -242,7 +276,10 @@ describe("Publish gating — open gateway escalations", () => {
     getLatestManagedSimulationRegressionMock.mockResolvedValue(null);
     countRuntimeEvidenceMock.mockResolvedValue(0);
 
-    const result = await publishRevisionDecision({ branchId: "branch-1", revisionId: "rev-1" }, { tenantId: "t-1", workspaceId: "ws-1" });
+    const result = await publishRevisionDecision(
+      { branchId: "branch-1", revisionId: "rev-1" },
+      { tenantId: "t-1", workspaceId: "ws-1" },
+    );
 
     expect(result).toHaveProperty("artifactHash");
   });
@@ -257,7 +294,10 @@ describe("Publish gating — open gateway escalations", () => {
       blockingCount: 6,
     });
 
-    const result = await publishRevisionDecision({ branchId: "branch-1", revisionId: "rev-1" }, { tenantId: "t-1", workspaceId: "ws-1" });
+    const result = await publishRevisionDecision(
+      { branchId: "branch-1", revisionId: "rev-1" },
+      { tenantId: "t-1", workspaceId: "ws-1" },
+    );
 
     expect(result).toEqual({ error: expect.stringMatching(/6 regression/i) });
   });
@@ -278,12 +318,14 @@ const VALID_EVIDENCE_PAYLOAD = {
   runtimeTarget: { stack: "LOCAL" },
   policyRefs: ["policy-ref-1"],
   artifactHash: "sha256:abc123",
-  policyContext: [{
-    scope: "WORKSPACE",
-    branchId: "branch-1",
-    revisionId: "rev-1",
-    artifactHash: "sha256:abc123",
-  }],
+  policyContext: [
+    {
+      scope: "WORKSPACE",
+      branchId: "branch-1",
+      revisionId: "rev-1",
+      artifactHash: "sha256:abc123",
+    },
+  ],
 };
 
 describe("Evidence pipeline — schema validation", () => {
@@ -310,10 +352,7 @@ describe("Evidence pipeline — schema validation", () => {
   });
 
   it("rejects a payload with empty policyRefs", () => {
-    const result = parseBody(EvidenceIngestSchema, {
-      ...VALID_EVIDENCE_PAYLOAD,
-      policyRefs: [],
-    });
+    const result = parseBody(EvidenceIngestSchema, { ...VALID_EVIDENCE_PAYLOAD, policyRefs: [] });
     expect(result.ok).toBe(false);
   });
 

@@ -27,7 +27,7 @@ export interface ApiRouteContext {
  */
 export function withApiRoute(
   route: string,
-  handler: (request: Request, ctx: ApiRouteContext) => Promise<Response>
+  handler: (request: Request, ctx: ApiRouteContext) => Promise<Response>,
 ): (request: Request) => Promise<Response> {
   const spanName = route.replace(/^\//, "").replaceAll("/", ".");
 
@@ -41,10 +41,7 @@ export function withApiRoute(
           traceId,
           span,
           json(body, init) {
-            return withTraceId(
-              Response.json({ ...body, meta: makeMeta(traceId) }, init),
-              traceId
-            );
+            return withTraceId(Response.json({ ...body, meta: makeMeta(traceId) }, init), traceId);
           },
           error(status, message, extra) {
             incrementCounter("spctre.api.errors", 1, {
@@ -52,11 +49,8 @@ export function withApiRoute(
               "http.response.status_code": status,
             });
             return withTraceId(
-              Response.json(
-                { error: message, ...extra, meta: makeMeta(traceId) },
-                { status }
-              ),
-              traceId
+              Response.json({ error: message, ...extra, meta: makeMeta(traceId) }, { status }),
+              traceId,
             );
           },
         };
@@ -64,10 +58,12 @@ export function withApiRoute(
         try {
           return await handler(request, ctx);
         } catch (err) {
-          logger.error(`[${route}] unhandled error:`, { error: err instanceof Error ? err.message : String(err) });
+          logger.error(`[${route}] unhandled error:`, {
+            error: err instanceof Error ? err.message : String(err),
+          });
           return ctx.error(500, "Internal server error.");
         }
-      }
+      },
     );
   };
 }

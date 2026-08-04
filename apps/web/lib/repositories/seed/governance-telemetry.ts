@@ -18,7 +18,9 @@ export async function resolveGovernancePackRefs(): Promise<GovernancePackRefs> {
   if (!sql) return { revisionId, branchId, artifactHash };
 
   try {
-    const governancePack = await sql<{ branch_id: string; active_revision_id: string; artifact_hash: string }[]>`
+    const governancePack = await sql<
+      { branch_id: string; active_revision_id: string; artifact_hash: string }[]
+    >`
       SELECT pb.id AS branch_id, pb.active_revision_id, pr.artifact_hash
       FROM policy_branch pb
       LEFT JOIN policy_revision pr ON pr.id = pb.active_revision_id AND pr.tenant_id = pb.tenant_id
@@ -42,7 +44,11 @@ export async function resolveGovernancePackRefs(): Promise<GovernancePackRefs> {
 }
 
 // 4. Seed gateway decisions and escalations (with median assignee delay)
-export async function seedGatewayDecisionsAndEscalations({ revisionId, branchId, artifactHash }: GovernancePackRefs) {
+export async function seedGatewayDecisionsAndEscalations({
+  revisionId,
+  branchId,
+  artifactHash,
+}: GovernancePackRefs) {
   if (!sql) return;
 
   try {
@@ -74,9 +80,9 @@ export async function seedGatewayDecisionsAndEscalations({ revisionId, branchId,
       RETURNING id, decision_id
     `;
 
-    const dec0 = decisions.find((d) => d.decision_id === 'dec-stripe-001')?.id;
-    const dec1 = decisions.find((d) => d.decision_id === 'dec-stripe-002')?.id;
-    const dec2 = decisions.find((d) => d.decision_id === 'dec-stripe-003')?.id;
+    const dec0 = decisions.find((d) => d.decision_id === "dec-stripe-001")?.id;
+    const dec1 = decisions.find((d) => d.decision_id === "dec-stripe-002")?.id;
+    const dec2 = decisions.find((d) => d.decision_id === "dec-stripe-003")?.id;
 
     if (dec0 && dec1 && dec2) {
       await sql`
@@ -111,7 +117,11 @@ export async function seedGatewayDecisionsAndEscalations({ revisionId, branchId,
 }
 
 // 5. Seed time-partitioned runtime evidence events
-export async function seedRuntimeEvidenceEvents({ revisionId, branchId, artifactHash }: GovernancePackRefs) {
+export async function seedRuntimeEvidenceEvents({
+  revisionId,
+  branchId,
+  artifactHash,
+}: GovernancePackRefs) {
   if (!sql) return;
 
   try {
@@ -122,32 +132,172 @@ export async function seedRuntimeEvidenceEvents({ revisionId, branchId, artifact
 
   try {
     const currentEvents = [
-      { decisionId: 'ev-cur-001', status: 'ALLOW', action: 'read_user', agentId: 'agent-support-prod', connector: 'aws-bedrock', reason: 'Prompt approved by safeguard' },
-      { decisionId: 'ev-cur-002', status: 'ALLOW', action: 'write_file', agentId: 'agent-support-prod', connector: 'aws-bedrock', reason: 'Valid sandbox file write' },
-      { decisionId: 'ev-cur-003', status: 'ALLOW', action: 'list_buckets', agentId: 'agent-support-prod', connector: 'aws-bedrock', reason: 'Public bucket access' },
-      { decisionId: 'ev-cur-004', status: 'ALLOW', action: 'read_invoice', agentId: 'agent-billing-prod', connector: 'stripe', reason: 'Read billing history allowable limit' },
-      { decisionId: 'ev-cur-005', status: 'ALLOW', action: 'create_customer', agentId: 'agent-billing-prod', connector: 'stripe', reason: 'Safe customer registration' },
-      { decisionId: 'ev-cur-006', status: 'ALLOW', action: 'read_pr', agentId: 'agent-deploy-prod', connector: 'github', reason: 'Read-only PR info fetch' },
-      { decisionId: 'ev-cur-007', status: 'ALLOW', action: 'merge_pr', agentId: 'agent-deploy-prod', connector: 'github', reason: 'Approved merge workflow' },
-      { decisionId: 'ev-cur-008', status: 'ALLOW', action: 'list_repos', agentId: 'agent-deploy-prod', connector: 'github', reason: 'Public repository list' },
-      { decisionId: 'ev-cur-009', status: 'WARN', action: 'delete_invoice', agentId: 'agent-billing-prod', connector: 'stripe', reason: 'High friction operation warn threshold' },
-      { decisionId: 'ev-cur-010', status: 'DENY', action: 'delete_branch', agentId: 'agent-deploy-prod', connector: 'github', reason: 'Blocked branch deletion check' }
+      {
+        decisionId: "ev-cur-001",
+        status: "ALLOW",
+        action: "read_user",
+        agentId: "agent-support-prod",
+        connector: "aws-bedrock",
+        reason: "Prompt approved by safeguard",
+      },
+      {
+        decisionId: "ev-cur-002",
+        status: "ALLOW",
+        action: "write_file",
+        agentId: "agent-support-prod",
+        connector: "aws-bedrock",
+        reason: "Valid sandbox file write",
+      },
+      {
+        decisionId: "ev-cur-003",
+        status: "ALLOW",
+        action: "list_buckets",
+        agentId: "agent-support-prod",
+        connector: "aws-bedrock",
+        reason: "Public bucket access",
+      },
+      {
+        decisionId: "ev-cur-004",
+        status: "ALLOW",
+        action: "read_invoice",
+        agentId: "agent-billing-prod",
+        connector: "stripe",
+        reason: "Read billing history allowable limit",
+      },
+      {
+        decisionId: "ev-cur-005",
+        status: "ALLOW",
+        action: "create_customer",
+        agentId: "agent-billing-prod",
+        connector: "stripe",
+        reason: "Safe customer registration",
+      },
+      {
+        decisionId: "ev-cur-006",
+        status: "ALLOW",
+        action: "read_pr",
+        agentId: "agent-deploy-prod",
+        connector: "github",
+        reason: "Read-only PR info fetch",
+      },
+      {
+        decisionId: "ev-cur-007",
+        status: "ALLOW",
+        action: "merge_pr",
+        agentId: "agent-deploy-prod",
+        connector: "github",
+        reason: "Approved merge workflow",
+      },
+      {
+        decisionId: "ev-cur-008",
+        status: "ALLOW",
+        action: "list_repos",
+        agentId: "agent-deploy-prod",
+        connector: "github",
+        reason: "Public repository list",
+      },
+      {
+        decisionId: "ev-cur-009",
+        status: "WARN",
+        action: "delete_invoice",
+        agentId: "agent-billing-prod",
+        connector: "stripe",
+        reason: "High friction operation warn threshold",
+      },
+      {
+        decisionId: "ev-cur-010",
+        status: "DENY",
+        action: "delete_branch",
+        agentId: "agent-deploy-prod",
+        connector: "github",
+        reason: "Blocked branch deletion check",
+      },
     ];
 
     const prevEvents = [
-      { decisionId: 'ev-prev-001', status: 'ALLOW', action: 'read_user', agentId: 'agent-support-prod', connector: 'aws-bedrock', reason: 'Prompt check' },
-      { decisionId: 'ev-prev-002', status: 'ALLOW', action: 'write_file', agentId: 'agent-support-prod', connector: 'aws-bedrock', reason: 'Sandbox check' },
-      { decisionId: 'ev-prev-003', status: 'ALLOW', action: 'read_invoice', agentId: 'agent-billing-prod', connector: 'stripe', reason: 'Invoicing' },
-      { decisionId: 'ev-prev-004', status: 'ALLOW', action: 'create_customer', agentId: 'agent-billing-prod', connector: 'stripe', reason: 'Customer check' },
-      { decisionId: 'ev-prev-005', status: 'ALLOW', action: 'read_pr', agentId: 'agent-deploy-prod', connector: 'github', reason: 'PR check' },
-      { decisionId: 'ev-prev-006', status: 'ALLOW', action: 'list_repos', agentId: 'agent-deploy-prod', connector: 'github', reason: 'Repository check' },
-      { decisionId: 'ev-prev-007', status: 'WARN', action: 'list_buckets', agentId: 'agent-support-prod', connector: 'aws-bedrock', reason: 'Unusual bucket scanning' },
-      { decisionId: 'ev-prev-008', status: 'WARN', action: 'delete_invoice', agentId: 'agent-billing-prod', connector: 'stripe', reason: 'High friction' },
-      { decisionId: 'ev-prev-009', status: 'DENY', action: 'merge_pr', agentId: 'agent-deploy-prod', connector: 'github', reason: 'Blocked merge' },
-      { decisionId: 'ev-prev-010', status: 'DENY', action: 'delete_branch', agentId: 'agent-deploy-prod', connector: 'github', reason: 'Blocked branch deletion' }
+      {
+        decisionId: "ev-prev-001",
+        status: "ALLOW",
+        action: "read_user",
+        agentId: "agent-support-prod",
+        connector: "aws-bedrock",
+        reason: "Prompt check",
+      },
+      {
+        decisionId: "ev-prev-002",
+        status: "ALLOW",
+        action: "write_file",
+        agentId: "agent-support-prod",
+        connector: "aws-bedrock",
+        reason: "Sandbox check",
+      },
+      {
+        decisionId: "ev-prev-003",
+        status: "ALLOW",
+        action: "read_invoice",
+        agentId: "agent-billing-prod",
+        connector: "stripe",
+        reason: "Invoicing",
+      },
+      {
+        decisionId: "ev-prev-004",
+        status: "ALLOW",
+        action: "create_customer",
+        agentId: "agent-billing-prod",
+        connector: "stripe",
+        reason: "Customer check",
+      },
+      {
+        decisionId: "ev-prev-005",
+        status: "ALLOW",
+        action: "read_pr",
+        agentId: "agent-deploy-prod",
+        connector: "github",
+        reason: "PR check",
+      },
+      {
+        decisionId: "ev-prev-006",
+        status: "ALLOW",
+        action: "list_repos",
+        agentId: "agent-deploy-prod",
+        connector: "github",
+        reason: "Repository check",
+      },
+      {
+        decisionId: "ev-prev-007",
+        status: "WARN",
+        action: "list_buckets",
+        agentId: "agent-support-prod",
+        connector: "aws-bedrock",
+        reason: "Unusual bucket scanning",
+      },
+      {
+        decisionId: "ev-prev-008",
+        status: "WARN",
+        action: "delete_invoice",
+        agentId: "agent-billing-prod",
+        connector: "stripe",
+        reason: "High friction",
+      },
+      {
+        decisionId: "ev-prev-009",
+        status: "DENY",
+        action: "merge_pr",
+        agentId: "agent-deploy-prod",
+        connector: "github",
+        reason: "Blocked merge",
+      },
+      {
+        decisionId: "ev-prev-010",
+        status: "DENY",
+        action: "delete_branch",
+        agentId: "agent-deploy-prod",
+        connector: "github",
+        reason: "Blocked branch deletion",
+      },
     ];
 
-    const insertEvent = async (ev: typeof currentEvents[0], daysAgo: number) => {
+    const insertEvent = async (ev: (typeof currentEvents)[0], daysAgo: number) => {
       const db = sql!;
       const id = randomUUID();
       const createdAt = new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000);
@@ -171,7 +321,7 @@ export async function seedRuntimeEvidenceEvents({ revisionId, branchId, artifact
             ${id}, ${ev.decisionId}, ${DEMO_TENANT_ID}, ${DEMO_WORKSPACE_ID}, 'production', 'CUSTOM', 'spctre-demo',
             ${ev.agentId}, ${ev.connector}, ${ev.action}, ${ev.status}, ${ev.reason},
             ARRAY['spctre-agent-governance-v1']::text[], ${artifactHash},
-            ${sql.json([{ revisionId, branchId, packId: 'spctre-agent-governance-v1' }])}::jsonb,
+            ${sql.json([{ revisionId, branchId, packId: "spctre-agent-governance-v1" }])}::jsonb,
             ${sql.json({ details: ev.reason })}::jsonb, 120, ${createdAt}, ${hash}, null
           )
         `;
@@ -190,7 +340,6 @@ export async function seedRuntimeEvidenceEvents({ revisionId, branchId, artifact
     for (const ev of prevEvents) {
       await insertEvent(ev, 40);
     }
-
   } catch (err) {
     logger.error("Failed to seed runtime evidence events", { error: err });
   }

@@ -14,7 +14,7 @@ import {
   EvidenceOverview,
   EvidenceStreamSection,
   IntentAnalysisSection,
-  RuleAnalysisSection
+  RuleAnalysisSection,
 } from "./evidence-page-sections";
 import {
   type EvidenceSearchParams,
@@ -32,7 +32,7 @@ const EVIDENCE_PAGE_SIZE = 50;
 
 export async function EvidencePageContent({
   workspaceSlug,
-  searchParams
+  searchParams,
 }: {
   workspaceSlug?: string;
   searchParams: Promise<EvidenceSearchParams>;
@@ -65,15 +65,11 @@ export async function EvidencePageContent({
     allowCount,
     intentRiskPatterns,
     controlMappingIndex,
-  } = await getEvidencePageModel({
-    workspaceSlug,
-    query,
-    cursor,
-    pageSize: EVIDENCE_PAGE_SIZE,
-  });
+  } = await getEvidencePageModel({ workspaceSlug, query, cursor, pageSize: EVIDENCE_PAGE_SIZE });
   const evidencePath = workspaceSlug ? `/${workspaceSlug}/evidence` : "/evidence";
   const searchInspectorOpen = firstParam(params.inspector) === "search";
-  const cursorHref = (targetCursor: string | null) => buildEvidenceCursorHref(evidencePath, params, targetCursor);
+  const cursorHref = (targetCursor: string | null) =>
+    buildEvidenceCursorHref(evidencePath, params, targetCursor);
   const ruleAnalysisTab = getRuleAnalysisTab(params);
   const onboardingStatus = await getWebOnboardingStatus({
     tenantId: workspaceContext.tenantId,
@@ -146,7 +142,7 @@ export async function EvidencePageContent({
           totalEvidenceCount,
           usingDb,
           warnCount,
-          controlMappingIndex
+          controlMappingIndex,
         }}
         cursorHref={cursorHref}
         viewMode={appViewMode}

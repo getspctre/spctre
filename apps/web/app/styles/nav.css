@@ -57,7 +57,9 @@
   align-items: center;
   gap: 5px;
   cursor: pointer;
-  transition: background 0.1s, border-color 0.1s;
+  transition:
+    background 0.1s,
+    border-color 0.1s;
 }
 
 .topNavCrumbButton:hover {
@@ -174,7 +176,10 @@
   font-size: 12px;
   font-weight: var(--fw-semi-plus);
   cursor: pointer;
-  transition: background 0.1s, color 0.1s, border-color 0.1s;
+  transition:
+    background 0.1s,
+    color 0.1s,
+    border-color 0.1s;
 }
 
 .topNavViewMode button:hover {
@@ -202,7 +207,9 @@
   font-size: 13px;
   color: var(--muted);
   text-decoration: none;
-  transition: background 0.1s, color 0.1s;
+  transition:
+    background 0.1s,
+    color 0.1s;
 }
 
 .topNavLink:hover {
@@ -211,7 +218,7 @@
 }
 
 .topNavLink[data-active="true"] {
-  background: oklch(0.90 0.013 250);
+  background: oklch(0.9 0.013 250);
   color: var(--ink);
   font-weight: var(--fw-semi);
 }
@@ -250,7 +257,9 @@
   align-items: center;
   gap: 9px;
   cursor: pointer;
-  transition: background 0.1s, border-color 0.1s;
+  transition:
+    background 0.1s,
+    border-color 0.1s;
 }
 
 .topNavUserButton:hover {
@@ -340,7 +349,9 @@
   text-align: left;
   text-decoration: none;
   cursor: pointer;
-  transition: background 0.1s, color 0.1s;
+  transition:
+    background 0.1s,
+    color 0.1s;
 }
 
 .topNavAction:hover {
@@ -442,7 +453,10 @@
   gap: 8px;
   font-size: 13px;
   font-weight: 500;
-  transition: width 0.2s, background 0.15s, color 0.15s;
+  transition:
+    width 0.2s,
+    background 0.15s,
+    color 0.15s;
 }
 
 .navItem:hover {

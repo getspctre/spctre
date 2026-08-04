@@ -16,7 +16,13 @@ export const DEPLOYMENT_PACK: PolicyPack = {
   tags: ["cicd", "deployments", "environments", "secrets", "rollbacks"],
   domains: ["deployments", "environments", "secrets", "pipelines", "infrastructure"],
   parameters: [
-    { key: "deployment.protected_environments", label: "Environment names requiring approval", type: "enum", default: ["production"], enumValues: ["production", "staging"] },
+    {
+      key: "deployment.protected_environments",
+      label: "Environment names requiring approval",
+      type: "enum",
+      default: ["production"],
+      enumValues: ["production", "staging"],
+    },
   ],
   metadata: makePackMetadata({
     name: "Deployment Pipeline Pack",
@@ -24,7 +30,13 @@ export const DEPLOYMENT_PACK: PolicyPack = {
     riskLevel: "HIGH",
     riskTags: ["cicd", "deployments", "environments"],
     category: "CI/CD and deployment",
-    changelog: [{ version: "1.0.0", date: "2026-07-20", summary: "Hand-authored replacement for the generated Deployment Pipeline pack." }],
+    changelog: [
+      {
+        version: "1.0.0",
+        date: "2026-07-20",
+        summary: "Hand-authored replacement for the generated Deployment Pipeline pack.",
+      },
+    ],
   }),
   rules: [
     {
@@ -36,11 +48,20 @@ export const DEPLOYMENT_PACK: PolicyPack = {
       actions: ["deployment.create", "deployment.promote"],
       immutable: true,
       parameterConstraints: [
-        { field: "environment", operator: "in", value: ["production"], parameterKey: "deployment.protected_environments" },
+        {
+          field: "environment",
+          operator: "in",
+          value: ["production"],
+          parameterKey: "deployment.protected_environments",
+        },
         { field: "approved", operator: "eq", value: false },
       ],
       controlMappings: [
-        { framework: "SOC2", controlId: "CC8.1", rationale: "Requires recorded approval before production change." },
+        {
+          framework: "SOC2",
+          controlId: "CC8.1",
+          rationale: "Requires recorded approval before production change.",
+        },
       ],
     },
     {
@@ -52,7 +73,12 @@ export const DEPLOYMENT_PACK: PolicyPack = {
       actions: ["secret.update", "environment.update_variable"],
       immutable: true,
       parameterConstraints: [
-        { field: "environment", operator: "in", value: ["production"], parameterKey: "deployment.protected_environments" },
+        {
+          field: "environment",
+          operator: "in",
+          value: ["production"],
+          parameterKey: "deployment.protected_environments",
+        },
       ],
     },
     {
@@ -77,7 +103,13 @@ export const KUBERNETES_PACK: PolicyPack = {
   tags: ["infrastructure", "clusters", "deployments", "secrets"],
   domains: ["clusters", "workloads", "rbac", "secrets", "namespaces"],
   parameters: [
-    { key: "kubernetes.protected_namespaces", label: "Namespace names treated as production", type: "enum", default: ["production", "prod"], enumValues: ["production", "prod", "kube-system"] },
+    {
+      key: "kubernetes.protected_namespaces",
+      label: "Namespace names treated as production",
+      type: "enum",
+      default: ["production", "prod"],
+      enumValues: ["production", "prod", "kube-system"],
+    },
   ],
   metadata: makePackMetadata({
     name: "Kubernetes Governance Pack",
@@ -85,7 +117,13 @@ export const KUBERNETES_PACK: PolicyPack = {
     riskLevel: "HIGH",
     riskTags: ["infrastructure", "clusters", "rbac"],
     category: "container orchestration",
-    changelog: [{ version: "1.0.0", date: "2026-07-20", summary: "Hand-authored replacement for the generated Kubernetes pack." }],
+    changelog: [
+      {
+        version: "1.0.0",
+        date: "2026-07-20",
+        summary: "Hand-authored replacement for the generated Kubernetes pack.",
+      },
+    ],
   }),
   rules: [
     {
@@ -98,7 +136,11 @@ export const KUBERNETES_PACK: PolicyPack = {
       immutable: true,
       parameterConstraints: [{ field: "role", operator: "eq", value: "cluster-admin" }],
       controlMappings: [
-        { framework: "SOC2", controlId: "CC6.1", rationale: "Restricts cluster-wide privilege escalation." },
+        {
+          framework: "SOC2",
+          controlId: "CC6.1",
+          rationale: "Restricts cluster-wide privilege escalation.",
+        },
       ],
     },
     {
@@ -110,7 +152,12 @@ export const KUBERNETES_PACK: PolicyPack = {
       actions: ["workload.delete", "namespace.delete"],
       immutable: true,
       parameterConstraints: [
-        { field: "namespace", operator: "in", value: ["production", "prod"], parameterKey: "kubernetes.protected_namespaces" },
+        {
+          field: "namespace",
+          operator: "in",
+          value: ["production", "prod"],
+          parameterKey: "kubernetes.protected_namespaces",
+        },
       ],
     },
     {
@@ -140,7 +187,13 @@ export const VERCEL_PACK: PolicyPack = {
     riskLevel: "HIGH",
     riskTags: ["deployments", "domains", "env"],
     category: "deployment platform",
-    changelog: [{ version: "1.0.0", date: "2026-07-20", summary: "Hand-authored replacement for the generated Vercel pack." }],
+    changelog: [
+      {
+        version: "1.0.0",
+        date: "2026-07-20",
+        summary: "Hand-authored replacement for the generated Vercel pack.",
+      },
+    ],
   }),
   rules: [
     {
@@ -180,7 +233,13 @@ export const ARGO_CD_PACK: PolicyPack = {
     riskLevel: "HIGH",
     riskTags: ["gitops", "deployments", "clusters"],
     category: "GitOps deployment",
-    changelog: [{ version: "1.0.0", date: "2026-07-20", summary: "Hand-authored replacement for the generated Argo CD pack." }],
+    changelog: [
+      {
+        version: "1.0.0",
+        date: "2026-07-20",
+        summary: "Hand-authored replacement for the generated Argo CD pack.",
+      },
+    ],
   }),
   rules: [
     {

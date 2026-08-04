@@ -6,7 +6,7 @@ import { claimEscalation, type ClaimEscalationState } from "./actions";
 export function ClaimButton({ queueId }: { queueId: string }) {
   const [state, action, pending] = useActionState<ClaimEscalationState, FormData>(
     claimEscalation,
-    null
+    null,
   );
 
   if (state && "ok" in state) {
@@ -17,7 +17,9 @@ export function ClaimButton({ queueId }: { queueId: string }) {
     <form action={action}>
       <input type="hidden" name="queueId" value={queueId} />
       {state && "error" in state && (
-        <p className="meta" role="alert" style={{ color: "var(--block)", marginBottom: 4 }}>{state.error}</p>
+        <p className="meta" role="alert" style={{ color: "var(--block)", marginBottom: 4 }}>
+          {state.error}
+        </p>
       )}
       <button
         type="submit"

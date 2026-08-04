@@ -115,10 +115,7 @@
         "displayName": "Headline",
         "purpose": "Topbar product title and page-level context."
       },
-      "title": {
-        "displayName": "Title",
-        "purpose": "Panel headings and primary section labels."
-      },
+      "title": { "displayName": "Title", "purpose": "Panel headings and primary section labels." },
       "body": {
         "displayName": "Body",
         "purpose": "Evidence details, row copy, and explanatory text."

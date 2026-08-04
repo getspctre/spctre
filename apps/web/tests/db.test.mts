@@ -3,19 +3,24 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const { beginMock, rawSqlMock, requestHeadersMock, txMock } = vi.hoisted(() => {
   const rawSqlMock = vi.fn(async () => [{ direct: true }]);
   const requestHeadersMock = vi.fn(() => new Headers());
-  const txMock = Object.assign(vi.fn(async () => [{ set_config: "tenant-id" }]), {
-    unsafe: vi.fn(async () => [{ unsafe: true }]),
-  });
-  const beginMock = vi.fn(async (callback: (tx: typeof txMock) => Promise<unknown>) => callback(txMock));
+  const txMock = Object.assign(
+    vi.fn(async () => [{ set_config: "tenant-id" }]),
+    { unsafe: vi.fn(async () => [{ unsafe: true }]) },
+  );
+  const beginMock = vi.fn(async (callback: (tx: typeof txMock) => Promise<unknown>) =>
+    callback(txMock),
+  );
   return { beginMock, rawSqlMock, requestHeadersMock, txMock };
 });
 
 vi.mock("postgres", () => ({
-  default: vi.fn(() => Object.assign(rawSqlMock, {
-    begin: beginMock,
-    counts: { active: 0, idle: 0, waiting: 0, connecting: 0 },
-    unsafe: vi.fn(async () => [{ unsafe: true }]),
-  })),
+  default: vi.fn(() =>
+    Object.assign(rawSqlMock, {
+      begin: beginMock,
+      counts: { active: 0, idle: 0, waiting: 0, connecting: 0 },
+      unsafe: vi.fn(async () => [{ unsafe: true }]),
+    }),
+  ),
 }));
 
 vi.mock("@spctre/platform/metrics", () => ({
@@ -51,7 +56,10 @@ describe("database tenant context", () => {
 
   it("rejects malicious-looking tenant IDs before opening a transaction", async () => {
     await expect(
-      withTenant("123e4567-e89b-12d3-a456-426614174000'; SELECT pg_sleep(10); --", async () => "ok")
+      withTenant(
+        "123e4567-e89b-12d3-a456-426614174000'; SELECT pg_sleep(10); --",
+        async () => "ok",
+      ),
     ).rejects.toThrow("Invalid tenant ID.");
 
     expect(beginMock).not.toHaveBeenCalled();
@@ -81,7 +89,10 @@ describe("database tenant context", () => {
     expect(beginMock).toHaveBeenCalledTimes(1);
     expect(txMock).toHaveBeenCalledTimes(2);
     const [setConfigStrings, boundTenantId] = txMock.mock.calls[0]!;
-    expect(Array.from(setConfigStrings)).toEqual(["SELECT set_config('app.current_tenant_id', ", ", true)"]);
+    expect(Array.from(setConfigStrings)).toEqual([
+      "SELECT set_config('app.current_tenant_id', ",
+      ", true)",
+    ]);
     expect(boundTenantId).toBe(tenantId);
     const [queryStrings] = txMock.mock.calls[1]!;
     expect(Array.from(queryStrings)).toEqual(["SELECT 1"]);
@@ -96,7 +107,9 @@ describe("database tenant context", () => {
   it("never inherits cookie context for an unbound bearer request", async () => {
     requestHeadersMock.mockReturnValue(new Headers({ authorization: "Bearer token-value" }));
 
-    await expect(sql!`SELECT 1`).rejects.toThrow("Bearer-token database work requires an explicit tenant context.");
+    await expect(sql!`SELECT 1`).rejects.toThrow(
+      "Bearer-token database work requires an explicit tenant context.",
+    );
     expect(beginMock).not.toHaveBeenCalled();
   });
 });

@@ -88,35 +88,66 @@ export const EvidenceIngestSchema = z.object({
   // Gateway ingest mode — server performs revision-at-time lookup when set
   ingestMode: z.enum(["standard", "gateway"]).optional(),
   // Pre-flight intent fields (Phase 1)
-  toolIntent: z.string().max(100000).optional().transform((val) => sanitizeText(val, 1000)),
-  planSummary: z.string().max(100000).optional().transform((val) => sanitizeText(val, 2000)),
-  toolParameters: z.record(z.string(), z.unknown()).optional().transform((val) => redactAndBoundParameters(val)),
+  toolIntent: z
+    .string()
+    .max(100000)
+    .optional()
+    .transform((val) => sanitizeText(val, 1000)),
+  planSummary: z
+    .string()
+    .max(100000)
+    .optional()
+    .transform((val) => sanitizeText(val, 2000)),
+  toolParameters: z
+    .record(z.string(), z.unknown())
+    .optional()
+    .transform((val) => redactAndBoundParameters(val)),
   // Runtime integration landscape fields (Phase 2 — new runtime stacks)
-  triggerKind: z.enum(["interactive", "scheduled", "mobile_dispatch", "inbound_webhook", "routine", "gateway_message"]).optional(),
+  triggerKind: z
+    .enum([
+      "interactive",
+      "scheduled",
+      "mobile_dispatch",
+      "inbound_webhook",
+      "routine",
+      "gateway_message",
+    ])
+    .optional(),
   layer: z.enum(["agent", "sandbox"]).optional(),
-  executionContext: z.object({
-    backend: z.string().optional(),
-    sessionId: z.string().optional(),
-    sandboxName: z.string().optional(),
-    inferenceProvider: z.string().optional(),
-    sandboxPolicyRef: z.string().optional(),
-    inferenceRouterRef: z.string().optional(),
-  }).passthrough().optional(),
+  executionContext: z
+    .object({
+      backend: z.string().optional(),
+      sessionId: z.string().optional(),
+      sandboxName: z.string().optional(),
+      inferenceProvider: z.string().optional(),
+      sandboxPolicyRef: z.string().optional(),
+      inferenceRouterRef: z.string().optional(),
+    })
+    .passthrough()
+    .optional(),
   parentAgentId: z.string().optional(),
   traceId: z.string().optional(),
-  orchestratorRef: z.object({
-    platform: z.string().min(1),
-    companyId: z.string().optional(),
-    issueId: z.string().optional(),
-    goalId: z.string().optional(),
-  }).passthrough().optional(),
-  pluginSource: z.enum(["public_marketplace", "corporate_marketplace", "corporate_private", "user_built"]).optional(),
-  skillContext: z.object({
-    activeSkills: z.array(z.string()).default([]),
-    instructionFiles: z.array(z.string()).optional(),
-    promptPolicyRefs: z.array(z.string()).optional(),
-    promptSurface: z.string().optional(),
-  }).passthrough().optional(),
+  orchestratorRef: z
+    .object({
+      platform: z.string().min(1),
+      companyId: z.string().optional(),
+      issueId: z.string().optional(),
+      goalId: z.string().optional(),
+    })
+    .passthrough()
+    .optional(),
+  pluginSource: z
+    .enum(["public_marketplace", "corporate_marketplace", "corporate_private", "user_built"])
+    .optional(),
+  skillContext: z
+    .object({
+      activeSkills: z.array(z.string()).default([]),
+      instructionFiles: z.array(z.string()).optional(),
+      promptPolicyRefs: z.array(z.string()).optional(),
+      promptSurface: z.string().optional(),
+    })
+    .passthrough()
+    .optional(),
   webhookSource: z.string().optional(),
   trustLevel: z.string().optional(),
   catalogProvider: z.string().optional(),
@@ -128,9 +159,20 @@ export const EvaluateSchema = z.object({
   connector: z.string().min(1, "connector is required."),
   action: z.string().min(1, "action is required."),
   domains: z.array(z.string()).optional(),
-  toolIntent: z.string().max(100000).optional().transform((val) => sanitizeText(val, 1000)),
-  planSummary: z.string().max(100000).optional().transform((val) => sanitizeText(val, 2000)),
-  toolParameters: z.record(z.string(), z.unknown()).optional().transform((val) => redactAndBoundParameters(val)),
+  toolIntent: z
+    .string()
+    .max(100000)
+    .optional()
+    .transform((val) => sanitizeText(val, 1000)),
+  planSummary: z
+    .string()
+    .max(100000)
+    .optional()
+    .transform((val) => sanitizeText(val, 2000)),
+  toolParameters: z
+    .record(z.string(), z.unknown())
+    .optional()
+    .transform((val) => redactAndBoundParameters(val)),
 });
 
 export type EvaluateInput = z.infer<typeof EvaluateSchema>;
@@ -161,9 +203,12 @@ export const EvidenceEraseRequestSchema = z.object({
     .string()
     .regex(
       /^\d{4}-\d{2}-\d{2}(?:[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d{1,9})?)?(?:Z|[+-]\d{2}:?\d{2})?)?$/,
-      "before must be a valid ISO-8601 timestamp."
+      "before must be a valid ISO-8601 timestamp.",
     )
-    .refine((value) => !Number.isNaN(new Date(value).getTime()), "before must be a valid ISO-8601 timestamp.")
+    .refine(
+      (value) => !Number.isNaN(new Date(value).getTime()),
+      "before must be a valid ISO-8601 timestamp.",
+    )
     .transform((value) => new Date(value).toISOString())
     .nullish()
     .transform((value) => value ?? undefined),

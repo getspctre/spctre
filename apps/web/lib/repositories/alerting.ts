@@ -35,7 +35,7 @@ function credentialKey(): string {
 
 export async function listAlertingIntegrations(
   tenantId: string,
-  workspaceId: string
+  workspaceId: string,
 ): Promise<AlertingIntegration[]> {
   if (!sql) return [];
   return sql<AlertingIntegration[]>`
@@ -62,7 +62,7 @@ export async function createAlertingIntegration(
   name: string,
   type: "SLACK" | "PAGERDUTY" | "TEAMS" | "EMAIL" | "WEBHOOK" | "SPLUNK_HEC" | "SENTINEL",
   url: string,
-  config: Record<string, unknown> = {}
+  config: Record<string, unknown> = {},
 ): Promise<AlertingIntegration | null> {
   if (!sql) return null;
   const key = credentialKey();
@@ -100,7 +100,7 @@ export async function createAlertingIntegration(
 export async function deleteAlertingIntegration(
   tenantId: string,
   workspaceId: string,
-  id: string
+  id: string,
 ): Promise<boolean> {
   if (!sql) return false;
   const result = await sql`
@@ -114,7 +114,7 @@ export async function deleteAlertingIntegration(
 
 export async function listAlertingRules(
   tenantId: string,
-  workspaceId: string
+  workspaceId: string,
 ): Promise<AlertingRule[]> {
   if (!sql) return [];
   return sql<AlertingRule[]>`
@@ -150,7 +150,7 @@ export async function createAlertingRule(
   minRiskLevel: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL" | null,
   minFrequency: number,
   frequencyWindowMinutes: number | null,
-  integrationId: string
+  integrationId: string,
 ): Promise<AlertingRule | null> {
   if (!sql) return null;
   const rows = await sql<AlertingRule[]>`
@@ -195,7 +195,7 @@ export async function createAlertingRule(
 export async function deleteAlertingRule(
   tenantId: string,
   workspaceId: string,
-  id: string
+  id: string,
 ): Promise<boolean> {
   if (!sql) return false;
   const result = await sql`
@@ -219,20 +219,22 @@ export interface EscalationAlertRule {
 
 export async function listActiveAlertingRulesWithIntegrations(
   tenantId: string,
-  workspaceId: string
+  workspaceId: string,
 ): Promise<EscalationAlertRule[]> {
   if (!sql) return [];
   const key = credentialKey();
   try {
-    const rows = await sql<{
-      id: string;
-      connector: string | null;
-      minRiskLevel: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL" | null;
-      integrationId: string;
-      type: "SLACK" | "PAGERDUTY" | "TEAMS" | "EMAIL" | "WEBHOOK" | "SPLUNK_HEC" | "SENTINEL";
-      url: string;
-      config: Record<string, unknown>;
-    }[]>`
+    const rows = await sql<
+      {
+        id: string;
+        connector: string | null;
+        minRiskLevel: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL" | null;
+        integrationId: string;
+        type: "SLACK" | "PAGERDUTY" | "TEAMS" | "EMAIL" | "WEBHOOK" | "SPLUNK_HEC" | "SENTINEL";
+        url: string;
+        config: Record<string, unknown>;
+      }[]
+    >`
       SELECT
         ar.id,
         ar.connector,

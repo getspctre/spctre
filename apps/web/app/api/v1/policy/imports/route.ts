@@ -31,12 +31,21 @@ async function handlePostApiV1PolicyImports(request: Request) {
 
   const tokenAuth = await authenticateServiceToken(request, "policy:import");
   if (!tokenAuth.ok) {
-    return withTraceId(Response.json({ error: tokenAuth.error, meta: makeMeta(traceId) }, { status: 401 }), traceId);
+    return withTraceId(
+      Response.json({ error: tokenAuth.error, meta: makeMeta(traceId) }, { status: 401 }),
+      traceId,
+    );
   }
 
   const body = await request.json().catch(() => null);
   if (!body || typeof body !== "object" || Array.isArray(body)) {
-    return withTraceId(Response.json({ error: "Request body must be an object.", meta: makeMeta(traceId) }, { status: 400 }), traceId);
+    return withTraceId(
+      Response.json(
+        { error: "Request body must be an object.", meta: makeMeta(traceId) },
+        { status: 400 },
+      ),
+      traceId,
+    );
   }
 
   const rec = body as Record<string, unknown>;
@@ -63,8 +72,11 @@ async function handlePostApiV1PolicyImports(request: Request) {
 
   if ("error" in outcome) {
     return withTraceId(
-      Response.json({ error: outcome.error, meta: makeMeta(traceId) }, { status: outcome.status ?? 400 }),
-      traceId
+      Response.json(
+        { error: outcome.error, meta: makeMeta(traceId) },
+        { status: outcome.status ?? 400 },
+      ),
+      traceId,
     );
   }
 
@@ -80,9 +92,9 @@ async function handlePostApiV1PolicyImports(request: Request) {
         ruleCount: result.ruleCount,
         meta: makeMeta(traceId),
       },
-      { status: result.created ? 201 : 200, headers: { "cache-control": "no-store" } }
+      { status: result.created ? 201 : 200, headers: { "cache-control": "no-store" } },
     ),
-    traceId
+    traceId,
   );
 }
 

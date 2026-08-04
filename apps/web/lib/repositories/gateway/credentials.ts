@@ -25,12 +25,14 @@ export async function findCredentialBroker(params: {
   if (!sql) return null;
 
   try {
-    const rows = await sql<{
-      id: string;
-      credential_type: CredentialBroker["credentialType"];
-      injected_parameter: string;
-      broker_config: Record<string, unknown>;
-    }[]>`
+    const rows = await sql<
+      {
+        id: string;
+        credential_type: CredentialBroker["credentialType"];
+        injected_parameter: string;
+        broker_config: Record<string, unknown>;
+      }[]
+    >`
       SELECT id, credential_type, injected_parameter, broker_config
       FROM gateway_credential_broker
       WHERE tenant_id = ${params.tenantId}
@@ -79,7 +81,9 @@ async function createCredentialGrant(params: {
     `;
     return rows.length > 0 ? "inserted" : "already_issued";
   } catch (err) {
-    logger.error("[gateway/credentials] failed to create credential grant:", { error: err instanceof Error ? err.message : String(err) });
+    logger.error("[gateway/credentials] failed to create credential grant:", {
+      error: err instanceof Error ? err.message : String(err),
+    });
     return "error";
   }
 }
@@ -95,11 +99,7 @@ function credentialSuffix(): string {
 
 export async function brokerCredential(
   broker: CredentialBroker,
-  params: {
-    tenantId: string;
-    workspaceId: string;
-    gatewayDecisionId: string;
-  }
+  params: { tenantId: string; workspaceId: string; gatewayDecisionId: string },
 ): Promise<BrokerResult> {
   const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes lifetime
   let credentialValue = "";
@@ -139,7 +139,7 @@ export async function brokerCredential(
 
 export async function hasCredentialGrantBeenIssued(
   gatewayDecisionId: string,
-  tenantId: string
+  tenantId: string,
 ): Promise<boolean> {
   if (!sql) return false;
 
@@ -152,14 +152,16 @@ export async function hasCredentialGrantBeenIssued(
     `;
     return parseInt(rows[0]?.count ?? "0", 10) > 0;
   } catch (err) {
-    logger.error("[gateway/credentials] failed to check if credential grant has been issued:", { error: err instanceof Error ? err.message : String(err) });
+    logger.error("[gateway/credentials] failed to check if credential grant has been issued:", {
+      error: err instanceof Error ? err.message : String(err),
+    });
     return false;
   }
 }
 
 export async function hasCredentialGrantBeenIssuedByDecisionId(
   decisionId: string,
-  tenantId: string
+  tenantId: string,
 ): Promise<boolean> {
   if (!sql) return false;
 
@@ -173,7 +175,10 @@ export async function hasCredentialGrantBeenIssuedByDecisionId(
     `;
     return parseInt(rows[0]?.count ?? "0", 10) > 0;
   } catch (err) {
-    logger.error("[gateway/credentials] failed to check if credential grant has been issued by decision id:", { error: err instanceof Error ? err.message : String(err) });
+    logger.error(
+      "[gateway/credentials] failed to check if credential grant has been issued by decision id:",
+      { error: err instanceof Error ? err.message : String(err) },
+    );
     return false;
   }
 }

@@ -20,7 +20,12 @@ const baseRule: PolicyRuleSummary = {
   actions: ["refund.create"],
   immutable: false,
   parameterConstraints: [
-    { field: "amount_cents", operator: "gte", value: 50000, parameterKey: "stripe.refund_review_threshold_cents" },
+    {
+      field: "amount_cents",
+      operator: "gte",
+      value: 50000,
+      parameterKey: "stripe.refund_review_threshold_cents",
+    },
   ],
 };
 
@@ -29,7 +34,12 @@ describe("diffPolicyRules — operational diff surface (shared by authored chang
     const after: PolicyRuleSummary = {
       ...baseRule,
       parameterConstraints: [
-        { field: "amount_cents", operator: "gte", value: 200000, parameterKey: "stripe.refund_review_threshold_cents" },
+        {
+          field: "amount_cents",
+          operator: "gte",
+          value: 200000,
+          parameterKey: "stripe.refund_review_threshold_cents",
+        },
       ],
     };
 
@@ -59,7 +69,9 @@ describe("diffPolicyRules — operational diff surface (shared by authored chang
       after: [{ ...baseRule, parameterConstraints: [{ ...baseRule.parameterConstraints![0] }] }],
     });
     expect(diff.summary).toMatchObject({ modified: 0, unchanged: 1 });
-    expect(diff.rules.find((r) => r.stableRuleId === baseRule.stableRuleId)?.status).toBe("UNCHANGED");
+    expect(diff.rules.find((r) => r.stableRuleId === baseRule.stableRuleId)?.status).toBe(
+      "UNCHANGED",
+    );
   });
 
   it("still classifies added / removed / effect-changed rules the same as an authored diff", () => {
@@ -74,7 +86,9 @@ describe("diffPolicyRules — operational diff surface (shared by authored chang
       ],
     });
     expect(diff.summary).toMatchObject({ added: 1, removed: 1, modified: 1 });
-    expect(diff.rules.find((r) => r.stableRuleId === baseRule.stableRuleId)?.changedFields).toContain("effect");
+    expect(
+      diff.rules.find((r) => r.stableRuleId === baseRule.stableRuleId)?.changedFields,
+    ).toContain("effect");
     expect(diff.rules.find((r) => r.stableRuleId === "stripe.new_rule")?.status).toBe("ADDED");
     expect(diff.rules.find((r) => r.stableRuleId === "stripe.legacy")?.status).toBe("REMOVED");
   });

@@ -3,11 +3,7 @@ import type { Prompt } from "@modelcontextprotocol/server";
 interface McpPromptTemplate {
   name: string;
   description: string;
-  arguments?: Array<{
-    name: string;
-    description?: string;
-    required?: boolean;
-  }>;
+  arguments?: Array<{ name: string; description?: string; required?: boolean }>;
   render: (args: Record<string, unknown> | undefined) => string;
 }
 
@@ -21,11 +17,7 @@ const PROMPT_TEMPLATES: McpPromptTemplate[] = [
     name: "policy-governance-101",
     description: "Guidance on when and how to use governance tools",
     arguments: [
-      {
-        name: "governance_scenario",
-        description: "Governance scenario name",
-        required: false,
-      },
+      { name: "governance_scenario", description: "Governance scenario name", required: false },
     ],
     render: (args) => {
       const scenario = stringArg(args, "governance_scenario");
@@ -36,11 +28,7 @@ const PROMPT_TEMPLATES: McpPromptTemplate[] = [
     name: "evidence-investigation",
     description: "Template for investigating policy decisions",
     arguments: [
-      {
-        name: "decision_id",
-        description: "Decision ID to investigate",
-        required: false,
-      },
+      { name: "decision_id", description: "Decision ID to investigate", required: false },
     ],
     render: (args) => {
       const decisionId = stringArg(args, "decision_id");
@@ -51,16 +39,8 @@ const PROMPT_TEMPLATES: McpPromptTemplate[] = [
     name: "gateway-integration-check",
     description: "Checklist for verifying MCP gateway decisions and evidence ingestion end to end",
     arguments: [
-      {
-        name: "connector",
-        description: "Connector under test",
-        required: false,
-      },
-      {
-        name: "decision_id",
-        description: "Decision or evidence ID to verify",
-        required: false,
-      },
+      { name: "connector", description: "Connector under test", required: false },
+      { name: "decision_id", description: "Decision or evidence ID to verify", required: false },
     ],
     render: (args) => {
       const connector = stringArg(args, "connector") ?? "the connector";
@@ -70,7 +50,9 @@ const PROMPT_TEMPLATES: McpPromptTemplate[] = [
         "Confirm evaluate_policy calls /api/gateway/decide with branch, revision, and artifact context.",
         "Confirm create_evidence_record writes /api/evidence with x-spctre-source=mcp.",
         "Check duplicate hook/MCP submissions return deduplicated evidence rather than two audit rows.",
-        decisionId ? `Use decision ID ${decisionId} as the trace anchor.` : "Capture the decision ID and use it as the trace anchor.",
+        decisionId
+          ? `Use decision ID ${decisionId} as the trace anchor.`
+          : "Capture the decision ID and use it as the trace anchor.",
       ].join(" ");
     },
   },
@@ -95,13 +77,10 @@ const PROMPT_TEMPLATES: McpPromptTemplate[] = [
   },
   {
     name: "mcp-client-hardening",
-    description: "Operational checklist for MCP client composition, transport auth, and backpressure",
+    description:
+      "Operational checklist for MCP client composition, transport auth, and backpressure",
     arguments: [
-      {
-        name: "client_name",
-        description: "Client or runtime being hardened",
-        required: false,
-      },
+      { name: "client_name", description: "Client or runtime being hardened", required: false },
     ],
     render: (args) => {
       const clientName = stringArg(args, "client_name") ?? "this MCP client";
@@ -122,7 +101,10 @@ export function listPromptTemplates(): Prompt[] {
   }));
 }
 
-export function renderPromptTemplate(name: string, args: Record<string, unknown> | undefined): string {
+export function renderPromptTemplate(
+  name: string,
+  args: Record<string, unknown> | undefined,
+): string {
   const template = PROMPT_TEMPLATES.find((candidate) => candidate.name === name);
   if (!template) {
     throw new Error(`Unknown prompt: ${name}`);

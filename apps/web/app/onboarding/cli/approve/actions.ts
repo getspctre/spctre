@@ -16,8 +16,12 @@ export async function approveCliOnboarding(formData: FormData): Promise<void> {
 
   const result = await approveCliOnboardingRequest({ code, session });
   if (!result.ok) {
-    redirect(`/onboarding/cli/approve?code=${encodeURIComponent(code)}&error=${encodeURIComponent(result.error)}`);
+    redirect(
+      `/onboarding/cli/approve?code=${encodeURIComponent(code)}&error=${encodeURIComponent(result.error)}`,
+    );
   }
 
-  redirect(`/onboarding/cli/approve?code=${encodeURIComponent(code)}&approved=1&workspace=${encodeURIComponent(result.workspaceSlug)}`);
+  redirect(
+    `/onboarding/cli/approve?code=${encodeURIComponent(code)}&approved=1&workspace=${encodeURIComponent(result.workspaceSlug)}`,
+  );
 }

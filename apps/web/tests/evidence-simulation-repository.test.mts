@@ -62,19 +62,16 @@ describe("evidence simulation revision selection", () => {
       "branch-scout",
       undefined,
       "workspace-1",
-      "tenant-1"
+      "tenant-1",
     );
 
     expect(getLatestRevisionMetadataForBranchMock).toHaveBeenCalledWith(
       "branch-scout",
       "workspace-1",
-      "tenant-1"
+      "tenant-1",
     );
     expect(getLatestRevisionMetadataMock).not.toHaveBeenCalled();
-    expect(result).toMatchObject({
-      branchId: "branch-scout",
-      revisionId: "revision-scout",
-    });
+    expect(result).toMatchObject({ branchId: "branch-scout", revisionId: "revision-scout" });
   });
 
   it("does not substitute the workspace's newest revision for an invalid branch selection", async () => {
@@ -84,7 +81,7 @@ describe("evidence simulation revision selection", () => {
       "branch-missing",
       undefined,
       "workspace-1",
-      "tenant-1"
+      "tenant-1",
     );
 
     expect(result).toBeNull();

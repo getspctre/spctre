@@ -8,7 +8,12 @@ const SCRYPT_PARAMS: ScryptOptions = { N: 16384, r: 8, p: 1 };
 // libuv threadpool instead of the event loop — a synchronous derivation blocks
 // the whole web instance for tens of ms, and this path is reachable
 // pre-authentication. See concurrency-and-memory-audit finding 3.
-function scryptAsync(password: string, salt: string, keylen: number, options: ScryptOptions): Promise<Buffer> {
+function scryptAsync(
+  password: string,
+  salt: string,
+  keylen: number,
+  options: ScryptOptions,
+): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     scrypt(password, salt, keylen, options, (err, derivedKey) => {
       if (err) reject(err);
@@ -82,7 +87,7 @@ export async function generateRecoveryCodes(params: {
     codes.map(async (code) => ({
       hash: await hashRecoveryCode(code),
       lookup: computeCodeLookup(code),
-    }))
+    })),
   );
 
   for (const { hash, lookup } of prepared) {
@@ -170,11 +175,9 @@ export async function countUnusedRecoveryCodes(params: {
   return Number(rows[0]?.n ?? 0);
 }
 
-export async function findPrincipalByEmail(email: string): Promise<{
-  principalId: string;
-  tenantId: string;
-  subject: string;
-} | null> {
+export async function findPrincipalByEmail(
+  email: string,
+): Promise<{ principalId: string; tenantId: string; subject: string } | null> {
   if (!rawSql || !email.trim()) return null;
 
   const rows = await rawSql<{ id: string; tenant_id: string; subject: string }[]>`

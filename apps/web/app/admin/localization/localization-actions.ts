@@ -41,17 +41,19 @@ export async function saveTerminologyTermInline(input: {
   const sourceTerm = sourceTermForLocale(option, locale);
   const expression = new RegExp(sourceTerm, "gi");
   try {
-    await Promise.all(option.keys.map(async (translationKey) => {
-      const standardValue = messages[translationKey];
-      if (!standardValue) return;
-      await upsertTenantTerminologyOverride(createTenantTerminologyStore(), {
-        tenantId: guard.session.tenantId,
-        locale,
-        translationKey,
-        customValue: standardValue.replace(expression, customTerm),
-        updatedAt: new Date().toISOString(),
-      });
-    }));
+    await Promise.all(
+      option.keys.map(async (translationKey) => {
+        const standardValue = messages[translationKey];
+        if (!standardValue) return;
+        await upsertTenantTerminologyOverride(createTenantTerminologyStore(), {
+          tenantId: guard.session.tenantId,
+          locale,
+          translationKey,
+          customValue: standardValue.replace(expression, customTerm),
+          updatedAt: new Date().toISOString(),
+        });
+      }),
+    );
   } catch {
     return { error: "Localization storage is not available on this database yet." };
   }
@@ -74,9 +76,16 @@ export async function resetTerminologyTermInline(input: {
   if (!option) return { error: "Unknown terminology term." };
 
   try {
-    await Promise.all(option.keys.map((translationKey) =>
-      deleteTenantTerminologyOverride(createTenantTerminologyStore(), guard.session.tenantId, locale, translationKey)
-    ));
+    await Promise.all(
+      option.keys.map((translationKey) =>
+        deleteTenantTerminologyOverride(
+          createTenantTerminologyStore(),
+          guard.session.tenantId,
+          locale,
+          translationKey,
+        ),
+      ),
+    );
   } catch {
     return { error: "Localization storage is not available on this database yet." };
   }

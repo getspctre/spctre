@@ -8,7 +8,10 @@ const POLICY_MODULE_FILENAME = "spctre_policy.py";
 const MANIFEST_FILENAME = "governance-manifest-omnigent.json";
 const AUDIT_NOTE_FILENAME = "GOVERNANCE.md";
 
-export function writeOmnigentAdapter(config: SpctreCliConfig): { adapterPath: string; launchHint: string } {
+export function writeOmnigentAdapter(config: SpctreCliConfig): {
+  adapterPath: string;
+  launchHint: string;
+} {
   const spctreDir = path.resolve(process.cwd(), SPCTRE_DIR);
   fs.mkdirSync(spctreDir, { recursive: true });
 
@@ -73,9 +76,7 @@ function buildManifest(config: SpctreCliConfig, pythonSource: string) {
     agentId: config.agentId,
     environment: config.environment,
     artifactHash: config.artifactHash,
-    files: {
-      policySha256: sha256(pythonSource),
-    },
+    files: { policySha256: sha256(pythonSource) },
     auditNotes: [
       "Omnigent uses native policy modules; no runtime monkey-patching is applied.",
       "The spctre_policy factory function delegates governed tool-call decisions to the Spctre evaluate endpoint.",

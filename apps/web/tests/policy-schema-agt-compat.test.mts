@@ -222,10 +222,15 @@ describe("AGT v4.0.0 compatibility — enterprise production policy", () => {
     expect(escalateRules).toHaveLength(3);
 
     expect(denyRules.map((r) => r.stableRuleId)).toEqual(
-      expect.arrayContaining(["block-delete-file", "block-execute-code", "block-ssh", "block-ssn-leak"])
+      expect.arrayContaining([
+        "block-delete-file",
+        "block-execute-code",
+        "block-ssh",
+        "block-ssn-leak",
+      ]),
     );
     expect(escalateRules.map((r) => r.stableRuleId)).toEqual(
-      expect.arrayContaining(["escalate-write-file", "escalate-send-email", "escalate-deploy"])
+      expect.arrayContaining(["escalate-write-file", "escalate-send-email", "escalate-deploy"]),
     );
   });
 
@@ -281,9 +286,7 @@ describe("AGT v4.0.0 compatibility — agt: block with v4 engine name", () => {
       identity: { min_trust_score: 800 },
       sandbox: { max_ring: 1 },
     });
-    expect(parsed.sourceDocument?.agt).toMatchObject({
-      engine: "agent-governance-toolkit-core",
-    });
+    expect(parsed.sourceDocument?.agt).toMatchObject({ engine: "agent-governance-toolkit-core" });
     expect(parsed.compatibility).toMatchObject({
       compatibilityLevel: "LOSSLESS_PRESERVED",
       preservedTopLevelKeys: ["agt"],
@@ -373,13 +376,17 @@ describe("AGT v4.1.0 compatibility — dynamic policy conditions", () => {
     });
 
     expect(parsed.rules).toHaveLength(3);
-    expect(parsed.rules.flatMap((rule) => rule.dynamicConditions ?? []).map((condition) => condition.kind)).toEqual(
+    expect(
+      parsed.rules
+        .flatMap((rule) => rule.dynamicConditions ?? [])
+        .map((condition) => condition.kind),
+    ).toEqual(
       expect.arrayContaining([
         "TIME_WINDOW",
         "PER_CALL_COST_LIMIT",
         "BUDGET_UTILIZATION_THRESHOLD",
         "SESSION_CUMULATIVE_COST_LIMIT",
-      ])
+      ]),
     );
     expect(parsed.compatibility).toMatchObject({
       agtVersion: "4.1.0",

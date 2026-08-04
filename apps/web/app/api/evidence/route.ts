@@ -27,44 +27,48 @@ async function handlePostApiEvidence(request: Request) {
   const traceId = extractTraceId(request);
   const startedAt = Date.now();
 
-  return await withSpan("api.evidence.ingest", { "spctre.request_id": traceId, "http.route": EVIDENCE_ROUTE }, async (span) => {
-    const delegated = await delegateToGoIngestor(request, traceId);
-    if (delegated) return delegated;
+  return await withSpan(
+    "api.evidence.ingest",
+    { "spctre.request_id": traceId, "http.route": EVIDENCE_ROUTE },
+    async (span) => {
+      const delegated = await delegateToGoIngestor(request, traceId);
+      if (delegated) return delegated;
 
-    let payload: unknown;
+      let payload: unknown;
 
-    try {
-      payload = await request.json();
-    } catch {
-      return errorResponse(traceId, 400, { error: "Request body must be JSON." });
-    }
+      try {
+        payload = await request.json();
+      } catch {
+        return errorResponse(traceId, 400, { error: "Request body must be JSON." });
+      }
 
-    const parsed = parseBody(EvidenceIngestSchema, payload);
+      const parsed = parseBody(EvidenceIngestSchema, payload);
 
-    if (!parsed.ok) {
-      return errorResponse(traceId, 400, { error: parsed.error, issues: parsed.issues });
-    }
+      if (!parsed.ok) {
+        return errorResponse(traceId, 400, { error: parsed.error, issues: parsed.issues });
+      }
 
-    const result = await ingestRuntimeEvidence({
-      request,
-      parsed: parsed.value,
-      rawPayload: payload,
-      startedAt,
-    });
+      const result = await ingestRuntimeEvidence({
+        request,
+        parsed: parsed.value,
+        rawPayload: payload,
+        startedAt,
+      });
 
-    if (result.spanAttributes) {
-      span.setAttributes(result.spanAttributes);
-    }
+      if (result.spanAttributes) {
+        span.setAttributes(result.spanAttributes);
+      }
 
-    for (const path of result.revalidatePaths ?? []) {
-      revalidatePath(path);
-    }
+      for (const path of result.revalidatePaths ?? []) {
+        revalidatePath(path);
+      }
 
-    return withTraceId(
-      Response.json({ ...result.body, meta: makeMeta(traceId) }, { status: result.status }),
-      traceId
-    );
-  });
+      return withTraceId(
+        Response.json({ ...result.body, meta: makeMeta(traceId) }, { status: result.status }),
+        traceId,
+      );
+    },
+  );
 }
 
 export { handlePostApiEvidence as POST };

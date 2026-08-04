@@ -11,25 +11,17 @@ const listSimulationRunsSpy = vi.fn();
 const getAuthSessionSpy = vi.fn();
 const revalidatePathSpy = vi.fn();
 
-vi.mock("next/cache", () => ({
-  revalidatePath: revalidatePathSpy,
-}));
+vi.mock("next/cache", () => ({ revalidatePath: revalidatePathSpy }));
 
-vi.mock("@spctre/policy-schema", () => ({
-  POLICY_PACKS: [],
-}));
+vi.mock("@spctre/policy-schema", () => ({ POLICY_PACKS: [] }));
 
-vi.mock("@/lib/workspace/server-context", () => ({
-  getWorkspaceContext: getWorkspaceContextSpy,
-}));
+vi.mock("@/lib/workspace/server-context", () => ({ getWorkspaceContext: getWorkspaceContextSpy }));
 
 vi.mock("@/lib/workspace-path", () => ({
   buildWorkspacePath: (_workspaceSlug: string, path: string) => path,
 }));
 
-vi.mock("@/lib/auth-session", () => ({
-  getAuthSession: getAuthSessionSpy,
-}));
+vi.mock("@/lib/auth-session", () => ({ getAuthSession: getAuthSessionSpy }));
 
 vi.mock("@/lib/repositories/evidence", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../lib/repositories/evidence")>();
@@ -42,10 +34,7 @@ vi.mock("@/lib/repositories/evidence", async (importOriginal) => {
 
 vi.mock("@/lib/repositories/policy", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../lib/repositories/policy")>();
-  return {
-    ...actual,
-    listBranches: listBranchesSpy,
-  };
+  return { ...actual, listBranches: listBranchesSpy };
 });
 
 vi.mock("@/lib/repositories/workspace", async (importOriginal) => {
@@ -113,10 +102,8 @@ describe("commercial model", () => {
 
     const response = await usageBillingRoute.GET(
       new Request("http://localhost:3000/api/usage-billing/export", {
-        headers: {
-          "x-request-id": "trace-usage-export",
-        },
-      })
+        headers: { "x-request-id": "trace-usage-export" },
+      }),
     );
     const body = await response.json();
 
@@ -129,11 +116,7 @@ describe("commercial model", () => {
       policyBundles: 2,
       retainedAuditEvents: 3,
     });
-    expect(body.meta).toMatchObject({
-      traceId: "trace-usage-export",
-      version: API_VERSION,
-    });
+    expect(body.meta).toMatchObject({ traceId: "trace-usage-export", version: API_VERSION });
     expect(body.pricingDimensions).toBeUndefined();
   });
-
 });

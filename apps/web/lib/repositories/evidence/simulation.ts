@@ -35,11 +35,16 @@ export interface SimulationRunWithBulkDetails extends SimulationRun {
   averageLatencySavedMs?: number;
 }
 
-function isKnownHighRiskOutcome(record: Awaited<ReturnType<typeof listRuntimeEvidence>>[number]): boolean {
+function isKnownHighRiskOutcome(
+  record: Awaited<ReturnType<typeof listRuntimeEvidence>>[number],
+): boolean {
   const raw = record.rawEvidence;
   const risk = typeof raw.riskLevel === "string" ? raw.riskLevel : raw.risk_level;
-  const consequence = record.toolParameters?.consequenceTier ?? record.toolParameters?.consequence_tier;
-  return risk === "HIGH" || risk === "CRITICAL" || consequence === "HIGH" || consequence === "CRITICAL";
+  const consequence =
+    record.toolParameters?.consequenceTier ?? record.toolParameters?.consequence_tier;
+  return (
+    risk === "HIGH" || risk === "CRITICAL" || consequence === "HIGH" || consequence === "CRITICAL"
+  );
 }
 
 export async function getEvidenceSimulationRun(
@@ -48,29 +53,37 @@ export async function getEvidenceSimulationRun(
   workspaceId: string | null,
   tenantId: string,
   createdBy = "system",
-  options: { allowBulk?: boolean } = {}
+  options: { allowBulk?: boolean } = {},
 ): Promise<SimulationRunWithBulkDetails | null> {
   const evidence = await listRuntimeEvidence(workspaceId, tenantId);
   if (!evidence.length) return null;
 
   let revision: RevisionMetadata | null = null;
   if (revisionId) {
-    revision = await getRevisionMetadata(revisionId, tenantId).catch(swallow("getRevisionMetadata", null));
+    revision = await getRevisionMetadata(revisionId, tenantId).catch(
+      swallow("getRevisionMetadata", null),
+    );
     if (revision && branchId && revision.branchId !== branchId) {
       revision = null;
     }
-    if (revision && !(await revisionBelongsToWorkspace(revision.revisionId, workspaceId, tenantId))) {
+    if (
+      revision &&
+      !(await revisionBelongsToWorkspace(revision.revisionId, workspaceId, tenantId))
+    ) {
       revision = null;
     }
   } else if (branchId) {
-    revision = await getLatestRevisionMetadataForBranch(branchId, workspaceId, tenantId)
-      .catch(swallow("getLatestRevisionMetadataForBranch", null));
+    revision = await getLatestRevisionMetadataForBranch(branchId, workspaceId, tenantId).catch(
+      swallow("getLatestRevisionMetadataForBranch", null),
+    );
   } else {
     revision = await getLatestRevisionMetadata(workspaceId, tenantId);
   }
   if (!revision) return null;
 
-  const proposedRules = await listRulesForRevision(revision.revisionId, tenantId).catch(swallow("listRulesForRevision", [] as PolicyRuleSummary[]));
+  const proposedRules = await listRulesForRevision(revision.revisionId, tenantId).catch(
+    swallow("listRulesForRevision", [] as PolicyRuleSummary[]),
+  );
 
   const plan = getSpctrePlan();
   if (options.allowBulk && isFeatureEnabledForPlan("bulkProductionSimulation", plan)) {
@@ -78,7 +91,7 @@ export async function getEvidenceSimulationRun(
       const bulkResult = await bulkSimulationService.runBulkSimulation({
         tenantId,
         workspaceId,
-        proposedRules
+        proposedRules,
       });
 
       const simRun = buildSimulationRun({
@@ -88,7 +101,7 @@ export async function getEvidenceSimulationRun(
         sourceEventCount: bulkResult.sourceEventCount,
         createdBy,
         createdAt: new Date().toISOString(),
-        results: bulkResult.results
+        results: bulkResult.results,
       });
 
       // Attach premium cost and latency details for the Cloud UI reports
@@ -105,43 +118,52 @@ export async function getEvidenceSimulationRun(
           : buildSimulationRegressionSummary({ results: bulkResult.results, coverage: "SAMPLED" }),
       };
     } catch (err) {
-      logger.warn("[Bulk Simulation Fallback] Parallel simulation failed, falling back to local sample.", { error: err instanceof Error ? err.message : String(err) });
+      logger.warn(
+        "[Bulk Simulation Fallback] Parallel simulation failed, falling back to local sample.",
+        { error: err instanceof Error ? err.message : String(err) },
+      );
     }
   }
 
   const SIMULATION_SAMPLE_SIZE = 20;
-  const highRiskEventIds = new Set(evidence.filter(isKnownHighRiskOutcome).map((record) => record.decisionId));
-  const results: SimulationReplayInput[] = evidence.slice(0, SIMULATION_SAMPLE_SIZE).map((record) => {
-    const previousStatus = record.status;
-    const evalResult = evaluateDecision({
-      connector: record.connector,
-      action: record.action,
-      domains: record.policyRefs,
-      rules: proposedRules,
-      toolIntent: record.toolIntent,
-      planSummary: record.planSummary,
-      toolParameters: record.toolParameters,
+  const highRiskEventIds = new Set(
+    evidence.filter(isKnownHighRiskOutcome).map((record) => record.decisionId),
+  );
+  const results: SimulationReplayInput[] = evidence
+    .slice(0, SIMULATION_SAMPLE_SIZE)
+    .map((record) => {
+      const previousStatus = record.status;
+      const evalResult = evaluateDecision({
+        connector: record.connector,
+        action: record.action,
+        domains: record.policyRefs,
+        rules: proposedRules,
+        toolIntent: record.toolIntent,
+        planSummary: record.planSummary,
+        toolParameters: record.toolParameters,
+      });
+      const proposedStatus = evalResult.status;
+      const delta: SimulationReplayInput["delta"] =
+        previousStatus === proposedStatus
+          ? "UNCHANGED"
+          : previousStatus !== "DENY" && proposedStatus === "DENY"
+            ? "NEW_DENY"
+            : previousStatus === "DENY" && proposedStatus !== "DENY"
+              ? "NEW_ALLOW"
+              : "MODIFIED";
+      return {
+        eventId: record.decisionId,
+        connector: record.connector,
+        action: record.action,
+        previousStatus,
+        proposedStatus,
+        delta,
+        matchedPolicyRefs: evalResult.matchedRefs.length
+          ? evalResult.matchedRefs
+          : record.policyRefs,
+        reason: evalResult.reason,
+      };
     });
-    const proposedStatus = evalResult.status;
-    const delta: SimulationReplayInput["delta"] =
-      previousStatus === proposedStatus
-        ? "UNCHANGED"
-        : previousStatus !== "DENY" && proposedStatus === "DENY"
-          ? "NEW_DENY"
-          : previousStatus === "DENY" && proposedStatus !== "DENY"
-            ? "NEW_ALLOW"
-            : "MODIFIED";
-    return {
-      eventId: record.decisionId,
-      connector: record.connector,
-      action: record.action,
-      previousStatus,
-      proposedStatus,
-      delta,
-      matchedPolicyRefs: evalResult.matchedRefs.length ? evalResult.matchedRefs : record.policyRefs,
-      reason: evalResult.reason,
-    };
-  });
 
   return buildSimulationRun({
     id: `sim-${revision.revisionId.slice(0, 8)}-${Date.now().toString(36)}`,
@@ -162,7 +184,7 @@ export async function getEvidenceSimulationRun(
 export async function persistSimulationRun(
   run: SimulationRun,
   workspaceId: string | null,
-  tenantId: string
+  tenantId: string,
 ): Promise<string | null> {
   if (!sql) return null;
   await ensureDemoTenant();
@@ -272,16 +294,18 @@ export async function listSimulationReplayFindings(params: {
   limit?: number;
 }): Promise<SimulationReplayFinding[]> {
   if (!sql) return [];
-  const rows = await sql<{
-    event_id: string;
-    connector: string;
-    action: string;
-    previous_status: SimulationReplayInput["previousStatus"];
-    proposed_status: SimulationReplayInput["proposedStatus"];
-    delta: SimulationReplayInput["delta"];
-    matched_policy_refs: string[];
-    reason: string;
-  }[]>`
+  const rows = await sql<
+    {
+      event_id: string;
+      connector: string;
+      action: string;
+      previous_status: SimulationReplayInput["previousStatus"];
+      proposed_status: SimulationReplayInput["proposedStatus"];
+      delta: SimulationReplayInput["delta"];
+      matched_policy_refs: string[];
+      reason: string;
+    }[]
+  >`
     SELECT event_id, connector, action, previous_status, proposed_status, delta, matched_policy_refs, reason
     FROM simulation_replay_finding
     WHERE tenant_id = ${params.tenantId}
@@ -308,20 +332,22 @@ export async function getSimulationRunReview(params: {
   simulationRunId: string;
 }): Promise<(SimulationRunSummary & { findings: SimulationReplayFinding[] }) | null> {
   if (!sql) return null;
-  const rows = await sql<{
-    id: string;
-    branch_id: string;
-    revision_id: string;
-    branch_name: string | null;
-    source_event_count: number;
-    newly_denied_count: number;
-    newly_allowed_count: number;
-    unchanged_count: number;
-    regression_summary: unknown;
-    created_by: string;
-    created_by_email: string | null;
-    created_at: Date;
-  }[]>`
+  const rows = await sql<
+    {
+      id: string;
+      branch_id: string;
+      revision_id: string;
+      branch_name: string | null;
+      source_event_count: number;
+      newly_denied_count: number;
+      newly_allowed_count: number;
+      unchanged_count: number;
+      regression_summary: unknown;
+      created_by: string;
+      created_by_email: string | null;
+      created_at: Date;
+    }[]
+  >`
     SELECT
       sr.id::text, sr.branch_id, sr.revision_id, pb.name AS branch_name,
       sr.source_event_count, sr.newly_denied_count, sr.newly_allowed_count,
@@ -373,7 +399,7 @@ export interface SimulationRunSummary {
 export async function listSimulationRuns(
   workspaceId: string | null,
   tenantId: string,
-  limit = 20
+  limit = 20,
 ): Promise<SimulationRunSummary[]> {
   try {
     const rows = await sql<
@@ -418,10 +444,12 @@ export async function listSimulationRuns(
       regressionSummary: parseRegressionSummary(row.regression_summary),
       createdBy: row.created_by,
       createdByEmail: row.created_by_email ?? null,
-      createdAt: row.created_at.toISOString()
+      createdAt: row.created_at.toISOString(),
     }));
   } catch (err) {
-    logger.error("[listSimulationRuns] failed:", { error: err instanceof Error ? err.message : String(err) });
+    logger.error("[listSimulationRuns] failed:", {
+      error: err instanceof Error ? err.message : String(err),
+    });
     return [];
   }
 }

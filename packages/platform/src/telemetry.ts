@@ -21,7 +21,6 @@ function intEnv(name: string, defaultValue: number): number {
   return Number.isFinite(parsed) ? parsed : defaultValue;
 }
 
-
 function parseResourceAttributes(raw: string | undefined): Record<string, string> {
   if (!raw) return {};
   const attrs: Record<string, string> = {};
@@ -34,7 +33,9 @@ function parseResourceAttributes(raw: string | undefined): Record<string, string
   return attrs;
 }
 
-export function initTelemetry(serviceName = process.env.OTEL_SERVICE_NAME?.trim() || DEFAULT_SERVICE_NAME): void {
+export function initTelemetry(
+  serviceName = process.env.OTEL_SERVICE_NAME?.trim() || DEFAULT_SERVICE_NAME,
+): void {
   if (telemetryState.started) return;
 
   telemetryState.serviceName = serviceName;
@@ -58,16 +59,12 @@ export function initTelemetry(serviceName = process.env.OTEL_SERVICE_NAME?.trim(
     }),
   ];
 
-
-
   telemetryState.sdk = new NodeSDK({
     resource,
     traceExporter: new OTLPTraceExporter(),
     metricReaders,
     instrumentations: [
-      getNodeAutoInstrumentations({
-        "@opentelemetry/instrumentation-fs": { enabled: false },
-      }),
+      getNodeAutoInstrumentations({ "@opentelemetry/instrumentation-fs": { enabled: false } }),
     ],
   });
 

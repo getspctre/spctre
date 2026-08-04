@@ -27,7 +27,9 @@ export async function revoke(options: { output?: string } = {}) {
     }
   } catch (err) {
     // If the token is already dead or the server is unreachable, still clean up locally.
-    console.warn(`Warning: could not reach control plane to revoke server-side tokens: ${String(err)}`);
+    console.warn(
+      `Warning: could not reach control plane to revoke server-side tokens: ${String(err)}`,
+    );
     console.warn("Removing local config anyway.");
   }
 

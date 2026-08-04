@@ -19,23 +19,23 @@ const HEALTH_UI_MAP: Record<AgentSummary["healthStatus"], HealthUI> = {
   CURRENT: {
     className: "pill pillAllow",
     label: "Current",
-    tooltip: "Agent is running the latest published policy bundle"
+    tooltip: "Agent is running the latest published policy bundle",
   },
   OUTDATED: {
     className: "pill pillWarn",
     label: "Outdated (policy drift)",
-    tooltip: "Agent artifact hash does not match the latest published bundle, sync required"
+    tooltip: "Agent artifact hash does not match the latest published bundle, sync required",
   },
   STALE: {
     className: "pill pillBlock",
     label: "Stale (not reporting)",
-    tooltip: "Agent has not sent a heartbeat in over one hour, may be offline"
+    tooltip: "Agent has not sent a heartbeat in over one hour, may be offline",
   },
   UNKNOWN: {
     className: "pill pillNeutral",
     label: "Unknown",
-    tooltip: "Agent status cannot be determined"
-  }
+    tooltip: "Agent status cannot be determined",
+  },
 };
 
 function relativeTime(iso: string): string {
@@ -58,8 +58,7 @@ interface Props {
 
 function ArtifactHashesSection({ agent, viewMode }: Props) {
   const hashMatch =
-    agent.latestPublishedHash != null &&
-    agent.currentArtifactHash === agent.latestPublishedHash;
+    agent.latestPublishedHash != null && agent.currentArtifactHash === agent.latestPublishedHash;
   const fingerprint = hashToFingerprint(agent.currentArtifactHash);
 
   return (
@@ -84,24 +83,23 @@ function ArtifactHashesSection({ agent, viewMode }: Props) {
       {!hashMatch && agent.latestPublishedHash ? (
         <>
           <p className="meta agentMutedBlock">
-            Policy drift detected. This agent is running <code className="tinyCode">{fingerprint}</code> but
-            the latest published bundle is{" "}
+            Policy drift detected. This agent is running{" "}
+            <code className="tinyCode">{fingerprint}</code> but the latest published bundle is{" "}
             <code className="tinyCode">
               {formatArtifactHash(agent.latestPublishedHash, viewMode, hashToFingerprint)}
-            </code>.
+            </code>
+            .
           </p>
           <div className="agentSyncCommand">
             <p className="metadata">Sync command</p>
-            <code className="tinyBreakCode">
-              spctre watch --sync --agent {agent.agentId}
-            </code>
+            <code className="tinyBreakCode">spctre watch --sync --agent {agent.agentId}</code>
           </div>
         </>
       ) : null}
       {!agent.latestPublishedHash ? (
         <p className="meta agentMutedBlock">
-          No published bundle is available for comparison. Publish a policy revision on the
-          Review page to establish a baseline.
+          No published bundle is available for comparison. Publish a policy revision on the Review
+          page to establish a baseline.
         </p>
       ) : null}
     </div>
@@ -136,20 +134,36 @@ function RuntimeIdentitySection({ agent, viewMode }: Props) {
           <strong>{relativeTime(agent.lastSeen)}</strong>
         </div>
       </div>
-      <a className="button buttonSmall" href={`/api/agents/runtime-assurance/history?agentId=${encodeURIComponent(agent.agentId)}`}>
+      <a
+        className="button buttonSmall"
+        href={`/api/agents/runtime-assurance/history?agentId=${encodeURIComponent(agent.agentId)}`}
+      >
         Download runtime history (JSON)
       </a>
       {agent.healthStatus === "STALE" ? (
-        <p className="meta agentMutedBlock">This agent has not reported for over one hour. Run <code className="tinyCode">spctre watch --heartbeat</code> from its production runner, then return here to confirm it is reporting.</p>
+        <p className="meta agentMutedBlock">
+          This agent has not reported for over one hour. Run{" "}
+          <code className="tinyCode">spctre watch --heartbeat</code> from its production runner,
+          then return here to confirm it is reporting.
+        </p>
       ) : null}
       {agent.healthStatus === "UNKNOWN" ? (
-        <p className="meta agentMutedBlock">Spctre cannot determine this agent’s policy state. Confirm its policy context and send a new runtime report.</p>
+        <p className="meta agentMutedBlock">
+          Spctre cannot determine this agent’s policy state. Confirm its policy context and send a
+          new runtime report.
+        </p>
       ) : null}
     </div>
   );
 }
 
-function SurfaceBindingsSection({ surfaces, canonicalAgentId }: { surfaces: AgentSurfaceBinding[]; canonicalAgentId: string }) {
+function SurfaceBindingsSection({
+  surfaces,
+  canonicalAgentId,
+}: {
+  surfaces: AgentSurfaceBinding[];
+  canonicalAgentId: string;
+}) {
   if (surfaces.length === 0) return null;
   return (
     <div className="packRuleDetail">
@@ -158,8 +172,9 @@ function SurfaceBindingsSection({ surfaces, canonicalAgentId }: { surfaces: Agen
         Surface bindings
       </p>
       <p className="meta agentMutedBlock">
-        This agent is active across {surfaces.length} cross-surface binding{surfaces.length !== 1 ? "s" : ""}. Decisions,
-        trust signals, reviewer interventions, and identity events are correlated across all surfaces under this canonical identity.
+        This agent is active across {surfaces.length} cross-surface binding
+        {surfaces.length !== 1 ? "s" : ""}. Decisions, trust signals, reviewer interventions, and
+        identity events are correlated across all surfaces under this canonical identity.
       </p>
       <div className="packRuleMeta">
         {surfaces.map((s) => (
@@ -169,34 +184,64 @@ function SurfaceBindingsSection({ surfaces, canonicalAgentId }: { surfaces: Agen
           </div>
         ))}
       </div>
-      <a className="button buttonSmall" href={`/api/agents/${encodeURIComponent(canonicalAgentId)}/identity-history`}>
+      <a
+        className="button buttonSmall"
+        href={`/api/agents/${encodeURIComponent(canonicalAgentId)}/identity-history`}
+      >
         Download identity history (JSON)
       </a>
     </div>
   );
 }
 
-function BlueprintSection({ blueprint, viewMode }: { blueprint?: AgentBlueprintSummary; viewMode: AppViewMode }) {
+function BlueprintSection({
+  blueprint,
+  viewMode,
+}: {
+  blueprint?: AgentBlueprintSummary;
+  viewMode: AppViewMode;
+}) {
   return (
     <div className="packRuleDetail">
       <p className="eyebrow">Governance blueprint</p>
       {blueprint ? (
         <div className="packRuleMeta">
-          <div><span className="meta">Blueprint</span><strong>{blueprint.name}</strong></div>
-          <div><span className="meta">Lifecycle state</span><span className="pill pillNeutral">{blueprint.status.replace("_", " ")}</span></div>
-          <div><span className="meta">Active revision</span><code className="smallCode">{formatProvenanceId(blueprint.activeRevisionId, viewMode, 18)}</code></div>
-          {blueprint.policyRevisionId ? <div><span className="meta">Linked policy revision</span><code className="smallCode">{formatProvenanceId(blueprint.policyRevisionId, viewMode, 18)}</code></div> : null}
+          <div>
+            <span className="meta">Blueprint</span>
+            <strong>{blueprint.name}</strong>
+          </div>
+          <div>
+            <span className="meta">Lifecycle state</span>
+            <span className="pill pillNeutral">{blueprint.status.replace("_", " ")}</span>
+          </div>
+          <div>
+            <span className="meta">Active revision</span>
+            <code className="smallCode">
+              {formatProvenanceId(blueprint.activeRevisionId, viewMode, 18)}
+            </code>
+          </div>
+          {blueprint.policyRevisionId ? (
+            <div>
+              <span className="meta">Linked policy revision</span>
+              <code className="smallCode">
+                {formatProvenanceId(blueprint.policyRevisionId, viewMode, 18)}
+              </code>
+            </div>
+          ) : null}
         </div>
-      ) : <p className="meta agentMutedBlock">No declarative blueprint is linked to this agent yet. Define its purpose, permitted surfaces, budgets, and approval path before expanding its operating scope.</p>}
+      ) : (
+        <p className="meta agentMutedBlock">
+          No declarative blueprint is linked to this agent yet. Define its purpose, permitted
+          surfaces, budgets, and approval path before expanding its operating scope.
+        </p>
+      )}
     </div>
   );
 }
 
 export function AgentInspector({ agent, viewMode, surfaces, blueprint, attention = false }: Props) {
   const agentDenyRate =
-    agent.totalDecisions > 0
-      ? ((agent.denyCount / agent.totalDecisions) * 100).toFixed(0)
-      : "0";
+    agent.totalDecisions > 0 ? ((agent.denyCount / agent.totalDecisions) * 100).toFixed(0) : "0";
 
   const health = HEALTH_UI_MAP[agent.healthStatus];
 
@@ -220,10 +265,7 @@ export function AgentInspector({ agent, viewMode, surfaces, blueprint, attention
                 <Bot size={15} />
                 <code className="agentId">{formatProvenanceId(agent.agentId, viewMode, 18)}</code>
               </div>
-              <span
-                className={health.className}
-                title={health.tooltip}
-              >
+              <span className={health.className} title={health.tooltip}>
                 {health.label}
                 <Info size={10} className="agentHealthInfo" />
               </span>
@@ -231,9 +273,7 @@ export function AgentInspector({ agent, viewMode, surfaces, blueprint, attention
 
             <div className="agentMeta">
               <span className="pill pillEnv">{agent.environment}</span>
-              <span className="pill pillStack">
-                {agent.runtimeStack.replace(/_/g, " ")}
-              </span>
+              <span className="pill pillStack">{agent.runtimeStack.replace(/_/g, " ")}</span>
             </div>
 
             <div className="agentStats agentStatsCompact">
@@ -250,7 +290,9 @@ export function AgentInspector({ agent, viewMode, surfaces, blueprint, attention
             <div className="agentFooter">
               <Clock size={12} />
               <span className="meta">Last seen {relativeTime(agent.lastSeen)}</span>
-              <span className="agentInspectLabel">{attention ? "Review and resolve" : "Inspect agent"}</span>
+              <span className="agentInspectLabel">
+                {attention ? "Review and resolve" : "Inspect agent"}
+              </span>
             </div>
           </button>
         </article>
@@ -259,9 +301,7 @@ export function AgentInspector({ agent, viewMode, surfaces, blueprint, attention
       <div className="packDrawerSummary">
         <div>
           <span className="meta">Health</span>
-          <span className={health.className}>
-            {health.label}
-          </span>
+          <span className={health.className}>{health.label}</span>
         </div>
         <div>
           <span className="meta">Deny rate</span>

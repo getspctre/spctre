@@ -62,7 +62,9 @@ export async function appendOperationsLog(params: {
       `;
     });
   } catch (err) {
-    logger.error("[operations_log] append failed (non-fatal):", { error: err instanceof Error ? err.message : String(err) });
+    logger.error("[operations_log] append failed (non-fatal):", {
+      error: err instanceof Error ? err.message : String(err),
+    });
   }
 }
 
@@ -99,7 +101,7 @@ function mapOperationsLogRow(row: OperationsLogDbRow): OperationsLogEntry {
 export async function listOperationsLog(
   tenantId: string,
   workspaceId?: string,
-  options: { eventType?: OperationsLogEventType; limit?: number; offset?: number } = {}
+  options: { eventType?: OperationsLogEventType; limit?: number; offset?: number } = {},
 ): Promise<OperationsLogEntry[]> {
   if (!sql) return [];
   const limit = options.limit ?? 100;
@@ -117,7 +119,9 @@ export async function listOperationsLog(
     `;
     return rows.map(mapOperationsLogRow);
   } catch (err) {
-    logger.error("[listOperationsLog] failed:", { error: err instanceof Error ? err.message : String(err) });
+    logger.error("[listOperationsLog] failed:", {
+      error: err instanceof Error ? err.message : String(err),
+    });
     return [];
   }
 }
@@ -131,7 +135,11 @@ export async function listOperationsLog(
 export async function listOperationsLogKeyset(
   tenantId: string,
   workspaceId?: string,
-  options: { eventType?: OperationsLogEventType; limit?: number; cursor?: KeysetCursor | null } = {}
+  options: {
+    eventType?: OperationsLogEventType;
+    limit?: number;
+    cursor?: KeysetCursor | null;
+  } = {},
 ): Promise<OperationsLogEntry[]> {
   if (!sql) return [];
   const limit = options.limit ?? 100;
@@ -142,7 +150,9 @@ export async function listOperationsLogKeyset(
       ? rawSql`AND (created_at > ${cursor.ts}::timestamptz OR (created_at = ${cursor.ts}::timestamptz AND id > ${cursor.id}::uuid))`
       : rawSql`AND (created_at < ${cursor.ts}::timestamptz OR (created_at = ${cursor.ts}::timestamptz AND id < ${cursor.id}::uuid))`
     : rawSql``;
-  const ordering = ascending ? rawSql`ORDER BY created_at ASC, id ASC` : rawSql`ORDER BY created_at DESC, id DESC`;
+  const ordering = ascending
+    ? rawSql`ORDER BY created_at ASC, id ASC`
+    : rawSql`ORDER BY created_at DESC, id DESC`;
   try {
     const rows = await sql<OperationsLogDbRow[]>`
       SELECT id, tenant_id, workspace_id, event_type, source_id, source_table,
@@ -157,14 +167,16 @@ export async function listOperationsLogKeyset(
     `;
     return rows.map(mapOperationsLogRow);
   } catch (err) {
-    logger.error("[listOperationsLogKeyset] failed:", { error: err instanceof Error ? err.message : String(err) });
+    logger.error("[listOperationsLogKeyset] failed:", {
+      error: err instanceof Error ? err.message : String(err),
+    });
     return [];
   }
 }
 
 export async function getOperationsLogEventCounts(
   tenantId: string,
-  workspaceId: string
+  workspaceId: string,
 ): Promise<Record<string, number>> {
   if (!sql) return {};
   try {
@@ -193,7 +205,9 @@ type OperationsLogChainRow = {
   created_at: Date;
 };
 
-function orderOperationsLogRowsForVerification(rows: OperationsLogChainRow[]): OperationsLogChainRow[] {
+function orderOperationsLogRowsForVerification(
+  rows: OperationsLogChainRow[],
+): OperationsLogChainRow[] {
   const byPrevHash = new Map<string | null, OperationsLogChainRow[]>();
   for (const row of rows) {
     const siblings = byPrevHash.get(row.prev_hash) ?? [];
@@ -224,7 +238,7 @@ function orderOperationsLogRowsForVerification(rows: OperationsLogChainRow[]): O
 
 export async function verifyOperationsLogChain(
   tenantId: string,
-  limit = 500
+  limit = 500,
 ): Promise<OperationsLogChainVerification> {
   const checkedAt = new Date().toISOString();
   if (!sql) return { verified: true, totalEntries: 0, checkedAt };
@@ -242,17 +256,19 @@ export async function verifyOperationsLogChain(
     if (rows.length === 0) return { verified: true, totalEntries: 0, checkedAt };
 
     const orderedRows = orderOperationsLogRowsForVerification(rows);
-    const validation = validateOperationsLogChain(orderedRows.map((row) => ({
-      id: row.id,
-      eventType: row.event_type,
-      sourceId: row.source_id,
-      sourceTable: row.source_table,
-      actorId: row.actor_id,
-      payload: isRecord(row.payload) ? row.payload : {},
-      contentHash: row.content_hash,
-      prevHash: row.prev_hash,
-      createdAt: row.created_at.toISOString(),
-    })));
+    const validation = validateOperationsLogChain(
+      orderedRows.map((row) => ({
+        id: row.id,
+        eventType: row.event_type,
+        sourceId: row.source_id,
+        sourceTable: row.source_table,
+        actorId: row.actor_id,
+        payload: isRecord(row.payload) ? row.payload : {},
+        contentHash: row.content_hash,
+        prevHash: row.prev_hash,
+        createdAt: row.created_at.toISOString(),
+      })),
+    );
 
     const issue = validation.issues[0];
     if (issue) {

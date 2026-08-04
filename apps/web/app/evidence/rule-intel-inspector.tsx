@@ -40,15 +40,9 @@ function HeatmapRuleInspector({ entry, maxDeny, viewMode }: HeatmapInspectorProp
               </div>
             </div>
             <div className="heatmapCounts">
-              {entry.denyCount > 0 && (
-                <span className="pill pillBlock">{entry.denyCount}</span>
-              )}
-              {entry.warnCount > 0 && (
-                <span className="pill pillWarn">{entry.warnCount}</span>
-              )}
-              {entry.allowCount > 0 && (
-                <span className="pill pillAllow">{entry.allowCount}</span>
-              )}
+              {entry.denyCount > 0 && <span className="pill pillBlock">{entry.denyCount}</span>}
+              {entry.warnCount > 0 && <span className="pill pillWarn">{entry.warnCount}</span>}
+              {entry.allowCount > 0 && <span className="pill pillAllow">{entry.allowCount}</span>}
             </div>
           </button>
         </article>
@@ -86,7 +80,9 @@ function HeatmapRuleInspector({ entry, maxDeny, viewMode }: HeatmapInspectorProp
           </div>
           <div>
             <span className="meta">Relative friction</span>
-            <strong>{entry.total > 0 ? ((entry.denyCount / entry.total) * 100).toFixed(0) : 0}% of total</strong>
+            <strong>
+              {entry.total > 0 ? ((entry.denyCount / entry.total) * 100).toFixed(0) : 0}% of total
+            </strong>
           </div>
         </div>
       </div>
@@ -94,8 +90,8 @@ function HeatmapRuleInspector({ entry, maxDeny, viewMode }: HeatmapInspectorProp
       <div className="packRuleDetail">
         <p className="eyebrow">Review guidance</p>
         <p className="meta">
-          This rule is generating high denial volume. Consider reviewing the rule configuration
-          to check whether the deny threshold matches current operational intent, or investigate
+          This rule is generating high denial volume. Consider reviewing the rule configuration to
+          check whether the deny threshold matches current operational intent, or investigate
           whether agents are hitting this rule unexpectedly.
         </p>
       </div>
@@ -120,7 +116,7 @@ export function RuleAnalysisTabs({
   frictionHref,
   maxDeny,
   unusedHref,
-  viewMode
+  viewMode,
 }: RuleAnalysisTabsProps) {
   return (
     <div>
@@ -148,12 +144,19 @@ export function RuleAnalysisTabs({
           <div className="emptyState">
             <Activity size={18} className="sectionIcon" />
             <h3>No high-friction rules</h3>
-            <p className="meta">No rules have generated significant denial volume in the retention window.</p>
+            <p className="meta">
+              No rules have generated significant denial volume in the retention window.
+            </p>
           </div>
         ) : (
           <div className="heatmapList">
             {activeHeatmap.map((entry) => (
-              <HeatmapRuleInspector key={entry.ruleId} entry={entry} maxDeny={maxDeny} viewMode={viewMode} />
+              <HeatmapRuleInspector
+                key={entry.ruleId}
+                entry={entry}
+                maxDeny={maxDeny}
+                viewMode={viewMode}
+              />
             ))}
           </div>
         )
@@ -161,7 +164,9 @@ export function RuleAnalysisTabs({
         <div className="emptyState">
           <Activity size={18} className="sectionIcon" />
           <h3>All rules active</h3>
-          <p className="meta">Every rule has matched at least one decision in the retention window.</p>
+          <p className="meta">
+            Every rule has matched at least one decision in the retention window.
+          </p>
         </div>
       ) : (
         <div className="unusedList">
@@ -242,10 +247,10 @@ function UnusedRuleInspector({ rule, viewMode }: UnusedRuleInspectorProps) {
       <div className="packRuleDetail">
         <p className="eyebrow">Review guidance</p>
         <p className="meta">
-          No runtime decisions have matched this rule. This may indicate the rule covers a path
-          that has not yet been exercised, or that the connector and action selectors do not
-          match any current agent traffic. Consider reviewing whether the rule should be
-          narrowed, broadened, or removed.
+          No runtime decisions have matched this rule. This may indicate the rule covers a path that
+          has not yet been exercised, or that the connector and action selectors do not match any
+          current agent traffic. Consider reviewing whether the rule should be narrowed, broadened,
+          or removed.
         </p>
       </div>
     </SlideOutPanel>

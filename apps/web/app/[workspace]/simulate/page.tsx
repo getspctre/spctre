@@ -27,18 +27,13 @@ export default async function WorkspaceSimulationPage({
   const simRevisionId = resolvedSearchParams.sim_revision;
   const simRunId = resolvedSearchParams.sim_run;
 
-  const {
-    workspaceContext,
-    activeSimulationRun,
-    branches,
-    simulationHistory,
-    activeHeatmap,
-  } = await getSimulationPageModel({
-    workspaceSlug: workspace,
-    simBranchId,
-    simRevisionId,
-    simRunId,
-  });
+  const { workspaceContext, activeSimulationRun, branches, simulationHistory, activeHeatmap } =
+    await getSimulationPageModel({
+      workspaceSlug: workspace,
+      simBranchId,
+      simRevisionId,
+      simRunId,
+    });
 
   const appViewMode = await getAppViewMode();
   const t = await getTranslations("simulate");
@@ -57,7 +52,12 @@ export default async function WorkspaceSimulationPage({
             <h2>
               {t.rich("run_heading", {
                 count: activeSimulationRun.sourceEventCount,
-                revision: formatProvenanceId(activeSimulationRun.revisionId, appViewMode, 12, hashToFingerprint),
+                revision: formatProvenanceId(
+                  activeSimulationRun.revisionId,
+                  appViewMode,
+                  12,
+                  hashToFingerprint,
+                ),
                 code: (chunks) => <code>{chunks}</code>,
               })}
             </h2>
@@ -90,16 +90,25 @@ export default async function WorkspaceSimulationPage({
         />
 
         {(() => {
-          const connectorMap = new Map<string, { denyCount: number; warnCount: number; total: number }>();
+          const connectorMap = new Map<
+            string,
+            { denyCount: number; warnCount: number; total: number }
+          >();
           for (const entry of activeHeatmap) {
             const connector = entry.ruleId.split(".")[0] ?? "unknown";
-            const existing = connectorMap.get(connector) ?? { denyCount: 0, warnCount: 0, total: 0 };
+            const existing = connectorMap.get(connector) ?? {
+              denyCount: 0,
+              warnCount: 0,
+              total: 0,
+            };
             existing.denyCount += entry.denyCount;
             existing.warnCount += entry.warnCount;
             existing.total += entry.total;
             connectorMap.set(connector, existing);
           }
-          const connectors = [...connectorMap.entries()].sort((a, b) => b[1].denyCount - a[1].denyCount);
+          const connectors = [...connectorMap.entries()].sort(
+            (a, b) => b[1].denyCount - a[1].denyCount,
+          );
           if (!connectors.length) return null;
           return (
             <div className="connectorImpact">
@@ -125,14 +134,15 @@ export default async function WorkspaceSimulationPage({
         })()}
 
         <div className="simulationSupport">
-          <PlanGate feature="bulkProductionSimulation" fallback={<UpgradePrompt feature="bulkProductionSimulation" variant="inline" />}>
+          <PlanGate
+            feature="bulkProductionSimulation"
+            fallback={<UpgradePrompt feature="bulkProductionSimulation" variant="inline" />}
+          >
             <div className="upgradePrompt upgradePromptInline simulationCloudNotice">
               <div>
                 <p className="eyebrow">{t("cloud_eyebrow")}</p>
                 <h3>{t("cloud_title")}</h3>
-                <p className="meta">
-                  {t("cloud_body")}
-                </p>
+                <p className="meta">{t("cloud_body")}</p>
               </div>
             </div>
           </PlanGate>
@@ -141,9 +151,7 @@ export default async function WorkspaceSimulationPage({
               <div>
                 <p className="eyebrow">{t("guidance_eyebrow")}</p>
                 <h3>{t("guidance_title")}</h3>
-                <p className="meta">
-                  {t("guidance_body")}
-                </p>
+                <p className="meta">{t("guidance_body")}</p>
               </div>
             </div>
             <SimulationChangeGuidance
@@ -166,7 +174,11 @@ export default async function WorkspaceSimulationPage({
         </div>
       </section>
 
-      <SimulationHistorySection simulationHistory={simulationHistory} viewMode={appViewMode} workspaceSlug={workspace} />
+      <SimulationHistorySection
+        simulationHistory={simulationHistory}
+        viewMode={appViewMode}
+        workspaceSlug={workspace}
+      />
     </>
   );
 }

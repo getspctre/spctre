@@ -16,16 +16,14 @@ function RuleSnapshot({ label, rule }: { label: string; rule: DiffRule }) {
     <div>
       <span className="meta">{label}</span>
       <p>{rule.title}</p>
-      <p className="meta">Effect: <strong>{rule.effect}</strong></p>
-      {rule.actions?.length ? (
-        <p className="meta">Actions: {rule.actions.join(", ")}</p>
-      ) : null}
+      <p className="meta">
+        Effect: <strong>{rule.effect}</strong>
+      </p>
+      {rule.actions?.length ? <p className="meta">Actions: {rule.actions.join(", ")}</p> : null}
       {rule.connectors?.length ? (
         <p className="meta">Connectors: {rule.connectors.join(", ")}</p>
       ) : null}
-      {rule.domains?.length ? (
-        <p className="meta">Domains: {rule.domains.join(", ")}</p>
-      ) : null}
+      {rule.domains?.length ? <p className="meta">Domains: {rule.domains.join(", ")}</p> : null}
     </div>
   );
 }
@@ -103,7 +101,10 @@ export function DiffRuleInspector({ diff }: Props) {
               <span className={statusClass}>{diff.status}</span>
             </div>
             {diff.changedFields?.includes("effect") && diff.before && diff.after ? (
-              <span className="pill pillWarn" style={{ display: "inline-flex", alignSelf: "flex-start", marginTop: 4 }}>
+              <span
+                className="pill pillWarn"
+                style={{ display: "inline-flex", alignSelf: "flex-start", marginTop: 4 }}
+              >
                 Effect changed: {diff.before.effect} → {diff.after.effect}
               </span>
             ) : null}
@@ -139,7 +140,6 @@ export function DiffRuleInspector({ diff }: Props) {
       ) : (
         <RuleDetailSection diff={diff} currentRule={currentRule} />
       )}
-
     </SlideOutPanel>
   );
 }

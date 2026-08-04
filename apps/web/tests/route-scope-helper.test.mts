@@ -20,22 +20,16 @@ const {
   unlinkAgentSurfaceSpy: vi.fn(),
 }));
 
-vi.mock("@/lib/auth-session", () => ({
-  getAuthSession: getAuthSessionSpy,
-}));
+vi.mock("@/lib/auth-session", () => ({ getAuthSession: getAuthSessionSpy }));
 
-vi.mock("@/lib/workspace", () => ({
-  getActiveScope: getActiveScopeSpy,
-}));
+vi.mock("@/lib/workspace", () => ({ getActiveScope: getActiveScopeSpy }));
 
 vi.mock("@/lib/service-tokens", () => ({
   authenticateServiceToken: vi.fn(),
   hasBearerToken: () => false,
 }));
 
-vi.mock("@/lib/feature-flags-server", () => ({
-  isFeatureEnabled: isFeatureEnabledSpy,
-}));
+vi.mock("@/lib/feature-flags-server", () => ({ isFeatureEnabled: isFeatureEnabledSpy }));
 
 vi.mock("@/lib/domains/compliance/service", () => ({
   getCompliancePacket: getCompliancePacketSpy,
@@ -53,7 +47,8 @@ vi.mock("@/lib/domains/identity/service", () => ({
 
 const { GET: complianceStatusGet } = await import("../app/api/compliance/status/route");
 const { GET: workflowConfigGet } = await import("../app/api/workflow/config/route");
-const { DELETE: agentSurfaceDelete } = await import("../app/api/agents/[id]/surfaces/[surfaceId]/route");
+const { DELETE: agentSurfaceDelete } =
+  await import("../app/api/agents/[id]/surfaces/[surfaceId]/route");
 
 function session() {
   return { principalId: "principal-1", tenantId: "tenant-1" };
@@ -82,13 +77,17 @@ describe("shared route scope helper integrations", () => {
 
   it("keeps compliance status unauthorized and success envelopes stable", async () => {
     getAuthSessionSpy.mockResolvedValueOnce(null);
-    await expectAuthRequired(await complianceStatusGet(new Request("http://localhost:3000/api/compliance/status")));
+    await expectAuthRequired(
+      await complianceStatusGet(new Request("http://localhost:3000/api/compliance/status")),
+    );
 
     getAuthSessionSpy.mockResolvedValueOnce(session());
     getActiveScopeSpy.mockResolvedValueOnce(activeScope());
     getCompliancePacketSpy.mockResolvedValueOnce(null);
 
-    const response = await complianceStatusGet(new Request("http://localhost:3000/api/compliance/status"));
+    const response = await complianceStatusGet(
+      new Request("http://localhost:3000/api/compliance/status"),
+    );
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toMatchObject({
       available: false,
@@ -98,13 +97,17 @@ describe("shared route scope helper integrations", () => {
 
   it("keeps workflow config unauthorized and success envelopes stable", async () => {
     getAuthSessionSpy.mockResolvedValueOnce(null);
-    await expectAuthRequired(await workflowConfigGet(new Request("http://localhost:3000/api/workflow/config")));
+    await expectAuthRequired(
+      await workflowConfigGet(new Request("http://localhost:3000/api/workflow/config")),
+    );
 
     getAuthSessionSpy.mockResolvedValueOnce(session());
     getActiveScopeSpy.mockResolvedValueOnce(activeScope());
     getApprovalWorkflowConfigSpy.mockResolvedValueOnce({ mode: "manual" });
 
-    const response = await workflowConfigGet(new Request("http://localhost:3000/api/workflow/config?environment=prod"));
+    const response = await workflowConfigGet(
+      new Request("http://localhost:3000/api/workflow/config?environment=prod"),
+    );
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toMatchObject({
       environment: "prod",
@@ -118,7 +121,7 @@ describe("shared route scope helper integrations", () => {
     await expectAuthRequired(
       await agentSurfaceDelete(new Request("http://localhost:3000/api/agents/a-1/surfaces/s-1"), {
         params: Promise.resolve({ id: "agent-1", surfaceId: "surface-1" }),
-      })
+      }),
     );
 
     getAuthSessionSpy.mockResolvedValueOnce(session());
@@ -129,9 +132,10 @@ describe("shared route scope helper integrations", () => {
     ]);
     unlinkAgentSurfaceSpy.mockResolvedValueOnce(true);
 
-    const response = await agentSurfaceDelete(new Request("http://localhost:3000/api/agents/a-1/surfaces/s-1"), {
-      params: Promise.resolve({ id: "agent-1", surfaceId: "surface-1" }),
-    });
+    const response = await agentSurfaceDelete(
+      new Request("http://localhost:3000/api/agents/a-1/surfaces/s-1"),
+      { params: Promise.resolve({ id: "agent-1", surfaceId: "surface-1" }) },
+    );
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toMatchObject({ ok: true });
     expect(unlinkAgentSurfaceSpy).toHaveBeenCalledWith(
@@ -140,7 +144,7 @@ describe("shared route scope helper integrations", () => {
         canonicalAgentId: "agent-1",
         tenantId: "tenant-1",
         workspaceId: "workspace-1",
-      })
+      }),
     );
   });
 });

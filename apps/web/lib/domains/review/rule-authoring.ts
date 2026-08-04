@@ -27,18 +27,45 @@ export type CommitRevisionState =
   | null;
 
 const VALID_RULE_EFFECTS = new Set(["ALLOW", "DENY", "WARN", "ESCALATE"]);
-const CONSTRAINT_OPERATORS = new Set(["gt", "gte", "lt", "lte", "eq", "neq", "in", "not_in", "contains"]);
-const CONTROL_FRAMEWORKS = new Set(["SOC2", "HIPAA", "ISO_27001", "ISO_42001", "EU_AI_ACT", "NIST_AI_RMF", "OWASP_AGENTIC"]);
+const CONSTRAINT_OPERATORS = new Set([
+  "gt",
+  "gte",
+  "lt",
+  "lte",
+  "eq",
+  "neq",
+  "in",
+  "not_in",
+  "contains",
+]);
+const CONTROL_FRAMEWORKS = new Set([
+  "SOC2",
+  "HIPAA",
+  "ISO_27001",
+  "ISO_42001",
+  "EU_AI_ACT",
+  "NIST_AI_RMF",
+  "OWASP_AGENTIC",
+]);
 
 // Fields the in-app editor models explicitly. Any other key on an incoming rule
 // (priority, conditions, dynamicConditions, preservedFields, originalRule, AGT-
 // native fields, ...) is preserved verbatim so committing an edited revision
 // never silently strips runtime- or provenance-critical rule data.
 const MODELED_RULE_KEYS = new Set([
-  "stableRuleId", "title", "effect", "domains", "connectors", "actions", "immutable",
-  "semanticChecks", "semantic_checks",
-  "parameterConstraints", "parameter_constraints",
-  "controlMappings", "control_mappings",
+  "stableRuleId",
+  "title",
+  "effect",
+  "domains",
+  "connectors",
+  "actions",
+  "immutable",
+  "semanticChecks",
+  "semantic_checks",
+  "parameterConstraints",
+  "parameter_constraints",
+  "controlMappings",
+  "control_mappings",
 ]);
 
 interface RuleAuthoringInput {
@@ -49,7 +76,11 @@ interface RuleAuthoringInput {
   connectors: string[];
   actions: string[];
   immutable: boolean;
-  semanticChecks?: { id: string; prompt: string; effect?: "ALLOW" | "DENY" | "WARN" | "ESCALATE" }[];
+  semanticChecks?: {
+    id: string;
+    prompt: string;
+    effect?: "ALLOW" | "DENY" | "WARN" | "ESCALATE";
+  }[];
   parameterConstraints?: PolicyParameterConstraint[];
   controlMappings?: PolicyControlMapping[];
   // Passthrough of unmodeled rule fields; kept for lossless round-trip.
@@ -71,7 +102,9 @@ function toParameterConstraints(value: unknown): PolicyParameterConstraint[] | u
     };
     const parameterKey = String(row.parameterKey ?? row.parameter_key ?? "").trim();
     if (parameterKey) constraint.parameterKey = parameterKey;
-    const rawEffect = String(row.effect ?? "").trim().toUpperCase();
+    const rawEffect = String(row.effect ?? "")
+      .trim()
+      .toUpperCase();
     if (VALID_RULE_EFFECTS.has(rawEffect)) {
       constraint.effect = rawEffect as PolicyParameterConstraint["effect"];
     }
@@ -88,7 +121,10 @@ function toControlMappings(value: unknown): PolicyControlMapping[] | undefined {
     const framework = String(row.framework ?? "").trim();
     const controlId = String(row.controlId ?? row.control_id ?? "").trim();
     if (!CONTROL_FRAMEWORKS.has(framework) || !controlId) return [];
-    const mapping: PolicyControlMapping = { framework: framework as PolicyControlMapping["framework"], controlId };
+    const mapping: PolicyControlMapping = {
+      framework: framework as PolicyControlMapping["framework"],
+      controlId,
+    };
     const rationale = String(row.rationale ?? "").trim();
     if (rationale) mapping.rationale = rationale;
     return [mapping];
@@ -102,14 +138,12 @@ function normalizeRuleAuthoringInput(input: unknown): RuleAuthoringInput | null 
 
   const stableRuleId = String(row.stableRuleId ?? "").trim();
   const title = String(row.title ?? "").trim();
-  const effect = String(row.effect ?? "").trim().toUpperCase();
+  const effect = String(row.effect ?? "")
+    .trim()
+    .toUpperCase();
 
   const toTextArray = (value: unknown): string[] =>
-    Array.isArray(value)
-      ? value
-          .map((item) => String(item).trim())
-          .filter(Boolean)
-      : [];
+    Array.isArray(value) ? value.map((item) => String(item).trim()).filter(Boolean) : [];
 
   const toSemanticChecksArray = (value: unknown): RuleAuthoringInput["semanticChecks"] => {
     if (!Array.isArray(value)) return undefined;
@@ -119,16 +153,26 @@ function normalizeRuleAuthoringInput(input: unknown): RuleAuthoringInput | null 
         const itemObj = item as Record<string, unknown>;
         const prompt = String(itemObj.prompt ?? "").trim();
         const id = String(itemObj.id ?? "").trim();
-        const rawEffect = String(itemObj.effect ?? "").trim().toUpperCase();
-        const effect = VALID_RULE_EFFECTS.has(rawEffect) ? (rawEffect as "ALLOW" | "DENY" | "WARN") : undefined;
+        const rawEffect = String(itemObj.effect ?? "")
+          .trim()
+          .toUpperCase();
+        const effect = VALID_RULE_EFFECTS.has(rawEffect)
+          ? (rawEffect as "ALLOW" | "DENY" | "WARN")
+          : undefined;
         if (!prompt || !id) return null;
-        const check: { id: string; prompt: string; effect?: "ALLOW" | "DENY" | "WARN" } = { id, prompt };
+        const check: { id: string; prompt: string; effect?: "ALLOW" | "DENY" | "WARN" } = {
+          id,
+          prompt,
+        };
         if (effect) {
           check.effect = effect;
         }
         return check;
       })
-      .filter((item): item is { id: string; prompt: string; effect?: "ALLOW" | "DENY" | "WARN" } => item !== null);
+      .filter(
+        (item): item is { id: string; prompt: string; effect?: "ALLOW" | "DENY" | "WARN" } =>
+          item !== null,
+      );
     return items.length > 0 ? items : undefined;
   };
 
@@ -149,7 +193,9 @@ function normalizeRuleAuthoringInput(input: unknown): RuleAuthoringInput | null 
     actions: toTextArray(row.actions),
     immutable: Boolean(row.immutable),
     semanticChecks: toSemanticChecksArray(row.semanticChecks ?? row.semantic_checks),
-    parameterConstraints: toParameterConstraints(row.parameterConstraints ?? row.parameter_constraints),
+    parameterConstraints: toParameterConstraints(
+      row.parameterConstraints ?? row.parameter_constraints,
+    ),
     controlMappings: toControlMappings(row.controlMappings ?? row.control_mappings),
   };
 }
@@ -157,10 +203,15 @@ function normalizeRuleAuthoringInput(input: unknown): RuleAuthoringInput | null 
 function isSameRule(left: RuleAuthoringInput, right: RuleAuthoringInput): boolean {
   const leftChecks = left.semanticChecks ?? [];
   const rightChecks = right.semanticChecks ?? [];
-  const checksEqual = leftChecks.length === rightChecks.length &&
+  const checksEqual =
+    leftChecks.length === rightChecks.length &&
     leftChecks.every((check, index) => {
       const rightCheck = rightChecks[index];
-      return check.id === rightCheck.id && check.prompt === rightCheck.prompt && check.effect === rightCheck.effect;
+      return (
+        check.id === rightCheck.id &&
+        check.prompt === rightCheck.prompt &&
+        check.effect === rightCheck.effect
+      );
     });
 
   return (
@@ -171,7 +222,8 @@ function isSameRule(left: RuleAuthoringInput, right: RuleAuthoringInput): boolea
     arraysEqual(left.connectors, right.connectors) &&
     arraysEqual(left.actions, right.actions) &&
     checksEqual &&
-    JSON.stringify(left.parameterConstraints ?? []) === JSON.stringify(right.parameterConstraints ?? []) &&
+    JSON.stringify(left.parameterConstraints ?? []) ===
+      JSON.stringify(right.parameterConstraints ?? []) &&
     JSON.stringify(left.controlMappings ?? []) === JSON.stringify(right.controlMappings ?? [])
   );
 }
@@ -203,7 +255,7 @@ function canonicalUnmodeledFields(rule: Record<string, unknown>): string {
 // Exported for testing. True when two rules carry identical unmodeled fields.
 export function unmodeledRuleFieldsMatch(
   baseline: Record<string, unknown>,
-  candidate: Record<string, unknown>
+  candidate: Record<string, unknown>,
 ): boolean {
   return canonicalUnmodeledFields(baseline) === canonicalUnmodeledFields(candidate);
 }
@@ -218,7 +270,11 @@ export async function createDraftRuleRevisionDecision(input: {
   const workspaceContext = await getWorkspaceContext({ workspaceSlug: input.workspaceSlug });
   const tenantId = workspaceContext.tenantId;
 
-  const baseRevision = await getRevisionForDraft({ tenantId, branchId: input.branchId, revisionId: input.baseRevisionId });
+  const baseRevision = await getRevisionForDraft({
+    tenantId,
+    branchId: input.branchId,
+    revisionId: input.baseRevisionId,
+  });
   if (!baseRevision) return { error: "Base revision not found on this branch." };
 
   const { actor } = await getActiveActor({
@@ -227,7 +283,7 @@ export async function createDraftRuleRevisionDecision(input: {
   });
   const adminCheck = requireActorAdminWorkspace(
     actor,
-    baseRevision.workspace_slug ?? workspaceContext.workspaceSlug
+    baseRevision.workspace_slug ?? workspaceContext.workspaceSlug,
   );
   if (!adminCheck.allowed) {
     await insertAuthorizationDenialEvent({
@@ -252,11 +308,14 @@ export async function createDraftRuleRevisionDecision(input: {
       : {};
   if (baseMetadata.draft === true) {
     return {
-      error: "This revision is already a draft. Commit it or switch to a non-draft revision before creating another draft.",
+      error:
+        "This revision is already a draft. Commit it or switch to a non-draft revision before creating another draft.",
     };
   }
 
-  const baseRules = await listRulesForRevision(input.baseRevisionId, tenantId).catch(swallow("listRulesForRevision", []));
+  const baseRules = await listRulesForRevision(input.baseRevisionId, tenantId).catch(
+    swallow("listRulesForRevision", []),
+  );
 
   // Copy base rules verbatim into the draft document. Projecting to a subset
   // here would strip parameterConstraints, controlMappings, and AGT-native
@@ -296,19 +355,19 @@ export async function createDraftRuleRevisionDecision(input: {
       message: input.message || `Draft from ${input.baseRevisionId.slice(0, 8)}`,
     });
   } catch (err) {
-    logger.error("[createDraftRuleRevisionDecision] database error:", { error: err instanceof Error ? err.message : String(err) });
+    logger.error("[createDraftRuleRevisionDecision] database error:", {
+      error: err instanceof Error ? err.message : String(err),
+    });
     return { error: "An unexpected error occurred. Please try again." };
   }
 
-  return {
-    revisionId: draftRevisionId,
-    sourceHash,
-    ruleCount: baseRules.length,
-  };
+  return { revisionId: draftRevisionId, sourceHash, ruleCount: baseRules.length };
 }
 
 // Parse and validate the JSON rules payload from the editor.
-export function parseRulesPayload(rulesPayload: string): { rules: RuleAuthoringInput[] } | { error: string } {
+export function parseRulesPayload(
+  rulesPayload: string,
+): { rules: RuleAuthoringInput[] } | { error: string } {
   let parsedPayload: unknown;
   try {
     parsedPayload = JSON.parse(rulesPayload);
@@ -378,7 +437,7 @@ export async function commitRuleRevisionDecision(input: {
   });
   const adminCheck = requireActorAdminWorkspace(
     actor,
-    branch.workspace_slug ?? workspaceContext.workspaceSlug
+    branch.workspace_slug ?? workspaceContext.workspaceSlug,
   );
   if (!adminCheck.allowed) {
     await insertAuthorizationDenialEvent({
@@ -393,7 +452,9 @@ export async function commitRuleRevisionDecision(input: {
     return { error: adminCheck.reason };
   }
 
-  const parentRules = await listRulesForRevision(input.parentRevisionId, tenantId).catch(swallow("listRulesForRevision", []));
+  const parentRules = await listRulesForRevision(input.parentRevisionId, tenantId).catch(
+    swallow("listRulesForRevision", []),
+  );
   const immutableRules = parentRules.filter((r) => r.immutable);
 
   for (const immutableRule of immutableRules) {
@@ -463,7 +524,9 @@ export async function commitRuleRevisionDecision(input: {
       rules: ruleRows,
     });
   } catch (err) {
-    logger.error("[commitRuleRevisionDecision] database error:", { error: err instanceof Error ? err.message : String(err) });
+    logger.error("[commitRuleRevisionDecision] database error:", {
+      error: err instanceof Error ? err.message : String(err),
+    });
     return { error: "An unexpected error occurred. Please try again." };
   }
 

@@ -11,8 +11,14 @@ export const dynamic = "force-dynamic";
 async function handleGetApiWorkspaceMcpPolicy(request: Request) {
   const traceId = extractTraceId(request);
   const url = new URL(request.url);
-  const agentId = url.searchParams.get("agentId")?.trim() || request.headers.get("x-spctre-agent-id")?.trim() || undefined;
-  const environment = url.searchParams.get("environment")?.trim() || request.headers.get("x-spctre-environment")?.trim() || "production";
+  const agentId =
+    url.searchParams.get("agentId")?.trim() ||
+    request.headers.get("x-spctre-agent-id")?.trim() ||
+    undefined;
+  const environment =
+    url.searchParams.get("environment")?.trim() ||
+    request.headers.get("x-spctre-environment")?.trim() ||
+    "production";
 
   const scope = await resolveRouteScope(request, { serviceTokenScope: "bundle:read", traceId });
   if (scope instanceof Response) return scope;
@@ -25,18 +31,23 @@ async function handleGetApiWorkspaceMcpPolicy(request: Request) {
     environment,
   });
 
-  return withTraceId(Response.json({
-    allowedTools: DEFAULT_MCP_TOOLS,
-    allowedConnectors: DEFAULT_MCP_CONNECTORS,
-    capabilities,
-    registry: {
-      workspaceId,
-      agentId,
-      environment,
-      source: capabilities.some((capability) => capability.grantScope !== "FALLBACK") ? "registry" : "fallback",
-    },
-    meta: makeMeta(traceId),
-  }), traceId);
+  return withTraceId(
+    Response.json({
+      allowedTools: DEFAULT_MCP_TOOLS,
+      allowedConnectors: DEFAULT_MCP_CONNECTORS,
+      capabilities,
+      registry: {
+        workspaceId,
+        agentId,
+        environment,
+        source: capabilities.some((capability) => capability.grantScope !== "FALLBACK")
+          ? "registry"
+          : "fallback",
+      },
+      meta: makeMeta(traceId),
+    }),
+    traceId,
+  );
 }
 
 export { handleGetApiWorkspaceMcpPolicy as GET };

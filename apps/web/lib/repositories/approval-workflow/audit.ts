@@ -13,18 +13,20 @@ export interface ApprovalWorkflowAuditEvent {
 
 export async function listApprovalWorkflowAuditEvents(
   tenantId: string,
-  limit = 20
+  limit = 20,
 ): Promise<ApprovalWorkflowAuditEvent[]> {
   if (!sql) return [];
-  const rows = await sql<{
-    id: string;
-    workflow_id: string | null;
-    workspace_id: string | null;
-    actor_id: string | null;
-    action: string;
-    detail: unknown;
-    created_at: Date;
-  }[]>`
+  const rows = await sql<
+    {
+      id: string;
+      workflow_id: string | null;
+      workspace_id: string | null;
+      actor_id: string | null;
+      action: string;
+      detail: unknown;
+      created_at: Date;
+    }[]
+  >`
     SELECT id, workflow_id, workspace_id, actor_id, action, detail, created_at
     FROM approval_workflow_audit_event
     WHERE tenant_id = ${tenantId}
@@ -38,9 +40,10 @@ export async function listApprovalWorkflowAuditEvents(
     workspaceId: row.workspace_id,
     actorId: row.actor_id,
     action: row.action,
-    detail: row.detail && typeof row.detail === "object" && !Array.isArray(row.detail)
-      ? (row.detail as Record<string, unknown>)
-      : {},
+    detail:
+      row.detail && typeof row.detail === "object" && !Array.isArray(row.detail)
+        ? (row.detail as Record<string, unknown>)
+        : {},
     createdAt: row.created_at.toISOString(),
   }));
 }

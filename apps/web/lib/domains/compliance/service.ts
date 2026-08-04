@@ -1,4 +1,8 @@
-import { RETENTION_RULES, DEFAULT_EXPIRING_WITHIN_DAYS, DEFAULT_COMPLIANCE_RETENTION_DAYS } from "@/lib/retention-config";
+import {
+  RETENTION_RULES,
+  DEFAULT_EXPIRING_WITHIN_DAYS,
+  DEFAULT_COMPLIANCE_RETENTION_DAYS,
+} from "@/lib/retention-config";
 import {
   buildComplianceEvidenceExport,
   buildControlEvidenceRollup,
@@ -24,8 +28,14 @@ import type {
   RuntimeDecisionEvidenceRecord,
   SignedActionReceipt,
 } from "@spctre/policy-schema";
-import { appendOperationsLog, getOperationsLogEventCounts } from "@/lib/repositories/operations-log";
-import { approvalRulesFromWorkflow, getApprovalWorkflowForContext } from "@/lib/repositories/approval-workflow";
+import {
+  appendOperationsLog,
+  getOperationsLogEventCounts,
+} from "@/lib/repositories/operations-log";
+import {
+  approvalRulesFromWorkflow,
+  getApprovalWorkflowForContext,
+} from "@/lib/repositories/approval-workflow";
 import {
   deleteExpiredEvidenceEvents,
   eraseEvidencePiiEvents,
@@ -35,14 +45,23 @@ import {
 import { getApprovals } from "@/lib/repositories/policy";
 import { getCommercialProfile } from "@/lib/repositories/workspace";
 import { getLatestVerificationStatus } from "@/lib/repositories/verification";
-import { listApprovalTimelineEvents, targetStacksFromJson } from "@/lib/repositories/shared/revisions";
-import { listResolvedEscalationsForRevision, type ResolvedEscalation } from "@/lib/repositories/gateway";
+import {
+  listApprovalTimelineEvents,
+  targetStacksFromJson,
+} from "@/lib/repositories/shared/revisions";
+import {
+  listResolvedEscalationsForRevision,
+  type ResolvedEscalation,
+} from "@/lib/repositories/gateway";
 import { listRulesForRevision } from "@/lib/repositories/shared/rules";
 import { listRuntimeEvidence } from "@/lib/repositories/evidence/runtime";
 import { recordConversionTelemetry } from "@/lib/repositories/onboarding/telemetry";
 import { listActionReceipts } from "@/lib/repositories/action-receipts";
 import { listGrcDeliveryAttempts } from "@/lib/repositories/grc-delivery-attempts";
-import { listGrcDeliveryDestinations, type GrcDeliveryDestination } from "@/lib/repositories/grc-delivery-destinations";
+import {
+  listGrcDeliveryDestinations,
+  type GrcDeliveryDestination,
+} from "@/lib/repositories/grc-delivery-destinations";
 import { swallow } from "@/lib/platform/swallow";
 
 export interface CompliancePacket {
@@ -51,35 +70,41 @@ export interface CompliancePacket {
   escalations: ResolvedEscalation[];
   actionReceipts: SignedActionReceipt[];
   controlEvidenceRollup: ControlEvidenceRollupEntry[];
-  forensicLedger?: {
-    ok: boolean;
-    verifiedCount: number;
-    error?: string;
-  };
+  forensicLedger?: { ok: boolean; verifiedCount: number; error?: string };
 }
 
 export async function getCompliancePacket(
   workspaceId: string | null,
-  tenantId: string
+  tenantId: string,
 ): Promise<CompliancePacket | null> {
   return runWithTenantContext(tenantId, () => getCompliancePacketInTenant(workspaceId, tenantId));
 }
 
 async function getCompliancePacketInTenant(
   workspaceId: string | null,
-  tenantId: string
+  tenantId: string,
 ): Promise<CompliancePacket | null> {
   const published = await getLatestPublishAndRevision(workspaceId, tenantId);
   if (!published) return null;
 
-  const [rules, approvals, evidence, approvalEvents, resolvedEscalations, approvalWorkflow, actionReceipts] = await Promise.all([
+  const [
+    rules,
+    approvals,
+    evidence,
+    approvalEvents,
+    resolvedEscalations,
+    approvalWorkflow,
+    actionReceipts,
+  ] = await Promise.all([
     listRulesForRevision(published.revision_id, tenantId),
     getApprovals(published.revision_id, tenantId),
     listRuntimeEvidence(workspaceId, tenantId),
     listApprovalTimelineEvents(published.branch_id, published.revision_id, tenantId),
     listResolvedEscalationsForRevision(published.revision_id, tenantId),
     getApprovalWorkflowForContext({ tenantId, workspaceId, environment: "production" }),
-    listActionReceipts({ tenantId, workspaceId, revisionId: published.revision_id }).catch(swallow("listActionReceipts", []))
+    listActionReceipts({ tenantId, workspaceId, revisionId: published.revision_id }).catch(
+      swallow("listActionReceipts", []),
+    ),
   ]);
   const generatedAt = new Date().toISOString();
   const artifact: PolicyArtifactExport = {
@@ -90,7 +115,7 @@ async function getCompliancePacketInTenant(
     sourceFormat: published.source_format as PolicyArtifactExport["sourceFormat"],
     targetStacks: targetStacksFromJson(published.target_stacks),
     rules,
-    generatedAt
+    generatedAt,
   };
   // Scope evidence to the published branch/revision before it's treated as
   // proof of anything — otherwise a historical event sharing a stable rule ID
@@ -99,8 +124,8 @@ async function getCompliancePacketInTenant(
   const evidenceForPublishedRevision = evidence.filter((record) =>
     record.policyContext.some(
       (context) =>
-        context.branchId === published.branch_id && context.revisionId === published.revision_id
-    )
+        context.branchId === published.branch_id && context.revisionId === published.revision_id,
+    ),
   );
   const relevantEvidenceCount = evidenceForPublishedRevision.length;
   const timeline = buildPolicyBranchTimeline({
@@ -118,7 +143,7 @@ async function getCompliancePacketInTenant(
         status: published.source_format,
         artifactHash: published.source_hash,
         sourceId: published.revision_id,
-        createdAt: published.revision_created_at.toISOString()
+        createdAt: published.revision_created_at.toISOString(),
       },
       ...approvalEvents,
       {
@@ -132,7 +157,7 @@ async function getCompliancePacketInTenant(
         status: "PUBLISHED",
         artifactHash: published.artifact_hash,
         sourceId: published.publish_id,
-        createdAt: published.published_at.toISOString()
+        createdAt: published.published_at.toISOString(),
       },
       {
         id: `evidence-${published.revision_id}`,
@@ -144,7 +169,7 @@ async function getCompliancePacketInTenant(
         status: relevantEvidenceCount ? "LINKED" : "PENDING",
         artifactHash: published.artifact_hash,
         sourceId: published.revision_id,
-        createdAt: generatedAt
+        createdAt: generatedAt,
       },
       ...resolvedEscalations.map((esc) => ({
         id: `escalation-${esc.id}`,
@@ -158,9 +183,9 @@ async function getCompliancePacketInTenant(
         status: esc.resolutionOutcome,
         artifactHash: esc.artifactHash,
         sourceId: esc.id,
-        createdAt: esc.resolvedAt
-      }))
-    ]
+        createdAt: esc.resolvedAt,
+      })),
+    ],
   });
   const readiness = evaluatePublishReadiness({
     branchId: published.branch_id,
@@ -172,20 +197,19 @@ async function getCompliancePacketInTenant(
 
   let forensicLedgerResult: { ok: boolean; verifiedCount: number; error?: string } | undefined;
   const plan = getSpctrePlan();
-  if (isFeatureEnabledForPlan("longTermForensicArchival", plan) && archivalService.verifyLedgerChain) {
+  if (
+    isFeatureEnabledForPlan("longTermForensicArchival", plan) &&
+    archivalService.verifyLedgerChain
+  ) {
     try {
       const verification = await archivalService.verifyLedgerChain(tenantId, workspaceId ?? "");
       forensicLedgerResult = {
         ok: verification.ok,
         verifiedCount: verification.verifiedCount,
-        error: verification.error
+        error: verification.error,
       };
     } catch (err) {
-      forensicLedgerResult = {
-        ok: false,
-        verifiedCount: 0,
-        error: (err as Error).message
-      };
+      forensicLedgerResult = { ok: false, verifiedCount: 0, error: (err as Error).message };
     }
   }
 
@@ -193,7 +217,10 @@ async function getCompliancePacketInTenant(
     timeline,
     escalations: resolvedEscalations,
     actionReceipts,
-    controlEvidenceRollup: buildControlEvidenceRollup({ rules, evidence: evidenceForPublishedRevision }),
+    controlEvidenceRollup: buildControlEvidenceRollup({
+      rules,
+      evidence: evidenceForPublishedRevision,
+    }),
     forensicLedger: forensicLedgerResult,
     export: buildComplianceEvidenceExport({
       id: `cmp-${published.revision_id.slice(0, 8)}`,
@@ -202,8 +229,8 @@ async function getCompliancePacketInTenant(
       timeline,
       evidence,
       generatedAt,
-      retentionDays: DEFAULT_COMPLIANCE_RETENTION_DAYS
-    })
+      retentionDays: DEFAULT_COMPLIANCE_RETENTION_DAYS,
+    }),
   };
 }
 
@@ -219,8 +246,8 @@ export async function getComplianceOperationsEventCounts(params: {
 }) {
   return operationsEventCountsCache.get(`${params.tenantId}:${params.workspaceId}`, () =>
     runWithTenantContext(params.tenantId, () =>
-      getOperationsLogEventCounts(params.tenantId, params.workspaceId)
-    )
+      getOperationsLogEventCounts(params.tenantId, params.workspaceId),
+    ),
   );
 }
 
@@ -232,7 +259,7 @@ export async function getComplianceVerificationStatus(params: {
   return runWithTenantContext(params.tenantId, () =>
     getLatestVerificationStatus(params.workspaceId, params.tenantId, {
       artifactHash: params.artifactHash,
-    })
+    }),
   );
 }
 
@@ -259,19 +286,13 @@ function resolveActiveRules(profile: Awaited<ReturnType<typeof getCommercialProf
     label = `Enterprise ${retentionDays}-day retention limit`;
   }
   return [
-    {
-      id: `ret-${planCode.toLowerCase()}`,
-      label,
-      retentionDays,
-      appliesTo: {},
-      exportable: true
-    }
+    { id: `ret-${planCode.toLowerCase()}`, label, retentionDays, appliesTo: {}, exportable: true },
   ];
 }
 
 export async function getEvidenceRetentionPlan(
   workspaceId: string | null,
-  tenantId: string
+  tenantId: string,
 ): Promise<EvidenceRetentionPlan | null> {
   const evidence = await listRuntimeEvidence(workspaceId, tenantId);
   if (!evidence.length) return null;
@@ -284,22 +305,24 @@ export async function getEvidenceRetentionPlan(
     evidence,
     rules: activeRules,
     generatedAt: new Date().toISOString(),
-    expiringWithinDays: DEFAULT_EXPIRING_WITHIN_DAYS
+    expiringWithinDays: DEFAULT_EXPIRING_WITHIN_DAYS,
   });
 }
 
 export async function pruneExpiredEvidence(
   workspaceId: string | null,
   tenantId: string,
-  actorId = "system"
+  actorId = "system",
 ): Promise<{ prunedCount: number; prunedDecisionIds: string[] }> {
-  return runWithTenantContext(tenantId, () => pruneExpiredEvidenceInTenant(workspaceId, tenantId, actorId));
+  return runWithTenantContext(tenantId, () =>
+    pruneExpiredEvidenceInTenant(workspaceId, tenantId, actorId),
+  );
 }
 
 async function pruneExpiredEvidenceInTenant(
   workspaceId: string | null,
   tenantId: string,
-  actorId: string
+  actorId: string,
 ): Promise<{ prunedCount: number; prunedDecisionIds: string[] }> {
   const evidence = await listRuntimeEvidence(workspaceId, tenantId);
   if (!evidence.length) return { prunedCount: 0, prunedDecisionIds: [] };
@@ -345,14 +368,14 @@ export async function eraseEvidencePii(
   workspaceId: string | null,
   tenantId: string,
   filters: EvidenceErasureFilters,
-  actorId: string
+  actorId: string,
 ): Promise<{ erasedCount: number; erasedDecisionIds: string[] }> {
   if (!filters.decisionIds?.length && !filters.agentId && !filters.before) {
     return { erasedCount: 0, erasedDecisionIds: [] };
   }
 
   const { erasedDecisionIds } = await runWithTenantContext(tenantId, () =>
-    eraseEvidencePiiEvents(tenantId, workspaceId, filters, actorId)
+    eraseEvidencePiiEvents(tenantId, workspaceId, filters, actorId),
   );
 
   if (erasedDecisionIds.length) {
@@ -406,27 +429,54 @@ export async function getCompliancePageModel<Posture>(params: {
   const workspaceContext = await getWorkspaceContext({ workspaceSlug: params.workspaceSlug });
   const appViewMode = await getAppViewMode();
   let degraded = false;
-  const degrade = <T,>(op: string, value: T) => (error: unknown): T => {
-    degraded = true;
-    return swallow(op, value)(error);
-  };
+  const degrade =
+    <T>(op: string, value: T) =>
+    (error: unknown): T => {
+      degraded = true;
+      return swallow(op, value)(error);
+    };
 
-  const [packet, persistedRetentionPlan, activeActor, grcDestinations, grcDeliveryAttempts, posture] = await runWithTenantContext(workspaceContext.tenantId, () =>
+  const [
+    packet,
+    persistedRetentionPlan,
+    activeActor,
+    grcDestinations,
+    grcDeliveryAttempts,
+    posture,
+  ] = await runWithTenantContext(workspaceContext.tenantId, () =>
     Promise.all([
-      getCompliancePacket(workspaceContext.workspaceId, workspaceContext.tenantId).catch(degrade("getCompliancePacket", null)),
-      getEvidenceRetentionPlan(workspaceContext.workspaceId, workspaceContext.tenantId).catch(degrade("getEvidenceRetentionPlan", null)),
-      getActiveActor({ workspaceId: workspaceContext.workspaceId, tenantId: workspaceContext.tenantId }).catch(degrade("getActiveActor", null)),
-      listGrcDeliveryDestinations({ tenantId: workspaceContext.tenantId, workspaceId: workspaceContext.workspaceId }).catch(degrade("listGrcDeliveryDestinations", [])),
-      listGrcDeliveryAttempts({ tenantId: workspaceContext.tenantId, workspaceId: workspaceContext.workspaceId, limit: 5 }).catch(degrade("listGrcDeliveryAttempts", [])),
-      params.loadPosture({ tenantId: workspaceContext.tenantId, workspaceId: workspaceContext.workspaceId, workspaceSlug: workspaceContext.workspaceSlug }),
-    ])
+      getCompliancePacket(workspaceContext.workspaceId, workspaceContext.tenantId).catch(
+        degrade("getCompliancePacket", null),
+      ),
+      getEvidenceRetentionPlan(workspaceContext.workspaceId, workspaceContext.tenantId).catch(
+        degrade("getEvidenceRetentionPlan", null),
+      ),
+      getActiveActor({
+        workspaceId: workspaceContext.workspaceId,
+        tenantId: workspaceContext.tenantId,
+      }).catch(degrade("getActiveActor", null)),
+      listGrcDeliveryDestinations({
+        tenantId: workspaceContext.tenantId,
+        workspaceId: workspaceContext.workspaceId,
+      }).catch(degrade("listGrcDeliveryDestinations", [])),
+      listGrcDeliveryAttempts({
+        tenantId: workspaceContext.tenantId,
+        workspaceId: workspaceContext.workspaceId,
+        limit: 5,
+      }).catch(degrade("listGrcDeliveryAttempts", [])),
+      params.loadPosture({
+        tenantId: workspaceContext.tenantId,
+        workspaceId: workspaceContext.workspaceId,
+        workspaceSlug: workspaceContext.workspaceSlug,
+      }),
+    ]),
   );
 
   const verificationSummary = packet?.export.artifact.artifactHash
     ? await runWithTenantContext(workspaceContext.tenantId, () =>
         getLatestVerificationStatus(workspaceContext.workspaceId, workspaceContext.tenantId, {
           artifactHash: packet.export.artifact.artifactHash,
-        })
+        }),
       ).catch(degrade("runWithTenantContext", null))
     : null;
 

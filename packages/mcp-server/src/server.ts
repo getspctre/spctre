@@ -6,11 +6,7 @@
 import { Server } from "@modelcontextprotocol/server";
 import axios, { AxiosInstance, AxiosResponse } from "axios";
 import { withSpan } from "./observability.js";
-import {
-  AccessTokenManager,
-  emitTokenEvent,
-  AXIOS_TIMEOUT_MS,
-} from "./token.js";
+import { AccessTokenManager, emitTokenEvent, AXIOS_TIMEOUT_MS } from "./token.js";
 import { type GovernedMcpCapability } from "./governance.js";
 import { recordToolMetric } from "./metrics.js";
 import { SPCTRE_MCP_VERSION } from "./version.js";
@@ -78,9 +74,7 @@ export class SpctreMcpServer {
     this.apiClient = axios.create({
       baseURL: this.config.apiBaseUrl,
       timeout: AXIOS_TIMEOUT_MS,
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
     });
 
     this.tokenManager = new AccessTokenManager({
@@ -90,17 +84,8 @@ export class SpctreMcpServer {
     });
 
     this.server = new Server(
-      {
-        name: "spctre",
-        version: SPCTRE_MCP_VERSION,
-      },
-      {
-        capabilities: {
-          tools: {},
-          resources: {},
-          prompts: {},
-        },
-      }
+      { name: "spctre", version: SPCTRE_MCP_VERSION },
+      { capabilities: { tools: {}, resources: {}, prompts: {} } },
     );
 
     this.context = this.createContext();
@@ -197,187 +182,201 @@ export class SpctreMcpServer {
 
     this.server.setRequestHandler("tools/call", async (request) => {
       const { name, arguments: args } = request.params;
-      return await withSpan("mcp.tool.call", {
-        "mcp.tool.name": name,
-        "mcp.transport": this.config.transport,
-        "spctre.workspace_id": this.config.workspaceId,
-        "spctre.agent_id": this.config.agentId,
-      }, async (span) => {
-        await this.assertToolAllowed(name);
+      return await withSpan(
+        "mcp.tool.call",
+        {
+          "mcp.tool.name": name,
+          "mcp.transport": this.config.transport,
+          "spctre.workspace_id": this.config.workspaceId,
+          "spctre.agent_id": this.config.agentId,
+        },
+        async (span) => {
+          await this.assertToolAllowed(name);
 
-        const t0 = Date.now();
-        let isError = false;
-        try {
-          const handler = this.toolHandlers[name];
-          if (!handler) {
-            throw new Error(`Unknown tool: ${name}`);
+          const t0 = Date.now();
+          let isError = false;
+          try {
+            const handler = this.toolHandlers[name];
+            if (!handler) {
+              throw new Error(`Unknown tool: ${name}`);
+            }
+            return (await handler(args ?? {})) as never;
+          } catch (err) {
+            isError = true;
+            span.setAttribute("error.type", err instanceof Error ? err.name : "Error");
+            throw err;
+          } finally {
+            recordToolMetric(name, Date.now() - t0, isError, this.config.transport);
           }
-          return await handler(args ?? {}) as never;
-        } catch (err) {
-          isError = true;
-          span.setAttribute("error.type", err instanceof Error ? err.name : "Error");
-          throw err;
-        } finally {
-          recordToolMetric(name, Date.now() - t0, isError, this.config.transport);
-        }
-      });
+        },
+      );
     });
   }
 
   private setupResourceHandlers(): void {
-    this.server.setRequestHandler("resources/list", async () => withSpan("mcp.resources.list", {
-      "mcp.transport": this.config.transport,
-      "spctre.workspace_id": this.config.workspaceId,
-    }, async () => {
-      return {
-        resources: [
-          {
-            uri: "spctre://policies/main/current",
-            name: "Current Policies",
-            description: "Active policy set for the current workspace",
-            mimeType: "application/json",
-          },
-          {
-            uri: "spctre://evidence/{decision_id}",
-            name: "Evidence Record",
-            description: "Audit trail for a specific decision",
-            mimeType: "application/json",
-          },
-          {
-            uri: "spctre://approvals/{approval_id}",
-            name: "Approval Record",
-            description: "State of a pending approval",
-            mimeType: "application/json",
-          },
-          {
-            uri: "spctre://agents/{agent_id}/audit",
-            name: "Agent Audit Trail",
-            description: "Decision history for a specific agent",
-            mimeType: "application/json",
-          },
-          {
-            uri: "spctre://trust/{agent_id}/history",
-            name: "Trust Score History",
-            description: "Trust score timeline for a specific agent from the §21 operations store",
-            mimeType: "application/json",
-          },
-          {
-            uri: "spctre://identity/{principal_id}/events",
-            name: "Identity Lifecycle Events",
-            description: "Identity lifecycle event log for a specific principal",
-            mimeType: "application/json",
-          },
-          {
-            uri: "spctre://verification/results",
-            name: "Verification Results",
-            description: "AGT verification run results for the current workspace",
-            mimeType: "application/json",
-          },
-          {
-            uri: "spctre://workspaces/list",
-            name: "Workspace List",
-            description: "All workspaces with their active policy branch and publication status",
-            mimeType: "application/json",
-          },
-          {
-            uri: "spctre://approvals/queue",
-            name: "Pending Approval Queue",
-            description: "Policy bundles awaiting review: assigned reviewers, approval status, and elapsed time",
-            mimeType: "application/json",
-          },
-          {
-            uri: "spctre://workflows/config",
-            name: "Approval Workflow Config",
-            description: "Approval workflow rules active for the current workspace and environment",
-            mimeType: "application/json",
-          },
-          {
-            uri: "spctre://members/list",
-            name: "Member and Role List",
-            description: "Current org members, their roles, and workspace-scoped grant overrides",
-            mimeType: "application/json",
-          },
-        ],
-      };
-    }));
+    this.server.setRequestHandler("resources/list", async () =>
+      withSpan(
+        "mcp.resources.list",
+        { "mcp.transport": this.config.transport, "spctre.workspace_id": this.config.workspaceId },
+        async () => {
+          return {
+            resources: [
+              {
+                uri: "spctre://policies/main/current",
+                name: "Current Policies",
+                description: "Active policy set for the current workspace",
+                mimeType: "application/json",
+              },
+              {
+                uri: "spctre://evidence/{decision_id}",
+                name: "Evidence Record",
+                description: "Audit trail for a specific decision",
+                mimeType: "application/json",
+              },
+              {
+                uri: "spctre://approvals/{approval_id}",
+                name: "Approval Record",
+                description: "State of a pending approval",
+                mimeType: "application/json",
+              },
+              {
+                uri: "spctre://agents/{agent_id}/audit",
+                name: "Agent Audit Trail",
+                description: "Decision history for a specific agent",
+                mimeType: "application/json",
+              },
+              {
+                uri: "spctre://trust/{agent_id}/history",
+                name: "Trust Score History",
+                description:
+                  "Trust score timeline for a specific agent from the §21 operations store",
+                mimeType: "application/json",
+              },
+              {
+                uri: "spctre://identity/{principal_id}/events",
+                name: "Identity Lifecycle Events",
+                description: "Identity lifecycle event log for a specific principal",
+                mimeType: "application/json",
+              },
+              {
+                uri: "spctre://verification/results",
+                name: "Verification Results",
+                description: "AGT verification run results for the current workspace",
+                mimeType: "application/json",
+              },
+              {
+                uri: "spctre://workspaces/list",
+                name: "Workspace List",
+                description:
+                  "All workspaces with their active policy branch and publication status",
+                mimeType: "application/json",
+              },
+              {
+                uri: "spctre://approvals/queue",
+                name: "Pending Approval Queue",
+                description:
+                  "Policy bundles awaiting review: assigned reviewers, approval status, and elapsed time",
+                mimeType: "application/json",
+              },
+              {
+                uri: "spctre://workflows/config",
+                name: "Approval Workflow Config",
+                description:
+                  "Approval workflow rules active for the current workspace and environment",
+                mimeType: "application/json",
+              },
+              {
+                uri: "spctre://members/list",
+                name: "Member and Role List",
+                description:
+                  "Current org members, their roles, and workspace-scoped grant overrides",
+                mimeType: "application/json",
+              },
+            ],
+          };
+        },
+      ),
+    );
 
     this.server.setRequestHandler("resources/read", async (request) => {
       const { uri } = request.params;
       const resourceType = uri.split("/").slice(2, 4).join("/") || "unknown";
-      return await withSpan("mcp.resource.read", {
-        "mcp.resource.type": resourceType,
-        "mcp.transport": this.config.transport,
-        "spctre.workspace_id": this.config.workspaceId,
-      }, async () => {
+      return await withSpan(
+        "mcp.resource.read",
+        {
+          "mcp.resource.type": resourceType,
+          "mcp.transport": this.config.transport,
+          "spctre.workspace_id": this.config.workspaceId,
+        },
+        async () => {
+          if (uri.startsWith("spctre://policies/")) {
+            return await getPoliciesResource(this.context, uri);
+          }
+          if (uri.startsWith("spctre://evidence/")) {
+            return await getEvidenceResource(this.context, uri);
+          }
+          if (uri.startsWith("spctre://approvals/")) {
+            return await getApprovalsResource(this.context, uri);
+          }
+          if (uri.startsWith("spctre://agents/")) {
+            return await getAgentAuditResource(this.context, uri);
+          }
+          if (uri.startsWith("spctre://trust/")) {
+            return await getTrustHistoryResource(this.context, uri);
+          }
+          if (uri.startsWith("spctre://identity/")) {
+            return await getIdentityEventsResource(this.context, uri);
+          }
+          if (uri.startsWith("spctre://verification/")) {
+            return await getVerificationResultsResource(this.context, uri);
+          }
+          if (uri === "spctre://workspaces/list") {
+            return await getWorkspacesListResource(this.context, uri);
+          }
+          if (uri === "spctre://approvals/queue") {
+            return await getApprovalsQueueResource(this.context, uri);
+          }
+          if (uri.startsWith("spctre://workflows/")) {
+            return await getWorkflowConfigResource(this.context, uri);
+          }
+          if (uri === "spctre://members/list") {
+            return await getMembersListResource(this.context, uri);
+          }
 
-      if (uri.startsWith("spctre://policies/")) {
-        return await getPoliciesResource(this.context, uri);
-      }
-      if (uri.startsWith("spctre://evidence/")) {
-        return await getEvidenceResource(this.context, uri);
-      }
-      if (uri.startsWith("spctre://approvals/")) {
-        return await getApprovalsResource(this.context, uri);
-      }
-      if (uri.startsWith("spctre://agents/")) {
-        return await getAgentAuditResource(this.context, uri);
-      }
-      if (uri.startsWith("spctre://trust/")) {
-        return await getTrustHistoryResource(this.context, uri);
-      }
-      if (uri.startsWith("spctre://identity/")) {
-        return await getIdentityEventsResource(this.context, uri);
-      }
-      if (uri.startsWith("spctre://verification/")) {
-        return await getVerificationResultsResource(this.context, uri);
-      }
-      if (uri === "spctre://workspaces/list") {
-        return await getWorkspacesListResource(this.context, uri);
-      }
-      if (uri === "spctre://approvals/queue") {
-        return await getApprovalsQueueResource(this.context, uri);
-      }
-      if (uri.startsWith("spctre://workflows/")) {
-        return await getWorkflowConfigResource(this.context, uri);
-      }
-      if (uri === "spctre://members/list") {
-        return await getMembersListResource(this.context, uri);
-      }
-
-        throw new Error(`Unknown resource: ${uri}`);
-      });
+          throw new Error(`Unknown resource: ${uri}`);
+        },
+      );
     });
   }
 
   private setupPromptHandlers(): void {
-    this.server.setRequestHandler("prompts/list", async () => withSpan("mcp.prompts.list", {
-      "mcp.transport": this.config.transport,
-      "spctre.workspace_id": this.config.workspaceId,
-    }, async () => {
-      return {
-        prompts: listPromptTemplates(),
-      };
-    }));
+    this.server.setRequestHandler("prompts/list", async () =>
+      withSpan(
+        "mcp.prompts.list",
+        { "mcp.transport": this.config.transport, "spctre.workspace_id": this.config.workspaceId },
+        async () => {
+          return { prompts: listPromptTemplates() };
+        },
+      ),
+    );
 
     this.server.setRequestHandler("prompts/get", async (request) => {
       const { name, arguments: args } = request.params;
-      return await withSpan("mcp.prompt.get", {
-        "mcp.prompt.name": name,
-        "mcp.transport": this.config.transport,
-        "spctre.workspace_id": this.config.workspaceId,
-      }, async () => {
-        return {
-          messages: [
-            {
-              role: "user",
-              content: {
-                type: "text",
-                text: renderPromptTemplate(name, args),
-              },
-            },
-          ],
-        };
-      });
+      return await withSpan(
+        "mcp.prompt.get",
+        {
+          "mcp.prompt.name": name,
+          "mcp.transport": this.config.transport,
+          "spctre.workspace_id": this.config.workspaceId,
+        },
+        async () => {
+          return {
+            messages: [
+              { role: "user", content: { type: "text", text: renderPromptTemplate(name, args) } },
+            ],
+          };
+        },
+      );
     });
   }
 
@@ -402,57 +401,80 @@ export class SpctreMcpServer {
     }
   }
 
-  private async postWithAuth(path: string, body: unknown, extraHeaders?: Record<string, string>): Promise<AxiosResponse> {
-    return await withSpan("mcp.upstream.post", { "http.route": path, "mcp.transport": this.config.transport }, async () => {
-    const token = await this.tokenManager.getValidAccessToken();
-    const headers = { Authorization: `Bearer ${token}`, ...extraHeaders };
+  private async postWithAuth(
+    path: string,
+    body: unknown,
+    extraHeaders?: Record<string, string>,
+  ): Promise<AxiosResponse> {
+    return await withSpan(
+      "mcp.upstream.post",
+      { "http.route": path, "mcp.transport": this.config.transport },
+      async () => {
+        const token = await this.tokenManager.getValidAccessToken();
+        const headers = { Authorization: `Bearer ${token}`, ...extraHeaders };
 
-    try {
-      return await this.apiClient.post(path, body, { headers });
-    } catch (error: unknown) {
-      if (axios.isAxiosError(error) && error.response?.status === 401 && this.config.apiRefreshToken) {
-        await this.tokenManager.refresh();
-        const refreshed = await this.tokenManager.getValidAccessToken();
-        return await this.apiClient.post(path, body, {
-          headers: { Authorization: `Bearer ${refreshed}`, ...extraHeaders },
-        });
-      }
-      throw error;
-    }
-    });
+        try {
+          return await this.apiClient.post(path, body, { headers });
+        } catch (error: unknown) {
+          if (
+            axios.isAxiosError(error) &&
+            error.response?.status === 401 &&
+            this.config.apiRefreshToken
+          ) {
+            await this.tokenManager.refresh();
+            const refreshed = await this.tokenManager.getValidAccessToken();
+            return await this.apiClient.post(path, body, {
+              headers: { Authorization: `Bearer ${refreshed}`, ...extraHeaders },
+            });
+          }
+          throw error;
+        }
+      },
+    );
   }
 
-  private async getWithAuth(path: string, params?: Record<string, unknown>): Promise<AxiosResponse> {
-    return await withSpan("mcp.upstream.get", { "http.route": path, "mcp.transport": this.config.transport }, async () => {
-    const token = await this.tokenManager.getValidAccessToken();
+  private async getWithAuth(
+    path: string,
+    params?: Record<string, unknown>,
+  ): Promise<AxiosResponse> {
+    return await withSpan(
+      "mcp.upstream.get",
+      { "http.route": path, "mcp.transport": this.config.transport },
+      async () => {
+        const token = await this.tokenManager.getValidAccessToken();
 
-    try {
-      return await this.apiClient.get(path, {
-        params,
-        headers: { Authorization: `Bearer ${token}` },
-      });
-    } catch (error: unknown) {
-      if (axios.isAxiosError(error) && error.response?.status === 401 && this.config.apiRefreshToken) {
-        await this.tokenManager.refresh();
-        const refreshed = await this.tokenManager.getValidAccessToken();
-        return await this.apiClient.get(path, {
-          params,
-          headers: { Authorization: `Bearer ${refreshed}` },
-        });
-      }
-      throw error;
-    }
-    });
+        try {
+          return await this.apiClient.get(path, {
+            params,
+            headers: { Authorization: `Bearer ${token}` },
+          });
+        } catch (error: unknown) {
+          if (
+            axios.isAxiosError(error) &&
+            error.response?.status === 401 &&
+            this.config.apiRefreshToken
+          ) {
+            await this.tokenManager.refresh();
+            const refreshed = await this.tokenManager.getValidAccessToken();
+            return await this.apiClient.get(path, {
+              params,
+              headers: { Authorization: `Bearer ${refreshed}` },
+            });
+          }
+          throw error;
+        }
+      },
+    );
   }
 
   // Resolve branch/revision/artifact refs for the published bundle, falling
   // back to response headers when the body omits them.
-  private async fetchPublishedBundleRefs(workspaceId: string): Promise<{
-    branchId: string;
-    revisionId: string;
-    artifactHash: string;
-  }> {
-    const bundleResponse = await this.getWithAuth("/api/bundle/latest", { workspace_id: workspaceId });
+  private async fetchPublishedBundleRefs(
+    workspaceId: string,
+  ): Promise<{ branchId: string; revisionId: string; artifactHash: string }> {
+    const bundleResponse = await this.getWithAuth("/api/bundle/latest", {
+      workspace_id: workspaceId,
+    });
     const bundle = bundleResponse.data ?? {};
     const branchId = bundle.branchId ?? bundleResponse.headers["x-spctre-branch-id"];
     const revisionId = bundle.revisionId ?? bundleResponse.headers["x-spctre-revision-id"];
@@ -473,7 +495,10 @@ export class SpctreMcpServer {
       this.config.allowedTools = [...merged];
     }
     if (Array.isArray(data.allowedConnectors) && data.allowedConnectors.length > 0) {
-      const merged = new Set<string>([...(this.config.allowedConnectors ?? []), ...data.allowedConnectors]);
+      const merged = new Set<string>([
+        ...(this.config.allowedConnectors ?? []),
+        ...data.allowedConnectors,
+      ]);
       this.config.allowedConnectors = [...merged];
     }
     if (Array.isArray(data.capabilities)) {
@@ -482,7 +507,9 @@ export class SpctreMcpServer {
     this.mcpRegistrySource = data.registry?.source ?? "api";
   }
 
-  private async ensureMcpPolicyLoaded(options: { agentId?: string; environment?: string } = {}): Promise<void> {
+  private async ensureMcpPolicyLoaded(
+    options: { agentId?: string; environment?: string } = {},
+  ): Promise<void> {
     const cacheKey = `${options.agentId ?? this.config.agentId}:${options.environment ?? "production"}`;
     if (this.mcpPolicyLoaded && this.mcpPolicyCacheKey === cacheKey) return;
     this.mcpPolicyLoaded = true;

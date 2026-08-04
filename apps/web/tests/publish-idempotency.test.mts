@@ -3,7 +3,8 @@ import { afterEach, describe, expect, it } from "vitest";
 
 const databaseAvailable = Boolean(process.env.DATABASE_URL);
 const { rawSql, runWithTenantContext } = await import("../lib/db");
-const { getExistingPublishArtifactHash, insertPolicyPublish } = await import("../lib/repositories/policy");
+const { getExistingPublishArtifactHash, insertPolicyPublish } =
+  await import("../lib/repositories/policy");
 
 const tenantIds: string[] = [];
 
@@ -29,7 +30,9 @@ async function createFixture() {
 
 afterEach(async () => {
   if (!rawSql) return;
-  await Promise.all(tenantIds.splice(0).map((tenantId) => rawSql`DELETE FROM tenant WHERE id = ${tenantId}`));
+  await Promise.all(
+    tenantIds.splice(0).map((tenantId) => rawSql`DELETE FROM tenant WHERE id = ${tenantId}`),
+  );
 });
 
 describe.skipIf(!databaseAvailable)("policy publish idempotency repository contract", () => {
@@ -37,13 +40,12 @@ describe.skipIf(!databaseAvailable)("policy publish idempotency repository contr
     const fixture = await createFixture();
     const artifactHash = "sha256:published-artifact";
 
-    await runWithTenantContext(fixture.tenantId, () => insertPolicyPublish({
-      ...fixture,
-      artifactHash,
-      actorId: "actor-test",
-    }));
-    await expect(runWithTenantContext(fixture.tenantId, () => getExistingPublishArtifactHash(fixture)))
-      .resolves.toBe(artifactHash);
+    await runWithTenantContext(fixture.tenantId, () =>
+      insertPolicyPublish({ ...fixture, artifactHash, actorId: "actor-test" }),
+    );
+    await expect(
+      runWithTenantContext(fixture.tenantId, () => getExistingPublishArtifactHash(fixture)),
+    ).resolves.toBe(artifactHash);
     await expect(rawSql<{ count: string }[]>`
       SELECT count(*)::text AS count FROM policy_publish
       WHERE tenant_id = ${fixture.tenantId} AND branch_id = ${fixture.branchId} AND revision_id = ${fixture.revisionId}

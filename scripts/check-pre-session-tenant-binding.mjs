@@ -38,11 +38,17 @@ const exempt = new Map([
   ["apps/web/lib/repositories/auth/session.ts::listPrincipalSessions", "session-context"],
   ["apps/web/lib/repositories/auth/session.ts::revokeSessionAndRecord", "session-context"],
   ["apps/web/lib/repositories/auth/session.ts::fetchSessionForAuth", "session-context"],
-  ["apps/web/lib/repositories/auth/session.ts::updateSessionAndPrincipalActivity", "session-context"],
+  [
+    "apps/web/lib/repositories/auth/session.ts::updateSessionAndPrincipalActivity",
+    "session-context",
+  ],
   ["apps/web/lib/repositories/auth/session.ts::revokeSessionRow", "session-context"],
   // principal.ts / grants.ts — local-dev signup bootstrap (creates the tenant).
   ["apps/web/lib/repositories/auth/principal.ts::upsertLocalDevPrincipal", "local-dev-bootstrap"],
-  ["apps/web/lib/repositories/auth/principal.ts::ensureLocalDevTenantWorkspace", "local-dev-bootstrap"],
+  [
+    "apps/web/lib/repositories/auth/principal.ts::ensureLocalDevTenantWorkspace",
+    "local-dev-bootstrap",
+  ],
   ["apps/web/lib/repositories/auth/grants.ts::upsertLocalDevWorkspaceGrant", "local-dev-bootstrap"],
   // onboarding — browser approval runs with an authenticated session.
   ["apps/web/lib/repositories/onboarding/cli.ts::approveCliOnboardingRequest", "browser-approval"],
@@ -71,7 +77,11 @@ function functionBlocks(source) {
   const starts = [];
   let match;
   while ((match = FUNCTION_START.exec(source)) !== null) {
-    starts.push({ name: match[1], index: match.index, line: source.slice(0, match.index).split("\n").length });
+    starts.push({
+      name: match[1],
+      index: match.index,
+      line: source.slice(0, match.index).split("\n").length,
+    });
   }
   return starts.map((start, i) => ({
     name: start.name,
@@ -133,7 +143,7 @@ if (violations.length > 0) {
   console.error(
     "Pre-session repository functions must bind their tenant with runWithTenantContext\n" +
       "(or use the owner connection rawSql). Unbound tenant-aware sql on these paths\n" +
-      "throws \"No tenant context is bound\" in multi-tenant deployments.\n"
+      'throws "No tenant context is bound" in multi-tenant deployments.\n',
   );
   for (const v of violations) console.error(`  - ${v.file}:${v.line} ${v.name}`);
 }
@@ -142,7 +152,7 @@ if (unusedExemptions.size > 0) {
   failed = true;
   console.error(
     "\nStale entries in the pre-session tenant-binding exemption list " +
-      "(no longer needed — remove them):\n"
+      "(no longer needed — remove them):\n",
   );
   for (const key of unusedExemptions) console.error(`  - ${key}`);
 }
@@ -151,7 +161,7 @@ if (bearerRouteViolations.length > 0) {
   failed = true;
   console.error(
     "\nBearer-token routes that access repositories directly must bind the authenticated tenant " +
-      "with runWithTenantContext before issuing tenant-scoped queries:\n"
+      "with runWithTenantContext before issuing tenant-scoped queries:\n",
   );
   for (const file of bearerRouteViolations) console.error(`  - ${file}`);
 }

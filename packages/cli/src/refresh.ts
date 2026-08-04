@@ -23,16 +23,12 @@ export async function refreshIfNeeded(config: SpctreCliConfig): Promise<SpctreCl
   if (!needsRefresh) return config;
 
   if (!config.refreshToken) {
-    console.error(
-      "Access token expired and no refresh token found. Run spctre init to reconnect."
-    );
+    console.error("Access token expired and no refresh token found. Run spctre init to reconnect.");
     process.exit(1);
   }
 
   if (config.refreshTokenExpiresAt && new Date(config.refreshTokenExpiresAt) <= new Date()) {
-    console.error(
-      "Refresh token expired. Run spctre init to reconnect."
-    );
+    console.error("Refresh token expired. Run spctre init to reconnect.");
     process.exit(1);
   }
 

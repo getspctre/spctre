@@ -5,7 +5,7 @@ import {
   normalizeSpctrePlan,
   type FeatureFlag,
   type FeatureFlagSnapshot,
-  type SpctrePlan
+  type SpctrePlan,
 } from "./feature-flags";
 
 export function getSpctrePlan(): SpctrePlan {

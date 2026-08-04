@@ -22,7 +22,10 @@ interface IdpCommonFields {
 }
 
 // SAML branch: validate and save. Returns an error message when invalid.
-async function saveSamlFromForm(formData: FormData, common: IdpCommonFields): Promise<string | null> {
+async function saveSamlFromForm(
+  formData: FormData,
+  common: IdpCommonFields,
+): Promise<string | null> {
   const samlEntryPoint = String(formData.get("samlEntryPoint") ?? "").trim();
   const samlCertRaw = String(formData.get("samlCert") ?? "").trim();
 
@@ -43,7 +46,10 @@ async function saveSamlFromForm(formData: FormData, common: IdpCommonFields): Pr
 }
 
 // OIDC branch: validate and save. Returns an error message when invalid.
-async function saveOidcFromForm(formData: FormData, common: IdpCommonFields): Promise<string | null> {
+async function saveOidcFromForm(
+  formData: FormData,
+  common: IdpCommonFields,
+): Promise<string | null> {
   const clientId = String(formData.get("clientId") ?? "").trim();
   const clientSecret = String(formData.get("clientSecret") ?? "").trim();
   const metadataUrlRaw = String(formData.get("metadataUrl") ?? "").trim();
@@ -66,7 +72,7 @@ async function saveOidcFromForm(formData: FormData, common: IdpCommonFields): Pr
 
 export async function upsertIdentityProvider(
   _prev: AdminAuthActionState,
-  formData: FormData
+  formData: FormData,
 ): Promise<AdminAuthActionState> {
   const guard = await requireAdminSession();
   if ("error" in guard) return { error: guard.error ?? "Admin permission is required." };
@@ -75,7 +81,9 @@ export async function upsertIdentityProvider(
   if (!writeCheck.allowed) return { error: writeCheck.error ?? "Write access denied." };
 
   const providerId = String(formData.get("providerId") ?? "").trim();
-  const providerType = String(formData.get("providerType") ?? "OIDC").trim().toUpperCase();
+  const providerType = String(formData.get("providerType") ?? "OIDC")
+    .trim()
+    .toUpperCase();
   const name = String(formData.get("name") ?? "").trim();
   const issuer = String(formData.get("issuer") ?? "").trim();
 
@@ -84,9 +92,10 @@ export async function upsertIdentityProvider(
   }
 
   const common: IdpCommonFields = { tenantId: guard.session.tenantId, providerId, name, issuer };
-  const saveError = providerType === "SAML"
-    ? await saveSamlFromForm(formData, common)
-    : await saveOidcFromForm(formData, common);
+  const saveError =
+    providerType === "SAML"
+      ? await saveSamlFromForm(formData, common)
+      : await saveOidcFromForm(formData, common);
   if (saveError) return { error: saveError, errorCode: saveError };
 
   revalidatePath("/admin/auth");
@@ -95,7 +104,7 @@ export async function upsertIdentityProvider(
 
 export async function deleteIdentityProviderForm(
   _prev: IdentityProviderMutationState,
-  formData: FormData
+  formData: FormData,
 ): Promise<IdentityProviderMutationState> {
   const guard = await requireAdminSession();
   if ("error" in guard) return { error: guard.error ?? "Admin permission is required." };
@@ -106,10 +115,7 @@ export async function deleteIdentityProviderForm(
   const providerId = String(formData.get("providerId") ?? "").trim();
   if (!providerId) return { error: "Identity provider is missing.", errorCode: "missing_provider" };
 
-  await deleteIdentityProvider({
-    tenantId: guard.session.tenantId,
-    providerId,
-  });
+  await deleteIdentityProvider({ tenantId: guard.session.tenantId, providerId });
 
   revalidatePath("/admin/auth");
   return { ok: true, messageCode: "removed" };

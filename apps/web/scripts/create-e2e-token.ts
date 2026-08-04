@@ -27,7 +27,10 @@ for (const file of [".env.local", ".env"]) {
       const eq = stripped.indexOf("=");
       if (eq === -1) continue;
       const key = stripped.slice(0, eq).trim();
-      const val = stripped.slice(eq + 1).trim().replace(/^["']|["']$/g, "");
+      const val = stripped
+        .slice(eq + 1)
+        .trim()
+        .replace(/^["']|["']$/g, "");
       if (!(key in process.env)) process.env[key] = val;
     }
   } catch {
@@ -41,8 +44,7 @@ if (!DATABASE_URL) {
   process.exit(1);
 }
 
-const DEMO_TENANT_ID =
-  process.env.SPCTRE_DEMO_TENANT_ID ?? "00000000-0000-0000-0000-000000000001";
+const DEMO_TENANT_ID = process.env.SPCTRE_DEMO_TENANT_ID ?? "00000000-0000-0000-0000-000000000001";
 const DEMO_WORKSPACE_ID =
   process.env.SPCTRE_DEMO_WORKSPACE_ID ?? "00000000-0000-0000-0000-000000000002";
 const DEMO_PRINCIPAL_ID =

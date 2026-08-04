@@ -18,7 +18,7 @@ export async function withSpan<T>(
   name: string,
   attrs: Record<string, unknown>,
   fn: (span: Span) => Promise<T> | T,
-  options?: { autoRecord?: boolean; metricName?: string }
+  options?: { autoRecord?: boolean; metricName?: string },
 ): Promise<T> {
   const span = tracer().startSpan(name, {
     kind: SpanKind.INTERNAL,
@@ -36,17 +36,24 @@ export async function withSpan<T>(
       span.setStatus(
         status !== undefined && status >= 400
           ? { code: SpanStatusCode.ERROR, message: `HTTP ${status}` }
-          : { code: SpanStatusCode.OK }
+          : { code: SpanStatusCode.OK },
       );
       if (options?.autoRecord) {
-        const metric = options.metricName ?? `spctre.${name.replace(/\./g, '_')}.duration`;
+        const metric = options.metricName ?? `spctre.${name.replace(/\./g, "_")}.duration`;
         recordDuration(metric, Date.now() - started, { ...attrs });
       }
       return result;
     } catch (err) {
       span.recordException(err as Error);
-      span.setStatus({ code: SpanStatusCode.ERROR, message: err instanceof Error ? err.message : String(err) });
-      incrementCounter("spctre.span.errors", 1, { "span.name": name, "error.type": err instanceof Error ? err.name : "Error", ...attrs });
+      span.setStatus({
+        code: SpanStatusCode.ERROR,
+        message: err instanceof Error ? err.message : String(err),
+      });
+      incrementCounter("spctre.span.errors", 1, {
+        "span.name": name,
+        "error.type": err instanceof Error ? err.name : "Error",
+        ...attrs,
+      });
       throw err;
     } finally {
       span.end();
