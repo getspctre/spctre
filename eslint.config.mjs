@@ -132,7 +132,13 @@ export default [
     rules: {
       complexity: ["warn", 20],
       "max-depth": ["warn", 5],
-      "max-lines-per-function": ["warn", { max: 150, skipBlankLines: true, skipComments: true }],
+      // 200, not 150: line counts are formatting-dependent, and Prettier's
+      // wrapping inflated them by ~1.1x for plain logic and ~1.5x for JSX-heavy
+      // code. At 150 the rule flagged 25 functions, mostly wrapping artifacts,
+      // which buries the real offenders. At 200 every function it flags is
+      // oversized regardless of formatting. `complexity` above is unaffected by
+      // formatting and remains the stronger of these two signals.
+      "max-lines-per-function": ["warn", { max: 200, skipBlankLines: true, skipComments: true }],
     },
   },
 ];
