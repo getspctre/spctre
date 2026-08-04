@@ -1,4 +1,5 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
+import { join } from "node:path";
 
 // Repositories whose exported functions run on pre-session paths (login, SSO,
 // OIDC/SAML callbacks, CLI/device onboarding) where no session-guard cookie has
@@ -58,6 +59,14 @@ const TENANT_SQL = /(?<![.\w])sql\s*[<`]|(?<![.\w])sql\.begin\b|\bdb\s*=\s*sql\b
 const BINDING = /runWithTenantContext\s*[<(]/;
 const FUNCTION_START = /^export\s+(?:async\s+)?function\s+([A-Za-z0-9_]+)/gm;
 
+function filesUnder(directory) {
+  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const path = join(directory, entry.name);
+    if (entry.isDirectory()) return filesUnder(path);
+    return entry.isFile() && /\.(?:ts|tsx)$/.test(entry.name) ? [path] : [];
+  });
+}
+
 function functionBlocks(source) {
   const starts = [];
   let match;
@@ -90,6 +99,33 @@ for (const file of preSessionFiles) {
   }
 }
 
+// Bearer-token routes do not have a session-guard cookie, so a route that
+// authenticates a service token and calls a repository directly must also bind
+// the token tenant around that work. Domain services are responsible for their
+// own binding and are intentionally outside this check.
+const bearerRepositoryExemptions = new Map([
+  [
+    "apps/web/app/api/gateway-ingest/_shared.ts",
+    "pre-tenant webhook-secret lookup uses rawSql; tenant writes bind in ingestGatewayEvent",
+  ],
+]);
+
+const bearerRouteViolations = [];
+const unusedBearerExemptions = new Set(bearerRepositoryExemptions.keys());
+
+for (const file of filesUnder("apps/web/app/api")) {
+  const source = readFileSync(file, "utf8");
+  const authenticatesServiceToken = source.includes("authenticateServiceToken(");
+  const importsRepository = source.includes("@/lib/repositories/");
+  if (!authenticatesServiceToken || !importsRepository) continue;
+
+  if (bearerRepositoryExemptions.has(file)) {
+    unusedBearerExemptions.delete(file);
+    continue;
+  }
+  if (!BINDING.test(source)) bearerRouteViolations.push(file);
+}
+
 let failed = false;
 
 if (violations.length > 0) {
@@ -109,6 +145,21 @@ if (unusedExemptions.size > 0) {
       "(no longer needed — remove them):\n"
   );
   for (const key of unusedExemptions) console.error(`  - ${key}`);
+}
+
+if (bearerRouteViolations.length > 0) {
+  failed = true;
+  console.error(
+    "\nBearer-token routes that access repositories directly must bind the authenticated tenant " +
+      "with runWithTenantContext before issuing tenant-scoped queries:\n"
+  );
+  for (const file of bearerRouteViolations) console.error(`  - ${file}`);
+}
+
+if (unusedBearerExemptions.size > 0) {
+  failed = true;
+  console.error("\nStale bearer-route tenant-binding exemptions (remove them):\n");
+  for (const file of unusedBearerExemptions) console.error(`  - ${file}`);
 }
 
 if (failed) process.exit(1);

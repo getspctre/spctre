@@ -15,6 +15,7 @@ import { getLatestVerificationStatus } from "@/lib/repositories/verification";
 import { findActorById, getBranchPermissions } from "@/lib/actors";
 import { extractTraceId, makeMeta, withTraceId } from "@spctre/api-contracts";
 import { swallow } from "@/lib/platform/swallow";
+import { runWithTenantContext } from "@/lib/tenant-context";
 
 export const dynamic = "force-dynamic";
 
@@ -156,25 +157,29 @@ async function handlePostApiE2ePolicyPublish(request: Request) {
 
   const tenantId = tokenAuth.auth.tenantId;
 
-  const authorized = await authorizeE2ePublish({
-    tenantId,
-    branchId,
-    revisionId,
-    actorId,
-    fallbackWorkspaceId: tokenAuth.auth.workspaceId,
-  });
+  const authorized = await runWithTenantContext(tenantId, () =>
+    authorizeE2ePublish({
+      tenantId,
+      branchId,
+      revisionId,
+      actorId,
+      fallbackWorkspaceId: tokenAuth.auth.workspaceId,
+    })
+  );
   if ("error" in authorized) {
     return withTraceId(Response.json({ error: authorized.error, meta: makeMeta(traceId) }, { status: authorized.status }), traceId);
   }
   const { branchRow, actor } = authorized;
 
-  const blocking = await checkE2ePublishReadiness({
-    tenantId,
-    branchId,
-    revisionId,
-    workspaceId: branchRow.workspace_id ?? tokenAuth.auth.workspaceId,
-    environment: branchRow.environment,
-  });
+  const blocking = await runWithTenantContext(tenantId, () =>
+    checkE2ePublishReadiness({
+      tenantId,
+      branchId,
+      revisionId,
+      workspaceId: branchRow.workspace_id ?? tokenAuth.auth.workspaceId,
+      environment: branchRow.environment,
+    })
+  );
   if (blocking) {
     return withTraceId(Response.json({
       error: blocking.error,
@@ -183,7 +188,9 @@ async function handlePostApiE2ePolicyPublish(request: Request) {
     }, { status: 422 }), traceId);
   }
 
-  const existingArtifactHash = await getExistingPublishArtifactHash({ tenantId, branchId, revisionId });
+  const existingArtifactHash = await runWithTenantContext(tenantId, () =>
+    getExistingPublishArtifactHash({ tenantId, branchId, revisionId })
+  );
   if (existingArtifactHash) {
     return withTraceId(Response.json({ artifactHash: existingArtifactHash, meta: makeMeta(traceId) }), traceId);
   }
@@ -194,7 +201,9 @@ async function handlePostApiE2ePolicyPublish(request: Request) {
     .slice(0, 16)}`;
 
   try {
-    await insertPolicyPublish({ tenantId, branchId, revisionId, artifactHash, actorId: actor.id });
+    await runWithTenantContext(tenantId, () =>
+      insertPolicyPublish({ tenantId, branchId, revisionId, artifactHash, actorId: actor.id })
+    );
   } catch (error) {
     console.error("[e2e/policy/publish] failed:", error);
     return withTraceId(Response.json({ error: "An unexpected error occurred.", meta: makeMeta(traceId) }, { status: 500 }), traceId);
