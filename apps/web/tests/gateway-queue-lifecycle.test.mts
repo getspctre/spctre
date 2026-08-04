@@ -20,6 +20,7 @@ let resolvedQueueIds = new Map<string, { outcome: string; note: string | null }>
 let queueResolveUpdates = 0;
 let lastGatewayDecisionArgs: unknown[] = [];
 let lastEvidenceArgs: unknown[] = [];
+const getLatestPublishedPolicyBundleSpy = vi.fn();
 
 function makeSqlMock() {
   const fn = (...args: unknown[]): Promise<unknown[]> => {
@@ -104,6 +105,10 @@ function makeSqlMock() {
 const sqlMock = makeSqlMock();
 
 vi.mock("@/lib/db", () => ({ sql: sqlMock }));
+
+vi.mock("@/lib/domains/policy/service", () => ({
+  getLatestPublishedPolicyBundle: getLatestPublishedPolicyBundleSpy,
+}));
 
 vi.mock("@/lib/demo", () => ({
   DEMO_TENANT_ID: "demo-tenant",
@@ -600,6 +605,7 @@ describe("Gateway decide API — outcome and queue routing", () => {
     process.env.GATEWAY_ENABLED = "true";
     insertedRows = [];
     lastGatewayDecisionArgs = [];
+    getLatestPublishedPolicyBundleSpy.mockResolvedValue(null);
   });
 
   afterEach(() => {
@@ -654,6 +660,37 @@ describe("Gateway decide API — outcome and queue routing", () => {
     });
     const res = await decidePost(req);
     const body = (await res.json()) as { decision: { outcome: string }; queued: boolean };
+    expect(body.decision.outcome).toBe("ESCALATE");
+    expect(body.queued).toBe(true);
+  });
+
+  it("escalates a low-risk request when the published policy requires HITL", async () => {
+    getLatestPublishedPolicyBundleSpy.mockResolvedValue({
+      bundle: {
+        rules: [
+          {
+            stableRuleId: "scout.escalate_brief_file",
+            title: "Every filed brief escalates for human review",
+            effect: "ESCALATE",
+            domains: [],
+            connectors: ["acquisition-scout"],
+            actions: ["brief.file"],
+          },
+        ],
+      },
+    });
+    const req = new Request("http://localhost:3000/api/gateway/decide", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        decisionId: "dec-scout-brief",
+        artifactHash: "sha256:decide-test",
+        policyContext: [{ scope: "WORKSPACE", branchId: "b-1", revisionId: "r-1", artifactHash: "sha256:decide-test" }],
+        connector: "acquisition-scout",
+        action: "brief.file",
+      }),
+    });
+    const body = (await (await decidePost(req)).json()) as { decision: { outcome: string }; queued: boolean };
     expect(body.decision.outcome).toBe("ESCALATE");
     expect(body.queued).toBe(true);
   });
