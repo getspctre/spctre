@@ -22,7 +22,7 @@ vi.mock("@/lib/db", () => ({
 }));
 
 vi.mock("@/lib/demo", () => ({
-  DEMO_TENANT_ID: "demo-tenant",
+  DEMO_TENANT_ID: "00000000-0000-0000-0000-000000000001",
   DEMO_WORKSPACE_ID: "demo-workspace"
 }));
 
@@ -33,7 +33,7 @@ vi.mock("@/lib/repositories/seed/local-dev", () => ({
 vi.mock("@/lib/service-tokens", () => ({
   authenticateServiceToken: vi.fn().mockResolvedValue({
     ok: true,
-    auth: { tenantId: "demo-tenant", workspaceId: "demo-workspace", principalId: "svc-1", scopes: ["evidence:write"] },
+    auth: { tenantId: "00000000-0000-0000-0000-000000000001", workspaceId: "demo-workspace", principalId: "svc-1", scopes: ["evidence:write"] },
   }),
   hasBearerToken: () => true,
 }));
@@ -46,7 +46,7 @@ vi.mock("@spctre/policy-schema", async (importOriginal) => {
     ...real,
     ingestAgtRuntimeDecision: (input: Record<string, unknown>) => ({
       decisionId: input.decisionId,
-      tenantId: input.tenantId ?? "demo-tenant",
+      tenantId: input.tenantId ?? "00000000-0000-0000-0000-000000000001",
       workspaceId: input.workspaceId ?? "demo-workspace",
       environment: input.environment,
       runtimeTarget: input.runtimeTarget,

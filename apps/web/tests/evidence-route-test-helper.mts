@@ -42,7 +42,7 @@ export function buildEvidenceRequest(
 
   const body = {
     decisionId: "dec-1",
-    tenantId: "demo-tenant",
+    tenantId: "00000000-0000-0000-0000-000000000001",
     workspaceId: "demo-workspace",
     environment: "production",
     runtimeTarget: { stack: "LOCAL" },
