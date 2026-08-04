@@ -35,6 +35,7 @@ import { logger } from "@spctre/platform/logging";
 import { incrementCounter, recordDuration } from "@spctre/platform/metrics";
 import { INGEST_LAG_WARN_MS } from "@spctre/platform/slos";
 import { swallow } from "@/lib/platform/swallow";
+import { runWithTenantContext } from "@/lib/tenant-context";
 
 const EVIDENCE_ROUTE = "/api/evidence";
 const EVIDENCE_REVALIDATE_PATHS = ["/evidence", "/compliance", "/agents", "/escalations"];
@@ -435,99 +436,101 @@ export async function ingestRuntimeEvidence(input: {
 
   const { tenantId, workspaceId, principalId } = auth;
 
-  // Every framework adapter may report its local surface identity. Resolve it
-  // once at ingress so evidence, Blueprint context, trust, and review all use
-  // the same canonical agent across runtimes.
-  agtInput.agentId = await resolveCanonicalAgentId({ tenantId, workspaceId, agentId: agtInput.agentId });
+  return runWithTenantContext(tenantId, async () => {
+    // Every framework adapter may report its local surface identity. Resolve it
+    // once at ingress so evidence, Blueprint context, trust, and review all use
+    // the same canonical agent across runtimes.
+    agtInput.agentId = await resolveCanonicalAgentId({ tenantId, workspaceId, agentId: agtInput.agentId });
 
-  const publishedBlueprint = await getPublishedBlueprintContext({
-    tenantId,
-    workspaceId,
-    agentId: agtInput.agentId,
-    policyRevisionIds: agtInput.policyContext.map((context) => context.revisionId),
-  }).catch(swallow("getPublishedBlueprintContext", undefined));
-  const scopedInput: AgtRuntimeDecisionInput = {
-    ...agtInput,
-    tenantId,
-    workspaceId,
-    blueprintContext: publishedBlueprint,
-  };
+    const publishedBlueprint = await getPublishedBlueprintContext({
+      tenantId,
+      workspaceId,
+      agentId: agtInput.agentId,
+      policyRevisionIds: agtInput.policyContext.map((context) => context.revisionId),
+    }).catch(swallow("getPublishedBlueprintContext", undefined));
+    const scopedInput: AgtRuntimeDecisionInput = {
+      ...agtInput,
+      tenantId,
+      workspaceId,
+      blueprintContext: publishedBlueprint,
+    };
 
-  // These checks are independent of one another, so run them concurrently
-  // rather than strictly sequentially on the ingest hot path.
-  // See database-optimizations-audit finding 4.
-  const [profile, workspaceCheck, contextCheck] = await Promise.all([
-    getCommercialProfile(tenantId).catch(swallow("getCommercialProfile", null)),
-    validateEvidenceWorkspaceBoundary(tenantId, workspaceId),
-    validateEvidencePolicyContextBoundary(scopedInput.policyContext, tenantId, workspaceId),
-  ]);
+    // These checks are independent of one another, so run them concurrently
+    // rather than strictly sequentially on the ingest hot path.
+    // See database-optimizations-audit finding 4.
+    const [profile, workspaceCheck, contextCheck] = await Promise.all([
+      getCommercialProfile(tenantId).catch(swallow("getCommercialProfile", null)),
+      validateEvidenceWorkspaceBoundary(tenantId, workspaceId),
+      validateEvidencePolicyContextBoundary(scopedInput.policyContext, tenantId, workspaceId),
+    ]);
 
-  // Enforce Free Tier (HOSTED_TRIAL) 1,000 total retained governed event capacity limit.
-  // The count depends on the profile plan, so it stays sequential after the fetch.
-  if (profile?.planCode === "HOSTED_TRIAL") {
-    const totalCount = await countTotalEvidenceEvents(tenantId);
-    if (totalCount >= 1000) {
-      return apiError(429, "Evidence ingestion limit exceeded. Free trial is limited to 1,000 total retained governed events. Upgrade to a paid plan.");
+    // Enforce Free Tier (HOSTED_TRIAL) 1,000 total retained governed event capacity limit.
+    // The count depends on the profile plan, so it stays sequential after the fetch.
+    if (profile?.planCode === "HOSTED_TRIAL") {
+      const totalCount = await countTotalEvidenceEvents(tenantId);
+      if (totalCount >= 1000) {
+        return apiError(429, "Evidence ingestion limit exceeded. Free trial is limited to 1,000 total retained governed events. Upgrade to a paid plan.");
+      }
     }
-  }
 
-  if (!workspaceCheck.ok) {
-    return apiError(403, workspaceCheck.error);
-  }
+    if (!workspaceCheck.ok) {
+      return apiError(403, workspaceCheck.error);
+    }
 
-  if (!contextCheck.ok) {
-    return apiError(403, contextCheck.error);
-  }
+    if (!contextCheck.ok) {
+      return apiError(403, contextCheck.error);
+    }
 
-  const evidence = ingestAgtRuntimeDecision(scopedInput);
-  const governanceActiveSignal = isGovernanceActiveSignal(evidence);
-  const rawPayloadRecord = parsed as Record<string, unknown>;
-  const sourceType = resolveIngestionSource(request, rawPayloadRecord);
+    const evidence = ingestAgtRuntimeDecision(scopedInput);
+    const governanceActiveSignal = isGovernanceActiveSignal(evidence);
+    const rawPayloadRecord = parsed as Record<string, unknown>;
+    const sourceType = resolveIngestionSource(request, rawPayloadRecord);
 
-  const persistResult = await persistEvidence({
-    tenantId,
-    workspaceId,
-    evidence,
-    rawPayload: rawPayloadRecord,
-    sourceType,
-    startedAt,
+    const persistResult = await persistEvidence({
+      tenantId,
+      workspaceId,
+      evidence,
+      rawPayload: rawPayloadRecord,
+      sourceType,
+      startedAt,
+    });
+    if (persistResult) return persistResult;
+
+    // Trigger FIRST_EVIDENCE_INGEST conversion telemetry asynchronously
+    recordConversionTelemetry(tenantId, "FIRST_EVIDENCE_INGEST").catch(swallow("recordConversionTelemetry", undefined));
+
+    emitPostInsertSideEffects({
+      tenantId,
+      workspaceId,
+      principalId,
+      evidence,
+      rawPayload: rawPayloadRecord,
+      governanceActiveSignal,
+    });
+
+    const gateway = await evaluateAndPersistGatewayDecision({
+      tenantId,
+      workspaceId,
+      principalId,
+      evidence,
+      rawPayload: rawPayloadRecord,
+    });
+
+    const spanAttributes = recordSuccessfulIngestMetrics({
+      tenantId,
+      workspaceId,
+      evidence,
+      gateway,
+      sourceType,
+      governanceActiveSignal,
+      startedAt,
+    });
+
+    return {
+      status: 201,
+      body: { evidence, gateway },
+      revalidatePaths: EVIDENCE_REVALIDATE_PATHS,
+      spanAttributes,
+    };
   });
-  if (persistResult) return persistResult;
-
-  // Trigger FIRST_EVIDENCE_INGEST conversion telemetry asynchronously
-  recordConversionTelemetry(tenantId, "FIRST_EVIDENCE_INGEST").catch(swallow("recordConversionTelemetry", undefined));
-
-  emitPostInsertSideEffects({
-    tenantId,
-    workspaceId,
-    principalId,
-    evidence,
-    rawPayload: rawPayloadRecord,
-    governanceActiveSignal,
-  });
-
-  const gateway = await evaluateAndPersistGatewayDecision({
-    tenantId,
-    workspaceId,
-    principalId,
-    evidence,
-    rawPayload: rawPayloadRecord,
-  });
-
-  const spanAttributes = recordSuccessfulIngestMetrics({
-    tenantId,
-    workspaceId,
-    evidence,
-    gateway,
-    sourceType,
-    governanceActiveSignal,
-    startedAt,
-  });
-
-  return {
-    status: 201,
-    body: { evidence, gateway },
-    revalidatePaths: EVIDENCE_REVALIDATE_PATHS,
-    spanAttributes,
-  };
 }

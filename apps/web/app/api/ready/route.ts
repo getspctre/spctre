@@ -1,4 +1,4 @@
-import { sql } from "@/lib/db";
+import { rawSql } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
@@ -16,11 +16,11 @@ async function handleGetApiReady() {
     : { ok: false, reason: `Missing: ${missingEnv.join(", ")}` };
 
   // 2. Database connectivity
-  if (!sql) {
+  if (!rawSql) {
     checks.db = { ok: false, reason: "DATABASE_URL not configured" };
   } else {
     try {
-      await sql`SELECT 1`;
+      await rawSql`SELECT 1`;
       checks.db = { ok: true };
     } catch (err) {
       console.error("[ready] database check failed", err);
@@ -29,9 +29,9 @@ async function handleGetApiReady() {
   }
 
   // 3. Migration state — schema_migrations table must exist and be fully applied
-  if (checks.db.ok && sql) {
+  if (checks.db.ok && rawSql) {
     try {
-      const rows = await sql<{ count: string }[]>`
+      const rows = await rawSql<{ count: string }[]>`
         SELECT COUNT(*)::text AS count FROM schema_migrations
       `;
       const applied = Number.parseInt(rows[0]?.count ?? "0", 10);
