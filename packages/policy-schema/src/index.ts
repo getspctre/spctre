@@ -1,5 +1,6 @@
 // Export core governance logic and helpers
 export * from "./schema";
+export * from "./semantic-topics";
 export * from "./types";
 export * from "./packs";
 export * from "./pack-definitions";
