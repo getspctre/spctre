@@ -11,6 +11,8 @@ import { afterEach, describe, expect, it } from "vitest";
 const databaseAvailable = Boolean(process.env.DATABASE_URL);
 const { rawSql } = await import("../lib/db");
 const { POST } = await import("../app/api/v1/blueprint/imports/route");
+const { setAgentBlueprintRevisionStatus } = await import("../lib/repositories/agent-blueprints");
+const { runWithTenantContext } = await import("../lib/tenant-context");
 
 type Fixture = { tenantId: string; workspaceId: string; principalId: string };
 const tenantIds: string[] = [];
@@ -174,6 +176,29 @@ describe.skipIf(!databaseAvailable)("POST /api/v1/blueprint/imports contract", (
 
     const head = await rawSql!<{ active_revision_id: string }[]>`SELECT active_revision_id FROM agent_blueprint WHERE id = ${blueprintId}`;
     expect(head[0].active_revision_id).toBe(changedBody.revisionId);
+  });
+
+  it("publishes a Blueprint bound to a UUID policy revision", async () => {
+    const fixture = await createFixture();
+    await seedPublishedPolicy(fixture, "acquisition-scout");
+    const operatorToken = await mintToken(fixture, ["blueprint:import"]);
+
+    const created = await POST(importRequest(operatorToken, blueprintSource({ policyBranch: "acquisition-scout" })));
+    expect(created.status).toBe(201);
+    const body = await created.json() as { blueprintId: string; revisionId: string };
+
+    // Drive the DB lifecycle transitions inside a bound tenant context, as the
+    // PATCH route does via the request session — the repository client requires
+    // one. Before the ::text cast the first (IN_REVIEW) transition already threw
+    // `operator does not exist: uuid = text` at plan time.
+    await runWithTenantContext(fixture.tenantId, async () => {
+      await expect(setAgentBlueprintRevisionStatus({
+        tenantId: fixture.tenantId, workspaceId: fixture.workspaceId, blueprintId: body.blueprintId, revisionId: body.revisionId, status: "IN_REVIEW",
+      })).resolves.toMatchObject({ status: "IN_REVIEW" });
+      await expect(setAgentBlueprintRevisionStatus({
+        tenantId: fixture.tenantId, workspaceId: fixture.workspaceId, blueprintId: body.blueprintId, revisionId: body.revisionId, status: "PUBLISHED",
+      })).resolves.toMatchObject({ status: "PUBLISHED" });
+    });
   });
 
   it("appends a fresh draft when a reverted definition recurs after both versions were published (A→B→A)", async () => {
