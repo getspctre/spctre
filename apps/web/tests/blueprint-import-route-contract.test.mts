@@ -11,8 +11,7 @@ import { afterEach, describe, expect, it } from "vitest";
 const databaseAvailable = Boolean(process.env.DATABASE_URL);
 const { rawSql } = await import("../lib/db");
 const { POST } = await import("../app/api/v1/blueprint/imports/route");
-const { setAgentBlueprintRevisionStatus } = await import("../lib/repositories/agent-blueprints");
-const { runWithTenantContext } = await import("../lib/tenant-context");
+const { setAgentBlueprintRevisionStatus } = await import("../lib/domains/agent-blueprints/service");
 
 type Fixture = { tenantId: string; workspaceId: string; principalId: string };
 const tenantIds: string[] = [];
@@ -187,18 +186,16 @@ describe.skipIf(!databaseAvailable)("POST /api/v1/blueprint/imports contract", (
     expect(created.status).toBe(201);
     const body = await created.json() as { blueprintId: string; revisionId: string };
 
-    // Drive the DB lifecycle transitions inside a bound tenant context, as the
-    // PATCH route does via the request session — the repository client requires
-    // one. Before the ::text cast the first (IN_REVIEW) transition already threw
-    // `operator does not exist: uuid = text` at plan time.
-    await runWithTenantContext(fixture.tenantId, async () => {
-      await expect(setAgentBlueprintRevisionStatus({
-        tenantId: fixture.tenantId, workspaceId: fixture.workspaceId, blueprintId: body.blueprintId, revisionId: body.revisionId, status: "IN_REVIEW",
-      })).resolves.toMatchObject({ status: "IN_REVIEW" });
-      await expect(setAgentBlueprintRevisionStatus({
-        tenantId: fixture.tenantId, workspaceId: fixture.workspaceId, blueprintId: body.blueprintId, revisionId: body.revisionId, status: "PUBLISHED",
-      })).resolves.toMatchObject({ status: "PUBLISHED" });
-    });
+    // Drive the lifecycle transitions through the tenant-bound service entry
+    // point — the PATCH route's path — which binds the RLS context the
+    // repository client requires. Before the ::text cast the IN_REVIEW
+    // transition threw `operator does not exist: uuid = text` at plan time.
+    await expect(setAgentBlueprintRevisionStatus({
+      tenantId: fixture.tenantId, workspaceId: fixture.workspaceId, blueprintId: body.blueprintId, revisionId: body.revisionId, status: "IN_REVIEW",
+    })).resolves.toMatchObject({ status: "IN_REVIEW" });
+    await expect(setAgentBlueprintRevisionStatus({
+      tenantId: fixture.tenantId, workspaceId: fixture.workspaceId, blueprintId: body.blueprintId, revisionId: body.revisionId, status: "PUBLISHED",
+    })).resolves.toMatchObject({ status: "PUBLISHED" });
   });
 
   it("appends a fresh draft when a reverted definition recurs after both versions were published (A→B→A)", async () => {
