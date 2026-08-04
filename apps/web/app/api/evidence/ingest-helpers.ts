@@ -2,7 +2,10 @@ import { evidenceIngestUrl } from "@/lib/platform/config";
 import { fetchWithRetry } from "@/lib/platform/fetch-retry";
 import { withTraceId } from "@spctre/api-contracts";
 
-export async function delegateToGoIngestor(request: Request, traceId: string): Promise<Response | null> {
+export async function delegateToGoIngestor(
+  request: Request,
+  traceId: string,
+): Promise<Response | null> {
   const baseUrl = evidenceIngestUrl();
   if (!baseUrl || request.headers.get("x-spctre-forwarded-by") === "web") {
     return null;
@@ -30,6 +33,6 @@ export async function delegateToGoIngestor(request: Request, traceId: string): P
       statusText: response.statusText,
       headers: response.headers,
     }),
-    traceId
+    traceId,
   );
 }

@@ -9,7 +9,11 @@ export function DataTable({ className, ...props }: TableHTMLAttributes<HTMLTable
   return <table className={cx("uiTable", className)} {...props} />;
 }
 
-export function TableHeaderCell({ className, children, ...props }: HTMLAttributes<HTMLTableCellElement>) {
+export function TableHeaderCell({
+  className,
+  children,
+  ...props
+}: HTMLAttributes<HTMLTableCellElement>) {
   return (
     <th className={cx("uiTableHead", className)} {...props}>
       {children}

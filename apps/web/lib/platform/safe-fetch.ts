@@ -18,7 +18,7 @@ const guardedLookup: LookupFunction = (hostname, options, callback) => {
     const cb = callback as (
       err: NodeJS.ErrnoException | null,
       address: string | { address: string; family: number }[],
-      family?: number
+      family?: number,
     ) => void;
     if (err) {
       cb(err, "", 0);
@@ -28,9 +28,11 @@ const guardedLookup: LookupFunction = (hostname, options, callback) => {
     for (const entry of list) {
       if (isBlockedAddress(entry.address)) {
         cb(
-          Object.assign(new Error(`Blocked SSRF target: ${entry.address}`), { code: "ESSRFBLOCKED" }),
+          Object.assign(new Error(`Blocked SSRF target: ${entry.address}`), {
+            code: "ESSRFBLOCKED",
+          }),
           "",
-          0
+          0,
         );
         return;
       }
@@ -84,7 +86,10 @@ export async function safeFetch(url: string, init: SafeFetchInit = {}): Promise<
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   if (signal) {
     if (signal.aborted) controller.abort((signal as AbortSignal).reason);
-    else signal.addEventListener("abort", () => controller.abort((signal as AbortSignal).reason), { once: true });
+    else
+      signal.addEventListener("abort", () => controller.abort((signal as AbortSignal).reason), {
+        once: true,
+      });
   }
 
   try {

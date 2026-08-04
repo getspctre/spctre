@@ -3,10 +3,7 @@ import { formatWorkspaceEyebrow } from "@/lib/workspace";
 import { ReviewHeader } from "./review-header";
 import { ReviewComposeSection } from "./review-compose-section";
 import { ReviewDiffSection } from "./review-diff-section";
-import {
-  ReviewHistorySection,
-  ReviewPublishSection,
-} from "./review-approvals-section";
+import { ReviewHistorySection, ReviewPublishSection } from "./review-approvals-section";
 import { ReviewTabs } from "./review-tabs";
 import { ReviewImpactSummary } from "./review-impact-summary";
 import { getTranslations } from "next-intl/server";
@@ -42,13 +39,14 @@ function getPublishTab(params: ReviewSearchParams): PublishTab {
 function buildReviewHref(
   path: string,
   params: ReviewSearchParams,
-  next: { stage?: ReviewStage; publishTab?: PublishTab }
+  next: { stage?: ReviewStage; publishTab?: PublishTab },
 ): string {
   const urlParams = new URLSearchParams();
   const branch = firstParam(params.branch);
   if (branch) urlParams.set("branch", branch);
   if (next.stage && next.stage !== "review") urlParams.set("stage", next.stage);
-  if (next.publishTab && next.publishTab !== "coverage") urlParams.set("publishTab", next.publishTab);
+  if (next.publishTab && next.publishTab !== "coverage")
+    urlParams.set("publishTab", next.publishTab);
   const query = urlParams.toString();
   const hash = next.publishTab
     ? "publish"
@@ -58,7 +56,7 @@ function buildReviewHref(
         ? "history"
         : next.stage === "impact"
           ? "impact-summary"
-        : "diff";
+          : "diff";
   return `${path}${query ? `?${query}` : ""}#${hash}`;
 }
 
@@ -69,20 +67,50 @@ function reviewNextStep(model: ReviewModel, reviewPath: string) {
   const branchQuery = branch ? `?branch=${branch.id}` : "";
   if (!branch) return null;
   if (model.isPublished) {
-    return { eyebrow: "Revision status", label: "This revision is published", description: "Use History to inspect or restore a prior published revision.", href: `${reviewPath}${branchQuery}&stage=history#history`, action: "View history" };
+    return {
+      eyebrow: "Revision status",
+      label: "This revision is published",
+      description: "Use History to inspect or restore a prior published revision.",
+      href: `${reviewPath}${branchQuery}&stage=history#history`,
+      action: "View history",
+    };
   }
   if (model.requiresManagedSimulation && !model.simulationRegression) {
-    return { eyebrow: "Next required step", label: "Run retained-log simulation", description: "A managed simulation must be recorded for this revision before publication.", href: `${reviewPath}${branchQuery}&stage=publish#publish-gate`, action: "Run simulation" };
+    return {
+      eyebrow: "Next required step",
+      label: "Run retained-log simulation",
+      description: "A managed simulation must be recorded for this revision before publication.",
+      href: `${reviewPath}${branchQuery}&stage=publish#publish-gate`,
+      action: "Run simulation",
+    };
   }
   const blocker = model.readiness.blockingReasons[0];
   if (blocker?.href && blocker.cta) {
     const publishTab = blocker.href === "#verification" ? "&publishTab=verification" : "";
-    return { eyebrow: "Next required step", label: blocker.cta, description: blocker.message, href: `${reviewPath}${branchQuery}&stage=publish${publishTab}${blocker.href}`, action: blocker.cta };
+    return {
+      eyebrow: "Next required step",
+      label: blocker.cta,
+      description: blocker.message,
+      href: `${reviewPath}${branchQuery}&stage=publish${publishTab}${blocker.href}`,
+      action: blocker.cta,
+    };
   }
   if (model.readiness.status === "READY") {
-    return { eyebrow: "Next required step", label: "Publish this revision", description: "Required approvals and verification checks are complete.", href: `${reviewPath}${branchQuery}&stage=publish#publish-action`, action: "Publish revision" };
+    return {
+      eyebrow: "Next required step",
+      label: "Publish this revision",
+      description: "Required approvals and verification checks are complete.",
+      href: `${reviewPath}${branchQuery}&stage=publish#publish-action`,
+      action: "Publish revision",
+    };
   }
-  return { eyebrow: "Next required step", label: "Resolve publication requirements", description: blocker?.message ?? "Review outstanding approvals and verification requirements.", href: `${reviewPath}${branchQuery}&stage=publish#reviews`, action: "Open requirements" };
+  return {
+    eyebrow: "Next required step",
+    label: "Resolve publication requirements",
+    description: blocker?.message ?? "Review outstanding approvals and verification requirements.",
+    href: `${reviewPath}${branchQuery}&stage=publish#reviews`,
+    action: "Open requirements",
+  };
 }
 
 function ImpactTabContent({ model }: { model: ReviewModel }) {
@@ -108,10 +136,7 @@ function ReviewStageContent({ model }: { model: ReviewModel }) {
   return (
     <>
       {model.activeComposition && model.activeDiff ? (
-        <ReviewDiffSection
-          diff={model.activeDiff}
-          viewMode={model.appViewMode}
-        />
+        <ReviewDiffSection diff={model.activeDiff} viewMode={model.appViewMode} />
       ) : null}
       {model.activeComposition && model.activeDiff ? (
         <ReviewComposeSection
@@ -128,7 +153,7 @@ function ReviewStageContent({ model }: { model: ReviewModel }) {
 
 export async function ReviewPageContent({
   workspaceSlug,
-  searchParams
+  searchParams,
 }: {
   workspaceSlug?: string;
   searchParams: Promise<ReviewSearchParams>;
@@ -156,7 +181,8 @@ export async function ReviewPageContent({
         nextStep={nextStep}
         viewMode={model.appViewMode}
       />
-      {(model.activeComposition && model.activeDiff) || (model.activeArtifact && model.activeBundle) ? (
+      {(model.activeComposition && model.activeDiff) ||
+      (model.activeArtifact && model.activeBundle) ? (
         <ReviewTabs
           hasArtifact={!!(model.activeArtifact && model.activeBundle)}
           hasHistory={model.usingRealBranch && !!model.activeBranch && model.revisions.length > 0}
@@ -167,47 +193,51 @@ export async function ReviewPageContent({
           historyHref={buildReviewHref(reviewPath, params, { stage: "history" })}
           reviewContent={<ReviewStageContent model={model} />}
           impactContent={<ImpactTabContent model={model} />}
-          publishContent={model.activeArtifact && model.activeBundle ? (
-            <ReviewPublishSection
-              activeBranch={model.activeBranch}
-              usingRealBranch={model.usingRealBranch}
-              approvalRules={model.approvalRules}
-              approvals={model.approvals}
-              compatibilityReport={model.compatibilityReport}
-              approvalWorkflow={model.approvalWorkflow}
-              readiness={model.readiness}
-              isPublished={model.isPublished}
-              actor={model.actor}
-              permissions={model.permissions}
-              verificationSummary={model.verificationSummary}
-              simulationRegression={model.simulationRegression}
-              requiresManagedSimulation={model.requiresManagedSimulation}
-              activeArtifact={model.activeArtifact}
-              activeBundle={model.activeBundle}
-              viewMode={model.appViewMode}
-              activePublishTab={activePublishTab}
-              publishCoverageHref={buildReviewHref(reviewPath, params, {
-                stage: "publish",
-                publishTab: "coverage",
-              })}
-              publishVerificationHref={buildReviewHref(reviewPath, params, {
-                stage: "publish",
-                publishTab: "verification",
-              })}
-              publishExportHref={buildReviewHref(reviewPath, params, {
-                stage: "publish",
-                publishTab: "export",
-              })}
-            />
-          ) : null}
-          historyContent={model.usingRealBranch && !!model.activeBranch && model.revisions.length > 0 ? (
-            <ReviewHistorySection
-              activeBranch={model.activeBranch}
-              usingRealBranch={model.usingRealBranch}
-              revisions={model.revisions}
-              viewMode={model.appViewMode}
-            />
-          ) : null}
+          publishContent={
+            model.activeArtifact && model.activeBundle ? (
+              <ReviewPublishSection
+                activeBranch={model.activeBranch}
+                usingRealBranch={model.usingRealBranch}
+                approvalRules={model.approvalRules}
+                approvals={model.approvals}
+                compatibilityReport={model.compatibilityReport}
+                approvalWorkflow={model.approvalWorkflow}
+                readiness={model.readiness}
+                isPublished={model.isPublished}
+                actor={model.actor}
+                permissions={model.permissions}
+                verificationSummary={model.verificationSummary}
+                simulationRegression={model.simulationRegression}
+                requiresManagedSimulation={model.requiresManagedSimulation}
+                activeArtifact={model.activeArtifact}
+                activeBundle={model.activeBundle}
+                viewMode={model.appViewMode}
+                activePublishTab={activePublishTab}
+                publishCoverageHref={buildReviewHref(reviewPath, params, {
+                  stage: "publish",
+                  publishTab: "coverage",
+                })}
+                publishVerificationHref={buildReviewHref(reviewPath, params, {
+                  stage: "publish",
+                  publishTab: "verification",
+                })}
+                publishExportHref={buildReviewHref(reviewPath, params, {
+                  stage: "publish",
+                  publishTab: "export",
+                })}
+              />
+            ) : null
+          }
+          historyContent={
+            model.usingRealBranch && !!model.activeBranch && model.revisions.length > 0 ? (
+              <ReviewHistorySection
+                activeBranch={model.activeBranch}
+                usingRealBranch={model.usingRealBranch}
+                revisions={model.revisions}
+                viewMode={model.appViewMode}
+              />
+            ) : null
+          }
         />
       ) : (
         <section className="panel">

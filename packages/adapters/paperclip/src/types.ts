@@ -26,11 +26,7 @@ export interface PaperclipEvidenceRecord {
   action: string;
   toolName: string;
   toolArgs: Record<string, unknown>;
-  runtimeTarget: {
-    stack: "PAPERCLIP";
-    adapter: string;
-    environment?: string;
-  };
+  runtimeTarget: { stack: "PAPERCLIP"; adapter: string; environment?: string };
   orchestratorRef: OrchestratorRef;
   trustLevel: TrustLevel;
   triggerKind: TriggerKind;
@@ -80,9 +76,7 @@ export interface DispatchResult {
   decisionId?: string;
 }
 
-export type BeforeToolDispatchHook = (
-  context: DispatchContext
-) => Promise<DispatchResult>;
+export type BeforeToolDispatchHook = (context: DispatchContext) => Promise<DispatchResult>;
 
 export interface SpctrePaperclipPluginOptions {
   apiKey: string;

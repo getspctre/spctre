@@ -11,7 +11,7 @@ function securityTxt(): string {
     "Hiring: https://spctre.dev",
     "",
     "# Spctre targets acknowledgement within 3 business days.",
-    "# Confirmed vulnerabilities target patch or mitigation within 90 days."
+    "# Confirmed vulnerabilities target patch or mitigation within 90 days.",
   ]);
 }
 
@@ -19,8 +19,8 @@ export function securityTxtResponse(): Response {
   return new Response(securityTxt(), {
     headers: {
       "content-type": "text/plain; charset=utf-8",
-      "cache-control": "public, max-age=3600"
-    }
+      "cache-control": "public, max-age=3600",
+    },
   });
 }
 

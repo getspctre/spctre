@@ -21,18 +21,33 @@ async function handlePostApiEvaluate(request: Request) {
   try {
     body = await request.json();
   } catch {
-    return withTraceId(Response.json({ error: "Request body must be JSON.", meta: makeMeta(traceId) }, { status: 400 }), traceId);
+    return withTraceId(
+      Response.json(
+        { error: "Request body must be JSON.", meta: makeMeta(traceId) },
+        { status: 400 },
+      ),
+      traceId,
+    );
   }
 
   if (!body || typeof body !== "object" || Array.isArray(body)) {
-    return withTraceId(Response.json({ error: "Payload must be an object.", meta: makeMeta(traceId) }, { status: 400 }), traceId);
+    return withTraceId(
+      Response.json(
+        { error: "Payload must be an object.", meta: makeMeta(traceId) },
+        { status: 400 },
+      ),
+      traceId,
+    );
   }
 
   const parsed = parseBody(EvaluateSchema, body);
   if (!parsed.ok) {
     return withTraceId(
-      Response.json({ error: parsed.error, issues: parsed.issues, meta: makeMeta(traceId) }, { status: 400 }),
-      traceId
+      Response.json(
+        { error: parsed.error, issues: parsed.issues, meta: makeMeta(traceId) },
+        { status: 400 },
+      ),
+      traceId,
     );
   }
 
@@ -40,22 +55,40 @@ async function handlePostApiEvaluate(request: Request) {
 
   const auth = await resolveEvaluateAuth(request);
   if (!auth.ok) {
-    return withTraceId(Response.json({ error: auth.error, meta: makeMeta(traceId) }, { status: auth.status }), traceId);
+    return withTraceId(
+      Response.json({ error: auth.error, meta: makeMeta(traceId) }, { status: auth.status }),
+      traceId,
+    );
   }
 
   let published;
   try {
-    published = await getLatestPublishedPolicyBundle({ workspaceId: auth.workspaceId, tenantId: auth.tenantId });
+    published = await getLatestPublishedPolicyBundle({
+      workspaceId: auth.workspaceId,
+      tenantId: auth.tenantId,
+    });
   } catch (err) {
     console.error("[evaluate] getLatestPublishedPolicyBundle failed", err);
-    return withTraceId(Response.json({ error: "Service temporarily unavailable.", meta: makeMeta(traceId) }, { status: 503 }), traceId);
+    return withTraceId(
+      Response.json(
+        { error: "Service temporarily unavailable.", meta: makeMeta(traceId) },
+        { status: 503 },
+      ),
+      traceId,
+    );
   }
 
   if (!published) {
-    return withTraceId(Response.json(
-      { error: "No published policy bundle available for this workspace.", meta: makeMeta(traceId) },
-      { status: 404 }
-    ), traceId);
+    return withTraceId(
+      Response.json(
+        {
+          error: "No published policy bundle available for this workspace.",
+          meta: makeMeta(traceId),
+        },
+        { status: 404 },
+      ),
+      traceId,
+    );
   }
 
   const result = evaluateDecision({
@@ -68,25 +101,29 @@ async function handlePostApiEvaluate(request: Request) {
     toolParameters,
   });
 
-  return withTraceId(Response.json({
-    connector,
-    action,
-    domains,
-    toolIntent,
-    planSummary,
-    toolParameters,
-    branchId: published.branchId,
-    revisionId: published.revisionId,
-    artifactHash: published.artifactHash,
-    publishedAt: published.publishedAt,
-    result,
-    meta: makeMeta(traceId),
-  }), traceId);
+  return withTraceId(
+    Response.json({
+      connector,
+      action,
+      domains,
+      toolIntent,
+      planSummary,
+      toolParameters,
+      branchId: published.branchId,
+      revisionId: published.revisionId,
+      artifactHash: published.artifactHash,
+      publishedAt: published.publishedAt,
+      result,
+      meta: makeMeta(traceId),
+    }),
+    traceId,
+  );
 }
 
-async function resolveEvaluateAuth(request: Request): Promise<
-  | { ok: true; tenantId: string; workspaceId: string }
-  | { ok: false; error: string; status: number }
+async function resolveEvaluateAuth(
+  request: Request,
+): Promise<
+  { ok: true; tenantId: string; workspaceId: string } | { ok: false; error: string; status: number }
 > {
   if (hasBearerToken(request)) {
     const tokenAuth = await authenticateServiceToken(request, "decision:evaluate");

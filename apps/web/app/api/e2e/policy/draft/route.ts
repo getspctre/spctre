@@ -26,17 +26,32 @@ function asStringArray(value: unknown): string[] {
 async function handlePostApiE2ePolicyDraft(request: Request) {
   const traceId = extractTraceId(request);
   if (!getBooleanEnv("SPCTRE_E2E_API_ENABLED", false)) {
-    return withTraceId(Response.json({ error: "E2E support API is disabled.", meta: makeMeta(traceId) }, { status: 404 }), traceId);
+    return withTraceId(
+      Response.json(
+        { error: "E2E support API is disabled.", meta: makeMeta(traceId) },
+        { status: 404 },
+      ),
+      traceId,
+    );
   }
 
   const tokenAuth = await authenticateServiceToken(request, "e2e:write");
   if (!tokenAuth.ok) {
-    return withTraceId(Response.json({ error: tokenAuth.error, meta: makeMeta(traceId) }, { status: 401 }), traceId);
+    return withTraceId(
+      Response.json({ error: tokenAuth.error, meta: makeMeta(traceId) }, { status: 401 }),
+      traceId,
+    );
   }
 
   const body = await request.json().catch(() => null);
   if (!body || typeof body !== "object" || Array.isArray(body)) {
-    return withTraceId(Response.json({ error: "Request body must be an object.", meta: makeMeta(traceId) }, { status: 400 }), traceId);
+    return withTraceId(
+      Response.json(
+        { error: "Request body must be an object.", meta: makeMeta(traceId) },
+        { status: 400 },
+      ),
+      traceId,
+    );
   }
 
   const rec = body as Record<string, unknown>;
@@ -45,18 +60,37 @@ async function handlePostApiE2ePolicyDraft(request: Request) {
   const sourcePath = asString(rec.sourcePath) || "e2e/policy.yaml";
   const targetStacks = asStringArray(rec.targetStacks);
 
-  if (!source) return withTraceId(Response.json({ error: "source is required.", meta: makeMeta(traceId) }, { status: 400 }), traceId);
-  if (!branchName) return withTraceId(Response.json({ error: "branchName is required.", meta: makeMeta(traceId) }, { status: 400 }), traceId);
+  if (!source)
+    return withTraceId(
+      Response.json({ error: "source is required.", meta: makeMeta(traceId) }, { status: 400 }),
+      traceId,
+    );
+  if (!branchName)
+    return withTraceId(
+      Response.json({ error: "branchName is required.", meta: makeMeta(traceId) }, { status: 400 }),
+      traceId,
+    );
 
   const parsed = parseAgtPolicyDocument({ document: source, sourcePath });
   const errors = parsed.diagnostics.filter((d) => d.severity === "ERROR");
   if (errors.length) {
-    return withTraceId(Response.json({ error: errors.map((d) => d.message).join("; "), meta: makeMeta(traceId) }, { status: 400 }), traceId);
+    return withTraceId(
+      Response.json(
+        { error: errors.map((d) => d.message).join("; "), meta: makeMeta(traceId) },
+        { status: 400 },
+      ),
+      traceId,
+    );
   }
 
-  const reservedRuleIdError = reservedStableRuleIdError(parsed.rules.map((rule) => rule.stableRuleId));
+  const reservedRuleIdError = reservedStableRuleIdError(
+    parsed.rules.map((rule) => rule.stableRuleId),
+  );
   if (reservedRuleIdError) {
-    return withTraceId(Response.json({ error: reservedRuleIdError, meta: makeMeta(traceId) }, { status: 400 }), traceId);
+    return withTraceId(
+      Response.json({ error: reservedRuleIdError, meta: makeMeta(traceId) }, { status: 400 }),
+      traceId,
+    );
   }
 
   try {
@@ -75,18 +109,30 @@ async function handlePostApiE2ePolicyDraft(request: Request) {
         compatibility: parsed.compatibility,
         message: "E2E draft import",
         targetStacks,
-      })
+      }),
     );
 
-    return withTraceId(Response.json({
-      branchId: imported.branchId,
-      revisionId: imported.revisionId,
-      sourceHash: imported.sourceHash,
-      meta: makeMeta(traceId),
-    }, { status: 201 }), traceId);
+    return withTraceId(
+      Response.json(
+        {
+          branchId: imported.branchId,
+          revisionId: imported.revisionId,
+          sourceHash: imported.sourceHash,
+          meta: makeMeta(traceId),
+        },
+        { status: 201 },
+      ),
+      traceId,
+    );
   } catch (error) {
     console.error("[e2e/policy/draft] failed:", error);
-    return withTraceId(Response.json({ error: "Unable to import draft policy.", meta: makeMeta(traceId) }, { status: 500 }), traceId);
+    return withTraceId(
+      Response.json(
+        { error: "Unable to import draft policy.", meta: makeMeta(traceId) },
+        { status: 500 },
+      ),
+      traceId,
+    );
   }
 }
 

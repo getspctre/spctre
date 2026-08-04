@@ -6,18 +6,14 @@ import { stableHash } from "@/lib/repositories/shared/revisions";
 
 async function loadRulesForRevisions(
   revisionIds: string[],
-  tenantId: string
+  tenantId: string,
 ): Promise<Map<string, PolicyRuleSummary[]>> {
   const rulesByRevision = new Map<string, PolicyRuleSummary[]>();
   if (!revisionIds.length || !sql) return rulesByRevision;
 
   // 1. Fetch revisions with source_document
   const revisionRows = await sql<
-    {
-      id: string;
-      source_document: unknown;
-      source_path: string | null;
-    }[]
+    { id: string; source_document: unknown; source_path: string | null }[]
   >`
     SELECT id, source_document, source_path
     FROM policy_revision
@@ -29,20 +25,28 @@ async function loadRulesForRevisions(
   for (const row of revisionRows) {
     if (row.source_document) {
       try {
-        const docStr = typeof row.source_document === "string" ? row.source_document : JSON.stringify(row.source_document);
-        const parsed = parseAgtPolicyDocument({ document: docStr, sourcePath: row.source_path ?? undefined });
+        const docStr =
+          typeof row.source_document === "string"
+            ? row.source_document
+            : JSON.stringify(row.source_document);
+        const parsed = parseAgtPolicyDocument({
+          document: docStr,
+          sourcePath: row.source_path ?? undefined,
+        });
         if (parsed.rules && parsed.rules.length > 0) {
           rulesByRevision.set(row.id, parsed.rules);
           parsedRevisions.add(row.id);
         }
       } catch (e) {
-        logger.error(`Failed to parse source_document for revision ${row.id} in composition:`, { error: e instanceof Error ? e.message : String(e) });
+        logger.error(`Failed to parse source_document for revision ${row.id} in composition:`, {
+          error: e instanceof Error ? e.message : String(e),
+        });
       }
     }
   }
 
   // 2. For any revisions that couldn't be parsed or had no rules, fall back to policy_rule table
-  const fallbackIds = revisionIds.filter(id => !parsedRevisions.has(id));
+  const fallbackIds = revisionIds.filter((id) => !parsedRevisions.has(id));
   if (fallbackIds.length > 0) {
     const allRuleRows = await sql<
       {
@@ -87,7 +91,7 @@ async function loadRulesForRevisions(
 
 export async function listActiveCompositionLayers(
   workspaceId: string | null,
-  tenantId: string
+  tenantId: string,
 ): Promise<CompositionLayer[]> {
   if (!sql) return [];
   const rows = await sql<
@@ -140,16 +144,11 @@ export async function listActiveCompositionLayers(
 
 export async function listPublishedCompositionLayers(
   workspaceId: string | null,
-  tenantId: string
+  tenantId: string,
 ): Promise<CompositionLayer[]> {
   if (!sql) return [];
   const rows = await sql<
-    {
-      branch_id: string;
-      revision_id: string;
-      scope: string;
-      artifact_hash: string;
-    }[]
+    { branch_id: string; revision_id: string; scope: string; artifact_hash: string }[]
   >`
     WITH latest_publish AS (
       SELECT DISTINCT ON (pp.branch_id)

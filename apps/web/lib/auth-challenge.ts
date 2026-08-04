@@ -14,6 +14,6 @@ export function authChallengeCookieOptions(maxAgeSeconds = 600) {
     sameSite: "lax" as const,
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    maxAge: maxAgeSeconds
+    maxAge: maxAgeSeconds,
   };
 }

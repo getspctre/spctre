@@ -14,7 +14,7 @@ export function formatProvenanceId(
   value: string | null | undefined,
   mode: AppViewMode,
   length = 12,
-  executiveFormatter?: (value: string) => string
+  executiveFormatter?: (value: string) => string,
 ): string {
   if (!value) return "pending";
   if (isForensicViewMode(mode) || value.length <= length) return value;
@@ -25,7 +25,7 @@ export function formatProvenanceId(
 export function formatArtifactHash(
   value: string | null | undefined,
   mode: AppViewMode,
-  executiveFormatter?: (hash: string) => string
+  executiveFormatter?: (hash: string) => string,
 ): string {
   if (!value) return "pending";
   if (isForensicViewMode(mode)) return value;

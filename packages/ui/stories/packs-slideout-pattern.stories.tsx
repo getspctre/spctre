@@ -6,9 +6,7 @@ import { StatusPill } from "../src/status-pill";
 import { DataTable, TableCell, TableHeaderCell, TableShell } from "../src/table";
 import { TabButton, TabsRow } from "../src/tabs";
 
-const meta = {
-  title: "Patterns/Packs Slideout"
-} satisfies Meta;
+const meta = { title: "Patterns/Packs Slideout" } satisfies Meta;
 
 export default meta;
 
@@ -41,7 +39,7 @@ function PacksScenario(props: PacksScenarioProps) {
           display: "grid",
           gap: 16,
           gridTemplateColumns: "minmax(0, 1.3fr) minmax(360px, 0.9fr)",
-          alignItems: "start"
+          alignItems: "start",
         }}
       >
         <TableShell>
@@ -95,7 +93,8 @@ function PacksScenario(props: PacksScenarioProps) {
               <p>Payments operations</p>
               <p className="meta">Description</p>
               <p>
-                Controls high-risk payment actions with role-aware approval policy and action coverage for refund and payout operations.
+                Controls high-risk payment actions with role-aware approval policy and action
+                coverage for refund and payout operations.
               </p>
               <p className="meta">Version status</p>
               <p>
@@ -104,7 +103,9 @@ function PacksScenario(props: PacksScenarioProps) {
                 Latest available: <strong>v{props.latestVersion}</strong>
               </p>
               {!props.showUpgrade ? (
-                <p className="meta">No upgrade action is shown when installed is current or unknown.</p>
+                <p className="meta">
+                  No upgrade action is shown when installed is current or unknown.
+                </p>
               ) : null}
             </div>
           }
@@ -123,7 +124,7 @@ export const UpgradeAvailable: Story = {
       statusTone="warn"
       statusLabel="UPDATE AVAILABLE"
     />
-  )
+  ),
 };
 
 export const UpToDateNoUpgradeCta: Story = {
@@ -135,5 +136,5 @@ export const UpToDateNoUpgradeCta: Story = {
       statusTone="allow"
       statusLabel="UP TO DATE"
     />
-  )
+  ),
 };

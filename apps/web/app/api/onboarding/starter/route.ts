@@ -3,7 +3,10 @@ import { getAuthSession } from "@/lib/auth-session";
 import { getActiveActor, requireActorAdminWorkspace } from "@/lib/actors";
 import { verifyWriteAccess } from "@/lib/demo-guard";
 import { getWorkspaceContext } from "@/lib/workspace";
-import { ensureStarterPublishedBundle, getWebOnboardingStatus } from "@/lib/repositories/onboarding/shared";
+import {
+  ensureStarterPublishedBundle,
+  getWebOnboardingStatus,
+} from "@/lib/repositories/onboarding/shared";
 import { swallow } from "@/lib/platform/swallow";
 
 export const dynamic = "force-dynamic";
@@ -13,24 +16,33 @@ async function handlePostApiOnboardingStarter(request: Request) {
   const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (!session) {
     return withTraceId(
-      Response.json({ error: "Authentication required.", meta: makeMeta(traceId) }, { status: 401 }),
-      traceId
+      Response.json(
+        { error: "Authentication required.", meta: makeMeta(traceId) },
+        { status: 401 },
+      ),
+      traceId,
     );
   }
 
   const workspaceContext = await getWorkspaceContext().catch(swallow("getWorkspaceContext", null));
   if (!workspaceContext) {
     return withTraceId(
-      Response.json({ error: "Workspace context unavailable.", meta: makeMeta(traceId) }, { status: 400 }),
-      traceId
+      Response.json(
+        { error: "Workspace context unavailable.", meta: makeMeta(traceId) },
+        { status: 400 },
+      ),
+      traceId,
     );
   }
 
   const writeCheck = verifyWriteAccess(workspaceContext.tenantId);
   if (!writeCheck.allowed) {
     return withTraceId(
-      Response.json({ error: writeCheck.error ?? "Write access denied.", meta: makeMeta(traceId) }, { status: 403 }),
-      traceId
+      Response.json(
+        { error: writeCheck.error ?? "Write access denied.", meta: makeMeta(traceId) },
+        { status: 403 },
+      ),
+      traceId,
     );
   }
 
@@ -42,7 +54,7 @@ async function handlePostApiOnboardingStarter(request: Request) {
   if (!adminCheck.allowed) {
     return withTraceId(
       Response.json({ error: adminCheck.reason, meta: makeMeta(traceId) }, { status: 403 }),
-      traceId
+      traceId,
     );
   }
 

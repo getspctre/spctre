@@ -1,9 +1,6 @@
 import { revalidatePath } from "next/cache";
 import { authenticateServiceToken, hasBearerToken } from "@/lib/service-tokens";
-import {
-  type GatewayEventV1,
-  type GatewayProvider,
-} from "@/lib/domains/gateway/ingest";
+import { type GatewayEventV1, type GatewayProvider } from "@/lib/domains/gateway/ingest";
 import {
   isGatewayDatabaseConfigured,
   getTenantIdOrDemo,
@@ -25,7 +22,7 @@ const VALID_PROVIDERS = new Set<GatewayProvider>(["portkey", "helicone", "litell
 function parseNonNegativeNumber(
   value: unknown,
   fallback: number,
-  shouldFloor: boolean = false
+  shouldFloor: boolean = false,
 ): number {
   if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
     return fallback;
@@ -46,9 +43,7 @@ function parseString(value: unknown): string | null {
  * Returns an array of strings, filtering out non-string elements.
  */
 function parseStringArray(value: unknown): string[] {
-  return Array.isArray(value)
-    ? value.filter((v): v is string => typeof v === "string")
-    : [];
+  return Array.isArray(value) ? value.filter((v): v is string => typeof v === "string") : [];
 }
 
 /**
@@ -91,70 +86,123 @@ function parsePayload(body: Record<string, unknown>): GatewayEventV1 | null {
 async function handlePostApiGatewayIngestMcp(request: Request) {
   const traceId = extractTraceId(request);
 
-  return await withSpan("api.gateway-ingest.mcp", { "http.route": "/api/gateway-ingest/mcp" }, async () => {
-    if (!isGatewayDatabaseConfigured()) {
-      return withTraceId(Response.json({ error: "Database not configured.", meta: makeMeta(traceId) }, { status: 503 }), traceId);
-    }
+  return await withSpan(
+    "api.gateway-ingest.mcp",
+    { "http.route": "/api/gateway-ingest/mcp" },
+    async () => {
+      if (!isGatewayDatabaseConfigured()) {
+        return withTraceId(
+          Response.json(
+            { error: "Database not configured.", meta: makeMeta(traceId) },
+            { status: 503 },
+          ),
+          traceId,
+        );
+      }
 
-    if (!hasBearerToken(request)) {
-      incrementCounter("spctre.api.errors", 1, { "http.route": "/api/gateway-ingest/mcp", "http.response.status_code": 401 });
-      return withTraceId(Response.json({ error: "Bearer token required.", meta: makeMeta(traceId) }, { status: 401 }), traceId);
-    }
+      if (!hasBearerToken(request)) {
+        incrementCounter("spctre.api.errors", 1, {
+          "http.route": "/api/gateway-ingest/mcp",
+          "http.response.status_code": 401,
+        });
+        return withTraceId(
+          Response.json(
+            { error: "Bearer token required.", meta: makeMeta(traceId) },
+            { status: 401 },
+          ),
+          traceId,
+        );
+      }
 
-    const tokenAuth = await authenticateServiceToken(request, "evidence:write");
-    if (!tokenAuth.ok) {
-      incrementCounter("spctre.api.errors", 1, { "http.route": "/api/gateway-ingest/mcp", "http.response.status_code": 401 });
-      return withTraceId(Response.json({ error: "Invalid or expired service token.", meta: makeMeta(traceId) }, { status: 401 }), traceId);
-    }
+      const tokenAuth = await authenticateServiceToken(request, "evidence:write");
+      if (!tokenAuth.ok) {
+        incrementCounter("spctre.api.errors", 1, {
+          "http.route": "/api/gateway-ingest/mcp",
+          "http.response.status_code": 401,
+        });
+        return withTraceId(
+          Response.json(
+            { error: "Invalid or expired service token.", meta: makeMeta(traceId) },
+            { status: 401 },
+          ),
+          traceId,
+        );
+      }
 
-    const tenantId = tokenAuth.auth.tenantId ?? getTenantIdOrDemo(null);
-    const workspaceId = tokenAuth.auth.workspaceId ?? getWorkspaceIdOrDemo(null);
-    const principalId = tokenAuth.auth.principalId ?? "gateway:mcp";
+      const tenantId = tokenAuth.auth.tenantId ?? getTenantIdOrDemo(null);
+      const workspaceId = tokenAuth.auth.workspaceId ?? getWorkspaceIdOrDemo(null);
+      const principalId = tokenAuth.auth.principalId ?? "gateway:mcp";
 
-    let raw: Record<string, unknown>;
-    try {
-      raw = await request.json() as Record<string, unknown>;
-    } catch {
-      return withTraceId(Response.json({ error: "Request body must be JSON.", meta: makeMeta(traceId) }, { status: 400 }), traceId);
-    }
+      let raw: Record<string, unknown>;
+      try {
+        raw = (await request.json()) as Record<string, unknown>;
+      } catch {
+        return withTraceId(
+          Response.json(
+            { error: "Request body must be JSON.", meta: makeMeta(traceId) },
+            { status: 400 },
+          ),
+          traceId,
+        );
+      }
 
-    const event = parsePayload(raw);
-    if (!event) {
-      return withTraceId(Response.json({
-        error: "Invalid payload. Required: provider (portkey|helicone|litellm), gateway_event_id, agent_id.",
-        meta: makeMeta(traceId),
-      }, { status: 422 }), traceId);
-    }
+      const event = parsePayload(raw);
+      if (!event) {
+        return withTraceId(
+          Response.json(
+            {
+              error:
+                "Invalid payload. Required: provider (portkey|helicone|litellm), gateway_event_id, agent_id.",
+              meta: makeMeta(traceId),
+            },
+            { status: 422 },
+          ),
+          traceId,
+        );
+      }
 
-    try {
-      const environment = typeof raw.environment === "string" ? raw.environment : "production";
+      try {
+        const environment = typeof raw.environment === "string" ? raw.environment : "production";
 
-      const result = await ingestGatewayEvent({
-        event,
-        tenantId,
-        workspaceId: workspaceId ?? "",
-        principalId,
-        environment,
-      });
+        const result = await ingestGatewayEvent({
+          event,
+          tenantId,
+          workspaceId: workspaceId ?? "",
+          principalId,
+          environment,
+        });
 
-      revalidatePath("/evidence");
-      revalidatePath("/agents");
+        revalidatePath("/evidence");
+        revalidatePath("/agents");
 
-      return withTraceId(
-        Response.json({
-          decisionId: result.decisionId,
-          provenanceGap: result.provenanceGap,
-          deduplicated: result.deduplicated,
-          meta: makeMeta(traceId),
-        }, { status: result.deduplicated ? 200 : 201 }),
-        traceId
-      );
-    } catch (err) {
-      incrementCounter("spctre.api.errors", 1, { "http.route": "/api/gateway-ingest/mcp", "http.response.status_code": 500 });
-      console.error("[gateway-ingest/mcp] ingest failed", err);
-      return withTraceId(Response.json({ error: "Service temporarily unavailable.", meta: makeMeta(traceId) }, { status: 500 }), traceId);
-    }
-  });
+        return withTraceId(
+          Response.json(
+            {
+              decisionId: result.decisionId,
+              provenanceGap: result.provenanceGap,
+              deduplicated: result.deduplicated,
+              meta: makeMeta(traceId),
+            },
+            { status: result.deduplicated ? 200 : 201 },
+          ),
+          traceId,
+        );
+      } catch (err) {
+        incrementCounter("spctre.api.errors", 1, {
+          "http.route": "/api/gateway-ingest/mcp",
+          "http.response.status_code": 500,
+        });
+        console.error("[gateway-ingest/mcp] ingest failed", err);
+        return withTraceId(
+          Response.json(
+            { error: "Service temporarily unavailable.", meta: makeMeta(traceId) },
+            { status: 500 },
+          ),
+          traceId,
+        );
+      }
+    },
+  );
 }
 
 export { handlePostApiGatewayIngestMcp as POST };

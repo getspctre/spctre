@@ -93,7 +93,7 @@ export async function runTests(policyPath: string, fixturesPath: string): Promis
 
 export async function testCmd(
   policyArg: string | undefined,
-  options: { tests: string; format?: string }
+  options: { tests: string; format?: string },
 ): Promise<void> {
   // Resolve policy path
   const policyPath = policyArg
@@ -183,8 +183,8 @@ export async function testCmd(
           })),
         },
         null,
-        2
-      )
+        2,
+      ),
     );
   } else {
     for (const r of results) {

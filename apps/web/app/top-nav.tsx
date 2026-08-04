@@ -5,7 +5,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, AlertTriangle, ChevronRight } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { logoutControlPlane } from "./auth-actions";
-import { setActiveTenant, setActiveWorkspace, type TenantSwitchState, type WorkspaceSwitchState } from "./workspace-actions";
+import {
+  setActiveTenant,
+  setActiveWorkspace,
+  type TenantSwitchState,
+  type WorkspaceSwitchState,
+} from "./workspace-actions";
 import { useActionState } from "react";
 import type { TenantSummary, WorkspaceSummary } from "@/lib/workspace/types";
 import { buildWorkspacePath, buildWorkspaceSwitchPath } from "@/lib/workspace/path";
@@ -31,22 +36,26 @@ interface TopNavProps {
 
 const PAGE_LABEL_KEYS: Record<string, string> = {
   "": "policies",
-  "rules": "rules",
-  "review": "review",
-  "evidence": "audit_log",
-  "agents": "agents",
+  rules: "rules",
+  review: "review",
+  evidence: "audit_log",
+  agents: "agents",
   "escalation-routing": "escalation_routing",
   "siem-export": "siem_export",
-  "compliance": "compliance_report",
-  "packs": "packs",
-  "operations": "audit_ledger",
-  "escalations": "escalations",
+  compliance: "compliance_report",
+  packs: "packs",
+  operations: "audit_ledger",
+  escalations: "escalations",
   "usage-billing": "usage_billing",
-  "account": "account",
-  "admin": "admin",
+  account: "account",
+  admin: "admin",
 };
 
-function getPageLabel(pathname: string, workspaceSlug: string, t: (key: string) => string): string | null {
+function getPageLabel(
+  pathname: string,
+  workspaceSlug: string,
+  t: (key: string) => string,
+): string | null {
   const segments = pathname.split("/").filter(Boolean);
   const afterWorkspace = segments[0] === workspaceSlug ? segments.slice(1) : segments;
   const section = afterWorkspace[0] ?? "";
@@ -55,11 +64,7 @@ function getPageLabel(pathname: string, workspaceSlug: string, t: (key: string) 
 }
 
 function initialsFromName(name: string): string {
-  const parts = name
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2);
+  const parts = name.trim().split(/\s+/).filter(Boolean).slice(0, 2);
 
   if (!parts.length) return "U";
   return parts.map((part) => part[0]?.toUpperCase() ?? "").join("");
@@ -96,7 +101,9 @@ function WorkspaceSwitcherMenu({
 }) {
   return (
     <div className="topNavWorkspaceMenu">
-      <p className="meta">{canSwitchTenants ? "Switch tenant and workspace" : "Switch workspace"}</p>
+      <p className="meta">
+        {canSwitchTenants ? "Switch tenant and workspace" : "Switch workspace"}
+      </p>
       {canSwitchTenants ? (
         <>
           <label className="workspaceFieldLabel" htmlFor="topnav-tenant-select">
@@ -275,7 +282,7 @@ function useMenuDismissal(
   menuRef: React.RefObject<HTMLDivElement | null>,
   workspaceMenuRef: React.RefObject<HTMLDivElement | null>,
   setOpen: (value: boolean) => void,
-  setWorkspaceOpen: (value: boolean) => void
+  setWorkspaceOpen: (value: boolean) => void,
 ) {
   useEffect(() => {
     if (!open && !workspaceOpen) return;
@@ -315,7 +322,7 @@ function deriveNavContext(
   pathname: string,
   workspaceOptions: WorkspaceSummary[],
   activeWorkspaceId: string,
-  t: (key: string) => string
+  t: (key: string) => string,
 ) {
   const pathnameSegments = pathname.split("/").filter(Boolean);
   const pathWorkspace = workspaceOptions.find((w) => w.slug === pathnameSegments[0]);
@@ -378,7 +385,7 @@ function ViewModeToggle({
  */
 function useWorkspaceSwitchRedirect(
   workspaceState: WorkspaceSwitchState,
-  workspaceOptions: WorkspaceSummary[]
+  workspaceOptions: WorkspaceSummary[],
 ) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -409,7 +416,8 @@ function useTenantSwitchRedirect(tenantState: TenantSwitchState) {
   const router = useRouter();
   const handledTenantState = useRef<TenantSwitchState>(null);
   useEffect(() => {
-    if (!tenantState || "error" in tenantState || handledTenantState.current === tenantState) return;
+    if (!tenantState || "error" in tenantState || handledTenantState.current === tenantState)
+      return;
     handledTenantState.current = tenantState;
     // When the target tenant requires MFA, leave the user in place: the root
     // layout re-renders the MFA gate (revalidatePath already fired), so pushing
@@ -443,7 +451,10 @@ export function TopNav({
   const menuRef = useRef<HTMLDivElement>(null);
   const workspaceMenuRef = useRef<HTMLDivElement>(null);
   const [tenantState, tenantAction, tenantPending] = useActionState(setActiveTenant, null);
-  const [workspaceState, workspaceAction, workspacePending] = useActionState(setActiveWorkspace, null);
+  const [workspaceState, workspaceAction, workspacePending] = useActionState(
+    setActiveWorkspace,
+    null,
+  );
   const canSwitchTenants = useFeatureFlag("multiTenantWorkspaceIsolation");
 
   useMenuDismissal(open, workspaceOpen, menuRef, workspaceMenuRef, setOpen, setWorkspaceOpen);
@@ -497,7 +508,9 @@ export function TopNav({
             </>
           ) : null}
           {workspacePending || tenantPending ? (
-            <span className="meta" style={{ fontSize: 11 }}>Switching…</span>
+            <span className="meta" style={{ fontSize: 11 }}>
+              Switching…
+            </span>
           ) : (
             <ChevronDown size={12} className="topNavCrumbChevron" />
           )}
@@ -529,13 +542,13 @@ export function TopNav({
           className="topNavLink"
           data-active={escalationsActive ? "true" : undefined}
           data-alert={hasOpenEscalations ? "true" : undefined}
-          title={hasOpenEscalations ? `${escalationCount} open escalations` : "View pending escalations"}
+          title={
+            hasOpenEscalations ? `${escalationCount} open escalations` : "View pending escalations"
+          }
         >
           <AlertTriangle size={16} />
           <span>{hasOpenEscalations ? "Open escalations" : "Escalations"}</span>
-          {hasOpenEscalations ? (
-            <span className="topNavBadge">{escalationCount}</span>
-          ) : null}
+          {hasOpenEscalations ? <span className="topNavBadge">{escalationCount}</span> : null}
         </Link>
         <ViewModeToggle viewMode={viewMode} onChange={updateViewMode} />
       </nav>

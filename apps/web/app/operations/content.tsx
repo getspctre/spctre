@@ -39,33 +39,36 @@ function eventTypePillClass(eventType: string): string {
 
 function eventTypeTooltip(eventType: string): string {
   const tooltips: Record<string, string> = {
-    "EVIDENCE_INGEST": "New evidence ingested into the system",
-    "EVIDENCE_EXPORT": "Evidence exported for compliance purposes",
-    "BUNDLE_EXPORT": "Policy bundle export preview, download, or blocked export recorded",
-    "EVIDENCE_PRUNE": "Expired evidence removed from retention",
-    "SIMULATION_RUN": "Simulation replay completed and recorded",
-    "POLICY_IMPORT": "Policy configuration imported",
-    "POLICY_PUBLISH": "Policy released to agents",
-    "POLICY_APPROVE": "Policy changes approved by reviewer",
-    "ESCALATION_OPENED": "High-risk decision escalated for review",
-    "ESCALATION_CLAIMED": "Escalated decision claimed for review",
-    "ESCALATION_RESOLVED": "Escalated decision resolved",
-    "AGENT_TRIAGE": "Historical advisor triage record",
-    "AGENT_RECOMMENDATION": "Historical advisor recommendation record",
-    "SIMULATION_GUIDANCE": "Inline simulation guidance or recorded reviewer response",
-    "NOTIFICATION_SENT": "Outbound notification delivered",
-    "NOTIFICATION_FAILED": "Outbound notification delivery failed",
-    "VERIFICATION_RUN": "Policy verification run completed",
-    "TRUST_SCORE_CHANGE": "Agent trust score updated",
-    "IDENTITY_CHANGE": "Identity configuration modified",
-    "TOKEN_ISSUED": "Authentication token issued",
-    "TOKEN_REVOKED": "Authentication token revoked",
-    "COMPLIANCE_EXPORT": "Compliance report generated"
+    EVIDENCE_INGEST: "New evidence ingested into the system",
+    EVIDENCE_EXPORT: "Evidence exported for compliance purposes",
+    BUNDLE_EXPORT: "Policy bundle export preview, download, or blocked export recorded",
+    EVIDENCE_PRUNE: "Expired evidence removed from retention",
+    SIMULATION_RUN: "Simulation replay completed and recorded",
+    POLICY_IMPORT: "Policy configuration imported",
+    POLICY_PUBLISH: "Policy released to agents",
+    POLICY_APPROVE: "Policy changes approved by reviewer",
+    ESCALATION_OPENED: "High-risk decision escalated for review",
+    ESCALATION_CLAIMED: "Escalated decision claimed for review",
+    ESCALATION_RESOLVED: "Escalated decision resolved",
+    AGENT_TRIAGE: "Historical advisor triage record",
+    AGENT_RECOMMENDATION: "Historical advisor recommendation record",
+    SIMULATION_GUIDANCE: "Inline simulation guidance or recorded reviewer response",
+    NOTIFICATION_SENT: "Outbound notification delivered",
+    NOTIFICATION_FAILED: "Outbound notification delivery failed",
+    VERIFICATION_RUN: "Policy verification run completed",
+    TRUST_SCORE_CHANGE: "Agent trust score updated",
+    IDENTITY_CHANGE: "Identity configuration modified",
+    TOKEN_ISSUED: "Authentication token issued",
+    TOKEN_REVOKED: "Authentication token revoked",
+    COMPLIANCE_EXPORT: "Compliance report generated",
   };
   return tooltips[eventType] || "Operation logged";
 }
 
-const EVENT_TYPE_GROUPS: Array<{ group: string; options: Array<{ label: string; value: OperationsLogEventType }> }> = [
+const EVENT_TYPE_GROUPS: Array<{
+  group: string;
+  options: Array<{ label: string; value: OperationsLogEventType }>;
+}> = [
   {
     group: "Evidence",
     options: [
@@ -146,14 +149,15 @@ function chainHealthLabel(verification: OperationsLogChainVerification | null): 
 
 function chainHealthDetail(
   verification: OperationsLogChainVerification | null,
-  appViewMode: Awaited<ReturnType<typeof getAppViewMode>>
+  appViewMode: Awaited<ReturnType<typeof getAppViewMode>>,
 ): string {
   if (!verification) return "Verification could not run";
   if (verification.verified) return `${verification.totalEntries} entries checked`;
   if (verification.brokenEntryId) {
     return `Broken at ${formatProvenanceId(verification.brokenEntryId, appViewMode, 16, hashToFingerprint)}`;
   }
-  if (verification.brokenAt) return `Broken at ${verification.brokenAt.slice(0, 16).replace("T", " ")}`;
+  if (verification.brokenAt)
+    return `Broken at ${verification.brokenAt.slice(0, 16).replace("T", " ")}`;
   return "Chain verification failed";
 }
 
@@ -195,7 +199,9 @@ function OperationsEventRow({
       </td>
       <td>
         {entry.actorId ? (
-          <code className="smallCode">{formatProvenanceId(entry.actorId, appViewMode, 16, formatActorId)}</code>
+          <code className="smallCode">
+            {formatProvenanceId(entry.actorId, appViewMode, 16, formatActorId)}
+          </code>
         ) : (
           <span className="meta">System</span>
         )}
@@ -229,9 +235,7 @@ function BundleExportHistorySection({
           <p className="eyebrow">{t("bundle_exports.eyebrow")}</p>
           <h2>{t("bundle_exports.title")}</h2>
           <p className="meta">
-            {t.rich("bundle_exports.description", {
-              table: (chunks) => <code>{chunks}</code>,
-            })}
+            {t.rich("bundle_exports.description", { table: (chunks) => <code>{chunks}</code> })}
           </p>
         </div>
         <Download size={20} className="sectionIcon" />
@@ -292,16 +296,24 @@ function BundleExportHistorySection({
                   <td>
                     <code className="tinyCode mutedCode">
                       {entry.compiledArtifactHash
-                        ? formatArtifactHash(entry.compiledArtifactHash, appViewMode, hashToFingerprint)
+                        ? formatArtifactHash(
+                            entry.compiledArtifactHash,
+                            appViewMode,
+                            hashToFingerprint,
+                          )
                         : "None"}
                     </code>
                   </td>
                   <td>
-                    <span className={verifiedPillClass(entry.verified)}>{verifiedLabel(entry.verified)}</span>
+                    <span className={verifiedPillClass(entry.verified)}>
+                      {verifiedLabel(entry.verified)}
+                    </span>
                   </td>
                   <td>
                     {entry.actorId ? (
-                      <code className="smallCode">{formatProvenanceId(entry.actorId, appViewMode, 16, formatActorId)}</code>
+                      <code className="smallCode">
+                        {formatProvenanceId(entry.actorId, appViewMode, 16, formatActorId)}
+                      </code>
                     ) : (
                       <span className="meta">System</span>
                     )}
@@ -340,9 +352,7 @@ function OperationsHero({
       <div className="operationsHeroMain">
         <p className="eyebrow">{t("hero.eyebrow")}</p>
         <h2>{t("hero.title")}</h2>
-        <p className="meta">
-          {t("hero.description")}
-        </p>
+        <p className="meta">{t("hero.description")}</p>
         {eventType ? (
           <div className="operationsHeroFilter">
             <span className={eventTypePillClass(eventType)}>{eventType}</span>
@@ -389,10 +399,18 @@ function OperationsFilters({
   t: OperationsTranslations;
 }) {
   return (
-    <div className="operationsFilters" style={{ flexDirection: "column", alignItems: "flex-start", gap: 12 }}>
+    <div
+      className="operationsFilters"
+      style={{ flexDirection: "column", alignItems: "flex-start", gap: 12 }}
+    >
       {EVENT_TYPE_GROUPS.map((group) => (
-        <div key={group.group} style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-          <span className="meta" style={{ fontSize: 11, minWidth: 110, textAlign: "right" }}>{group.group}</span>
+        <div
+          key={group.group}
+          style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}
+        >
+          <span className="meta" style={{ fontSize: 11, minWidth: 110, textAlign: "right" }}>
+            {group.group}
+          </span>
           {group.options.map((opt) => (
             <a
               key={opt.value}
@@ -405,7 +423,11 @@ function OperationsFilters({
         </div>
       ))}
       {eventType ? (
-        <a className="button buttonSmall" href={cursorUrl(null)} style={{ alignSelf: "flex-start" }}>
+        <a
+          className="button buttonSmall"
+          href={cursorUrl(null)}
+          style={{ alignSelf: "flex-start" }}
+        >
           {t("filters.clear")}
         </a>
       ) : null}
@@ -442,9 +464,7 @@ function OperationsEventsSection({
         <div>
           <p className="eyebrow">{t("events.eyebrow")}</p>
           <h2>{t("events.title")}</h2>
-          <p className="meta">
-            {t("events.description")}
-          </p>
+          <p className="meta">{t("events.description")}</p>
         </div>
       </div>
 
@@ -455,12 +475,8 @@ function OperationsEventsSection({
           <ScrollText size={32} />
           <div>
             <h3>{t("events.empty.title")}</h3>
-            <p>
-              {t("events.empty.description")}
-            </p>
-            <p className="meta operationsEmptyHint">
-              {t("events.empty.hint")}
-            </p>
+            <p>{t("events.empty.description")}</p>
+            <p className="meta operationsEmptyHint">{t("events.empty.hint")}</p>
           </div>
         </div>
       ) : (
@@ -478,7 +494,12 @@ function OperationsEventsSection({
               </thead>
               <tbody>
                 {entries.map((entry) => (
-                  <OperationsEventRow key={entry.id} entry={entry} appViewMode={appViewMode} formatActorId={formatActorId} />
+                  <OperationsEventRow
+                    key={entry.id}
+                    entry={entry}
+                    appViewMode={appViewMode}
+                    formatActorId={formatActorId}
+                  />
                 ))}
               </tbody>
             </table>
@@ -505,10 +526,7 @@ function OperationsEventsSection({
 export async function OperationsPageContent({
   workspaceSlug,
   searchParams,
-}: {
-  workspaceSlug?: string;
-  searchParams?: Record<string, string>;
-} = {}) {
+}: { workspaceSlug?: string; searchParams?: Record<string, string> } = {}) {
   const t = await getTranslations("operations");
   const workspaceContext = await getWorkspaceContext({ workspaceSlug });
   const appViewMode = await getAppViewMode();
@@ -544,10 +562,7 @@ export async function OperationsPageContent({
         limit: 25,
         offset: 0,
       }),
-      verifyOperationsLedger({
-        tenantId: workspaceContext.tenantId,
-        limit: 500,
-      }),
+      verifyOperationsLedger({ tenantId: workspaceContext.tenantId, limit: 500 }),
       getActiveActor({
         workspaceId: workspaceContext.workspaceId,
         tenantId: workspaceContext.tenantId,

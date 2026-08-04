@@ -33,7 +33,12 @@ async function createFixture(): Promise<Fixture> {
   return { tenantId, workspaceId, principalId };
 }
 
-async function issueToken(fixture: Fixture, rawToken: string, scopes: string[], options: { expired?: boolean; revoked?: boolean } = {}) {
+async function issueToken(
+  fixture: Fixture,
+  rawToken: string,
+  scopes: string[],
+  options: { expired?: boolean; revoked?: boolean } = {},
+) {
   await rawSql`
     INSERT INTO service_token (tenant_id, workspace_id, principal_id, label, token_hash, token_prefix, scopes, expires_at, revoked_at)
     VALUES (
@@ -47,14 +52,19 @@ async function issueToken(fixture: Fixture, rawToken: string, scopes: string[], 
 
 afterEach(async () => {
   if (!rawSql) return;
-  await Promise.all(tenantIds.splice(0).map((tenantId) => rawSql`DELETE FROM tenant WHERE id = ${tenantId}`));
+  await Promise.all(
+    tenantIds.splice(0).map((tenantId) => rawSql`DELETE FROM tenant WHERE id = ${tenantId}`),
+  );
 });
 
 describe.skipIf(!databaseAvailable)("service token authentication contract", () => {
   it("rejects missing bearer tokens", async () => {
     const fixture = await createFixture();
-    await expect(runWithTenantContext(fixture.tenantId, () => authenticateServiceToken(requestWithAuth(), "evidence:write")))
-      .resolves.toEqual({ ok: false, error: "Missing bearer token." });
+    await expect(
+      runWithTenantContext(fixture.tenantId, () =>
+        authenticateServiceToken(requestWithAuth(), "evidence:write"),
+      ),
+    ).resolves.toEqual({ ok: false, error: "Missing bearer token." });
   });
 
   it("rejects expired and revoked tokens", async () => {
@@ -62,18 +72,27 @@ describe.skipIf(!databaseAvailable)("service token authentication contract", () 
     await issueToken(fixture, "expired-token", ["evidence:write"], { expired: true });
     await issueToken(fixture, "revoked-token", ["evidence:write"], { revoked: true });
 
-    await expect(runWithTenantContext(fixture.tenantId, () => authenticateServiceToken(requestWithAuth("Bearer expired-token"), "evidence:write")))
-      .resolves.toEqual({ ok: false, error: "Missing or invalid bearer token." });
-    await expect(runWithTenantContext(fixture.tenantId, () => authenticateServiceToken(requestWithAuth("Bearer revoked-token"), "evidence:write")))
-      .resolves.toEqual({ ok: false, error: "Missing or invalid bearer token." });
+    await expect(
+      runWithTenantContext(fixture.tenantId, () =>
+        authenticateServiceToken(requestWithAuth("Bearer expired-token"), "evidence:write"),
+      ),
+    ).resolves.toEqual({ ok: false, error: "Missing or invalid bearer token." });
+    await expect(
+      runWithTenantContext(fixture.tenantId, () =>
+        authenticateServiceToken(requestWithAuth("Bearer revoked-token"), "evidence:write"),
+      ),
+    ).resolves.toEqual({ ok: false, error: "Missing or invalid bearer token." });
   });
 
   it("does not record use when the required scope is absent", async () => {
     const fixture = await createFixture();
     await issueToken(fixture, "limited-token", ["bundle:read"]);
 
-    await expect(runWithTenantContext(fixture.tenantId, () => authenticateServiceToken(requestWithAuth("Bearer limited-token"), "evidence:write")))
-      .resolves.toEqual({ ok: false, error: "Token is missing evidence:write scope." });
+    await expect(
+      runWithTenantContext(fixture.tenantId, () =>
+        authenticateServiceToken(requestWithAuth("Bearer limited-token"), "evidence:write"),
+      ),
+    ).resolves.toEqual({ ok: false, error: "Token is missing evidence:write scope." });
     await expect(rawSql<{ last_used_at: Date | null }[]>`
       SELECT last_used_at FROM service_token WHERE token_hash = ${hashServiceToken("limited-token")}
     `).resolves.toEqual([{ last_used_at: null }]);
@@ -83,17 +102,20 @@ describe.skipIf(!databaseAvailable)("service token authentication contract", () 
     const fixture = await createFixture();
     await issueToken(fixture, "active-token", ["bundle:read", "evidence:write"]);
 
-    await expect(runWithTenantContext(fixture.tenantId, () => authenticateServiceToken(requestWithAuth("Bearer active-token"), "evidence:write")))
-      .resolves.toEqual({
-        ok: true,
-        auth: {
-          tokenId: expect.any(String),
-          tenantId: fixture.tenantId,
-          workspaceId: fixture.workspaceId,
-          principalId: fixture.principalId,
-          scopes: ["bundle:read", "evidence:write"],
-        },
-      });
+    await expect(
+      runWithTenantContext(fixture.tenantId, () =>
+        authenticateServiceToken(requestWithAuth("Bearer active-token"), "evidence:write"),
+      ),
+    ).resolves.toEqual({
+      ok: true,
+      auth: {
+        tokenId: expect.any(String),
+        tenantId: fixture.tenantId,
+        workspaceId: fixture.workspaceId,
+        principalId: fixture.principalId,
+        scopes: ["bundle:read", "evidence:write"],
+      },
+    });
     await expect(rawSql<{ last_used_at: Date | null }[]>`
       SELECT last_used_at FROM service_token WHERE token_hash = ${hashServiceToken("active-token")}
     `).resolves.toEqual([{ last_used_at: expect.any(Date) }]);
@@ -103,16 +125,17 @@ describe.skipIf(!databaseAvailable)("service token authentication contract", () 
     const fixture = await createFixture();
     await issueToken(fixture, "pre-auth-token", ["bundle:read"]);
 
-    await expect(authenticateServiceToken(requestWithAuth("Bearer pre-auth-token"), "bundle:read"))
-      .resolves.toEqual({
-        ok: true,
-        auth: {
-          tokenId: expect.any(String),
-          tenantId: fixture.tenantId,
-          workspaceId: fixture.workspaceId,
-          principalId: fixture.principalId,
-          scopes: ["bundle:read"],
-        },
-      });
+    await expect(
+      authenticateServiceToken(requestWithAuth("Bearer pre-auth-token"), "bundle:read"),
+    ).resolves.toEqual({
+      ok: true,
+      auth: {
+        tokenId: expect.any(String),
+        tenantId: fixture.tenantId,
+        workspaceId: fixture.workspaceId,
+        principalId: fixture.principalId,
+        scopes: ["bundle:read"],
+      },
+    });
   });
 });

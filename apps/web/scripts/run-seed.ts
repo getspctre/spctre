@@ -13,10 +13,15 @@ for (const file of [".env.local", ".env"]) {
       const eq = stripped.indexOf("=");
       if (eq === -1) continue;
       const key = stripped.slice(0, eq).trim();
-      const val = stripped.slice(eq + 1).trim().replace(/^["']|["']$/g, "");
+      const val = stripped
+        .slice(eq + 1)
+        .trim()
+        .replace(/^["']|["']$/g, "");
       if (!(key in process.env)) process.env[key] = val;
     }
-  } catch { /* skip missing file */ }
+  } catch {
+    /* skip missing file */
+  }
 }
 
 const { ensureDemoTenant } = await import("../lib/repositories/seed/local-dev.js");

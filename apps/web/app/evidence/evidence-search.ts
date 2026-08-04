@@ -1,4 +1,10 @@
-import type { EvidenceLayer, RuntimeDecisionStatus, RuntimeEvidenceSearchQuery, RuntimeStack, TriggerKind } from "@spctre/policy-schema";
+import type {
+  EvidenceLayer,
+  RuntimeDecisionStatus,
+  RuntimeEvidenceSearchQuery,
+  RuntimeStack,
+  TriggerKind,
+} from "@spctre/policy-schema";
 
 export type EvidenceSearchParams = Record<string, string | string[] | undefined>;
 export type RuleAnalysisTab = "friction" | "unused";
@@ -23,7 +29,7 @@ export const EVIDENCE_RUNTIME_STACKS: RuntimeStack[] = [
   "ODYSSEUS",
   "PAPERCLIP",
   "LOCAL",
-  "CUSTOM"
+  "CUSTOM",
 ];
 
 const EVIDENCE_TRIGGER_KINDS: TriggerKind[] = [
@@ -38,9 +44,18 @@ const EVIDENCE_TRIGGER_KINDS: TriggerKind[] = [
 const EVIDENCE_LAYERS: EvidenceLayer[] = ["agent", "sandbox"];
 
 export function getEvidenceSearchQuery(params: EvidenceSearchParams): RuntimeEvidenceSearchQuery {
-  const hasFilters = ["q", "status", "connector", "stack", "triggerKind", "layer", "branch", "revision", "from", "to"].some(
-    (key) => Object.prototype.hasOwnProperty.call(params, key)
-  );
+  const hasFilters = [
+    "q",
+    "status",
+    "connector",
+    "stack",
+    "triggerKind",
+    "layer",
+    "branch",
+    "revision",
+    "from",
+    "to",
+  ].some((key) => Object.prototype.hasOwnProperty.call(params, key));
   const status = enumParam(params.status, EVIDENCE_STATUSES);
   const stack = enumParam(params.stack, EVIDENCE_RUNTIME_STACKS);
   const triggerKind = enumParam(params.triggerKind, EVIDENCE_TRIGGER_KINDS);
@@ -63,7 +78,7 @@ export function getEvidenceSearchQuery(params: EvidenceSearchParams): RuntimeEvi
     revisionId,
     from,
     to,
-    limit: 5
+    limit: 5,
   };
 }
 
@@ -78,7 +93,7 @@ export function firstParam(value: string | string[] | undefined): string | undef
 export function buildEvidenceCursorHref(
   evidencePath: string,
   params: EvidenceSearchParams,
-  cursor: string | null
+  cursor: string | null,
 ): string {
   const urlParams = new URLSearchParams();
 
@@ -103,7 +118,7 @@ export function getRuleAnalysisTab(params: EvidenceSearchParams): RuleAnalysisTa
 export function buildRuleAnalysisHref(
   evidencePath: string,
   params: EvidenceSearchParams,
-  tab: RuleAnalysisTab
+  tab: RuleAnalysisTab,
 ): string {
   const urlParams = new URLSearchParams();
 
@@ -131,7 +146,7 @@ function textParam(value: string | string[] | undefined): string | undefined {
 
 function enumParam<const TValue extends string>(
   value: string | string[] | undefined,
-  allowed: readonly TValue[]
+  allowed: readonly TValue[],
 ): TValue | undefined {
   const text = textParam(value);
   return allowed.find((allowedValue) => allowedValue === text);
@@ -139,7 +154,7 @@ function enumParam<const TValue extends string>(
 
 function dateParam(
   value: string | string[] | undefined,
-  boundary: "from" | "to"
+  boundary: "from" | "to",
 ): string | undefined {
   const date = textParam(value);
 

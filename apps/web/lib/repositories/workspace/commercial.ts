@@ -1,6 +1,9 @@
 import { rawSql, runWithTenantContext, sql } from "@/lib/db";
 import type { JSONValue } from "postgres";
-import { recordConversionTelemetry, type ConversionTelemetryEventType } from "@/lib/repositories/onboarding/telemetry";
+import {
+  recordConversionTelemetry,
+  type ConversionTelemetryEventType,
+} from "@/lib/repositories/onboarding/telemetry";
 import { swallow } from "@/lib/platform/swallow";
 
 export interface CommercialUsageSummary {
@@ -45,7 +48,7 @@ export interface CommercialEventSummary {
 
 export async function getCommercialUsageSummary(
   workspaceId: string | null,
-  tenantId: string
+  tenantId: string,
 ): Promise<CommercialUsageSummary> {
   if (!sql) {
     return {
@@ -53,36 +56,31 @@ export async function getCommercialUsageSummary(
       policyBundleCount: 0,
       retainedAuditEventCount: 0,
       productionEnvironmentCount: 0,
-      serviceTokenCount: 0
+      serviceTokenCount: 0,
     };
   }
 
-  const [
-    workspaceRows,
-    publishRows,
-    evidenceRows,
-    environmentRows,
-    serviceTokenRows
-  ] = await Promise.all([
-    sql<{ count: string }[]>`
+  const [workspaceRows, publishRows, evidenceRows, environmentRows, serviceTokenRows] =
+    await Promise.all([
+      sql<{ count: string }[]>`
       SELECT COUNT(*)::text AS count
       FROM workspace
       WHERE tenant_id = ${tenantId}
     `,
-    sql<{ count: string }[]>`
+      sql<{ count: string }[]>`
       SELECT COUNT(*)::text AS count
       FROM policy_publish pp
       JOIN policy_branch pb ON pb.id = pp.branch_id AND pb.tenant_id = pp.tenant_id
       WHERE pp.tenant_id = ${tenantId}
         AND (pp.workspace_id = ${workspaceId} OR pb.scope = 'ORGANIZATION')
     `,
-    sql<{ count: string }[]>`
+      sql<{ count: string }[]>`
       SELECT COUNT(*)::text AS count
       FROM runtime_evidence_event
       WHERE tenant_id = ${tenantId}
         AND workspace_id = ${workspaceId}
     `,
-    sql<{ count: string }[]>`
+      sql<{ count: string }[]>`
       SELECT COUNT(DISTINCT environment)::text AS count
       FROM (
         SELECT environment
@@ -97,33 +95,31 @@ export async function getCommercialUsageSummary(
       ) environments
       WHERE environment IS NOT NULL AND environment <> ''
     `,
-    sql<{ count: string }[]>`
+      sql<{ count: string }[]>`
       SELECT COUNT(*)::text AS count
       FROM service_token
       WHERE tenant_id = ${tenantId}
         AND workspace_id = ${workspaceId}
         AND revoked_at IS NULL
-    `.catch(swallow("sql", [{ count: "0" }]))
-  ]);
+    `.catch(swallow("sql", [{ count: "0" }])),
+    ]);
 
   return {
     workspaceCount: parseInt(workspaceRows[0]?.count ?? "0", 10),
     policyBundleCount: parseInt(publishRows[0]?.count ?? "0", 10),
     retainedAuditEventCount: parseInt(evidenceRows[0]?.count ?? "0", 10),
     productionEnvironmentCount: parseInt(environmentRows[0]?.count ?? "0", 10),
-    serviceTokenCount: parseInt(serviceTokenRows[0]?.count ?? "0", 10)
+    serviceTokenCount: parseInt(serviceTokenRows[0]?.count ?? "0", 10),
   };
 }
 
-export async function getCommercialProfile(
-  tenantId: string
-): Promise<CommercialProfile> {
+export async function getCommercialProfile(tenantId: string): Promise<CommercialProfile> {
   const fallback: CommercialProfile = {
     planCode: "HOSTED_TRIAL",
     lifecycleStatus: "EVALUATING",
     salesStatus: "NONE",
     billingContactEmail: null,
-    updatedAt: null
+    updatedAt: null,
   };
   if (!sql) return fallback;
 
@@ -153,7 +149,7 @@ export async function getCommercialProfile(
       billingContactEmail: row.billing_contact_email,
       updatedAt: row.updated_at.toISOString(),
       downgradedAt: row.downgraded_at ? row.downgraded_at.toISOString() : null,
-      retentionWindowDays: row.retention_window_days
+      retentionWindowDays: row.retention_window_days,
     };
   } catch {
     return fallback;
@@ -161,12 +157,14 @@ export async function getCommercialProfile(
 }
 
 export async function getCommercialProfileWithContext(
-  tenantId: string
+  tenantId: string,
 ): Promise<CommercialProfile> {
   return runWithTenantContext(tenantId, () => getCommercialProfile(tenantId));
 }
 
-export function normalizeCommercialPlanCode(planCode: string | null | undefined): CommercialPlanCode {
+export function normalizeCommercialPlanCode(
+  planCode: string | null | undefined,
+): CommercialPlanCode {
   if (planCode === "OSS_EVALUATION" || !planCode) return "HOSTED_TRIAL";
   if (planCode === "TEAM" || planCode === "BUSINESS" || planCode === "ENTERPRISE") return planCode;
   return "HOSTED_TRIAL";
@@ -174,7 +172,7 @@ export function normalizeCommercialPlanCode(planCode: string | null | undefined)
 
 export async function resolveTenantIdByBillingCustomerId(
   billingProvider: BillingLifecycleEvent["billingProvider"],
-  billingCustomerId: string
+  billingCustomerId: string,
 ): Promise<string | null> {
   if (!rawSql) return null;
   const rows = await rawSql<{ tenant_id: string }[]>`
@@ -187,10 +185,13 @@ export async function resolveTenantIdByBillingCustomerId(
   return rows[0]?.tenant_id ?? null;
 }
 
-export async function recordBillingLifecycleEvent(event: BillingLifecycleEvent): Promise<{ tenantId: string } | null> {
+export async function recordBillingLifecycleEvent(
+  event: BillingLifecycleEvent,
+): Promise<{ tenantId: string } | null> {
   if (!sql) return null;
-  const tenantId = event.tenantId?.trim()
-    || (event.billingCustomerId
+  const tenantId =
+    event.tenantId?.trim() ||
+    (event.billingCustomerId
       ? await resolveTenantIdByBillingCustomerId(event.billingProvider, event.billingCustomerId)
       : null);
   if (!tenantId) return null;
@@ -227,7 +228,7 @@ export async function recordBillingLifecycleEvent(event: BillingLifecycleEvent):
 export async function listCommercialEvents(
   workspaceId: string | null,
   tenantId: string,
-  limit = 6
+  limit = 6,
 ): Promise<CommercialEventSummary[]> {
   if (!sql) return [];
 
@@ -266,7 +267,7 @@ export async function listCommercialEvents(
         row.metadata && typeof row.metadata === "object" && !Array.isArray(row.metadata)
           ? (row.metadata as Record<string, unknown>)
           : {},
-      createdAt: row.created_at.toISOString()
+      createdAt: row.created_at.toISOString(),
     }));
   } catch {
     return [];

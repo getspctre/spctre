@@ -34,10 +34,7 @@ export async function sendMagicLinkEmail(params: {
 
   const res = await fetchWithTimeout("https://api.resend.com/emails", {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${resendKey}`,
-      "content-type": "application/json",
-    },
+    headers: { Authorization: `Bearer ${resendKey}`, "content-type": "application/json" },
     body: JSON.stringify({
       from: FROM_EMAIL,
       to: [params.to],
@@ -77,10 +74,7 @@ export async function sendAlertEmail(params: {
 
   const res = await fetchWithTimeout("https://api.resend.com/emails", {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${resendKey}`,
-      "content-type": "application/json",
-    },
+    headers: { Authorization: `Bearer ${resendKey}`, "content-type": "application/json" },
     body: JSON.stringify({
       from: FROM_EMAIL,
       to: [params.to],
@@ -133,10 +127,7 @@ export async function sendMemberInviteEmail(params: {
 
   const res = await fetchWithTimeout("https://api.resend.com/emails", {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${resendKey}`,
-      "content-type": "application/json",
-    },
+    headers: { Authorization: `Bearer ${resendKey}`, "content-type": "application/json" },
     body: JSON.stringify({
       from: FROM_EMAIL,
       to: [params.to],

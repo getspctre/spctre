@@ -6,9 +6,7 @@ const createTotpEnrollmentSpy = vi.fn();
 const createSmsEnrollmentSpy = vi.fn();
 const generateRecoveryCodesSpy = vi.fn();
 
-vi.mock("@/lib/auth-session", () => ({
-  getAuthSession: getAuthSessionSpy,
-}));
+vi.mock("@/lib/auth-session", () => ({ getAuthSession: getAuthSessionSpy }));
 
 vi.mock("@/lib/domains/auth/service", () => ({
   isAuthDatabaseConfigured: () => true,
@@ -19,13 +17,9 @@ vi.mock("@/lib/domains/auth/service", () => ({
   upsertPasskeyCredential: vi.fn(),
 }));
 
-vi.mock("@/lib/feature-flags-server", () => ({
-  getSpctrePlan: () => "enterprise",
-}));
+vi.mock("@/lib/feature-flags-server", () => ({ getSpctrePlan: () => "enterprise" }));
 
-vi.mock("@/lib/platform/sms", () => ({
-  sendSmsOtp: vi.fn(),
-}));
+vi.mock("@/lib/platform/sms", () => ({ sendSmsOtp: vi.fn() }));
 
 const totpStartRoute = await import("../app/api/auth/mfa/enroll-totp/start/route");
 const smsStartRoute = await import("../app/api/auth/mfa/enroll-sms/start/route");
@@ -67,7 +61,7 @@ describe("auth demo route boundary", () => {
       new Request("http://localhost:3000/api/auth/mfa/enroll-sms/start", {
         method: "POST",
         body: JSON.stringify({ phoneNumber: "+15555550100", recaptchaToken: "token" }),
-      })
+      }),
     );
 
     expect(response.status).toBe(403);

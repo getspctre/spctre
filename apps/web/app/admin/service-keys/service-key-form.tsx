@@ -4,13 +4,18 @@ import { useActionState, useState } from "react";
 import { useTranslations } from "next-intl";
 import { createServiceKey, type ServiceKeyActionState } from "./actions";
 
-const DEFAULT_SCOPES = new Set(["bundle:read", "decision:evaluate", "evidence:write", "heartbeat:write"]);
+const DEFAULT_SCOPES = new Set([
+  "bundle:read",
+  "decision:evaluate",
+  "evidence:write",
+  "heartbeat:write",
+]);
 
 export function ServiceKeyForm({ availableScopes }: { availableScopes: string[] }) {
   const t = useTranslations("admin.service_keys.form");
   const [state, formAction, isPending] = useActionState<ServiceKeyActionState, FormData>(
     createServiceKey,
-    null
+    null,
   );
   const [copied, setCopied] = useState(false);
 
@@ -31,23 +36,21 @@ export function ServiceKeyForm({ availableScopes }: { availableScopes: string[] 
           </div>
         </div>
         <div className="serviceKeyTokenReveal">
-          <p className="serviceKeyTokenRevealWarn">
-            {t("copy_warning")}
-          </p>
+          <p className="serviceKeyTokenRevealWarn">{t("copy_warning")}</p>
           <div className="serviceKeyTokenDisplay">
             <code className="serviceKeyTokenCode">{state.rawToken}</code>
-            <button
-              type="button"
-              className="button"
-              onClick={() => copyToken(state.rawToken)}
-            >
+            <button type="button" className="button" onClick={() => copyToken(state.rawToken)}>
               {copied ? t("copied") : t("copy")}
             </button>
           </div>
-          <p className="meta">{t("prefix")} <code>{state.tokenPrefix}…</code></p>
+          <p className="meta">
+            {t("prefix")} <code>{state.tokenPrefix}…</code>
+          </p>
         </div>
         <div className="adminAuthPanelActions">
-          <a href="/admin/service-keys" className="button">{t("done")}</a>
+          <a href="/admin/service-keys" className="button">
+            {t("done")}
+          </a>
         </div>
       </div>
     );
@@ -56,11 +59,15 @@ export function ServiceKeyForm({ availableScopes }: { availableScopes: string[] 
   return (
     <form action={formAction} className="adminAuthForm">
       {state?.error && (
-        <p className="meta serviceKeyTokenRevealWarn">{state.errorCode ? t(`status.${state.errorCode}`) : state.error}</p>
+        <p className="meta serviceKeyTokenRevealWarn">
+          {state.errorCode ? t(`status.${state.errorCode}`) : state.error}
+        </p>
       )}
 
       <div className="formField">
-        <label htmlFor="key-label" className="eyebrow">{t("label")}</label>
+        <label htmlFor="key-label" className="eyebrow">
+          {t("label")}
+        </label>
         <input
           id="key-label"
           name="label"

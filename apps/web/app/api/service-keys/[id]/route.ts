@@ -10,19 +10,31 @@ export const dynamic = "force-dynamic";
 
 async function handleDeleteApiServiceKeysByid(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const traceId = extractTraceId(request);
   const { id } = await params;
 
   const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (!session) {
-    return withTraceId(Response.json({ error: "Authentication required.", meta: makeMeta(traceId) }, { status: 401 }), traceId);
+    return withTraceId(
+      Response.json(
+        { error: "Authentication required.", meta: makeMeta(traceId) },
+        { status: 401 },
+      ),
+      traceId,
+    );
   }
 
   const ctx = await getActiveScope().catch(swallow("getActiveScope", null));
   if (!ctx) {
-    return withTraceId(Response.json({ error: "Workspace context unavailable.", meta: makeMeta(traceId) }, { status: 400 }), traceId);
+    return withTraceId(
+      Response.json(
+        { error: "Workspace context unavailable.", meta: makeMeta(traceId) },
+        { status: 400 },
+      ),
+      traceId,
+    );
   }
 
   const actor = await findActorById(session.principalId, {
@@ -30,7 +42,13 @@ async function handleDeleteApiServiceKeysByid(
     workspaceId: ctx.workspaceId,
   }).catch(swallow("findActorById", null));
   if (!actor?.reviewerRoles.includes("Admin")) {
-    return withTraceId(Response.json({ error: "Admin permission is required.", meta: makeMeta(traceId) }, { status: 403 }), traceId);
+    return withTraceId(
+      Response.json(
+        { error: "Admin permission is required.", meta: makeMeta(traceId) },
+        { status: 403 },
+      ),
+      traceId,
+    );
   }
 
   const revoked = await revokeServiceKeyById({
@@ -39,11 +57,23 @@ async function handleDeleteApiServiceKeysByid(
     workspaceId: ctx.workspaceId,
   });
   if (revoked === null) {
-    return withTraceId(Response.json({ error: "Database not configured.", meta: makeMeta(traceId) }, { status: 503 }), traceId);
+    return withTraceId(
+      Response.json(
+        { error: "Database not configured.", meta: makeMeta(traceId) },
+        { status: 503 },
+      ),
+      traceId,
+    );
   }
 
   if (!revoked) {
-    return withTraceId(Response.json({ error: "Key not found or already revoked.", meta: makeMeta(traceId) }, { status: 404 }), traceId);
+    return withTraceId(
+      Response.json(
+        { error: "Key not found or already revoked.", meta: makeMeta(traceId) },
+        { status: 404 },
+      ),
+      traceId,
+    );
   }
 
   recordAuthOperation({
@@ -56,7 +86,10 @@ async function handleDeleteApiServiceKeysByid(
     payload: { keyId: id, revokedAt: new Date().toISOString() },
   }).catch(swallow("recordAuthOperation", undefined));
 
-  return withTraceId(new Response(null, { status: 204, headers: { "X-Trace-Id": traceId } }), traceId);
+  return withTraceId(
+    new Response(null, { status: 204, headers: { "X-Trace-Id": traceId } }),
+    traceId,
+  );
 }
 
 export { handleDeleteApiServiceKeysByid as DELETE };

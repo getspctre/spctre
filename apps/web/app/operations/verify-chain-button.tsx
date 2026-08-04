@@ -7,7 +7,13 @@ import { useTranslations } from "next-intl";
 type VerifyState =
   | { status: "idle" }
   | { status: "pending" }
-  | { status: "success"; verified: boolean; totalEntries?: number; brokenEntryId?: string; brokenAt?: string }
+  | {
+      status: "success";
+      verified: boolean;
+      totalEntries?: number;
+      brokenEntryId?: string;
+      brokenAt?: string;
+    }
   | { status: "error"; error: string };
 
 export function VerifyChainButton() {
@@ -21,9 +27,13 @@ export function VerifyChainButton() {
         method: "GET",
         headers: { Accept: "application/json" },
       });
-      const data = await response.json().catch(() => null) as
-        | { verified?: boolean; totalEntries?: number; brokenEntryId?: string; brokenAt?: string; error?: string }
-        | null;
+      const data = (await response.json().catch(() => null)) as {
+        verified?: boolean;
+        totalEntries?: number;
+        brokenEntryId?: string;
+        brokenAt?: string;
+        error?: string;
+      } | null;
 
       if (!response.ok && data?.verified !== false) {
         setState({ status: "error", error: data?.error ?? t("errors.verify") });
@@ -55,10 +65,7 @@ export function VerifyChainButton() {
         {state.status === "pending" ? t("verifying") : t("verify")}
       </button>
       {state.status === "success" ? (
-        <span
-          className={state.verified ? "pill pillAllow" : "pill pillBlock"}
-          role="status"
-        >
+        <span className={state.verified ? "pill pillAllow" : "pill pillBlock"} role="status">
           {state.verified
             ? state.totalEntries != null
               ? t("verified_count", { count: state.totalEntries })
@@ -70,7 +77,9 @@ export function VerifyChainButton() {
         </span>
       ) : null}
       {state.status === "error" ? (
-        <span className="meta publishError" role="alert">{state.error}</span>
+        <span className="meta publishError" role="alert">
+          {state.error}
+        </span>
       ) : null}
       <a className="button buttonSmall" href="/api/operations/verify" title={t("api_title")}>
         {t("api_json")}

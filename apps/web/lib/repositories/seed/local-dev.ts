@@ -6,9 +6,21 @@ import { logger } from "@spctre/platform/logging";
 import { DEMO_PRINCIPAL_IDS, DEMO_TENANT_ID, DEMO_WORKSPACE_ID } from "@/lib/demo";
 import { runWithTenantContext, sql } from "@/lib/db";
 import { getRuntimeConfig } from "@/lib/config/runtime";
-import { seedLocalDevSelfGovernancePack, rolloutProductionSelfGovernancePack } from "./self-governance";
-import { seedTrustCalibrationPolicies, seedContextBudgetEvents, seedTrustScoreEvents } from "./trust";
-import { resolveGovernancePackRefs, seedGatewayDecisionsAndEscalations, seedRuntimeEvidenceEvents, seedSimulationRuns } from "./governance-telemetry";
+import {
+  seedLocalDevSelfGovernancePack,
+  rolloutProductionSelfGovernancePack,
+} from "./self-governance";
+import {
+  seedTrustCalibrationPolicies,
+  seedContextBudgetEvents,
+  seedTrustScoreEvents,
+} from "./trust";
+import {
+  resolveGovernancePackRefs,
+  seedGatewayDecisionsAndEscalations,
+  seedRuntimeEvidenceEvents,
+  seedSimulationRuns,
+} from "./governance-telemetry";
 
 /** Demo seeding is automatic only outside production; hosted demos opt in explicitly. */
 export function canBootstrapDemoTenant(): boolean {
@@ -23,7 +35,6 @@ export async function ensureDemoTenant(): Promise<boolean> {
 }
 
 async function ensureDemoTenantInTenant(): Promise<void> {
-
   let blockedBySlugConflict = false;
   try {
     await sql.begin(async (tx) => {
@@ -32,10 +43,10 @@ async function ensureDemoTenantInTenant(): Promise<void> {
       `;
       if (conflictingTenant.length > 0) {
         blockedBySlugConflict = true;
-        logger.warn("Demo tenant seed skipped because tenant-demo slug is already owned by another tenant", {
-          existingTenantId: conflictingTenant[0].id,
-          expectedTenantId: DEMO_TENANT_ID
-        });
+        logger.warn(
+          "Demo tenant seed skipped because tenant-demo slug is already owned by another tenant",
+          { existingTenantId: conflictingTenant[0].id, expectedTenantId: DEMO_TENANT_ID },
+        );
         return;
       }
 
@@ -55,10 +66,13 @@ async function ensureDemoTenantInTenant(): Promise<void> {
       `;
       if (conflictingWorkspace.length > 0) {
         blockedBySlugConflict = true;
-        logger.warn("Demo workspace seed skipped because workspace-demo slug is already owned by another workspace", {
-          existingWorkspaceId: conflictingWorkspace[0].id,
-          expectedWorkspaceId: DEMO_WORKSPACE_ID
-        });
+        logger.warn(
+          "Demo workspace seed skipped because workspace-demo slug is already owned by another workspace",
+          {
+            existingWorkspaceId: conflictingWorkspace[0].id,
+            expectedWorkspaceId: DEMO_WORKSPACE_ID,
+          },
+        );
         return;
       }
 
@@ -76,7 +90,7 @@ async function ensureDemoTenantInTenant(): Promise<void> {
     if (blockedBySlugConflict) return;
   } catch (err) {
     logger.error("Failed to seed core demo tenant and workspace", {
-      error: err instanceof Error ? err.message : String(err)
+      error: err instanceof Error ? err.message : String(err),
     });
     return;
   }
@@ -151,7 +165,7 @@ async function ensureDemoTenantInTenant(): Promise<void> {
     await seedDemoTelemetryAndGovernance();
   } catch (err) {
     logger.warn("Demo telemetry and governance seeding failed", {
-      error: err instanceof Error ? err.message : String(err)
+      error: err instanceof Error ? err.message : String(err),
     });
   }
 }
@@ -183,7 +197,8 @@ async function cleanDemoRecords() {
       logger.info(`Cleaned agt_trust_score_event: ${res.count}`);
     },
     async () => {
-      const res = await sql`DELETE FROM runtime_evidence_event_key WHERE tenant_id = ${DEMO_TENANT_ID}`;
+      const res =
+        await sql`DELETE FROM runtime_evidence_event_key WHERE tenant_id = ${DEMO_TENANT_ID}`;
       logger.info(`Cleaned runtime_evidence_event_key: ${res.count}`);
     },
     async () => {
@@ -191,7 +206,8 @@ async function cleanDemoRecords() {
       logger.info(`Cleaned runtime_evidence_event: ${res.count}`);
     },
     async () => {
-      const res = await sql`DELETE FROM gateway_escalation_queue WHERE tenant_id = ${DEMO_TENANT_ID}`;
+      const res =
+        await sql`DELETE FROM gateway_escalation_queue WHERE tenant_id = ${DEMO_TENANT_ID}`;
       logger.info(`Cleaned gateway_escalation_queue: ${res.count}`);
     },
     async () => {
@@ -203,7 +219,8 @@ async function cleanDemoRecords() {
       logger.info(`Cleaned agt_operations_log: ${res.count}`);
     },
     async () => {
-      const res = await sql`DELETE FROM trust_calibration_policy WHERE tenant_id = ${DEMO_TENANT_ID}`;
+      const res =
+        await sql`DELETE FROM trust_calibration_policy WHERE tenant_id = ${DEMO_TENANT_ID}`;
       logger.info(`Cleaned trust_calibration_policy: ${res.count}`);
     },
     async () => {
@@ -215,7 +232,7 @@ async function cleanDemoRecords() {
       await deleteQuery();
     } catch (err) {
       logger.warn("Seeding cleanup failed for a table", {
-        error: err instanceof Error ? err.message : String(err)
+        error: err instanceof Error ? err.message : String(err),
       });
     }
   }

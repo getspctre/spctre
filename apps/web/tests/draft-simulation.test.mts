@@ -36,7 +36,7 @@ describe("buildDraftSimulationSummary", () => {
         record({ toolParameters: { amount_cents: 80000 }, status: "ALLOW" }), // → ESCALATE (changed)
         record({ toolParameters: { amount_cents: 100 }, status: "ALLOW" }), // stays ALLOW (unchanged)
       ],
-      DRAFT
+      DRAFT,
     );
 
     expect(summary.sampled).toBe(3);
@@ -50,7 +50,7 @@ describe("buildDraftSimulationSummary", () => {
   it("reports no change when the recorded status already matches the draft decision", () => {
     const summary = buildDraftSimulationSummary(
       [record({ toolParameters: { amount_cents: 90000 }, status: "ESCALATE" })],
-      DRAFT
+      DRAFT,
     );
     expect(summary.changed).toBe(0);
     expect(summary.transitions).toEqual([]);
@@ -58,7 +58,14 @@ describe("buildDraftSimulationSummary", () => {
 
   it("returns an empty summary for no evidence", () => {
     const summary = buildDraftSimulationSummary([], DRAFT);
-    expect(summary).toEqual({ sampled: 0, unchanged: 0, changed: 0, indeterminate: 0, transitions: [], findings: [] });
+    expect(summary).toEqual({
+      sampled: 0,
+      unchanged: 0,
+      changed: 0,
+      indeterminate: 0,
+      transitions: [],
+      findings: [],
+    });
   });
 
   describe("domain-scoped rules with unknown request domain", () => {
@@ -67,7 +74,7 @@ describe("buildDraftSimulationSummary", () => {
     it("marks a decision indeterminate instead of overstating a domain-scoped match", () => {
       const summary = buildDraftSimulationSummary(
         [record({ toolParameters: { amount_cents: 90000 }, status: "ALLOW" })],
-        DOMAIN_SCOPED
+        DOMAIN_SCOPED,
       );
       // The refunds-scoped ESCALATE would match under the evaluator's empty-domain
       // wildcard, but evidence doesn't record the domain — so it's indeterminate,
@@ -94,7 +101,7 @@ describe("buildDraftSimulationSummary", () => {
       ];
       const summary = buildDraftSimulationSummary(
         [record({ toolParameters: { amount_cents: 90000 }, status: "ALLOW" })],
-        rules
+        rules,
       );
       // DENY wins regardless of the domain-scoped rule, so the change is definite.
       expect(summary.indeterminate).toBe(0);

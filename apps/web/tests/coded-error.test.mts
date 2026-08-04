@@ -1,9 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  CodedError,
-  extractErrorCode,
-  resolveErrorMessage,
-} from "@/lib/errors/coded-error";
+import { CodedError, extractErrorCode, resolveErrorMessage } from "@/lib/errors/coded-error";
 
 describe("coded-error", () => {
   it("keeps message equal to the code for log/audit invariance", () => {
@@ -38,16 +34,18 @@ describe("coded-error", () => {
   it("resolves coded errors to a localized string and passes meta", () => {
     const t = (key: string, values?: Record<string, string | number | Date>) =>
       key === "PLAN_REQUIRED" ? `needs ${values?.plan} plan` : key;
-    expect(resolveErrorMessage(new CodedError("PLAN_REQUIRED", { plan: "Cloud" }), t, "fallback")).toBe(
-      "needs Cloud plan"
+    expect(
+      resolveErrorMessage(new CodedError("PLAN_REQUIRED", { plan: "Cloud" }), t, "fallback"),
+    ).toBe("needs Cloud plan");
+    expect(resolveErrorMessage(new CodedError("AUTH_REQUIRED"), t, "fallback")).toBe(
+      "AUTH_REQUIRED",
     );
-    expect(resolveErrorMessage(new CodedError("AUTH_REQUIRED"), t, "fallback")).toBe("AUTH_REQUIRED");
   });
 
   it("never passes through raw English: falls back for uncoded errors", () => {
     const t = (key: string) => key;
     expect(resolveErrorMessage(new Error("Zod: name is required"), t, "Could not save")).toBe(
-      "Could not save"
+      "Could not save",
     );
   });
 });

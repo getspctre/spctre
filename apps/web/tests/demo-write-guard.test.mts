@@ -15,15 +15,10 @@ const importPolicyPackDecisionSpy = vi.fn();
 
 // Set up mocks for standard Next.js and web app components
 vi.mock("next/headers", () => ({
-  cookies: async () => ({
-    get: () => ({ value: "session-123" }),
-    set: () => {},
-  }),
+  cookies: async () => ({ get: () => ({ value: "session-123" }), set: () => {} }),
 }));
 
-vi.mock("next/cache", () => ({
-  revalidatePath: vi.fn(),
-}));
+vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 
 vi.mock("@/lib/auth-session", () => ({
   getAuthSession: getAuthSessionSpy,
@@ -41,9 +36,7 @@ vi.mock("@/lib/workspace/server-context", () => ({
   getRequiredWorkspaceContext: getRequiredWorkspaceContextSpy,
 }));
 
-vi.mock("@/lib/repositories/shared/database", () => ({
-  isDatabaseConfigured: () => true,
-}));
+vi.mock("@/lib/repositories/shared/database", () => ({ isDatabaseConfigured: () => true }));
 
 // Mock repositories and domain services to prevent real DB queries
 vi.mock("@/lib/demo", () => ({
@@ -57,9 +50,7 @@ vi.mock("@/lib/repositories/auth/session", () => ({
   updateSessionForActorSwitch: updateSessionForActorSwitchSpy,
 }));
 
-vi.mock("@/lib/repositories/mfa", () => ({
-  getTenantRequireMfa: async () => false,
-}));
+vi.mock("@/lib/repositories/mfa", () => ({ getTenantRequireMfa: async () => false }));
 
 vi.mock("@/lib/repositories/auth/principal", () => ({
   getPrincipalSubject: async () => "user@example.com",
@@ -71,12 +62,7 @@ vi.mock("@/lib/repositories/default-policy", () => ({
 
 vi.mock("@/lib/actors", () => ({
   findActorById: findActorByIdSpy,
-  getActiveActor: async () => ({
-    actor: {
-      id: "p-123",
-      reviewerRoles: ["Admin"],
-    },
-  }),
+  getActiveActor: async () => ({ actor: { id: "p-123", reviewerRoles: ["Admin"] } }),
   requireActorAdminWorkspace: () => ({ allowed: true }),
 }));
 
@@ -88,13 +74,15 @@ vi.mock("@/lib/repositories/workspace", () => ({
   insertAdminAuditEvent: async () => {},
   insertAuthorizationDenialEvent: async () => {},
   countTenantWorkspaces: async () => 0,
-  getCommercialProfile: async () => ({ planCode: "TEAM", lifecycleStatus: "ACTIVE", salesStatus: "CUSTOMER" }),
+  getCommercialProfile: async () => ({
+    planCode: "TEAM",
+    lifecycleStatus: "ACTIVE",
+    salesStatus: "CUSTOMER",
+  }),
 }));
 
 vi.mock("@/lib/repositories/policy", () => ({
-  getBranchWithPublishStatus: async () => ({
-    has_published_revision: false,
-  }),
+  getBranchWithPublishStatus: async () => ({ has_published_revision: false }),
   deletePolicyBranch: async () => {},
   getRevisionForDraft: async () => ({
     workspace_id: "w-123",
@@ -104,37 +92,20 @@ vi.mock("@/lib/repositories/policy", () => ({
     source_document: {},
   }),
   createDraftRevision: async () => {},
-  getBranchForRollback: async () => ({
-    workspace_id: "w-123",
-    workspace_slug: "demo",
-  }),
+  getBranchForRollback: async () => ({ workspace_id: "w-123", workspace_slug: "demo" }),
   createCommittedRevision: async () => {},
 }));
 
 vi.mock("@/lib/domains/policy/service", () => ({
-  createPolicyBranchDecision: async () => ({
-    branchId: "branch-123",
-    revisionId: "revision-123",
-  }),
-  importPolicyDecision: async () => ({
-    result: { rulesImported: 5 },
-  }),
-  rollbackBranchDecision: async () => ({
-    artifactHash: "hash-123",
-    revisionId: "rev-123",
-  }),
-  deleteUnpublishedBranchDecision: async () => ({
-    success: true,
-  }),
+  createPolicyBranchDecision: async () => ({ branchId: "branch-123", revisionId: "revision-123" }),
+  importPolicyDecision: async () => ({ result: { rulesImported: 5 } }),
+  rollbackBranchDecision: async () => ({ artifactHash: "hash-123", revisionId: "rev-123" }),
+  deleteUnpublishedBranchDecision: async () => ({ success: true }),
 }));
 
 vi.mock("@/lib/domains/review/service", () => ({
-  addApprovalDecision: async () => ({
-    ok: true,
-  }),
-  publishRevisionDecision: async () => ({
-    artifactHash: "hash-999",
-  }),
+  addApprovalDecision: async () => ({ ok: true }),
+  publishRevisionDecision: async () => ({ artifactHash: "hash-999" }),
   createDraftRuleRevisionDecision: async () => ({
     revisionId: "draft-rev-123",
     sourceHash: "hash-draft-123",
@@ -174,25 +145,17 @@ const {
   generateSimulationChangeRecommendation,
   applySimulationChangeRecommendation,
 } = await import("../app/evidence/actions");
-const {
-  claimEscalation,
-  resolveEscalation,
-} = await import("../app/escalations/actions");
+const { claimEscalation, resolveEscalation } = await import("../app/escalations/actions");
 const { importPolicyPack } = await import("../app/packs/actions");
-const {
-  addApproval,
-  rollbackBranch,
-  publishRevision,
-} = await import("../app/review/publish-actions");
-const {
-  createDraftRuleRevision,
-  commitRuleRevision,
-} = await import("../app/review/rule-actions");
+const { addApproval, rollbackBranch, publishRevision } =
+  await import("../app/review/publish-actions");
+const { createDraftRuleRevision, commitRuleRevision } = await import("../app/review/rule-actions");
 
 describe("Demo Write Guard - Premium Onboarding CTA Block", () => {
   const DEMO_TENANT = "00000000-0000-0000-0000-000000000001";
   const REGULAR_TENANT = "10000000-0000-0000-0000-000000000001";
-  const FRIENDLY_ERROR = "This action is read-only in Demo Mode. Create a free Spctre Cloud account to save changes!";
+  const FRIENDLY_ERROR =
+    "This action is read-only in Demo Mode. Create a free Spctre Cloud account to save changes!";
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -307,7 +270,10 @@ describe("Demo Write Guard - Premium Onboarding CTA Block", () => {
       const formData = new FormData();
       formData.set("branchId", "b-1");
       formData.set("parentRevisionId", "rev-1");
-      formData.set("rulesPayload", JSON.stringify([{ stableRuleId: "r1", title: "Rule 1", effect: "ALLOW" }]));
+      formData.set(
+        "rulesPayload",
+        JSON.stringify([{ stableRuleId: "r1", title: "Rule 1", effect: "ALLOW" }]),
+      );
       const result = await commitRuleRevision(null, formData);
       expect(result).toEqual({ error: FRIENDLY_ERROR });
     });
@@ -439,7 +405,10 @@ describe("Demo Write Guard - Premium Onboarding CTA Block", () => {
       const formData = new FormData();
       formData.set("branchId", "b-1");
       formData.set("parentRevisionId", "rev-1");
-      formData.set("rulesPayload", JSON.stringify([{ stableRuleId: "r1", title: "Rule 1", effect: "ALLOW" }]));
+      formData.set(
+        "rulesPayload",
+        JSON.stringify([{ stableRuleId: "r1", title: "Rule 1", effect: "ALLOW" }]),
+      );
       const result = await commitRuleRevision(null, formData);
       expect(result).not.toEqual({ error: FRIENDLY_ERROR });
       expect(result?.error).toBeUndefined();
@@ -455,11 +424,19 @@ describe("Demo Write Guard - Premium Onboarding CTA Block", () => {
       formData.set("packId", "pack-1");
 
       await expect(runSimulation(null, formData)).resolves.not.toEqual({ error: FRIENDLY_ERROR });
-      await expect(generateSimulationChangeRecommendation(null, formData)).resolves.not.toEqual({ error: FRIENDLY_ERROR });
-      await expect(applySimulationChangeRecommendation(null, formData)).resolves.not.toEqual({ error: FRIENDLY_ERROR });
+      await expect(generateSimulationChangeRecommendation(null, formData)).resolves.not.toEqual({
+        error: FRIENDLY_ERROR,
+      });
+      await expect(applySimulationChangeRecommendation(null, formData)).resolves.not.toEqual({
+        error: FRIENDLY_ERROR,
+      });
       await expect(claimEscalation(null, formData)).resolves.not.toEqual({ error: FRIENDLY_ERROR });
-      await expect(resolveEscalation(null, formData)).resolves.not.toEqual({ error: FRIENDLY_ERROR });
-      await expect(importPolicyPack(null, formData)).resolves.not.toEqual({ error: FRIENDLY_ERROR });
+      await expect(resolveEscalation(null, formData)).resolves.not.toEqual({
+        error: FRIENDLY_ERROR,
+      });
+      await expect(importPolicyPack(null, formData)).resolves.not.toEqual({
+        error: FRIENDLY_ERROR,
+      });
     });
 
     it("uses active demo workspace context for demo persona switching even when the session tenant is regular", async () => {

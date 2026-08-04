@@ -1,6 +1,20 @@
 "use client";
 
-import { Activity, AlertTriangle, BookOpen, Bot, Boxes, ExternalLink, GitBranch, HelpCircle, PackageCheck, ScrollText, Search, SquareCheck, FileCode2 } from "lucide-react";
+import {
+  Activity,
+  AlertTriangle,
+  BookOpen,
+  Bot,
+  Boxes,
+  ExternalLink,
+  GitBranch,
+  HelpCircle,
+  PackageCheck,
+  ScrollText,
+  Search,
+  SquareCheck,
+  FileCode2,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { type WorkspaceSummary } from "@/lib/workspace/types";
@@ -21,9 +35,7 @@ interface NavItemProps {
 
 function NavItem({ href, icon, badge, children, exact = false }: NavItemProps) {
   const pathname = usePathname();
-  const active = exact
-    ? pathname === href
-    : pathname === href || pathname.startsWith(`${href}/`);
+  const active = exact ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
   return (
     <Link
       className="navItem"
@@ -46,13 +58,19 @@ function CmdTrigger() {
     window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true, bubbles: true }));
   }
   return (
-    <button type="button" className="cmdTrigger" onClick={openPalette} title={t("open_command_palette")}>
+    <button
+      type="button"
+      className="cmdTrigger"
+      onClick={openPalette}
+      title={t("open_command_palette")}
+    >
       <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
         <Search size={13} />
         <span>{t("go_to")}</span>
       </span>
       <span className="cmdTriggerKbd">
-        <kbd>⌘</kbd><kbd>K</kbd>
+        <kbd>⌘</kbd>
+        <kbd>K</kbd>
       </span>
     </button>
   );
@@ -88,7 +106,9 @@ export function Sidebar({
   const shellT = useTranslations("sidebar");
   const pathname = usePathname();
   const pathnameSegments = pathname.split("/").filter(Boolean);
-  const pathWorkspace = workspaceOptions.find((workspace) => workspace.slug === pathnameSegments[0]);
+  const pathWorkspace = workspaceOptions.find(
+    (workspace) => workspace.slug === pathnameSegments[0],
+  );
   const activeWorkspace =
     pathWorkspace ?? workspaceOptions.find((workspace) => workspace.id === activeWorkspaceId);
   const scopedHref = (path: string) =>
@@ -104,50 +124,115 @@ export function Sidebar({
         <span className="brandName">Spctre</span>
       </div>
       <nav className="nav" aria-label={shellT("primary_nav")}>
-        {([
-          {
-            label: t("policies"),
-            items: [
-              { key: "policies", path: "/", label: t("policies"), icon: <GitBranch size={17} />, badge: branchCount },
-              { key: "rules", path: "/rules", label: t("rules"), icon: <Search size={17} /> },
-              { key: "packs", path: "/packs", label: t("packs"), icon: <Boxes size={17} /> },
-              { key: "review", path: "/review", label: t("review"), icon: <SquareCheck size={17} /> },
-            ],
-          },
-          {
-            label: t("audit"),
-            items: [
-              { key: "evidence", path: "/evidence", label: t("audit_log"), icon: <Activity size={17} /> },
-              { key: "operations", path: "/operations", label: t("audit_ledger"), icon: <ScrollText size={17} /> },
-              { key: "compliance", path: "/compliance", label: t("compliance_report"), icon: <PackageCheck size={17} /> },
-            ],
-          },
-          {
-            label: t("agents"),
-            items: [
-              { key: "agents", path: "/agents", label: t("agents"), icon: <Bot size={17} /> },
-              { key: "blueprints", path: "/blueprints", label: "Blueprints", icon: <FileCode2 size={17} /> },
-              { key: "escalations", path: "/escalations", label: t("escalations"), icon: <AlertTriangle size={17} />, badge: escalationCount },
-            ],
-          },
-        ] as NavGroup[]).map((group) => (
+        {(
+          [
+            {
+              label: t("policies"),
+              items: [
+                {
+                  key: "policies",
+                  path: "/",
+                  label: t("policies"),
+                  icon: <GitBranch size={17} />,
+                  badge: branchCount,
+                },
+                { key: "rules", path: "/rules", label: t("rules"), icon: <Search size={17} /> },
+                { key: "packs", path: "/packs", label: t("packs"), icon: <Boxes size={17} /> },
+                {
+                  key: "review",
+                  path: "/review",
+                  label: t("review"),
+                  icon: <SquareCheck size={17} />,
+                },
+              ],
+            },
+            {
+              label: t("audit"),
+              items: [
+                {
+                  key: "evidence",
+                  path: "/evidence",
+                  label: t("audit_log"),
+                  icon: <Activity size={17} />,
+                },
+                {
+                  key: "operations",
+                  path: "/operations",
+                  label: t("audit_ledger"),
+                  icon: <ScrollText size={17} />,
+                },
+                {
+                  key: "compliance",
+                  path: "/compliance",
+                  label: t("compliance_report"),
+                  icon: <PackageCheck size={17} />,
+                },
+              ],
+            },
+            {
+              label: t("agents"),
+              items: [
+                { key: "agents", path: "/agents", label: t("agents"), icon: <Bot size={17} /> },
+                {
+                  key: "blueprints",
+                  path: "/blueprints",
+                  label: "Blueprints",
+                  icon: <FileCode2 size={17} />,
+                },
+                {
+                  key: "escalations",
+                  path: "/escalations",
+                  label: t("escalations"),
+                  icon: <AlertTriangle size={17} />,
+                  badge: escalationCount,
+                },
+              ],
+            },
+          ] as NavGroup[]
+        ).map((group) => (
           <div className="navGroup" key={group.label}>
             <p className="navLabel">{group.label}</p>
             {group.items.map((item) => (
-              <NavItem key={item.key} href={scopedHref(item.path)} icon={item.icon} badge={item.badge} exact={item.path === "/"}>
+              <NavItem
+                key={item.key}
+                href={scopedHref(item.path)}
+                icon={item.icon}
+                badge={item.badge}
+                exact={item.path === "/"}
+              >
                 {item.label}
               </NavItem>
             ))}
           </div>
         ))}
       </nav>
-      <a href="/help-docs" target="_blank" rel="noopener noreferrer" className="navItem" style={{ margin: "0 14px" }} title={shellT("opens_new_tab")}>
+      <a
+        href="/help-docs"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="navItem"
+        style={{ margin: "0 14px" }}
+        title={shellT("opens_new_tab")}
+      >
         <HelpCircle size={17} />
-        <span className="navItemLabel">{t("help_docs")} <ExternalLink size={11} style={{ opacity: 0.5, verticalAlign: "middle" }} /></span>
+        <span className="navItemLabel">
+          {t("help_docs")}{" "}
+          <ExternalLink size={11} style={{ opacity: 0.5, verticalAlign: "middle" }} />
+        </span>
       </a>
-      <a href="/api-docs" target="_blank" rel="noopener noreferrer" className="navItem" style={{ margin: "0 14px" }} title={shellT("opens_new_tab")}>
+      <a
+        href="/api-docs"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="navItem"
+        style={{ margin: "0 14px" }}
+        title={shellT("opens_new_tab")}
+      >
         <BookOpen size={17} />
-        <span className="navItemLabel">{t("api_docs")} <ExternalLink size={11} style={{ opacity: 0.5, verticalAlign: "middle" }} /></span>
+        <span className="navItemLabel">
+          {t("api_docs")}{" "}
+          <ExternalLink size={11} style={{ opacity: 0.5, verticalAlign: "middle" }} />
+        </span>
       </a>
       <CmdTrigger />
     </aside>

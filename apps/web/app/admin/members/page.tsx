@@ -62,8 +62,12 @@ function MemberRow({
           </div>
           <div className="adminMembersInlinePills">
             {isCurrentUser ? <span className="pill pillNeutral">{t("member_row.you")}</span> : null}
-            <span className={member.inviteStatus === "ACCEPTED" ? "pill pillAllow" : "pill pillWarn"}>
-              {member.inviteStatus === "ACCEPTED" ? t("member_row.active") : t("member_row.pending")}
+            <span
+              className={member.inviteStatus === "ACCEPTED" ? "pill pillAllow" : "pill pillWarn"}
+            >
+              {member.inviteStatus === "ACCEPTED"
+                ? t("member_row.active")
+                : t("member_row.pending")}
             </span>
           </div>
           <code>{member.id}</code>
@@ -72,7 +76,9 @@ function MemberRow({
       <td>
         <strong>{roleDefinition(member.orgRole).label}</strong>
         <span className="auditHash">
-          {tenantGrant?.reviewerRoles.length ? tenantGrant.reviewerRoles.join(", ") : t("member_row.no_reviewer_lanes")}
+          {tenantGrant?.reviewerRoles.length
+            ? tenantGrant.reviewerRoles.join(", ")
+            : t("member_row.no_reviewer_lanes")}
         </span>
       </td>
       <td>
@@ -84,7 +90,9 @@ function MemberRow({
             {t("member_row.passkeys", { count: member.passkeyCount })}
           </span>
         </div>
-        <span className="auditHash">{t("member_row.last_active", { date: formatAdminDate(member.lastActiveAt) })}</span>
+        <span className="auditHash">
+          {t("member_row.last_active", { date: formatAdminDate(member.lastActiveAt) })}
+        </span>
       </td>
       <td>
         <div className="adminMembersOverrideList">
@@ -136,10 +144,14 @@ function RoleMatrix({ t }: { t: AdminMembersT }) {
                     <span className="auditHash">{definition.summary}</span>
                   </td>
                   <td>
-                    {definition.reviewerRoles.length ? definition.reviewerRoles.join(", ") : t("none")}
+                    {definition.reviewerRoles.length
+                      ? definition.reviewerRoles.join(", ")
+                      : t("none")}
                   </td>
                   <td>
-                    {definition.publishScopes.length ? definition.publishScopes.join(", ") : t("none")}
+                    {definition.publishScopes.length
+                      ? definition.publishScopes.join(", ")
+                      : t("none")}
                   </td>
                   <td>{definition.capabilities.join(", ")}</td>
                 </tr>
@@ -166,9 +178,7 @@ function GranularGrantsSection({ t }: { t: AdminMembersT }) {
             </div>
             <span className="pill pillWarn">{t("enterprise")}</span>
           </div>
-          <p className="meta">
-            {t("granular.fallback_description")}
-          </p>
+          <p className="meta">{t("granular.fallback_description")}</p>
           <div className="adminMembersGrantGrid">
             {dimensions.map((dimension) => (
               <div key={dimension.label}>
@@ -178,7 +188,9 @@ function GranularGrantsSection({ t }: { t: AdminMembersT }) {
             ))}
           </div>
           <div className="adminAuthPanelActions">
-            <a className="button" href="/usage-billing">{t("view_plans")}</a>
+            <a className="button" href="/usage-billing">
+              {t("view_plans")}
+            </a>
           </div>
         </section>
       }
@@ -191,9 +203,7 @@ function GranularGrantsSection({ t }: { t: AdminMembersT }) {
           </div>
           <span className="pill pillAllow">{t("enterprise")}</span>
         </div>
-        <p className="meta">
-          {t("granular.description")}
-        </p>
+        <p className="meta">{t("granular.description")}</p>
         <div className="adminMembersGrantGrid">
           {dimensions.map((dimension) => (
             <div key={dimension.label}>
@@ -210,7 +220,13 @@ function GranularGrantsSection({ t }: { t: AdminMembersT }) {
   );
 }
 
-function RbacAuditPanel({ auditEvents, t }: { auditEvents: MembersPageModel["auditEvents"]; t: AdminMembersT }) {
+function RbacAuditPanel({
+  auditEvents,
+  t,
+}: {
+  auditEvents: MembersPageModel["auditEvents"];
+  t: AdminMembersT;
+}) {
   return (
     <section className="adminAuthPanel">
       <div className="adminAuthPanelHeader">
@@ -250,12 +266,15 @@ function RbacAuditPanel({ auditEvents, t }: { auditEvents: MembersPageModel["aud
 
 export default async function AdminMembersPage() {
   const t = await getTranslations("admin.members");
-  const { workspaceContext, members, workspaces, auditEvents, session } = await getMembersPageModel();
+  const { workspaceContext, members, workspaces, auditEvents, session } =
+    await getMembersPageModel();
 
   const pendingCount = members.filter((member) => member.inviteStatus === "PENDING").length;
   const activeCount = members.filter((member) => member.inviteStatus === "ACCEPTED").length;
   const adminCount = members.filter((member) => member.orgRole === "ADMIN").length;
-  const secureCount = members.filter((member) => member.mfaEnrolled || member.passkeyCount > 0).length;
+  const secureCount = members.filter(
+    (member) => member.mfaEnrolled || member.passkeyCount > 0,
+  ).length;
 
   return (
     <>
@@ -267,7 +286,9 @@ export default async function AdminMembersPage() {
           <>
             <span className="pill pillNeutral">{t("counts.seats", { count: members.length })}</span>
             <span className="pill pillAllow">{t("counts.active", { count: activeCount })}</span>
-            <span className={pendingCount ? "pill pillWarn" : "pill pillNeutral"}>{t("counts.pending", { count: pendingCount })}</span>
+            <span className={pendingCount ? "pill pillWarn" : "pill pillNeutral"}>
+              {t("counts.pending", { count: pendingCount })}
+            </span>
           </>
         }
       />
@@ -335,7 +356,10 @@ export default async function AdminMembersPage() {
           <RoleMatrix t={t} />
         </section>
 
-        <aside className="adminAuthSidebar adminMembersSidebar" aria-label={t("sidebar_aria_label")}>
+        <aside
+          className="adminAuthSidebar adminMembersSidebar"
+          aria-label={t("sidebar_aria_label")}
+        >
           <div className="adminAuthSectionHeader">
             <UserPlus size={18} aria-hidden />
             <div>

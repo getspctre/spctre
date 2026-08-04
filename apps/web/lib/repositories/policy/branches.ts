@@ -3,7 +3,11 @@ import type { JSONValue } from "postgres";
 import { assertCustomerRulesDoNotUseReservedIds } from "@/lib/policy/reserved-rule-ids";
 import { sql } from "@/lib/db";
 import { ensureDemoTenant } from "@/lib/repositories/seed/local-dev";
-import type { AgtCompatibilityReport, PolicyBranch, PolicyRuleSummary } from "@spctre/policy-schema";
+import type {
+  AgtCompatibilityReport,
+  PolicyBranch,
+  PolicyRuleSummary,
+} from "@spctre/policy-schema";
 
 export interface BranchRevision {
   revisionId: string;
@@ -43,17 +47,12 @@ export interface BranchStatusSummary {
 }
 
 export async function listBranchStatusSummariesForTenant(
-  tenantId: string
+  tenantId: string,
 ): Promise<Map<string, BranchStatusSummary>> {
   if (!sql) return new Map();
 
   const rows = await sql<
-    {
-      workspace_id: string;
-      branch_id: string;
-      has_approvals: boolean;
-      created_at: Date;
-    }[]
+    { workspace_id: string; branch_id: string; has_approvals: boolean; created_at: Date }[]
   >`
     WITH requested_workspace AS (
       SELECT id
@@ -95,7 +94,7 @@ export async function listBranchStatusSummariesForTenant(
 
 export async function listBranches(
   workspaceId: string | null,
-  tenantId: string
+  tenantId: string,
 ): Promise<PolicyBranch[]> {
   if (!sql) return [];
   const rows = await sql<
@@ -149,14 +148,14 @@ export async function listBranches(
     activeRevision: row.active_revision_id ?? "",
     author: row.author_display_name ?? row.author_email ?? row.created_by,
     status: row.is_published ? "PUBLISHED" : row.has_approvals ? "IN_REVIEW" : ("DRAFT" as const),
-    message: row.message ?? ""
+    message: row.message ?? "",
   }));
 }
 
 export async function listBranchRevisions(
   branchId: string,
   workspaceId: string | null,
-  tenantId: string
+  tenantId: string,
 ): Promise<BranchRevision[]> {
   if (!sql) return [];
 
@@ -211,15 +210,21 @@ export async function listBranchRevisions(
 
   return rows.map((row) => {
     const sourceDocument =
-      row.source_document && typeof row.source_document === "object" && !Array.isArray(row.source_document)
+      row.source_document &&
+      typeof row.source_document === "object" &&
+      !Array.isArray(row.source_document)
         ? (row.source_document as Record<string, unknown>)
         : {};
     const metadata =
-      sourceDocument.metadata && typeof sourceDocument.metadata === "object" && !Array.isArray(sourceDocument.metadata)
+      sourceDocument.metadata &&
+      typeof sourceDocument.metadata === "object" &&
+      !Array.isArray(sourceDocument.metadata)
         ? (sourceDocument.metadata as Record<string, unknown>)
         : {};
     const spctrePack =
-      metadata.spctre_pack && typeof metadata.spctre_pack === "object" && !Array.isArray(metadata.spctre_pack)
+      metadata.spctre_pack &&
+      typeof metadata.spctre_pack === "object" &&
+      !Array.isArray(metadata.spctre_pack)
         ? (metadata.spctre_pack as Record<string, unknown>)
         : {};
 
@@ -241,7 +246,7 @@ export async function listBranchRevisions(
       ruleCount: row.rule_count,
       isActive: row.is_active,
       publishedAt: row.published_at?.toISOString() ?? null,
-      createdAt: row.created_at.toISOString()
+      createdAt: row.created_at.toISOString(),
     };
   });
 }
@@ -306,9 +311,21 @@ export async function deletePolicyBranch(params: {
 export async function getPublishBranchScope(params: {
   tenantId: string;
   branchId: string;
-}): Promise<{ workspace_id: string | null; scope: string; environment: string | null; workspace_slug: string | null } | null> {
+}): Promise<{
+  workspace_id: string | null;
+  scope: string;
+  environment: string | null;
+  workspace_slug: string | null;
+} | null> {
   if (!sql) return null;
-  const rows = await sql<{ workspace_id: string | null; scope: string; environment: string | null; workspace_slug: string | null }[]>`
+  const rows = await sql<
+    {
+      workspace_id: string | null;
+      scope: string;
+      environment: string | null;
+      workspace_slug: string | null;
+    }[]
+  >`
     SELECT pb.workspace_id, pb.scope, pb.environment, w.slug AS workspace_slug
     FROM policy_branch pb
     LEFT JOIN workspace w ON w.id = pb.workspace_id
@@ -379,7 +396,10 @@ export async function getRevisionWorkspaceScope(params: {
   return rows[0] ?? null;
 }
 
-export async function getRevisionAgeHours(revisionId: string, tenantId: string): Promise<number | null> {
+export async function getRevisionAgeHours(
+  revisionId: string,
+  tenantId: string,
+): Promise<number | null> {
   if (!sql || !revisionId) return null;
   const rows = await sql<{ age_hours: number }[]>`
     SELECT EXTRACT(EPOCH FROM (now() - created_at)) / 3600 AS age_hours
@@ -404,13 +424,15 @@ export async function getRevisionForDraft(params: {
   source_document: unknown;
 } | null> {
   if (!sql) return null;
-  const rows = await sql<{
-    workspace_id: string | null;
-    workspace_slug: string | null;
-    source_format: string;
-    source_path: string | null;
-    source_document: unknown;
-  }[]>`
+  const rows = await sql<
+    {
+      workspace_id: string | null;
+      workspace_slug: string | null;
+      source_format: string;
+      source_path: string | null;
+      source_document: unknown;
+    }[]
+  >`
     SELECT pr.workspace_id, w.slug AS workspace_slug, pr.source_format, pr.source_path, pr.source_document
     FROM policy_revision pr
     LEFT JOIN workspace w ON w.id = pr.workspace_id
@@ -455,7 +477,8 @@ export async function persistImportedBranch(params: {
       WHERE id = ${params.workspaceId} AND tenant_id = ${params.tenantId}
       LIMIT 1
     `;
-    if (!workspaceRows.length) throw new Error("Workspace is not available in the selected tenant.");
+    if (!workspaceRows.length)
+      throw new Error("Workspace is not available in the selected tenant.");
   }
 
   await sql.begin(async (tx) => {
@@ -595,7 +618,8 @@ export async function importPolicyBranchIdempotent(params: {
       WHERE id = ${params.workspaceId} AND tenant_id = ${params.tenantId}
       LIMIT 1
     `;
-    if (!workspaceRows.length) throw new Error("Workspace is not available in the selected tenant.");
+    if (!workspaceRows.length)
+      throw new Error("Workspace is not available in the selected tenant.");
   }
 
   const runOnce = () =>
@@ -604,7 +628,9 @@ export async function importPolicyBranchIdempotent(params: {
       // life of the transaction; released on commit/rollback.
       await tx`SELECT pg_advisory_xact_lock(hashtextextended(${identity}, 0))`;
 
-      const existing = await tx<{ branch_id: string; active_revision_id: string | null; head_source_hash: string | null }[]>`
+      const existing = await tx<
+        { branch_id: string; active_revision_id: string | null; head_source_hash: string | null }[]
+      >`
         SELECT
           pb.id AS branch_id,
           pb.active_revision_id,
@@ -622,7 +648,11 @@ export async function importPolicyBranchIdempotent(params: {
         FOR UPDATE OF pb
       `;
 
-      const insertRevisionAndRules = async (branchId: string, revisionId: string, parentRevisionId: string | null) => {
+      const insertRevisionAndRules = async (
+        branchId: string,
+        revisionId: string,
+        parentRevisionId: string | null,
+      ) => {
         await tx`
           INSERT INTO policy_revision (
             id, tenant_id, workspace_id, branch_id, parent_revision_id,
@@ -673,7 +703,14 @@ export async function importPolicyBranchIdempotent(params: {
           )
         `;
         await insertRevisionAndRules(branchId, revisionId, null);
-        return { branchId, revisionId, sourceHash, importedAt, created: true, alreadyCurrent: false };
+        return {
+          branchId,
+          revisionId,
+          sourceHash,
+          importedAt,
+          created: true,
+          alreadyCurrent: false,
+        };
       }
 
       const branchId = existing[0].branch_id;
@@ -681,13 +718,27 @@ export async function importPolicyBranchIdempotent(params: {
 
       // Head already carries this exact source: no write.
       if (existing[0].head_source_hash === sourceHash) {
-        return { branchId, revisionId: currentRevisionId ?? "", sourceHash, importedAt, created: false, alreadyCurrent: true };
+        return {
+          branchId,
+          revisionId: currentRevisionId ?? "",
+          sourceHash,
+          importedAt,
+          created: false,
+          alreadyCurrent: true,
+        };
       }
 
       // Source changed: append a new draft revision and move the branch head.
       const revisionId = crypto.randomUUID();
       await insertRevisionAndRules(branchId, revisionId, currentRevisionId);
-      return { branchId, revisionId, sourceHash, importedAt, created: false, alreadyCurrent: false };
+      return {
+        branchId,
+        revisionId,
+        sourceHash,
+        importedAt,
+        created: false,
+        alreadyCurrent: false,
+      };
     });
 
   // The advisory lock serializes same-identity imports, so a unique violation
@@ -706,7 +757,9 @@ export async function importPolicyBranchIdempotent(params: {
       throw error;
     }
   }
-  throw lastError instanceof Error ? lastError : new Error("Policy import failed after contention retries.");
+  throw lastError instanceof Error
+    ? lastError
+    : new Error("Policy import failed after contention retries.");
 }
 
 export async function createDraftRevision(params: {
@@ -771,7 +824,9 @@ export async function createCommittedRevision(params: {
   rules: CommittedRuleRow[];
 }): Promise<void> {
   if (!sql) throw new Error("Database not configured.");
-  assertCustomerRulesDoNotUseReservedIds(params.rules.map((rule) => ({ stableRuleId: rule.stable_rule_id })));
+  assertCustomerRulesDoNotUseReservedIds(
+    params.rules.map((rule) => ({ stableRuleId: rule.stable_rule_id })),
+  );
   await sql.begin(async (tx) => {
     await tx`
       INSERT INTO policy_revision (

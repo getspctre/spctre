@@ -49,7 +49,7 @@ export class SpctreOpenClawAdapter {
   beforeToolCall: BeforeToolCallHook = async (
     toolName: string,
     args: Record<string, unknown>,
-    hookContext: Record<string, unknown>
+    hookContext: Record<string, unknown>,
   ): Promise<BeforeToolCallResult> => {
     if (this.dryRun) {
       return { action: "allow" };
@@ -85,7 +85,9 @@ export class SpctreOpenClawAdapter {
     latencyMs: number;
   }): EvidenceRecord {
     return {
-      decisionId: stringFromContext(params.hookContext, ["decisionId", "decision_id"]) ?? `openclaw-${randomUUID()}`,
+      decisionId:
+        stringFromContext(params.hookContext, ["decisionId", "decision_id"]) ??
+        `openclaw-${randomUUID()}`,
       tenantId: this.tenantId,
       workspaceId: this.workspaceId,
       environment: this.environment,
@@ -110,8 +112,18 @@ export class SpctreOpenClawAdapter {
       },
       triggerKind: deriveTriggerKind(params.hookContext),
       executionContext: buildExecutionContext(params.hookContext),
-      parentAgentId: stringFromContext(params.hookContext, ["parentAgentId", "parent_agent_id", "routingParentAgentId", "routing_parent_agent_id"]),
-      traceId: stringFromContext(params.hookContext, ["traceId", "trace_id", "sessionId", "session_id"]),
+      parentAgentId: stringFromContext(params.hookContext, [
+        "parentAgentId",
+        "parent_agent_id",
+        "routingParentAgentId",
+        "routing_parent_agent_id",
+      ]),
+      traceId: stringFromContext(params.hookContext, [
+        "traceId",
+        "trace_id",
+        "sessionId",
+        "session_id",
+      ]),
       toolParameters: params.args,
       ingestMode: "gateway",
     };
@@ -133,10 +145,11 @@ function decisionFromEvaluation(evaluation: EvaluationResult): BeforeToolCallRes
 function buildEvaluationInput(
   toolName: string,
   args: Record<string, unknown>,
-  hookContext: Record<string, unknown>
+  hookContext: Record<string, unknown>,
 ): EvaluateParams {
   return {
-    connector: stringFromContext(hookContext, ["connector"]) ?? inferConnector(toolName, hookContext),
+    connector:
+      stringFromContext(hookContext, ["connector"]) ?? inferConnector(toolName, hookContext),
     action: stringFromContext(hookContext, ["action"]) ?? toolName,
     domains: arrayOfStringsFromContext(hookContext, "domains"),
     toolIntent: stringFromContext(hookContext, ["toolIntent", "tool_intent", "intent"]),
@@ -159,11 +172,18 @@ function inferConnector(toolName: string, hookContext: Record<string, unknown>):
 }
 
 function deriveTriggerKind(hookContext: Record<string, unknown>): TriggerKind {
-  if (hookContext.cron === true || hookContext.scheduled === true || stringFromContext(hookContext, ["triggerKind", "trigger_kind"]) === "scheduled") {
+  if (
+    hookContext.cron === true ||
+    hookContext.scheduled === true ||
+    stringFromContext(hookContext, ["triggerKind", "trigger_kind"]) === "scheduled"
+  ) {
     return "scheduled";
   }
 
-  if (typeof hookContext.channel === "string" || stringFromContext(hookContext, ["triggerKind", "trigger_kind"]) === "gateway_message") {
+  if (
+    typeof hookContext.channel === "string" ||
+    stringFromContext(hookContext, ["triggerKind", "trigger_kind"]) === "gateway_message"
+  ) {
     return "gateway_message";
   }
 
@@ -171,10 +191,10 @@ function deriveTriggerKind(hookContext: Record<string, unknown>): TriggerKind {
 }
 
 function buildExecutionContext(hookContext: Record<string, unknown>): ExecutionContext | undefined {
-  const executionContext = recordFromContext(hookContext, "executionContext") ?? recordFromContext(hookContext, "execution_context");
-  const context: ExecutionContext = {
-    ...(executionContext ?? {}),
-  };
+  const executionContext =
+    recordFromContext(hookContext, "executionContext") ??
+    recordFromContext(hookContext, "execution_context");
+  const context: ExecutionContext = { ...(executionContext ?? {}) };
 
   for (const [sourceKey, targetKey] of [
     ["backend", "backend"],
@@ -208,17 +228,25 @@ function stringFromContext(context: Record<string, unknown>, keys: string[]): st
   return undefined;
 }
 
-function arrayOfStringsFromContext(context: Record<string, unknown>, key: string): string[] | undefined {
+function arrayOfStringsFromContext(
+  context: Record<string, unknown>,
+  key: string,
+): string[] | undefined {
   const value = context[key];
   if (!Array.isArray(value)) {
     return undefined;
   }
 
-  const strings = value.filter((item): item is string => typeof item === "string" && item.length > 0);
+  const strings = value.filter(
+    (item): item is string => typeof item === "string" && item.length > 0,
+  );
   return strings.length > 0 ? strings : undefined;
 }
 
-function recordFromContext(context: Record<string, unknown>, key: string): Record<string, unknown> | undefined {
+function recordFromContext(
+  context: Record<string, unknown>,
+  key: string,
+): Record<string, unknown> | undefined {
   const value = context[key];
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return undefined;

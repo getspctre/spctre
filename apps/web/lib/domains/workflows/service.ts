@@ -59,14 +59,7 @@ export async function getWorkflowsPageModel(scope: ActiveScope): Promise<Workflo
   ]);
   const enabledCount = workflows.filter((workflow) => workflow.enabled).length;
 
-  return {
-    workspaceContext,
-    actor,
-    workflows,
-    workspaces,
-    auditEvents,
-    enabledCount,
-  };
+  return { workspaceContext, actor, workflows, workspaces, auditEvents, enabledCount };
 }
 
 export async function getApprovalWorkflowConfig(params: {
@@ -97,8 +90,8 @@ function selectedRoles(formData: FormData): string[] {
       formData
         .getAll("eligibleRole")
         .map((value) => String(value).trim())
-        .filter((value) => VALID_REVIEWER_ROLES.has(value))
-    )
+        .filter((value) => VALID_REVIEWER_ROLES.has(value)),
+    ),
   );
 }
 
@@ -129,7 +122,8 @@ function parseWorkflowForm(formData: FormData): ParsedWorkflowForm {
     environment: environmentRaw || null,
     reviewMode: VALID_REVIEW_MODES.has(reviewModeRaw) ? reviewModeRaw : "PARALLEL",
     requireVerification: String(formData.get("requireVerification") ?? "").trim() === "on",
-    allowImmediatePackPublish: String(formData.get("allowImmediatePackPublish") ?? "").trim() === "on",
+    allowImmediatePackPublish:
+      String(formData.get("allowImmediatePackPublish") ?? "").trim() === "on",
     role: String(formData.get("role") ?? "").trim(),
     requiredCount: Number.parseInt(String(formData.get("requiredCount") ?? "1"), 10),
     eligibleRoles: selectedRoles(formData),
@@ -147,7 +141,7 @@ function validateWorkflowForm(form: ParsedWorkflowForm): string | null {
 }
 
 export async function upsertApprovalWorkflowDecision(
-  formData: FormData
+  formData: FormData,
 ): Promise<WorkflowActionState> {
   const guard = await requireWorkflowAdmin();
   if ("error" in guard) return { error: guard.error };
@@ -179,21 +173,18 @@ export async function upsertApprovalWorkflowDecision(
 
   const existingWorkflowId = workflowId
     ? ""
-    : (await getExistingWorkflowForScope({
+    : ((await getExistingWorkflowForScope({
         tenantId: guard.session.tenantId,
         workspaceId,
         environment,
-      })) ?? "";
+      })) ?? "");
   const targetWorkflowId = workflowId || existingWorkflowId;
 
   const existingRiskTags = targetWorkflowId
-    ? await getWorkflowRiskTags({
-        tenantId: guard.session.tenantId,
-        workflowId: targetWorkflowId,
-      })
+    ? await getWorkflowRiskTags({ tenantId: guard.session.tenantId, workflowId: targetWorkflowId })
     : [];
   const preservedRiskTags = existingRiskTags.filter(
-    (tag) => tag !== REQUIRE_AGT_VERIFICATION_TAG && tag !== ALLOW_IMMEDIATE_PACK_PUBLISH_TAG
+    (tag) => tag !== REQUIRE_AGT_VERIFICATION_TAG && tag !== ALLOW_IMMEDIATE_PACK_PUBLISH_TAG,
   );
   const riskTags = [
     ...preservedRiskTags,
@@ -254,7 +245,7 @@ export async function upsertApprovalWorkflowDecision(
 }
 
 export async function disableApprovalWorkflowDecision(
-  formData: FormData
+  formData: FormData,
 ): Promise<WorkflowActionState> {
   const guard = await requireWorkflowAdmin();
   if ("error" in guard) return { error: guard.error };
@@ -271,7 +262,9 @@ export async function disableApprovalWorkflowDecision(
   if (target.enabled) {
     const enabledCount = await countEnabledWorkflows(guard.session.tenantId);
     if (enabledCount <= 1) {
-      return { error: "Cannot disable the only active workflow. Keep at least one workflow enabled." };
+      return {
+        error: "Cannot disable the only active workflow. Keep at least one workflow enabled.",
+      };
     }
   }
 
@@ -299,11 +292,14 @@ export async function disableApprovalWorkflowDecision(
   revalidatePath("/admin/workflows");
   revalidatePath("/review");
   revalidatePath("/compliance");
-  return { ok: true, message: `Workflow disabled. Refreshed ${refreshedItems} active review item(s).` };
+  return {
+    ok: true,
+    message: `Workflow disabled. Refreshed ${refreshedItems} active review item(s).`,
+  };
 }
 
 export async function removeApprovalWorkflowRuleDecision(
-  formData: FormData
+  formData: FormData,
 ): Promise<WorkflowActionState> {
   const guard = await requireWorkflowAdmin();
   if ("error" in guard) return { error: guard.error };

@@ -46,14 +46,18 @@ export async function startStdio(config: SpctreConfig): Promise<void> {
   // claims. The deadline is enforced by stdioLegacyMode, not a manual task.
   const instances = new Set<SpctreMcpServer>();
   const legacyMode = stdioLegacyMode();
-  const handle = serveStdio(() => {
-    const server = new SpctreMcpServer(config);
-    instances.add(server);
-    return server.protocolServer();
-  }, {
-    legacy: legacyMode,
-    onerror: (error) => logger.error("STDIO MCP transport failed", { error: errorMessage(error) }),
-  });
+  const handle = serveStdio(
+    () => {
+      const server = new SpctreMcpServer(config);
+      instances.add(server);
+      return server.protocolServer();
+    },
+    {
+      legacy: legacyMode,
+      onerror: (error) =>
+        logger.error("STDIO MCP transport failed", { error: errorMessage(error) }),
+    },
+  );
   logger.info("MCP server running in modern STDIO mode", {
     transport: "stdio",
     protocol: "2026-07-28",
@@ -94,16 +98,25 @@ export async function startHttp(config: SpctreConfig): Promise<void> {
   process.on("SIGTERM", shutdown);
 }
 
-export function createHttpApp(config: SpctreConfig, deps: HttpTransportDeps = {}): HttpTransportApp {
+export function createHttpApp(
+  config: SpctreConfig,
+  deps: HttpTransportDeps = {},
+): HttpTransportApp {
   const app = express();
   const allowedSourceIps = deps.allowedSourceIps ?? parseAllowedSourceIps();
-  const createServer = deps.createServer ?? ((requestConfig: SpctreConfig) => new SpctreMcpServer(requestConfig));
-  const rateLimiter = deps.rateLimiter === undefined
-    ? (config.httpRateLimitPerSecond > 0
-        ? new TokenBucketRateLimiter({ perSecond: config.httpRateLimitPerSecond, burst: config.httpRateLimitBurst })
-        : null)
-    : deps.rateLimiter;
-  const oauthResource = config.oauthResource ?? `${config.apiBaseUrl.replace(/\/$/, "")}${config.httpPath}`;
+  const createServer =
+    deps.createServer ?? ((requestConfig: SpctreConfig) => new SpctreMcpServer(requestConfig));
+  const rateLimiter =
+    deps.rateLimiter === undefined
+      ? config.httpRateLimitPerSecond > 0
+        ? new TokenBucketRateLimiter({
+            perSecond: config.httpRateLimitPerSecond,
+            burst: config.httpRateLimitBurst,
+          })
+        : null
+      : deps.rateLimiter;
+  const oauthResource =
+    config.oauthResource ?? `${config.apiBaseUrl.replace(/\/$/, "")}${config.httpPath}`;
   const oauthMetadataPath = "/.well-known/oauth-protected-resource";
 
   const challenge = (error: string) =>
@@ -140,9 +153,21 @@ export function createHttpApp(config: SpctreConfig, deps: HttpTransportDeps = {}
   app.get("/readyz", async (_req: Request, res: Response) => {
     try {
       await axios.head(config.apiBaseUrl, { timeout: 3_000 });
-      res.json({ ok: true, unit: "mcp-server", stateless: true, checks: { upstream: { ok: true } } });
+      res.json({
+        ok: true,
+        unit: "mcp-server",
+        stateless: true,
+        checks: { upstream: { ok: true } },
+      });
     } catch {
-      res.status(503).json({ ok: false, unit: "mcp-server", stateless: true, checks: { upstream: { ok: false, reason: `Upstream ${config.apiBaseUrl} unreachable` } } });
+      res
+        .status(503)
+        .json({
+          ok: false,
+          unit: "mcp-server",
+          stateless: true,
+          checks: { upstream: { ok: false, reason: `Upstream ${config.apiBaseUrl} unreachable` } },
+        });
     }
   });
 
@@ -167,7 +192,12 @@ export function createHttpApp(config: SpctreConfig, deps: HttpTransportDeps = {}
       if (!decision.allowed) {
         incrementCounter("spctre.mcp.request.rejected", 1, { reason: "rate_limit" });
         res.setHeader("Retry-After", String(Math.max(1, Math.ceil(decision.retryAfterMs / 1000))));
-        res.status(429).json({ error: "Rate limit exceeded. Slow down and retry.", retryAfterMs: decision.retryAfterMs });
+        res
+          .status(429)
+          .json({
+            error: "Rate limit exceeded. Slow down and retry.",
+            retryAfterMs: decision.retryAfterMs,
+          });
         return;
       }
     }
@@ -183,11 +213,13 @@ export function createHttpApp(config: SpctreConfig, deps: HttpTransportDeps = {}
 
     try {
       await toNodeHandler(handler, {
-        onerror: (error) => logger.error("Stateless MCP request failed", { error: errorMessage(error) }),
+        onerror: (error) =>
+          logger.error("Stateless MCP request failed", { error: errorMessage(error) }),
       })(req, res, next);
     } catch (error) {
       incrementCounter("spctre.mcp.request.errors", 1, { transport: "http" });
-      if (!res.headersSent) res.status(500).json({ error: errorMessage(error) || "MCP request failed." });
+      if (!res.headersSent)
+        res.status(500).json({ error: errorMessage(error) || "MCP request failed." });
     }
   });
 

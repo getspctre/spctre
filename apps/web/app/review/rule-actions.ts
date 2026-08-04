@@ -9,22 +9,28 @@ import {
 } from "@/lib/domains/review/service";
 import { getWorkspaceContext } from "@/lib/workspace";
 import { verifyWriteAccess } from "@/lib/demo-guard";
-import { evaluateDecision, validatePolicyControlMappings, type PolicyRuleSummary, type EvaluationResult } from "@spctre/policy-schema";
-import { simulateDraftAgainstEvidence, type DraftSimulationSummary } from "@/lib/domains/review/draft-simulation";
+import {
+  evaluateDecision,
+  validatePolicyControlMappings,
+  type PolicyRuleSummary,
+  type EvaluationResult,
+} from "@spctre/policy-schema";
+import {
+  simulateDraftAgainstEvidence,
+  type DraftSimulationSummary,
+} from "@/lib/domains/review/draft-simulation";
 
 export type DraftRevisionState = DomainDraftRevisionState;
 export type CommitRevisionState = DomainCommitRevisionState;
 
 export type DraftSimulationState =
-  | { summary: DraftSimulationSummary; error?: never }
-  | { error: string; summary?: never }
-  | null;
+  { summary: DraftSimulationSummary; error?: never } | { error: string; summary?: never } | null;
 
 // Preview the draft rule set's blast radius over recent retained evidence,
 // without committing. Read-only and ephemeral — no persistence.
 export async function simulateDraftDecision(
   _prev: DraftSimulationState,
-  formData: FormData
+  formData: FormData,
 ): Promise<DraftSimulationState> {
   const workspaceContext = await getWorkspaceContext();
   const rulesPayload = String(formData.get("rulesPayload") ?? "").trim();
@@ -50,9 +56,7 @@ export async function simulateDraftDecision(
 }
 
 export type ExampleDecisionState =
-  | { result: EvaluationResult; error?: never }
-  | { error: string; result?: never }
-  | null;
+  { result: EvaluationResult; error?: never } | { error: string; result?: never } | null;
 
 // Preview what the in-memory draft rule set would decide for an example
 // tool-call, without committing. Deterministic and side-effect free — it runs
@@ -60,7 +64,7 @@ export type ExampleDecisionState =
 // would commit, so the preview matches real enforcement.
 export async function evaluateExampleDecision(
   _prev: ExampleDecisionState,
-  formData: FormData
+  formData: FormData,
 ): Promise<ExampleDecisionState> {
   const rulesPayload = String(formData.get("rulesPayload") ?? "").trim();
   const connector = String(formData.get("connector") ?? "").trim();
@@ -90,7 +94,7 @@ export async function evaluateExampleDecision(
     try {
       const parsed = JSON.parse(parametersText);
       if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-        return { error: "Tool parameters must be a JSON object, e.g. { \"amount_cents\": 60000 }." };
+        return { error: 'Tool parameters must be a JSON object, e.g. { "amount_cents": 60000 }.' };
       }
       toolParameters = parsed as Record<string, unknown>;
     } catch {
@@ -98,13 +102,21 @@ export async function evaluateExampleDecision(
     }
   }
 
-  const result = evaluateDecision({ connector, action, domains, rules, toolIntent, planSummary: toolIntent, toolParameters });
+  const result = evaluateDecision({
+    connector,
+    action,
+    domains,
+    rules,
+    toolIntent,
+    planSummary: toolIntent,
+    toolParameters,
+  });
   return { result };
 }
 
 export async function createDraftRuleRevision(
   _prev: DraftRevisionState,
-  formData: FormData
+  formData: FormData,
 ): Promise<DraftRevisionState> {
   const workspaceContext = await getWorkspaceContext();
   const tenantId = workspaceContext.tenantId;
@@ -136,7 +148,7 @@ export async function createDraftRuleRevision(
 
 export async function commitRuleRevision(
   _prev: CommitRevisionState,
-  formData: FormData
+  formData: FormData,
 ): Promise<CommitRevisionState> {
   const workspaceContext = await getWorkspaceContext();
   const tenantId = workspaceContext.tenantId;
@@ -155,7 +167,10 @@ export async function commitRuleRevision(
     const parsedRules = JSON.parse(rulesPayload);
     if (!Array.isArray(parsedRules)) return { error: "Authored rules must be an array." };
     const mappingIssues = validatePolicyControlMappings(parsedRules as PolicyRuleSummary[]);
-    if (mappingIssues.length) return { error: `Control mappings require attention: ${mappingIssues.map((issue) => `${issue.stableRuleId}: ${issue.message}`).join(" ")}` };
+    if (mappingIssues.length)
+      return {
+        error: `Control mappings require attention: ${mappingIssues.map((issue) => `${issue.stableRuleId}: ${issue.message}`).join(" ")}`,
+      };
   } catch {
     return { error: "Authored rules are not valid JSON." };
   }

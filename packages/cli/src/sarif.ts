@@ -26,19 +26,9 @@ interface SarifOutput {
   version: "2.1.0";
   $schema: string;
   runs: Array<{
-    tool: {
-      driver: {
-        name: string;
-        version: string;
-        informationUri: string;
-        rules: SarifRule[];
-      };
-    };
+    tool: { driver: { name: string; version: string; informationUri: string; rules: SarifRule[] } };
     results: SarifResult[];
-    artifacts: Array<{
-      location: { uri: string; uriBaseId: string };
-      mimeType: string;
-    }>;
+    artifacts: Array<{ location: { uri: string; uriBaseId: string }; mimeType: string }>;
   }>;
 }
 
@@ -70,7 +60,9 @@ export function buildSarif(lintResult: LintResult, testReport: TestReport | null
       ruleId,
       level: "error",
       message: { text: err },
-      locations: [{ physicalLocation: { artifactLocation: { uri: artifactUri, uriBaseId: "%SRCROOT%" } } }],
+      locations: [
+        { physicalLocation: { artifactLocation: { uri: artifactUri, uriBaseId: "%SRCROOT%" } } },
+      ],
     });
   }
 
@@ -82,7 +74,9 @@ export function buildSarif(lintResult: LintResult, testReport: TestReport | null
       ruleId,
       level,
       message: { text: d.message },
-      locations: [{ physicalLocation: { artifactLocation: { uri: artifactUri, uriBaseId: "%SRCROOT%" } } }],
+      locations: [
+        { physicalLocation: { artifactLocation: { uri: artifactUri, uriBaseId: "%SRCROOT%" } } },
+      ],
     });
   }
 
@@ -97,7 +91,13 @@ export function buildSarif(lintResult: LintResult, testReport: TestReport | null
         message: {
           text: `${r.fixture.connector}/${r.fixture.action}: expected ${r.fixture.expect}, got ${r.actual}. ${r.reason}`,
         },
-        locations: [{ physicalLocation: { artifactLocation: { uri: fileUri(testReport.file), uriBaseId: "%SRCROOT%" } } }],
+        locations: [
+          {
+            physicalLocation: {
+              artifactLocation: { uri: fileUri(testReport.file), uriBaseId: "%SRCROOT%" },
+            },
+          },
+        ],
       });
     }
   }
@@ -117,10 +117,7 @@ export function buildSarif(lintResult: LintResult, testReport: TestReport | null
         },
         results,
         artifacts: [
-          {
-            location: { uri: artifactUri, uriBaseId: "%SRCROOT%" },
-            mimeType: "application/json",
-          },
+          { location: { uri: artifactUri, uriBaseId: "%SRCROOT%" }, mimeType: "application/json" },
         ],
       },
     ],

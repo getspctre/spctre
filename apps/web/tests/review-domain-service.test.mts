@@ -1,8 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("@/lib/db", () => ({
-  sql: null,
-}));
+vi.mock("@/lib/db", () => ({ sql: null }));
 
 vi.mock("next/headers", () => ({
   cookies: async () => ({ get: () => ({ value: "session-123" }), set: () => {} }),
@@ -20,9 +18,7 @@ vi.mock("@/lib/workspace/scope", () => ({
   })),
 }));
 
-vi.mock("@/lib/app-view-mode-server", () => ({
-  getAppViewMode: vi.fn(async () => "standard"),
-}));
+vi.mock("@/lib/app-view-mode-server", () => ({ getAppViewMode: vi.fn(async () => "standard") }));
 
 vi.mock("@/lib/workspace/server-context", () => ({
   getWorkspaceContext: vi.fn(async () => ({
@@ -37,29 +33,25 @@ const { getReviewPageModel } = await import("../app/review/review-page-model");
 
 describe("review domain service", () => {
   it("guards addApprovalDecision when required inputs are missing", async () => {
-    const result = await reviewService.addApprovalDecision({
-      revisionId: "",
-      role: "",
-      approvalStatus: "",
-      note: null,
-    }, { tenantId: "00000000-0000-0000-0000-000000000001", workspaceId: "workspace-demo" });
+    const result = await reviewService.addApprovalDecision(
+      { revisionId: "", role: "", approvalStatus: "", note: null },
+      { tenantId: "00000000-0000-0000-0000-000000000001", workspaceId: "workspace-demo" },
+    );
 
     expect(result).toEqual({ error: "Review action is unavailable." });
   });
 
   it("returns a stable infrastructure error when publish is unavailable", async () => {
-    const result = await reviewService.publishRevisionDecision({
-      revisionId: "revision-1",
-      branchId: "branch-1",
-    }, { tenantId: "00000000-0000-0000-0000-000000000001", workspaceId: "workspace-demo" });
+    const result = await reviewService.publishRevisionDecision(
+      { revisionId: "revision-1", branchId: "branch-1" },
+      { tenantId: "00000000-0000-0000-0000-000000000001", workspaceId: "workspace-demo" },
+    );
 
     expect(result).toEqual({ error: "Branch not found." });
   });
 
   it("getReviewPageModel returns demo fallback data for demo tenant", async () => {
-    const model = await getReviewPageModel({
-      workspaceSlug: "default",
-    });
+    const model = await getReviewPageModel({ workspaceSlug: "default" });
 
     expect(model.workspaceContext.tenantId).toBe("00000000-0000-0000-0000-000000000001");
     expect(model.branches.length).toBeGreaterThan(0);

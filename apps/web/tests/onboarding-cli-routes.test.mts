@@ -5,7 +5,7 @@ const exchangeCliOnboardingCodeSpy = vi.fn();
 
 vi.mock("@/lib/onboarding", () => ({
   startCliOnboarding: startCliOnboardingSpy,
-  exchangeCliOnboardingCode: exchangeCliOnboardingCodeSpy
+  exchangeCliOnboardingCode: exchangeCliOnboardingCodeSpy,
 }));
 
 const startRoute = await import("../app/api/onboarding/cli/start/route");
@@ -21,7 +21,7 @@ describe("CLI onboarding routes", () => {
     startCliOnboardingSpy.mockResolvedValue({
       code: "abc123",
       approveUrl: "http://localhost:3000/onboarding/cli/approve?code=abc123",
-      expiresAt: "2026-05-06T00:10:00.000Z"
+      expiresAt: "2026-05-06T00:10:00.000Z",
     });
 
     const response = await startRoute.POST(
@@ -32,9 +32,9 @@ describe("CLI onboarding routes", () => {
           workspaceSlug: "default",
           agentId: "solo-agent",
           environment: "production",
-          bundlePath: "spctre-policy.json"
-        })
-      })
+          bundlePath: "spctre-policy.json",
+        }),
+      }),
     );
 
     expect(response.status).toBe(201);
@@ -44,20 +44,20 @@ describe("CLI onboarding routes", () => {
       workspaceSlug: "default",
       agentId: "solo-agent",
       environment: "production",
-      bundlePath: "spctre-policy.json"
+      bundlePath: "spctre-policy.json",
     });
   });
 
   it("returns pending while the CLI approval has not been approved", async () => {
     exchangeCliOnboardingCodeSpy.mockRejectedValue(
-      new Error("CLI onboarding request is waiting for browser approval.")
+      new Error("CLI onboarding request is waiting for browser approval."),
     );
 
     const response = await exchangeRoute.POST(
       new Request("http://localhost:3000/api/onboarding/cli/exchange", {
         method: "POST",
-        body: JSON.stringify({ code: "abc123" })
-      })
+        body: JSON.stringify({ code: "abc123" }),
+      }),
     );
 
     expect(response.status).toBe(202);
@@ -71,20 +71,20 @@ describe("CLI onboarding routes", () => {
       workspaceId: "workspace-1",
       workspaceSlug: "default",
       agentId: "solo-agent",
-      artifactHash: "sha256:starter"
+      artifactHash: "sha256:starter",
     });
 
     const response = await exchangeRoute.POST(
       new Request("http://localhost:3000/api/onboarding/cli/exchange", {
         method: "POST",
-        body: JSON.stringify({ code: "abc123" })
-      })
+        body: JSON.stringify({ code: "abc123" }),
+      }),
     );
 
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toMatchObject({
       token: "spctre_dev_token",
-      workspaceId: "workspace-1"
+      workspaceId: "workspace-1",
     });
     expect(exchangeCliOnboardingCodeSpy).toHaveBeenCalledWith("abc123");
   });

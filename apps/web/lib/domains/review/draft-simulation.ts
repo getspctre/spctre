@@ -1,4 +1,9 @@
-import { evaluateDecision, type PolicyRuleSummary, type RuntimeDecisionStatus, type RuntimeDecisionEvidenceRecord } from "@spctre/policy-schema";
+import {
+  evaluateDecision,
+  type PolicyRuleSummary,
+  type RuntimeDecisionStatus,
+  type RuntimeDecisionEvidenceRecord,
+} from "@spctre/policy-schema";
 import { getWorkspaceContext } from "@/lib/workspace";
 import { runWithTenantContext } from "@/lib/tenant-context";
 import { listRuntimeEvidence } from "@/lib/repositories/evidence/runtime";
@@ -52,7 +57,7 @@ type SimulatableRecord = Pick<
 // without a database.
 export function buildDraftSimulationSummary(
   records: SimulatableRecord[],
-  rules: PolicyRuleSummary[]
+  rules: PolicyRuleSummary[],
 ): DraftSimulationSummary {
   // Rules that apply regardless of the request's domain. evaluateDecision treats
   // an empty input-domain list as a wildcard, so a domain-scoped rule would
@@ -125,7 +130,7 @@ export async function simulateDraftAgainstEvidence(input: {
   const { tenantId, workspaceId } = workspaceContext;
 
   const evidence = await runWithTenantContext(tenantId, () =>
-    listRuntimeEvidence(workspaceId, tenantId, SAMPLE_LIMIT, 0)
+    listRuntimeEvidence(workspaceId, tenantId, SAMPLE_LIMIT, 0),
   ).catch(swallow("runWithTenantContext", []));
 
   return { summary: buildDraftSimulationSummary(evidence, input.rules) };

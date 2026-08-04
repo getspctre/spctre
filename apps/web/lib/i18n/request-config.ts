@@ -30,11 +30,7 @@ export const resolveI18nRequestConfig = cache(async (): Promise<I18nRequestConfi
   };
 
   if (headersList.get("x-is-docs") === "true") {
-    return {
-      locale: "en",
-      messages: getStaticMessages("en"),
-      overrides: {},
-    };
+    return { locale: "en", messages: getStaticMessages("en"), overrides: {} };
   }
 
   let locale = resolveLocalePreference(requestedLocale);
@@ -45,7 +41,9 @@ export const resolveI18nRequestConfig = cache(async (): Promise<I18nRequestConfi
   const hasAppAccess = Boolean(session && (!session.requireMfa || session.mfaVerified));
 
   if (hasAppAccess) {
-    const workspaceContext = await getWorkspaceContext().catch(swallow("getWorkspaceContext", null));
+    const workspaceContext = await getWorkspaceContext().catch(
+      swallow("getWorkspaceContext", null),
+    );
     if (workspaceContext) {
       tenantId = workspaceContext.tenantId;
       locale = resolveLocalePreference({
@@ -56,7 +54,7 @@ export const resolveI18nRequestConfig = cache(async (): Promise<I18nRequestConfi
       overrides = await getTenantTerminologyOverrides(
         createTenantTerminologyStore(),
         workspaceContext.tenantId,
-        locale
+        locale,
       ).catch(swallow("getTenantTerminologyOverrides", {}));
     }
   }

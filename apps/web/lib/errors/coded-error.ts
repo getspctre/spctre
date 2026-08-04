@@ -44,7 +44,7 @@ export class CodedError extends Error {
 // instance, a plain `{ code }` (e.g. a JSON error envelope from an API route),
 // or an Error whose message is a known code (server-action boundary in dev).
 export function extractErrorCode(
-  err: unknown
+  err: unknown,
 ): { code: ErrorCode; meta?: Record<string, unknown> } | null {
   if (err && typeof err === "object") {
     const anyErr = err as { code?: unknown; meta?: unknown; message?: unknown };
@@ -68,17 +68,15 @@ export function extractErrorCode(
 // the localized `errors.<CODE>` message is used; otherwise the caller's
 // localized `fallback` is returned so raw English domain copy is never shown to
 // the user. `tErrors` must be a translator scoped to the `errors` namespace.
-type ErrorTranslator = (
-  key: string,
-  values?: Record<string, string | number | Date>
-) => string;
+type ErrorTranslator = (key: string, values?: Record<string, string | number | Date>) => string;
 
 export function resolveErrorMessage(
   err: unknown,
   tErrors: ErrorTranslator,
-  fallback: string
+  fallback: string,
 ): string {
   const coded = extractErrorCode(err);
-  if (coded) return tErrors(coded.code, coded.meta as Record<string, string | number | Date> | undefined);
+  if (coded)
+    return tErrors(coded.code, coded.meta as Record<string, string | number | Date> | undefined);
   return fallback;
 }

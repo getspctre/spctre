@@ -19,7 +19,7 @@ export async function setControlPlaneSessionCookies(params: {
     pid: params.principalId,
     sub: params.subject,
     mfaVerified: params.mfaVerified,
-    ttlSeconds
+    ttlSeconds,
   });
 
   const cookieOptions = {
@@ -27,7 +27,7 @@ export async function setControlPlaneSessionCookies(params: {
     sameSite: "lax" as const,
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    maxAge: ttlSeconds
+    maxAge: ttlSeconds,
   };
 
   params.response.cookies.set(SESSION_COOKIE, params.sessionId, cookieOptions);

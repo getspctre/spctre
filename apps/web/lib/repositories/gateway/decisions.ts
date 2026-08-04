@@ -16,7 +16,7 @@ export interface RevisionAtTime {
 export async function resolveRevisionAtTime(
   tenantId: string,
   workspaceId: string,
-  atTimestamp: string
+  atTimestamp: string,
 ): Promise<RevisionAtTime | null> {
   if (!sql) return null;
 
@@ -42,7 +42,7 @@ export async function resolveRevisionAtTime(
 export async function getGatewayOutcomesForDecisions(
   tenantId: string,
   workspaceId: string,
-  decisionIds: string[]
+  decisionIds: string[],
 ): Promise<Map<string, string>> {
   if (!sql || !decisionIds.length) return new Map();
   try {
@@ -60,7 +60,10 @@ export async function getGatewayOutcomesForDecisions(
 }
 
 export async function countGatewaySessionDecisions(params: {
-  tenantId: string; workspaceId: string; agentId: string; sessionId: string;
+  tenantId: string;
+  workspaceId: string;
+  agentId: string;
+  sessionId: string;
 }): Promise<number> {
   if (!sql) return 0;
   const rows = await sql<{ count: string }[]>`
@@ -117,7 +120,9 @@ function decisionInsertValues(record: GatewayDecisionRecord) {
   };
 }
 
-export async function persistGatewayDecision(record: GatewayDecisionRecord): Promise<string | null> {
+export async function persistGatewayDecision(
+  record: GatewayDecisionRecord,
+): Promise<string | null> {
   if (!sql) return null;
 
   const v = decisionInsertValues(record);
@@ -188,7 +193,9 @@ export async function persistGatewayDecision(record: GatewayDecisionRecord): Pro
     `;
 
     // Trigger FIRST_HITL_ESCALATION conversion telemetry asynchronously
-    recordConversionTelemetry(record.tenantId, "FIRST_HITL_ESCALATION").catch(swallow("recordConversionTelemetry", undefined));
+    recordConversionTelemetry(record.tenantId, "FIRST_HITL_ESCALATION").catch(
+      swallow("recordConversionTelemetry", undefined),
+    );
 
     // Dispatch alerting notification for new escalation (fire-and-forget)
     dispatchEscalationCreatedAlert({
@@ -212,7 +219,7 @@ export async function updateGatewayDecisionOutcome(
   id: string,
   tenantId: string,
   outcome: "PROCEED" | "ESCALATE" | "ABORT",
-  reason: string
+  reason: string,
 ): Promise<boolean> {
   if (!sql) return false;
 
@@ -226,7 +233,9 @@ export async function updateGatewayDecisionOutcome(
     `;
     return true;
   } catch (err) {
-    logger.error("[gateway/decisions] failed to update gateway decision outcome:", { error: err instanceof Error ? err.message : String(err) });
+    logger.error("[gateway/decisions] failed to update gateway decision outcome:", {
+      error: err instanceof Error ? err.message : String(err),
+    });
     return false;
   }
 }

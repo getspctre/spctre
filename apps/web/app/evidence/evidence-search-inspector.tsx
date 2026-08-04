@@ -4,7 +4,7 @@ import { Search } from "lucide-react";
 import type {
   RuntimeDecisionStatus,
   RuntimeEvidenceSearchResult,
-  RuntimeStack
+  RuntimeStack,
 } from "@spctre/policy-schema";
 import { runtimeLabels } from "@/lib/constants";
 import { hashToFingerprint } from "@/lib/fingerprint";
@@ -33,12 +33,10 @@ function SearchResultCard({
     new Set(
       result.policyContext
         .map((context) =>
-          context.packVersion
-            ? `${context.packId ?? "pack"}@${context.packVersion}`
-            : undefined
+          context.packVersion ? `${context.packId ?? "pack"}@${context.packVersion}` : undefined,
         )
-        .filter((value): value is string => Boolean(value))
-    )
+        .filter((value): value is string => Boolean(value)),
+    ),
   );
 
   return (
@@ -49,9 +47,13 @@ function SearchResultCard({
             {result.connector}.{result.action}
           </h3>
           <p className="meta">
-            <code>{forensicMode ? result.decisionId : `${result.decisionId.slice(0, 16)}...`}</code> /{" "}
+            <code>{forensicMode ? result.decisionId : `${result.decisionId.slice(0, 16)}...`}</code>{" "}
+            /{" "}
             {crossSurfaceIdentity ? (
-              <a href={`/api/agents/${encodeURIComponent(result.agentId)}/identity-history`} title="Cross-surface identity history">
+              <a
+                href={`/api/agents/${encodeURIComponent(result.agentId)}/identity-history`}
+                title="Cross-surface identity history"
+              >
                 {result.agentId}
               </a>
             ) : (
@@ -149,10 +151,17 @@ export function EvidenceSearchInspector({
   searchResult,
   statuses,
   runtimeStacks,
-  crossSurfaceIdentity
+  crossSurfaceIdentity,
 }: Props) {
-  const { selectedStatus, selectedStack, selectedConnector, selectedBranch, selectedRevision, fromDate, toDate } =
-    deriveSearchFormDefaults(searchResult);
+  const {
+    selectedStatus,
+    selectedStack,
+    selectedConnector,
+    selectedBranch,
+    selectedRevision,
+    fromDate,
+    toDate,
+  } = deriveSearchFormDefaults(searchResult);
   const queryLabel = searchResult.query.text || "all evidence";
   const resetHref = `${actionPath}?inspector=search`;
 
@@ -174,7 +183,11 @@ export function EvidenceSearchInspector({
         <input name="inspector" type="hidden" value="search" />
         <label>
           <span>Text</span>
-          <input name="q" defaultValue={searchResult.query.text ?? ""} placeholder="refund, agent, hash..." />
+          <input
+            name="q"
+            defaultValue={searchResult.query.text ?? ""}
+            placeholder="refund, agent, hash..."
+          />
         </label>
         <label>
           <span>Status</span>
@@ -252,7 +265,12 @@ export function EvidenceSearchInspector({
 
       <div className="searchResults">
         {searchResult.results.map((result) => (
-          <SearchResultCard key={result.decisionId} result={result} forensicMode={forensicMode} crossSurfaceIdentity={crossSurfaceIdentity} />
+          <SearchResultCard
+            key={result.decisionId}
+            result={result}
+            forensicMode={forensicMode}
+            crossSurfaceIdentity={crossSurfaceIdentity}
+          />
         ))}
         {searchResult.results.length === 0 ? (
           <div className="emptyState">

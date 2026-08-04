@@ -19,7 +19,7 @@ export interface SiemStream {
 
 export async function listSiemStreams(
   tenantId: string,
-  workspaceId: string
+  workspaceId: string,
 ): Promise<SiemStream[]> {
   if (!sql) return [];
   return sql<SiemStream[]>`
@@ -52,7 +52,7 @@ export async function createSiemStream(
   url: string,
   config: Record<string, unknown>,
   credentialsJson: string,
-  credentialKey: string
+  credentialKey: string,
 ): Promise<SiemStream | null> {
   if (!sql) return null;
   const rows = await sql<SiemStream[]>`
@@ -88,7 +88,7 @@ export async function createSiemStream(
 export async function deleteSiemStream(
   tenantId: string,
   workspaceId: string,
-  id: string
+  id: string,
 ): Promise<boolean> {
   if (!sql) return false;
   const result = await sql`
@@ -104,7 +104,7 @@ export async function toggleSiemStream(
   tenantId: string,
   workspaceId: string,
   id: string,
-  enabled: boolean
+  enabled: boolean,
 ): Promise<boolean> {
   if (!sql) return false;
   const result = await sql`

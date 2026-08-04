@@ -3,9 +3,7 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 
-vi.mock("node:child_process", () => ({
-  spawnSync: vi.fn(),
-}));
+vi.mock("node:child_process", () => ({ spawnSync: vi.fn() }));
 
 import { bundleRunVerifiers } from "../src/bundle-export";
 import * as childProcess from "node:child_process";
@@ -61,7 +59,14 @@ describe("bundleRunVerifiers", () => {
   }
 
   it("reports pass when all verifier tools exit 0", async () => {
-    spawnSyncMock.mockReturnValue({ status: 0, stdout: "", stderr: "", pid: 1, output: [], signal: null });
+    spawnSyncMock.mockReturnValue({
+      status: 0,
+      stdout: "",
+      stderr: "",
+      pid: 1,
+      output: [],
+      signal: null,
+    });
 
     const { artifactPath, manifestPath } = writeFixtures();
     const result = await bundleRunVerifiers({ artifact: artifactPath, manifest: manifestPath });
@@ -127,7 +132,11 @@ describe("bundleRunVerifiers", () => {
       });
 
     const { artifactPath, manifestPath } = writeFixtures();
-    const result = await bundleRunVerifiers({ artifact: artifactPath, manifest: manifestPath, allowMissingTools: true });
+    const result = await bundleRunVerifiers({
+      artifact: artifactPath,
+      manifest: manifestPath,
+      allowMissingTools: true,
+    });
 
     expect(result?.ok).toBe(true);
     expect(result?.results[0].status).toBe("pass");
@@ -147,14 +156,25 @@ describe("bundleRunVerifiers", () => {
 
     const exitSpy = vi.spyOn(process, "exit").mockImplementation((() => undefined) as never);
     const { artifactPath, manifestPath } = writeFixtures();
-    const result = await bundleRunVerifiers({ artifact: artifactPath, manifest: manifestPath, allowMissingTools: true });
+    const result = await bundleRunVerifiers({
+      artifact: artifactPath,
+      manifest: manifestPath,
+      allowMissingTools: true,
+    });
 
     expect(result?.ok).toBe(false);
     expect(exitSpy).toHaveBeenCalledWith(1);
   });
 
   it("reports fail and exits non-zero when a tool exits with non-zero status", async () => {
-    spawnSyncMock.mockReturnValue({ status: 1, stdout: "", stderr: "parse error at line 3", pid: 1, output: [], signal: null });
+    spawnSyncMock.mockReturnValue({
+      status: 1,
+      stdout: "",
+      stderr: "parse error at line 3",
+      pid: 1,
+      output: [],
+      signal: null,
+    });
 
     const exitSpy = vi.spyOn(process, "exit").mockImplementation((() => undefined) as never);
     const { artifactPath, manifestPath } = writeFixtures();
@@ -167,34 +187,57 @@ describe("bundleRunVerifiers", () => {
   });
 
   it("outputs JSON when --output json is set", async () => {
-    spawnSyncMock.mockReturnValue({ status: 0, stdout: "", stderr: "", pid: 1, output: [], signal: null });
+    spawnSyncMock.mockReturnValue({
+      status: 0,
+      stdout: "",
+      stderr: "",
+      pid: 1,
+      output: [],
+      signal: null,
+    });
 
     const { artifactPath, manifestPath } = writeFixtures();
     await bundleRunVerifiers({ artifact: artifactPath, manifest: manifestPath, output: "json" });
 
-    const jsonCall = (console.log as ReturnType<typeof vi.fn>).mock.calls.find((args: unknown[]) => {
-      try {
-        const parsed = JSON.parse(args[0] as string) as { ok: boolean; results: unknown[] };
-        return typeof parsed.ok === "boolean" && Array.isArray(parsed.results);
-      } catch {
-        return false;
-      }
-    });
+    const jsonCall = (console.log as ReturnType<typeof vi.fn>).mock.calls.find(
+      (args: unknown[]) => {
+        try {
+          const parsed = JSON.parse(args[0] as string) as { ok: boolean; results: unknown[] };
+          return typeof parsed.ok === "boolean" && Array.isArray(parsed.results);
+        } catch {
+          return false;
+        }
+      },
+    );
     expect(jsonCall).toBeDefined();
   });
 
   it("invokes opa check and opa test with the artifact path, not manifest display strings", async () => {
-    spawnSyncMock.mockReturnValue({ status: 0, stdout: "", stderr: "", pid: 1, output: [], signal: null });
+    spawnSyncMock.mockReturnValue({
+      status: 0,
+      stdout: "",
+      stderr: "",
+      pid: 1,
+      output: [],
+      signal: null,
+    });
 
     const { artifactPath, manifestPath } = writeFixtures();
     await bundleRunVerifiers({ artifact: artifactPath, manifest: manifestPath });
 
     expect(spawnSyncMock).toHaveBeenCalledWith("opa", ["check", artifactPath], expect.any(Object));
-    expect(spawnSyncMock).toHaveBeenCalledWith("opa", ["test",  artifactPath], expect.any(Object));
+    expect(spawnSyncMock).toHaveBeenCalledWith("opa", ["test", artifactPath], expect.any(Object));
   });
 
   it("invokes spctre bundle verify with --artifact and --manifest flags for spctre-json format", async () => {
-    spawnSyncMock.mockReturnValue({ status: 0, stdout: "", stderr: "", pid: 1, output: [], signal: null });
+    spawnSyncMock.mockReturnValue({
+      status: 0,
+      stdout: "",
+      stderr: "",
+      pid: 1,
+      output: [],
+      signal: null,
+    });
 
     const spctreJsonManifest = { ...baseManifest, format: "spctre-json" };
     const { artifactPath, manifestPath } = writeFixtures(spctreJsonManifest);
@@ -204,7 +247,7 @@ describe("bundleRunVerifiers", () => {
     expect(spawnSyncMock).toHaveBeenCalledWith(
       "spctre",
       ["bundle", "verify", "--artifact", artifactPath, "--manifest", manifestPath],
-      expect.any(Object)
+      expect.any(Object),
     );
     expect(spawnSyncMock).toHaveBeenCalledTimes(1);
   });
@@ -238,7 +281,7 @@ describe("bundleRunVerifiers", () => {
     await bundleRunVerifiers({ artifact: artifactPath, manifest: manifestPath });
 
     expect(console.error).toHaveBeenCalledWith(
-      expect.stringContaining('No verifiers are configured for format "unknown-format"')
+      expect.stringContaining('No verifiers are configured for format "unknown-format"'),
     );
   });
 
@@ -248,7 +291,7 @@ describe("bundleRunVerifiers", () => {
     await bundleRunVerifiers({ artifact: artifactPath, manifest: manifestPath });
 
     expect(console.error).not.toHaveBeenCalledWith(
-      expect.stringContaining("No verifiers are configured for format")
+      expect.stringContaining("No verifiers are configured for format"),
     );
   });
 
@@ -273,7 +316,14 @@ describe("bundleRunVerifiers", () => {
   });
 
   it("includes failed and informational counts in JSON output", async () => {
-    spawnSyncMock.mockReturnValue({ status: 0, stdout: "", stderr: "", pid: 1, output: [], signal: null });
+    spawnSyncMock.mockReturnValue({
+      status: 0,
+      stdout: "",
+      stderr: "",
+      pid: 1,
+      output: [],
+      signal: null,
+    });
 
     const spctreJsonManifest = { ...baseManifest, format: "spctre-json" };
     const { artifactPath, manifestPath } = writeFixtures(spctreJsonManifest);

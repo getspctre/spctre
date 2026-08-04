@@ -49,7 +49,10 @@ async function mintToken(fixture: Fixture, scopes: string[]): Promise<string> {
 
 // Seeds a CONNECTOR policy branch with a single PUBLISHED revision so the import
 // can resolve and bind to it. Returns the resolved branch and revision ids.
-async function seedPublishedPolicy(fixture: Fixture, branchName: string): Promise<{ branchId: string; revisionId: string }> {
+async function seedPublishedPolicy(
+  fixture: Fixture,
+  branchName: string,
+): Promise<{ branchId: string; revisionId: string }> {
   const branchId = randomUUID();
   const revisionId = randomUUID();
   await rawSql!`
@@ -68,23 +71,29 @@ async function seedPublishedPolicy(fixture: Fixture, branchName: string): Promis
   return { branchId, revisionId };
 }
 
-function blueprintSource(params: { agentId?: string; policyBranch: string; purpose?: string }): string {
-  return [
-    "name: Acquisition Scout",
-    `agentId: ${params.agentId ?? "scout"}`,
-    "message: Read-only researcher",
-    "definition:",
-    `  purpose: ${params.purpose ?? "Read-only acquisition researcher."}`,
-    "  allowedTaskClasses: [research]",
-    "  tools: [research.fetch]",
-    "  connectors: [acquisition-scout]",
-    "  services: [github]",
-    "  environments: [production]",
-    "  runtimeTargets:",
-    "    - stack: CUSTOM",
-    "      adapter: spctre-scout",
-    `  policyBranchId: ${params.policyBranch}`,
-  ].join("\n") + "\n";
+function blueprintSource(params: {
+  agentId?: string;
+  policyBranch: string;
+  purpose?: string;
+}): string {
+  return (
+    [
+      "name: Acquisition Scout",
+      `agentId: ${params.agentId ?? "scout"}`,
+      "message: Read-only researcher",
+      "definition:",
+      `  purpose: ${params.purpose ?? "Read-only acquisition researcher."}`,
+      "  allowedTaskClasses: [research]",
+      "  tools: [research.fetch]",
+      "  connectors: [acquisition-scout]",
+      "  services: [github]",
+      "  environments: [production]",
+      "  runtimeTargets:",
+      "    - stack: CUSTOM",
+      "      adapter: spctre-scout",
+      `  policyBranchId: ${params.policyBranch}`,
+    ].join("\n") + "\n"
+  );
 }
 
 function importRequest(token: string, source: string) {
@@ -96,7 +105,9 @@ function importRequest(token: string, source: string) {
 }
 
 async function blueprintRevisionCount(blueprintId: string): Promise<number> {
-  const rows = await rawSql!<{ count: string }[]>`SELECT count(*)::text FROM agent_blueprint_revision WHERE blueprint_id = ${blueprintId}`;
+  const rows = await rawSql!<
+    { count: string }[]
+  >`SELECT count(*)::text FROM agent_blueprint_revision WHERE blueprint_id = ${blueprintId}`;
   return Number(rows[0].count);
 }
 
@@ -123,10 +134,14 @@ describe.skipIf(!databaseAvailable)("POST /api/v1/blueprint/imports contract", (
     await seedPublishedPolicy(fixture, "acquisition-scout");
     const runtimeToken = await mintToken(fixture, ["bundle:read", "evidence:write"]);
 
-    const response = await POST(importRequest(runtimeToken, blueprintSource({ policyBranch: "acquisition-scout" })));
+    const response = await POST(
+      importRequest(runtimeToken, blueprintSource({ policyBranch: "acquisition-scout" })),
+    );
 
     expect(response.status).toBe(401);
-    await expect(response.json()).resolves.toMatchObject({ error: "Token is missing blueprint:import scope." });
+    await expect(response.json()).resolves.toMatchObject({
+      error: "Token is missing blueprint:import scope.",
+    });
   });
 
   it("fails closed (409) when the policy branch has no published revision", async () => {
@@ -134,7 +149,9 @@ describe.skipIf(!databaseAvailable)("POST /api/v1/blueprint/imports contract", (
     const operatorToken = await mintToken(fixture, ["blueprint:import"]);
 
     // No seedPublishedPolicy — the branch is unpublished (or absent).
-    const response = await POST(importRequest(operatorToken, blueprintSource({ policyBranch: "acquisition-scout" })));
+    const response = await POST(
+      importRequest(operatorToken, blueprintSource({ policyBranch: "acquisition-scout" })),
+    );
 
     expect(response.status).toBe(409);
     await expect(response.json()).resolves.toMatchObject({
@@ -148,7 +165,9 @@ describe.skipIf(!databaseAvailable)("POST /api/v1/blueprint/imports contract", (
     const operatorToken = await mintToken(fixture, ["blueprint:import"]);
 
     // 1. First import → create a DRAFT Blueprint bound to the published revision.
-    const created = await POST(importRequest(operatorToken, blueprintSource({ policyBranch: "acquisition-scout" })));
+    const created = await POST(
+      importRequest(operatorToken, blueprintSource({ policyBranch: "acquisition-scout" })),
+    );
     expect(created.status).toBe(201);
     const createdBody = await created.json();
     expect(createdBody).toMatchObject({
@@ -161,19 +180,32 @@ describe.skipIf(!databaseAvailable)("POST /api/v1/blueprint/imports contract", (
     expect(await blueprintRevisionCount(blueprintId)).toBe(1);
 
     // 2. Re-import identical source → no-op.
-    const same = await POST(importRequest(operatorToken, blueprintSource({ policyBranch: "acquisition-scout" })));
+    const same = await POST(
+      importRequest(operatorToken, blueprintSource({ policyBranch: "acquisition-scout" })),
+    );
     expect(same.status).toBe(200);
-    await expect(same.json()).resolves.toMatchObject({ created: false, alreadyCurrent: true, blueprintId });
+    await expect(same.json()).resolves.toMatchObject({
+      created: false,
+      alreadyCurrent: true,
+      blueprintId,
+    });
     expect(await blueprintRevisionCount(blueprintId)).toBe(1);
 
     // 3. Re-import changed definition → append a new draft revision.
-    const changed = await POST(importRequest(operatorToken, blueprintSource({ policyBranch: "acquisition-scout", purpose: "A different purpose." })));
+    const changed = await POST(
+      importRequest(
+        operatorToken,
+        blueprintSource({ policyBranch: "acquisition-scout", purpose: "A different purpose." }),
+      ),
+    );
     expect(changed.status).toBe(200);
     const changedBody = await changed.json();
     expect(changedBody).toMatchObject({ created: false, alreadyCurrent: false, blueprintId });
     expect(await blueprintRevisionCount(blueprintId)).toBe(2);
 
-    const head = await rawSql!<{ active_revision_id: string }[]>`SELECT active_revision_id FROM agent_blueprint WHERE id = ${blueprintId}`;
+    const head = await rawSql!<
+      { active_revision_id: string }[]
+    >`SELECT active_revision_id FROM agent_blueprint WHERE id = ${blueprintId}`;
     expect(head[0].active_revision_id).toBe(changedBody.revisionId);
   });
 
@@ -182,20 +214,34 @@ describe.skipIf(!databaseAvailable)("POST /api/v1/blueprint/imports contract", (
     await seedPublishedPolicy(fixture, "acquisition-scout");
     const operatorToken = await mintToken(fixture, ["blueprint:import"]);
 
-    const created = await POST(importRequest(operatorToken, blueprintSource({ policyBranch: "acquisition-scout" })));
+    const created = await POST(
+      importRequest(operatorToken, blueprintSource({ policyBranch: "acquisition-scout" })),
+    );
     expect(created.status).toBe(201);
-    const body = await created.json() as { blueprintId: string; revisionId: string };
+    const body = (await created.json()) as { blueprintId: string; revisionId: string };
 
     // Drive the lifecycle transitions through the tenant-bound service entry
     // point — the PATCH route's path — which binds the RLS context the
     // repository client requires. Before the ::text cast the IN_REVIEW
     // transition threw `operator does not exist: uuid = text` at plan time.
-    await expect(setAgentBlueprintRevisionStatus({
-      tenantId: fixture.tenantId, workspaceId: fixture.workspaceId, blueprintId: body.blueprintId, revisionId: body.revisionId, status: "IN_REVIEW",
-    })).resolves.toMatchObject({ status: "IN_REVIEW" });
-    await expect(setAgentBlueprintRevisionStatus({
-      tenantId: fixture.tenantId, workspaceId: fixture.workspaceId, blueprintId: body.blueprintId, revisionId: body.revisionId, status: "PUBLISHED",
-    })).resolves.toMatchObject({ status: "PUBLISHED" });
+    await expect(
+      setAgentBlueprintRevisionStatus({
+        tenantId: fixture.tenantId,
+        workspaceId: fixture.workspaceId,
+        blueprintId: body.blueprintId,
+        revisionId: body.revisionId,
+        status: "IN_REVIEW",
+      }),
+    ).resolves.toMatchObject({ status: "IN_REVIEW" });
+    await expect(
+      setAgentBlueprintRevisionStatus({
+        tenantId: fixture.tenantId,
+        workspaceId: fixture.workspaceId,
+        blueprintId: body.blueprintId,
+        revisionId: body.revisionId,
+        status: "PUBLISHED",
+      }),
+    ).resolves.toMatchObject({ status: "PUBLISHED" });
   });
 
   it("appends a fresh draft when a reverted definition recurs after both versions were published (A→B→A)", async () => {
@@ -203,8 +249,14 @@ describe.skipIf(!databaseAvailable)("POST /api/v1/blueprint/imports contract", (
     await seedPublishedPolicy(fixture, "acquisition-scout");
     const operatorToken = await mintToken(fixture, ["blueprint:import"]);
 
-    const sourceA = blueprintSource({ policyBranch: "acquisition-scout", purpose: "Definition A." });
-    const sourceB = blueprintSource({ policyBranch: "acquisition-scout", purpose: "Definition B." });
+    const sourceA = blueprintSource({
+      policyBranch: "acquisition-scout",
+      purpose: "Definition A.",
+    });
+    const sourceB = blueprintSource({
+      policyBranch: "acquisition-scout",
+      purpose: "Definition B.",
+    });
 
     // Import A, then publish it.
     const a = await POST(importRequest(operatorToken, sourceA));
@@ -254,15 +306,25 @@ describe.skipIf(!databaseAvailable)("POST /api/v1/blueprint/imports contract", (
     const operatorToken = await mintToken(fixture, ["blueprint:import"]);
 
     // Establish the Blueprint with head = A.
-    const first = await POST(importRequest(operatorToken, blueprintSource({ policyBranch: "acquisition-scout", purpose: "Definition A." })));
+    const first = await POST(
+      importRequest(
+        operatorToken,
+        blueprintSource({ policyBranch: "acquisition-scout", purpose: "Definition A." }),
+      ),
+    );
     expect(first.status).toBe(201);
     const blueprintId = (await first.json()).blueprintId as string;
 
     // Fire several identical imports of a CHANGED definition B at once. With the
     // per-Blueprint row lock they serialize: exactly one appends the B revision,
     // the rest observe it as the new head and no-op — never duplicate revisions.
-    const sourceB = blueprintSource({ policyBranch: "acquisition-scout", purpose: "Definition B." });
-    const responses = await Promise.all(Array.from({ length: 6 }, () => POST(importRequest(operatorToken, sourceB))));
+    const sourceB = blueprintSource({
+      policyBranch: "acquisition-scout",
+      purpose: "Definition B.",
+    });
+    const responses = await Promise.all(
+      Array.from({ length: 6 }, () => POST(importRequest(operatorToken, sourceB))),
+    );
     const bodies = await Promise.all(responses.map((r) => r.json()));
     for (const r of responses) expect([200, 201]).toContain(r.status);
     for (const body of bodies) expect(body.error).toBeUndefined();
@@ -276,7 +338,9 @@ describe.skipIf(!databaseAvailable)("POST /api/v1/blueprint/imports contract", (
       FROM agent_blueprint b JOIN agent_blueprint_revision r ON r.id = b.active_revision_id
       WHERE b.id = ${blueprintId}
     `;
-    expect(bodies.every((b) => b.revisionId === headB.id && b.definitionHash === headB.definition_hash)).toBe(true);
+    expect(
+      bodies.every((b) => b.revisionId === headB.id && b.definitionHash === headB.definition_hash),
+    ).toBe(true);
   });
 
   it("serializes concurrent first-ever imports; creates one Blueprint without a spurious 409", async () => {
@@ -288,7 +352,9 @@ describe.skipIf(!databaseAvailable)("POST /api/v1/blueprint/imports contract", (
     // agent-id unique constraint lets exactly one create it; the rest must
     // re-read the winner and converge (alreadyCurrent), not return 409.
     const source = blueprintSource({ policyBranch: "acquisition-scout", purpose: "Definition A." });
-    const responses = await Promise.all(Array.from({ length: 6 }, () => POST(importRequest(operatorToken, source))));
+    const responses = await Promise.all(
+      Array.from({ length: 6 }, () => POST(importRequest(operatorToken, source))),
+    );
     const bodies = await Promise.all(responses.map((r) => r.json()));
 
     for (const r of responses) expect([200, 201]).toContain(r.status);
@@ -312,7 +378,9 @@ describe.skipIf(!databaseAvailable)("POST /api/v1/blueprint/imports contract", (
     await seedPublishedPolicy(fixture, "acquisition-scout");
     const operatorToken = await mintToken(fixture, ["blueprint:import"]);
 
-    const source = blueprintSource({ policyBranch: "acquisition-scout" }) + "  policyRevisionId: rev_forbidden\n";
+    const source =
+      blueprintSource({ policyBranch: "acquisition-scout" }) +
+      "  policyRevisionId: rev_forbidden\n";
     const response = await POST(importRequest(operatorToken, source));
     expect(response.status).toBe(400);
   });
@@ -323,18 +391,19 @@ describe.skipIf(!databaseAvailable)("POST /api/v1/blueprint/imports contract", (
     const operatorToken = await mintToken(fixture, ["blueprint:import"]);
 
     // purpose is required by parseAgentBlueprintDefinition.
-    const source = [
-      "name: Broken",
-      "agentId: scout",
-      "definition:",
-      "  allowedTaskClasses: [research]",
-      "  tools: [research.fetch]",
-      "  connectors: [acquisition-scout]",
-      "  services: [github]",
-      "  environments: [production]",
-      "  runtimeTargets: [{ stack: CUSTOM }]",
-      "  policyBranchId: acquisition-scout",
-    ].join("\n") + "\n";
+    const source =
+      [
+        "name: Broken",
+        "agentId: scout",
+        "definition:",
+        "  allowedTaskClasses: [research]",
+        "  tools: [research.fetch]",
+        "  connectors: [acquisition-scout]",
+        "  services: [github]",
+        "  environments: [production]",
+        "  runtimeTargets: [{ stack: CUSTOM }]",
+        "  policyBranchId: acquisition-scout",
+      ].join("\n") + "\n";
     const response = await POST(importRequest(operatorToken, source));
     expect(response.status).toBe(400);
   });

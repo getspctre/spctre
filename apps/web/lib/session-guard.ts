@@ -25,7 +25,7 @@ async function importHmacKey(secret: string): Promise<CryptoKey> {
     new TextEncoder().encode(secret),
     { name: "HMAC", hash: "SHA-256" },
     false,
-    ["sign", "verify"]
+    ["sign", "verify"],
   );
 }
 
@@ -52,7 +52,7 @@ export async function createSessionGuardToken(params: {
     pid: params.pid,
     sub: params.sub,
     mfa: params.mfaVerified,
-    exp
+    exp,
   };
 
   const encodedPayload = toBase64Url(new TextEncoder().encode(JSON.stringify(payload)));
@@ -62,7 +62,7 @@ export async function createSessionGuardToken(params: {
 
 export async function verifySessionGuardToken(
   token: string,
-  expectedSessionId?: string
+  expectedSessionId?: string,
 ): Promise<SessionGuardClaims | null> {
   const secret = getSessionGuardSecret();
 
@@ -77,7 +77,9 @@ export async function verifySessionGuardToken(
 
   let payload: SessionGuardClaims;
   try {
-    payload = JSON.parse(new TextDecoder().decode(fromBase64Url(encodedPayload))) as SessionGuardClaims;
+    payload = JSON.parse(
+      new TextDecoder().decode(fromBase64Url(encodedPayload)),
+    ) as SessionGuardClaims;
   } catch {
     return null;
   }

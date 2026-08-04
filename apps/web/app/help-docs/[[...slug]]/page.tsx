@@ -2,12 +2,7 @@ import { source } from "@/lib/source";
 import type { InferPageType } from "fumadocs-core/source";
 import { findSiblings } from "fumadocs-core/page-tree";
 import type { Item } from "fumadocs-core/page-tree";
-import {
-  DocsPage,
-  DocsBody,
-  DocsTitle,
-  DocsDescription,
-} from "fumadocs-ui/page";
+import { DocsPage, DocsBody, DocsTitle, DocsDescription } from "fumadocs-ui/page";
 import { Card, Cards } from "fumadocs-ui/components/card";
 import { notFound } from "next/navigation";
 import defaultMdxComponents from "fumadocs-ui/mdx";
@@ -17,12 +12,7 @@ import type { Metadata } from "next";
 
 type Page = InferPageType<typeof source>;
 
-const mdxComponents = {
-  ...defaultMdxComponents,
-  Callout,
-  Step,
-  Steps,
-};
+const mdxComponents = { ...defaultMdxComponents, Callout, Step, Steps };
 
 function DocsSectionIndex({ url }: { url: string }) {
   return (
@@ -31,29 +21,17 @@ function DocsSectionIndex({ url }: { url: string }) {
         if (item.type === "separator") return [];
 
         if (item.type === "folder") {
-          const landing =
-            item.index ??
-            (item.children.find((c): c is Item => c.type === "page"));
+          const landing = item.index ?? item.children.find((c): c is Item => c.type === "page");
           if (!landing) return [];
           return [
-            <Card
-              key={landing.url}
-              title={item.name}
-              href={landing.url}
-              icon={item.icon}
-            >
+            <Card key={landing.url} title={item.name} href={landing.url} icon={item.icon}>
               {item.description ?? landing.description}
             </Card>,
           ];
         }
 
         return [
-          <Card
-            key={item.url}
-            title={item.name}
-            href={item.url}
-            icon={item.icon}
-          >
+          <Card key={item.url} title={item.name} href={item.url} icon={item.icon}>
             {item.description}
           </Card>,
         ];
@@ -62,11 +40,7 @@ function DocsSectionIndex({ url }: { url: string }) {
   );
 }
 
-export default async function Page({
-  params,
-}: {
-  params: Promise<{ slug?: string[] }>;
-}) {
+export default async function Page({ params }: { params: Promise<{ slug?: string[] }> }) {
   const { slug } = await params;
   const page = source.getPage(slug) as Page | undefined;
   if (!page) notFound();
@@ -103,10 +77,6 @@ export async function generateMetadata({
   return {
     title: page.data.title,
     description: page.data.description,
-    openGraph: {
-      title: page.data.title,
-      description: page.data.description,
-      type: "article",
-    },
+    openGraph: { title: page.data.title, description: page.data.description, type: "article" },
   };
 }

@@ -13,17 +13,15 @@ function computeLogNodeHash(node: {
   created_at: string;
 }): string {
   const serializedPayload = JSON.stringify(
-    Object.fromEntries(
-      Object.entries(node.payload || {}).sort(([a], [b]) => a.localeCompare(b))
-    )
+    Object.fromEntries(Object.entries(node.payload || {}).sort(([a], [b]) => a.localeCompare(b))),
   );
-  
+
   const source = [
     node.event_type,
     node.source_id || "",
     node.actor_id,
     serializedPayload,
-    node.created_at
+    node.created_at,
   ].join("|");
 
   return createHash("sha256").update(source).digest("hex");
@@ -34,7 +32,7 @@ export async function GET(request: Request) {
   if (plan !== "enterprise") {
     return Response.json(
       { error: "Tamper-evident Admin Audit Trail is an Enterprise-only feature." },
-      { status: 403 }
+      { status: 403 },
     );
   }
 
@@ -52,21 +50,12 @@ export async function GET(request: Request) {
 
   try {
     // Query the append-only tamper-evident operations log via repository
-    const rows = await queryAdminAuditLogs({
-      eventType,
-      actorId,
-      limit,
-      offset
-    });
+    const rows = await queryAdminAuditLogs({ eventType, actorId, limit, offset });
 
     if (rows.length === 0) {
       return Response.json({
         logs: [],
-        chainValidation: {
-          ok: true,
-          verifiedCount: 0,
-          rootHash: null
-        }
+        chainValidation: { ok: true, verifiedCount: 0, rootHash: null },
       });
     }
 
@@ -88,7 +77,7 @@ export async function GET(request: Request) {
         source_id: row.source_id,
         actor_id: row.actor_id,
         payload: row.payload,
-        created_at: row.created_at.toISOString()
+        created_at: row.created_at.toISOString(),
       });
 
       expectedPrevHash = row.content_hash;
@@ -97,37 +86,40 @@ export async function GET(request: Request) {
 
     const rootHash = rows[rows.length - 1]?.content_hash || null;
 
-    return Response.json({
-      logs: rows.map((row) => ({
-        id: row.id,
-        tenantId: row.tenant_id,
-        workspaceId: row.workspace_id,
-        eventType: row.event_type,
-        sourceId: row.source_id,
-        sourceTable: row.source_table,
-        actorId: row.actor_id,
-        payload: row.payload,
-        createdAt: row.created_at.toISOString()
-      })),
-      chainValidation: {
-        ok: chainOk,
-        verifiedCount,
-        error: chainError,
-        rootHash,
-        provider: "Spctre Tamper-Evident Ledger Engine (v1)"
-      }
-    }, {
-      headers: {
-        "x-spctre-ledger-root": rootHash || "",
-        "x-spctre-ledger-status": chainOk ? "VERIFIED" : "TAMPERED",
-        "cache-control": "no-store"
-      }
-    });
+    return Response.json(
+      {
+        logs: rows.map((row) => ({
+          id: row.id,
+          tenantId: row.tenant_id,
+          workspaceId: row.workspace_id,
+          eventType: row.event_type,
+          sourceId: row.source_id,
+          sourceTable: row.source_table,
+          actorId: row.actor_id,
+          payload: row.payload,
+          createdAt: row.created_at.toISOString(),
+        })),
+        chainValidation: {
+          ok: chainOk,
+          verifiedCount,
+          error: chainError,
+          rootHash,
+          provider: "Spctre Tamper-Evident Ledger Engine (v1)",
+        },
+      },
+      {
+        headers: {
+          "x-spctre-ledger-root": rootHash || "",
+          "x-spctre-ledger-status": chainOk ? "VERIFIED" : "TAMPERED",
+          "cache-control": "no-store",
+        },
+      },
+    );
   } catch (err) {
     console.error("[Audit Log API Error]", err);
     return Response.json(
       { error: "Failed to query operations log.", detail: (err as Error).message },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

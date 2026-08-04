@@ -25,7 +25,7 @@ export async function requireAdminSession() {
 
   const actor = await findActorById(session.principalId, {
     tenantId: session.tenantId,
-    workspaceId
+    workspaceId,
   }).catch(swallow("findActorById", null));
   if (!actor || !actor.reviewerRoles.includes("Admin")) {
     return { error: "Admin permission is required." } as const;

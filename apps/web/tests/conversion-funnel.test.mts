@@ -13,9 +13,7 @@ vi.mock("@/lib/db", () => ({
   runWithTenantContext: async (_tenantId: string, fn: () => Promise<unknown>) => fn(),
 }));
 
-vi.mock("@/lib/feature-flags-server", () => ({
-  getSpctrePlan: mockGetSpctrePlan,
-}));
+vi.mock("@/lib/feature-flags-server", () => ({ getSpctrePlan: mockGetSpctrePlan }));
 
 vi.mock("@/lib/repositories/workspace", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../lib/repositories/workspace")>();
@@ -31,10 +29,12 @@ vi.mock("@/lib/repositories/workspace", async (importOriginal) => {
 const paddleWebhookRoute = await import("../app/api/billing/paddle/webhook/route");
 const telemetryEventsRoute = await import("../app/api/telemetry/events/route");
 
-function paddleSignature(body: string, secret: string, timestamp = Math.floor(Date.now() / 1000)): string {
-  const signature = createHmac("sha256", secret)
-    .update(`${timestamp}:${body}`)
-    .digest("hex");
+function paddleSignature(
+  body: string,
+  secret: string,
+  timestamp = Math.floor(Date.now() / 1000),
+): string {
+  const signature = createHmac("sha256", secret).update(`${timestamp}:${body}`).digest("hex");
   return `ts=${timestamp};h1=${signature}`;
 }
 
@@ -55,11 +55,8 @@ describe("Conversion & Trial-to-Paid Funnel", () => {
       const response = await telemetryEventsRoute.POST(
         new Request("http://localhost:3000/api/telemetry/events", {
           method: "POST",
-          body: JSON.stringify({
-            tenantId: "tenant-1",
-            eventType: "TRIAL_START",
-          }),
-        })
+          body: JSON.stringify({ tenantId: "tenant-1", eventType: "TRIAL_START" }),
+        }),
       );
       const payload = await response.json();
 
@@ -88,10 +85,7 @@ describe("Conversion & Trial-to-Paid Funnel", () => {
         data: {
           customer_id: "ctm_123",
           subscription_id: "sub_123",
-          custom_data: {
-            tenantId: "tenant-trial",
-            planCode: "TEAM",
-          },
+          custom_data: { tenantId: "tenant-trial", planCode: "TEAM" },
         },
       });
 
@@ -99,24 +93,24 @@ describe("Conversion & Trial-to-Paid Funnel", () => {
         new Request("http://localhost:3000/api/billing/paddle/webhook", {
           method: "POST",
           body,
-          headers: {
-            "paddle-signature": paddleSignature(body, "pdl_ntfset_test"),
-          },
-        })
+          headers: { "paddle-signature": paddleSignature(body, "pdl_ntfset_test") },
+        }),
       );
       const payload = await response.json();
 
       expect(response.status).toBe(200);
       expect(payload.handled).toBe(true);
-      expect(mockRecordBillingLifecycleEvent).toHaveBeenCalledWith(expect.objectContaining({
-        tenantId: "tenant-trial",
-        billingCustomerId: "ctm_123",
-        billingProvider: "PADDLE",
-        planCode: "TEAM",
-        lifecycleStatus: "ACTIVE",
-        salesStatus: "CUSTOMER",
-        telemetryEventType: "TRIAL_CONVERTED",
-      }));
+      expect(mockRecordBillingLifecycleEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          tenantId: "tenant-trial",
+          billingCustomerId: "ctm_123",
+          billingProvider: "PADDLE",
+          planCode: "TEAM",
+          lifecycleStatus: "ACTIVE",
+          salesStatus: "CUSTOMER",
+          telemetryEventType: "TRIAL_CONVERTED",
+        }),
+      );
       expect(capturedEvent?.metadata).toMatchObject({
         billingProvider: "PADDLE",
         paddleEventType: "transaction.completed",
@@ -132,7 +126,7 @@ describe("Conversion & Trial-to-Paid Funnel", () => {
         new Request("http://localhost:3000/api/billing/paddle/webhook", {
           method: "POST",
           body: JSON.stringify({ event_type: "transaction.completed" }),
-        })
+        }),
       );
 
       expect(response.status).toBe(401);
@@ -152,10 +146,7 @@ describe("Conversion & Trial-to-Paid Funnel", () => {
         data: {
           customer_id: "ctm_123",
           status: "active",
-          custom_data: {
-            tenantId: "tenant-trial",
-            planCode: "TEAM",
-          },
+          custom_data: { tenantId: "tenant-trial", planCode: "TEAM" },
         },
       });
 
@@ -164,14 +155,14 @@ describe("Conversion & Trial-to-Paid Funnel", () => {
           method: "POST",
           body,
           headers: { "paddle-signature": paddleSignature(body, "pdl_ntfset_test") },
-        })
+        }),
       );
 
       expect(response.status).toBe(200);
       expect(mockRecordBillingLifecycleEvent).toHaveBeenCalledTimes(1);
-      expect(mockRecordBillingLifecycleEvent).toHaveBeenCalledWith(expect.objectContaining({
-        telemetryEventType: "TRIAL_CONVERTED",
-      }));
+      expect(mockRecordBillingLifecycleEvent).toHaveBeenCalledWith(
+        expect.objectContaining({ telemetryEventType: "TRIAL_CONVERTED" }),
+      );
     });
 
     it("records subscription.updated active as plan change for existing paid tenants", async () => {
@@ -187,10 +178,7 @@ describe("Conversion & Trial-to-Paid Funnel", () => {
         data: {
           customer_id: "ctm_123",
           status: "active",
-          custom_data: {
-            tenantId: "tenant-paid",
-            planCode: "BUSINESS",
-          },
+          custom_data: { tenantId: "tenant-paid", planCode: "BUSINESS" },
         },
       });
 
@@ -199,14 +187,14 @@ describe("Conversion & Trial-to-Paid Funnel", () => {
           method: "POST",
           body,
           headers: { "paddle-signature": paddleSignature(body, "pdl_ntfset_test") },
-        })
+        }),
       );
 
       expect(response.status).toBe(200);
       expect(mockRecordBillingLifecycleEvent).toHaveBeenCalledTimes(1);
-      expect(mockRecordBillingLifecycleEvent).toHaveBeenCalledWith(expect.objectContaining({
-        telemetryEventType: "PLAN_CHANGED",
-      }));
+      expect(mockRecordBillingLifecycleEvent).toHaveBeenCalledWith(
+        expect.objectContaining({ telemetryEventType: "PLAN_CHANGED" }),
+      );
     });
 
     it("returns a retryable 503 when a signed billing event cannot resolve a tenant", async () => {
@@ -215,10 +203,7 @@ describe("Conversion & Trial-to-Paid Funnel", () => {
       const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
       const body = JSON.stringify({
         event_type: "transaction.payment_failed",
-        data: {
-          status: "past_due",
-          custom_data: {},
-        },
+        data: { status: "past_due", custom_data: {} },
       });
 
       try {
@@ -227,7 +212,7 @@ describe("Conversion & Trial-to-Paid Funnel", () => {
             method: "POST",
             body,
             headers: { "paddle-signature": paddleSignature(body, "pdl_ntfset_test") },
-          })
+          }),
         );
         const payload = await response.json();
 
@@ -242,7 +227,7 @@ describe("Conversion & Trial-to-Paid Funnel", () => {
             telemetryEventType: "PAYMENT_FAILED",
             hasTenantId: false,
             hasBillingCustomerId: false,
-          })
+          }),
         );
       } finally {
         warnSpy.mockRestore();
@@ -260,11 +245,7 @@ describe("Conversion & Trial-to-Paid Funnel", () => {
       mockResolveTenantIdByBillingCustomerId.mockResolvedValue("tenant-paid");
       const body = JSON.stringify({
         event_type: "subscription.activated",
-        data: {
-          customer_id: "ctm_123",
-          status: "active",
-          custom_data: {},
-        },
+        data: { customer_id: "ctm_123", status: "active", custom_data: {} },
       });
 
       const response = await paddleWebhookRoute.POST(
@@ -272,16 +253,15 @@ describe("Conversion & Trial-to-Paid Funnel", () => {
           method: "POST",
           body,
           headers: { "paddle-signature": paddleSignature(body, "pdl_ntfset_test") },
-        })
+        }),
       );
 
       expect(response.status).toBe(200);
       // A null planCode preserves the stored plan; a TEAM fallback here would
       // downgrade BUSINESS subscribers provisioned by the marketing site.
-      expect(mockRecordBillingLifecycleEvent).toHaveBeenCalledWith(expect.objectContaining({
-        planCode: null,
-        telemetryEventType: "PLAN_CHANGED",
-      }));
+      expect(mockRecordBillingLifecycleEvent).toHaveBeenCalledWith(
+        expect.objectContaining({ planCode: null, telemetryEventType: "PLAN_CHANGED" }),
+      );
     });
 
     it("records renewal transactions as plan changes, not trial conversions", async () => {
@@ -295,11 +275,7 @@ describe("Conversion & Trial-to-Paid Funnel", () => {
       mockResolveTenantIdByBillingCustomerId.mockResolvedValue("tenant-paid");
       const body = JSON.stringify({
         event_type: "transaction.completed",
-        data: {
-          customer_id: "ctm_123",
-          subscription_id: "sub_123",
-          custom_data: {},
-        },
+        data: { customer_id: "ctm_123", subscription_id: "sub_123", custom_data: {} },
       });
 
       const response = await paddleWebhookRoute.POST(
@@ -307,14 +283,13 @@ describe("Conversion & Trial-to-Paid Funnel", () => {
           method: "POST",
           body,
           headers: { "paddle-signature": paddleSignature(body, "pdl_ntfset_test") },
-        })
+        }),
       );
 
       expect(response.status).toBe(200);
-      expect(mockRecordBillingLifecycleEvent).toHaveBeenCalledWith(expect.objectContaining({
-        planCode: null,
-        telemetryEventType: "PLAN_CHANGED",
-      }));
+      expect(mockRecordBillingLifecycleEvent).toHaveBeenCalledWith(
+        expect.objectContaining({ planCode: null, telemetryEventType: "PLAN_CHANGED" }),
+      );
     });
 
     it("records subscription.canceled as paid subscription cancellation for paid tenants", async () => {
@@ -330,10 +305,7 @@ describe("Conversion & Trial-to-Paid Funnel", () => {
         data: {
           customer_id: "ctm_123",
           status: "canceled",
-          custom_data: {
-            tenantId: "tenant-paid",
-            planCode: "BUSINESS",
-          },
+          custom_data: { tenantId: "tenant-paid", planCode: "BUSINESS" },
         },
       });
 
@@ -342,13 +314,13 @@ describe("Conversion & Trial-to-Paid Funnel", () => {
           method: "POST",
           body,
           headers: { "paddle-signature": paddleSignature(body, "pdl_ntfset_test") },
-        })
+        }),
       );
 
       expect(response.status).toBe(200);
-      expect(mockRecordBillingLifecycleEvent).toHaveBeenCalledWith(expect.objectContaining({
-        telemetryEventType: "SUBSCRIPTION_CANCELLED",
-      }));
+      expect(mockRecordBillingLifecycleEvent).toHaveBeenCalledWith(
+        expect.objectContaining({ telemetryEventType: "SUBSCRIPTION_CANCELLED" }),
+      );
     });
 
     it("records trialing subscription updates as trial start", async () => {
@@ -359,10 +331,7 @@ describe("Conversion & Trial-to-Paid Funnel", () => {
         data: {
           customer_id: "ctm_123",
           status: "trialing",
-          custom_data: {
-            tenantId: "tenant-trial",
-            planCode: "HOSTED_TRIAL",
-          },
+          custom_data: { tenantId: "tenant-trial", planCode: "HOSTED_TRIAL" },
         },
       });
 
@@ -371,15 +340,17 @@ describe("Conversion & Trial-to-Paid Funnel", () => {
           method: "POST",
           body,
           headers: { "paddle-signature": paddleSignature(body, "pdl_ntfset_test") },
-        })
+        }),
       );
 
       expect(response.status).toBe(200);
-      expect(mockRecordBillingLifecycleEvent).toHaveBeenCalledWith(expect.objectContaining({
-        lifecycleStatus: "EVALUATING",
-        salesStatus: "NONE",
-        telemetryEventType: "TRIAL_START",
-      }));
+      expect(mockRecordBillingLifecycleEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          lifecycleStatus: "EVALUATING",
+          salesStatus: "NONE",
+          telemetryEventType: "TRIAL_START",
+        }),
+      );
     });
   });
 });

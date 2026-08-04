@@ -30,7 +30,9 @@ describe("Antigravity workspace installation", () => {
 
     await installSkill({ antigravity: true });
 
-    expect(fs.existsSync(path.join(workspace, ".agents", "skills", "spctre", "SKILL.md"))).toBe(true);
+    expect(fs.existsSync(path.join(workspace, ".agents", "skills", "spctre", "SKILL.md"))).toBe(
+      true,
+    );
     // No plugin bundle for workspace installs — bare .agents/ customizations
     // are auto-read without `agy plugin install`.
     expect(fs.existsSync(path.join(workspace, ".agents", "plugins"))).toBe(false);
@@ -42,8 +44,12 @@ describe("Antigravity workspace installation", () => {
 
     installHook({ antigravity: true, mode: "observe" });
 
-    const hooks = JSON.parse(fs.readFileSync(path.join(workspace, ".agents", "hooks.json"), "utf8"));
+    const hooks = JSON.parse(
+      fs.readFileSync(path.join(workspace, ".agents", "hooks.json"), "utf8"),
+    );
     expect(hooks.spctre.PreToolUse[0].matcher).toBe(".*");
-    expect(hooks.spctre.PreToolUse[0].hooks[0].command).toContain("--harness antigravity --mode observe");
+    expect(hooks.spctre.PreToolUse[0].hooks[0].command).toContain(
+      "--harness antigravity --mode observe",
+    );
   });
 });

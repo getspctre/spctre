@@ -30,14 +30,21 @@ describe("bundle export golden fixtures", () => {
       expect(exported.manifest.blockingWarnings).toHaveLength(0);
       expect(exported.manifest.verificationTargets.length).toBeGreaterThan(0);
 
-      const verification = verifyPolicyBundleExport({ artifact: exported.artifact, manifest: exported.manifest });
+      const verification = verifyPolicyBundleExport({
+        artifact: exported.artifact,
+        manifest: exported.manifest,
+      });
       expect(verification.ok).toBe(true);
       expect(verification.issues).toHaveLength(0);
     });
   }
 
   it("opa-rego artifact contains package declaration and condition helpers", () => {
-    const exported = buildPolicyBundleExport({ bundle, format: "opa-rego", generatedAt: FIXED_GENERATED_AT });
+    const exported = buildPolicyBundleExport({
+      bundle,
+      format: "opa-rego",
+      generatedAt: FIXED_GENERATED_AT,
+    });
 
     expect(typeof exported.artifact).toBe("string");
     const rego = exported.artifact as string;
@@ -48,19 +55,29 @@ describe("bundle export golden fixtures", () => {
   });
 
   it("opa-bundle artifact has policy.rego and data.json with correct provenance", () => {
-    const exported = buildPolicyBundleExport({ bundle, format: "opa-bundle", generatedAt: FIXED_GENERATED_AT });
+    const exported = buildPolicyBundleExport({
+      bundle,
+      format: "opa-bundle",
+      generatedAt: FIXED_GENERATED_AT,
+    });
 
     const artifact = exported.artifact as Record<string, unknown>;
     expect(typeof (artifact["policy.rego"] as string)).toBe("string");
-    expect((artifact["policy.rego"] as string)).toContain("package spctre.policy");
+    expect(artifact["policy.rego"] as string).toContain("package spctre.policy");
 
-    const data = artifact["data.json"] as { spctre: { provenance: Record<string, unknown>; rules: unknown[] } };
+    const data = artifact["data.json"] as {
+      spctre: { provenance: Record<string, unknown>; rules: unknown[] };
+    };
     expect(data.spctre.provenance.branch_id).toBe("branch-fixture");
     expect(data.spctre.rules).toHaveLength(3);
   });
 
   it("cedar artifact contains permit, forbid, WARN advisory comment, and entity mapping header", () => {
-    const exported = buildPolicyBundleExport({ bundle, format: "cedar", generatedAt: FIXED_GENERATED_AT });
+    const exported = buildPolicyBundleExport({
+      bundle,
+      format: "cedar",
+      generatedAt: FIXED_GENERATED_AT,
+    });
 
     expect(typeof exported.artifact).toBe("string");
     const cedar = exported.artifact as string;
@@ -73,7 +90,11 @@ describe("bundle export golden fixtures", () => {
   });
 
   it("mcp-proxy-config artifact has correct schema and parameterConstraints on each rule", () => {
-    const exported = buildPolicyBundleExport({ bundle, format: "mcp-proxy-config", generatedAt: FIXED_GENERATED_AT });
+    const exported = buildPolicyBundleExport({
+      bundle,
+      format: "mcp-proxy-config",
+      generatedAt: FIXED_GENERATED_AT,
+    });
 
     const artifact = exported.artifact as Record<string, unknown>;
     expect(artifact.schemaVersion).toBe("spctre.mcp.proxy.config.v1");
@@ -97,26 +118,37 @@ describe("bundle export golden fixtures", () => {
       artifactHash: "sha256:art",
       targetStacks: [],
       approvals: [],
-      rules: [{
-        stableRuleId: "github.branch.force_push_protected.block",
-        title: "Block force-pushing to a protected branch",
-        effect: "DENY",
-        sourceFormat: "SPCTRE_MANAGED",
-        domains: ["branches"],
-        connectors: ["github"],
-        actions: ["branch.push"],
-        immutable: true,
-        conditions: [{ legacy_field: "unrelated_agt_condition" }],
-        parameterConstraints: [
-          { field: "ref", operator: "in", value: ["main", "master"], parameterKey: "github.protected_branches" },
-          { field: "force", operator: "eq", value: true },
-        ],
-      }],
+      rules: [
+        {
+          stableRuleId: "github.branch.force_push_protected.block",
+          title: "Block force-pushing to a protected branch",
+          effect: "DENY",
+          sourceFormat: "SPCTRE_MANAGED",
+          domains: ["branches"],
+          connectors: ["github"],
+          actions: ["branch.push"],
+          immutable: true,
+          conditions: [{ legacy_field: "unrelated_agt_condition" }],
+          parameterConstraints: [
+            {
+              field: "ref",
+              operator: "in",
+              value: ["main", "master"],
+              parameterKey: "github.protected_branches",
+            },
+            { field: "force", operator: "eq", value: true },
+          ],
+        },
+      ],
       generatedAt: FIXED_GENERATED_AT,
       metadata: {},
     });
 
-    const exported = buildPolicyBundleExport({ bundle: b, format: "mcp-proxy-config", generatedAt: FIXED_GENERATED_AT });
+    const exported = buildPolicyBundleExport({
+      bundle: b,
+      format: "mcp-proxy-config",
+      generatedAt: FIXED_GENERATED_AT,
+    });
     expect(exported.ok).toBe(true);
     const artifact = exported.artifact as { rules: Record<string, unknown>[] };
     const rule = artifact.rules.find((r) => r.id === "github.branch.force_push_protected.block")!;
@@ -125,7 +157,12 @@ describe("bundle export golden fixtures", () => {
     // not the unrelated legacy AGT `conditions` blob — otherwise a proxy
     // enforcing this artifact would apply the rule unconditionally.
     expect(rule.parameterConstraints).toEqual([
-      { field: "ref", operator: "in", value: ["main", "master"], parameterKey: "github.protected_branches" },
+      {
+        field: "ref",
+        operator: "in",
+        value: ["main", "master"],
+        parameterKey: "github.protected_branches",
+      },
       { field: "force", operator: "eq", value: true },
     ]);
     expect(rule.rawConditions).toEqual([{ legacy_field: "unrelated_agt_condition" }]);
@@ -151,48 +188,54 @@ describe("semantic parity", () => {
   }
 
   it("DENY rule produces forbid in Cedar", () => {
-    const b = makeMinimalBundle([{
-      stableRuleId: "x.deny",
-      title: "Deny X",
-      effect: "DENY",
-      sourceFormat: "SPCTRE_MANAGED",
-      domains: [],
-      connectors: ["x"],
-      actions: ["act"],
-      immutable: false,
-    }]);
+    const b = makeMinimalBundle([
+      {
+        stableRuleId: "x.deny",
+        title: "Deny X",
+        effect: "DENY",
+        sourceFormat: "SPCTRE_MANAGED",
+        domains: [],
+        connectors: ["x"],
+        actions: ["act"],
+        immutable: false,
+      },
+    ]);
     const exported = buildPolicyBundleExport({ bundle: b, format: "cedar" });
     expect(exported.ok).toBe(true);
     expect(exported.artifact as string).toContain("forbid(");
   });
 
   it("ALLOW rule produces permit in Cedar", () => {
-    const b = makeMinimalBundle([{
-      stableRuleId: "x.allow",
-      title: "Allow X",
-      effect: "ALLOW",
-      sourceFormat: "SPCTRE_MANAGED",
-      domains: [],
-      connectors: ["x"],
-      actions: ["act"],
-      immutable: false,
-    }]);
+    const b = makeMinimalBundle([
+      {
+        stableRuleId: "x.allow",
+        title: "Allow X",
+        effect: "ALLOW",
+        sourceFormat: "SPCTRE_MANAGED",
+        domains: [],
+        connectors: ["x"],
+        actions: ["act"],
+        immutable: false,
+      },
+    ]);
     const exported = buildPolicyBundleExport({ bundle: b, format: "cedar" });
     expect(exported.ok).toBe(true);
     expect(exported.artifact as string).toContain("permit(");
   });
 
   it("WARN rule emits advisory comment, not a Cedar policy statement", () => {
-    const b = makeMinimalBundle([{
-      stableRuleId: "x.warn",
-      title: "Warn X",
-      effect: "WARN",
-      sourceFormat: "SPCTRE_MANAGED",
-      domains: [],
-      connectors: ["x"],
-      actions: ["act"],
-      immutable: false,
-    }]);
+    const b = makeMinimalBundle([
+      {
+        stableRuleId: "x.warn",
+        title: "Warn X",
+        effect: "WARN",
+        sourceFormat: "SPCTRE_MANAGED",
+        domains: [],
+        connectors: ["x"],
+        actions: ["act"],
+        immutable: false,
+      },
+    ]);
     const exported = buildPolicyBundleExport({ bundle: b, format: "cedar" });
     expect(exported.ok).toBe(true);
     const cedar = exported.artifact as string;
@@ -202,16 +245,18 @@ describe("semantic parity", () => {
   });
 
   it("ESCALATE rule causes Cedar export to fail closed with blocking warning", () => {
-    const b = makeMinimalBundle([{
-      stableRuleId: "x.escalate",
-      title: "Escalate X",
-      effect: "ESCALATE",
-      sourceFormat: "SPCTRE_MANAGED",
-      domains: [],
-      connectors: ["x"],
-      actions: ["act"],
-      immutable: false,
-    }]);
+    const b = makeMinimalBundle([
+      {
+        stableRuleId: "x.escalate",
+        title: "Escalate X",
+        effect: "ESCALATE",
+        sourceFormat: "SPCTRE_MANAGED",
+        domains: [],
+        connectors: ["x"],
+        actions: ["act"],
+        immutable: false,
+      },
+    ]);
     const exported = buildPolicyBundleExport({ bundle: b, format: "cedar" });
     expect(exported.ok).toBe(false);
     expect(exported.artifact).toBeNull();
@@ -231,22 +276,26 @@ describe("dynamic conditions", () => {
       artifactHash: "sha256:art",
       targetStacks: [],
       approvals: [],
-      rules: [{
-        stableRuleId: "x.deny.window",
-        title: "Deny in window",
-        effect: "DENY",
-        sourceFormat: "SPCTRE_MANAGED",
-        domains: [],
-        connectors: ["x"],
-        actions: ["act"],
-        immutable: false,
-        dynamicConditions: [{
-          kind: "TIME_WINDOW",
-          source: "AGT_CONDITION",
-          window: { start_hour: 9, end_hour: 17 },
-          originalCondition: { type: "time_window", start_hour: 9, end_hour: 17 },
-        }],
-      }],
+      rules: [
+        {
+          stableRuleId: "x.deny.window",
+          title: "Deny in window",
+          effect: "DENY",
+          sourceFormat: "SPCTRE_MANAGED",
+          domains: [],
+          connectors: ["x"],
+          actions: ["act"],
+          immutable: false,
+          dynamicConditions: [
+            {
+              kind: "TIME_WINDOW",
+              source: "AGT_CONDITION",
+              window: { start_hour: 9, end_hour: 17 },
+              originalCondition: { type: "time_window", start_hour: 9, end_hour: 17 },
+            },
+          ],
+        },
+      ],
       generatedAt: FIXED_GENERATED_AT,
       metadata: {},
     });
@@ -269,22 +318,26 @@ describe("dynamic conditions", () => {
       artifactHash: "sha256:art",
       targetStacks: [],
       approvals: [],
-      rules: [{
-        stableRuleId: "x.deny.window",
-        title: "Deny in window",
-        effect: "DENY",
-        sourceFormat: "SPCTRE_MANAGED",
-        domains: [],
-        connectors: ["x"],
-        actions: ["act"],
-        immutable: false,
-        dynamicConditions: [{
-          kind: "TIME_WINDOW",
-          source: "AGT_CONDITION",
-          window: { start_hour: 9, end_hour: 17 },
-          originalCondition: { type: "time_window", start_hour: 9, end_hour: 17 },
-        }],
-      }],
+      rules: [
+        {
+          stableRuleId: "x.deny.window",
+          title: "Deny in window",
+          effect: "DENY",
+          sourceFormat: "SPCTRE_MANAGED",
+          domains: [],
+          connectors: ["x"],
+          actions: ["act"],
+          immutable: false,
+          dynamicConditions: [
+            {
+              kind: "TIME_WINDOW",
+              source: "AGT_CONDITION",
+              window: { start_hour: 9, end_hour: 17 },
+              originalCondition: { type: "time_window", start_hour: 9, end_hour: 17 },
+            },
+          ],
+        },
+      ],
       generatedAt: FIXED_GENERATED_AT,
       metadata: {},
     });
@@ -305,22 +358,26 @@ describe("dynamic conditions", () => {
       artifactHash: "sha256:art",
       targetStacks: [],
       approvals: [],
-      rules: [{
-        stableRuleId: "x.allow.window",
-        title: "Allow in window",
-        effect: "ALLOW",
-        sourceFormat: "SPCTRE_MANAGED",
-        domains: [],
-        connectors: ["x"],
-        actions: ["act"],
-        immutable: false,
-        dynamicConditions: [{
-          kind: "TIME_WINDOW",
-          source: "AGT_CONDITION",
-          window: { start_hour: 9, end_hour: 17 },
-          originalCondition: { type: "time_window", start_hour: 9, end_hour: 17 },
-        }],
-      }],
+      rules: [
+        {
+          stableRuleId: "x.allow.window",
+          title: "Allow in window",
+          effect: "ALLOW",
+          sourceFormat: "SPCTRE_MANAGED",
+          domains: [],
+          connectors: ["x"],
+          actions: ["act"],
+          immutable: false,
+          dynamicConditions: [
+            {
+              kind: "TIME_WINDOW",
+              source: "AGT_CONDITION",
+              window: { start_hour: 9, end_hour: 17 },
+              originalCondition: { type: "time_window", start_hour: 9, end_hour: 17 },
+            },
+          ],
+        },
+      ],
       generatedAt: FIXED_GENERATED_AT,
       metadata: {},
     });
@@ -353,7 +410,11 @@ describe("native verifier invocation", () => {
   })();
 
   it.skipIf(!opaAvailable)("opa check passes on exported opa-rego artifact", () => {
-    const exported = buildPolicyBundleExport({ bundle, format: "opa-rego", generatedAt: FIXED_GENERATED_AT });
+    const exported = buildPolicyBundleExport({
+      bundle,
+      format: "opa-rego",
+      generatedAt: FIXED_GENERATED_AT,
+    });
     const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "spctre-opa-golden-"));
     const regoPath = path.join(tmpDir, "policy.rego");
     fs.writeFileSync(regoPath, exported.artifact as string);
@@ -366,12 +427,19 @@ describe("native verifier invocation", () => {
   });
 
   it.skipIf(!cedarAvailable)("cedar validate passes on exported cedar artifact", () => {
-    const exported = buildPolicyBundleExport({ bundle, format: "cedar", generatedAt: FIXED_GENERATED_AT });
+    const exported = buildPolicyBundleExport({
+      bundle,
+      format: "cedar",
+      generatedAt: FIXED_GENERATED_AT,
+    });
     const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "spctre-cedar-golden-"));
     const cedarPath = path.join(tmpDir, "policy.cedar");
     fs.writeFileSync(cedarPath, exported.artifact as string);
     try {
-      const result = spawnSync("cedar", ["validate", cedarPath], { encoding: "utf8", timeout: 10000 });
+      const result = spawnSync("cedar", ["validate", cedarPath], {
+        encoding: "utf8",
+        timeout: 10000,
+      });
       expect(result.status).toBe(0);
     } finally {
       fs.rmSync(tmpDir, { recursive: true, force: true });

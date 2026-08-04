@@ -16,7 +16,10 @@ const SPCTRE_DIR = ".spctre";
  *
  * Deploy with: notion worker deploy .spctre/notion-worker.js
  */
-export function writeNotionWorkerAdapter(config: SpctreCliConfig): { adapterPath: string; launchHint: string } {
+export function writeNotionWorkerAdapter(config: SpctreCliConfig): {
+  adapterPath: string;
+  launchHint: string;
+} {
   const spctreDir = path.resolve(process.cwd(), SPCTRE_DIR);
   fs.mkdirSync(spctreDir, { recursive: true });
 
@@ -78,9 +81,7 @@ function buildManifest(config: SpctreCliConfig, workerSource: string) {
     agentId: config.agentId,
     environment: config.environment,
     artifactHash: config.artifactHash,
-    files: {
-      workerSha256: sha256(workerSource),
-    },
+    files: { workerSha256: sha256(workerSource) },
     auditNotes: [
       "This project uses a generated Notion Worker governance template.",
       "Deploy the Worker via: notion worker deploy .spctre/notion-worker.js",

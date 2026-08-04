@@ -16,7 +16,10 @@ export function SimulationRegressionReadiness({
         <div className="simulationRegressionIntro">
           <p className="eyebrow">Publish evidence</p>
           <h3 id="replay-readiness-title">Regression readiness</h3>
-          <p className="meta">No saved replay covers this revision yet. Run a retained-log simulation before Cloud publication.</p>
+          <p className="meta">
+            No saved replay covers this revision yet. Run a retained-log simulation before Cloud
+            publication.
+          </p>
         </div>
         <span className="pill pillWarn">Replay required</span>
       </section>
@@ -35,11 +38,21 @@ export function SimulationRegressionReadiness({
         <p className="meta">
           {isRetainedLog
             ? `${coverageLabel} · ${sourceEventCount} source events`
-            : `${coverageLabel} · ${inspectedEventCount} of ${sourceEventCount} events inspected`} · {isClear ? "No blocking regressions" : `${summary.blockingCount} blocking regression${summary.blockingCount === 1 ? "" : "s"}`}
+            : `${coverageLabel} · ${inspectedEventCount} of ${sourceEventCount} events inspected`}{" "}
+          ·{" "}
+          {isClear
+            ? "No blocking regressions"
+            : `${summary.blockingCount} blocking regression${summary.blockingCount === 1 ? "" : "s"}`}
         </p>
       </div>
-      <span className={isClear ? "pill pillAllow" : isRetainedLog ? "pill pillBlock" : "pill pillWarn"}>
-        {isClear ? "No blocking regressions" : isRetainedLog ? "Publish blocked" : "Not publishable"}
+      <span
+        className={isClear ? "pill pillAllow" : isRetainedLog ? "pill pillBlock" : "pill pillWarn"}
+      >
+        {isClear
+          ? "No blocking regressions"
+          : isRetainedLog
+            ? "Publish blocked"
+            : "Not publishable"}
       </span>
 
       <dl className="simulationRegressionChecks">
@@ -79,8 +92,17 @@ function RegressionCheck({
 }) {
   const hasRegression = value > 0;
   return (
-    <div className={hasRegression ? "simulationRegressionCheck simulationRegressionCheckBlocked" : "simulationRegressionCheck"}>
-      <dt>{hasRegression ? icon : <CheckCircle2 size={15} />}<span>{label}</span></dt>
+    <div
+      className={
+        hasRegression
+          ? "simulationRegressionCheck simulationRegressionCheckBlocked"
+          : "simulationRegressionCheck"
+      }
+    >
+      <dt>
+        {hasRegression ? icon : <CheckCircle2 size={15} />}
+        <span>{label}</span>
+      </dt>
       <dd>{hasRegression ? `${value} finding${value === 1 ? "" : "s"}` : clearLabel}</dd>
     </div>
   );

@@ -15,7 +15,13 @@ export const GITHUB_PACK: PolicyPack = {
   tags: ["code", "deployments", "secrets", "branches", "ci"],
   domains: ["repositories", "branches", "deployments", "secrets", "workflows"],
   parameters: [
-    { key: "github.protected_branches", label: "Branch names treated as protected", type: "enum", default: ["main", "master"], enumValues: ["main", "master", "release", "production"] },
+    {
+      key: "github.protected_branches",
+      label: "Branch names treated as protected",
+      type: "enum",
+      default: ["main", "master"],
+      enumValues: ["main", "master", "release", "production"],
+    },
   ],
   metadata: makePackMetadata({
     name: "GitHub Operations Pack",
@@ -23,7 +29,13 @@ export const GITHUB_PACK: PolicyPack = {
     riskLevel: "HIGH",
     riskTags: ["code", "branches", "secrets"],
     category: "source control and repository operations",
-    changelog: [{ version: "1.0.0", date: "2026-07-20", summary: "Hand-authored replacement for the generated GitHub pack." }],
+    changelog: [
+      {
+        version: "1.0.0",
+        date: "2026-07-20",
+        summary: "Hand-authored replacement for the generated GitHub pack.",
+      },
+    ],
   }),
   rules: [
     {
@@ -35,11 +47,20 @@ export const GITHUB_PACK: PolicyPack = {
       actions: ["branch.push"],
       immutable: true,
       parameterConstraints: [
-        { field: "ref", operator: "in", value: ["main", "master"], parameterKey: "github.protected_branches" },
+        {
+          field: "ref",
+          operator: "in",
+          value: ["main", "master"],
+          parameterKey: "github.protected_branches",
+        },
         { field: "force", operator: "eq", value: true },
       ],
       controlMappings: [
-        { framework: "SOC2", controlId: "CC8.1", rationale: "Prevents unreviewed history rewrite on protected branches." },
+        {
+          framework: "SOC2",
+          controlId: "CC8.1",
+          rationale: "Prevents unreviewed history rewrite on protected branches.",
+        },
       ],
     },
     {
@@ -51,7 +72,12 @@ export const GITHUB_PACK: PolicyPack = {
       actions: ["branch.delete"],
       immutable: true,
       parameterConstraints: [
-        { field: "ref", operator: "in", value: ["main", "master"], parameterKey: "github.protected_branches" },
+        {
+          field: "ref",
+          operator: "in",
+          value: ["main", "master"],
+          parameterKey: "github.protected_branches",
+        },
       ],
     },
     {
@@ -91,7 +117,13 @@ export const GITHUB_ACTIONS_PACK: PolicyPack = {
     riskLevel: "HIGH",
     riskTags: ["ci", "secrets", "runners"],
     category: "CI/CD execution",
-    changelog: [{ version: "1.0.0", date: "2026-07-20", summary: "Hand-authored replacement for the generated GitHub Actions pack." }],
+    changelog: [
+      {
+        version: "1.0.0",
+        date: "2026-07-20",
+        summary: "Hand-authored replacement for the generated GitHub Actions pack.",
+      },
+    ],
   }),
   rules: [
     {
@@ -103,7 +135,11 @@ export const GITHUB_ACTIONS_PACK: PolicyPack = {
       actions: ["workflow.run"],
       immutable: true,
       semanticChecks: [
-        { id: "github-actions-sc-1", prompt: "check for unpinned or mutable third-party action reference", effect: "DENY" },
+        {
+          id: "github-actions-sc-1",
+          prompt: "check for unpinned or mutable third-party action reference",
+          effect: "DENY",
+        },
       ],
     },
     {
@@ -133,7 +169,13 @@ export const GITHUB_ENTERPRISE_ADMIN_PACK: PolicyPack = {
     riskLevel: "HIGH",
     riskTags: ["identity", "admin", "security"],
     category: "source control administration",
-    changelog: [{ version: "1.0.0", date: "2026-07-20", summary: "Hand-authored replacement for the generated GitHub Enterprise Admin pack." }],
+    changelog: [
+      {
+        version: "1.0.0",
+        date: "2026-07-20",
+        summary: "Hand-authored replacement for the generated GitHub Enterprise Admin pack.",
+      },
+    ],
   }),
   rules: [
     {
@@ -146,7 +188,11 @@ export const GITHUB_ENTERPRISE_ADMIN_PACK: PolicyPack = {
       immutable: true,
       parameterConstraints: [{ field: "new_role", operator: "eq", value: "owner" }],
       controlMappings: [
-        { framework: "SOC2", controlId: "CC6.1", rationale: "Restricts privilege escalation to organization owner." },
+        {
+          framework: "SOC2",
+          controlId: "CC6.1",
+          rationale: "Restricts privilege escalation to organization owner.",
+        },
       ],
     },
     {

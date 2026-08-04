@@ -10,7 +10,10 @@ function maskPhoneNumbers(input: string): string {
   return input.replace(/\+?\d[\d\s().-]{5,}\d/g, "<redacted-phone>");
 }
 
-export async function sendSmsOtp(phoneNumber: string, recaptchaToken: string = "mock-server-token"): Promise<string> {
+export async function sendSmsOtp(
+  phoneNumber: string,
+  recaptchaToken: string = "mock-server-token",
+): Promise<string> {
   const firebaseApiKey = process.env.FIREBASE_API_KEY?.trim();
   if (!firebaseApiKey) {
     // Dev fallback mode: write to console for offline testing
@@ -26,10 +29,7 @@ export async function sendSmsOtp(phoneNumber: string, recaptchaToken: string = "
   const response = await fetchWithTimeout(url, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({
-      phoneNumber,
-      recaptchaToken,
-    }),
+    body: JSON.stringify({ phoneNumber, recaptchaToken }),
     cache: "no-store",
   });
 
@@ -60,10 +60,7 @@ export async function verifyFirebasePhoneAuth(sessionInfo: string, code: string)
   const response = await fetchWithTimeout(url, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({
-      sessionInfo,
-      code,
-    }),
+    body: JSON.stringify({ sessionInfo, code }),
     cache: "no-store",
   });
 

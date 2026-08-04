@@ -12,14 +12,18 @@ const VALID_TARGET_PLANS = new Set(["TEAM", "BUSINESS", "ENTERPRISE"]);
 
 export async function requestUsageBillingReview(formData: FormData): Promise<void> {
   const workspaceSlug = String(formData.get("workspaceSlug") ?? "").trim();
-  const targetPlan = String(formData.get("targetPlan") ?? "BUSINESS").trim().toUpperCase();
-  const note = String(formData.get("note") ?? "").trim().slice(0, 500);
+  const targetPlan = String(formData.get("targetPlan") ?? "BUSINESS")
+    .trim()
+    .toUpperCase();
+  const note = String(formData.get("note") ?? "")
+    .trim()
+    .slice(0, 500);
 
   if (!VALID_TARGET_PLANS.has(targetPlan)) return;
 
   const [workspaceContext, session] = await Promise.all([
     getWorkspaceContext({ workspaceSlug: workspaceSlug || undefined }),
-    getAuthSession().catch(swallow("getAuthSession", null))
+    getAuthSession().catch(swallow("getAuthSession", null)),
   ]);
   if (!session) return;
   if (isDemoTenant(workspaceContext.tenantId)) return;

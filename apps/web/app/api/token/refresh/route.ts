@@ -23,72 +23,97 @@ export const dynamic = "force-dynamic";
 async function handlePostApiTokenRefresh(request: Request) {
   const traceId = extractTraceId(request);
   const started = Date.now();
-  return await withSpan("api.token.refresh", { "spctre.request_id": traceId, "http.route": "/api/token/refresh" }, async () => {
-  const idempotencyKey = extractIdempotencyKey(request);
+  return await withSpan(
+    "api.token.refresh",
+    { "spctre.request_id": traceId, "http.route": "/api/token/refresh" },
+    async () => {
+      const idempotencyKey = extractIdempotencyKey(request);
 
-  // Return cached response for repeated requests with the same idempotency key.
-  if (idempotencyKey) {
-    const cached = refreshIdempotencyCache.get(idempotencyKey);
-    if (cached) {
-      incrementCounter("spctre.token.refresh", 1, { outcome: "cached" });
-      return withTraceId(Response.json({ ...cached, meta: makeMeta(traceId) }, { status: 200 }), traceId);
-    }
-  }
+      // Return cached response for repeated requests with the same idempotency key.
+      if (idempotencyKey) {
+        const cached = refreshIdempotencyCache.get(idempotencyKey);
+        if (cached) {
+          incrementCounter("spctre.token.refresh", 1, { outcome: "cached" });
+          return withTraceId(
+            Response.json({ ...cached, meta: makeMeta(traceId) }, { status: 200 }),
+            traceId,
+          );
+        }
+      }
 
-  let payload: unknown;
-  try {
-    payload = await request.json();
-  } catch {
-    incrementCounter("spctre.api.errors", 1, { "http.route": "/api/token/refresh", "http.response.status_code": 400 });
-    return withTraceId(
-      Response.json({ error: "Request body must be JSON.", meta: makeMeta(traceId) }, { status: 400 }),
-      traceId
-    );
-  }
+      let payload: unknown;
+      try {
+        payload = await request.json();
+      } catch {
+        incrementCounter("spctre.api.errors", 1, {
+          "http.route": "/api/token/refresh",
+          "http.response.status_code": 400,
+        });
+        return withTraceId(
+          Response.json(
+            { error: "Request body must be JSON.", meta: makeMeta(traceId) },
+            { status: 400 },
+          ),
+          traceId,
+        );
+      }
 
-  const parsed = parseBody(TokenRefreshSchema, payload);
-  if (!parsed.ok) {
-    incrementCounter("spctre.api.errors", 1, { "http.route": "/api/token/refresh", "http.response.status_code": 400 });
-    return withTraceId(
-      Response.json({ error: parsed.error, issues: parsed.issues, meta: makeMeta(traceId) }, { status: 400 }),
-      traceId
-    );
-  }
+      const parsed = parseBody(TokenRefreshSchema, payload);
+      if (!parsed.ok) {
+        incrementCounter("spctre.api.errors", 1, {
+          "http.route": "/api/token/refresh",
+          "http.response.status_code": 400,
+        });
+        return withTraceId(
+          Response.json(
+            { error: parsed.error, issues: parsed.issues, meta: makeMeta(traceId) },
+            { status: 400 },
+          ),
+          traceId,
+        );
+      }
 
-  const delegated = await delegateTokenRefreshToWorker(parsed.value, request, traceId);
-  if (delegated) return delegated;
+      const delegated = await delegateTokenRefreshToWorker(parsed.value, request, traceId);
+      if (delegated) return delegated;
 
-  const result = await rotateRefreshToken(parsed.value.refreshToken);
-  if (!result.ok) {
-    incrementCounter("spctre.token.refresh", 1, { outcome: "failure", "http.response.status_code": result.status });
-    return withTraceId(
-      Response.json({ error: result.error, meta: makeMeta(traceId) }, { status: result.status }),
-      traceId
-    );
-  }
+      const result = await rotateRefreshToken(parsed.value.refreshToken);
+      if (!result.ok) {
+        incrementCounter("spctre.token.refresh", 1, {
+          outcome: "failure",
+          "http.response.status_code": result.status,
+        });
+        return withTraceId(
+          Response.json(
+            { error: result.error, meta: makeMeta(traceId) },
+            { status: result.status },
+          ),
+          traceId,
+        );
+      }
 
-  const { pair } = result;
-  const responseBody: TokenPairResponse = {
-    accessToken: pair.accessToken,
-    accessTokenExpiresAt: pair.accessTokenExpiresAt,
-    refreshToken: pair.refreshToken,
-    refreshTokenExpiresAt: pair.refreshTokenExpiresAt,
-  };
+      const { pair } = result;
+      const responseBody: TokenPairResponse = {
+        accessToken: pair.accessToken,
+        accessTokenExpiresAt: pair.accessTokenExpiresAt,
+        refreshToken: pair.refreshToken,
+        refreshTokenExpiresAt: pair.refreshTokenExpiresAt,
+      };
 
-  if (idempotencyKey) {
-    refreshIdempotencyCache.set(idempotencyKey, responseBody);
-  }
+      if (idempotencyKey) {
+        refreshIdempotencyCache.set(idempotencyKey, responseBody);
+      }
 
-  incrementCounter("spctre.token.refresh", 1, { outcome: "success" });
-  recordDuration("spctre.token.refresh.duration", Date.now() - started, { outcome: "success" });
-  return withTraceId(Response.json({ ...responseBody, meta: makeMeta(traceId) }), traceId);
-  });
+      incrementCounter("spctre.token.refresh", 1, { outcome: "success" });
+      recordDuration("spctre.token.refresh.duration", Date.now() - started, { outcome: "success" });
+      return withTraceId(Response.json({ ...responseBody, meta: makeMeta(traceId) }), traceId);
+    },
+  );
 }
 
 async function delegateTokenRefreshToWorker(
   payload: { refreshToken: string },
   request: Request,
-  traceId: string
+  traceId: string,
 ): Promise<Response | null> {
   const baseUrl = evidenceIngestUrl();
   if (!baseUrl || request.headers.get("x-spctre-forwarded-by") === "web") return null;
@@ -116,7 +141,7 @@ async function delegateTokenRefreshToWorker(
       statusText: response.statusText,
       headers: response.headers,
     }),
-    traceId
+    traceId,
   );
 }
 

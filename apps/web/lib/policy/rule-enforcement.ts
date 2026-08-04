@@ -12,7 +12,8 @@ import type { PolicyRuleSummary } from "@spctre/policy-schema";
  * in both client components and server actions without pulling the package's
  * Node/native runtime into a browser bundle.
  */
-export type RuleEnforcementDisposition = "DETERMINISTIC" | "SEMANTIC" | "ADVISORY" | "ALLOW" | "OBSERVE";
+export type RuleEnforcementDisposition =
+  "DETERMINISTIC" | "SEMANTIC" | "ADVISORY" | "ALLOW" | "OBSERVE";
 
 export interface RuleEnforcementAssessment {
   disposition: RuleEnforcementDisposition;
@@ -41,7 +42,7 @@ export interface EnforcementCoverage {
 
 export function assessRuleEnforcement(
   rule: EnforcementInput,
-  coverage?: EnforcementCoverage
+  coverage?: EnforcementCoverage,
 ): RuleEnforcementAssessment {
   const hasSemantic = (rule.semanticChecks?.length ?? 0) > 0;
 
@@ -92,7 +93,8 @@ export function assessRuleEnforcement(
   return {
     disposition: "DETERMINISTIC",
     label: rule.effect === "ESCALATE" ? "Pre-action escalate" : "Pre-action block",
-    detail: "Deterministic — enforceable as a pre-action decision on any gateway or native adapter.",
+    detail:
+      "Deterministic — enforceable as a pre-action decision on any gateway or native adapter.",
     deterministic: true,
   };
 }

@@ -32,7 +32,9 @@ export async function POST(req: NextRequest) {
     }
 
     // Fetch tenant commercial profile to determine plan-based retention
-    const profile = await getCommercialProfile(tenantId).catch(swallow("getCommercialProfile", null));
+    const profile = await getCommercialProfile(tenantId).catch(
+      swallow("getCommercialProfile", null),
+    );
     let retentionDays = 90;
     if (profile?.planCode === "TEAM") {
       retentionDays = 365;
@@ -51,7 +53,7 @@ export async function POST(req: NextRequest) {
           workspaceId: record.workspace_id,
           tenantId: record.tenant_id,
           payload: record.raw_evidence,
-          retainUntil
+          retainUntil,
         });
         archivedCount++;
       } catch (err) {

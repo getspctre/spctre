@@ -65,21 +65,23 @@ export async function listBundleExportLogs(params: {
   const limit = params.limit ?? 50;
   const offset = params.offset ?? 0;
   try {
-    const rows = await sql<{
-      id: string;
-      tenant_id: string;
-      workspace_id: string;
-      branch_id: string;
-      revision_id: string;
-      artifact_hash: string;
-      format: string;
-      outcome: BundleExportOutcome;
-      compiled_artifact_hash: string | null;
-      blocking_count: number;
-      verified: boolean | null;
-      actor_id: string | null;
-      created_at: Date;
-    }[]>`
+    const rows = await sql<
+      {
+        id: string;
+        tenant_id: string;
+        workspace_id: string;
+        branch_id: string;
+        revision_id: string;
+        artifact_hash: string;
+        format: string;
+        outcome: BundleExportOutcome;
+        compiled_artifact_hash: string | null;
+        blocking_count: number;
+        verified: boolean | null;
+        actor_id: string | null;
+        created_at: Date;
+      }[]
+    >`
       SELECT id, tenant_id, workspace_id, branch_id, revision_id, artifact_hash,
              format, outcome, compiled_artifact_hash, blocking_count, verified,
              actor_id, created_at

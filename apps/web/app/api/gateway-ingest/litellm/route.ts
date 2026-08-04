@@ -11,13 +11,16 @@ async function handlePostApiGatewayIngestLitellm(request: Request) {
     route: "/api/gateway-ingest/litellm",
     spanName: "api.gateway-ingest.litellm",
     defaultPrincipalId: "gateway:litellm",
-    invalidPayloadMessage: "Could not parse LiteLLM event — missing required field 'id' or 'call_id'.",
+    invalidPayloadMessage:
+      "Could not parse LiteLLM event — missing required field 'id' or 'call_id'.",
     normalize: normalizeLitellmEvent,
     getEnvironment: (raw, request) => {
       const metadata = (raw.metadata as Record<string, unknown> | undefined) ?? {};
       const tags = Array.isArray(metadata.tags) ? (metadata.tags as string[]) : [];
-      return tags.find((t) => ["production", "staging", "development"].includes(t)) ??
-        String(request.headers.get("x-spctre-environment") ?? "production");
+      return (
+        tags.find((t) => ["production", "staging", "development"].includes(t)) ??
+        String(request.headers.get("x-spctre-environment") ?? "production")
+      );
     },
   });
 }

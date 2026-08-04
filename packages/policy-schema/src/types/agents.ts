@@ -29,11 +29,7 @@ export interface BundleCompatibilityReport {
 }
 
 export type TrustScoreSource =
-  | "EVIDENCE_INGEST"
-  | "POLICY_EVALUATION"
-  | "MANUAL"
-  | "IDENTITY_EVENT"
-  | "SYSTEM";
+  "EVIDENCE_INGEST" | "POLICY_EVALUATION" | "MANUAL" | "IDENTITY_EVENT" | "SYSTEM";
 
 export interface TrustScoreEvent {
   id: string;
@@ -117,10 +113,7 @@ export interface TrustCalibrationPolicy {
 }
 
 export type ContextBudgetEventType =
-  | "TOKEN_GROWTH"
-  | "SUMMARIZATION_EVENT"
-  | "CONTEXT_SOURCE_MIX"
-  | "BUDGET_BREACH";
+  "TOKEN_GROWTH" | "SUMMARIZATION_EVENT" | "CONTEXT_SOURCE_MIX" | "BUDGET_BREACH";
 
 export interface ContextBudgetEvent {
   id: string;
@@ -133,12 +126,7 @@ export interface ContextBudgetEvent {
   eventType: ContextBudgetEventType;
   tokenCount: number;
   tokenDelta?: number;
-  contextSourceMix: {
-    system?: number;
-    user?: number;
-    assistant?: number;
-    tool?: number;
-  };
+  contextSourceMix: { system?: number; user?: number; assistant?: number; tool?: number };
   budgetLimit?: number;
   budgetUtilization?: number;
   governanceAction?: "ALLOW" | "WARN" | "ESCALATE" | "REVIEW";

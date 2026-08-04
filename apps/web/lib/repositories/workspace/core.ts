@@ -109,12 +109,9 @@ export async function normalizeWorkspaceContext(params: {
   return { tenantId, workspaceId };
 }
 
-export async function listWorkspacesForTenant(tenantId: string): Promise<{
-  id: string;
-  slug: string;
-  name: string;
-  created_at: Date;
-}[]> {
+export async function listWorkspacesForTenant(
+  tenantId: string,
+): Promise<{ id: string; slug: string; name: string; created_at: Date }[]> {
   if (!sql) return [];
   return sql<{ id: string; slug: string; name: string; created_at: Date }[]>`
     SELECT id, slug, name, created_at FROM workspace

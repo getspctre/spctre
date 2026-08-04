@@ -1,7 +1,15 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
-import { ArrowRight, CheckCircle2, Clipboard, KeyRound, ShieldX, Terminal, Zap } from "lucide-react";
+import {
+  ArrowRight,
+  CheckCircle2,
+  Clipboard,
+  KeyRound,
+  ShieldX,
+  Terminal,
+  Zap,
+} from "lucide-react";
 import type { WebOnboardingStatus } from "@/lib/repositories/onboarding/shared";
 import { buildWorkspacePath } from "@/lib/workspace/path";
 import {
@@ -30,7 +38,7 @@ function buildSetupSnippets(
   apiBase: string,
   workspaceSlug: string,
   token: string,
-  publishedBundle: PublishedBundleRefs
+  publishedBundle: PublishedBundleRefs,
 ) {
   const cliBlock = [
     "npm install -g @spctre/cli",
@@ -45,7 +53,7 @@ function buildSetupSnippets(
     '    "content-type": "application/json"',
     "  },",
     "  body: JSON.stringify({",
-    '    decisionId: `onboarding-${Date.now()}`,',
+    "    decisionId: `onboarding-${Date.now()}`,",
     `    artifactHash: "${publishedBundle.artifactHash}",`,
     "    policyContext: [{",
     '      scope: "WORKSPACE",',
@@ -77,7 +85,8 @@ function buildSetupSnippets(
 function starterStateLabel(starterState: "idle" | "pending" | "ready" | "blocked"): string {
   if (starterState === "ready") return "Starter policy is published for this workspace.";
   if (starterState === "pending") return "Publishing the starter policy...";
-  if (starterState === "blocked") return "Starter policy will be published when an admin sends the sample decision.";
+  if (starterState === "blocked")
+    return "Starter policy will be published when an admin sends the sample decision.";
   return "Preparing starter policy...";
 }
 
@@ -132,11 +141,14 @@ function SetupTokenRow({
         </form>
         {liveStatus.setupTokenExists && !tokenState?.ok ? (
           <p className="meta">
-            Existing setup token: <code>{liveStatus.setupTokenPrefix}...</code>. Generate a fresh active token to reveal a new secret.
+            Existing setup token: <code>{liveStatus.setupTokenPrefix}...</code>. Generate a fresh
+            active token to reveal a new secret.
           </p>
         ) : null}
         {tokenState?.error ? (
-          <p className="meta" style={{ color: "var(--block)" }}>{tokenState.error}</p>
+          <p className="meta" style={{ color: "var(--block)" }}>
+            {tokenState.error}
+          </p>
         ) : null}
         {tokenState?.ok ? (
           <p className="meta" style={{ color: "var(--warn)" }}>
@@ -148,7 +160,11 @@ function SetupTokenRow({
       {tokenState?.ok ? (
         <div className="quickStartSecret">
           <code>{tokenState.rawToken}</code>
-          <button className="button" type="button" onClick={() => copyBlock("token", tokenState.rawToken)}>
+          <button
+            className="button"
+            type="button"
+            onClick={() => copyBlock("token", tokenState.rawToken)}
+          >
             <Clipboard size={14} />
             {copied === "token" ? "Copied" : "Copy"}
           </button>
@@ -163,7 +179,7 @@ function SetupTokenRow({
 function useLiveOnboardingStatus(status: WebOnboardingStatus) {
   const [liveStatus, setLiveStatus] = useState(status);
   const [starterState, setStarterState] = useState<"idle" | "pending" | "ready" | "blocked">(
-    status.publishedBundle ? "ready" : "idle"
+    status.publishedBundle ? "ready" : "idle",
   );
 
   const hasSampleDecision = liveStatus.quickStartEvidenceCount > 0;
@@ -179,7 +195,7 @@ function useLiveOnboardingStatus(status: WebOnboardingStatus) {
     let cancelled = false;
     setStarterState("pending");
     fetch("/api/onboarding/starter", { method: "POST", cache: "no-store" })
-      .then((response) => response.ok ? response.json() : null)
+      .then((response) => (response.ok ? response.json() : null))
       .then((payload: { status?: WebOnboardingStatus } | null) => {
         if (cancelled) return;
         if (payload?.status) {
@@ -203,7 +219,7 @@ function useLiveOnboardingStatus(status: WebOnboardingStatus) {
     let cancelled = false;
     const loadStatus = () => {
       fetch("/api/onboarding/status", { cache: "no-store" })
-        .then((response) => response.ok ? response.json() : null)
+        .then((response) => (response.ok ? response.json() : null))
         .then((payload: { status?: WebOnboardingStatus } | null) => {
           if (!cancelled && payload?.status) setLiveStatus(payload.status);
         })
@@ -231,18 +247,19 @@ export function QuickStartBanner({
 }: Props) {
   const [allowState, allowAction, allowPending] = useActionState<QuickStartState, FormData>(
     sendAllowedDecision,
-    null
+    null,
   );
   const [blockState, blockAction, blockPending] = useActionState<QuickStartState, FormData>(
     sendBlockedDecision,
-    null
+    null,
   );
   const [tokenState, tokenAction, tokenPending] = useActionState<SetupTokenState, FormData>(
     generateOnboardingSetupToken,
-    null
+    null,
   );
   const [copied, setCopied] = useState<string | null>(null);
-  const { liveStatus, starterState, hasSampleDecision, hasRealEvidence } = useLiveOnboardingStatus(status);
+  const { liveStatus, starterState, hasSampleDecision, hasRealEvidence } =
+    useLiveOnboardingStatus(status);
 
   const pending = allowPending || blockPending;
   const error = allowState?.error ?? blockState?.error;
@@ -252,24 +269,33 @@ export function QuickStartBanner({
     workspaceSlug,
     liveStatus.latestRealEvidenceId
       ? `/evidence?highlight=${encodeURIComponent(liveStatus.latestRealEvidenceId)}`
-      : "/evidence"
+      : "/evidence",
   );
   const publishedBundle = liveStatus.publishedBundle ?? {
     branchId: "<branch-id>",
     revisionId: "<revision-id>",
     artifactHash: "<artifact-hash>",
   };
-  const starterPolicyHref = surface === "policies" ? "#branches" : buildWorkspacePath(workspaceSlug, "/#branches");
+  const starterPolicyHref =
+    surface === "policies" ? "#branches" : buildWorkspacePath(workspaceSlug, "/#branches");
   const apiBase = controlPlaneUrl.replace(/\/$/, "");
-  const { cliBlock, fetchBlock, curlBlock } = buildSetupSnippets(apiBase, workspaceSlug, token, publishedBundle);
+  const { cliBlock, fetchBlock, curlBlock } = buildSetupSnippets(
+    apiBase,
+    workspaceSlug,
+    token,
+    publishedBundle,
+  );
 
   function copyBlock(id: string, value: string) {
-    navigator.clipboard.writeText(value).then(() => {
-      setCopied(id);
-      setTimeout(() => setCopied(null), 2000);
-    }).catch(() => {
-      // Clipboard access is browser-local; keep the value visible for manual copying.
-    });
+    navigator.clipboard
+      .writeText(value)
+      .then(() => {
+        setCopied(id);
+        setTimeout(() => setCopied(null), 2000);
+      })
+      .catch(() => {
+        // Clipboard access is browser-local; keep the value visible for manual copying.
+      });
   }
 
   if (hasRealEvidence) {
@@ -284,7 +310,8 @@ export function QuickStartBanner({
             <p className="eyebrow">Onboarding · Connect an agent</p>
             <h2>Your first sample decision appeared</h2>
             <p className="meta">
-              Connect one real agent next. The first non-sample decision will show in the same Evidence stream.
+              Connect one real agent next. The first non-sample decision will show in the same
+              Evidence stream.
             </p>
           </div>
           <Terminal size={20} className="sectionIcon" />
@@ -300,13 +327,7 @@ export function QuickStartBanner({
         />
 
         <div className="quickStartCodeGrid">
-          <SetupCodeBlock
-            id="cli"
-            title="CLI"
-            code={cliBlock}
-            copied={copied}
-            onCopy={copyBlock}
-          />
+          <SetupCodeBlock id="cli" title="CLI" code={cliBlock} copied={copied} onCopy={copyBlock} />
           <SetupCodeBlock
             id="fetch"
             title="JavaScript"
@@ -335,10 +356,15 @@ export function QuickStartBanner({
       <div className="rowHeader">
         <div>
           <p className="eyebrow">Quick start · Try governance now</p>
-          <h2>{surface === "policies" ? "Publish a starter policy" : "Send your first governed decision"}</h2>
+          <h2>
+            {surface === "policies"
+              ? "Publish a starter policy"
+              : "Send your first governed decision"}
+          </h2>
           <p className="meta">
-            Send a sample decision to see governance in action, no CLI or agent setup needed.
-            The evidence row will include the rule, branch, revision, and artifact hash that governed it.
+            Send a sample decision to see governance in action, no CLI or agent setup needed. The
+            evidence row will include the rule, branch, revision, and artifact hash that governed
+            it.
           </p>
           <p className="meta">{starterStateLabel(starterState)}</p>
         </div>
@@ -357,8 +383,12 @@ export function QuickStartBanner({
         </form>
 
         <form action={blockAction}>
-          <button className="button" type="submit" disabled={pending}
-            style={{ borderColor: "var(--block)", color: "var(--block)" }}>
+          <button
+            className="button"
+            type="submit"
+            disabled={pending}
+            style={{ borderColor: "var(--block)", color: "var(--block)" }}
+          >
             <ShieldX size={15} />
             {blockPending ? "Sending…" : "Send a blocked action"}
           </button>
@@ -374,7 +404,9 @@ export function QuickStartBanner({
       </div>
 
       {error ? (
-        <p className="meta" style={{ color: "var(--block)", marginTop: 8 }}>{error}</p>
+        <p className="meta" style={{ color: "var(--block)", marginTop: 8 }}>
+          {error}
+        </p>
       ) : null}
     </section>
   );
@@ -398,7 +430,11 @@ function SetupCodeBlock({
   disabledMessage?: string;
 }) {
   return (
-    <div className={disabled ? "quickStartCodeBlock quickStartCodeBlockDisabled" : "quickStartCodeBlock"}>
+    <div
+      className={
+        disabled ? "quickStartCodeBlock quickStartCodeBlockDisabled" : "quickStartCodeBlock"
+      }
+    >
       <div className="rowHeader">
         <p className="eyebrow">{title}</p>
         <button
@@ -411,7 +447,9 @@ function SetupCodeBlock({
           <Clipboard size={15} />
         </button>
       </div>
-      <pre><code>{code}</code></pre>
+      <pre>
+        <code>{code}</code>
+      </pre>
       {disabled && disabledMessage ? <p className="meta">{disabledMessage}</p> : null}
       {copied === id ? <p className="meta">Copied</p> : null}
     </div>

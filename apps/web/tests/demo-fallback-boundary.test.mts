@@ -14,16 +14,9 @@ const NON_DEMO_TENANT = "11111111-1111-1111-1111-111111111111";
 
 // No database → every repository read returns empty, so only the demo-tenant
 // gate can introduce sample data.
-vi.mock("@/lib/db", () => ({
-  sql: null,
-  rawSql: () => "",
-}));
-vi.mock("@/lib/feature-flags-server", () => ({
-  isFeatureEnabled: () => false,
-}));
-vi.mock("@/lib/app-view-mode-server", () => ({
-  getAppViewMode: async () => "operator",
-}));
+vi.mock("@/lib/db", () => ({ sql: null, rawSql: () => "" }));
+vi.mock("@/lib/feature-flags-server", () => ({ isFeatureEnabled: () => false }));
+vi.mock("@/lib/app-view-mode-server", () => ({ getAppViewMode: async () => "operator" }));
 // The review page model resolves the active actor, which reads cookies when no
 // database is configured. Stub it so no actor cookie is present.
 vi.mock("next/headers", () => ({
@@ -31,7 +24,8 @@ vi.mock("next/headers", () => ({
   headers: async () => ({ get: () => null }),
 }));
 
-const getWorkspaceContext = vi.fn<(args?: { workspaceSlug?: string }) => Promise<WorkspaceContext>>();
+const getWorkspaceContext =
+  vi.fn<(args?: { workspaceSlug?: string }) => Promise<WorkspaceContext>>();
 vi.mock("@/lib/workspace", () => ({ getWorkspaceContext }));
 
 const agents = await import("../lib/domains/agents/service");
@@ -79,7 +73,11 @@ describe("evidence page model demo boundary", () => {
 
   it("returns empty evidence/heatmap for a real tenant with no data", async () => {
     useTenant(NON_DEMO_TENANT);
-    const model = await evidence.getEvidencePageModel({ workspaceSlug: "prod", query, pageSize: 10 });
+    const model = await evidence.getEvidencePageModel({
+      workspaceSlug: "prod",
+      query,
+      pageSize: 10,
+    });
     expect(model.evidence).toEqual([]);
     expect(model.activeHeatmap).toEqual([]);
     expect(model.activeUnused).toEqual([]);
@@ -87,7 +85,11 @@ describe("evidence page model demo boundary", () => {
 
   it("shows sample evidence for the demo tenant", async () => {
     useTenant(DEMO_TENANT_ID);
-    const model = await evidence.getEvidencePageModel({ workspaceSlug: "demo", query, pageSize: 10 });
+    const model = await evidence.getEvidencePageModel({
+      workspaceSlug: "demo",
+      query,
+      pageSize: 10,
+    });
     expect(model.evidence.length).toBeGreaterThan(0);
   });
 });
@@ -120,7 +122,10 @@ describe("review page model demo boundary", () => {
 
   it("shows demo branches and artifacts for the demo tenant", async () => {
     useTenant(DEMO_TENANT_ID);
-    const model = await getReviewPageModel({ workspaceSlug: "demo", selectedBranchId: "br-refund-review" });
+    const model = await getReviewPageModel({
+      workspaceSlug: "demo",
+      selectedBranchId: "br-refund-review",
+    });
     expect(model.branches.length).toBeGreaterThan(0);
     expect(model.activeDiff).not.toBeNull();
   });

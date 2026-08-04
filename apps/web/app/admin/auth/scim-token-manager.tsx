@@ -21,7 +21,7 @@ function RevokeScimTokenForm({ id }: { id: string }) {
   const t = useTranslations("admin.auth.scim.tokens");
   const [state, formAction, isPending] = useActionState<ScimTokenMutationState, FormData>(
     revokeScimProvisioningToken,
-    null
+    null,
   );
 
   return (
@@ -39,11 +39,17 @@ function RevokeScimTokenForm({ id }: { id: string }) {
   );
 }
 
-export function ScimTokenManager({ tokens, scimEndpoint }: { tokens: ScimTokenRow[]; scimEndpoint: string }) {
+export function ScimTokenManager({
+  tokens,
+  scimEndpoint,
+}: {
+  tokens: ScimTokenRow[];
+  scimEndpoint: string;
+}) {
   const t = useTranslations("admin.auth.scim.tokens");
   const [state, formAction, isPending] = useActionState<ScimTokenActionState, FormData>(
     createScimProvisioningToken,
-    null
+    null,
   );
   const [copied, setCopied] = useState(false);
 
@@ -78,7 +84,9 @@ export function ScimTokenManager({ tokens, scimEndpoint }: { tokens: ScimTokenRo
             </p>
           )}
           <div className="formField">
-            <label htmlFor="scim-token-label" className="eyebrow">{t("label")}</label>
+            <label htmlFor="scim-token-label" className="eyebrow">
+              {t("label")}
+            </label>
             <input
               id="scim-token-label"
               name="label"
@@ -111,7 +119,11 @@ export function ScimTokenManager({ tokens, scimEndpoint }: { tokens: ScimTokenRo
                   <td>{token.label ?? "—"}</td>
                   <td>{token.createdBy}</td>
                   <td>{new Date(token.createdAt).toLocaleDateString()}</td>
-                  <td>{token.lastUsedAt ? new Date(token.lastUsedAt).toLocaleDateString() : t("never_used")}</td>
+                  <td>
+                    {token.lastUsedAt
+                      ? new Date(token.lastUsedAt).toLocaleDateString()
+                      : t("never_used")}
+                  </td>
                   <td>
                     <RevokeScimTokenForm id={token.id} />
                   </td>

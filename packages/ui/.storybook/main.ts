@@ -10,10 +10,10 @@ const config: StorybookConfig = {
       build: {
         // Storybook's generated preview runtime currently emits a ~1 MB iframe chunk.
         // Raise the warning threshold so the build stays signal-rich for this package.
-        chunkSizeWarningLimit: 1100
-      }
+        chunkSizeWarningLimit: 1100,
+      },
     });
-  }
+  },
 };
 
 export default config;

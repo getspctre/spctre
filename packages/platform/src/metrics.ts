@@ -17,7 +17,11 @@ const gaugeInstruments = new Map<string, ObservableGauge>();
 const gaugeSeries = new Map<string, Map<string, { value: number; attrs: Attributes }>>();
 const observableGauges = new Map<string, ObservableGauge>();
 
-export function recordDuration(name: string, valueMs: number, attrs: Record<string, unknown> = {}): void {
+export function recordDuration(
+  name: string,
+  valueMs: number,
+  attrs: Record<string, unknown> = {},
+): void {
   let histogram = histograms.get(name);
   if (!histogram) {
     histogram = metrics.getMeter(currentServiceName()).createHistogram(name, { unit: "ms" });
@@ -26,7 +30,11 @@ export function recordDuration(name: string, valueMs: number, attrs: Record<stri
   histogram.record(valueMs, redactAttributes(attrs));
 }
 
-export function incrementCounter(name: string, value = 1, attrs: Record<string, unknown> = {}): void {
+export function incrementCounter(
+  name: string,
+  value = 1,
+  attrs: Record<string, unknown> = {},
+): void {
   let counter = counters.get(name);
   if (!counter) {
     counter = metrics.getMeter(currentServiceName()).createCounter(name);
@@ -97,7 +105,10 @@ export function registerDbPoolMetrics(name: string, statsFn: () => DbPoolStats):
     const ratio = max > 0 ? active / max : 0;
     result.observe(ratio, { "db.pool.name": name });
     if (ratio >= DB_POOL_SATURATION_WARN_RATIO) {
-      writeLog("warn", "DB pool saturation above threshold", { "db.pool.name": name, saturation: ratio });
+      writeLog("warn", "DB pool saturation above threshold", {
+        "db.pool.name": name,
+        saturation: ratio,
+      });
     }
   });
 }

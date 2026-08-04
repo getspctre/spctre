@@ -8,20 +8,20 @@ const exportOptions = [
     href: "/api/evidence/export?format=csv",
     title: "Download evidence as CSV",
     label: "CSV",
-    description: "Spreadsheet-ready rows for filtering, review, and handoff."
+    description: "Spreadsheet-ready rows for filtering, review, and handoff.",
   },
   {
     href: "/api/evidence/export?format=json",
     title: "Download evidence as JSON",
     label: "JSON",
-    description: "Full evidence packet with structured records and metadata."
+    description: "Full evidence packet with structured records and metadata.",
   },
   {
     href: "/api/evidence/export?format=agt-verification",
     title: "Download evidence for AGT verification",
     label: "AGT Verify",
-    description: "Verification packet for AGT-compatible evidence checks."
-  }
+    description: "Verification packet for AGT-compatible evidence checks.",
+  },
 ];
 
 export function EvidenceExportDialog() {
@@ -40,14 +40,24 @@ export function EvidenceExportDialog() {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") setOpen(false);
       if (event.key === "Tab" && dialogRef.current) {
-        const focusable = [...dialogRef.current.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), input:not([disabled])')];
-        const first = focusable[0]; const last = focusable.at(-1);
+        const focusable = [
+          ...dialogRef.current.querySelectorAll<HTMLElement>(
+            "a[href], button:not([disabled]), input:not([disabled])",
+          ),
+        ];
+        const first = focusable[0];
+        const last = focusable.at(-1);
         if (first && last) {
           // Index-based wrap also covers focus sitting on the dialog container
           // (index -1), so the first Tab/shift-Tab cannot escape the dialog.
           const index = focusable.indexOf(document.activeElement as HTMLElement);
-          if (event.shiftKey && index <= 0) { event.preventDefault(); last.focus(); }
-          else if (!event.shiftKey && (index === -1 || index === focusable.length - 1)) { event.preventDefault(); first.focus(); }
+          if (event.shiftKey && index <= 0) {
+            event.preventDefault();
+            last.focus();
+          } else if (!event.shiftKey && (index === -1 || index === focusable.length - 1)) {
+            event.preventDefault();
+            first.focus();
+          }
         }
       }
     };

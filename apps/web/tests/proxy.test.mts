@@ -1,16 +1,21 @@
 import type { NextRequest } from "next/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-function makeRequest(pathname: string, ip: string, init?: { method?: string; headers?: Record<string, string>; sessionId?: string }): NextRequest {
+function makeRequest(
+  pathname: string,
+  ip: string,
+  init?: { method?: string; headers?: Record<string, string>; sessionId?: string },
+): NextRequest {
   return {
     method: init?.method ?? "GET",
     headers: new Headers({ "x-forwarded-for": ip, ...(init?.headers ?? {}) }),
     nextUrl: new URL(`https://spctre.test${pathname}`),
     cookies: {
-      get: (name: string) => name === "spctre_session_id" && init?.sessionId
-        ? { name, value: init.sessionId }
-        : undefined
-    }
+      get: (name: string) =>
+        name === "spctre_session_id" && init?.sessionId
+          ? { name, value: init.sessionId }
+          : undefined,
+    },
   } as unknown as NextRequest;
 }
 
@@ -81,9 +86,11 @@ describe("proxy rate limiting", () => {
     process.env.DATABASE_URL = "postgres://spctre.test/app";
 
     const { proxy } = await import("../proxy");
-    const response = await proxy(makeRequest("/api/v1/scim/v2/Users", "203.0.113.10", {
-      headers: { authorization: "Bearer scim-token" },
-    }));
+    const response = await proxy(
+      makeRequest("/api/v1/scim/v2/Users", "203.0.113.10", {
+        headers: { authorization: "Bearer scim-token" },
+      }),
+    );
 
     expect(response.status).toBe(200);
   });
@@ -92,10 +99,12 @@ describe("proxy rate limiting", () => {
     process.env.DATABASE_URL = "postgres://spctre.test/app";
 
     const { proxy } = await import("../proxy");
-    const response = await proxy(makeRequest("/api/v1/policy/imports", "203.0.113.10", {
-      method: "POST",
-      headers: { authorization: "Bearer policy-import-token" },
-    }));
+    const response = await proxy(
+      makeRequest("/api/v1/policy/imports", "203.0.113.10", {
+        method: "POST",
+        headers: { authorization: "Bearer policy-import-token" },
+      }),
+    );
 
     expect(response.status).toBe(200);
   });
@@ -104,7 +113,9 @@ describe("proxy rate limiting", () => {
     process.env.DATABASE_URL = "postgres://spctre.test/app";
 
     const { proxy } = await import("../proxy");
-    const response = await proxy(makeRequest("/api/agent-blueprints/runtime?agentId=scout", "203.0.113.10"));
+    const response = await proxy(
+      makeRequest("/api/agent-blueprints/runtime?agentId=scout", "203.0.113.10"),
+    );
 
     expect(response.status).toBe(200);
   });
@@ -113,11 +124,13 @@ describe("proxy rate limiting", () => {
     process.env.DATABASE_URL = "postgres://spctre.test/app";
 
     const { proxy } = await import("../proxy");
-    const response = await proxy(makeRequest("/api/workspace/normalize", "203.0.113.10", {
-      method: "POST",
-      sessionId: "session-1",
-      headers: { origin: "https://evil.example" }
-    }));
+    const response = await proxy(
+      makeRequest("/api/workspace/normalize", "203.0.113.10", {
+        method: "POST",
+        sessionId: "session-1",
+        headers: { origin: "https://evil.example" },
+      }),
+    );
 
     expect(response.status).toBe(403);
     await expect(response.json()).resolves.toEqual({ error: "Invalid request origin." });
@@ -127,17 +140,18 @@ describe("proxy rate limiting", () => {
     process.env.DATABASE_URL = "postgres://spctre.test/app";
 
     const { proxy } = await import("../proxy");
-    const response = await proxy(makeRequest("/api/workspace/normalize", "203.0.113.10", {
-      method: "POST",
-      sessionId: "session-1",
-      headers: {
-        origin: "https://spctre-staging-web-fyow2cpb6q-uc.a.run.app",
-        "x-forwarded-host": "spctre-staging-web-fyow2cpb6q-uc.a.run.app",
-        "x-forwarded-proto": "https",
-      }
-    }));
+    const response = await proxy(
+      makeRequest("/api/workspace/normalize", "203.0.113.10", {
+        method: "POST",
+        sessionId: "session-1",
+        headers: {
+          origin: "https://spctre-staging-web-fyow2cpb6q-uc.a.run.app",
+          "x-forwarded-host": "spctre-staging-web-fyow2cpb6q-uc.a.run.app",
+          "x-forwarded-proto": "https",
+        },
+      }),
+    );
 
     expect(response.status).not.toBe(403);
   });
-
 });

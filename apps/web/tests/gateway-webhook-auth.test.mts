@@ -1,8 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { resolveBySecretSpy } = vi.hoisted(() => ({
-  resolveBySecretSpy: vi.fn(),
-}));
+const { resolveBySecretSpy } = vi.hoisted(() => ({ resolveBySecretSpy: vi.fn() }));
 
 vi.mock("@/lib/repositories/gateway-webhook", () => ({
   resolveWebhookRegistrationBySecret: resolveBySecretSpy,
@@ -32,7 +30,9 @@ describe("gateway webhook authentication", () => {
       headers: { "x-portkey-webhook-secret": "secret-1" },
     });
 
-    await expect(resolveWebhookRegistration(request, "x-portkey-webhook-secret", "portkey")).resolves.toEqual({
+    await expect(
+      resolveWebhookRegistration(request, "x-portkey-webhook-secret", "portkey"),
+    ).resolves.toEqual({
       tenantId: "tenant-1",
       workspaceId: "workspace-1",
       provider: "portkey",
@@ -53,6 +53,8 @@ describe("gateway webhook authentication", () => {
       headers: { "x-portkey-webhook-secret": "secret-1" },
     });
 
-    await expect(resolveWebhookRegistration(request, "x-portkey-webhook-secret", "portkey")).resolves.toBeNull();
+    await expect(
+      resolveWebhookRegistration(request, "x-portkey-webhook-secret", "portkey"),
+    ).resolves.toBeNull();
   });
 });

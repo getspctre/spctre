@@ -17,7 +17,9 @@ export interface PostureRuleRow {
 }
 
 /** A bounded comparison of declared organization and workspace policy. */
-export async function listPostureRuleRows(tenantId: string): Promise<{
+export async function listPostureRuleRows(
+  tenantId: string,
+): Promise<{
   orgRules: PostureRuleRow[];
   workspaceRules: PostureRuleRow[];
   workspaceCount: number;

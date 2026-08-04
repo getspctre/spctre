@@ -1,8 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  validateToolArgs,
-  McpToolValidationError,
-} from "../src/tools/validate.js";
+import { validateToolArgs, McpToolValidationError } from "../src/tools/validate.js";
 
 describe("validateToolArgs", () => {
   it("returns typed args when they satisfy the advertised schema", () => {

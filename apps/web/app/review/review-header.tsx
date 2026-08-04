@@ -16,7 +16,13 @@ interface ReviewHeaderProps {
   requestedBranchUnavailable: boolean;
   branches: PolicyBranch[];
   workspaceSlug: string | undefined;
-  nextStep: { eyebrow: string; label: string; description: string; href: string; action: string } | null;
+  nextStep: {
+    eyebrow: string;
+    label: string;
+    description: string;
+    href: string;
+    action: string;
+  } | null;
   viewMode: AppViewMode;
 }
 
@@ -59,7 +65,10 @@ export function ReviewHeader({
               <p className="eyebrow">Branch · Workspace policy</p>
               <h2>{activeBranch?.name ?? "Select a policy branch"}</h2>
             </div>
-            <span className={readinessPillClass} title={readiness.blockingReasons.map((b) => b.message).join(" · ") || undefined}>
+            <span
+              className={readinessPillClass}
+              title={readiness.blockingReasons.map((b) => b.message).join(" · ") || undefined}
+            >
               {isPublished
                 ? "PUBLISHED"
                 : readiness.status === "READY"
@@ -82,7 +91,10 @@ export function ReviewHeader({
           {activeBranch ? (
             <div className="reviewProvenance">
               <span>
-                Revision <code>{formatProvenanceId(activeBranch.activeRevision, viewMode, 12, hashToFingerprint)}</code>
+                Revision{" "}
+                <code>
+                  {formatProvenanceId(activeBranch.activeRevision, viewMode, 12, hashToFingerprint)}
+                </code>
               </span>
               <span>{describeBranchScope(activeBranch)}</span>
               <span>{activeBranch.author}</span>
@@ -95,7 +107,9 @@ export function ReviewHeader({
                 <strong>{nextStep.label}</strong>
                 <p className="meta">{nextStep.description}</p>
               </div>
-              <a className="button buttonSmall" href={nextStep.href}>{nextStep.action}</a>
+              <a className="button buttonSmall" href={nextStep.href}>
+                {nextStep.action}
+              </a>
             </div>
           ) : null}
         </div>

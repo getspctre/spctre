@@ -3,7 +3,6 @@
   gap: 0;
 }
 
-
 .policiesHero {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(380px, 0.95fr);
@@ -36,7 +35,6 @@
 .policiesHeroMain .meta {
   max-width: 72ch;
 }
-
 
 .policiesHeroStats {
   display: grid;
@@ -86,7 +84,6 @@
 .policiesPanel .auditRow:last-child td {
   border-bottom: 0;
 }
-
 
 .policiesPreviewRow {
   cursor: default;
@@ -248,7 +245,10 @@
   align-items: center;
   display: grid;
   gap: 12px;
-  grid-template-columns: minmax(170px, 1.35fr) minmax(150px, 1fr) minmax(100px, 0.7fr) minmax(130px, 0.8fr);
+  grid-template-columns: minmax(170px, 1.35fr) minmax(150px, 1fr) minmax(100px, 0.7fr) minmax(
+      130px,
+      0.8fr
+    );
 }
 
 .assuranceLedgerHead {
@@ -411,7 +411,6 @@
   color: var(--block);
 }
 
-
 .rulesHero {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(360px, 0.9fr);
@@ -508,12 +507,24 @@
   table-layout: fixed;
 }
 
-.rulesCatalogTable th:nth-child(1) { width: 29%; }
-.rulesCatalogTable th:nth-child(2) { width: 9%; }
-.rulesCatalogTable th:nth-child(3) { width: 12%; }
-.rulesCatalogTable th:nth-child(4) { width: 30%; }
-.rulesCatalogTable th:nth-child(5) { width: 10%; }
-.rulesCatalogTable th:nth-child(6) { width: 10%; }
+.rulesCatalogTable th:nth-child(1) {
+  width: 29%;
+}
+.rulesCatalogTable th:nth-child(2) {
+  width: 9%;
+}
+.rulesCatalogTable th:nth-child(3) {
+  width: 12%;
+}
+.rulesCatalogTable th:nth-child(4) {
+  width: 30%;
+}
+.rulesCatalogTable th:nth-child(5) {
+  width: 10%;
+}
+.rulesCatalogTable th:nth-child(6) {
+  width: 10%;
+}
 
 .rulesCatalogTable .buttonSmall {
   white-space: nowrap;
@@ -755,7 +766,9 @@
   background: oklch(0.982 0.006 236);
 }
 
-.impactSignal[data-state="review"] { background: oklch(0.98 0.015 85); }
+.impactSignal[data-state="review"] {
+  background: oklch(0.98 0.015 85);
+}
 
 .impactSignalIcon {
   display: grid;
@@ -772,8 +785,14 @@
   background: oklch(0.93 0.06 85);
 }
 
-.impactSignal h2 { margin: 2px 0 4px; }
-.impactSignal p:not(.eyebrow) { margin: 0; max-width: 75ch; color: var(--muted); }
+.impactSignal h2 {
+  margin: 2px 0 4px;
+}
+.impactSignal p:not(.eyebrow) {
+  margin: 0;
+  max-width: 75ch;
+  color: var(--muted);
+}
 
 .impactBriefGrid {
   display: grid;
@@ -792,38 +811,123 @@
   border-bottom: 1px solid var(--line);
 }
 
-.impactBriefSection:nth-child(odd) { border-right: 1px solid var(--line); }
-.impactBriefSection:nth-last-child(-n + 2) { border-bottom: 0; }
-.impactBriefSection > p { margin: 0; }
-.impactBriefSection > a { font-size: 13px; font-weight: 650; }
+.impactBriefSection:nth-child(odd) {
+  border-right: 1px solid var(--line);
+}
+.impactBriefSection:nth-last-child(-n + 2) {
+  border-bottom: 0;
+}
+.impactBriefSection > p {
+  margin: 0;
+}
+.impactBriefSection > a {
+  font-size: 13px;
+  font-weight: 650;
+}
 
-.impactBriefTitle { display: flex; align-items: center; gap: 8px; }
-.impactBriefTitle h3 { margin: 0; font-size: 15px; }
-.impactBriefTitle svg { color: var(--accent); }
+.impactBriefTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.impactBriefTitle h3 {
+  margin: 0;
+  font-size: 15px;
+}
+.impactBriefTitle svg {
+  color: var(--accent);
+}
 
-.impactRuleList { display: grid; gap: 6px; }
-.impactRuleList > div { display: grid; grid-template-columns: minmax(70px, auto) minmax(0, 1fr) auto; gap: 8px; align-items: center; font-size: 13px; }
-.impactRuleList code { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.impactRuleList span:nth-child(2) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.impactRuleList {
+  display: grid;
+  gap: 6px;
+}
+.impactRuleList > div {
+  display: grid;
+  grid-template-columns: minmax(70px, auto) minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  font-size: 13px;
+}
+.impactRuleList code {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.impactRuleList span:nth-child(2) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
-.impactFacts, .impactProvenance { display: grid; gap: 6px; margin: 0; }
-.impactFacts > div, .impactProvenance > div { display: flex; justify-content: space-between; gap: 12px; }
-.impactFacts dt, .impactProvenance dt { color: var(--muted); font-size: 13px; }
-.impactFacts dd, .impactProvenance dd { margin: 0; font-size: 13px; text-align: right; }
-.impactProvenance code { font-size: 12px; }
+.impactFacts,
+.impactProvenance {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+}
+.impactFacts > div,
+.impactProvenance > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.impactFacts dt,
+.impactProvenance dt {
+  color: var(--muted);
+  font-size: 13px;
+}
+.impactFacts dd,
+.impactProvenance dd {
+  margin: 0;
+  font-size: 13px;
+  text-align: right;
+}
+.impactProvenance code {
+  font-size: 12px;
+}
 
-.impactTagList { display: flex; flex-wrap: wrap; gap: 6px; }
-.impactRiskCopy, .impactBlocking { margin: 0; color: oklch(0.43 0.12 48); font-size: 13px; }
+.impactTagList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.impactRiskCopy,
+.impactBlocking {
+  margin: 0;
+  color: oklch(0.43 0.12 48);
+  font-size: 13px;
+}
 
-.impactRuntimeNote { display: flex; gap: 10px; align-items: baseline; padding-top: 2px; font-size: 13px; }
-.impactRuntimeNote span { color: var(--muted); }
-.impactRuntimeNote > div { display: grid; gap: 8px; }
+.impactRuntimeNote {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  padding-top: 2px;
+  font-size: 13px;
+}
+.impactRuntimeNote span {
+  color: var(--muted);
+}
+.impactRuntimeNote > div {
+  display: grid;
+  gap: 8px;
+}
 
 @media (max-width: 760px) {
-  .impactBriefGrid { grid-template-columns: 1fr; }
-  .impactBriefSection:nth-child(odd) { border-right: 0; }
-  .impactBriefSection:nth-last-child(2) { border-bottom: 1px solid var(--line); }
-  .impactRuntimeNote { display: grid; gap: 2px; }
+  .impactBriefGrid {
+    grid-template-columns: 1fr;
+  }
+  .impactBriefSection:nth-child(odd) {
+    border-right: 0;
+  }
+  .impactBriefSection:nth-last-child(2) {
+    border-bottom: 1px solid var(--line);
+  }
+  .impactRuntimeNote {
+    display: grid;
+    gap: 2px;
+  }
 }
 
 .policyStack {
@@ -952,7 +1056,6 @@
   display: grid;
   gap: 8px;
 }
-
 
 .compositionLayout {
   display: grid;
@@ -1269,7 +1372,9 @@
 
 .constraintRow {
   display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 0.9fr) minmax(0, 0.9fr) auto;
+  grid-template-columns:
+    minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 0.9fr) minmax(0, 0.9fr)
+    auto;
   gap: 6px;
   align-items: center;
 }

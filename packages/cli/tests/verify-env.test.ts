@@ -54,6 +54,8 @@ describe("verify-env", () => {
 
     verifyEnv({ framework: "langchain", python: "python3" });
 
-    expect(logSpy).toHaveBeenCalledWith("Governance active: langchain adapter is installed and patched.");
+    expect(logSpy).toHaveBeenCalledWith(
+      "Governance active: langchain adapter is installed and patched.",
+    );
   });
 });

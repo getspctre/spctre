@@ -8,7 +8,12 @@ import { ensureStarterPublishedBundle, ONBOARDING_TTL_MINUTES, slugifyWorkspace 
 import { recordConversionTelemetry } from "./telemetry";
 import { swallow } from "@/lib/platform/swallow";
 
-const DEV_TOKEN_SCOPES: ServiceTokenScope[] = ["bundle:read", "decision:evaluate", "evidence:write", "heartbeat:write"];
+const DEV_TOKEN_SCOPES: ServiceTokenScope[] = [
+  "bundle:read",
+  "decision:evaluate",
+  "evidence:write",
+  "heartbeat:write",
+];
 
 export interface CliOnboardingStart {
   code: string;
@@ -63,7 +68,7 @@ export async function startCliOnboarding(params: {
   return {
     code,
     approveUrl: `${baseUrl}/onboarding/cli/approve?code=${encodeURIComponent(code)}`,
-    expiresAt
+    expiresAt,
   };
 }
 
@@ -74,10 +79,7 @@ export async function approveCliOnboardingRequest(params: {
   if (!sql) return { ok: false, error: "Database not configured." };
 
   const requestRows = await sql<
-    {
-      requested_workspace_slug: string | null;
-      requested_agent_id: string;
-    }[]
+    { requested_workspace_slug: string | null; requested_agent_id: string }[]
   >`
     SELECT requested_workspace_slug, requested_agent_id
     FROM cli_onboarding_request
@@ -89,12 +91,14 @@ export async function approveCliOnboardingRequest(params: {
   const request = requestRows[0];
   if (!request) return { ok: false, error: "CLI onboarding request is expired or unknown." };
 
-  const workspaceSlug = slugifyWorkspace(request.requested_workspace_slug ?? "default") || "default";
-  const workspaceName = workspaceSlug
-    .split("-")
-    .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ") || "Default";
+  const workspaceSlug =
+    slugifyWorkspace(request.requested_workspace_slug ?? "default") || "default";
+  const workspaceName =
+    workspaceSlug
+      .split("-")
+      .filter(Boolean)
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(" ") || "Default";
 
   const workspaceRows = await sql<{ id: string; slug: string }[]>`
     INSERT INTO workspace (tenant_id, slug, name)
@@ -145,7 +149,8 @@ export async function exchangeCliOnboardingCode(code: string): Promise<CliOnboar
   `;
 
   const request = requestRows[0];
-  if (!request) throw new Error("CLI onboarding request is expired, unknown, or already exchanged.");
+  if (!request)
+    throw new Error("CLI onboarding request is expired, unknown, or already exchanged.");
   if (!request.approved_tenant_id || !request.approved_workspace_id || !request.approved_by) {
     throw new Error("CLI onboarding request is waiting for browser approval.");
   }
@@ -154,8 +159,9 @@ export async function exchangeCliOnboardingCode(code: string): Promise<CliOnboar
   const approvedWorkspaceId = request.approved_workspace_id;
   const serviceSubject = `service:spctre-cli:${request.requested_agent_id}`;
   const serviceDisplayName = `Spctre CLI ${request.requested_agent_id}`;
-  const exchange = await runWithTenantContext(approvedTenantId, () => sql.begin(async (tx) => {
-    const principalRows = await tx<{ id: string }[]>`
+  const exchange = await runWithTenantContext(approvedTenantId, () =>
+    sql.begin(async (tx) => {
+      const principalRows = await tx<{ id: string }[]>`
       INSERT INTO app_principal (tenant_id, subject, display_name, principal_type)
       VALUES (
         ${approvedTenantId}, ${serviceSubject}, ${serviceDisplayName}, 'SERVICE'
@@ -163,9 +169,9 @@ export async function exchangeCliOnboardingCode(code: string): Promise<CliOnboar
       ON CONFLICT (tenant_id, subject) DO UPDATE SET display_name = EXCLUDED.display_name
       RETURNING id
     `;
-    const principalId = principalRows[0].id;
+      const principalId = principalRows[0].id;
 
-    await tx`
+      await tx`
       INSERT INTO principal_permission_grant (
         tenant_id, principal_id, workspace_id, reviewer_roles, publish_scopes, allowed_environments
       ) VALUES (
@@ -175,28 +181,33 @@ export async function exchangeCliOnboardingCode(code: string): Promise<CliOnboar
       ON CONFLICT (principal_id, workspace_id) DO NOTHING
     `;
 
-    const pair = await issueAccessRefreshPair(tx, {
-      tenantId: approvedTenantId,
-      workspaceId: approvedWorkspaceId,
-      principalId,
-      label: `Dev token for ${request.requested_agent_id}`,
-      scopes: DEV_TOKEN_SCOPES,
-      environment: request.requested_environment,
-    });
+      const pair = await issueAccessRefreshPair(tx, {
+        tenantId: approvedTenantId,
+        workspaceId: approvedWorkspaceId,
+        principalId,
+        label: `Dev token for ${request.requested_agent_id}`,
+        scopes: DEV_TOKEN_SCOPES,
+        environment: request.requested_environment,
+      });
 
-    let billingCustomerId: string | undefined;
+      let billingCustomerId: string | undefined;
 
-    if (request.trial) {
-      // 1. Create or preserve a trial commercial profile without downgrading paid tenants.
-      const existingProfile = await tx<{ plan_code: string; billing_customer_id: string | null }[]>`
+      if (request.trial) {
+        // 1. Create or preserve a trial commercial profile without downgrading paid tenants.
+        const existingProfile = await tx<
+          { plan_code: string; billing_customer_id: string | null }[]
+        >`
         SELECT plan_code, billing_customer_id FROM tenant_commercial_profile WHERE tenant_id = ${approvedTenantId} LIMIT 1
       `;
-      const existingPlanCode = existingProfile[0]?.plan_code;
-      if (existingPlanCode && existingPlanCode !== "HOSTED_TRIAL") {
-        throw new Error("This tenant already has a paid Spctre Cloud plan; use spctre cloud login without --trial.");
-      }
-      billingCustomerId = existingProfile[0]?.billing_customer_id || `ctm_trial_${randomBytes(8).toString("hex")}`;
-      await tx`
+        const existingPlanCode = existingProfile[0]?.plan_code;
+        if (existingPlanCode && existingPlanCode !== "HOSTED_TRIAL") {
+          throw new Error(
+            "This tenant already has a paid Spctre Cloud plan; use spctre cloud login without --trial.",
+          );
+        }
+        billingCustomerId =
+          existingProfile[0]?.billing_customer_id || `ctm_trial_${randomBytes(8).toString("hex")}`;
+        await tx`
         INSERT INTO tenant_commercial_profile (
           tenant_id, plan_code, lifecycle_status, sales_status, billing_provider, billing_customer_id, updated_at
         ) VALUES (
@@ -209,23 +220,23 @@ export async function exchangeCliOnboardingCode(code: string): Promise<CliOnboar
           updated_at = now()
       `;
 
-      // 2. Set token and refresh token expiration dates to exactly 30 days from now
-      const trialExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-      await tx`
+        // 2. Set token and refresh token expiration dates to exactly 30 days from now
+        const trialExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+        await tx`
         UPDATE service_token
         SET expires_at = ${trialExpiresAt}
         WHERE id = ${pair.accessTokenId}
       `;
-      await tx`
+        await tx`
         UPDATE service_refresh_token
         SET expires_at = ${trialExpiresAt}
         WHERE access_token_id = ${pair.accessTokenId}
       `;
-      pair.accessTokenExpiresAt = trialExpiresAt;
-      pair.refreshTokenExpiresAt = trialExpiresAt;
-    }
+        pair.accessTokenExpiresAt = trialExpiresAt;
+        pair.refreshTokenExpiresAt = trialExpiresAt;
+      }
 
-    await tx`
+      await tx`
       UPDATE cli_onboarding_request
       SET exchanged_at = now(),
           service_principal_id = ${principalId},
@@ -234,33 +245,36 @@ export async function exchangeCliOnboardingCode(code: string): Promise<CliOnboar
         AND exchanged_at IS NULL
     `;
 
-    // 3. Fire conversion telemetry (non-blocking)
-    if (request.trial && billingCustomerId) {
-      // Keep billing customer IDs in tenant_commercial_profile only; telemetry is aggregate-safe.
-      await recordConversionTelemetry(approvedTenantId, "TRIAL_START", {
-        billingProvider: "PADDLE",
-        trialDurationDays: 30,
-      }).catch(swallow("recordConversionTelemetry", undefined));
-    }
+      // 3. Fire conversion telemetry (non-blocking)
+      if (request.trial && billingCustomerId) {
+        // Keep billing customer IDs in tenant_commercial_profile only; telemetry is aggregate-safe.
+        await recordConversionTelemetry(approvedTenantId, "TRIAL_START", {
+          billingProvider: "PADDLE",
+          trialDurationDays: 30,
+        }).catch(swallow("recordConversionTelemetry", undefined));
+      }
 
-    return { principalId, tokenId: pair.accessTokenId, pair };
-  }));
+      return { principalId, tokenId: pair.accessTokenId, pair };
+    }),
+  );
   const starter = await runWithTenantContext(approvedTenantId, () =>
     ensureStarterPublishedBundle({
       tenantId: approvedTenantId,
       workspaceId: approvedWorkspaceId,
       actorId: exchange.principalId,
-      environment: request.requested_environment
-    })
+      environment: request.requested_environment,
+    }),
   );
-  const workspaceRows = await runWithTenantContext(approvedTenantId, () =>
-    sql<{ slug: string }[]>`
+  const workspaceRows = await runWithTenantContext(
+    approvedTenantId,
+    () =>
+      sql<{ slug: string }[]>`
       SELECT slug
       FROM workspace
       WHERE tenant_id = ${approvedTenantId}
         AND id = ${approvedWorkspaceId}
       LIMIT 1
-    `
+    `,
   );
 
   return {
@@ -283,8 +297,8 @@ export async function exchangeCliOnboardingCode(code: string): Promise<CliOnboar
         scope: "WORKSPACE",
         branchId: starter.branchId,
         revisionId: starter.revisionId,
-        artifactHash: starter.artifactHash
-      }
-    ]
+        artifactHash: starter.artifactHash,
+      },
+    ],
   };
 }

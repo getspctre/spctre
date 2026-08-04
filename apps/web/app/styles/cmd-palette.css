@@ -174,7 +174,9 @@
   box-sizing: border-box;
   width: calc(100% - 28px);
   justify-content: space-between;
-  transition: background 0.15s, border-color 0.15s;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
 }
 
 .cmdTrigger:hover {

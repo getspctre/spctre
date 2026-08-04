@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 async function handleGetAgentSurfaces(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const traceId = extractTraceId(request);
   const scope = await resolveRouteScope(request, { serviceTokenScope: "operations:read", traceId });
@@ -17,8 +17,11 @@ async function handleGetAgentSurfaces(
 
   if (!isFeatureEnabled("crossSurfaceAgentIdentity")) {
     return withTraceId(
-      Response.json({ error: "Cross-surface agent identity requires a Cloud plan.", meta: makeMeta(traceId) }, { status: 402 }),
-      traceId
+      Response.json(
+        { error: "Cross-surface agent identity requires a Cloud plan.", meta: makeMeta(traceId) },
+        { status: 402 },
+      ),
+      traceId,
     );
   }
 
@@ -31,13 +34,13 @@ async function handleGetAgentSurfaces(
 
   return withTraceId(
     Response.json({ canonicalAgentId, surfaces, count: surfaces.length, meta: makeMeta(traceId) }),
-    traceId
+    traceId,
   );
 }
 
 async function handlePostAgentSurface(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const traceId = extractTraceId(request);
   const scope = await resolveRouteScope(request, { serviceTokenScope: "evidence:write", traceId });
@@ -45,8 +48,11 @@ async function handlePostAgentSurface(
 
   if (!isFeatureEnabled("crossSurfaceAgentIdentity")) {
     return withTraceId(
-      Response.json({ error: "Cross-surface agent identity requires a Cloud plan.", meta: makeMeta(traceId) }, { status: 402 }),
-      traceId
+      Response.json(
+        { error: "Cross-surface agent identity requires a Cloud plan.", meta: makeMeta(traceId) },
+        { status: 402 },
+      ),
+      traceId,
     );
   }
 
@@ -54,8 +60,11 @@ async function handlePostAgentSurface(
   const body = await request.json().catch(() => null);
   if (!body || typeof body !== "object" || Array.isArray(body)) {
     return withTraceId(
-      Response.json({ error: "Request body must be an object.", meta: makeMeta(traceId) }, { status: 400 }),
-      traceId
+      Response.json(
+        { error: "Request body must be an object.", meta: makeMeta(traceId) },
+        { status: 400 },
+      ),
+      traceId,
     );
   }
 
@@ -65,14 +74,20 @@ async function handlePostAgentSurface(
 
   if (!surfaceType) {
     return withTraceId(
-      Response.json({ error: "surfaceType is required.", meta: makeMeta(traceId) }, { status: 400 }),
-      traceId
+      Response.json(
+        { error: "surfaceType is required.", meta: makeMeta(traceId) },
+        { status: 400 },
+      ),
+      traceId,
     );
   }
   if (!surfaceAgentId) {
     return withTraceId(
-      Response.json({ error: "surfaceAgentId is required.", meta: makeMeta(traceId) }, { status: 400 }),
-      traceId
+      Response.json(
+        { error: "surfaceAgentId is required.", meta: makeMeta(traceId) },
+        { status: 400 },
+      ),
+      traceId,
     );
   }
 
@@ -87,8 +102,14 @@ async function handlePostAgentSurface(
 
   if (!binding) {
     return withTraceId(
-      Response.json({ error: "Surface binding already exists or could not be created.", meta: makeMeta(traceId) }, { status: 409 }),
-      traceId
+      Response.json(
+        {
+          error: "Surface binding already exists or could not be created.",
+          meta: makeMeta(traceId),
+        },
+        { status: 409 },
+      ),
+      traceId,
     );
   }
 

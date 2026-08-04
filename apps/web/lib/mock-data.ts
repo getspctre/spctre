@@ -12,7 +12,7 @@ import {
   ingestAgtRuntimeDecision,
   parseAgtPolicyDocument,
   searchRuntimeDecisionEvidence,
-  toAgtCompatiblePolicyBundle
+  toAgtCompatiblePolicyBundle,
 } from "@spctre/policy-schema";
 import type {
   PolicyApproval,
@@ -28,7 +28,7 @@ import type {
   RuntimeEvidenceSearchResult,
   RuntimeTarget,
   RuntimeDecisionEvidenceRecord,
-  SimulationReplayInput
+  SimulationReplayInput,
 } from "@spctre/policy-schema";
 import type { RuleHeatEntry, UnusedRule } from "@/lib/repositories/policy";
 
@@ -40,7 +40,7 @@ export const branches: PolicyBranch[] = [
     activeRevision: "rev-8f12",
     author: "platform",
     status: "PUBLISHED",
-    message: "Published governance bundle for AWS Bedrock support agents"
+    message: "Published governance bundle for AWS Bedrock support agents",
   },
   {
     id: "br-refund-review",
@@ -50,7 +50,7 @@ export const branches: PolicyBranch[] = [
     parentRevision: "rev-8f12",
     author: "pm-ops",
     status: "IN_REVIEW",
-    message: "Tighten Stripe refund rules before next billing cycle"
+    message: "Tighten Stripe refund rules before next billing cycle",
   },
   {
     id: "br-incident-mode",
@@ -60,8 +60,8 @@ export const branches: PolicyBranch[] = [
     parentRevision: "rev-8f12",
     author: "security",
     status: "DRAFT",
-    message: "Temporary production deploy restrictions"
-  }
+    message: "Temporary production deploy restrictions",
+  },
 ];
 
 export const rules: PolicyRuleSummary[] = [
@@ -74,7 +74,7 @@ export const rules: PolicyRuleSummary[] = [
     domains: ["billing"],
     connectors: ["stripe"],
     actions: ["refund.create"],
-    immutable: true
+    immutable: true,
   },
   {
     stableRuleId: "github.deploy.freeze",
@@ -85,8 +85,8 @@ export const rules: PolicyRuleSummary[] = [
     domains: ["release"],
     connectors: ["github"],
     actions: ["deployment.create"],
-    immutable: false
-  }
+    immutable: false,
+  },
 ];
 
 const refundPolicySource = `
@@ -118,7 +118,7 @@ rules:
 
 const parsedRefundPolicy = parseAgtPolicyDocument({
   document: refundPolicySource,
-  sourcePath: "policies/stripe/refunds.yaml"
+  sourcePath: "policies/stripe/refunds.yaml",
 });
 
 const importResult = buildPolicyImportResult({
@@ -134,7 +134,7 @@ const importResult = buildPolicyImportResult({
   inheritedRevisionIds: ["rev-org-211"],
   warnings: parsedRefundPolicy.warnings,
   diagnostics: parsedRefundPolicy.diagnostics,
-  metadata: parsedRefundPolicy.metadata
+  metadata: parsedRefundPolicy.metadata,
 }) as Required<PolicyImportResult>;
 
 const organizationBaselineRules: PolicyRuleSummary[] = [
@@ -147,8 +147,8 @@ const organizationBaselineRules: PolicyRuleSummary[] = [
     domains: ["security"],
     connectors: ["stripe", "zendesk", "salesforce"],
     actions: ["*.export"],
-    immutable: true
-  }
+    immutable: true,
+  },
 ];
 
 const workspaceSupportRules: PolicyRuleSummary[] = [
@@ -161,8 +161,8 @@ const workspaceSupportRules: PolicyRuleSummary[] = [
     domains: ["billing", "support"],
     connectors: ["stripe"],
     actions: ["refund.create", "refund.update"],
-    immutable: true
-  }
+    immutable: true,
+  },
 ];
 
 export const compositionPreview = composePolicyLayers({
@@ -176,7 +176,7 @@ export const compositionPreview = composePolicyLayers({
       revisionId: "rev-org-211",
       ruleCount: 6,
       artifactHash: "sha256:88cd...",
-      rules: organizationBaselineRules
+      rules: organizationBaselineRules,
     },
     {
       scope: "WORKSPACE",
@@ -184,7 +184,7 @@ export const compositionPreview = composePolicyLayers({
       revisionId: "rev-8f12",
       ruleCount: 4,
       artifactHash: "sha256:4a1f...",
-      rules: workspaceSupportRules
+      rules: workspaceSupportRules,
     },
     {
       scope: "CONNECTOR",
@@ -192,11 +192,11 @@ export const compositionPreview = composePolicyLayers({
       revisionId: "rev-a441",
       ruleCount: importResult.rules.length,
       artifactHash: "sha256:7c2f...",
-      rules: importResult.rules
-    }
+      rules: importResult.rules,
+    },
   ],
   composedArtifactHash: "sha256:7c2f0c9a1e...",
-  composedAt: "2026-04-29T15:20:00.000Z"
+  composedAt: "2026-04-29T15:20:00.000Z",
 });
 
 const previousRefundRules: PolicyRuleSummary[] = [
@@ -209,7 +209,7 @@ const previousRefundRules: PolicyRuleSummary[] = [
     domains: ["billing"],
     connectors: ["stripe"],
     actions: ["refund.create"],
-    immutable: false
+    immutable: false,
   },
   {
     stableRuleId: "stripe.refund.audit_note",
@@ -220,8 +220,8 @@ const previousRefundRules: PolicyRuleSummary[] = [
     domains: ["billing", "audit"],
     connectors: ["stripe"],
     actions: ["refund.create"],
-    immutable: true
-  }
+    immutable: true,
+  },
 ];
 
 export const revisionDiff = diffPolicyRules({
@@ -229,22 +229,13 @@ export const revisionDiff = diffPolicyRules({
   baseRevisionId: "rev-8f12",
   compareRevisionId: "rev-a441",
   before: previousRefundRules,
-  after: importResult.rules
+  after: importResult.rules,
 });
 
 const approvalRules: PolicyApprovalRule[] = [
-  {
-    role: "Security",
-    requiredCount: 1
-  },
-  {
-    role: "Product Ops",
-    requiredCount: 1
-  },
-  {
-    role: "Billing Owner",
-    requiredCount: 1
-  }
+  { role: "Security", requiredCount: 1 },
+  { role: "Product Ops", requiredCount: 1 },
+  { role: "Billing Owner", requiredCount: 1 },
 ];
 
 const approvals: PolicyApproval[] = [
@@ -252,44 +243,28 @@ const approvals: PolicyApproval[] = [
     reviewer: "maya@spctre.local",
     role: "Security",
     status: "APPROVED",
-    reviewedAt: "2026-04-29T14:18:00.000Z"
+    reviewedAt: "2026-04-29T14:18:00.000Z",
   },
-  {
-    reviewer: "lee@spctre.local",
-    role: "Product Ops",
-    status: "PENDING"
-  },
+  { reviewer: "lee@spctre.local", role: "Product Ops", status: "PENDING" },
   {
     reviewer: "nora@spctre.local",
     role: "Billing Owner",
     status: "CHANGES_REQUESTED",
-    reviewedAt: "2026-04-29T15:02:00.000Z"
-  }
+    reviewedAt: "2026-04-29T15:02:00.000Z",
+  },
 ];
 
 const publishReadiness = evaluatePublishReadiness({
   branchId: "br-refund-review",
   revisionId: "rev-a441",
   approvalRules,
-  approvals
+  approvals,
 });
 
 const targetStacks: RuntimeTarget[] = [
-  {
-    stack: "AWS_BEDROCK",
-    adapter: "agt-compatible-bedrock",
-    environment: "production"
-  },
-  {
-    stack: "OPENAI_AGENTS",
-    adapter: "agt-compatible-openai-agents",
-    environment: "production"
-  },
-  {
-    stack: "LOCAL",
-    adapter: "agt-compatible-local",
-    environment: "staging"
-  }
+  { stack: "AWS_BEDROCK", adapter: "agt-compatible-bedrock", environment: "production" },
+  { stack: "OPENAI_AGENTS", adapter: "agt-compatible-openai-agents", environment: "production" },
+  { stack: "LOCAL", adapter: "agt-compatible-local", environment: "staging" },
 ];
 
 export const agtBundlePreview = toAgtCompatiblePolicyBundle({
@@ -304,16 +279,13 @@ export const agtBundlePreview = toAgtCompatiblePolicyBundle({
   targetStacks,
   approvals: publishReadiness.approvals,
   rules: compositionPreview.effectiveRules,
-  metadata: {
-    composition_id: compositionPreview.id,
-    import_id: importResult.id
-  },
-  generatedAt: "2026-04-29T15:22:00.000Z"
+  metadata: { composition_id: compositionPreview.id, import_id: importResult.id },
+  generatedAt: "2026-04-29T15:22:00.000Z",
 });
 
 export const artifactExport = buildPolicyArtifactExport({
   bundle: agtBundlePreview,
-  generatedAt: "2026-04-29T15:23:00.000Z"
+  generatedAt: "2026-04-29T15:23:00.000Z",
 });
 
 const simulationResults: SimulationReplayInput[] = [
@@ -325,7 +297,7 @@ const simulationResults: SimulationReplayInput[] = [
     proposedStatus: "DENY",
     delta: "NEW_DENY",
     matchedPolicyRefs: ["stripe.refund.manager_approval"],
-    reason: "Refund updates over $500 now require manager approval."
+    reason: "Refund updates over $500 now require manager approval.",
   },
   {
     eventId: "evt-refund-8799",
@@ -335,7 +307,7 @@ const simulationResults: SimulationReplayInput[] = [
     proposedStatus: "WARN",
     delta: "MODIFIED",
     matchedPolicyRefs: ["stripe.refund.customer_history"],
-    reason: "Customer history rule warns on recent chargeback activity."
+    reason: "Customer history rule warns on recent chargeback activity.",
   },
   {
     eventId: "evt-refund-8714",
@@ -345,8 +317,8 @@ const simulationResults: SimulationReplayInput[] = [
     proposedStatus: "DENY",
     delta: "UNCHANGED",
     matchedPolicyRefs: ["stripe.refund.audit_note"],
-    reason: "Audit note requirement still blocks incomplete refund decisions."
-  }
+    reason: "Audit note requirement still blocks incomplete refund decisions.",
+  },
 ];
 
 export const simulationRun = buildSimulationRun({
@@ -356,7 +328,7 @@ export const simulationRun = buildSimulationRun({
   sourceEventCount: 128,
   createdBy: "pm-ops",
   createdAt: "2026-04-29T15:28:00.000Z",
-  results: simulationResults
+  results: simulationResults,
 });
 
 export const audits: RuntimeDecisionEvidenceRecord[] = [
@@ -365,10 +337,7 @@ export const audits: RuntimeDecisionEvidenceRecord[] = [
     tenantId: "tenant-demo",
     workspaceId: "support",
     environment: "production",
-    runtimeTarget: {
-      stack: "AWS_BEDROCK",
-      adapter: "agt-compatible-bedrock"
-    },
+    runtimeTarget: { stack: "AWS_BEDROCK", adapter: "agt-compatible-bedrock" },
     agentId: "support-agent-7",
     connector: "stripe",
     action: "refund.create",
@@ -384,31 +353,25 @@ export const audits: RuntimeDecisionEvidenceRecord[] = [
         scope: "ORGANIZATION",
         branchId: "org-baseline",
         revisionId: "rev-org-211",
-        artifactHash: "sha256:88cd..."
+        artifactHash: "sha256:88cd...",
       },
       {
         scope: "WORKSPACE",
         branchId: "br-prod-support",
         revisionId: "rev-8f12",
-        artifactHash: "sha256:4a1f..."
-      }
+        artifactHash: "sha256:4a1f...",
+      },
     ],
     latencyMs: 1,
     createdAt: "2026-04-28T22:44:00.000Z",
-    rawEvidence: {
-      source: "agt-compatible-bedrock",
-      request_id: "bedrock-req-1042"
-    }
+    rawEvidence: { source: "agt-compatible-bedrock", request_id: "bedrock-req-1042" },
   }),
   ingestAgtRuntimeDecision({
     decisionId: "runtime-decision-1041",
     tenantId: "tenant-demo",
     workspaceId: "platform",
     environment: "production",
-    runtimeTarget: {
-      stack: "LANGCHAIN",
-      adapter: "agt-compatible-langchain"
-    },
+    runtimeTarget: { stack: "LANGCHAIN", adapter: "agt-compatible-langchain" },
     agentId: "release-agent-2",
     connector: "github",
     action: "deployment.create",
@@ -424,31 +387,25 @@ export const audits: RuntimeDecisionEvidenceRecord[] = [
         scope: "ORGANIZATION",
         branchId: "org-baseline",
         revisionId: "rev-org-211",
-        artifactHash: "sha256:88cd..."
+        artifactHash: "sha256:88cd...",
       },
       {
         scope: "ENVIRONMENT",
         branchId: "br-incident-mode",
         revisionId: "rev-c270",
-        artifactHash: "sha256:91bc..."
-      }
+        artifactHash: "sha256:91bc...",
+      },
     ],
     latencyMs: 1,
     createdAt: "2026-04-28T22:40:00.000Z",
-    rawEvidence: {
-      source: "agt-compatible-langchain",
-      request_id: "lc-run-1041"
-    }
+    rawEvidence: { source: "agt-compatible-langchain", request_id: "lc-run-1041" },
   }),
   ingestAgtRuntimeDecision({
     decisionId: "runtime-decision-1040",
     tenantId: "tenant-demo",
     workspaceId: "support",
     environment: "staging",
-    runtimeTarget: {
-      stack: "LOCAL",
-      adapter: "agt-compatible-local"
-    },
+    runtimeTarget: { stack: "LOCAL", adapter: "agt-compatible-local" },
     agentId: "support-agent-sim",
     connector: "stripe",
     action: "refund.update",
@@ -464,22 +421,19 @@ export const audits: RuntimeDecisionEvidenceRecord[] = [
         scope: "WORKSPACE",
         branchId: "br-prod-support",
         revisionId: "rev-8f12",
-        artifactHash: "sha256:4a1f..."
+        artifactHash: "sha256:4a1f...",
       },
       {
         scope: "CONNECTOR",
         branchId: "br-refund-review",
         revisionId: "rev-a441",
-        artifactHash: compositionPreview.composedArtifactHash
-      }
+        artifactHash: compositionPreview.composedArtifactHash,
+      },
     ],
     latencyMs: 1,
     createdAt: "2026-04-29T15:31:00.000Z",
-    rawEvidence: {
-      source: "agt-compatible-local",
-      request_id: "local-replay-1040"
-    }
-  })
+    rawEvidence: { source: "agt-compatible-local", request_id: "local-replay-1040" },
+  }),
 ];
 
 const retentionRules: EvidenceRetentionRule[] = [
@@ -487,32 +441,23 @@ const retentionRules: EvidenceRetentionRule[] = [
     id: "ret-deny-production",
     label: "Production deny evidence",
     retentionDays: 1095,
-    appliesTo: {
-      statuses: ["DENY"],
-      environments: ["production"]
-    },
-    exportable: true
+    appliesTo: { statuses: ["DENY"], environments: ["production"] },
+    exportable: true,
   },
   {
     id: "ret-warning-production",
     label: "Production warnings",
     retentionDays: 365,
-    appliesTo: {
-      statuses: ["WARN"],
-      environments: ["production"]
-    },
-    exportable: true
+    appliesTo: { statuses: ["WARN"], environments: ["production"] },
+    exportable: true,
   },
   {
     id: "ret-local-staging",
     label: "Staging replay evidence",
     retentionDays: 2,
-    appliesTo: {
-      environments: ["staging"],
-      runtimeStacks: ["LOCAL"]
-    },
-    exportable: false
-  }
+    appliesTo: { environments: ["staging"], runtimeStacks: ["LOCAL"] },
+    exportable: false,
+  },
 ];
 
 export const retentionPlan: EvidenceRetentionPlan = buildEvidenceRetentionPlan({
@@ -520,7 +465,7 @@ export const retentionPlan: EvidenceRetentionPlan = buildEvidenceRetentionPlan({
   evidence: audits,
   rules: retentionRules,
   generatedAt: "2026-04-30T00:00:00.000Z",
-  expiringWithinDays: 7
+  expiringWithinDays: 7,
 });
 
 export const branchTimeline: PolicyBranchTimeline = buildPolicyBranchTimeline({
@@ -537,7 +482,7 @@ export const branchTimeline: PolicyBranchTimeline = buildPolicyBranchTimeline({
       actor: importResult.author,
       status: importResult.warnings.length ? "WARNINGS" : "CLEAN",
       sourceId: importResult.id,
-      createdAt: importResult.importedAt
+      createdAt: importResult.importedAt,
     },
     {
       id: compositionPreview.id,
@@ -549,7 +494,7 @@ export const branchTimeline: PolicyBranchTimeline = buildPolicyBranchTimeline({
       status: compositionPreview.conflictNotes.length ? "CONFLICTS" : "CLEAN",
       artifactHash: compositionPreview.composedArtifactHash,
       sourceId: compositionPreview.id,
-      createdAt: compositionPreview.composedAt
+      createdAt: compositionPreview.composedAt,
     },
     {
       id: `${revisionDiff.baseRevisionId}-${revisionDiff.compareRevisionId}`,
@@ -560,7 +505,7 @@ export const branchTimeline: PolicyBranchTimeline = buildPolicyBranchTimeline({
       detail: `${revisionDiff.summary.added} added, ${revisionDiff.summary.modified} modified, ${revisionDiff.summary.removed} removed.`,
       status: "READY",
       sourceId: `${revisionDiff.baseRevisionId}-${revisionDiff.compareRevisionId}`,
-      createdAt: "2026-04-29T15:21:00.000Z"
+      createdAt: "2026-04-29T15:21:00.000Z",
     },
     ...publishReadiness.approvals.map((approval) => ({
       id: `${approval.role}-${approval.reviewer}`,
@@ -572,7 +517,7 @@ export const branchTimeline: PolicyBranchTimeline = buildPolicyBranchTimeline({
       actor: approval.reviewer,
       status: approval.status,
       sourceId: `${approval.role}-${approval.reviewer}`,
-      createdAt: approval.reviewedAt ?? "2026-04-29T15:24:00.000Z"
+      createdAt: approval.reviewedAt ?? "2026-04-29T15:24:00.000Z",
     })),
     {
       id: artifactExport.artifactHash,
@@ -584,7 +529,7 @@ export const branchTimeline: PolicyBranchTimeline = buildPolicyBranchTimeline({
       status: "GENERATED",
       artifactHash: artifactExport.artifactHash,
       sourceId: artifactExport.artifactHash,
-      createdAt: artifactExport.generatedAt
+      createdAt: artifactExport.generatedAt,
     },
     {
       id: simulationRun.id,
@@ -596,14 +541,13 @@ export const branchTimeline: PolicyBranchTimeline = buildPolicyBranchTimeline({
       actor: simulationRun.createdBy,
       status: "SAMPLED",
       sourceId: simulationRun.id,
-      createdAt: simulationRun.createdAt
+      createdAt: simulationRun.createdAt,
     },
     ...audits
       .filter((audit) =>
         audit.policyContext.some(
-          (context) =>
-            context.branchId === "br-refund-review" && context.revisionId === "rev-a441"
-        )
+          (context) => context.branchId === "br-refund-review" && context.revisionId === "rev-a441",
+        ),
       )
       .map((audit) => ({
         id: audit.decisionId,
@@ -616,9 +560,9 @@ export const branchTimeline: PolicyBranchTimeline = buildPolicyBranchTimeline({
         status: audit.status,
         artifactHash: audit.artifactHash,
         sourceId: audit.decisionId,
-        createdAt: audit.createdAt
-      }))
-  ]
+        createdAt: audit.createdAt,
+      })),
+  ],
 });
 
 export const complianceExport: PolicyComplianceEvidenceExport = buildComplianceEvidenceExport({
@@ -629,15 +573,39 @@ export const complianceExport: PolicyComplianceEvidenceExport = buildComplianceE
   evidence: audits,
   simulationRun,
   generatedAt: "2026-04-29T15:35:00.000Z",
-  retentionDays: 90
+  retentionDays: 90,
 });
 
 export const mockHeatmap: RuleHeatEntry[] = [
-  { ruleId: "stripe.refund.manager_approval", denyCount: 23, warnCount: 8, allowCount: 0, total: 31 },
+  {
+    ruleId: "stripe.refund.manager_approval",
+    denyCount: 23,
+    warnCount: 8,
+    allowCount: 0,
+    total: 31,
+  },
   { ruleId: "github.deploy.freeze", denyCount: 12, warnCount: 4, allowCount: 0, total: 16 },
-  { ruleId: "stripe.refund.customer_history", denyCount: 7, warnCount: 14, allowCount: 3, total: 24 },
-  { ruleId: "stripe.subscription.downgrade_block", denyCount: 5, warnCount: 2, allowCount: 1, total: 8 },
-  { ruleId: "salesforce.contract.approval_required", denyCount: 3, warnCount: 6, allowCount: 0, total: 9 },
+  {
+    ruleId: "stripe.refund.customer_history",
+    denyCount: 7,
+    warnCount: 14,
+    allowCount: 3,
+    total: 24,
+  },
+  {
+    ruleId: "stripe.subscription.downgrade_block",
+    denyCount: 5,
+    warnCount: 2,
+    allowCount: 1,
+    total: 8,
+  },
+  {
+    ruleId: "salesforce.contract.approval_required",
+    denyCount: 3,
+    warnCount: 6,
+    allowCount: 0,
+    total: 9,
+  },
 ];
 
 export const mockUnusedRules: UnusedRule[] = [

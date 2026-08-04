@@ -24,13 +24,7 @@ const nextConfig = {
     SPCTRE_NATIVE_PATH: path.resolve(__dirname, "../../packages/policy-schema/native"),
   },
   async redirects() {
-    return [
-      {
-        source: "/favicon.ico",
-        destination: "/icon.svg",
-        permanent: true,
-      },
-    ];
+    return [{ source: "/favicon.ico", destination: "/icon.svg", permanent: true }];
   },
   async headers() {
     return [
@@ -41,18 +35,9 @@ const nextConfig = {
             key: "Strict-Transport-Security",
             value: "max-age=31536000; includeSubDomains; preload",
           },
-          {
-            key: "X-Frame-Options",
-            value: "SAMEORIGIN",
-          },
-          {
-            key: "X-Content-Type-Options",
-            value: "nosniff",
-          },
-          {
-            key: "Referrer-Policy",
-            value: "strict-origin-when-cross-origin",
-          },
+          { key: "X-Frame-Options", value: "SAMEORIGIN" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           // CSP is set dynamically in proxy.ts middleware with a per-request nonce,
           // which eliminates 'unsafe-eval' in production and 'unsafe-inline' entirely.
         ],

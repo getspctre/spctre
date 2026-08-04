@@ -12,17 +12,9 @@ import { formatProvenanceId, type AppViewMode } from "@/lib/app-view-mode";
 import { hashToFingerprint } from "@/lib/fingerprint";
 import { buildWorkspacePath } from "@/lib/workspace/path";
 
-const riskIcon = {
-  HIGH: ShieldX,
-  MEDIUM: ShieldAlert,
-  LOW: ShieldCheck
-};
+const riskIcon = { HIGH: ShieldX, MEDIUM: ShieldAlert, LOW: ShieldCheck };
 
-const riskPill = {
-  HIGH: "pill pillBlock",
-  MEDIUM: "pill pillWarn",
-  LOW: "pill pillAllow"
-};
+const riskPill = { HIGH: "pill pillBlock", MEDIUM: "pill pillWarn", LOW: "pill pillAllow" };
 
 const effectPill: Record<string, string> = {
   DENY: "pill pillBlock",
@@ -34,13 +26,13 @@ const effectPill: Record<string, string> = {
 
 const SIMPLE_ICON_OVERRIDES: Record<string, string> = {
   "adobe-sign": "adobe",
-  "airbyte": "airbyte",
-  "airtable": "airtable",
+  airbyte: "airbyte",
+  airtable: "airtable",
   "anthropic-api": "anthropic",
   "argo-cd": "argo",
-  "asana": "asana",
-  "atlassian": "atlassian",
-  "auth0": "auth0",
+  asana: "asana",
+  atlassian: "atlassian",
+  auth0: "auth0",
   "aws-bedrock": "amazonwebservices",
   "aws-cloudtrail": "amazonwebservices",
   "aws-iam": "amazonwebservices",
@@ -53,34 +45,34 @@ const SIMPLE_ICON_OVERRIDES: Record<string, string> = {
   "azure-key-vault": "microsoftazure",
   "azure-kubernetes-service": "kubernetes",
   "azure-storage": "microsoftazure",
-  "bigquery": "googlebigquery",
-  "buildkite": "buildkite",
-  "calendly": "calendly",
-  "chargebee": "chargebee",
-  "checkmarx": "checkmarx",
-  "circleci": "circleci",
-  "clickup": "clickup",
+  bigquery: "googlebigquery",
+  buildkite: "buildkite",
+  calendly: "calendly",
+  chargebee: "chargebee",
+  checkmarx: "checkmarx",
+  circleci: "circleci",
+  clickup: "clickup",
   "cloudflare-zero-trust": "cloudflare",
-  "cloudflare": "cloudflare",
-  "confluence": "confluence",
+  cloudflare: "cloudflare",
+  confluence: "confluence",
   "crowdstrike-falcon": "crowdstrike",
-  "databricks": "databricks",
-  "datadog": "datadog",
-  "dependabot": "dependabot",
-  "discord": "discord",
+  databricks: "databricks",
+  datadog: "datadog",
+  dependabot: "dependabot",
+  discord: "discord",
   "docker-hub": "docker",
-  "docusign": "docusign",
-  "dropbox": "dropbox",
-  "duo": "duo",
-  "elasticsearch": "elasticsearch",
-  "expensify": "expensify",
-  "figma": "figma",
-  "fivetran": "fivetran",
-  "freshdesk": "freshdesk",
-  "fullstory": "fullstory",
-  "gainsight": "gainsight",
-  "github": "github",
-  "gitlab": "gitlab",
+  docusign: "docusign",
+  dropbox: "dropbox",
+  duo: "duo",
+  elasticsearch: "elasticsearch",
+  expensify: "expensify",
+  figma: "figma",
+  fivetran: "fivetran",
+  freshdesk: "freshdesk",
+  fullstory: "fullstory",
+  gainsight: "gainsight",
+  github: "github",
+  gitlab: "gitlab",
   "google-cloud-iam": "googlecloud",
   "google-cloud-run": "googlecloud",
   "google-cloud-storage": "googlecloud",
@@ -88,69 +80,69 @@ const SIMPLE_ICON_OVERRIDES: Record<string, string> = {
   "google-secret-manager": "googlecloud",
   "google-vertex-ai": "googlecloud",
   "google-workspace": "googleworkspace",
-  "greenhouse": "greenhouse",
+  greenhouse: "greenhouse",
   "hashicorp-vault": "vault",
-  "hubspot": "hubspot",
-  "intercom": "intercom",
-  "intune": "microsoftintune",
-  "jira": "jira",
-  "jenkins": "jenkins",
-  "kafka": "apachekafka",
-  "kubernetes": "kubernetes",
-  "lacework": "lacework",
-  "launchdarkly": "launchdarkly",
-  "linear": "linear",
-  "looker": "looker",
-  "mailchimp": "mailchimp",
-  "marketo": "adobe",
-  "mattermost": "mattermost",
+  hubspot: "hubspot",
+  intercom: "intercom",
+  intune: "microsoftintune",
+  jira: "jira",
+  jenkins: "jenkins",
+  kafka: "apachekafka",
+  kubernetes: "kubernetes",
+  lacework: "lacework",
+  launchdarkly: "launchdarkly",
+  linear: "linear",
+  looker: "looker",
+  mailchimp: "mailchimp",
+  marketo: "adobe",
+  mattermost: "mattermost",
   "microsoft-365": "microsoft365",
   "microsoft-entra-id": "microsoft",
   "microsoft-teams": "microsoftteams",
-  "mixpanel": "mixpanel",
-  "mongodb": "mongodb",
-  "netlify": "netlify",
+  mixpanel: "mixpanel",
+  mongodb: "mongodb",
+  netlify: "netlify",
   "new-relic": "newrelic",
-  "notion": "notion",
-  "npm": "npm",
-  "okta": "okta",
-  "onedrive": "microsoftonedrive",
-  "onelogin": "onelogin",
-  "onepassword": "1password",
+  notion: "notion",
+  npm: "npm",
+  okta: "okta",
+  onedrive: "microsoftonedrive",
+  onelogin: "onelogin",
+  onepassword: "1password",
   "onepassword-admin": "1password",
   "openai-api": "openai",
-  "pagerduty": "pagerduty",
-  "pendo": "pendo",
-  "postgresql": "postgresql",
+  pagerduty: "pagerduty",
+  pendo: "pendo",
+  postgresql: "postgresql",
   "power-bi": "powerbi",
-  "pypi": "pypi",
-  "redis": "redis",
-  "salesforce": "salesforce",
-  "segment": "segment",
-  "semgrep": "semgrep",
-  "sentry": "sentry",
-  "servicenow": "servicenow",
-  "sharepoint": "microsoftsharepoint",
-  "shopify": "shopify",
-  "slack": "slack",
-  "snowflake": "snowflake",
-  "sonarqube": "sonarqube",
-  "splunk": "splunk",
-  "stripe": "stripe",
+  pypi: "pypi",
+  redis: "redis",
+  salesforce: "salesforce",
+  segment: "segment",
+  semgrep: "semgrep",
+  sentry: "sentry",
+  servicenow: "servicenow",
+  sharepoint: "microsoftsharepoint",
+  shopify: "shopify",
+  slack: "slack",
+  snowflake: "snowflake",
+  sonarqube: "sonarqube",
+  splunk: "splunk",
+  stripe: "stripe",
   "stripe-billing": "stripe",
-  "tableau": "tableau",
-  "tailscale": "tailscale",
+  tableau: "tableau",
+  tailscale: "tailscale",
   "terraform-cloud": "terraform",
-  "trello": "trello",
-  "twilio": "twilio",
-  "uipath": "uipath",
-  "vercel": "vercel",
-  "veracode": "veracode",
-  "woocommerce": "woocommerce",
-  "workato": "workato",
-  "zendesk": "zendesk",
-  "zapier": "zapier",
-  "zoom": "zoom"
+  trello: "trello",
+  twilio: "twilio",
+  uipath: "uipath",
+  vercel: "vercel",
+  veracode: "veracode",
+  woocommerce: "woocommerce",
+  workato: "workato",
+  zendesk: "zendesk",
+  zapier: "zapier",
+  zoom: "zoom",
 };
 
 function getConnectorLogoSlug(connector: string) {
@@ -158,9 +150,7 @@ function getConnectorLogoSlug(connector: string) {
   return connector.replace(/[^a-z0-9]/g, "");
 }
 
-const CONNECTOR_LOGO_DOMAINS: Partial<Record<string, string>> = {
-  "twilio": "twilio.com"
-};
+const CONNECTOR_LOGO_DOMAINS: Partial<Record<string, string>> = { twilio: "twilio.com" };
 
 // These connectors have no stable Simple Icons mark. Use the product's
 // deterministic initials rather than issuing a request that will 404.
@@ -192,13 +182,14 @@ function ConnectorLogo({
   const logoCandidates = showRemoteLogo ? getConnectorLogoCandidates(connector) : [];
   const currentLogoSrc = logoCandidates[sourceIndex];
   const showFallback = sourceIndex >= logoCandidates.length;
-  const fallback = connector
-    .split(/[-_]/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() ?? "")
-    .join("")
-    .slice(0, 2) || "PK";
+  const fallback =
+    connector
+      .split(/[-_]/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase() ?? "")
+      .join("")
+      .slice(0, 2) || "PK";
 
   if (showFallback) {
     return (
@@ -246,7 +237,13 @@ interface PackSlideOutProps {
   catalogStatusLoaded: boolean;
 }
 
-function PackGovernanceSection({ pack, metadata }: { pack: PolicyPack; metadata: ReturnType<typeof getPackMetadata> }) {
+function PackGovernanceSection({
+  pack,
+  metadata,
+}: {
+  pack: PolicyPack;
+  metadata: ReturnType<typeof getPackMetadata>;
+}) {
   const RiskIcon = riskIcon[pack.riskLevel];
   return (
     <div className="packRuleDetail">
@@ -258,7 +255,9 @@ function PackGovernanceSection({ pack, metadata }: { pack: PolicyPack; metadata:
         </div>
         <div>
           <span className="meta">Review requirements</span>
-          <strong>{metadata.reviewRoles.join(", ")} ({metadata.minimumApprovals} approvals)</strong>
+          <strong>
+            {metadata.reviewRoles.join(", ")} ({metadata.minimumApprovals} approvals)
+          </strong>
         </div>
         <div>
           <span className="meta">Compatibility targets</span>
@@ -313,7 +312,13 @@ function PackRulesSection({ pack }: { pack: PolicyPack }) {
   );
 }
 
-function PackChangelogSection({ pack, metadata }: { pack: PolicyPack; metadata: ReturnType<typeof getPackMetadata> }) {
+function PackChangelogSection({
+  pack,
+  metadata,
+}: {
+  pack: PolicyPack;
+  metadata: ReturnType<typeof getPackMetadata>;
+}) {
   if (metadata.changelog.length === 0) return null;
   return (
     <section className="packDrawerRules" aria-labelledby={`${pack.id}-changelog`}>

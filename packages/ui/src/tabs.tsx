@@ -10,5 +10,7 @@ export function TabsRow({ className, ...props }: HTMLAttributes<HTMLDivElement>)
 }
 
 export function TabButton({ active = false, className, ...props }: TabButtonProps) {
-  return <button className={cx("uiTab", active && "uiTabActive", className)} role="tab" {...props} />;
+  return (
+    <button className={cx("uiTab", active && "uiTabActive", className)} role="tab" {...props} />
+  );
 }

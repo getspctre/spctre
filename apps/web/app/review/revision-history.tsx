@@ -7,7 +7,12 @@ import type { RollbackState } from "./publish-actions";
 import type { BranchRevision } from "@/lib/domains/review/service";
 
 import { SlideOutPanel } from "@/app/slide-out-panel";
-import { formatArtifactHash, formatProvenanceId, isForensicViewMode, type AppViewMode } from "@/lib/app-view-mode";
+import {
+  formatArtifactHash,
+  formatProvenanceId,
+  isForensicViewMode,
+  type AppViewMode,
+} from "@/lib/app-view-mode";
 import { hashToFingerprint } from "@/lib/fingerprint";
 
 interface RevisionHistoryProps {
@@ -16,7 +21,13 @@ interface RevisionHistoryProps {
   viewMode: AppViewMode;
 }
 
-function RevisionMetadataSection({ rev, viewMode }: { rev: BranchRevision; viewMode: AppViewMode }) {
+function RevisionMetadataSection({
+  rev,
+  viewMode,
+}: {
+  rev: BranchRevision;
+  viewMode: AppViewMode;
+}) {
   return (
     <div className="packRuleDetail">
       <p className="eyebrow">Revision metadata</p>
@@ -29,7 +40,9 @@ function RevisionMetadataSection({ rev, viewMode }: { rev: BranchRevision; viewM
         </div>
         <div>
           <span className="meta">Author</span>
-          <strong>{isForensicViewMode(viewMode) ? rev.authorId : (rev.authorEmail ?? rev.authorId)}</strong>
+          <strong>
+            {isForensicViewMode(viewMode) ? rev.authorId : (rev.authorEmail ?? rev.authorId)}
+          </strong>
         </div>
         <div>
           <span className="meta">Source format</span>
@@ -73,10 +86,7 @@ function RevisionMetadataSection({ rev, viewMode }: { rev: BranchRevision; viewM
 }
 
 export function RevisionHistory({ branchId, revisions, viewMode }: RevisionHistoryProps) {
-  const [state, action, isPending] = useActionState<RollbackState, FormData>(
-    rollbackBranch,
-    null
-  );
+  const [state, action, isPending] = useActionState<RollbackState, FormData>(rollbackBranch, null);
 
   const rolledBackTo = state?.revisionId;
   const [confirmRevisionId, setConfirmRevisionId] = useState<string | null>(null);
@@ -95,7 +105,9 @@ export function RevisionHistory({ branchId, revisions, viewMode }: RevisionHisto
         <div className="revisionRollbackSuccess">
           <CheckCircle2 size={14} />
           <span>
-            Rolled back to <code>{formatProvenanceId(rolledBackTo, viewMode, 12, hashToFingerprint)}</code> — new artifact{" "}
+            Rolled back to{" "}
+            <code>{formatProvenanceId(rolledBackTo, viewMode, 12, hashToFingerprint)}</code> — new
+            artifact{" "}
             <code>{formatArtifactHash(state.artifactHash, viewMode, hashToFingerprint)}</code>
           </span>
         </div>
@@ -126,9 +138,13 @@ export function RevisionHistory({ branchId, revisions, viewMode }: RevisionHisto
                       <p className="meta">{rev.createdAt.slice(0, 10)}</p>
                       <h3>{rev.message}</h3>
                       <p className="meta">
-                        <code>{formatProvenanceId(rev.revisionId, viewMode, 12, hashToFingerprint)}</code>
+                        <code>
+                          {formatProvenanceId(rev.revisionId, viewMode, 12, hashToFingerprint)}
+                        </code>
                         {" / "}
-                        {isForensicViewMode(viewMode) ? rev.authorId : (rev.authorEmail ?? rev.authorId)}
+                        {isForensicViewMode(viewMode)
+                          ? rev.authorId
+                          : (rev.authorEmail ?? rev.authorId)}
                         {" / "}
                         {rev.ruleCount} {rev.ruleCount === 1 ? "rule" : "rules"}
                         {" / "}
@@ -137,9 +153,7 @@ export function RevisionHistory({ branchId, revisions, viewMode }: RevisionHisto
                       </p>
                     </div>
                     <div className="revisionBadges">
-                      {rev.isActive ? (
-                        <span className="pill pillAllow">Active</span>
-                      ) : null}
+                      {rev.isActive ? <span className="pill pillAllow">Active</span> : null}
                       {rev.publishedAt ? (
                         <span className="pill pillNeutral">
                           Published {rev.publishedAt.slice(0, 10)}
@@ -160,9 +174,7 @@ export function RevisionHistory({ branchId, revisions, viewMode }: RevisionHisto
             <div className="packDrawerSummary">
               <div>
                 <span className="meta">Status</span>
-                <strong>
-                  {rev.isActive ? "Active" : rev.publishedAt ? "Published" : "Draft"}
-                </strong>
+                <strong>{rev.isActive ? "Active" : rev.publishedAt ? "Published" : "Draft"}</strong>
               </div>
               <div>
                 <span className="meta">Rules</span>
@@ -185,20 +197,56 @@ export function RevisionHistory({ branchId, revisions, viewMode }: RevisionHisto
               <div className="packDrawerFooter">
                 {confirmRevisionId === rev.revisionId ? (
                   <form action={action} className="rollbackConfirmation">
-                    <p><strong>Restore this published revision?</strong></p>
+                    <p>
+                      <strong>Restore this published revision?</strong>
+                    </p>
                     <p className="meta">
-                      This republishes <code>{formatProvenanceId(rev.revisionId, viewMode, 12, hashToFingerprint)}</code> ({rev.ruleCount} rules) and replaces the active revision <code>{formatProvenanceId(activeRevision?.revisionId, viewMode, 12, hashToFingerprint)}</code> when agents next sync.
+                      This republishes{" "}
+                      <code>
+                        {formatProvenanceId(rev.revisionId, viewMode, 12, hashToFingerprint)}
+                      </code>{" "}
+                      ({rev.ruleCount} rules) and replaces the active revision{" "}
+                      <code>
+                        {formatProvenanceId(
+                          activeRevision?.revisionId,
+                          viewMode,
+                          12,
+                          hashToFingerprint,
+                        )}
+                      </code>{" "}
+                      when agents next sync.
                     </p>
                     <label className="rollbackAcknowledgement">
-                      <input checked={acknowledged} onChange={(event) => setAcknowledged(event.target.checked)} type="checkbox" />
+                      <input
+                        checked={acknowledged}
+                        onChange={(event) => setAcknowledged(event.target.checked)}
+                        type="checkbox"
+                      />
                       I understand this changes the production policy.
                     </label>
                     <input type="hidden" name="branchId" value={branchId} />
                     <input type="hidden" name="targetRevisionId" value={rev.revisionId} />
                     <div className="toolbar">
-                      <button className="button" onClick={() => { setConfirmRevisionId(null); setAcknowledged(false); }} type="button">Cancel</button>
-                      <button className="button buttonPrimary" type="submit" disabled={isPending || !acknowledged}>
-                        {isPending ? <Loader size={14} className="spin" /> : <RotateCcw size={14} />}
+                      <button
+                        className="button"
+                        onClick={() => {
+                          setConfirmRevisionId(null);
+                          setAcknowledged(false);
+                        }}
+                        type="button"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        className="button buttonPrimary"
+                        type="submit"
+                        disabled={isPending || !acknowledged}
+                      >
+                        {isPending ? (
+                          <Loader size={14} className="spin" />
+                        ) : (
+                          <RotateCcw size={14} />
+                        )}
                         Restore and publish
                       </button>
                     </div>
@@ -206,7 +254,10 @@ export function RevisionHistory({ branchId, revisions, viewMode }: RevisionHisto
                 ) : (
                   <button
                     className="button"
-                    onClick={() => { setConfirmRevisionId(rev.revisionId); setAcknowledged(false); }}
+                    onClick={() => {
+                      setConfirmRevisionId(rev.revisionId);
+                      setAcknowledged(false);
+                    }}
                     type="button"
                   >
                     <RotateCcw size={14} />

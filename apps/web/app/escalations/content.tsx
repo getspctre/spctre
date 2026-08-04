@@ -23,7 +23,8 @@ export async function EscalationsPageContent({ workspaceSlug }: { workspaceSlug?
   });
 
   let queue: OpenEscalationQueue = [];
-  let actors: Array<{ id: string; name: string; email: string | null; reviewerRoles: string[] }> = [];
+  let actors: Array<{ id: string; name: string; email: string | null; reviewerRoles: string[] }> =
+    [];
   try {
     const [openQueue, activeActor] = await Promise.all([
       listGatewayEscalationQueue({

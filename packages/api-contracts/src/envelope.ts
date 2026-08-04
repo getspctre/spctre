@@ -57,7 +57,7 @@ export function ok<T>(data: T, traceId: string): ApiSuccess<T> {
 export function err(
   message: string,
   traceId: string,
-  issues?: Array<{ path: string; message: string }>
+  issues?: Array<{ path: string; message: string }>,
 ): ApiError {
   return { error: message, issues, meta: makeMeta(traceId) };
 }
@@ -65,7 +65,7 @@ export function err(
 export function paginated<T>(
   items: T[],
   pagination: Pagination,
-  traceId: string
+  traceId: string,
 ): PaginatedResponse<T> {
   return { data: items, pagination, meta: makeMeta(traceId) };
 }

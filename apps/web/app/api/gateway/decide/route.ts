@@ -51,7 +51,7 @@ async function decideGatewayRequest(
   input: GatewayDecisionInput,
   auth: GatewayAuth,
   ctx: ApiRouteContext,
-  started: number
+  started: number,
 ) {
   const { gatewayEnabled, decisionResult } = await resolveGatewayDecision(input, auth);
   const isDemo = isDemoTenant(auth.tenantId);
@@ -60,7 +60,13 @@ async function decideGatewayRequest(
   let credentialGrant: unknown = undefined;
   let actionReceipt: unknown = undefined;
   if (shouldPersist) {
-    const persistOutcome = await persistDecisionWithReplayGuard(ctx, input, decisionResult, auth, gatewayEnabled);
+    const persistOutcome = await persistDecisionWithReplayGuard(
+      ctx,
+      input,
+      decisionResult,
+      auth,
+      gatewayEnabled,
+    );
     if (persistOutcome instanceof Response) return persistOutcome;
     credentialGrant = persistOutcome.credentialGrant;
     actionReceipt = persistOutcome.receipt;
@@ -89,7 +95,12 @@ async function decideGatewayRequest(
 async function resolveGatewayDecision(input: GatewayDecisionInput, auth: GatewayAuth) {
   const { agentId, blueprint } = await resolveBlueprintForDecision(input, auth);
   const toolRef = input.connector && input.action ? `${input.connector}.${input.action}` : "";
-  const violatesBlueprint = !blueprintAllowsAction(blueprint, input.connector, input.action, toolRef);
+  const violatesBlueprint = !blueprintAllowsAction(
+    blueprint,
+    input.connector,
+    input.action,
+    toolRef,
+  );
   const gatewayEnabled = isGatewayEnabled();
   let decisionResult = gatewayEnabled
     ? evaluateGatewayDecision(input)
@@ -100,15 +111,46 @@ async function resolveGatewayDecision(input: GatewayDecisionInput, auth: Gateway
         shouldQueue: false,
         slaHours: undefined,
       };
-  if (violatesBlueprint) decisionResult = { outcome: "ABORT", reason: `Action ${toolRef} is outside the published Blueprint operating envelope.`, riskLevel: "HIGH", shouldQueue: false, slaHours: undefined };
+  if (violatesBlueprint)
+    decisionResult = {
+      outcome: "ABORT",
+      reason: `Action ${toolRef} is outside the published Blueprint operating envelope.`,
+      riskLevel: "HIGH",
+      shouldQueue: false,
+      slaHours: undefined,
+    };
   const sessionId = input.sessionId;
   if (gatewayEnabled && decisionResult.outcome === "PROCEED" && blueprint && agentId && sessionId) {
     const budgets = blueprint.definition.budgets;
-    if (budgets?.maxTokensPerTurn !== undefined && input.contextBudget !== undefined && input.contextBudget > budgets.maxTokensPerTurn) {
-      decisionResult = { outcome: "ESCALATE", reason: `Gateway escalated action: context budget ${input.contextBudget} exceeds published Blueprint limit ${budgets.maxTokensPerTurn}.`, riskLevel: "HIGH", shouldQueue: true, slaHours: 4 };
+    if (
+      budgets?.maxTokensPerTurn !== undefined &&
+      input.contextBudget !== undefined &&
+      input.contextBudget > budgets.maxTokensPerTurn
+    ) {
+      decisionResult = {
+        outcome: "ESCALATE",
+        reason: `Gateway escalated action: context budget ${input.contextBudget} exceeds published Blueprint limit ${budgets.maxTokensPerTurn}.`,
+        riskLevel: "HIGH",
+        shouldQueue: true,
+        slaHours: 4,
+      };
     } else if (budgets?.maxToolCallsPerSession !== undefined) {
-      const prior = await runWithTenantContext(auth.tenantId, () => countGatewaySessionDecisions({ tenantId: auth.tenantId, workspaceId: auth.workspaceId, agentId, sessionId }));
-      if (prior >= budgets.maxToolCallsPerSession) decisionResult = { outcome: "ABORT", reason: `Gateway aborted action: session has reached published Blueprint tool-call limit ${budgets.maxToolCallsPerSession}.`, riskLevel: "HIGH", shouldQueue: false, slaHours: undefined };
+      const prior = await runWithTenantContext(auth.tenantId, () =>
+        countGatewaySessionDecisions({
+          tenantId: auth.tenantId,
+          workspaceId: auth.workspaceId,
+          agentId,
+          sessionId,
+        }),
+      );
+      if (prior >= budgets.maxToolCallsPerSession)
+        decisionResult = {
+          outcome: "ABORT",
+          reason: `Gateway aborted action: session has reached published Blueprint tool-call limit ${budgets.maxToolCallsPerSession}.`,
+          riskLevel: "HIGH",
+          shouldQueue: false,
+          slaHours: undefined,
+        };
     }
   }
 
@@ -120,15 +162,25 @@ async function resolveBlueprintForDecision(input: GatewayDecisionInput, auth: Ga
   if (requestedAgentId) {
     input.agentId = await runWithTenantContext(auth.tenantId, () =>
       resolveCanonicalAgentId({
-        tenantId: auth.tenantId, workspaceId: auth.workspaceId, agentId: requestedAgentId,
-      })
+        tenantId: auth.tenantId,
+        workspaceId: auth.workspaceId,
+        agentId: requestedAgentId,
+      }),
     );
   }
 
   const { agentId, connector, action } = input;
-  const blueprint = agentId && connector && action
-    ? await runWithTenantContext(auth.tenantId, () => getPublishedBlueprintForGateway({ tenantId: auth.tenantId, workspaceId: auth.workspaceId, agentId, policyRevisionIds: input.policyContext.map((context) => context.revisionId) }))
-    : null;
+  const blueprint =
+    agentId && connector && action
+      ? await runWithTenantContext(auth.tenantId, () =>
+          getPublishedBlueprintForGateway({
+            tenantId: auth.tenantId,
+            workspaceId: auth.workspaceId,
+            agentId,
+            policyRevisionIds: input.policyContext.map((context) => context.revisionId),
+          }),
+        )
+      : null;
   return { agentId, blueprint };
 }
 
@@ -136,15 +188,19 @@ function blueprintAllowsAction(
   blueprint: Awaited<ReturnType<typeof getPublishedBlueprintForGateway>>,
   connector: string | undefined,
   action: string | undefined,
-  toolRef: string
+  toolRef: string,
 ) {
   if (!blueprint || !connector || !action) return true;
-  return blueprint.definition.connectors.includes(connector) &&
-    blueprint.definition.tools.some((tool) => tool === action || tool === toolRef);
+  return (
+    blueprint.definition.connectors.includes(connector) &&
+    blueprint.definition.tools.some((tool) => tool === action || tool === toolRef)
+  );
 }
 
 type GatewayDecisionResult = ReturnType<typeof evaluateGatewayDecision>;
-type GatewayPersistInput = Parameters<typeof persistGatewayDecisionAndBrokerCredentials>[0]["input"];
+type GatewayPersistInput = Parameters<
+  typeof persistGatewayDecisionAndBrokerCredentials
+>[0]["input"];
 
 // Replay-guard then persist + broker credentials. Returns a terminal Response
 // for replayed or failed decisions; otherwise the brokered credential grant.
@@ -154,7 +210,7 @@ async function persistDecisionWithReplayGuard(
   input: GatewayPersistInput,
   decisionResult: GatewayDecisionResult,
   auth: { tenantId: string; workspaceId: string; actorId: string },
-  gatewayEnabled: boolean
+  gatewayEnabled: boolean,
 ): Promise<Response | { credentialGrant: unknown; receipt?: unknown }> {
   const alreadyIssued = await hasGatewayCredentialGrantForDecision({
     decisionId: input.decisionId,
@@ -186,7 +242,9 @@ async function persistDecisionWithReplayGuard(
       actorId: auth.actorId,
     });
     if (!persistenceResult.ok) {
-      console.error("[gateway/decide] CRITICAL: brokering failed AND could not persist ABORT to gateway_decision row");
+      console.error(
+        "[gateway/decide] CRITICAL: brokering failed AND could not persist ABORT to gateway_decision row",
+      );
       return ctx.error(503, persistenceResult.error, {
         gatewayEnabled,
         persisted: persistenceResult.persisted,
@@ -203,24 +261,28 @@ async function persistDecisionWithReplayGuard(
       decisionResult.outcome = persistenceResult.outcome;
       decisionResult.reason = persistenceResult.reason ?? decisionResult.reason;
     }
-    return { credentialGrant: persistenceResult.credentialGrant || undefined, receipt: persistenceResult.receipt };
+    return {
+      credentialGrant: persistenceResult.credentialGrant || undefined,
+      receipt: persistenceResult.receipt,
+    };
   } catch (err) {
     console.error("[gateway/decide] failed to persist gateway decision:", err);
     return ctx.error(503, "Gateway decision could not be persisted.", {
       gatewayEnabled,
       persisted: false,
       queued: false,
-      decision: {
-        ...decisionResult,
-        credentialGrant: undefined,
-      },
+      decision: { ...decisionResult, credentialGrant: undefined },
     });
   }
 }
 
 async function delegateToGoGateway(request: Request, traceId: string): Promise<Response | null> {
   const baseUrl = evidenceIngestUrl();
-  if (!baseUrl || request.headers.get("x-spctre-forwarded-by") === "web" || !hasBearerToken(request)) {
+  if (
+    !baseUrl ||
+    request.headers.get("x-spctre-forwarded-by") === "web" ||
+    !hasBearerToken(request)
+  ) {
     return null;
   }
 
@@ -246,11 +308,13 @@ async function delegateToGoGateway(request: Request, traceId: string): Promise<R
       statusText: response.statusText,
       headers: response.headers,
     }),
-    traceId
+    traceId,
   );
 }
 
-async function resolveGatewayAuth(request: Request): Promise<
+async function resolveGatewayAuth(
+  request: Request,
+): Promise<
   | { ok: true; tenantId: string; workspaceId: string; actorId: string }
   | { ok: false; error: string; status: number }
 > {

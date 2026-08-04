@@ -9,10 +9,7 @@ interface ReviewDiffSectionProps {
   viewMode: AppViewMode;
 }
 
-export function ReviewDiffSection({
-  diff,
-  viewMode,
-}: ReviewDiffSectionProps) {
+export function ReviewDiffSection({ diff, viewMode }: ReviewDiffSectionProps) {
   return (
     <>
       <section className="panel reviewPanel" id="diff">
@@ -20,8 +17,13 @@ export function ReviewDiffSection({
           <div>
             <p className="eyebrow">Diff · Rules</p>
             <h2>
-              <code>{formatProvenanceId(diff.baseRevisionId, viewMode, 12, hashToFingerprint)}</code> to{" "}
-              <code>{formatProvenanceId(diff.compareRevisionId, viewMode, 12, hashToFingerprint)}</code>
+              <code>
+                {formatProvenanceId(diff.baseRevisionId, viewMode, 12, hashToFingerprint)}
+              </code>{" "}
+              to{" "}
+              <code>
+                {formatProvenanceId(diff.compareRevisionId, viewMode, 12, hashToFingerprint)}
+              </code>
             </h2>
           </div>
         </div>
@@ -47,10 +49,7 @@ export function ReviewDiffSection({
 
         <div className="diffList">
           {diff.rules.map((rule) => (
-            <DiffRuleInspector
-              key={rule.stableRuleId}
-              diff={rule}
-            />
+            <DiffRuleInspector key={rule.stableRuleId} diff={rule} />
           ))}
         </div>
       </section>

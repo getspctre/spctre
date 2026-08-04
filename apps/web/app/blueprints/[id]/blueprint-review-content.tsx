@@ -4,9 +4,20 @@ import type { AgentBlueprintDefinition, AgentBlueprintRevision } from "@spctre/p
 import { diffAgentBlueprintRevisions, evaluatePublishReadiness } from "@spctre/policy-schema";
 import { getWorkspaceContext, formatWorkspaceEyebrow } from "@/lib/workspace";
 import { buildWorkspacePath } from "@/lib/workspace/path";
-import { getAgentBlueprint, getAgentBlueprintApprovals } from "@/lib/domains/agent-blueprints/service";
-import { getApprovalWorkflowForContext, approvalRulesFromWorkflow } from "@/lib/repositories/approval-workflow";
-import { getActiveActor, canActorReviewRole, requireActorAdminWorkspace, getBranchPermissions } from "@/lib/actors";
+import {
+  getAgentBlueprint,
+  getAgentBlueprintApprovals,
+} from "@/lib/domains/agent-blueprints/service";
+import {
+  getApprovalWorkflowForContext,
+  approvalRulesFromWorkflow,
+} from "@/lib/repositories/approval-workflow";
+import {
+  getActiveActor,
+  canActorReviewRole,
+  requireActorAdminWorkspace,
+  getBranchPermissions,
+} from "@/lib/actors";
 import { ALL_REVIEWER_ROLES } from "@/lib/approval-config";
 import { hashToFingerprint } from "@/lib/fingerprint";
 import { swallow } from "@/lib/platform/swallow";
@@ -27,7 +38,11 @@ function ChipRow({ label, values }: { label: string; values: string[] }) {
       <span className="meta">{label}</span>
       {values.length ? (
         <div className="blueprintChipList blueprintDefChips">
-          {values.map((value) => <span className="blueprintChip" key={value}>{value}</span>)}
+          {values.map((value) => (
+            <span className="blueprintChip" key={value}>
+              {value}
+            </span>
+          ))}
         </div>
       ) : (
         <span className="meta">None declared</span>
@@ -56,18 +71,28 @@ function DefinitionInspector({ definition }: { definition: AgentBlueprintDefinit
           <div className="blueprintChipList blueprintDefChips">
             {definition.runtimeTargets.map((target, index) => (
               <span className="blueprintChip" key={`${target.stack}-${index}`}>
-                {target.stack.replaceAll("_", " ")}{target.environment ? ` · ${target.environment}` : ""}{target.adapter ? ` · ${target.adapter}` : ""}
+                {target.stack.replaceAll("_", " ")}
+                {target.environment ? ` · ${target.environment}` : ""}
+                {target.adapter ? ` · ${target.adapter}` : ""}
               </span>
             ))}
           </div>
-        ) : <span className="meta">None declared</span>}
+        ) : (
+          <span className="meta">None declared</span>
+        )}
       </div>
-      {definition.approvalPath?.length ? <ChipRow label="Approval path" values={definition.approvalPath} /> : null}
+      {definition.approvalPath?.length ? (
+        <ChipRow label="Approval path" values={definition.approvalPath} />
+      ) : null}
       {budgetEntries.length ? (
         <div className="blueprintDefRow blueprintDefWide">
           <span className="meta">Session budgets</span>
           <div className="blueprintChipList blueprintDefChips">
-            {budgetEntries.map(([key, value]) => <span className="blueprintChip" key={key}>{key}: {value}</span>)}
+            {budgetEntries.map(([key, value]) => (
+              <span className="blueprintChip" key={key}>
+                {key}: {value}
+              </span>
+            ))}
           </div>
         </div>
       ) : null}
@@ -75,7 +100,9 @@ function DefinitionInspector({ definition }: { definition: AgentBlueprintDefinit
         <span className="meta">Policy binding</span>
         {definition.policyRevisionId ? (
           <code className="smallCode">{hashToFingerprint(definition.policyRevisionId)}</code>
-        ) : <span className="meta">Unbound</span>}
+        ) : (
+          <span className="meta">Unbound</span>
+        )}
       </div>
     </div>
   );
@@ -91,7 +118,8 @@ export async function BlueprintReviewContent({
   selectedRevisionId?: string;
 }) {
   const workspace = await getWorkspaceContext({ workspaceSlug });
-  const path = (suffix: string) => (workspace.workspaceSlug ? buildWorkspacePath(workspace.workspaceSlug, suffix) : suffix);
+  const path = (suffix: string) =>
+    workspace.workspaceSlug ? buildWorkspacePath(workspace.workspaceSlug, suffix) : suffix;
   const blueprintsPath = path("/blueprints");
 
   const result = await getAgentBlueprint({
@@ -103,8 +131,26 @@ export async function BlueprintReviewContent({
   if (!result) {
     return (
       <>
-        <section className="topbar"><div><p className="eyebrow">{formatWorkspaceEyebrow(workspace)}</p><h1>Blueprint</h1></div></section>
-        <section className="panel"><div className="emptyState"><Bot size={20} className="sectionIcon" /><h3>Blueprint not found</h3><p className="meta">This Blueprint does not exist in {workspace.workspaceName ?? "this workspace"}, or you do not have access to it.</p><Link className="button buttonPrimary emptyStateAction" href={blueprintsPath}><ArrowLeft size={16} />Back to Blueprints</Link></div></section>
+        <section className="topbar">
+          <div>
+            <p className="eyebrow">{formatWorkspaceEyebrow(workspace)}</p>
+            <h1>Blueprint</h1>
+          </div>
+        </section>
+        <section className="panel">
+          <div className="emptyState">
+            <Bot size={20} className="sectionIcon" />
+            <h3>Blueprint not found</h3>
+            <p className="meta">
+              This Blueprint does not exist in {workspace.workspaceName ?? "this workspace"}, or you
+              do not have access to it.
+            </p>
+            <Link className="button buttonPrimary emptyStateAction" href={blueprintsPath}>
+              <ArrowLeft size={16} />
+              Back to Blueprints
+            </Link>
+          </div>
+        </section>
       </>
     );
   }
@@ -113,18 +159,27 @@ export async function BlueprintReviewContent({
   const headRevision =
     revisions.find((revision) => revision.id === blueprint.activeRevisionId) ?? revisions[0];
   const inspected =
-    (selectedRevisionId ? revisions.find((revision) => revision.id === selectedRevisionId) : undefined) ?? headRevision;
+    (selectedRevisionId
+      ? revisions.find((revision) => revision.id === selectedRevisionId)
+      : undefined) ?? headRevision;
   const inspectingHistorical = inspected.id !== headRevision.id;
 
   const parent = inspected.parentRevisionId
     ? revisions.find((revision) => revision.id === inspected.parentRevisionId)
     : undefined;
-  const diff = parent ? diffAgentBlueprintRevisions({ base: parent, compare: inspected }) : undefined;
+  const diff = parent
+    ? diffAgentBlueprintRevisions({ base: parent, compare: inspected })
+    : undefined;
 
   const [approvals, workflow, actorResult] = await Promise.all([
     getAgentBlueprintApprovals({ tenantId: workspace.tenantId, revisionId: headRevision.id }),
-    getApprovalWorkflowForContext({ tenantId: workspace.tenantId, workspaceId: workspace.workspaceId }),
-    getActiveActor({ workspaceId: workspace.workspaceId, tenantId: workspace.tenantId }).catch(swallow("getActiveActor", null)),
+    getApprovalWorkflowForContext({
+      tenantId: workspace.tenantId,
+      workspaceId: workspace.workspaceId,
+    }),
+    getActiveActor({ workspaceId: workspace.workspaceId, tenantId: workspace.tenantId }).catch(
+      swallow("getActiveActor", null),
+    ),
   ]);
 
   const approvalRules = approvalRulesFromWorkflow(workflow);
@@ -149,13 +204,23 @@ export async function BlueprintReviewContent({
   // policy rollback (workspace admin); submitting for review is authoring, open to
   // any workspace member (the server enforces write access).
   const publishPermission = actor
-    ? getBranchPermissions({ actor, branch: { scope: "WORKSPACE", environment: undefined }, workspaceSlug: reviewSlug })
-    : { canPublish: false, publishReason: "You do not have permission to publish in this workspace." };
+    ? getBranchPermissions({
+        actor,
+        branch: { scope: "WORKSPACE", environment: undefined },
+        workspaceSlug: reviewSlug,
+      })
+    : {
+        canPublish: false,
+        publishReason: "You do not have permission to publish in this workspace.",
+      };
   const canRollback = Boolean(actor && requireActorAdminWorkspace(actor, reviewSlug).allowed);
-  const canTransition = headRevision.status === "DRAFT" ? Boolean(actor) : publishPermission.canPublish;
-  const transitionBlockedReason = headRevision.status === "DRAFT"
-    ? "You need workspace access to submit this Blueprint for review."
-    : publishPermission.publishReason ?? "You do not have permission to publish in this workspace.";
+  const canTransition =
+    headRevision.status === "DRAFT" ? Boolean(actor) : publishPermission.canPublish;
+  const transitionBlockedReason =
+    headRevision.status === "DRAFT"
+      ? "You need workspace access to submit this Blueprint for review."
+      : (publishPermission.publishReason ??
+        "You do not have permission to publish in this workspace.");
 
   const requiredRoles = new Set(approvalRules.map((rule) => rule.role));
   const approvalRoleCards: BlueprintApprovalRole[] = ALL_REVIEWER_ROLES.map((role) => ({
@@ -170,7 +235,9 @@ export async function BlueprintReviewContent({
   const publishBlockedReason = readiness.blockingReasons[0]?.message;
 
   const inspectPath = (revisionId: string) =>
-    revisionId === headRevision.id ? path(`/blueprints/${blueprint.id}`) : `${path(`/blueprints/${blueprint.id}`)}?rev=${encodeURIComponent(revisionId)}`;
+    revisionId === headRevision.id
+      ? path(`/blueprints/${blueprint.id}`)
+      : `${path(`/blueprints/${blueprint.id}`)}?rev=${encodeURIComponent(revisionId)}`;
 
   return (
     <>
@@ -178,11 +245,19 @@ export async function BlueprintReviewContent({
         <div>
           <p className="eyebrow">{formatWorkspaceEyebrow(workspace)}</p>
           <h1>{blueprint.name}</h1>
-          <p className="meta">Agent <code className="smallCode">{blueprint.agentId}</code> · Head revision <code className="smallCode">{hashToFingerprint(headRevision.id)}</code></p>
+          <p className="meta">
+            Agent <code className="smallCode">{blueprint.agentId}</code> · Head revision{" "}
+            <code className="smallCode">{hashToFingerprint(headRevision.id)}</code>
+          </p>
         </div>
         <div className="toolbar">
-          <Link className="button" href={blueprintsPath}><ArrowLeft size={16} />Blueprints</Link>
-          <span className={`pill ${statusPill(headRevision.status)}`}>{headRevision.status.replace("_", " ")}</span>
+          <Link className="button" href={blueprintsPath}>
+            <ArrowLeft size={16} />
+            Blueprints
+          </Link>
+          <span className={`pill ${statusPill(headRevision.status)}`}>
+            {headRevision.status.replace("_", " ")}
+          </span>
         </div>
       </section>
 
@@ -192,8 +267,8 @@ export async function BlueprintReviewContent({
             <p className="eyebrow">Review · Lifecycle</p>
             <h2>Advance the head revision</h2>
             <p className="meta">
-              A draft is submitted for review, gathers the required approvals, then publishes to the immutable runtime contract{" "}
-              <code>spctre.agent-blueprint.v1</code>.
+              A draft is submitted for review, gathers the required approvals, then publishes to the
+              immutable runtime contract <code>spctre.agent-blueprint.v1</code>.
             </p>
           </div>
         </div>
@@ -202,14 +277,20 @@ export async function BlueprintReviewContent({
           revisionId={headRevision.id}
           status={headRevision.status}
           canPublish={canPublish}
-          publishBlockedReason={headRevision.status === "DRAFT" ? "Submit the draft for review first." : publishBlockedReason}
+          publishBlockedReason={
+            headRevision.status === "DRAFT"
+              ? "Submit the draft for review first."
+              : publishBlockedReason
+          }
           canTransition={canTransition}
           transitionBlockedReason={transitionBlockedReason}
         />
         {!isPublished && readiness.blockingReasons.length ? (
           <div className="blockerList">
             {readiness.blockingReasons.map((blocker) => (
-              <div className="blockerActionRow" key={blocker.message}><p className="meta">{blocker.message}</p></div>
+              <div className="blockerActionRow" key={blocker.message}>
+                <p className="meta">{blocker.message}</p>
+              </div>
             ))}
           </div>
         ) : null}
@@ -218,13 +299,22 @@ export async function BlueprintReviewContent({
       <section className="panel blueprintsPanel">
         <div className="rowHeader">
           <div>
-            <p className="eyebrow">{inspectingHistorical ? "Historical revision" : "Head revision"}</p>
+            <p className="eyebrow">
+              {inspectingHistorical ? "Historical revision" : "Head revision"}
+            </p>
             <h2>Operating envelope</h2>
             <p className="meta">
-              Revision <code className="smallCode">{hashToFingerprint(inspected.id)}</code> · {inspected.message} · authored {new Date(inspected.createdAt).toLocaleString()}
+              Revision <code className="smallCode">{hashToFingerprint(inspected.id)}</code> ·{" "}
+              {inspected.message} · authored {new Date(inspected.createdAt).toLocaleString()}
             </p>
             {inspectingHistorical ? (
-              <p className="meta">You are inspecting a historical revision. Review actions apply to the head revision <Link href={inspectPath(headRevision.id)}>{hashToFingerprint(headRevision.id)}</Link>.</p>
+              <p className="meta">
+                You are inspecting a historical revision. Review actions apply to the head revision{" "}
+                <Link href={inspectPath(headRevision.id)}>
+                  {hashToFingerprint(headRevision.id)}
+                </Link>
+                .
+              </p>
             ) : null}
           </div>
         </div>
@@ -232,7 +322,10 @@ export async function BlueprintReviewContent({
           <div className="blockerActionRow blueprintDiffSummary">
             <GitCompare size={15} />
             <p className="meta">
-              {diff.summary}{diff.changedFields.length ? ` Changed: ${diff.changedFields.join(", ")}.` : ""} (vs {hashToFingerprint(parent!.id)})
+              {diff.summary}
+              {diff.changedFields.length
+                ? ` Changed: ${diff.changedFields.join(", ")}.`
+                : ""} (vs {hashToFingerprint(parent!.id)})
             </p>
           </div>
         ) : null}
@@ -256,7 +349,11 @@ export async function BlueprintReviewContent({
           revisionId={headRevision.id}
           roles={approvalRoleCards}
           reviewableRoles={reviewableRoles}
-          reviewBlockedReason={reviewableRoles.length ? undefined : `${actorName} has no reviewer roles in this workspace.`}
+          reviewBlockedReason={
+            reviewableRoles.length
+              ? undefined
+              : `${actorName} has no reviewer roles in this workspace.`
+          }
           actorName={actorName}
           actorId={actor?.id}
           actionsDisabled={headRevision.status !== "IN_REVIEW"}
@@ -268,7 +365,10 @@ export async function BlueprintReviewContent({
           <div>
             <p className="eyebrow">Review · Impact</p>
             <h2>Simulate the envelope</h2>
-            <p className="meta">Estimate how the inspected revision would constrain the agent’s recent runtime activity before you publish.</p>
+            <p className="meta">
+              Estimate how the inspected revision would constrain the agent’s recent runtime
+              activity before you publish.
+            </p>
           </div>
         </div>
         <BlueprintSimulatePanel blueprintId={blueprint.id} revisionId={inspected.id} />
@@ -279,35 +379,72 @@ export async function BlueprintReviewContent({
           <div>
             <p className="eyebrow">Revision ledger</p>
             <h2>History</h2>
-            <p className="meta">Every immutable revision, its lifecycle state, and the policy revision it governs.</p>
+            <p className="meta">
+              Every immutable revision, its lifecycle state, and the policy revision it governs.
+            </p>
           </div>
           <FileCode2 size={20} className="sectionIcon" />
         </div>
         <div className="auditTableWrapper">
           <table className="auditTable">
-            <thead><tr><th>Revision</th><th>Lifecycle</th><th>Policy revision</th><th>Note</th><th>Created</th><th /></tr></thead>
+            <thead>
+              <tr>
+                <th>Revision</th>
+                <th>Lifecycle</th>
+                <th>Policy revision</th>
+                <th>Note</th>
+                <th>Created</th>
+                <th />
+              </tr>
+            </thead>
             <tbody>
               {revisions.map((revision: AgentBlueprintRevision) => {
                 const isHead = revision.id === headRevision.id;
                 const isInspected = revision.id === inspected.id;
                 return (
-                  <tr key={revision.id} className={`auditRow${isInspected ? " blueprintRevisionActive" : ""}`}>
+                  <tr
+                    key={revision.id}
+                    className={`auditRow${isInspected ? " blueprintRevisionActive" : ""}`}
+                  >
                     <td>
                       <code className="smallCode">{hashToFingerprint(revision.id)}</code>
-                      {isHead ? <span className="pill pillNeutral blueprintHeadTag">head</span> : null}
+                      {isHead ? (
+                        <span className="pill pillNeutral blueprintHeadTag">head</span>
+                      ) : null}
                     </td>
-                    <td><span className={`pill ${statusPill(revision.status)}`}>{revision.status.replace("_", " ")}</span></td>
-                    <td>{revision.definition.policyRevisionId ? <code className="smallCode">{hashToFingerprint(revision.definition.policyRevisionId)}</code> : <span className="meta">Unbound</span>}</td>
+                    <td>
+                      <span className={`pill ${statusPill(revision.status)}`}>
+                        {revision.status.replace("_", " ")}
+                      </span>
+                    </td>
+                    <td>
+                      {revision.definition.policyRevisionId ? (
+                        <code className="smallCode">
+                          {hashToFingerprint(revision.definition.policyRevisionId)}
+                        </code>
+                      ) : (
+                        <span className="meta">Unbound</span>
+                      )}
+                    </td>
                     <td>{revision.message}</td>
                     <td className="meta">{new Date(revision.createdAt).toLocaleString()}</td>
                     <td className="blueprintRevisionActions">
-                      {isInspected ? <span className="meta">Inspecting</span> : <Link className="button buttonSmall" href={inspectPath(revision.id)}><FileCode2 size={13} />Inspect</Link>}
+                      {isInspected ? (
+                        <span className="meta">Inspecting</span>
+                      ) : (
+                        <Link className="button buttonSmall" href={inspectPath(revision.id)}>
+                          <FileCode2 size={13} />
+                          Inspect
+                        </Link>
+                      )}
                       {revision.status === "PUBLISHED" && !isHead ? (
                         <BlueprintRollbackButton
                           blueprintId={blueprint.id}
                           targetRevisionId={revision.id}
                           canRollback={canRollback}
-                          blockedReason={canRollback ? undefined : "Admin permission is required to roll back."}
+                          blockedReason={
+                            canRollback ? undefined : "Admin permission is required to roll back."
+                          }
                         />
                       ) : null}
                     </td>
@@ -324,7 +461,10 @@ export async function BlueprintReviewContent({
           <div>
             <p className="eyebrow">Runtime contract</p>
             <h2>Published output</h2>
-            <p className="meta">Once published, gateway decisions bind this agent and its policy revision, then abort undeclared connector or tool actions.</p>
+            <p className="meta">
+              Once published, gateway decisions bind this agent and its policy revision, then abort
+              undeclared connector or tool actions.
+            </p>
           </div>
           <ShieldCheck size={20} className="sectionIcon" />
         </div>

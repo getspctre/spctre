@@ -11,7 +11,15 @@ export const CREWAI_GOVERNANCE_PACK: PolicyPack = {
   description:
     "Governance rules for agents built with CrewAI. Blocks unapproved delegation to undeclared agents, warns on high-blast-radius tools and runaway crew iteration patterns, applies rate-limit and data sensitivity defaults to tool calls, requires declared consequence tiers for mutating actions, and surfaces provenance gaps when policy context cannot be resolved at call time.",
   riskLevel: "HIGH",
-  tags: ["crewai", "multi-agent", "delegation", "tool-calls", "rate-limits", "data-sensitivity", "ai"],
+  tags: [
+    "crewai",
+    "multi-agent",
+    "delegation",
+    "tool-calls",
+    "rate-limits",
+    "data-sensitivity",
+    "ai",
+  ],
   domains: ["tool-calls", "delegation", "crew-execution", "data", "limits", "provenance"],
   metadata: {
     name: "CrewAI Governance Pack",
@@ -23,14 +31,22 @@ export const CREWAI_GOVERNANCE_PACK: PolicyPack = {
     riskTags: ["multi-agent", "tool-calls", "delegation", "blast-radius"],
     generated: false,
     category: "Framework runtime governance",
-    compatibilityTargets: ["AGT_PREVIEW", "CREWAI", "LANGCHAIN", "OPENAI_AGENTS", "AUTOGEN", "CUSTOM"],
+    compatibilityTargets: [
+      "AGT_PREVIEW",
+      "CREWAI",
+      "LANGCHAIN",
+      "OPENAI_AGENTS",
+      "AUTOGEN",
+      "CUSTOM",
+    ],
     reviewRoles: ["SECURITY", "COMPLIANCE"],
     minimumApprovals: 1,
     changelog: [
       {
         version: "1.0.0",
         date: "2026-05-11",
-        summary: "Initial pack: delegation block, blast-radius warn, iteration limit warn, rate-limit warn, sensitivity warn, consequence-tier block, and provenance gap rules.",
+        summary:
+          "Initial pack: delegation block, blast-radius warn, iteration limit warn, rate-limit warn, sensitivity warn, consequence-tier block, and provenance gap rules.",
       },
     ],
   },
@@ -46,11 +62,18 @@ export const CREWAI_GOVERNANCE_PACK: PolicyPack = {
     },
     {
       stableRuleId: "crewai.tools.warn_high_blast_radius",
-      title: "Warn when CrewAI tool execution involves high-blast-radius file, network, or shell operations",
+      title:
+        "Warn when CrewAI tool execution involves high-blast-radius file, network, or shell operations",
       effect: "WARN",
       domains: ["tool-calls", "requests"],
       connectors: ["crewai"],
-      actions: ["tool.shell", "tool.file_write", "tool.file_delete", "tool.http_request", "tool.browser"],
+      actions: [
+        "tool.shell",
+        "tool.file_write",
+        "tool.file_delete",
+        "tool.http_request",
+        "tool.browser",
+      ],
       immutable: false,
     },
     {
@@ -120,14 +143,22 @@ export const LANGCHAIN_GOVERNANCE_PACK: PolicyPack = {
     riskTags: ["tool-calls", "chains", "rag", "blast-radius"],
     generated: false,
     category: "Framework runtime governance",
-    compatibilityTargets: ["AGT_PREVIEW", "LANGCHAIN", "CREWAI", "OPENAI_AGENTS", "AUTOGEN", "CUSTOM"],
+    compatibilityTargets: [
+      "AGT_PREVIEW",
+      "LANGCHAIN",
+      "CREWAI",
+      "OPENAI_AGENTS",
+      "AUTOGEN",
+      "CUSTOM",
+    ],
     reviewRoles: ["SECURITY", "COMPLIANCE"],
     minimumApprovals: 1,
     changelog: [
       {
         version: "1.0.0",
         date: "2026-05-11",
-        summary: "Initial pack: shell tool block, blast-radius warn, unbounded-recursion warn, unscoped RAG warn, and provenance gap rules.",
+        summary:
+          "Initial pack: shell tool block, blast-radius warn, unbounded-recursion warn, unscoped RAG warn, and provenance gap rules.",
       },
     ],
   },
@@ -185,7 +216,8 @@ export const LANGCHAIN_GOVERNANCE_PACK: PolicyPack = {
     },
     {
       stableRuleId: "langchain.data.warn_sensitivity_unclassified",
-      title: "Warn when tool input, retrieval output, or chain state lacks a data sensitivity classification",
+      title:
+        "Warn when tool input, retrieval output, or chain state lacks a data sensitivity classification",
       effect: "WARN",
       domains: ["data", "retrieval", "tool-calls"],
       connectors: ["langchain"],
@@ -198,7 +230,12 @@ export const LANGCHAIN_GOVERNANCE_PACK: PolicyPack = {
       effect: "DENY",
       domains: ["tool-calls", "requests"],
       connectors: ["langchain"],
-      actions: ["tool.file_write", "tool.file_delete", "tool.api_post", "tool.mutation_without_tier"],
+      actions: [
+        "tool.file_write",
+        "tool.file_delete",
+        "tool.api_post",
+        "tool.mutation_without_tier",
+      ],
       immutable: true,
     },
     {
@@ -232,14 +269,22 @@ export const OPENAI_AGENTS_GOVERNANCE_PACK: PolicyPack = {
     riskTags: ["tool-calls", "handoffs", "blast-radius", "data-write"],
     generated: false,
     category: "Framework runtime governance",
-    compatibilityTargets: ["AGT_PREVIEW", "OPENAI_AGENTS", "LANGCHAIN", "CREWAI", "AUTOGEN", "CUSTOM"],
+    compatibilityTargets: [
+      "AGT_PREVIEW",
+      "OPENAI_AGENTS",
+      "LANGCHAIN",
+      "CREWAI",
+      "AUTOGEN",
+      "CUSTOM",
+    ],
     reviewRoles: ["SECURITY", "COMPLIANCE"],
     minimumApprovals: 1,
     changelog: [
       {
         version: "1.0.0",
         date: "2026-05-11",
-        summary: "Initial pack: unknown-agent handoff block, output size warn, blast-radius warn, production write HITL, and provenance gap rules.",
+        summary:
+          "Initial pack: unknown-agent handoff block, output size warn, blast-radius warn, production write HITL, and provenance gap rules.",
       },
     ],
   },
@@ -264,7 +309,8 @@ export const OPENAI_AGENTS_GOVERNANCE_PACK: PolicyPack = {
     },
     {
       stableRuleId: "openai-agents.outputs.warn_large_tool_output",
-      title: "Warn when a tool returns an unusually large output that could inflate downstream context",
+      title:
+        "Warn when a tool returns an unusually large output that could inflate downstream context",
       effect: "WARN",
       domains: ["outputs", "requests"],
       connectors: ["openai-agents"],
@@ -277,7 +323,13 @@ export const OPENAI_AGENTS_GOVERNANCE_PACK: PolicyPack = {
       effect: "DENY",
       domains: ["tool-calls", "requests"],
       connectors: ["openai-agents"],
-      actions: ["tool.database_write", "tool.file_write", "tool.api_post", "tool.api_put", "tool.api_delete"],
+      actions: [
+        "tool.database_write",
+        "tool.file_write",
+        "tool.api_post",
+        "tool.api_put",
+        "tool.api_delete",
+      ],
       immutable: true,
     },
     {
@@ -291,7 +343,8 @@ export const OPENAI_AGENTS_GOVERNANCE_PACK: PolicyPack = {
     },
     {
       stableRuleId: "openai-agents.data.warn_sensitivity_unclassified",
-      title: "Warn when tool inputs, outputs, or handoff context lack a data sensitivity classification",
+      title:
+        "Warn when tool inputs, outputs, or handoff context lack a data sensitivity classification",
       effect: "WARN",
       domains: ["data", "outputs", "handoffs"],
       connectors: ["openai-agents"],
@@ -304,7 +357,12 @@ export const OPENAI_AGENTS_GOVERNANCE_PACK: PolicyPack = {
       effect: "DENY",
       domains: ["tool-calls", "requests"],
       connectors: ["openai-agents"],
-      actions: ["tool.database_write", "tool.file_write", "tool.api_delete", "tool.mutation_without_tier"],
+      actions: [
+        "tool.database_write",
+        "tool.file_write",
+        "tool.api_delete",
+        "tool.mutation_without_tier",
+      ],
       immutable: true,
     },
     {
@@ -345,7 +403,8 @@ export const AUTOGEN_GOVERNANCE_PACK: PolicyPack = {
       {
         version: "1.0.0",
         date: "2026-05-11",
-        summary: "Initial pack: code execution block, group-chat quorum warn, unbounded loop warn, data exfil warn, and provenance gap rules.",
+        summary:
+          "Initial pack: code execution block, group-chat quorum warn, unbounded loop warn, data exfil warn, and provenance gap rules.",
       },
     ],
   },
@@ -370,7 +429,8 @@ export const AUTOGEN_GOVERNANCE_PACK: PolicyPack = {
     },
     {
       stableRuleId: "autogen.agents.warn_unbounded_loop",
-      title: "Warn when an agent conversation loop lacks a declared max-turn or termination condition",
+      title:
+        "Warn when an agent conversation loop lacks a declared max-turn or termination condition",
       effect: "WARN",
       domains: ["termination", "tool-calls"],
       connectors: ["autogen"],
@@ -397,7 +457,8 @@ export const AUTOGEN_GOVERNANCE_PACK: PolicyPack = {
     },
     {
       stableRuleId: "autogen.data.warn_sensitivity_unclassified",
-      title: "Warn when function-call inputs, outputs, or shared agent memory lack a data sensitivity classification",
+      title:
+        "Warn when function-call inputs, outputs, or shared agent memory lack a data sensitivity classification",
       effect: "WARN",
       domains: ["data", "group-chat", "tool-calls"],
       connectors: ["autogen"],
@@ -451,14 +512,16 @@ export const GOOGLE_ADK_GOVERNANCE_PACK: PolicyPack = {
       {
         version: "1.0.0",
         date: "2026-05-11",
-        summary: "Initial pack: non-allowlisted service block, Vertex scope warn, blast-radius warn, context budget warn, and provenance gap rules.",
+        summary:
+          "Initial pack: non-allowlisted service block, Vertex scope warn, blast-radius warn, context budget warn, and provenance gap rules.",
       },
     ],
   },
   rules: [
     {
       stableRuleId: "google-adk.tools.block_non_allowlisted_service",
-      title: "Block tool calls that target external services not declared in the workspace allowlist",
+      title:
+        "Block tool calls that target external services not declared in the workspace allowlist",
       effect: "DENY",
       domains: ["tool-calls", "requests"],
       connectors: ["google-adk"],
@@ -467,7 +530,8 @@ export const GOOGLE_ADK_GOVERNANCE_PACK: PolicyPack = {
     },
     {
       stableRuleId: "google-adk.vertex.warn_unscoped_resource_access",
-      title: "Warn on Vertex AI resource access without an explicit workspace or project scope declaration",
+      title:
+        "Warn on Vertex AI resource access without an explicit workspace or project scope declaration",
       effect: "WARN",
       domains: ["vertex-ai", "requests"],
       connectors: ["google-adk"],
@@ -503,7 +567,8 @@ export const GOOGLE_ADK_GOVERNANCE_PACK: PolicyPack = {
     },
     {
       stableRuleId: "google-adk.data.warn_sensitivity_unclassified",
-      title: "Warn when tool input, output, or session context lacks a data sensitivity classification",
+      title:
+        "Warn when tool input, output, or session context lacks a data sensitivity classification",
       effect: "WARN",
       domains: ["data", "sessions", "tool-calls"],
       connectors: ["google-adk"],
@@ -512,11 +577,17 @@ export const GOOGLE_ADK_GOVERNANCE_PACK: PolicyPack = {
     },
     {
       stableRuleId: "google-adk.tools.require_consequence_tier_for_mutation",
-      title: "Require a declared consequence tier before Google ADK tools perform mutating operations",
+      title:
+        "Require a declared consequence tier before Google ADK tools perform mutating operations",
       effect: "DENY",
       domains: ["tool-calls", "requests"],
       connectors: ["google-adk"],
-      actions: ["tool.file_write", "tool.api_call", "tool.external_service", "tool.mutation_without_tier"],
+      actions: [
+        "tool.file_write",
+        "tool.api_call",
+        "tool.external_service",
+        "tool.mutation_without_tier",
+      ],
       immutable: true,
     },
     {
@@ -557,23 +628,31 @@ export const STRANDS_GOVERNANCE_PACK: PolicyPack = {
       {
         version: "1.0.0",
         date: "2026-05-11",
-        summary: "Initial pack: IAM/S3/EC2 block, unapproved Bedrock model warn, missing consequence tier warn, cross-account warn, and provenance gap rules.",
+        summary:
+          "Initial pack: IAM/S3/EC2 block, unapproved Bedrock model warn, missing consequence tier warn, cross-account warn, and provenance gap rules.",
       },
     ],
   },
   rules: [
     {
       stableRuleId: "strands.aws.block_high_privilege_service_calls",
-      title: "Block unapproved calls to high-privilege AWS services (IAM mutations, S3 deletes, EC2 mutations)",
+      title:
+        "Block unapproved calls to high-privilege AWS services (IAM mutations, S3 deletes, EC2 mutations)",
       effect: "DENY",
       domains: ["aws", "tool-calls"],
       connectors: ["strands"],
-      actions: ["aws.iam.create_role", "aws.iam.attach_policy", "aws.s3.delete_object", "aws.ec2.terminate_instance"],
+      actions: [
+        "aws.iam.create_role",
+        "aws.iam.attach_policy",
+        "aws.s3.delete_object",
+        "aws.ec2.terminate_instance",
+      ],
       immutable: true,
     },
     {
       stableRuleId: "strands.bedrock.warn_unapproved_model",
-      title: "Warn when a Bedrock model invocation uses a model not in the workspace approved model list",
+      title:
+        "Warn when a Bedrock model invocation uses a model not in the workspace approved model list",
       effect: "WARN",
       domains: ["bedrock", "tool-calls"],
       connectors: ["strands"],
@@ -591,7 +670,8 @@ export const STRANDS_GOVERNANCE_PACK: PolicyPack = {
     },
     {
       stableRuleId: "strands.aws.warn_cross_account_access",
-      title: "Warn when an AWS tool call targets a resource in a different account than the declared workspace account",
+      title:
+        "Warn when an AWS tool call targets a resource in a different account than the declared workspace account",
       effect: "WARN",
       domains: ["aws", "iam"],
       connectors: ["strands"],
@@ -609,7 +689,8 @@ export const STRANDS_GOVERNANCE_PACK: PolicyPack = {
     },
     {
       stableRuleId: "strands.data.warn_sensitivity_unclassified",
-      title: "Warn when Strands tool input, output, or AWS resource context lacks a data sensitivity classification",
+      title:
+        "Warn when Strands tool input, output, or AWS resource context lacks a data sensitivity classification",
       effect: "WARN",
       domains: ["data", "aws", "tool-calls"],
       connectors: ["strands"],
@@ -654,19 +735,22 @@ export const GOOGLE_ANTIGRAVITY_GOVERNANCE_PACK: PolicyPack = {
       {
         version: "1.0.0",
         date: "2026-05-19",
-        summary: "Initial pack (as antigravity-cli-governance-v1): non-allowlisted service block, Vertex scope warn, blast-radius warn, context budget warn, and provenance gap rules.",
+        summary:
+          "Initial pack (as antigravity-cli-governance-v1): non-allowlisted service block, Vertex scope warn, blast-radius warn, context budget warn, and provenance gap rules.",
       },
       {
         version: "1.1.0",
         date: "2026-07-15",
-        summary: "Repointed from the retired antigravity-cli runtime adapter to the google-antigravity Python SDK connector; rule actions updated from BaseTool.run_async to ToolRunner.execute patch targets.",
+        summary:
+          "Repointed from the retired antigravity-cli runtime adapter to the google-antigravity Python SDK connector; rule actions updated from BaseTool.run_async to ToolRunner.execute patch targets.",
       },
     ],
   },
   rules: [
     {
       stableRuleId: "google-antigravity.tools.block_non_allowlisted_service",
-      title: "Block tool calls that target external services not declared in the workspace allowlist",
+      title:
+        "Block tool calls that target external services not declared in the workspace allowlist",
       effect: "DENY",
       domains: ["tool-calls", "requests"],
       connectors: ["google-antigravity"],
@@ -675,7 +759,8 @@ export const GOOGLE_ANTIGRAVITY_GOVERNANCE_PACK: PolicyPack = {
     },
     {
       stableRuleId: "google-antigravity.vertex.warn_unscoped_resource_access",
-      title: "Warn on Vertex AI resource access without an explicit workspace or project scope declaration",
+      title:
+        "Warn on Vertex AI resource access without an explicit workspace or project scope declaration",
       effect: "WARN",
       domains: ["vertex-ai", "requests"],
       connectors: ["google-antigravity"],
@@ -711,7 +796,8 @@ export const GOOGLE_ANTIGRAVITY_GOVERNANCE_PACK: PolicyPack = {
     },
     {
       stableRuleId: "google-antigravity.data.warn_sensitivity_unclassified",
-      title: "Warn when tool input, output, or session context lacks a data sensitivity classification",
+      title:
+        "Warn when tool input, output, or session context lacks a data sensitivity classification",
       effect: "WARN",
       domains: ["data", "sessions", "tool-calls"],
       connectors: ["google-antigravity"],
@@ -720,11 +806,17 @@ export const GOOGLE_ANTIGRAVITY_GOVERNANCE_PACK: PolicyPack = {
     },
     {
       stableRuleId: "google-antigravity.tools.require_consequence_tier_for_mutation",
-      title: "Require a declared consequence tier before Antigravity tools perform mutating operations",
+      title:
+        "Require a declared consequence tier before Antigravity tools perform mutating operations",
       effect: "DENY",
       domains: ["tool-calls", "requests"],
       connectors: ["google-antigravity"],
-      actions: ["tool.file_write", "tool.api_call", "tool.external_service", "tool.mutation_without_tier"],
+      actions: [
+        "tool.file_write",
+        "tool.api_call",
+        "tool.external_service",
+        "tool.mutation_without_tier",
+      ],
       immutable: true,
     },
     {
@@ -761,15 +853,78 @@ export const CLAUDE_AGENT_SDK_GOVERNANCE_PACK: PolicyPack = {
     compatibilityTargets: ["AGT_PREVIEW", "CUSTOM"],
     reviewRoles: ["SECURITY", "COMPLIANCE"],
     minimumApprovals: 1,
-    changelog: [{ version: "1.0.0", date: "2026-07-16", summary: "Initial native-hook governance pack for the Claude Agent SDK Python adapter." }],
+    changelog: [
+      {
+        version: "1.0.0",
+        date: "2026-07-16",
+        summary: "Initial native-hook governance pack for the Claude Agent SDK Python adapter.",
+      },
+    ],
   },
   rules: [
-    { stableRuleId: "claude-agent-sdk.tools.block_unapproved_external_service", title: "Block Claude Agent SDK tools that target services outside the workspace allowlist", effect: "DENY", domains: ["tool-calls", "permissions"], connectors: ["claude-agent-sdk"], actions: ["tool.http_call", "tool.api_call", "tool.external_service"], immutable: true },
-    { stableRuleId: "claude-agent-sdk.tools.warn_high_blast_radius", title: "Warn on high-blast-radius Claude Agent SDK file, shell, browser, or MCP tool calls", effect: "WARN", domains: ["tool-calls", "permissions"], connectors: ["claude-agent-sdk"], actions: ["tool.shell", "tool.file_write", "tool.file_delete", "tool.browser", "tool.mcp"], immutable: false },
-    { stableRuleId: "claude-agent-sdk.permissions.require_consequence_tier_for_mutation", title: "Require a declared consequence tier before Claude Agent SDK tools mutate systems", effect: "DENY", domains: ["permissions", "tool-calls"], connectors: ["claude-agent-sdk"], actions: ["tool.write", "tool.update", "tool.delete", "tool.mutation_without_tier"], immutable: true },
-    { stableRuleId: "claude-agent-sdk.sessions.warn_context_budget_exceeded", title: "Warn when a Claude Agent SDK session exceeds its declared context budget", effect: "WARN", domains: ["sessions", "limits"], connectors: ["claude-agent-sdk"], actions: ["session.turn", "session.continue", "llm_call"], immutable: false },
-    { stableRuleId: "claude-agent-sdk.tools.warn_rate_limit_missing", title: "Warn when a Claude Agent SDK tool has no rate-limit budget or throttle policy", effect: "WARN", domains: ["limits", "tool-calls"], connectors: ["claude-agent-sdk"], actions: ["tool.call", "tool.invoke", "tool.rate_limit_unset"], immutable: false },
-    { stableRuleId: "claude-agent-sdk.data.warn_sensitivity_unclassified", title: "Warn when Claude Agent SDK tool input or output lacks a data sensitivity classification", effect: "WARN", domains: ["data", "tool-calls"], connectors: ["claude-agent-sdk"], actions: ["tool.call", "tool.output", "data.unclassified"], immutable: false },
-    { stableRuleId: "claude-agent-sdk.provenance.warn_gap", title: "Warn on Claude Agent SDK tool events whose policy context cannot be resolved", effect: "WARN", domains: ["provenance", "tool-calls"], connectors: ["claude-agent-sdk"], actions: ["tool.call", "tool.invoke", "session.turn"], immutable: false },
+    {
+      stableRuleId: "claude-agent-sdk.tools.block_unapproved_external_service",
+      title: "Block Claude Agent SDK tools that target services outside the workspace allowlist",
+      effect: "DENY",
+      domains: ["tool-calls", "permissions"],
+      connectors: ["claude-agent-sdk"],
+      actions: ["tool.http_call", "tool.api_call", "tool.external_service"],
+      immutable: true,
+    },
+    {
+      stableRuleId: "claude-agent-sdk.tools.warn_high_blast_radius",
+      title: "Warn on high-blast-radius Claude Agent SDK file, shell, browser, or MCP tool calls",
+      effect: "WARN",
+      domains: ["tool-calls", "permissions"],
+      connectors: ["claude-agent-sdk"],
+      actions: ["tool.shell", "tool.file_write", "tool.file_delete", "tool.browser", "tool.mcp"],
+      immutable: false,
+    },
+    {
+      stableRuleId: "claude-agent-sdk.permissions.require_consequence_tier_for_mutation",
+      title: "Require a declared consequence tier before Claude Agent SDK tools mutate systems",
+      effect: "DENY",
+      domains: ["permissions", "tool-calls"],
+      connectors: ["claude-agent-sdk"],
+      actions: ["tool.write", "tool.update", "tool.delete", "tool.mutation_without_tier"],
+      immutable: true,
+    },
+    {
+      stableRuleId: "claude-agent-sdk.sessions.warn_context_budget_exceeded",
+      title: "Warn when a Claude Agent SDK session exceeds its declared context budget",
+      effect: "WARN",
+      domains: ["sessions", "limits"],
+      connectors: ["claude-agent-sdk"],
+      actions: ["session.turn", "session.continue", "llm_call"],
+      immutable: false,
+    },
+    {
+      stableRuleId: "claude-agent-sdk.tools.warn_rate_limit_missing",
+      title: "Warn when a Claude Agent SDK tool has no rate-limit budget or throttle policy",
+      effect: "WARN",
+      domains: ["limits", "tool-calls"],
+      connectors: ["claude-agent-sdk"],
+      actions: ["tool.call", "tool.invoke", "tool.rate_limit_unset"],
+      immutable: false,
+    },
+    {
+      stableRuleId: "claude-agent-sdk.data.warn_sensitivity_unclassified",
+      title:
+        "Warn when Claude Agent SDK tool input or output lacks a data sensitivity classification",
+      effect: "WARN",
+      domains: ["data", "tool-calls"],
+      connectors: ["claude-agent-sdk"],
+      actions: ["tool.call", "tool.output", "data.unclassified"],
+      immutable: false,
+    },
+    {
+      stableRuleId: "claude-agent-sdk.provenance.warn_gap",
+      title: "Warn on Claude Agent SDK tool events whose policy context cannot be resolved",
+      effect: "WARN",
+      domains: ["provenance", "tool-calls"],
+      connectors: ["claude-agent-sdk"],
+      actions: ["tool.call", "tool.invoke", "session.turn"],
+      immutable: false,
+    },
   ],
 };

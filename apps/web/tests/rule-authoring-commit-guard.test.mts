@@ -5,7 +5,11 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("@/lib/repositories/shared/database", () => ({ isDatabaseConfigured: () => true }));
 
 vi.mock("@/lib/workspace", () => ({
-  getWorkspaceContext: vi.fn(async () => ({ tenantId: "tenant-1", workspaceId: "ws-1", workspaceSlug: "default" })),
+  getWorkspaceContext: vi.fn(async () => ({
+    tenantId: "tenant-1",
+    workspaceId: "ws-1",
+    workspaceSlug: "default",
+  })),
 }));
 
 const getBranchForRollback = vi.fn();
@@ -19,12 +23,22 @@ vi.mock("@/lib/repositories/policy", () => ({
 
 vi.mock("@/lib/actors", () => ({ getActiveActor: vi.fn(), requireActorAdminWorkspace: vi.fn() }));
 vi.mock("@/lib/repositories/shared/rules", () => ({ listRulesForRevision: vi.fn(async () => []) }));
-vi.mock("@/lib/repositories/workspace", () => ({ insertAuthorizationDenialEvent: vi.fn(async () => undefined) }));
+vi.mock("@/lib/repositories/workspace", () => ({
+  insertAuthorizationDenialEvent: vi.fn(async () => undefined),
+}));
 
 const { commitRuleRevisionDecision } = await import("../lib/domains/review/rule-authoring");
 
 const VALID_PAYLOAD = JSON.stringify([
-  { stableRuleId: "org.rule", title: "Rule", effect: "WARN", domains: [], connectors: [], actions: [], immutable: false },
+  {
+    stableRuleId: "org.rule",
+    title: "Rule",
+    effect: "WARN",
+    domains: [],
+    connectors: [],
+    actions: [],
+    immutable: false,
+  },
 ]);
 
 describe("commitRuleRevisionDecision — branch/parent lineage guard", () => {

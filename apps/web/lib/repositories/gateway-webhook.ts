@@ -30,7 +30,7 @@ function generateWebhookSecret(): string {
 
 /** Look up a registration by the raw secret value. Returns null on miss or revoked. */
 export async function resolveWebhookRegistrationBySecret(
-  secret: string
+  secret: string,
 ): Promise<ResolvedWebhookAuth | null> {
   const db = rawSql ?? sql;
   if (!db || !secret) return null;

@@ -6,15 +6,10 @@ import { revalidatePaths } from "@/lib/platform/cache";
 import { getActiveScope, getWorkspaceContext } from "@/lib/workspace";
 import { verifyWriteAccess } from "@/lib/demo-guard";
 
-export type ApprovalState =
-  | { ok: true; error?: never }
-  | { ok?: never; error: string }
-  | null;
+export type ApprovalState = { ok: true; error?: never } | { ok?: never; error: string } | null;
 
 export type PublishState =
-  | { artifactHash: string; error?: never }
-  | { error: string; artifactHash?: never }
-  | null;
+  { artifactHash: string; error?: never } | { error: string; artifactHash?: never } | null;
 
 export type RollbackState =
   | { artifactHash: string; revisionId: string; error?: never }
@@ -23,7 +18,7 @@ export type RollbackState =
 
 export async function addApproval(
   _prev: ApprovalState,
-  formData: FormData
+  formData: FormData,
 ): Promise<ApprovalState> {
   const context = await getWorkspaceContext();
   const writeCheck = verifyWriteAccess(context.tenantId);
@@ -34,12 +29,10 @@ export async function addApproval(
   const approvalStatus = formData.get("approvalStatus") as string;
   const note = (formData.get("note") as string | null) || null;
 
-  const result = await addApprovalDecision({
-    revisionId,
-    role,
-    approvalStatus,
-    note,
-  }, await getActiveScope());
+  const result = await addApprovalDecision(
+    { revisionId, role, approvalStatus, note },
+    await getActiveScope(),
+  );
   if ("error" in result) {
     return result;
   }
@@ -50,7 +43,7 @@ export async function addApproval(
 
 export async function rollbackBranch(
   _prev: RollbackState,
-  formData: FormData
+  formData: FormData,
 ): Promise<RollbackState> {
   const context = await getWorkspaceContext();
   const writeCheck = verifyWriteAccess(context.tenantId);
@@ -59,10 +52,7 @@ export async function rollbackBranch(
   const branchId = formData.get("branchId") as string;
   const targetRevisionId = formData.get("targetRevisionId") as string;
 
-  const result = await rollbackBranchDecision({
-    branchId,
-    targetRevisionId,
-  });
+  const result = await rollbackBranchDecision({ branchId, targetRevisionId });
   if ("error" in result) {
     return result;
   }
@@ -73,7 +63,7 @@ export async function rollbackBranch(
 
 export async function publishRevision(
   _prev: PublishState,
-  formData: FormData
+  formData: FormData,
 ): Promise<PublishState> {
   const context = await getWorkspaceContext();
   const writeCheck = verifyWriteAccess(context.tenantId);

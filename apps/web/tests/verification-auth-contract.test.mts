@@ -6,25 +6,18 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 // workspace context. Adopting the shared resolveRouteScope helper must not
 // change either. See apps/web/app/api/_route-scope.ts (contextUnavailableStatus).
 
-const {
-  getActiveScopeSpy,
-  getAuthSessionSpy,
-  incrementCounterSpy,
-  recordDurationSpy,
-} = vi.hoisted(() => ({
-  getActiveScopeSpy: vi.fn(),
-  getAuthSessionSpy: vi.fn(),
-  incrementCounterSpy: vi.fn(),
-  recordDurationSpy: vi.fn(),
-}));
+const { getActiveScopeSpy, getAuthSessionSpy, incrementCounterSpy, recordDurationSpy } = vi.hoisted(
+  () => ({
+    getActiveScopeSpy: vi.fn(),
+    getAuthSessionSpy: vi.fn(),
+    incrementCounterSpy: vi.fn(),
+    recordDurationSpy: vi.fn(),
+  }),
+);
 
-vi.mock("@/lib/auth-session", () => ({
-  getAuthSession: getAuthSessionSpy,
-}));
+vi.mock("@/lib/auth-session", () => ({ getAuthSession: getAuthSessionSpy }));
 
-vi.mock("@/lib/workspace", () => ({
-  getActiveScope: getActiveScopeSpy,
-}));
+vi.mock("@/lib/workspace", () => ({ getActiveScope: getActiveScopeSpy }));
 
 vi.mock("@/lib/service-tokens", () => ({
   authenticateServiceToken: vi.fn(),
@@ -47,7 +40,8 @@ vi.mock("@/lib/domains/verification/service", () => ({
   recordVerificationOperation: vi.fn(),
 }));
 
-const { POST: verificationPost, GET: verificationGet } = await import("../app/api/verification/route");
+const { POST: verificationPost, GET: verificationGet } =
+  await import("../app/api/verification/route");
 
 function session() {
   return { principalId: "principal-1", tenantId: "tenant-1" };
@@ -66,17 +60,22 @@ describe("/api/verification auth contract", () => {
     getActiveScopeSpy.mockResolvedValueOnce(null);
 
     const response = await verificationPost(
-      new Request("http://localhost:3000/api/verification", { method: "POST" })
+      new Request("http://localhost:3000/api/verification", { method: "POST" }),
     );
 
     expect(response.status).toBe(401);
-    await expect(response.json()).resolves.toMatchObject({ error: "Workspace context unavailable." });
+    await expect(response.json()).resolves.toMatchObject({
+      error: "Workspace context unavailable.",
+    });
 
     // The emitted error metric must stay labelled 401 for this case.
     expect(incrementCounterSpy).toHaveBeenCalledWith(
       "spctre.api.errors",
       1,
-      expect.objectContaining({ "http.route": "/api/verification", "http.response.status_code": 401 })
+      expect.objectContaining({
+        "http.route": "/api/verification",
+        "http.response.status_code": 401,
+      }),
     );
   });
 
@@ -87,6 +86,8 @@ describe("/api/verification auth contract", () => {
     const response = await verificationGet(new Request("http://localhost:3000/api/verification"));
 
     expect(response.status).toBe(400);
-    await expect(response.json()).resolves.toMatchObject({ error: "Workspace context unavailable." });
+    await expect(response.json()).resolves.toMatchObject({
+      error: "Workspace context unavailable.",
+    });
   });
 });

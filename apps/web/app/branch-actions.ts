@@ -12,7 +12,7 @@ export type DeleteBranchState = { error: string } | { success: true } | null;
 
 export async function deleteBranchAdmin(
   _prevState: DeleteBranchState,
-  formData: FormData
+  formData: FormData,
 ): Promise<DeleteBranchState> {
   const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (!session) return { error: "Authentication required." };
@@ -21,10 +21,9 @@ export async function deleteBranchAdmin(
   const writeCheck = verifyWriteAccess(tenantId);
   if (!writeCheck.allowed) return { error: writeCheck.error || "Write access denied." };
 
-  const actor = await findActorById(session.principalId, {
-    tenantId,
-    workspaceId
-  }).catch(swallow("findActorById", null));
+  const actor = await findActorById(session.principalId, { tenantId, workspaceId }).catch(
+    swallow("findActorById", null),
+  );
   if (!actor?.reviewerRoles.includes("Admin")) {
     return { error: "Admin permission required." };
   }
@@ -34,11 +33,7 @@ export async function deleteBranchAdmin(
 
   if (!branchId) return { error: "Branch ID is required." };
 
-  const deleteResult = await deleteUnpublishedBranchDecision({
-    tenantId,
-    branchId,
-    confirmation,
-  });
+  const deleteResult = await deleteUnpublishedBranchDecision({ tenantId, branchId, confirmation });
   if ("error" in deleteResult) return deleteResult;
 
   revalidatePath("/");

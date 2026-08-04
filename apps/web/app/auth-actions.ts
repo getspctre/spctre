@@ -17,21 +17,15 @@ import {
   createAuthSession,
   getAuthSession,
   revokeAuthSession,
-  sessionTtlHours
+  sessionTtlHours,
 } from "@/lib/auth-session";
 import { createSessionGuardToken, SESSION_GUARD_COOKIE } from "@/lib/session-guard";
 import { isConfiguredUserLoginEnabled } from "@/lib/auth-login-modes";
 import { swallow } from "@/lib/platform/swallow";
 
-export type LoginState =
-  | { error: string; ok?: never }
-  | { ok: true; error?: never }
-  | null;
+export type LoginState = { error: string; ok?: never } | { ok: true; error?: never } | null;
 
-type MfaVerifyState =
-  | { error: string; ok?: never }
-  | { ok: true; error?: never }
-  | null;
+type MfaVerifyState = { error: string; ok?: never } | { ok: true; error?: never } | null;
 
 export async function launchDemoCloud(): Promise<void> {
   const bootstrap = await bootstrapDemoTenant();
@@ -55,7 +49,7 @@ export async function launchDemoCloud(): Promise<void> {
     authMethod: "SESSION",
     mfaVerifiedAt: new Date().toISOString(),
     userAgent,
-    ipAddress
+    ipAddress,
   });
   const ttlSeconds = sessionTtlHours() * 60 * 60;
   const guardToken = await createSessionGuardToken({
@@ -64,7 +58,7 @@ export async function launchDemoCloud(): Promise<void> {
     pid: principal.id,
     sub: principal.subject,
     mfaVerified: true,
-    ttlSeconds
+    ttlSeconds,
   });
 
   const cookieStore = await cookies();
@@ -73,26 +67,26 @@ export async function launchDemoCloud(): Promise<void> {
     sameSite: "lax",
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    maxAge: ttlSeconds
+    maxAge: ttlSeconds,
   });
   cookieStore.set(SESSION_GUARD_COOKIE, guardToken, {
     path: "/",
     sameSite: "lax",
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    maxAge: ttlSeconds
+    maxAge: ttlSeconds,
   });
   cookieStore.set(ACTIVE_TENANT_COOKIE, DEMO_TENANT_ID, {
     path: "/",
     sameSite: "lax",
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production"
+    secure: process.env.NODE_ENV === "production",
   });
   cookieStore.set(ACTIVE_WORKSPACE_COOKIE, DEMO_WORKSPACE_ID, {
     path: "/",
     sameSite: "lax",
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production"
+    secure: process.env.NODE_ENV === "production",
   });
 
   redirect("/");
@@ -100,7 +94,7 @@ export async function launchDemoCloud(): Promise<void> {
 
 export async function loginWithPrincipal(
   _prev: LoginState,
-  formData: FormData
+  formData: FormData,
 ): Promise<LoginState> {
   if (!isConfiguredUserLoginEnabled()) {
     return { error: "Configured-user login is disabled." };
@@ -130,7 +124,7 @@ export async function loginWithPrincipal(
     authMethod: "SESSION",
     mfaVerifiedAt: principal.require_mfa ? null : new Date().toISOString(),
     userAgent,
-    ipAddress
+    ipAddress,
   });
   const ttlSeconds = sessionTtlHours() * 60 * 60;
   const guardToken = await createSessionGuardToken({
@@ -139,7 +133,7 @@ export async function loginWithPrincipal(
     pid: principal.id,
     sub: principal.subject,
     mfaVerified: !principal.require_mfa,
-    ttlSeconds
+    ttlSeconds,
   });
 
   const cookieStore = await cookies();
@@ -148,14 +142,14 @@ export async function loginWithPrincipal(
     sameSite: "lax",
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    maxAge: ttlSeconds
+    maxAge: ttlSeconds,
   });
   cookieStore.set(SESSION_GUARD_COOKIE, guardToken, {
     path: "/",
     sameSite: "lax",
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    maxAge: ttlSeconds
+    maxAge: ttlSeconds,
   });
 
   const workspaceId = await getPrimaryWorkspaceId(principal.tenant_id);
@@ -164,13 +158,13 @@ export async function loginWithPrincipal(
     path: "/",
     sameSite: "lax",
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production"
+    secure: process.env.NODE_ENV === "production",
   });
   cookieStore.set(ACTIVE_WORKSPACE_COOKIE, workspaceId ?? "", {
     path: "/",
     sameSite: "lax",
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production"
+    secure: process.env.NODE_ENV === "production",
   });
 
   if (workspaceId) {
@@ -194,10 +188,7 @@ export async function loginWithPrincipalForm(formData: FormData): Promise<void> 
   await loginWithPrincipal(null, formData);
 }
 
-async function verifyMfaLogin(
-  _prev: MfaVerifyState,
-  formData: FormData
-): Promise<MfaVerifyState> {
+async function verifyMfaLogin(_prev: MfaVerifyState, formData: FormData): Promise<MfaVerifyState> {
   const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (!session) return { error: "Sign in before verifying MFA." };
   if (!session.requireMfa) return { ok: true };
@@ -206,7 +197,9 @@ async function verifyMfaLogin(
   const code = String(formData.get("code") ?? "").trim();
   const next = String(formData.get("next") ?? "").trim();
   const redirectTarget = next && next.startsWith("/") && !next.startsWith("//") ? next : "/";
-  const rawMethod = String(formData.get("method") ?? "").trim().toLowerCase();
+  const rawMethod = String(formData.get("method") ?? "")
+    .trim()
+    .toLowerCase();
   const factor: "totp" | "sms" | null =
     rawMethod === "totp" ? "totp" : rawMethod === "sms" ? "sms" : null;
 
@@ -229,7 +222,7 @@ async function verifyMfaLogin(
     pid: session.principalId,
     sub: session.subject,
     mfaVerified: true,
-    ttlSeconds
+    ttlSeconds,
   });
 
   const cookieStore = await cookies();
@@ -238,7 +231,7 @@ async function verifyMfaLogin(
     sameSite: "lax",
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    maxAge: ttlSeconds
+    maxAge: ttlSeconds,
   });
 
   redirect(redirectTarget);
@@ -251,7 +244,9 @@ export async function verifyMfaLoginForm(formData: FormData): Promise<void> {
 export async function logoutControlPlane() {
   const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (session?.sessionId) {
-    await revokeAuthSession(session.sessionId, session.tenantId).catch(swallow("revokeAuthSession", undefined));
+    await revokeAuthSession(session.sessionId, session.tenantId).catch(
+      swallow("revokeAuthSession", undefined),
+    );
   }
 
   const cookieStore = await cookies();
@@ -262,7 +257,7 @@ export async function logoutControlPlane() {
     path: "/",
     sameSite: "lax",
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production"
+    secure: process.env.NODE_ENV === "production",
   });
 
   redirect("/login");

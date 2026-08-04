@@ -31,9 +31,11 @@ async function detectLocalePreferenceColumns(): Promise<LocalePreferenceColumns>
 
   columnCache = {
     principalPreferredLocale: rows.some(
-      (row) => row.table_name === "app_principal" && row.column_name === "preferred_locale"
+      (row) => row.table_name === "app_principal" && row.column_name === "preferred_locale",
     ),
-    tenantDefaultLocale: rows.some((row) => row.table_name === "tenant" && row.column_name === "default_locale"),
+    tenantDefaultLocale: rows.some(
+      (row) => row.table_name === "tenant" && row.column_name === "default_locale",
+    ),
   };
   return columnCache;
 }

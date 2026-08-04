@@ -31,7 +31,7 @@ export function EvidenceOverview({
   warnCount,
   allowCount,
   shownCount,
-  usingDb
+  usingDb,
 }: {
   evidenceCount: number;
   filteredCount: number;
@@ -67,7 +67,9 @@ export function EvidenceOverview({
         </div>
         <div>
           <span className="meta">{t("stats.statuses")}</span>
-          <strong>{denyCount} / {warnCount} / {allowCount}</strong>
+          <strong>
+            {denyCount} / {warnCount} / {allowCount}
+          </strong>
         </div>
       </div>
     </section>
@@ -88,7 +90,16 @@ export function EvidenceStreamSection({
   workspaceSlug?: string;
 }) {
   const t = useTranslations("evidence.stream");
-  const { evidence, nextCursor, prevCursor, hasNext, hasPrev, totalEvidenceCount, usingDb, controlMappingIndex } = model;
+  const {
+    evidence,
+    nextCursor,
+    prevCursor,
+    hasNext,
+    hasPrev,
+    totalEvidenceCount,
+    usingDb,
+    controlMappingIndex,
+  } = model;
   const showPagination = usingDb && (hasPrev || hasNext);
 
   return (
@@ -102,7 +113,10 @@ export function EvidenceStreamSection({
           </h2>
           {usingDb ? (
             <p className="meta">
-              {t("showing", { shown: evidence.length.toLocaleString(), total: totalEvidenceCount.toLocaleString() })}
+              {t("showing", {
+                shown: evidence.length.toLocaleString(),
+                total: totalEvidenceCount.toLocaleString(),
+              })}
             </p>
           ) : null}
         </div>
@@ -127,21 +141,28 @@ export function EvidenceStreamSection({
         <div className="demoEvidenceBanner">
           <div>
             <p className="eyebrow">{t("demo.eyebrow")}</p>
-            <p className="meta">
-              {t("demo.description")}
-            </p>
+            <p className="meta">{t("demo.description")}</p>
           </div>
           <div className="toolbar">
             <a className="button buttonSmall" href={workspaceSlug ? `/${workspaceSlug}` : "/"}>
               {t("demo.quick_start")}
             </a>
-            <a className="button buttonSmall" href={workspaceSlug ? `/${workspaceSlug}/agents` : "/agents"}>
+            <a
+              className="button buttonSmall"
+              href={workspaceSlug ? `/${workspaceSlug}/agents` : "/agents"}
+            >
               {t("demo.cli_setup")}
             </a>
           </div>
         </div>
       ) : null}
-      <EvidenceTable evidence={evidence} viewMode={viewMode} highlightId={highlightId} workspaceSlug={workspaceSlug} controlMappingIndex={controlMappingIndex} />
+      <EvidenceTable
+        evidence={evidence}
+        viewMode={viewMode}
+        highlightId={highlightId}
+        workspaceSlug={workspaceSlug}
+        controlMappingIndex={controlMappingIndex}
+      />
       {showPagination ? (
         <div className="paginationFooter">
           {hasPrev ? (
@@ -169,7 +190,7 @@ export function RuleAnalysisSection({
   frictionHref,
   maxDeny,
   unusedHref,
-  viewMode
+  viewMode,
 }: Pick<EvidencePageModel, "activeHeatmap" | "activeUnused" | "maxDeny"> & {
   activeTab: "friction" | "unused";
   frictionHref: string;
@@ -203,7 +224,7 @@ export function RuleAnalysisSection({
 }
 
 export function IntentAnalysisSection({
-  intentRiskPatterns
+  intentRiskPatterns,
 }: Pick<EvidencePageModel, "intentRiskPatterns">) {
   const t = useTranslations("evidence.intent_patterns");
 
@@ -225,9 +246,14 @@ export function IntentAnalysisSection({
           const pct = (count / intentRiskPatterns[0].count) * 100;
           return (
             <div className="connectorImpactRow" key={intent}>
-              <span className="ruleRef" style={{ flex: 1 }}>{intent}</span>
+              <span className="ruleRef" style={{ flex: 1 }}>
+                {intent}
+              </span>
               <div className="connectorImpactTrack" style={{ flex: 2 }}>
-                <div className="connectorImpactBar" style={{ width: `${pct}%`, backgroundColor: "var(--brand-warn)" }} />
+                <div
+                  className="connectorImpactBar"
+                  style={{ width: `${pct}%`, backgroundColor: "var(--brand-warn)" }}
+                />
               </div>
               <span className="meta" style={{ width: 80, textAlign: "right" }}>
                 {t("flags", { count })}

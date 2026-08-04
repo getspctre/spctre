@@ -53,7 +53,7 @@ export async function createWorkspaceAdmin(formData: FormData): Promise<void> {
 
 export async function updateWorkspaceAdmin(
   _state: { error: string } | null,
-  formData: FormData
+  formData: FormData,
 ): Promise<{ error: string } | null> {
   const guard = await requireAdminSession();
   if ("error" in guard) {
@@ -91,16 +91,14 @@ export async function setTenantDefaultLocaleAdmin(formData: FormData): Promise<v
   }
   const locale = normalizeLocale(localeInput);
 
-  const result = await setTenantDefaultLocale({
-    tenantId: guard.session.tenantId,
-    locale,
-  });
+  const result = await setTenantDefaultLocale({ tenantId: guard.session.tenantId, locale });
 
   if (result !== "updated") {
     redirect(
       adminWorkspaceUrl({
-        errorCode: result === "column-unavailable" ? "locale_storage_unavailable" : "database_unconfigured",
-      })
+        errorCode:
+          result === "column-unavailable" ? "locale_storage_unavailable" : "database_unconfigured",
+      }),
     );
   }
 
@@ -115,7 +113,9 @@ export async function deleteWorkspaceAdmin(formData: FormData): Promise<void> {
   }
 
   const workspaceId = String(formData.get("workspaceId") ?? "").trim();
-  const confirm = String(formData.get("confirm") ?? "").trim().toUpperCase();
+  const confirm = String(formData.get("confirm") ?? "")
+    .trim()
+    .toUpperCase();
 
   if (confirm !== "DELETE") {
     redirect(adminWorkspaceUrl({ errorCode: "delete_confirm" }));
@@ -139,7 +139,7 @@ export async function deleteWorkspaceAdmin(formData: FormData): Promise<void> {
       path: "/",
       sameSite: "lax",
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production"
+      secure: process.env.NODE_ENV === "production",
     });
   }
 

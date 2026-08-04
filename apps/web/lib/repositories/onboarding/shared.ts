@@ -30,8 +30,9 @@ export type WebOnboardingMilestone = (typeof WEB_ONBOARDING_MILESTONES)[number];
 
 type WebOnboardingMilestoneMap = Record<WebOnboardingMilestone, boolean>;
 
-const EMPTY_WEB_ONBOARDING_MILESTONES: WebOnboardingMilestoneMap =
-  Object.fromEntries(WEB_ONBOARDING_MILESTONES.map((milestone) => [milestone, false])) as WebOnboardingMilestoneMap;
+const EMPTY_WEB_ONBOARDING_MILESTONES: WebOnboardingMilestoneMap = Object.fromEntries(
+  WEB_ONBOARDING_MILESTONES.map((milestone) => [milestone, false]),
+) as WebOnboardingMilestoneMap;
 
 export const STARTER_POLICY_RULES = [
   {
@@ -43,7 +44,7 @@ export const STARTER_POLICY_RULES = [
     domains: ["operations"],
     connectors: ["system"],
     actions: ["heartbeat"],
-    immutable: false
+    immutable: false,
   },
   {
     stableRuleId: "sample.event.allow",
@@ -54,7 +55,7 @@ export const STARTER_POLICY_RULES = [
     domains: ["onboarding"],
     connectors: ["sample"],
     actions: ["event.register"],
-    immutable: false
+    immutable: false,
   },
   {
     stableRuleId: "sample.payment.block",
@@ -65,8 +66,8 @@ export const STARTER_POLICY_RULES = [
     domains: ["finance"],
     connectors: ["sample"],
     actions: ["payment.create"],
-    immutable: false
-  }
+    immutable: false,
+  },
 ] as const;
 
 export function slugifyWorkspace(input: string) {
@@ -100,7 +101,7 @@ export async function ensureStarterPublishedBundle(params: {
     return {
       branchId: existing.branchId,
       revisionId: existing.revisionId,
-      artifactHash: existing.artifactHash
+      artifactHash: existing.artifactHash,
     };
   }
 
@@ -109,13 +110,10 @@ export async function ensureStarterPublishedBundle(params: {
   const branchId = randomUUID();
   const revisionId = randomUUID();
   const rules = STARTER_POLICY_RULES;
-  const sourceDocument = {
-    kind: "spctre.starter_policy",
-    rules
-  };
+  const sourceDocument = { kind: "spctre.starter_policy", rules };
   const sourceHash = computeShortHash(JSON.stringify(sourceDocument));
   const artifactHash = computeShortHash(
-    `${params.tenantId}:${params.workspaceId}:${revisionId}:starter`
+    `${params.tenantId}:${params.workspaceId}:${revisionId}:starter`,
   );
 
   await sql.begin(async (tx) => {
@@ -155,7 +153,7 @@ export async function ensureStarterPublishedBundle(params: {
           domains: rule.domains,
           connectors: rule.connectors,
           actions: rule.actions,
-          immutable: rule.immutable
+          immutable: rule.immutable,
         })),
         "tenant_id",
         "workspace_id",
@@ -168,7 +166,7 @@ export async function ensureStarterPublishedBundle(params: {
         "domains",
         "connectors",
         "actions",
-        "immutable"
+        "immutable",
       )}
     `;
 
@@ -193,12 +191,7 @@ export async function ensureStarterPublishedBundle(params: {
     tenantId: params.tenantId,
     workspaceId: params.workspaceId,
     milestone: "starter_policy_published",
-    metadata: {
-      source: "starter_bundle",
-      branchId,
-      revisionId,
-      artifactHash,
-    },
+    metadata: { source: "starter_bundle", branchId, revisionId, artifactHash },
   });
 
   return { branchId, revisionId, artifactHash };
@@ -225,7 +218,9 @@ export async function recordWebOnboardingMilestone(params: {
         metadata = web_onboarding_milestone.metadata || EXCLUDED.metadata
     `;
   } catch (err) {
-    logger.warn("[web-onboarding] milestone persistence failed", { error: err instanceof Error ? err.message : String(err) });
+    logger.warn("[web-onboarding] milestone persistence failed", {
+      error: err instanceof Error ? err.message : String(err),
+    });
   }
 }
 
@@ -257,11 +252,7 @@ export interface WebOnboardingStatus {
   setupTokenExists: boolean;
   setupTokenPrefix: string | null;
   milestones: WebOnboardingMilestoneMap;
-  publishedBundle: {
-    branchId: string;
-    revisionId: string;
-    artifactHash: string;
-  } | null;
+  publishedBundle: { branchId: string; revisionId: string; artifactHash: string } | null;
 }
 
 // Record any milestones that the observed workspace state implies but that
@@ -275,58 +266,70 @@ async function reconcileWebOnboardingMilestones(
     gatewayDecisionCount: number;
     realEvidenceCount: number;
     latestRealEvidenceId: string | null;
-  }
+  },
 ): Promise<void> {
   const scope = { tenantId: params.tenantId, workspaceId: params.workspaceId };
   const tasks: Promise<unknown>[] = [];
 
   if (observed.publishedBundle) {
-    tasks.push(recordWebOnboardingMilestone({
-      ...scope,
-      milestone: "starter_policy_published",
-      metadata: {
-        source: "status_reconciliation",
-        branchId: observed.publishedBundle.branchId,
-        revisionId: observed.publishedBundle.revisionId,
-        artifactHash: observed.publishedBundle.artifactHash,
-      },
-    }));
+    tasks.push(
+      recordWebOnboardingMilestone({
+        ...scope,
+        milestone: "starter_policy_published",
+        metadata: {
+          source: "status_reconciliation",
+          branchId: observed.publishedBundle.branchId,
+          revisionId: observed.publishedBundle.revisionId,
+          artifactHash: observed.publishedBundle.artifactHash,
+        },
+      }),
+    );
   }
   if (observed.quickStartEvidenceCount > 0) {
-    tasks.push(recordWebOnboardingMilestone({
-      ...scope,
-      milestone: "sample_decision_sent",
-      metadata: { source: "status_reconciliation" },
-    }));
+    tasks.push(
+      recordWebOnboardingMilestone({
+        ...scope,
+        milestone: "sample_decision_sent",
+        metadata: { source: "status_reconciliation" },
+      }),
+    );
   }
   if (observed.setupToken) {
-    tasks.push(recordWebOnboardingMilestone({
-      ...scope,
-      milestone: "setup_token_generated",
-      metadata: { source: "status_reconciliation", tokenPrefix: observed.setupToken.tokenPrefix },
-    }));
+    tasks.push(
+      recordWebOnboardingMilestone({
+        ...scope,
+        milestone: "setup_token_generated",
+        metadata: { source: "status_reconciliation", tokenPrefix: observed.setupToken.tokenPrefix },
+      }),
+    );
   }
   if (observed.gatewayDecisionCount > 0) {
-    tasks.push(recordWebOnboardingMilestone({
-      ...scope,
-      milestone: "gateway_test_sent",
-      metadata: { source: "status_reconciliation" },
-    }));
+    tasks.push(
+      recordWebOnboardingMilestone({
+        ...scope,
+        milestone: "gateway_test_sent",
+        metadata: { source: "status_reconciliation" },
+      }),
+    );
   }
   if (observed.realEvidenceCount > 0) {
-    tasks.push(recordWebOnboardingMilestone({
-      ...scope,
-      milestone: "first_real_evidence_received",
-      metadata: {
-        source: "status_reconciliation",
-        latestDecisionId: observed.latestRealEvidenceId,
-      },
-    }));
-    tasks.push(recordWebOnboardingMilestone({
-      ...scope,
-      milestone: "onboarding_completed",
-      metadata: { source: "status_reconciliation" },
-    }));
+    tasks.push(
+      recordWebOnboardingMilestone({
+        ...scope,
+        milestone: "first_real_evidence_received",
+        metadata: {
+          source: "status_reconciliation",
+          latestDecisionId: observed.latestRealEvidenceId,
+        },
+      }),
+    );
+    tasks.push(
+      recordWebOnboardingMilestone({
+        ...scope,
+        milestone: "onboarding_completed",
+        metadata: { source: "status_reconciliation" },
+      }),
+    );
   }
 
   await Promise.all(tasks);
@@ -376,8 +379,12 @@ export async function getWebOnboardingStatus(params: {
       WHERE tenant_id = ${params.tenantId}
         AND workspace_id = ${params.workspaceId}
     `.catch(swallow("sql", [{ gateway_count: "0" }])),
-    listActiveApiKeys(params.tenantId, params.workspaceId).catch(swallow("listActiveApiKeys", null)),
-    getLatestPublishedBundle(params.workspaceId, params.tenantId).catch(swallow("getLatestPublishedBundle", null)),
+    listActiveApiKeys(params.tenantId, params.workspaceId).catch(
+      swallow("listActiveApiKeys", null),
+    ),
+    getLatestPublishedBundle(params.workspaceId, params.tenantId).catch(
+      swallow("getLatestPublishedBundle", null),
+    ),
   ]);
 
   const setupToken = keys?.find((key) => key.label === WEB_ONBOARDING_TOKEN_LABEL) ?? null;

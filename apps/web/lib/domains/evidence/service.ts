@@ -54,7 +54,9 @@ import { swallow } from "@/lib/platform/swallow";
 export type { SimulationRunSummary } from "@/lib/repositories/evidence";
 export type { RuleHeatEntry, UnusedRule } from "@/lib/repositories/policy";
 
-export async function queryForensicEvidence(params: Parameters<typeof queryForensicEvidenceInTenant>[0]) {
+export async function queryForensicEvidence(
+  params: Parameters<typeof queryForensicEvidenceInTenant>[0],
+) {
   return runWithTenantContext(params.tenantId, () => queryForensicEvidenceInTenant(params));
 }
 
@@ -120,10 +122,12 @@ export async function getEvidencePageModel({
 
   let evidence = fallback.evidence;
   let degraded = false;
-  const degrade = <T,>(op: string, value: T) => (error: unknown): T => {
-    degraded = true;
-    return swallow(op, value)(error);
-  };
+  const degrade =
+    <T>(op: string, value: T) =>
+    (error: unknown): T => {
+      degraded = true;
+      return swallow(op, value)(error);
+    };
   let totalEvidenceCount = evidence.length;
   let usingDb = false;
   let nextCursor: string | null = null;
@@ -135,9 +139,9 @@ export async function getEvidencePageModel({
     Promise.all([
       listRuntimeEvidenceKeyset(workspaceId, tenantId, pageSize, decodedCursor),
       evidenceCountCache.get(`${tenantId}:${workspaceId}`, () =>
-        countRuntimeEvidence(workspaceId, tenantId)
+        countRuntimeEvidence(workspaceId, tenantId),
       ),
-    ])
+    ]),
   ).catch(degrade("runWithTenantContext", null));
 
   if (dbResult) {
@@ -158,8 +162,10 @@ export async function getEvidencePageModel({
     Promise.all([
       getHighFrictionRules(8, workspaceId, tenantId).catch(degrade("getHighFrictionRules", null)),
       getUnusedActiveRules(workspaceId, tenantId).catch(degrade("getUnusedActiveRules", null)),
-      getLatestPublishedBundle(workspaceId, tenantId).catch(degrade("getLatestPublishedBundle", null)),
-    ])
+      getLatestPublishedBundle(workspaceId, tenantId).catch(
+        degrade("getLatestPublishedBundle", null),
+      ),
+    ]),
   );
   const controlMappingIndex = buildRuleControlMappingIndex(publishedBundle?.bundle.rules ?? []);
 
@@ -224,24 +230,35 @@ export async function getSimulationPageModel({
   const { tenantId, workspaceId } = workspaceContext;
   const fallback = getEvidenceDemoFallbackData(tenantId);
 
-  const savedRun = simRunId && isSimulationRunId(simRunId)
-    ? await runWithTenantContext(tenantId, () =>
-      getSimulationRunReview({ tenantId, workspaceId, simulationRunId: simRunId }).catch(swallow("getSimulationRunReview", null))
-    )
-    : null;
+  const savedRun =
+    simRunId && isSimulationRunId(simRunId)
+      ? await runWithTenantContext(tenantId, () =>
+          getSimulationRunReview({ tenantId, workspaceId, simulationRunId: simRunId }).catch(
+            swallow("getSimulationRunReview", null),
+          ),
+        )
+      : null;
 
-  const [generatedSimulationRun, heatmap, branches, simulationHistory] = await runWithTenantContext(tenantId, () =>
-    Promise.all([
-      savedRun ? Promise.resolve(null) : getEvidenceSimulationRun(simBranchId, simRevisionId, workspaceId, tenantId, "system", { allowBulk: false }).catch(swallow("getEvidenceSimulationRun", null)),
-      getHighFrictionRules(8, workspaceId, tenantId).catch(swallow("getHighFrictionRules", null)),
-      listBranches(workspaceId, tenantId).catch(swallow("listBranches", [])),
-      listSimulationRuns(workspaceId, tenantId).catch(swallow("listSimulationRuns", null)),
-    ])
+  const [generatedSimulationRun, heatmap, branches, simulationHistory] = await runWithTenantContext(
+    tenantId,
+    () =>
+      Promise.all([
+        savedRun
+          ? Promise.resolve(null)
+          : getEvidenceSimulationRun(simBranchId, simRevisionId, workspaceId, tenantId, "system", {
+              allowBulk: false,
+            }).catch(swallow("getEvidenceSimulationRun", null)),
+        getHighFrictionRules(8, workspaceId, tenantId).catch(swallow("getHighFrictionRules", null)),
+        listBranches(workspaceId, tenantId).catch(swallow("listBranches", [])),
+        listSimulationRuns(workspaceId, tenantId).catch(swallow("listSimulationRuns", null)),
+      ]),
   );
 
   return {
     workspaceContext,
-    activeSimulationRun: savedRun ? simulationRunFromReview(savedRun) : generatedSimulationRun ?? fallback.simulationRun ?? emptySimulationRun(),
+    activeSimulationRun: savedRun
+      ? simulationRunFromReview(savedRun)
+      : (generatedSimulationRun ?? fallback.simulationRun ?? emptySimulationRun()),
     branches,
     simulationHistory,
     activeHeatmap: heatmap ?? fallback.heatmap,
@@ -252,7 +269,9 @@ function isSimulationRunId(value: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 }
 
-function simulationRunFromReview(review: NonNullable<Awaited<ReturnType<typeof getSimulationRunReview>>>): SimulationRun {
+function simulationRunFromReview(
+  review: NonNullable<Awaited<ReturnType<typeof getSimulationRunReview>>>,
+): SimulationRun {
   return {
     id: review.id,
     branchId: review.branchId,
@@ -286,17 +305,13 @@ export async function getAgtVerificationExportInputs(params: {
 
   const escalations = await listResolvedEscalationsForRevision(
     published.revisionId,
-    params.tenantId
-  ).catch(swallow("listResolvedEscalationsForRevision", []));
-  const verificationResults = await listVerificationResults(
-    params.workspaceId,
     params.tenantId,
-    {
-      revisionId: published.revisionId,
-      artifactHash: published.artifactHash,
-      limit: 25,
-    }
-  ).catch(swallow("listVerificationResults", []));
+  ).catch(swallow("listResolvedEscalationsForRevision", []));
+  const verificationResults = await listVerificationResults(params.workspaceId, params.tenantId, {
+    revisionId: published.revisionId,
+    artifactHash: published.artifactHash,
+    limit: 25,
+  }).catch(swallow("listVerificationResults", []));
 
   return { published, escalations, verificationResults };
 }
@@ -310,7 +325,15 @@ export async function getGatewayOutcomeMapForEvidence(params: {
 }
 
 export type RunSimulationResult =
-  | { newlyDenied: number; newlyAllowed: number; unchanged: number; total: number; branchId: string; revisionId: string; runId: string }
+  | {
+      newlyDenied: number;
+      newlyAllowed: number;
+      unchanged: number;
+      total: number;
+      branchId: string;
+      revisionId: string;
+      runId: string;
+    }
   | { error: string };
 
 export async function runSimulationDecision(input: {
@@ -318,76 +341,96 @@ export async function runSimulationDecision(input: {
   revisionId: string;
 }): Promise<RunSimulationResult> {
   const started = Date.now();
-  return await withSpan("evidence.simulation.run", { "spctre.branch_id": input.branchId, "spctre.revision_id": input.revisionId }, async (span) => {
-  const workspaceContext = await getWorkspaceContext().catch(swallow("getWorkspaceContext", null));
-  if (!workspaceContext) {
-    recordDuration("spctre.evidence.simulation.duration", Date.now() - started, { outcome: "missing_workspace_context" });
-    return { error: "Workspace context unavailable." };
-  }
-  const { workspaceId, tenantId } = workspaceContext;
+  return await withSpan(
+    "evidence.simulation.run",
+    { "spctre.branch_id": input.branchId, "spctre.revision_id": input.revisionId },
+    async (span) => {
+      const workspaceContext = await getWorkspaceContext().catch(
+        swallow("getWorkspaceContext", null),
+      );
+      if (!workspaceContext) {
+        recordDuration("spctre.evidence.simulation.duration", Date.now() - started, {
+          outcome: "missing_workspace_context",
+        });
+        return { error: "Workspace context unavailable." };
+      }
+      const { workspaceId, tenantId } = workspaceContext;
 
-  try {
-    const { actor } = await getActiveActor({ workspaceId, tenantId }).catch(swallow("getActiveActor", {
-      actor: { id: "system", name: "system" },
-    }));
+      try {
+        const { actor } = await getActiveActor({ workspaceId, tenantId }).catch(
+          swallow("getActiveActor", { actor: { id: "system", name: "system" } }),
+        );
 
-    const run = await getEvidenceSimulationRun(
-      input.branchId || undefined,
-      input.revisionId || undefined,
-      workspaceId,
-      tenantId,
-      actor.id,
-      { allowBulk: isFeatureEnabledForPlan("bulkProductionSimulation", getSpctrePlan()) }
-    );
-    if (!run) {
-      recordDuration("spctre.evidence.simulation.duration", Date.now() - started, { outcome: "empty" });
-      return { error: "No evidence or revision data available to simulate against." };
-    }
+        const run = await getEvidenceSimulationRun(
+          input.branchId || undefined,
+          input.revisionId || undefined,
+          workspaceId,
+          tenantId,
+          actor.id,
+          { allowBulk: isFeatureEnabledForPlan("bulkProductionSimulation", getSpctrePlan()) },
+        );
+        if (!run) {
+          recordDuration("spctre.evidence.simulation.duration", Date.now() - started, {
+            outcome: "empty",
+          });
+          return { error: "No evidence or revision data available to simulate against." };
+        }
 
-    const persistedRunId = await persistSimulationRun(run, workspaceId, tenantId).catch(swallow("persistSimulationRun", null));
-    if (!persistedRunId) {
-      recordDuration("spctre.evidence.simulation.duration", Date.now() - started, { outcome: "persistence_failed" });
-      return { error: "Simulation completed but could not be saved. Please retry." };
-    }
-    appendOperationsLog({
-      tenantId,
-      workspaceId,
-      eventType: "SIMULATION_RUN",
-      sourceId: persistedRunId,
-      sourceTable: "simulation_run",
-      actorId: actor.id,
-      payload: {
-        branchId: run.branchId,
-        revisionId: run.revisionId,
-        simulationRunId: persistedRunId,
-        sourceEventCount: run.sourceEventCount,
-        newlyDeniedCount: run.newlyDeniedCount,
-        newlyAllowedCount: run.newlyAllowedCount,
-        unchangedCount: run.unchangedCount,
-        regressionSummary: run.regressionSummary,
-        sampledEventIds: run.results.slice(0, 10).map((result) => result.eventId),
-      },
-    }).catch(swallow("appendOperationsLog", undefined));
+        const persistedRunId = await persistSimulationRun(run, workspaceId, tenantId).catch(
+          swallow("persistSimulationRun", null),
+        );
+        if (!persistedRunId) {
+          recordDuration("spctre.evidence.simulation.duration", Date.now() - started, {
+            outcome: "persistence_failed",
+          });
+          return { error: "Simulation completed but could not be saved. Please retry." };
+        }
+        appendOperationsLog({
+          tenantId,
+          workspaceId,
+          eventType: "SIMULATION_RUN",
+          sourceId: persistedRunId,
+          sourceTable: "simulation_run",
+          actorId: actor.id,
+          payload: {
+            branchId: run.branchId,
+            revisionId: run.revisionId,
+            simulationRunId: persistedRunId,
+            sourceEventCount: run.sourceEventCount,
+            newlyDeniedCount: run.newlyDeniedCount,
+            newlyAllowedCount: run.newlyAllowedCount,
+            unchangedCount: run.unchangedCount,
+            regressionSummary: run.regressionSummary,
+            sampledEventIds: run.results.slice(0, 10).map((result) => result.eventId),
+          },
+        }).catch(swallow("appendOperationsLog", undefined));
 
-    span.setAttributes({
-      "spctre.simulation.total": run.sourceEventCount,
-      "spctre.simulation.newly_denied": run.newlyDeniedCount,
-      "spctre.simulation.newly_allowed": run.newlyAllowedCount,
-    });
-    recordDuration("spctre.evidence.simulation.duration", Date.now() - started, { outcome: "success" });
-    return {
-      newlyDenied: run.newlyDeniedCount,
-      newlyAllowed: run.newlyAllowedCount,
-      unchanged: run.unchangedCount,
-      total: run.sourceEventCount,
-      branchId: run.branchId,
-      revisionId: run.revisionId,
-      runId: persistedRunId,
-    };
-  } catch (error) {
-    logger.error("[runSimulationDecision] error:", { error: error instanceof Error ? error.message : String(error) });
-    recordDuration("spctre.evidence.simulation.duration", Date.now() - started, { outcome: "error" });
-    return { error: "An unexpected error occurred during simulation." };
-  }
-  });
+        span.setAttributes({
+          "spctre.simulation.total": run.sourceEventCount,
+          "spctre.simulation.newly_denied": run.newlyDeniedCount,
+          "spctre.simulation.newly_allowed": run.newlyAllowedCount,
+        });
+        recordDuration("spctre.evidence.simulation.duration", Date.now() - started, {
+          outcome: "success",
+        });
+        return {
+          newlyDenied: run.newlyDeniedCount,
+          newlyAllowed: run.newlyAllowedCount,
+          unchanged: run.unchangedCount,
+          total: run.sourceEventCount,
+          branchId: run.branchId,
+          revisionId: run.revisionId,
+          runId: persistedRunId,
+        };
+      } catch (error) {
+        logger.error("[runSimulationDecision] error:", {
+          error: error instanceof Error ? error.message : String(error),
+        });
+        recordDuration("spctre.evidence.simulation.duration", Date.now() - started, {
+          outcome: "error",
+        });
+        return { error: "An unexpected error occurred during simulation." };
+      }
+    },
+  );
 }

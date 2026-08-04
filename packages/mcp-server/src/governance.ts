@@ -88,16 +88,17 @@ export function authorizeGovernedMcpTool(params: {
 } {
   const issuedAt = params.issuedAt ?? new Date().toISOString();
   const decisionId =
-    params.decisionId ??
-    `mcp-${params.serverName}-${params.toolName}-${Date.now()}`;
+    params.decisionId ?? `mcp-${params.serverName}-${params.toolName}-${Date.now()}`;
 
   const capability = params.capabilities.find((item) => {
     const connectorMatches = !params.connector || item.connector === params.connector;
     const actionMatches = !params.action || item.action === params.action;
-    return item.serverName === params.serverName &&
+    return (
+      item.serverName === params.serverName &&
       item.toolName === params.toolName &&
       connectorMatches &&
-      actionMatches;
+      actionMatches
+    );
   });
 
   const outcome = capability ? "ALLOW" : "DENY";
@@ -107,25 +108,21 @@ export function authorizeGovernedMcpTool(params: {
     ? `MCP tool ${params.serverName}.${params.toolName} is approved for this workspace and agent.`
     : `MCP tool ${params.serverName}.${params.toolName} is not approved for this workspace and agent.`;
 
-  const auditSeal = buildMcpAuditSeal({
-    decisionId,
-    workspaceId: params.workspaceId,
-    agentId: params.agentId,
-    serverName: params.serverName,
-    toolName: params.toolName,
-    connector,
-    action,
-    outcome,
-    artifactHash: params.artifactHash,
-    issuedAt,
-  }, params.sealSecret);
+  const auditSeal = buildMcpAuditSeal(
+    {
+      decisionId,
+      workspaceId: params.workspaceId,
+      agentId: params.agentId,
+      serverName: params.serverName,
+      toolName: params.toolName,
+      connector,
+      action,
+      outcome,
+      artifactHash: params.artifactHash,
+      issuedAt,
+    },
+    params.sealSecret,
+  );
 
-  return {
-    decisionId,
-    outcome,
-    reason,
-    capability,
-    auditSeal,
-    issuedAt,
-  };
+  return { decisionId, outcome, reason, capability, auditSeal, issuedAt };
 }

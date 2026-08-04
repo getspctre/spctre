@@ -1,8 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
-vi.mock("axios", () => ({
-  default: { post: vi.fn() },
-}));
+vi.mock("axios", () => ({ default: { post: vi.fn() } }));
 
 vi.mock("../src/observability.js", () => ({
   incrementCounter: vi.fn(),
@@ -59,7 +57,7 @@ describe("AccessTokenManager — getValidAccessToken", () => {
     const mgr = new AccessTokenManager({ apiBaseUrl: "http://localhost" });
 
     await expect(mgr.getValidAccessToken()).rejects.toSatisfy(
-      (e: unknown) => e instanceof TokenLifecycleError && e.kind === "no_refresh_token"
+      (e: unknown) => e instanceof TokenLifecycleError && e.kind === "no_refresh_token",
     );
   });
 });
@@ -95,7 +93,7 @@ describe("AccessTokenManager — refresh", () => {
     });
 
     await expect(mgr.refresh()).rejects.toSatisfy(
-      (e: unknown) => e instanceof TokenLifecycleError && e.kind === "token_revoked"
+      (e: unknown) => e instanceof TokenLifecycleError && e.kind === "token_revoked",
     );
     expect(axiosPost).toHaveBeenCalledTimes(1);
   });
@@ -112,7 +110,7 @@ describe("AccessTokenManager — refresh", () => {
     });
 
     await expect(mgr.refresh()).rejects.toSatisfy(
-      (e: unknown) => e instanceof TokenLifecycleError && e.kind === "token_expired"
+      (e: unknown) => e instanceof TokenLifecycleError && e.kind === "token_expired",
     );
     expect(axiosPost).toHaveBeenCalledTimes(1);
   });
@@ -129,7 +127,7 @@ describe("AccessTokenManager — refresh", () => {
     // Attach the rejection handler before running timers so Node never sees
     // the promise as unhandled between attempts.
     const assertion = expect(mgr.refresh()).rejects.toSatisfy(
-      (e: unknown) => e instanceof TokenLifecycleError && e.kind === "refresh_network_error"
+      (e: unknown) => e instanceof TokenLifecycleError && e.kind === "refresh_network_error",
     );
     await vi.runAllTimersAsync();
     await assertion;
@@ -142,7 +140,10 @@ describe("AccessTokenManager — refresh", () => {
     // server could kill the session. See concurrency-and-memory-audit finding 1.
     let resolvePost: (v: unknown) => void = () => {};
     axiosPost.mockImplementationOnce(
-      () => new Promise((resolve) => { resolvePost = resolve; })
+      () =>
+        new Promise((resolve) => {
+          resolvePost = resolve;
+        }),
     );
 
     const mgr = new AccessTokenManager({
@@ -170,9 +171,7 @@ describe("AccessTokenManager — refresh", () => {
   it("succeeds on second attempt after one network failure", async () => {
     axiosPost
       .mockRejectedValueOnce(new Error("transient"))
-      .mockResolvedValueOnce({
-        data: { accessToken: "recovered-token" },
-      });
+      .mockResolvedValueOnce({ data: { accessToken: "recovered-token" } });
 
     const mgr = new AccessTokenManager({
       apiBaseUrl: "http://localhost",
@@ -238,7 +237,7 @@ describe("AccessTokenManager — revokeBestEffort", () => {
       undefined,
       expect.objectContaining({
         headers: expect.objectContaining({ Authorization: "Bearer refreshed-token" }),
-      })
+      }),
     );
   });
 });

@@ -1,5 +1,10 @@
 import { createTtlCache } from "@/lib/platform/ttl-cache";
-import { flattenMessages, getStaticMessages, normalizeLocale, type SupportedLocale } from "./messages";
+import {
+  flattenMessages,
+  getStaticMessages,
+  normalizeLocale,
+  type SupportedLocale,
+} from "./messages";
 
 export interface TenantTerminologyOverride {
   tenantId: string;
@@ -28,7 +33,7 @@ function cacheKey(tenantId: string, locale: SupportedLocale): string {
 async function loadOverrides(
   store: TenantTerminologyStore,
   tenantId: string,
-  locale: SupportedLocale
+  locale: SupportedLocale,
 ): Promise<Record<string, string>> {
   return cache.get(cacheKey(tenantId, locale), async () => {
     const overrides = await store.listOverrides(tenantId, locale);
@@ -48,7 +53,7 @@ async function loadOverrides(
 export async function getTenantTerminologyOverrides(
   store: TenantTerminologyStore,
   tenantId: string,
-  localeInput: string | null | undefined
+  localeInput: string | null | undefined,
 ): Promise<Record<string, string>> {
   return loadOverrides(store, tenantId, normalizeLocale(localeInput));
 }
@@ -60,7 +65,7 @@ export async function getTenantTerminologyOverrides(
 export async function getTenantMessages(
   store: TenantTerminologyStore,
   tenantId: string,
-  localeInput: string | null | undefined
+  localeInput: string | null | undefined,
 ): Promise<Record<string, string>> {
   const locale = normalizeLocale(localeInput);
   const base = flattenMessages(getStaticMessages(locale));
@@ -74,7 +79,7 @@ function invalidateTenantMessages(tenantId: string, localeInput: string | null |
 
 export async function upsertTenantTerminologyOverride(
   store: TenantTerminologyStore,
-  override: TenantTerminologyOverride
+  override: TenantTerminologyOverride,
 ): Promise<void> {
   if (!store.upsertOverride) {
     throw new Error("Tenant terminology store does not support writes.");
@@ -87,7 +92,7 @@ export async function deleteTenantTerminologyOverride(
   store: TenantTerminologyStore,
   tenantId: string,
   localeInput: string | null | undefined,
-  translationKey: string
+  translationKey: string,
 ): Promise<void> {
   if (!store.deleteOverride) {
     throw new Error("Tenant terminology store does not support deletes.");

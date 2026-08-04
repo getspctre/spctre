@@ -1,7 +1,7 @@
 import { AgentsPageContent } from "../../agents/content";
 
 export default async function WorkspaceAgentsPage({
-  params
+  params,
 }: {
   params: Promise<{ workspace: string }>;
 }) {

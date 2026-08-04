@@ -26,9 +26,18 @@ export default defineConfig({
     // `types` export condition; runtime still resolves to built dist/).
     alias: [
       { find: "@", replacement: fromHere("./") },
-      { find: /^@spctre\/policy-schema$/, replacement: fromHere("../../packages/policy-schema/src/index.ts") },
-      { find: /^@spctre\/policy-schema\/packs$/, replacement: fromHere("../../packages/policy-schema/src/packs.ts") },
-      { find: /^@spctre\/policy-schema\/types$/, replacement: fromHere("../../packages/policy-schema/src/types.ts") }
-    ]
-  }
+      {
+        find: /^@spctre\/policy-schema$/,
+        replacement: fromHere("../../packages/policy-schema/src/index.ts"),
+      },
+      {
+        find: /^@spctre\/policy-schema\/packs$/,
+        replacement: fromHere("../../packages/policy-schema/src/packs.ts"),
+      },
+      {
+        find: /^@spctre\/policy-schema\/types$/,
+        replacement: fromHere("../../packages/policy-schema/src/types.ts"),
+      },
+    ],
+  },
 });

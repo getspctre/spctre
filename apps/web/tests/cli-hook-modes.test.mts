@@ -12,9 +12,15 @@ function readJson(filePath: string): Record<string, unknown> {
   return JSON.parse(fs.readFileSync(filePath, "utf8")) as Record<string, unknown>;
 }
 
-function commandsFor(settings: Record<string, unknown>, hookEvent: string, group = "hooks"): string[] {
+function commandsFor(
+  settings: Record<string, unknown>,
+  hookEvent: string,
+  group = "hooks",
+): string[] {
   const hooks = settings[group] as Record<string, Array<{ hooks?: Array<{ command?: string }> }>>;
-  return (hooks[hookEvent] ?? []).flatMap((entry) => entry.hooks?.map((hook) => hook.command ?? "") ?? []);
+  return (hooks[hookEvent] ?? []).flatMap(
+    (entry) => entry.hooks?.map((hook) => hook.command ?? "") ?? [],
+  );
 }
 
 describe("CLI hook adapter modes", () => {
@@ -34,7 +40,7 @@ describe("CLI hook adapter modes", () => {
 
     const settings = readJson(path.join(tempDir, ".codex", "hooks.json"));
     expect(commandsFor(settings, "PreToolUse")).toContain(
-      "npx @spctre/cli pretooluse --harness codex --mode observe"
+      "npx @spctre/cli pretooluse --harness codex --mode observe",
     );
   });
 
@@ -43,23 +49,26 @@ describe("CLI hook adapter modes", () => {
 
     const settings = readJson(path.join(tempDir, ".claude", "settings.json"));
     expect(commandsFor(settings, "PreToolUse")).toContain(
-      "npx @spctre/cli pretooluse --harness claude --mode enforce"
+      "npx @spctre/cli pretooluse --harness claude --mode enforce",
     );
   });
 
   it("removes legacy hook commands during uninstall", () => {
     const settingsPath = path.join(tempDir, ".claude", "settings.json");
     fs.mkdirSync(path.dirname(settingsPath), { recursive: true });
-    fs.writeFileSync(settingsPath, JSON.stringify({
-      hooks: {
-        PreToolUse: [
-          {
-            matcher: ".*",
-            hooks: [{ type: "command", command: "npx @spctre/cli pretooluse --harness claude" }],
-          },
-        ],
-      },
-    }));
+    fs.writeFileSync(
+      settingsPath,
+      JSON.stringify({
+        hooks: {
+          PreToolUse: [
+            {
+              matcher: ".*",
+              hooks: [{ type: "command", command: "npx @spctre/cli pretooluse --harness claude" }],
+            },
+          ],
+        },
+      }),
+    );
 
     installHook({ claude: true, uninstall: true });
 
@@ -69,10 +78,10 @@ describe("CLI hook adapter modes", () => {
 
   it("exposes explicit hook commands and blocking semantics", () => {
     expect(buildHookCommand("gemini", "observe")).toBe(
-      "npx @spctre/cli pretooluse --harness gemini --mode observe"
+      "npx @spctre/cli pretooluse --harness gemini --mode observe",
     );
     expect(buildHookCommand("gemini", "enforce")).toBe(
-      "npx @spctre/cli pretooluse --harness gemini --mode enforce"
+      "npx @spctre/cli pretooluse --harness gemini --mode enforce",
     );
     expect(shouldBlockDecision("observe", "DENY")).toBe(false);
     expect(shouldBlockDecision("enforce", "DENY")).toBe(true);
@@ -88,7 +97,7 @@ describe("CLI hook adapter modes", () => {
     expect(() => parseHookMode({ mode: "enforec" as never })).toThrow("process.exit");
     expect(exitSpy).toHaveBeenCalledWith(1);
     expect(errorSpy).toHaveBeenCalledWith(
-      'Error: unsupported hook mode "enforec". Expected "observe" or "enforce".'
+      'Error: unsupported hook mode "enforec". Expected "observe" or "enforce".',
     );
 
     exitSpy.mockRestore();
@@ -100,16 +109,16 @@ describe("CLI hook adapter modes", () => {
 
     const settings = readJson(path.join(tempDir, ".agents", "hooks.json"));
     expect(commandsFor(settings, "PreToolUse", "spctre")).toContain(
-      "npx @spctre/cli pretooluse --harness antigravity --mode observe"
+      "npx @spctre/cli pretooluse --harness antigravity --mode observe",
     );
   });
 
   it("exposes explicit hook commands and blocking semantics for antigravity", () => {
     expect(buildHookCommand("antigravity", "observe")).toBe(
-      "npx @spctre/cli pretooluse --harness antigravity --mode observe"
+      "npx @spctre/cli pretooluse --harness antigravity --mode observe",
     );
     expect(buildHookCommand("antigravity", "enforce")).toBe(
-      "npx @spctre/cli pretooluse --harness antigravity --mode enforce"
+      "npx @spctre/cli pretooluse --harness antigravity --mode enforce",
     );
   });
 });

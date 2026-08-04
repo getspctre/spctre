@@ -8,25 +8,47 @@ import { swallow } from "@/lib/platform/swallow";
 export { asInt, asNumber, asString } from "../_shared";
 
 export const VALID_STACKS = new Set([
-  "AWS_BEDROCK", "GOOGLE_ADK", "AZURE_AI", "LANGCHAIN",
-  "LANGGRAPH", "CREWAI", "AUTOGEN", "OPENAI_AGENTS",
-  "OMNIGENT", "OPENCODE", "CLAUDE_CODE", "LOCAL", "CUSTOM",
+  "AWS_BEDROCK",
+  "GOOGLE_ADK",
+  "AZURE_AI",
+  "LANGCHAIN",
+  "LANGGRAPH",
+  "CREWAI",
+  "AUTOGEN",
+  "OPENAI_AGENTS",
+  "OMNIGENT",
+  "OPENCODE",
+  "CLAUDE_CODE",
+  "LOCAL",
+  "CUSTOM",
 ]);
 
-export async function resolveAuth(request: Request): Promise<
+export async function resolveAuth(
+  request: Request,
+): Promise<
   | { ok: true; tenantId: string; workspaceId: string; actorId: string }
   | { ok: false; error: string }
 > {
   if (hasBearerToken(request)) {
     const tokenAuth = await authenticateServiceToken(request, "evidence:write");
     if (!tokenAuth.ok) return { ok: false, error: tokenAuth.error };
-    return { ok: true, tenantId: tokenAuth.auth.tenantId, workspaceId: tokenAuth.auth.workspaceId, actorId: tokenAuth.auth.principalId };
+    return {
+      ok: true,
+      tenantId: tokenAuth.auth.tenantId,
+      workspaceId: tokenAuth.auth.workspaceId,
+      actorId: tokenAuth.auth.principalId,
+    };
   }
   const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (!session) return { ok: false, error: "Authentication required." };
   const ctx = await getActiveScope().catch(swallow("getActiveScope", null));
   if (!ctx) return { ok: false, error: "Workspace context unavailable." };
-  return { ok: true, tenantId: ctx.tenantId, workspaceId: ctx.workspaceId, actorId: session.principalId };
+  return {
+    ok: true,
+    tenantId: ctx.tenantId,
+    workspaceId: ctx.workspaceId,
+    actorId: session.principalId,
+  };
 }
 
 export async function delegateTrustPostToWorker(params: {
@@ -39,7 +61,10 @@ export async function delegateTrustPostToWorker(params: {
   const secret = workerInternalSecret();
   if (!baseUrl || !secret) return null;
 
-  const target = new URL(`/api/trust/${params.path}`, baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`);
+  const target = new URL(
+    `/api/trust/${params.path}`,
+    baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`,
+  );
   const response = await fetchWithTimeout(target, {
     method: "POST",
     headers: {
@@ -61,6 +86,6 @@ export async function delegateTrustPostToWorker(params: {
       statusText: response.statusText,
       headers: response.headers,
     }),
-    params.traceId
+    params.traceId,
   );
 }

@@ -9,9 +9,15 @@ import type { GovernedMcpCapability } from "../governance.js";
 export interface McpServerContext {
   readonly config: SpctreConfig;
   getWithAuth(path: string, params?: Record<string, unknown>): Promise<AxiosResponse>;
-  postWithAuth(path: string, body: unknown, extraHeaders?: Record<string, string>): Promise<AxiosResponse>;
+  postWithAuth(
+    path: string,
+    body: unknown,
+    extraHeaders?: Record<string, string>,
+  ): Promise<AxiosResponse>;
   assertConnectorAllowed(connector: string | undefined): void;
-  fetchPublishedBundleRefs(workspaceId: string): Promise<{ branchId: string; revisionId: string; artifactHash: string }>;
+  fetchPublishedBundleRefs(
+    workspaceId: string,
+  ): Promise<{ branchId: string; revisionId: string; artifactHash: string }>;
   ensureMcpPolicyLoaded(options?: { agentId?: string; environment?: string }): Promise<void>;
   readonly governedMcpCapabilities: GovernedMcpCapability[];
   readonly mcpRegistrySource: string;

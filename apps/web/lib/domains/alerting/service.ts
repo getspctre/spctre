@@ -34,11 +34,7 @@ export async function getAlertingPageModel(params: {
     listAlertingRules(workspaceContext.tenantId, workspaceContext.workspaceId),
   ]);
 
-  return {
-    workspaceContext,
-    integrations,
-    rules,
-  };
+  return { workspaceContext, integrations, rules };
 }
 
 export async function addAlertingIntegrationDecision(params: {
@@ -65,7 +61,7 @@ export async function addAlertingIntegrationDecision(params: {
     params.name,
     params.type,
     params.url,
-    params.config ?? {}
+    params.config ?? {},
   );
 }
 
@@ -105,14 +101,11 @@ export async function addAlertingRuleDecision(params: {
     params.minRiskLevel,
     params.minFrequency,
     params.frequencyWindowMinutes,
-    params.integrationId
+    params.integrationId,
   );
 }
 
-export async function removeAlertingRuleDecision(params: {
-  workspaceId: string;
-  id: string;
-}) {
+export async function removeAlertingRuleDecision(params: { workspaceId: string; id: string }) {
   const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (!session) throw new CodedError("AUTH_REQUIRED");
   const ctx = await getRequiredWorkspaceContext();

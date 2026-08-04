@@ -18,21 +18,10 @@ export const SPCTRE_OPENAPI_SPEC = {
     version: "2026-01",
     description:
       "The Spctre public REST API. All endpoints are versioned under `/api/v1/` and follow the same envelope convention: every response carries a `meta` object with a `traceId`, `version`, and `ts` timestamp. Authenticate with a service account API key issued from the Spctre web UI (`spctre init` or Settings → API Keys).",
-    license: {
-      name: "Apache 2.0",
-      url: "https://www.apache.org/licenses/LICENSE-2.0.html",
-    },
-    contact: {
-      name: "Spctre",
-      url: "https://spctre.dev",
-    },
+    license: { name: "Apache 2.0", url: "https://www.apache.org/licenses/LICENSE-2.0.html" },
+    contact: { name: "Spctre", url: "https://spctre.dev" },
   },
-  servers: [
-    {
-      url: "/api/v1",
-      description: "Spctre Public API v1",
-    },
-  ],
+  servers: [{ url: "/api/v1", description: "Spctre Public API v1" }],
   security: [{ bearerAuth: [] }],
 
   // ──────────────────────────────────────────────────────────
@@ -66,11 +55,7 @@ export const SPCTRE_OPENAPI_SPEC = {
             description: "Correlation ID echoed from X-Request-ID or generated server-side.",
             examples: ["req_01j1x2y3z4"],
           },
-          version: {
-            type: "string",
-            description: "API version string.",
-            examples: ["2026-01"],
-          },
+          version: { type: "string", description: "API version string.", examples: ["2026-01"] },
           ts: {
             type: "string",
             format: "date-time",
@@ -89,10 +74,7 @@ export const SPCTRE_OPENAPI_SPEC = {
             description: "Field-level validation issues (present on 400 responses).",
             items: {
               type: "object",
-              properties: {
-                path: { type: "string" },
-                message: { type: "string" },
-              },
+              properties: { path: { type: "string" }, message: { type: "string" } },
             },
           },
           meta: { $ref: "#/components/schemas/ApiMeta" },
@@ -151,13 +133,11 @@ export const SPCTRE_OPENAPI_SPEC = {
       EvidenceLayer: {
         type: "string",
         enum: ["agent", "sandbox"],
-        description: "Whether the evidence record originates from the agent layer (L7 tool calls) or sandbox layer (L3/L4 network policy).",
+        description:
+          "Whether the evidence record originates from the agent layer (L7 tool calls) or sandbox layer (L3/L4 network policy).",
       },
 
-      RuntimeDecisionStatus: {
-        type: "string",
-        enum: ["ALLOW", "DENY", "WARN", "ESCALATE"],
-      },
+      RuntimeDecisionStatus: { type: "string", enum: ["ALLOW", "DENY", "WARN", "ESCALATE"] },
 
       RuntimeTarget: {
         type: "object",
@@ -166,8 +146,16 @@ export const SPCTRE_OPENAPI_SPEC = {
           stack: { $ref: "#/components/schemas/RuntimeStack" },
           adapter: { type: "string", description: "Specific adapter within the stack." },
           environment: { type: "string" },
-          sandboxName: { type: "string", description: "Runtime sandbox/deployment name for sandbox-layer policy and evidence queries." },
-          inferenceProvider: { type: "string", description: "Inference router/provider identifier for model-routing policy and evidence queries." },
+          sandboxName: {
+            type: "string",
+            description:
+              "Runtime sandbox/deployment name for sandbox-layer policy and evidence queries.",
+          },
+          inferenceProvider: {
+            type: "string",
+            description:
+              "Inference router/provider identifier for model-routing policy and evidence queries.",
+          },
         },
       },
 
@@ -209,11 +197,13 @@ export const SPCTRE_OPENAPI_SPEC = {
           },
           tenantId: {
             type: "string",
-            description: "Optional tenant boundary hint. Empty string is treated as omitted. The x-spctre-tenant-id header takes precedence when both are present; otherwise inferred from the bearer token when omitted.",
+            description:
+              "Optional tenant boundary hint. Empty string is treated as omitted. The x-spctre-tenant-id header takes precedence when both are present; otherwise inferred from the bearer token when omitted.",
           },
           workspaceId: {
             type: "string",
-            description: "Optional workspace boundary hint. Empty string is treated as omitted. The x-spctre-workspace-id header takes precedence when both are present; otherwise inferred from the bearer token when omitted.",
+            description:
+              "Optional workspace boundary hint. Empty string is treated as omitted. The x-spctre-workspace-id header takes precedence when both are present; otherwise inferred from the bearer token when omitted.",
           },
           environment: { type: "string", minLength: 1 },
           runtimeTarget: { $ref: "#/components/schemas/RuntimeTarget" },
@@ -264,15 +254,28 @@ export const SPCTRE_OPENAPI_SPEC = {
             description:
               "Use 'gateway' when posting from a gateway adapter; the server resolves policyRefs, artifactHash, and policyContext automatically.",
           },
-          toolIntent: { type: "string", maxLength: 2000, description: "The explicitly declared intent or purpose of the tool call." },
-          planSummary: { type: "string", maxLength: 4000, description: "A high-level plan summary explicitly provided by the runtime." },
-          toolParameters: { type: "object", additionalProperties: true, description: "The structured arguments passed to the tool." },
+          toolIntent: {
+            type: "string",
+            maxLength: 2000,
+            description: "The explicitly declared intent or purpose of the tool call.",
+          },
+          planSummary: {
+            type: "string",
+            maxLength: 4000,
+            description: "A high-level plan summary explicitly provided by the runtime.",
+          },
+          toolParameters: {
+            type: "object",
+            additionalProperties: true,
+            description: "The structured arguments passed to the tool.",
+          },
           triggerKind: { $ref: "#/components/schemas/TriggerKind" },
           layer: { $ref: "#/components/schemas/EvidenceLayer" },
           executionContext: {
             type: "object",
             additionalProperties: true,
-            description: "Execution surface identity plus sandbox/inference-router evidence references.",
+            description:
+              "Execution surface identity plus sandbox/inference-router evidence references.",
             properties: {
               backend: { type: "string" },
               sessionId: { type: "string" },
@@ -282,13 +285,21 @@ export const SPCTRE_OPENAPI_SPEC = {
               inferenceRouterRef: { type: "string" },
             },
           },
-          parentAgentId: { type: "string", description: "Agent ID of the parent when this evidence originates from a subagent." },
-          traceId: { type: "string", description: "Distributed trace identifier linking related agent decisions across subagents." },
+          parentAgentId: {
+            type: "string",
+            description: "Agent ID of the parent when this evidence originates from a subagent.",
+          },
+          traceId: {
+            type: "string",
+            description:
+              "Distributed trace identifier linking related agent decisions across subagents.",
+          },
           orchestratorRef: {
             type: "object",
             additionalProperties: true,
             required: ["platform"],
-            description: "Orchestrator-platform reference (e.g. Paperclip companyId, issueId, goalId).",
+            description:
+              "Orchestrator-platform reference (e.g. Paperclip companyId, issueId, goalId).",
             properties: {
               platform: { type: "string" },
               companyId: { type: "string" },
@@ -298,13 +309,19 @@ export const SPCTRE_OPENAPI_SPEC = {
           },
           pluginSource: {
             type: "string",
-            enum: ["public_marketplace", "corporate_marketplace", "corporate_private", "user_built"],
+            enum: [
+              "public_marketplace",
+              "corporate_marketplace",
+              "corporate_private",
+              "user_built",
+            ],
             description: "Plugin provenance dimension.",
           },
           skillContext: {
             type: "object",
             additionalProperties: true,
-            description: "Prompt-level governance surface: active skills, instruction files, and prompt policy refs present when the decision was made.",
+            description:
+              "Prompt-level governance surface: active skills, instruction files, and prompt policy refs present when the decision was made.",
             properties: {
               activeSkills: { type: "array", items: { type: "string" } },
               instructionFiles: { type: "array", items: { type: "string" } },
@@ -312,9 +329,21 @@ export const SPCTRE_OPENAPI_SPEC = {
               promptSurface: { type: "string" },
             },
           },
-          webhookSource: { type: "string", description: "Source identifier for inbound webhook triggers (present when triggerKind is inbound_webhook)." },
-          trustLevel: { type: "string", description: "Trust level assigned by the orchestration platform (e.g. Paperclip trust preset)." },
-          catalogProvider: { type: "string", description: "Catalog or skill provenance provider (e.g. Paperclip catalog-provenance identifier)." },
+          webhookSource: {
+            type: "string",
+            description:
+              "Source identifier for inbound webhook triggers (present when triggerKind is inbound_webhook).",
+          },
+          trustLevel: {
+            type: "string",
+            description:
+              "Trust level assigned by the orchestration platform (e.g. Paperclip trust preset).",
+          },
+          catalogProvider: {
+            type: "string",
+            description:
+              "Catalog or skill provenance provider (e.g. Paperclip catalog-provenance identifier).",
+          },
         },
       },
 
@@ -339,7 +368,8 @@ export const SPCTRE_OPENAPI_SPEC = {
           },
           deduplicated: {
             type: "boolean",
-            description: "True when a record with the same decisionId already exists (200 response).",
+            description:
+              "True when a record with the same decisionId already exists (200 response).",
           },
           meta: { $ref: "#/components/schemas/ApiMeta" },
         },
@@ -348,9 +378,14 @@ export const SPCTRE_OPENAPI_SPEC = {
       GitCheckpointIngestRequest: {
         type: "object",
         required: ["idempotencyKey", "environment", "status", "reason", "checkpoint"],
-        description: "Framework-agnostic Git checkpoint and diff evidence. Clients submit normalized Git facts; the server does not execute Git or access a caller repository.",
+        description:
+          "Framework-agnostic Git checkpoint and diff evidence. Clients submit normalized Git facts; the server does not execute Git or access a caller repository.",
         properties: {
-          idempotencyKey: { type: "string", minLength: 1, description: "Stable checkpoint submission key. Reuse it to safely retry." },
+          idempotencyKey: {
+            type: "string",
+            minLength: 1,
+            description: "Stable checkpoint submission key. Reuse it to safely retry.",
+          },
           environment: { type: "string", minLength: 1 },
           status: { $ref: "#/components/schemas/RuntimeDecisionStatus" },
           reason: { type: "string", minLength: 1 },
@@ -382,7 +417,10 @@ export const SPCTRE_OPENAPI_SPEC = {
                       required: ["path"],
                       properties: {
                         path: { type: "string" },
-                        status: { type: "string", enum: ["added", "modified", "deleted", "renamed", "copied", "unmerged"] },
+                        status: {
+                          type: "string",
+                          enum: ["added", "modified", "deleted", "renamed", "copied", "unmerged"],
+                        },
                         previousPath: { type: "string" },
                       },
                     },
@@ -391,10 +429,24 @@ export const SPCTRE_OPENAPI_SPEC = {
               },
             },
           },
-          agent: { type: "object", properties: { id: { type: "string" }, adapter: { type: "string" } } },
-          connector: { type: "string", description: "Optional client connector label; defaults to git." },
-          action: { type: "string", description: "Optional action label; defaults to checkpoint.ingest." },
-          policyRefs: { type: "array", items: { type: "string" }, description: "Caller-supplied references retained as metadata. Policy context is resolved server-side." },
+          agent: {
+            type: "object",
+            properties: { id: { type: "string" }, adapter: { type: "string" } },
+          },
+          connector: {
+            type: "string",
+            description: "Optional client connector label; defaults to git.",
+          },
+          action: {
+            type: "string",
+            description: "Optional action label; defaults to checkpoint.ingest.",
+          },
+          policyRefs: {
+            type: "array",
+            items: { type: "string" },
+            description:
+              "Caller-supplied references retained as metadata. Policy context is resolved server-side.",
+          },
           metadata: { type: "object", additionalProperties: true },
         },
       },
@@ -407,11 +459,13 @@ export const SPCTRE_OPENAPI_SPEC = {
           decisionId: { type: "string", minLength: 1 },
           tenantId: {
             type: "string",
-            description: "Optional tenant boundary hint. Empty string is treated as omitted. The x-spctre-tenant-id header takes precedence when both are present; otherwise inferred from the bearer token when omitted.",
+            description:
+              "Optional tenant boundary hint. Empty string is treated as omitted. The x-spctre-tenant-id header takes precedence when both are present; otherwise inferred from the bearer token when omitted.",
           },
           workspaceId: {
             type: "string",
-            description: "Optional workspace boundary hint. Empty string is treated as omitted. The x-spctre-workspace-id header takes precedence when both are present; otherwise inferred from the bearer token when omitted.",
+            description:
+              "Optional workspace boundary hint. Empty string is treated as omitted. The x-spctre-workspace-id header takes precedence when both are present; otherwise inferred from the bearer token when omitted.",
           },
           artifactHash: { type: "string", minLength: 1 },
           policyContext: {
@@ -427,17 +481,35 @@ export const SPCTRE_OPENAPI_SPEC = {
           dataSensitivity: { type: "string" },
           trustScore: { type: "number" },
           contextBudget: { type: "integer" },
-          riskLevel: {
+          riskLevel: { type: "string", enum: ["LOW", "MEDIUM", "HIGH", "CRITICAL"] },
+          toolIntent: {
             type: "string",
-            enum: ["LOW", "MEDIUM", "HIGH", "CRITICAL"],
+            maxLength: 2000,
+            description: "The explicitly declared intent or purpose of the tool call.",
           },
-          toolIntent: { type: "string", maxLength: 2000, description: "The explicitly declared intent or purpose of the tool call." },
-          planSummary: { type: "string", maxLength: 4000, description: "A high-level plan summary explicitly provided by the runtime." },
-          toolParameters: { type: "object", additionalProperties: true, description: "The structured arguments passed to the tool." },
+          planSummary: {
+            type: "string",
+            maxLength: 4000,
+            description: "A high-level plan summary explicitly provided by the runtime.",
+          },
+          toolParameters: {
+            type: "object",
+            additionalProperties: true,
+            description: "The structured arguments passed to the tool.",
+          },
           connector: { type: "string" },
           action: { type: "string" },
-          agentId: { type: "string", description: "Runtime agent identity used to link this decision to cross-surface evidence and governance history." },
-          sessionId: { type: "string", minLength: 1, maxLength: 256, description: "Stable runtime session identifier used for Blueprint loop safeguards." },
+          agentId: {
+            type: "string",
+            description:
+              "Runtime agent identity used to link this decision to cross-surface evidence and governance history.",
+          },
+          sessionId: {
+            type: "string",
+            minLength: 1,
+            maxLength: 256,
+            description: "Stable runtime session identifier used for Blueprint loop safeguards.",
+          },
         },
       },
 
@@ -483,10 +555,7 @@ export const SPCTRE_OPENAPI_SPEC = {
         required: ["queueId", "resolutionOutcome"],
         properties: {
           queueId: { type: "string", minLength: 1 },
-          resolutionOutcome: {
-            type: "string",
-            enum: ["PROCEED", "ESCALATE", "ABORT"],
-          },
+          resolutionOutcome: { type: "string", enum: ["PROCEED", "ESCALATE", "ABORT"] },
           resolutionNote: { type: "string" },
           agentGuidance: { type: "string" },
         },
@@ -520,14 +589,18 @@ export const SPCTRE_OPENAPI_SPEC = {
       TokenRefreshRequest: {
         type: "object",
         required: ["refreshToken"],
-        properties: {
-          refreshToken: { type: "string", minLength: 1 },
-        },
+        properties: { refreshToken: { type: "string", minLength: 1 } },
       },
 
       TokenRefreshResponse: {
         type: "object",
-        required: ["accessToken", "accessTokenExpiresAt", "refreshToken", "refreshTokenExpiresAt", "meta"],
+        required: [
+          "accessToken",
+          "accessTokenExpiresAt",
+          "refreshToken",
+          "refreshTokenExpiresAt",
+          "meta",
+        ],
         properties: {
           accessToken: { type: "string" },
           accessTokenExpiresAt: { type: "string", format: "date-time" },
@@ -545,7 +618,10 @@ export const SPCTRE_OPENAPI_SPEC = {
           environment: { type: "string", minLength: 1 },
           runtimeStack: { $ref: "#/components/schemas/RuntimeStack" },
           trustScore: { type: "number", minimum: 0, maximum: 1 },
-          source: { type: "string", enum: ["EVIDENCE_INGEST", "POLICY_EVALUATION", "MANUAL", "IDENTITY_EVENT", "SYSTEM"] },
+          source: {
+            type: "string",
+            enum: ["EVIDENCE_INGEST", "POLICY_EVALUATION", "MANUAL", "IDENTITY_EVENT", "SYSTEM"],
+          },
           sourceRef: { type: "string" },
           reason: { type: "string" },
         },
@@ -569,13 +645,23 @@ export const SPCTRE_OPENAPI_SPEC = {
 
       ContextBudgetIngestRequest: {
         type: "object",
-        required: ["sessionId", "agentId", "environment", "runtimeStack", "eventType", "tokenCount"],
+        required: [
+          "sessionId",
+          "agentId",
+          "environment",
+          "runtimeStack",
+          "eventType",
+          "tokenCount",
+        ],
         properties: {
           sessionId: { type: "string", minLength: 1 },
           agentId: { type: "string", minLength: 1 },
           environment: { type: "string", minLength: 1 },
           runtimeStack: { $ref: "#/components/schemas/RuntimeStack" },
-          eventType: { type: "string", enum: ["TOKEN_GROWTH", "SUMMARIZATION_EVENT", "CONTEXT_SOURCE_MIX", "BUDGET_BREACH"] },
+          eventType: {
+            type: "string",
+            enum: ["TOKEN_GROWTH", "SUMMARIZATION_EVENT", "CONTEXT_SOURCE_MIX", "BUDGET_BREACH"],
+          },
           tokenCount: { type: "integer", minimum: 0 },
           tokenDelta: { type: "integer" },
           contextSourceMix: { type: "object", additionalProperties: true },
@@ -608,7 +694,11 @@ export const SPCTRE_OPENAPI_SPEC = {
         properties: {
           decisionId: { type: "string" },
           status: { type: "string", enum: ["PENDING", "IN_REVIEW", "RESOLVED", "EXPIRED"] },
-          resolutionOutcome: { type: "string", enum: ["PROCEED", "ESCALATE", "ABORT"], nullable: true },
+          resolutionOutcome: {
+            type: "string",
+            enum: ["PROCEED", "ESCALATE", "ABORT"],
+            nullable: true,
+          },
           resolutionNote: { type: "string", nullable: true },
           agentGuidance: { type: "string", nullable: true },
           slaDueAt: { type: "string", format: "date-time", nullable: true },
@@ -616,7 +706,8 @@ export const SPCTRE_OPENAPI_SPEC = {
           approvedToolParameters: {
             type: "object",
             additionalProperties: true,
-            description: "Immutable, redacted decision arguments. Present only when the escalation is RESOLVED with a PROCEED outcome.",
+            description:
+              "Immutable, redacted decision arguments. Present only when the escalation is RESOLVED with a PROCEED outcome.",
           },
           credentialGrant: { $ref: "#/components/schemas/CredentialGrant" },
           meta: { $ref: "#/components/schemas/ApiMeta" },
@@ -666,7 +757,15 @@ export const SPCTRE_OPENAPI_SPEC = {
           generatedAt: { type: "string", format: "date-time" },
           provenance: {
             type: "object",
-            required: ["tenantId", "workspaceId", "branchId", "revisionId", "sourceHash", "sourceFormat", "targetStacks"],
+            required: [
+              "tenantId",
+              "workspaceId",
+              "branchId",
+              "revisionId",
+              "sourceHash",
+              "sourceFormat",
+              "targetStacks",
+            ],
             properties: {
               tenantId: { type: "string" },
               workspaceId: { type: "string", nullable: true },
@@ -675,7 +774,10 @@ export const SPCTRE_OPENAPI_SPEC = {
               sourceHash: { type: "string" },
               sourceFormat: { type: "string" },
               sourcePath: { type: "string" },
-              targetStacks: { type: "array", items: { type: "object", additionalProperties: true } },
+              targetStacks: {
+                type: "array",
+                items: { type: "object", additionalProperties: true },
+              },
             },
           },
           ruleCount: { type: "integer" },
@@ -687,7 +789,8 @@ export const SPCTRE_OPENAPI_SPEC = {
         required: ["artifact", "manifest", "meta"],
         properties: {
           artifact: {
-            description: "Target artifact. String for text formats, object for JSON/bundle formats.",
+            description:
+              "Target artifact. String for text formats, object for JSON/bundle formats.",
             oneOf: [{ type: "string" }, { type: "object", additionalProperties: true }],
           },
           manifest: { $ref: "#/components/schemas/BundleExportManifest" },
@@ -699,10 +802,7 @@ export const SPCTRE_OPENAPI_SPEC = {
         type: "object",
         required: ["formats", "meta"],
         properties: {
-          formats: {
-            type: "array",
-            items: { $ref: "#/components/schemas/BundleExportManifest" },
-          },
+          formats: { type: "array", items: { $ref: "#/components/schemas/BundleExportManifest" } },
           meta: { $ref: "#/components/schemas/ApiMeta" },
         },
       },
@@ -742,7 +842,16 @@ export const SPCTRE_OPENAPI_SPEC = {
       // ── Compliance ────────────────────────────────────────
       ComplianceExportResponse: {
         type: "object",
-        required: ["schemaVersion", "exportedAt", "artifact", "summary", "escalations", "verificationResults", "frameworkAnnotation", "retentionPlan"],
+        required: [
+          "schemaVersion",
+          "exportedAt",
+          "artifact",
+          "summary",
+          "escalations",
+          "verificationResults",
+          "frameworkAnnotation",
+          "retentionPlan",
+        ],
         properties: {
           schemaVersion: { type: "string", examples: ["spctre/v1"] },
           exportedAt: { type: "string", format: "date-time" },
@@ -781,9 +890,19 @@ export const SPCTRE_OPENAPI_SPEC = {
             items: { type: "string" },
             description: "Optional domain tags used for additional policy matching.",
           },
-          toolIntent: { type: "string", description: "The explicitly declared intent or purpose of the tool call." },
-          planSummary: { type: "string", description: "A high-level plan summary explicitly provided by the runtime." },
-          toolParameters: { type: "object", additionalProperties: true, description: "The structured arguments passed to the tool." },
+          toolIntent: {
+            type: "string",
+            description: "The explicitly declared intent or purpose of the tool call.",
+          },
+          planSummary: {
+            type: "string",
+            description: "A high-level plan summary explicitly provided by the runtime.",
+          },
+          toolParameters: {
+            type: "object",
+            additionalProperties: true,
+            description: "The structured arguments passed to the tool.",
+          },
         },
       },
 
@@ -815,7 +934,14 @@ export const SPCTRE_OPENAPI_SPEC = {
           artifactHash: { type: "string", minLength: 1 },
           verificationType: {
             type: "string",
-            enum: ["AGT_VERIFY", "AGT_VERIFY_EVIDENCE", "AGT_LINT_POLICY", "AGT_REDTEAM", "AGT_REPLAY", "CUSTOM"],
+            enum: [
+              "AGT_VERIFY",
+              "AGT_VERIFY_EVIDENCE",
+              "AGT_LINT_POLICY",
+              "AGT_REDTEAM",
+              "AGT_REPLAY",
+              "CUSTOM",
+            ],
           },
           outcome: { type: "string", enum: ["PASS", "FAIL", "WARN"] },
           revisionId: { type: "string" },
@@ -837,7 +963,11 @@ export const SPCTRE_OPENAPI_SPEC = {
           escrowSignature: { type: "string" },
           escrowVerificationOutcome: { type: "string", enum: ["PASS", "FAIL", "WARN"] },
           escrowVerifiedAt: { type: "string", format: "date-time" },
-          summary: { type: "object", additionalProperties: true, description: "Arbitrary verification summary payload." },
+          summary: {
+            type: "object",
+            additionalProperties: true,
+            description: "Arbitrary verification summary payload.",
+          },
         },
       },
 
@@ -857,10 +987,15 @@ export const SPCTRE_OPENAPI_SPEC = {
         type: "object",
         required: ["source", "branchName"],
         properties: {
-          source: { type: "string", minLength: 1, description: "The raw AGT-compatible policy document (YAML or JSON)." },
+          source: {
+            type: "string",
+            minLength: 1,
+            description: "The raw AGT-compatible policy document (YAML or JSON).",
+          },
           branchName: {
             type: "string",
-            description: "Target branch name. Lowercase letters, digits, hyphens, and slashes; cannot start or end with a hyphen or slash.",
+            description:
+              "Target branch name. Lowercase letters, digits, hyphens, and slashes; cannot start or end with a hyphen or slash.",
           },
           scope: {
             type: "string",
@@ -870,9 +1005,18 @@ export const SPCTRE_OPENAPI_SPEC = {
             // optional (the server defaults it to WORKSPACE when omitted).
             description: "Branch scope. Optional; the server defaults to WORKSPACE when omitted.",
           },
-          connector: { type: "string", description: "Connector id. Required when scope is CONNECTOR." },
-          environment: { type: "string", description: "Environment. Required when scope is ENVIRONMENT." },
-          sourcePath: { type: "string", description: "Provenance path recorded with the revision." },
+          connector: {
+            type: "string",
+            description: "Connector id. Required when scope is CONNECTOR.",
+          },
+          environment: {
+            type: "string",
+            description: "Environment. Required when scope is ENVIRONMENT.",
+          },
+          sourcePath: {
+            type: "string",
+            description: "Provenance path recorded with the revision.",
+          },
           targetStacks: {
             type: "array",
             items: { type: "string" },
@@ -883,13 +1027,31 @@ export const SPCTRE_OPENAPI_SPEC = {
 
       PolicyImportResponse: {
         type: "object",
-        required: ["branchId", "revisionId", "sourceHash", "created", "alreadyCurrent", "ruleCount", "meta"],
+        required: [
+          "branchId",
+          "revisionId",
+          "sourceHash",
+          "created",
+          "alreadyCurrent",
+          "ruleCount",
+          "meta",
+        ],
         properties: {
           branchId: { type: "string" },
           revisionId: { type: "string" },
-          sourceHash: { type: "string", description: "SHA-256 (truncated) of the imported source." },
-          created: { type: "boolean", description: "True when a brand-new branch was created (HTTP 201)." },
-          alreadyCurrent: { type: "boolean", description: "True when the branch head already carried this exact source; no write was performed." },
+          sourceHash: {
+            type: "string",
+            description: "SHA-256 (truncated) of the imported source.",
+          },
+          created: {
+            type: "boolean",
+            description: "True when a brand-new branch was created (HTTP 201).",
+          },
+          alreadyCurrent: {
+            type: "boolean",
+            description:
+              "True when the branch head already carried this exact source; no write was performed.",
+          },
           ruleCount: { type: "integer" },
           meta: { $ref: "#/components/schemas/ApiMeta" },
         },
@@ -902,23 +1064,53 @@ export const SPCTRE_OPENAPI_SPEC = {
           source: {
             type: "string",
             minLength: 1,
-            description: "The raw declarative Blueprint source document (YAML or JSON): an envelope of name, agentId, message, and definition. The definition names its governing policy branch via policyBranchId (a branch name) and must not pin policyRevisionId.",
+            description:
+              "The raw declarative Blueprint source document (YAML or JSON): an envelope of name, agentId, message, and definition. The definition names its governing policy branch via policyBranchId (a branch name) and must not pin policyRevisionId.",
           },
-          sourcePath: { type: "string", description: "Provenance path recorded with the revision." },
+          sourcePath: {
+            type: "string",
+            description: "Provenance path recorded with the revision.",
+          },
         },
       },
 
       BlueprintImportResponse: {
         type: "object",
-        required: ["blueprintId", "revisionId", "definitionHash", "created", "alreadyCurrent", "policyBranchId", "policyRevisionId", "meta"],
+        required: [
+          "blueprintId",
+          "revisionId",
+          "definitionHash",
+          "created",
+          "alreadyCurrent",
+          "policyBranchId",
+          "policyRevisionId",
+          "meta",
+        ],
         properties: {
           blueprintId: { type: "string" },
           revisionId: { type: "string" },
-          definitionHash: { type: "string", description: "SHA-256 of the bound Blueprint definition." },
-          created: { type: "boolean", description: "True when a brand-new Blueprint was created (HTTP 201)." },
-          alreadyCurrent: { type: "boolean", description: "True when a revision with this exact bound definition already existed; no write was performed." },
-          policyBranchId: { type: "string", description: "Resolved id of the governing policy branch." },
-          policyRevisionId: { type: "string", description: "Resolved id of the branch's published revision the Blueprint is bound to." },
+          definitionHash: {
+            type: "string",
+            description: "SHA-256 of the bound Blueprint definition.",
+          },
+          created: {
+            type: "boolean",
+            description: "True when a brand-new Blueprint was created (HTTP 201).",
+          },
+          alreadyCurrent: {
+            type: "boolean",
+            description:
+              "True when a revision with this exact bound definition already existed; no write was performed.",
+          },
+          policyBranchId: {
+            type: "string",
+            description: "Resolved id of the governing policy branch.",
+          },
+          policyRevisionId: {
+            type: "string",
+            description:
+              "Resolved id of the branch's published revision the Blueprint is bound to.",
+          },
           meta: { $ref: "#/components/schemas/ApiMeta" },
         },
       },
@@ -936,39 +1128,28 @@ export const SPCTRE_OPENAPI_SPEC = {
           meta: { $ref: "#/components/schemas/ApiMeta" },
         },
       },
-
     },
 
     responses: {
       Unauthorized: {
         description: "Authentication required or token invalid.",
-        content: {
-          "application/json": { schema: { $ref: "#/components/schemas/ApiError" } },
-        },
+        content: { "application/json": { schema: { $ref: "#/components/schemas/ApiError" } } },
       },
       Forbidden: {
         description: "Token lacks the required scope for this operation.",
-        content: {
-          "application/json": { schema: { $ref: "#/components/schemas/ApiError" } },
-        },
+        content: { "application/json": { schema: { $ref: "#/components/schemas/ApiError" } } },
       },
       NotFound: {
         description: "The requested resource does not exist.",
-        content: {
-          "application/json": { schema: { $ref: "#/components/schemas/ApiError" } },
-        },
+        content: { "application/json": { schema: { $ref: "#/components/schemas/ApiError" } } },
       },
       BadRequest: {
         description: "Request body failed schema validation.",
-        content: {
-          "application/json": { schema: { $ref: "#/components/schemas/ApiError" } },
-        },
+        content: { "application/json": { schema: { $ref: "#/components/schemas/ApiError" } } },
       },
       ServiceUnavailable: {
         description: "Database or upstream dependency unavailable.",
-        content: {
-          "application/json": { schema: { $ref: "#/components/schemas/ApiError" } },
-        },
+        content: { "application/json": { schema: { $ref: "#/components/schemas/ApiError" } } },
       },
       CloudOnly: {
         description:
@@ -1008,9 +1189,7 @@ export const SPCTRE_OPENAPI_SPEC = {
         requestBody: {
           required: true,
           content: {
-            "application/json": {
-              schema: { $ref: "#/components/schemas/EvidenceIngestRequest" },
-            },
+            "application/json": { schema: { $ref: "#/components/schemas/EvidenceIngestRequest" } },
           },
         },
         responses: {
@@ -1042,17 +1221,36 @@ export const SPCTRE_OPENAPI_SPEC = {
       post: {
         operationId: "ingestGitCheckpoint",
         summary: "Ingest a Git checkpoint and diff",
-        description: "Accepts framework-agnostic, normalized Git checkpoint and diff metadata. The server resolves policy context at the checkpoint timestamp and persists the result as evidence. It never executes Git or reads a client repository.",
+        description:
+          "Accepts framework-agnostic, normalized Git checkpoint and diff metadata. The server resolves policy context at the checkpoint timestamp and persists the result as evidence. It never executes Git or reads a client repository.",
         "x-spctre-plan": "oss",
         tags: ["Evidence"],
         security: [{ bearerAuth: [] }],
         requestBody: {
           required: true,
-          content: { "application/json": { schema: { $ref: "#/components/schemas/GitCheckpointIngestRequest" } } },
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/GitCheckpointIngestRequest" },
+            },
+          },
         },
         responses: {
-          "201": { description: "Checkpoint evidence ingested.", content: { "application/json": { schema: { $ref: "#/components/schemas/EvidenceIngestResponse" } } } },
-          "200": { description: "Duplicate submission suppressed.", content: { "application/json": { schema: { $ref: "#/components/schemas/EvidenceIngestResponse" } } } },
+          "201": {
+            description: "Checkpoint evidence ingested.",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/EvidenceIngestResponse" },
+              },
+            },
+          },
+          "200": {
+            description: "Duplicate submission suppressed.",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/EvidenceIngestResponse" },
+              },
+            },
+          },
           "400": { $ref: "#/components/responses/BadRequest" },
           "401": { $ref: "#/components/responses/Unauthorized" },
           "403": { $ref: "#/components/responses/Forbidden" },
@@ -1074,9 +1272,7 @@ export const SPCTRE_OPENAPI_SPEC = {
         requestBody: {
           required: true,
           content: {
-            "application/json": {
-              schema: { $ref: "#/components/schemas/GatewayDecisionRequest" },
-            },
+            "application/json": { schema: { $ref: "#/components/schemas/GatewayDecisionRequest" } },
           },
         },
         responses: {
@@ -1106,9 +1302,7 @@ export const SPCTRE_OPENAPI_SPEC = {
         requestBody: {
           required: true,
           content: {
-            "application/json": {
-              schema: { $ref: "#/components/schemas/GatewayResolveRequest" },
-            },
+            "application/json": { schema: { $ref: "#/components/schemas/GatewayResolveRequest" } },
           },
         },
         responses: {
@@ -1179,8 +1373,7 @@ export const SPCTRE_OPENAPI_SPEC = {
       get: {
         operationId: "getEscalationStatus",
         summary: "Get gateway decision escalation status",
-        description:
-          "Checks the current status of an escalation queue item by its decision ID.",
+        description: "Checks the current status of an escalation queue item by its decision ID.",
         "x-spctre-plan": "oss",
         tags: ["Gateway"],
         parameters: [
@@ -1221,14 +1414,26 @@ export const SPCTRE_OPENAPI_SPEC = {
         requestBody: {
           required: true,
           content: {
-            "application/json": {
-              schema: { $ref: "#/components/schemas/GatewayWebhookRequest" },
-            },
+            "application/json": { schema: { $ref: "#/components/schemas/GatewayWebhookRequest" } },
           },
         },
         responses: {
-          "201": { description: "Gateway event ingested.", content: { "application/json": { schema: { $ref: "#/components/schemas/GatewayIngestResponse" } } } },
-          "200": { description: "Duplicate gateway event.", content: { "application/json": { schema: { $ref: "#/components/schemas/GatewayIngestResponse" } } } },
+          "201": {
+            description: "Gateway event ingested.",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/GatewayIngestResponse" },
+              },
+            },
+          },
+          "200": {
+            description: "Duplicate gateway event.",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/GatewayIngestResponse" },
+              },
+            },
+          },
           "401": { $ref: "#/components/responses/Unauthorized" },
           "422": { $ref: "#/components/responses/BadRequest" },
           "503": { $ref: "#/components/responses/ServiceUnavailable" },
@@ -1248,14 +1453,26 @@ export const SPCTRE_OPENAPI_SPEC = {
         requestBody: {
           required: true,
           content: {
-            "application/json": {
-              schema: { $ref: "#/components/schemas/GatewayWebhookRequest" },
-            },
+            "application/json": { schema: { $ref: "#/components/schemas/GatewayWebhookRequest" } },
           },
         },
         responses: {
-          "201": { description: "Gateway event ingested.", content: { "application/json": { schema: { $ref: "#/components/schemas/GatewayIngestResponse" } } } },
-          "200": { description: "Duplicate gateway event.", content: { "application/json": { schema: { $ref: "#/components/schemas/GatewayIngestResponse" } } } },
+          "201": {
+            description: "Gateway event ingested.",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/GatewayIngestResponse" },
+              },
+            },
+          },
+          "200": {
+            description: "Duplicate gateway event.",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/GatewayIngestResponse" },
+              },
+            },
+          },
           "401": { $ref: "#/components/responses/Unauthorized" },
           "422": { $ref: "#/components/responses/BadRequest" },
           "503": { $ref: "#/components/responses/ServiceUnavailable" },
@@ -1275,14 +1492,26 @@ export const SPCTRE_OPENAPI_SPEC = {
         requestBody: {
           required: true,
           content: {
-            "application/json": {
-              schema: { $ref: "#/components/schemas/GatewayWebhookRequest" },
-            },
+            "application/json": { schema: { $ref: "#/components/schemas/GatewayWebhookRequest" } },
           },
         },
         responses: {
-          "201": { description: "Gateway event ingested.", content: { "application/json": { schema: { $ref: "#/components/schemas/GatewayIngestResponse" } } } },
-          "200": { description: "Duplicate gateway event.", content: { "application/json": { schema: { $ref: "#/components/schemas/GatewayIngestResponse" } } } },
+          "201": {
+            description: "Gateway event ingested.",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/GatewayIngestResponse" },
+              },
+            },
+          },
+          "200": {
+            description: "Duplicate gateway event.",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/GatewayIngestResponse" },
+              },
+            },
+          },
           "401": { $ref: "#/components/responses/Unauthorized" },
           "422": { $ref: "#/components/responses/BadRequest" },
           "503": { $ref: "#/components/responses/ServiceUnavailable" },
@@ -1302,14 +1531,26 @@ export const SPCTRE_OPENAPI_SPEC = {
         requestBody: {
           required: true,
           content: {
-            "application/json": {
-              schema: { $ref: "#/components/schemas/GatewayWebhookRequest" },
-            },
+            "application/json": { schema: { $ref: "#/components/schemas/GatewayWebhookRequest" } },
           },
         },
         responses: {
-          "201": { description: "Gateway event ingested.", content: { "application/json": { schema: { $ref: "#/components/schemas/GatewayIngestResponse" } } } },
-          "200": { description: "Duplicate gateway event.", content: { "application/json": { schema: { $ref: "#/components/schemas/GatewayIngestResponse" } } } },
+          "201": {
+            description: "Gateway event ingested.",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/GatewayIngestResponse" },
+              },
+            },
+          },
+          "200": {
+            description: "Duplicate gateway event.",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/GatewayIngestResponse" },
+              },
+            },
+          },
           "401": { $ref: "#/components/responses/Unauthorized" },
           "422": { $ref: "#/components/responses/BadRequest" },
           "503": { $ref: "#/components/responses/ServiceUnavailable" },
@@ -1337,13 +1578,16 @@ export const SPCTRE_OPENAPI_SPEC = {
         requestBody: {
           required: true,
           content: {
-            "application/json": {
-              schema: { $ref: "#/components/schemas/TokenRefreshRequest" },
-            },
+            "application/json": { schema: { $ref: "#/components/schemas/TokenRefreshRequest" } },
           },
         },
         responses: {
-          "200": { description: "Token pair rotated.", content: { "application/json": { schema: { $ref: "#/components/schemas/TokenRefreshResponse" } } } },
+          "200": {
+            description: "Token pair rotated.",
+            content: {
+              "application/json": { schema: { $ref: "#/components/schemas/TokenRefreshResponse" } },
+            },
+          },
           "400": { $ref: "#/components/responses/BadRequest" },
           "401": { $ref: "#/components/responses/Unauthorized" },
           "503": { $ref: "#/components/responses/ServiceUnavailable" },
@@ -1379,10 +1623,17 @@ export const SPCTRE_OPENAPI_SPEC = {
         security: [{ bearerAuth: [] }],
         requestBody: {
           required: true,
-          content: { "application/json": { schema: { $ref: "#/components/schemas/TrustScoreIngestRequest" } } },
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/TrustScoreIngestRequest" },
+            },
+          },
         },
         responses: {
-          "201": { description: "Trust score ingested.", content: { "application/json": { schema: { type: "object" } } } },
+          "201": {
+            description: "Trust score ingested.",
+            content: { "application/json": { schema: { type: "object" } } },
+          },
           "400": { $ref: "#/components/responses/BadRequest" },
           "401": { $ref: "#/components/responses/Unauthorized" },
           "503": { $ref: "#/components/responses/ServiceUnavailable" },
@@ -1401,10 +1652,15 @@ export const SPCTRE_OPENAPI_SPEC = {
         security: [{ bearerAuth: [] }],
         requestBody: {
           required: true,
-          content: { "application/json": { schema: { $ref: "#/components/schemas/TrustEvaluateRequest" } } },
+          content: {
+            "application/json": { schema: { $ref: "#/components/schemas/TrustEvaluateRequest" } },
+          },
         },
         responses: {
-          "200": { description: "Trust governance evaluated.", content: { "application/json": { schema: { type: "object" } } } },
+          "200": {
+            description: "Trust governance evaluated.",
+            content: { "application/json": { schema: { type: "object" } } },
+          },
           "400": { $ref: "#/components/responses/BadRequest" },
           "401": { $ref: "#/components/responses/Unauthorized" },
           "503": { $ref: "#/components/responses/ServiceUnavailable" },
@@ -1423,10 +1679,17 @@ export const SPCTRE_OPENAPI_SPEC = {
         security: [{ bearerAuth: [] }],
         requestBody: {
           required: true,
-          content: { "application/json": { schema: { $ref: "#/components/schemas/ContextBudgetIngestRequest" } } },
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/ContextBudgetIngestRequest" },
+            },
+          },
         },
         responses: {
-          "201": { description: "Context-budget event ingested.", content: { "application/json": { schema: { type: "object" } } } },
+          "201": {
+            description: "Context-budget event ingested.",
+            content: { "application/json": { schema: { type: "object" } } },
+          },
           "400": { $ref: "#/components/responses/BadRequest" },
           "401": { $ref: "#/components/responses/Unauthorized" },
           "503": { $ref: "#/components/responses/ServiceUnavailable" },
@@ -1457,7 +1720,8 @@ export const SPCTRE_OPENAPI_SPEC = {
             in: "query",
             required: false,
             schema: { type: "boolean" },
-            description: "When true and format is omitted, returns manifests for all supported export targets without artifacts.",
+            description:
+              "When true and format is omitted, returns manifests for all supported export targets without artifacts.",
           },
         ],
         responses: {
@@ -1487,7 +1751,8 @@ export const SPCTRE_OPENAPI_SPEC = {
           "400": { $ref: "#/components/responses/BadRequest" },
           "401": { $ref: "#/components/responses/Unauthorized" },
           "409": {
-            description: "Requested export target is blocked because semantics cannot be safely preserved.",
+            description:
+              "Requested export target is blocked because semantics cannot be safely preserved.",
             content: {
               "application/json": {
                 schema: { $ref: "#/components/schemas/BundleExportBlockedResponse" },
@@ -1524,7 +1789,16 @@ export const SPCTRE_OPENAPI_SPEC = {
             in: "query",
             schema: {
               type: "string",
-              enum: ["soc2", "iso27001", "hipaa", "gdpr", "pci-dss", "nist-ai-rmf", "public-sector", "eu-ai-act"],
+              enum: [
+                "soc2",
+                "iso27001",
+                "hipaa",
+                "gdpr",
+                "pci-dss",
+                "nist-ai-rmf",
+                "public-sector",
+                "eu-ai-act",
+              ],
             },
             description:
               "Framework to annotate the export for. When omitted the raw packet is returned without framework-specific annotations.",
@@ -1532,11 +1806,7 @@ export const SPCTRE_OPENAPI_SPEC = {
           {
             name: "format",
             in: "query",
-            schema: {
-              type: "string",
-              enum: ["json", "pdf"],
-              default: "json",
-            },
+            schema: { type: "string", enum: ["json", "pdf"], default: "json" },
             description: "Export format. PDF export is plan-gated.",
           },
         ],
@@ -1572,18 +1842,14 @@ export const SPCTRE_OPENAPI_SPEC = {
         requestBody: {
           required: true,
           content: {
-            "application/json": {
-              schema: { $ref: "#/components/schemas/EvaluateRequest" },
-            },
+            "application/json": { schema: { $ref: "#/components/schemas/EvaluateRequest" } },
           },
         },
         responses: {
           "200": {
             description: "Evaluation result.",
             content: {
-              "application/json": {
-                schema: { $ref: "#/components/schemas/EvaluateResponse" },
-              },
+              "application/json": { schema: { $ref: "#/components/schemas/EvaluateResponse" } },
             },
           },
           "400": { $ref: "#/components/responses/BadRequest" },
@@ -1608,26 +1874,20 @@ export const SPCTRE_OPENAPI_SPEC = {
         requestBody: {
           required: true,
           content: {
-            "application/json": {
-              schema: { $ref: "#/components/schemas/PolicyImportRequest" },
-            },
+            "application/json": { schema: { $ref: "#/components/schemas/PolicyImportRequest" } },
           },
         },
         responses: {
           "200": {
             description: "Existing branch updated, or already current (no write).",
             content: {
-              "application/json": {
-                schema: { $ref: "#/components/schemas/PolicyImportResponse" },
-              },
+              "application/json": { schema: { $ref: "#/components/schemas/PolicyImportResponse" } },
             },
           },
           "201": {
             description: "New draft branch created.",
             content: {
-              "application/json": {
-                schema: { $ref: "#/components/schemas/PolicyImportResponse" },
-              },
+              "application/json": { schema: { $ref: "#/components/schemas/PolicyImportResponse" } },
             },
           },
           "400": { $ref: "#/components/responses/BadRequest" },
@@ -1648,9 +1908,7 @@ export const SPCTRE_OPENAPI_SPEC = {
         requestBody: {
           required: true,
           content: {
-            "application/json": {
-              schema: { $ref: "#/components/schemas/BlueprintImportRequest" },
-            },
+            "application/json": { schema: { $ref: "#/components/schemas/BlueprintImportRequest" } },
           },
         },
         responses: {
@@ -1673,12 +1931,9 @@ export const SPCTRE_OPENAPI_SPEC = {
           "400": { $ref: "#/components/responses/BadRequest" },
           "401": { $ref: "#/components/responses/Unauthorized" },
           "409": {
-            description: "The named policy branch has no published revision; publish the policy first.",
-            content: {
-              "application/json": {
-                schema: { $ref: "#/components/schemas/ApiError" },
-              },
-            },
+            description:
+              "The named policy branch has no published revision; publish the policy first.",
+            content: { "application/json": { schema: { $ref: "#/components/schemas/ApiError" } } },
           },
         },
       },
@@ -1722,16 +1977,8 @@ export const SPCTRE_OPENAPI_SPEC = {
         "x-spctre-plan": "oss",
         tags: ["Verification"],
         parameters: [
-          {
-            name: "revisionId",
-            in: "query",
-            schema: { type: "string" },
-          },
-          {
-            name: "artifactHash",
-            in: "query",
-            schema: { type: "string" },
-          },
+          { name: "revisionId", in: "query", schema: { type: "string" } },
+          { name: "artifactHash", in: "query", schema: { type: "string" } },
           {
             name: "limit",
             in: "query",
@@ -1766,8 +2013,7 @@ export const SPCTRE_OPENAPI_SPEC = {
       get: {
         operationId: "getApproval",
         summary: "Get an approval by ID",
-        description:
-          "Returns the approval record for a specific revision approval ID.",
+        description: "Returns the approval record for a specific revision approval ID.",
         "x-spctre-plan": "oss",
         tags: ["Approvals"],
         parameters: [
@@ -1783,9 +2029,7 @@ export const SPCTRE_OPENAPI_SPEC = {
           "200": {
             description: "Approval record.",
             content: {
-              "application/json": {
-                schema: { $ref: "#/components/schemas/ApprovalResponse" },
-              },
+              "application/json": { schema: { $ref: "#/components/schemas/ApprovalResponse" } },
             },
           },
           "401": { $ref: "#/components/responses/Unauthorized" },
@@ -1872,7 +2116,10 @@ export const SPCTRE_OPENAPI_SPEC = {
           { name: "count", in: "query", schema: { type: "integer", default: 100 } },
         ],
         responses: {
-          "200": { description: "SCIM ListResponse.", content: { "application/scim+json": { schema: { type: "object" } } } },
+          "200": {
+            description: "SCIM ListResponse.",
+            content: { "application/scim+json": { schema: { type: "object" } } },
+          },
           "401": { $ref: "#/components/responses/Unauthorized" },
           "402": { $ref: "#/components/responses/CloudOnly" },
         },
@@ -1889,7 +2136,10 @@ export const SPCTRE_OPENAPI_SPEC = {
           content: { "application/scim+json": { schema: { type: "object" } } },
         },
         responses: {
-          "201": { description: "User created.", content: { "application/scim+json": { schema: { type: "object" } } } },
+          "201": {
+            description: "User created.",
+            content: { "application/scim+json": { schema: { type: "object" } } },
+          },
           "401": { $ref: "#/components/responses/Unauthorized" },
           "402": { $ref: "#/components/responses/CloudOnly" },
         },
@@ -1902,8 +2152,16 @@ export const SPCTRE_OPENAPI_SPEC = {
     { name: "Evidence", description: "Agent runtime governance decision ingestion." },
     { name: "Gateway", description: "Policy enforcement gateway — decide, escalate, and resolve." },
     { name: "Bundle", description: "Published policy bundle download." },
-    { name: "Policy", description: "Policy authoring — idempotent import of local policy sources (operator/CI identity)." },
-    { name: "Blueprint", description: "Agent Blueprint authoring — idempotent import of local Blueprint sources (operator/CI identity)." },
+    {
+      name: "Policy",
+      description:
+        "Policy authoring — idempotent import of local policy sources (operator/CI identity).",
+    },
+    {
+      name: "Blueprint",
+      description:
+        "Agent Blueprint authoring — idempotent import of local Blueprint sources (operator/CI identity).",
+    },
     { name: "Compliance", description: "Compliance packet export and framework annotation." },
     { name: "Simulation", description: "Policy simulation and evaluation." },
     { name: "Verification", description: "Policy verification result ingestion and query." },
@@ -1911,7 +2169,10 @@ export const SPCTRE_OPENAPI_SPEC = {
     { name: "Auth", description: "Token lifecycle and service identity." },
     { name: "Trust", description: "Trust-score and context-budget runtime governance." },
     { name: "Meta", description: "API meta endpoints (spec, health)." },
-    { name: "Cloud", description: "Cloud-only endpoints (x-spctre-plan: cloud). Returns 402 for OSS tenants." },
+    {
+      name: "Cloud",
+      description: "Cloud-only endpoints (x-spctre-plan: cloud). Returns 402 for OSS tenants.",
+    },
     { name: "SCIM", description: "SCIM 2.0 user provisioning (Cloud only)." },
   ],
 } as const;

@@ -21,9 +21,7 @@ const repositoryMocks = {
   isDatabaseConfigured: isDatabaseConfiguredSpy,
 };
 
-vi.mock("@/lib/db", () => ({
-  sql: {},
-}));
+vi.mock("@/lib/db", () => ({ sql: {} }));
 
 vi.mock("@/lib/workspace/server-context", () => ({
   getWorkspaceContext: vi.fn(async () => ({
@@ -34,9 +32,7 @@ vi.mock("@/lib/workspace/server-context", () => ({
 }));
 
 vi.mock("@/lib/actors", () => ({
-  getActiveActor: vi.fn(async () => ({
-    actor: { id: "actor-1", name: "Admin" },
-  })),
+  getActiveActor: vi.fn(async () => ({ actor: { id: "actor-1", name: "Admin" } })),
   requireActorAdminWorkspace: vi.fn(() => ({ allowed: true, reason: "" })),
 }));
 
@@ -97,10 +93,18 @@ describe("packs domain service", () => {
   it("applies a parameter override to the persisted rules on install", async () => {
     const stripePack = POLICY_PACKS.find((p) => p.connector === "stripe");
     expect(stripePack).toBeDefined();
-    const refundRule = stripePack!.rules.find((r) => r.stableRuleId === "stripe.refund.high_value_review");
-    expect(refundRule?.parameterConstraints?.[0]).toMatchObject({ parameterKey: "stripe.refund_review_threshold_cents", value: 50000 });
+    const refundRule = stripePack!.rules.find(
+      (r) => r.stableRuleId === "stripe.refund.high_value_review",
+    );
+    expect(refundRule?.parameterConstraints?.[0]).toMatchObject({
+      parameterKey: "stripe.refund_review_threshold_cents",
+      value: 50000,
+    });
 
-    repositoryMocks.resolveWorkspaceForAction.mockResolvedValueOnce({ id: "workspace-1", slug: "default" });
+    repositoryMocks.resolveWorkspaceForAction.mockResolvedValueOnce({
+      id: "workspace-1",
+      slug: "default",
+    });
     repositoryMocks.findConnectorBranch.mockResolvedValueOnce(null);
     persistPackInstallBranchSpy.mockResolvedValueOnce({
       branchId: "branch-stripe",
@@ -120,7 +124,7 @@ describe("packs domain service", () => {
     expect("error" in result).toBe(false);
     const persistedCall = persistPackInstallBranchSpy.mock.calls[0][0];
     const persistedRefundRule = persistedCall.rules.find(
-      (r: { stableRuleId: string }) => r.stableRuleId === "stripe.refund.high_value_review"
+      (r: { stableRuleId: string }) => r.stableRuleId === "stripe.refund.high_value_review",
     );
     expect(persistedRefundRule.parameterConstraints[0].value).toBe(200000);
 
@@ -132,14 +136,20 @@ describe("packs domain service", () => {
     // default for reference, may still mention 50000 in metadata — that's
     // expected provenance, not the enforced value.)
     expect(persistedCall.source).toContain("200000");
-    const documentRefundRule = (persistedCall.sourceDocument.rules as Array<{ stable_rule_id: string; parameter_constraints?: Array<{ value: unknown }> }>).find(
-      (r) => r.stable_rule_id === "stripe.refund.high_value_review"
-    );
+    const documentRefundRule = (
+      persistedCall.sourceDocument.rules as Array<{
+        stable_rule_id: string;
+        parameter_constraints?: Array<{ value: unknown }>;
+      }>
+    ).find((r) => r.stable_rule_id === "stripe.refund.high_value_review");
     expect(documentRefundRule?.parameter_constraints?.[0]?.value).not.toBe(50000);
     expect(documentRefundRule?.parameter_constraints?.[0]?.value).toBe(200000);
     const expectedHash = `sha256:${createHash("sha256").update(persistedCall.source).digest("hex").slice(0, 16)}`;
     expect(expectedHash).toBe(
-      `sha256:${createHash("sha256").update(JSON.stringify(persistedCall.sourceDocument, null, 2)).digest("hex").slice(0, 16)}`
+      `sha256:${createHash("sha256")
+        .update(JSON.stringify(persistedCall.sourceDocument, null, 2))
+        .digest("hex")
+        .slice(0, 16)}`,
     );
 
     // The pack's parameter catalog (labels/types/defaults/enum choices) must
@@ -163,11 +173,17 @@ describe("packs domain service", () => {
             sourceFormat: "AGT_YAML",
             parameterConstraints: [{ ...rule.parameterConstraints![0], value: 200000 }],
           }
-        : { ...rule, sourceFormat: "AGT_YAML" }
+        : { ...rule, sourceFormat: "AGT_YAML" },
     );
 
-    repositoryMocks.resolveWorkspaceForAction.mockResolvedValueOnce({ id: "workspace-1", slug: "default" });
-    repositoryMocks.findConnectorBranch.mockResolvedValueOnce({ id: "branch-stripe", active_revision_id: "revision-stripe-1" });
+    repositoryMocks.resolveWorkspaceForAction.mockResolvedValueOnce({
+      id: "workspace-1",
+      slug: "default",
+    });
+    repositoryMocks.findConnectorBranch.mockResolvedValueOnce({
+      id: "branch-stripe",
+      active_revision_id: "revision-stripe-1",
+    });
     repositoryMocks.listRulesForRevision.mockResolvedValueOnce(previouslyOverriddenRules);
     persistPackUpgradeRevisionSpy.mockResolvedValueOnce({
       revisionId: "revision-stripe-2",
@@ -185,7 +201,7 @@ describe("packs domain service", () => {
     expect("error" in result).toBe(false);
     const persistedCall = persistPackUpgradeRevisionSpy.mock.calls[0][0];
     const persistedRefundRule = persistedCall.rules.find(
-      (r: { stableRuleId: string }) => r.stableRuleId === "stripe.refund.high_value_review"
+      (r: { stableRuleId: string }) => r.stableRuleId === "stripe.refund.high_value_review",
     );
     // The override must survive the upgrade — not silently reset to the
     // pack's hard-coded default (50000) because areRulesEquivalent ignored
@@ -197,10 +213,19 @@ describe("packs domain service", () => {
     const stripePack = POLICY_PACKS.find((p) => p.connector === "stripe")!;
 
     // Pre-upgrade active revision: pack defaults (refund threshold 50000).
-    const beforeRules: PolicyRuleSummary[] = stripePack.rules.map((rule) => ({ ...rule, sourceFormat: "AGT_YAML" }));
+    const beforeRules: PolicyRuleSummary[] = stripePack.rules.map((rule) => ({
+      ...rule,
+      sourceFormat: "AGT_YAML",
+    }));
 
-    repositoryMocks.resolveWorkspaceForAction.mockResolvedValueOnce({ id: "workspace-1", slug: "default" });
-    repositoryMocks.findConnectorBranch.mockResolvedValueOnce({ id: "branch-stripe", active_revision_id: "revision-stripe-1" });
+    repositoryMocks.resolveWorkspaceForAction.mockResolvedValueOnce({
+      id: "workspace-1",
+      slug: "default",
+    });
+    repositoryMocks.findConnectorBranch.mockResolvedValueOnce({
+      id: "branch-stripe",
+      active_revision_id: "revision-stripe-1",
+    });
     repositoryMocks.listRulesForRevision.mockResolvedValueOnce(beforeRules);
     persistPackUpgradeRevisionSpy.mockResolvedValueOnce({
       revisionId: "revision-stripe-2",
@@ -278,10 +303,13 @@ describe("mergeObservedVocabulary", () => {
   });
 
   it("adds a bare entry for a connector no installed pack covers", () => {
-    const merged = packsService.mergeObservedVocabulary([], [
-      { connector: "internal-tool", action: "run" },
-      { connector: "internal-tool", action: "stop" },
-    ]);
+    const merged = packsService.mergeObservedVocabulary(
+      [],
+      [
+        { connector: "internal-tool", action: "run" },
+        { connector: "internal-tool", action: "stop" },
+      ],
+    );
     expect(merged).toHaveLength(1);
     expect(merged[0]).toEqual({
       connector: "internal-tool",
@@ -293,11 +321,14 @@ describe("mergeObservedVocabulary", () => {
   });
 
   it("omits sample and managed platform actions from observed suggestions", () => {
-    const merged = packsService.mergeObservedVocabulary([], [
-      { connector: "sample", action: "payment.create" },
-      { connector: "spctre-agent", action: "policy.publish" },
-      { connector: "stripe", action: "refund.create" },
-    ]);
+    const merged = packsService.mergeObservedVocabulary(
+      [],
+      [
+        { connector: "sample", action: "payment.create" },
+        { connector: "spctre-agent", action: "policy.publish" },
+        { connector: "stripe", action: "refund.create" },
+      ],
+    );
 
     expect(merged).toEqual([
       expect.objectContaining({ connector: "stripe", actions: ["refund.create"] }),
@@ -325,12 +356,18 @@ describe("areRulesEquivalent (preserve-customizations detection)", () => {
   });
 
   it("detects a locally-edited semantic check as a customization (not equivalent)", () => {
-    const edited = { ...base, semanticChecks: [{ id: "sc-1", prompt: "block destructive intent", effect: "DENY" as const }] };
+    const edited = {
+      ...base,
+      semanticChecks: [{ id: "sc-1", prompt: "block destructive intent", effect: "DENY" as const }],
+    };
     expect(packsService.areRulesEquivalent(edited, base)).toBe(false);
   });
 
   it("detects an edited control mapping as a customization", () => {
-    const edited = { ...base, controlMappings: [{ framework: "SOC2" as const, controlId: "CC6.6" }] };
+    const edited = {
+      ...base,
+      controlMappings: [{ framework: "SOC2" as const, controlId: "CC6.6" }],
+    };
     expect(packsService.areRulesEquivalent(edited, base)).toBe(false);
   });
 

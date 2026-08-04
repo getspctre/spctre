@@ -8,7 +8,13 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   leadingIcon?: ReactNode;
 }
 
-export function Button({ tone = "default", className, leadingIcon, children, ...props }: ButtonProps) {
+export function Button({
+  tone = "default",
+  className,
+  leadingIcon,
+  children,
+  ...props
+}: ButtonProps) {
   const toneClass =
     tone === "primary"
       ? "buttonPrimary"

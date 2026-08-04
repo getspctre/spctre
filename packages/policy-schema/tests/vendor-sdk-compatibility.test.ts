@@ -20,6 +20,7 @@ describe("pinned vendor SDK compatibility matrix", () => {
       expect.objectContaining({ target: "vercel-ai", packageName: "ai", version: "7.0.22" }),
       expect.objectContaining({ target: "genkit", packageName: "genkit", version: "1.39.0" }),
     ]);
-    for (const target of VENDOR_SDK_COMPATIBILITY_MATRIX) expect(target.version).not.toMatch(/[~^*]/);
+    for (const target of VENDOR_SDK_COMPATIBILITY_MATRIX)
+      expect(target.version).not.toMatch(/[~^*]/);
   });
 });

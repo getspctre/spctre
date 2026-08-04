@@ -47,7 +47,7 @@ function buildCatalogMap(): { connectors: Set<string>; actions: Map<string, Set<
 
 function checkCatalog(
   rules: PolicyRuleSummary[],
-  catalog: { connectors: Set<string>; actions: Map<string, Set<string>> }
+  catalog: { connectors: Set<string>; actions: Map<string, Set<string>> },
 ): LintDiagnostic[] {
   const diagnostics: LintDiagnostic[] = [];
 
@@ -56,7 +56,7 @@ function checkCatalog(
       if (!catalog.connectors.has(connector)) {
         // Suggest closest match by simple prefix check
         const candidates = [...catalog.connectors].filter(
-          (c) => c.startsWith(connector.slice(0, 3)) || connector.startsWith(c.slice(0, 3))
+          (c) => c.startsWith(connector.slice(0, 3)) || connector.startsWith(c.slice(0, 3)),
         );
         const suggestion = candidates.length > 0 ? `  did you mean "${candidates[0]}"?` : "";
         diagnostics.push({
@@ -95,7 +95,7 @@ function checkCatalog(
 
 function checkDeadRules(
   rules: PolicyRuleSummary[],
-  catalog: { connectors: Set<string>; actions: Map<string, Set<string>> }
+  catalog: { connectors: Set<string>; actions: Map<string, Set<string>> },
 ): LintDiagnostic[] {
   const diagnostics: LintDiagnostic[] = [];
 
@@ -146,20 +146,18 @@ function checkConflictShadows(rules: PolicyRuleSummary[]): LintDiagnostic[] {
 function isShadowedBy(rule: PolicyRuleSummary, denyRule: PolicyRuleSummary): boolean {
   const connectorCovered =
     denyRule.connectors.length === 0 ||
-    (rule.connectors.length > 0 &&
-      rule.connectors.every((c) => denyRule.connectors.includes(c)));
+    (rule.connectors.length > 0 && rule.connectors.every((c) => denyRule.connectors.includes(c)));
 
   const actionCovered =
     denyRule.actions.length === 0 ||
-    (rule.actions.length > 0 &&
-      rule.actions.every((a) => denyRule.actions.includes(a)));
+    (rule.actions.length > 0 && rule.actions.every((a) => denyRule.actions.includes(a)));
 
   return connectorCovered && actionCovered;
 }
 
 function fetchCatalogFromApi(
   _controlPlaneUrl: string,
-  _token: string
+  _token: string,
 ): Promise<{ connectors: Set<string>; actions: Map<string, Set<string>> } | null> {
   // Placeholder for future server-side catalog fetch. Returns null to fall back to local catalog.
   return Promise.resolve(null);
@@ -171,23 +169,35 @@ function fetchCatalogFromApi(
  */
 export async function lintFile(
   filePath: string,
-  options: { offline?: boolean; url?: string; token?: string } = {}
+  options: { offline?: boolean; url?: string; token?: string } = {},
 ): Promise<LintResult> {
   if (!fs.existsSync(filePath)) {
-    return { file: filePath, parseErrors: [`Policy file not found: ${filePath}`], diagnostics: [], ruleCount: 0 };
+    return {
+      file: filePath,
+      parseErrors: [`Policy file not found: ${filePath}`],
+      diagnostics: [],
+      ruleCount: 0,
+    };
   }
 
   let document: string;
   try {
     document = fs.readFileSync(filePath, "utf8");
   } catch (err) {
-    return { file: filePath, parseErrors: [`Could not read ${filePath}: ${String(err)}`], diagnostics: [], ruleCount: 0 };
+    return {
+      file: filePath,
+      parseErrors: [`Could not read ${filePath}: ${String(err)}`],
+      diagnostics: [],
+      ruleCount: 0,
+    };
   }
 
   const importResult = parseAgtPolicyDocument({ document, sourcePath: filePath });
   const result: LintResult = {
     file: filePath,
-    parseErrors: importResult.diagnostics.filter((d) => d.severity === "ERROR").map((d) => d.message),
+    parseErrors: importResult.diagnostics
+      .filter((d) => d.severity === "ERROR")
+      .map((d) => d.message),
     diagnostics: [],
     ruleCount: importResult.rules.length,
   };
@@ -213,7 +223,7 @@ export async function lintFile(
 
 export async function lint(
   policyArg: string | undefined,
-  options: { offline: boolean; format?: string; strict: boolean; url?: string }
+  options: { offline: boolean; format?: string; strict: boolean; url?: string },
 ): Promise<void> {
   let config = readConfig();
   if (config && !options.url) config = await refreshIfNeeded(config);
@@ -241,11 +251,16 @@ export async function lint(
 
   printResult(result, options.format, L10nManager.fromConfig(config));
 
-  const hasErrors = result.parseErrors.length > 0 || (options.strict && result.diagnostics.length > 0);
+  const hasErrors =
+    result.parseErrors.length > 0 || (options.strict && result.diagnostics.length > 0);
   if (hasErrors) process.exit(1);
 }
 
-function printResult(result: LintResult, format?: string, l10n = L10nManager.fromConfig(readConfig())): void {
+function printResult(
+  result: LintResult,
+  format?: string,
+  l10n = L10nManager.fromConfig(readConfig()),
+): void {
   if (format === "json") {
     console.log(
       JSON.stringify(
@@ -257,8 +272,8 @@ function printResult(result: LintResult, format?: string, l10n = L10nManager.fro
           ok: result.parseErrors.length === 0 && result.diagnostics.length === 0,
         },
         null,
-        2
-      )
+        2,
+      ),
     );
     return;
   }
@@ -271,7 +286,9 @@ function printResult(result: LintResult, format?: string, l10n = L10nManager.fro
   }
 
   if (result.diagnostics.length === 0) {
-    console.log(l10n.format("diagnostics.noIssues", { filePath: result.file, ruleCount: result.ruleCount }));
+    console.log(
+      l10n.format("diagnostics.noIssues", { filePath: result.file, ruleCount: result.ruleCount }),
+    );
     return;
   }
 

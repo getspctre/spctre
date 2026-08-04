@@ -23,7 +23,10 @@ import {
   deletePolicyBranch,
 } from "@/lib/repositories/policy";
 import type { ImportPolicyBranchResult } from "@/lib/repositories/policy";
-import { insertAuthorizationDenialEvent, resolveWorkspaceForAction } from "@/lib/repositories/workspace";
+import {
+  insertAuthorizationDenialEvent,
+  resolveWorkspaceForAction,
+} from "@/lib/repositories/workspace";
 import { isDatabaseConfigured } from "@/lib/repositories/shared/database";
 import { reservedStableRuleIdError } from "@/lib/policy/reserved-rule-ids";
 import { swallow } from "@/lib/platform/swallow";
@@ -48,7 +51,10 @@ function validateAndParseImport(input: {
   if (!input.source.trim()) return { error: "Policy source is required." };
   if (!input.branchName) return { error: "Branch name is required." };
   if (!/^[a-z0-9][a-z0-9/-]*[a-z0-9]$|^[a-z0-9]$/.test(input.branchName)) {
-    return { error: "Branch name must use only lowercase letters, digits, hyphens, and slashes, and cannot start or end with a hyphen or slash." };
+    return {
+      error:
+        "Branch name must use only lowercase letters, digits, hyphens, and slashes, and cannot start or end with a hyphen or slash.",
+    };
   }
   if (!VALID_SCOPES.has(input.scope)) return { error: "Invalid scope value." };
   if (input.scope === "ENVIRONMENT" && !input.environment) {
@@ -69,7 +75,12 @@ function validateAndParseImport(input: {
 
   const parsed = parseAgtPolicyDocument({ document: input.source, sourcePath: input.sourcePath });
   if (parsed.diagnostics.some((d) => d.severity === "ERROR")) {
-    return { error: `Parse error: ${parsed.diagnostics.filter((d) => d.severity === "ERROR").map((d) => d.message).join("; ")}` };
+    return {
+      error: `Parse error: ${parsed.diagnostics
+        .filter((d) => d.severity === "ERROR")
+        .map((d) => d.message)
+        .join("; ")}`,
+    };
   }
 
   const seenRuleIds = new Set<string>();
@@ -86,13 +97,9 @@ function validateAndParseImport(input: {
   return { parsed };
 }
 
-export type ImportPolicyResult =
-  | { result: PolicyImportResult }
-  | { error: string };
+export type ImportPolicyResult = { result: PolicyImportResult } | { error: string };
 
-export type CreatePolicyBranchResult =
-  | { branchId: string; revisionId: string }
-  | { error: string };
+export type CreatePolicyBranchResult = { branchId: string; revisionId: string } | { error: string };
 
 export async function listPolicyRules(params: {
   workspaceId: string;
@@ -100,7 +107,7 @@ export async function listPolicyRules(params: {
   searchText?: string;
 }) {
   return runWithTenantContext(params.tenantId, () =>
-    listRules(params.workspaceId, params.tenantId, params.searchText)
+    listRules(params.workspaceId, params.tenantId, params.searchText),
   );
 }
 
@@ -109,7 +116,7 @@ export async function getLatestPublishedPolicyBundle(params: {
   tenantId: string;
 }) {
   return runWithTenantContext(params.tenantId, () =>
-    getLatestPublishedBundle(params.workspaceId, params.tenantId)
+    getLatestPublishedBundle(params.workspaceId, params.tenantId),
   );
 }
 
@@ -206,14 +213,15 @@ export async function importPolicyDecision(input: {
       }),
     };
   } catch (error) {
-    logger.error("[importPolicyDecision] database error:", { error: error instanceof Error ? error.message : String(error) });
+    logger.error("[importPolicyDecision] database error:", {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return { error: "An unexpected error occurred. Please try again." };
   }
 }
 
 export type ImportPolicyForTokenResult =
-  | { result: ImportPolicyBranchResult & { ruleCount: number } }
-  | { error: string; status?: number };
+  { result: ImportPolicyBranchResult & { ruleCount: number } } | { error: string; status?: number };
 
 /**
  * Token-authenticated, idempotent policy import for automation/CI. The caller
@@ -242,7 +250,10 @@ export async function importPolicyForToken(input: {
   // letting a workspace-scoped credential draft organization-wide policy — a
   // tenant/privilege-boundary surprise. Reject it on the token path.
   if (input.scope === "ORGANIZATION") {
-    return { error: "Service tokens are workspace-bound; ORGANIZATION-scoped import is not supported.", status: 400 };
+    return {
+      error: "Service tokens are workspace-bound; ORGANIZATION-scoped import is not supported.",
+      status: 400,
+    };
   }
 
   const validation = validateAndParseImport(input);
@@ -254,7 +265,10 @@ export async function importPolicyForToken(input: {
   // path must never import one. (The browser importer keeps a human in the
   // loop; this guard covers the unattended operator/CI path.)
   if (parsed.rules.length === 0) {
-    return { error: "Policy document contains no rules; refusing to import an empty policy.", status: 400 };
+    return {
+      error: "Policy document contains no rules; refusing to import an empty policy.",
+      status: 400,
+    };
   }
   // Reject match-all rules: a rule with no connector, action, or domain target
   // matches every request, which is a default-allow/deny footgun on import.
@@ -262,7 +276,7 @@ export async function importPolicyForToken(input: {
     (rule) =>
       (rule.connectors?.length ?? 0) === 0 &&
       (rule.actions?.length ?? 0) === 0 &&
-      (rule.domains?.length ?? 0) === 0
+      (rule.domains?.length ?? 0) === 0,
   );
   if (untargeted) {
     return {
@@ -289,7 +303,7 @@ export async function importPolicyForToken(input: {
         compatibility: parsed.compatibility,
         message: "Import via policy:import token",
         targetStacks: input.targetStacks,
-      })
+      }),
     );
     return { result: { ...imported, ruleCount: parsed.rules.length } };
   } catch (error) {
@@ -315,7 +329,10 @@ export async function createPolicyBranchDecision(input: {
   if (!input.branchName) return { error: "Branch name is required." };
   if (!input.purpose) return { error: "Policy purpose is required." };
   if (!/^[a-z0-9][a-z0-9/-]*[a-z0-9]$|^[a-z0-9]$/.test(input.branchName)) {
-    return { error: "Branch name must use only lowercase letters, digits, hyphens, and slashes, and cannot start or end with a hyphen or slash." };
+    return {
+      error:
+        "Branch name must use only lowercase letters, digits, hyphens, and slashes, and cannot start or end with a hyphen or slash.",
+    };
   }
   if (!VALID_SCOPES.has(input.scope)) return { error: "Invalid scope value." };
   if (input.scope === "ENVIRONMENT" && !input.environment) {
@@ -378,14 +395,14 @@ export async function createPolicyBranchDecision(input: {
 
     return { branchId: persisted.branchId, revisionId: persisted.revisionId };
   } catch (error) {
-    logger.error("[createPolicyBranchDecision] database error:", { error: error instanceof Error ? error.message : String(error) });
+    logger.error("[createPolicyBranchDecision] database error:", {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return { error: "An unexpected error occurred. Please try again." };
   }
 }
 
-export type RollbackBranchResult =
-  | { artifactHash: string; revisionId: string }
-  | { error: string };
+export type RollbackBranchResult = { artifactHash: string; revisionId: string } | { error: string };
 
 export async function rollbackBranchDecision(input: {
   branchId: string;
@@ -406,7 +423,7 @@ export async function rollbackBranchDecision(input: {
   });
   const adminCheck = requireActorAdminWorkspace(
     actor,
-    branch.workspace_slug ?? workspaceContext.workspaceSlug
+    branch.workspace_slug ?? workspaceContext.workspaceSlug,
   );
   if (!adminCheck.allowed) {
     await insertAuthorizationDenialEvent({
@@ -443,7 +460,9 @@ export async function rollbackBranchDecision(input: {
       actorId: actor.id,
     });
   } catch (error) {
-    logger.error("[rollbackBranchDecision] database error:", { error: error instanceof Error ? error.message : String(error) });
+    logger.error("[rollbackBranchDecision] database error:", {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return { error: "An unexpected error occurred. Please try again." };
   }
 
@@ -507,7 +526,7 @@ export async function getPoliciesPageModel(params: {
         Promise.all([
           listBranches(workspaceContext.workspaceId, workspaceContext.tenantId),
           listRules(workspaceContext.workspaceId, workspaceContext.tenantId),
-        ])
+        ]),
       );
       if (dbBranches.length || dbRules.length) {
         branches = dbBranches;
@@ -523,13 +542,5 @@ export async function getPoliciesPageModel(params: {
     }
   }
 
-  return {
-    workspaceContext,
-    appViewMode,
-    isAdmin,
-    branches,
-    rules,
-    session,
-    degraded,
-  };
+  return { workspaceContext, appViewMode, isAdmin, branches, rules, session, degraded };
 }

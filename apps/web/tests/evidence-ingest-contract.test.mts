@@ -40,12 +40,11 @@ vi.mock("@/lib/repositories/auth/session", () => ({
 
 vi.mock("@/lib/service-tokens", () => ({
   authenticateServiceToken: authenticateServiceTokenSpy,
-  hasBearerToken: (request: Request) => (request.headers.get("authorization") ?? "").startsWith("Bearer "),
+  hasBearerToken: (request: Request) =>
+    (request.headers.get("authorization") ?? "").startsWith("Bearer "),
 }));
 
-vi.mock("@/lib/platform/config", () => ({
-  isGatewayEnabled: () => false,
-}));
+vi.mock("@/lib/platform/config", () => ({ isGatewayEnabled: () => false }));
 
 vi.mock("@/lib/repositories/gateway", () => ({
   persistGatewayDecision: persistGatewayDecisionSpy,
@@ -91,10 +90,7 @@ const baseParsed: EvidenceIngestInput = {
 };
 
 function evidenceRequest(headers: HeadersInit = { authorization: "Bearer token" }) {
-  return new Request("http://localhost:3000/api/evidence", {
-    method: "POST",
-    headers,
-  });
+  return new Request("http://localhost:3000/api/evidence", { method: "POST", headers });
 }
 
 function ingest(parsed: EvidenceIngestInput = baseParsed, headers?: HeadersInit) {
@@ -147,14 +143,16 @@ describe("evidence ingest contract", () => {
       "spctre.gateway.outcome": "not_evaluated",
     });
 
-    expect(insertRuntimeEvidenceWithDedupSpy).toHaveBeenCalledWith(expect.objectContaining({
-      tenantId: "00000000-0000-0000-0000-000000000010",
-      workspaceId: "workspace-real",
-      rawEvidenceWithSource: expect.objectContaining({
-        requestId: "req-contract",
-        _source: "hook",
+    expect(insertRuntimeEvidenceWithDedupSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tenantId: "00000000-0000-0000-0000-000000000010",
+        workspaceId: "workspace-real",
+        rawEvidenceWithSource: expect.objectContaining({
+          requestId: "req-contract",
+          _source: "hook",
+        }),
       }),
-    }));
+    );
     expect(appendOperationsLogSpy).toHaveBeenCalledTimes(1);
     expect(appendOperationsLogSpy).toHaveBeenCalledWith({
       tenantId: "00000000-0000-0000-0000-000000000010",
@@ -174,7 +172,10 @@ describe("evidence ingest contract", () => {
         runtimeAdapter: "codex-hook",
       },
     });
-    expect(recordConversionTelemetrySpy).toHaveBeenCalledWith("00000000-0000-0000-0000-000000000010", "FIRST_EVIDENCE_INGEST");
+    expect(recordConversionTelemetrySpy).toHaveBeenCalledWith(
+      "00000000-0000-0000-0000-000000000010",
+      "FIRST_EVIDENCE_INGEST",
+    );
   });
 
   it("suppresses side effects on duplicate decision ingest", async () => {
@@ -211,7 +212,9 @@ describe("evidence ingest contract", () => {
     });
 
     expect(result.status).toBe(400);
-    expect(result.body).toEqual({ error: "policyRefs must include at least one policy reference." });
+    expect(result.body).toEqual({
+      error: "policyRefs must include at least one policy reference.",
+    });
     expect(authenticateServiceTokenSpy).not.toHaveBeenCalled();
     expect(insertRuntimeEvidenceWithDedupSpy).not.toHaveBeenCalled();
     expect(appendOperationsLogSpy).not.toHaveBeenCalled();

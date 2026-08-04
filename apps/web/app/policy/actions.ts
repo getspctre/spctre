@@ -7,16 +7,17 @@ import { getWorkspaceContext } from "@/lib/workspace";
 import { verifyWriteAccess } from "@/lib/demo-guard";
 
 export type ImportState =
-  | { result: PolicyImportResult; error?: never }
-  | { error: string; result?: never }
-  | null;
+  { result: PolicyImportResult; error?: never } | { error: string; result?: never } | null;
 
 export type CreatePolicyBranchState =
   | { branchId: string; revisionId: string; error?: never }
   | { error: string; branchId?: never; revisionId?: never }
   | null;
 
-export async function createPolicyBranch(_prev: CreatePolicyBranchState, formData: FormData): Promise<CreatePolicyBranchState> {
+export async function createPolicyBranch(
+  _prev: CreatePolicyBranchState,
+  formData: FormData,
+): Promise<CreatePolicyBranchState> {
   const context = await getWorkspaceContext();
   const writeCheck = verifyWriteAccess(context.tenantId);
   if (!writeCheck.allowed) return { error: writeCheck.error || "Write access denied." };
@@ -41,7 +42,8 @@ export async function importPolicy(_prev: ImportState, formData: FormData): Prom
 
   const pastedSource = (formData.get("source") as string | null) ?? "";
   const uploadedSource = formData.get("sourceFile");
-  const sourceFile = uploadedSource instanceof File && uploadedSource.size > 0 ? uploadedSource : null;
+  const sourceFile =
+    uploadedSource instanceof File && uploadedSource.size > 0 ? uploadedSource : null;
   const source = pastedSource.trim() || (sourceFile ? await sourceFile.text() : "");
   const branchName = ((formData.get("branchName") as string | null) ?? "").trim();
   const scope = (formData.get("scope") as string | null) ?? "WORKSPACE";

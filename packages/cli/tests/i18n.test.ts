@@ -29,8 +29,8 @@ describe("CLI localization", () => {
     expect(
       l10n.format("diagnostics.unknownConnector", {
         connector: "github",
-        suggestion: "  did you mean \"gitlab\"?",
-      })
+        suggestion: '  did you mean "gitlab"?',
+      }),
     ).toContain("github");
   });
 

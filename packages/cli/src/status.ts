@@ -29,14 +29,19 @@ function describeTokenStatus(config: SpctreCliConfig): string {
     : `valid · refreshes automatically · refresh expires in ${refreshDaysRemaining ?? "?"}d`;
 }
 
-function resolveLocalArtifactHash(config: SpctreCliConfig): { localHash: string; bundleExists: boolean } {
+function resolveLocalArtifactHash(config: SpctreCliConfig): {
+  localHash: string;
+  bundleExists: boolean;
+} {
   const bundleAbsPath = path.resolve(process.cwd(), config.bundlePath);
   const bundleExists = fs.existsSync(bundleAbsPath);
 
   let localHash = config.artifactHash;
   if (bundleExists) {
     try {
-      const bundle = JSON.parse(fs.readFileSync(bundleAbsPath, "utf8")) as { artifactHash?: string };
+      const bundle = JSON.parse(fs.readFileSync(bundleAbsPath, "utf8")) as {
+        artifactHash?: string;
+      };
       if (bundle.artifactHash) localHash = bundle.artifactHash;
     } catch {
       // use config hash as fallback
@@ -48,7 +53,7 @@ function resolveLocalArtifactHash(config: SpctreCliConfig): { localHash: string;
 async function checkConnectivity(
   config: SpctreCliConfig,
   localHash: string,
-  format: string
+  format: string,
 ): Promise<ConnectivityStatus> {
   if (format === "text") process.stderr.write("\nChecking connectivity...");
   try {
@@ -67,7 +72,12 @@ async function checkConnectivity(
     const fresh = serverHash ? serverHash === localHash : null;
     const plan = res.headers.get("x-spctre-plan") ?? "oss";
     if (format === "text") {
-      const freshLabel = fresh === null ? "" : fresh ? "  policy current" : `  policy outdated (server: ${serverHash?.slice(0, 19)})`;
+      const freshLabel =
+        fresh === null
+          ? ""
+          : fresh
+            ? "  policy current"
+            : `  policy outdated (server: ${serverHash?.slice(0, 19)})`;
       console.log(` ok (${latency}ms)${freshLabel}`);
     }
     return { ok: true, latencyMs: latency, serverHash, fresh, plan };
@@ -82,13 +92,14 @@ function printStatusJson(
   tokenLine: string,
   localHash: string,
   bundleExists: boolean,
-  connectivityStatus: ConnectivityStatus | null
+  connectivityStatus: ConnectivityStatus | null,
 ) {
   const shadowActive = isShadowModeActive();
   const shadowEntries = readShadowLog();
-  const shadow = (shadowEntries.length > 0 || shadowActive)
-    ? { active: shadowActive, ...shadowLogSummary(shadowEntries) }
-    : null;
+  const shadow =
+    shadowEntries.length > 0 || shadowActive
+      ? { active: shadowActive, ...shadowLogSummary(shadowEntries) }
+      : null;
   printJson({
     configPath: configPath(),
     workspaceId: config.workspaceId,
@@ -113,7 +124,9 @@ function printShadowSection() {
   const summary = shadowLogSummary(shadowEntries);
   const activeLabel = shadowActive ? "  [ACTIVE]" : "";
   console.log(`\nShadow mode${activeLabel}`);
-  console.log(`  Decisions  ${summary.total} (${summary.allowed} allow, ${summary.denied} deny, ${summary.warned} warn)`);
+  console.log(
+    `  Decisions  ${summary.total} (${summary.allowed} allow, ${summary.denied} deny, ${summary.warned} warn)`,
+  );
   if (summary.topBlockedRules.length > 0) {
     console.log(`  Top blocked  ${summary.topBlockedRules.join("  ")}`);
   }
@@ -148,7 +161,9 @@ export async function status(options: { check: boolean; output?: string }) {
   const { localHash, bundleExists } = resolveLocalArtifactHash(config);
   const format = getOutputFormat(options.output);
 
-  const connectivityStatus = options.check ? await checkConnectivity(config, localHash, format) : null;
+  const connectivityStatus = options.check
+    ? await checkConnectivity(config, localHash, format)
+    : null;
 
   if (format === "json") {
     printStatusJson(config, tokenLine, localHash, bundleExists, connectivityStatus);

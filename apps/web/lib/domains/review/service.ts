@@ -5,15 +5,9 @@
 // (app/review/review-page-model.ts), not here.
 export type { BlastRadius, BranchRevision } from "@/lib/repositories/policy";
 
-export {
-  addApprovalDecision,
-  getApprovalDetail,
-  listPendingApprovals,
-} from "./approvals";
+export { addApprovalDecision, getApprovalDetail, listPendingApprovals } from "./approvals";
 
-export {
-  publishRevisionDecision,
-} from "./publish";
+export { publishRevisionDecision } from "./publish";
 
 export {
   type DraftRevisionState,

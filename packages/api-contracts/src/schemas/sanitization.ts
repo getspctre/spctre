@@ -1,11 +1,17 @@
-const SENSITIVE_KEY_PATTERN = /authorization|token|secret|password|credential|jwt|cookie|ssn|card|cvv|private|cert|ssh|client_id|client_secret|clientsecret|clientid|db_|\bkey\b|^key$|api_?key|apiKey|secret_?key|secretKey|private_?key|privateKey|auth_?key|authKey|access_?key|accessKey|sensitive/i;
+const SENSITIVE_KEY_PATTERN =
+  /authorization|token|secret|password|credential|jwt|cookie|ssn|card|cvv|private|cert|ssh|client_id|client_secret|clientsecret|clientid|db_|\bkey\b|^key$|api_?key|apiKey|secret_?key|secretKey|private_?key|privateKey|auth_?key|authKey|access_?key|accessKey|sensitive/i;
 
 export function redactAndBoundParameters(
   params: unknown,
   maxDepth = 4,
-  maxNodes = 100
+  maxNodes = 100,
 ): Record<string, unknown> | undefined {
-  if (params === null || params === undefined || typeof params !== "object" || Array.isArray(params)) {
+  if (
+    params === null ||
+    params === undefined ||
+    typeof params !== "object" ||
+    Array.isArray(params)
+  ) {
     return undefined;
   }
 
@@ -66,11 +72,7 @@ export function redactAndBoundParameters(
     : {};
 }
 
-export function redactAndBoundJson(
-  value: unknown,
-  maxDepth = 6,
-  maxNodes = 250
-): unknown {
+export function redactAndBoundJson(value: unknown, maxDepth = 6, maxNodes = 250): unknown {
   let nodeCount = 0;
 
   function walk(val: unknown, key: string, depth: number): unknown {

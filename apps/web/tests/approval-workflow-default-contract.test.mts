@@ -3,7 +3,8 @@ import { afterEach, describe, expect, it } from "vitest";
 
 const databaseAvailable = Boolean(process.env.DATABASE_URL);
 const { rawSql, runWithTenantContext } = await import("../lib/db");
-const { approvalRulesFromWorkflow, getApprovalWorkflowForContext } = await import("../lib/repositories/approval-workflow/config");
+const { approvalRulesFromWorkflow, getApprovalWorkflowForContext } =
+  await import("../lib/repositories/approval-workflow/config");
 
 interface Fixture {
   tenantId: string;
@@ -53,10 +54,12 @@ describe.skipIf(!databaseAvailable)("default approval workflow contract", () => 
   it("uses the sole reviewer's highest-priority eligible role", async () => {
     const fixture = await createFixture([["Security", "Platform"]]);
 
-    const workflow = await runWithTenantContext(fixture.tenantId, () => getApprovalWorkflowForContext({
-      tenantId: fixture.tenantId,
-      workspaceId: fixture.workspaceId,
-    }));
+    const workflow = await runWithTenantContext(fixture.tenantId, () =>
+      getApprovalWorkflowForContext({
+        tenantId: fixture.tenantId,
+        workspaceId: fixture.workspaceId,
+      }),
+    );
 
     expect(approvalRulesFromWorkflow(workflow)).toEqual([{ role: "Security", requiredCount: 1 }]);
   });
@@ -64,10 +67,12 @@ describe.skipIf(!databaseAvailable)("default approval workflow contract", () => 
   it("collapses multiple eligible reviewers to a single satisfiable lane", async () => {
     const fixture = await createFixture([["Security"], ["Platform"]]);
 
-    const workflow = await runWithTenantContext(fixture.tenantId, () => getApprovalWorkflowForContext({
-      tenantId: fixture.tenantId,
-      workspaceId: fixture.workspaceId,
-    }));
+    const workflow = await runWithTenantContext(fixture.tenantId, () =>
+      getApprovalWorkflowForContext({
+        tenantId: fixture.tenantId,
+        workspaceId: fixture.workspaceId,
+      }),
+    );
 
     // policy_approval holds one row per reviewer identity and revision, so an
     // implicit multi-role default is unsatisfiable for a solo operator once a
@@ -83,10 +88,12 @@ describe.skipIf(!databaseAvailable)("default approval workflow contract", () => 
     await rawSql`UPDATE app_principal SET invite_status = 'REVOKED' WHERE id = ${fixture.principalIds[2]}`;
     await rawSql`UPDATE app_principal SET idp_deprovisioned_at = now() WHERE id = ${fixture.principalIds[3]}`;
 
-    const workflow = await runWithTenantContext(fixture.tenantId, () => getApprovalWorkflowForContext({
-      tenantId: fixture.tenantId,
-      workspaceId: fixture.workspaceId,
-    }));
+    const workflow = await runWithTenantContext(fixture.tenantId, () =>
+      getApprovalWorkflowForContext({
+        tenantId: fixture.tenantId,
+        workspaceId: fixture.workspaceId,
+      }),
+    );
 
     expect(approvalRulesFromWorkflow(workflow)).toEqual([{ role: "Security", requiredCount: 1 }]);
   });

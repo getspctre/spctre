@@ -59,7 +59,10 @@ export function readStoredConfig(): SpctreCliConfig | null {
   if (!fs.existsSync(target)) return null;
 
   try {
-    return { ...defaultConfig(), ...(JSON.parse(fs.readFileSync(target, "utf8")) as Partial<SpctreCliConfig>) };
+    return {
+      ...defaultConfig(),
+      ...(JSON.parse(fs.readFileSync(target, "utf8")) as Partial<SpctreCliConfig>),
+    };
   } catch {
     return null;
   }
@@ -90,9 +93,10 @@ export function writeConfig(config: SpctreCliConfig) {
 export function requireConfig(): SpctreCliConfig {
   const config = readConfig();
   if (!config) {
-    const ciHint = process.env.CI === "true"
-      ? " In CI, set SPCTRE_API_TOKEN + SPCTRE_WORKSPACE and run: spctre init --token <key> --workspace <slug>"
-      : "";
+    const ciHint =
+      process.env.CI === "true"
+        ? " In CI, set SPCTRE_API_TOKEN + SPCTRE_WORKSPACE and run: spctre init --token <key> --workspace <slug>"
+        : "";
     console.error(`Error: No .spctre/config.json found. Run spctre init first.${ciHint}`);
     process.exit(1);
   }
@@ -131,7 +135,12 @@ function applyEnvOverrides(config: SpctreCliConfig): SpctreCliConfig {
     serviceAccountMode,
     ...(process.env.SPCTRE_URL ? { controlPlaneUrl: process.env.SPCTRE_URL } : {}),
     ...(process.env.SPCTRE_GATEWAY_URL ? { gatewayUrl: process.env.SPCTRE_GATEWAY_URL } : {}),
-    ...(process.env.SPCTRE_GATEWAY_OUTAGE_POLICY ? { gatewayOutagePolicy: process.env.SPCTRE_GATEWAY_OUTAGE_POLICY as SpctreCliConfig["gatewayOutagePolicy"] } : {}),
+    ...(process.env.SPCTRE_GATEWAY_OUTAGE_POLICY
+      ? {
+          gatewayOutagePolicy: process.env
+            .SPCTRE_GATEWAY_OUTAGE_POLICY as SpctreCliConfig["gatewayOutagePolicy"],
+        }
+      : {}),
     ...(process.env.SPCTRE_WORKSPACE ? { workspaceId: process.env.SPCTRE_WORKSPACE } : {}),
     ...(process.env.SPCTRE_AGENT ? { agentId: process.env.SPCTRE_AGENT } : {}),
     ...(process.env.SPCTRE_BUNDLE_PATH ? { bundlePath: process.env.SPCTRE_BUNDLE_PATH } : {}),

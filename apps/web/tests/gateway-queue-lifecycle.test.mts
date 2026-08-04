@@ -44,7 +44,11 @@ function makeSqlMock() {
       insertedRows.push("escalation_queue");
       return Promise.resolve([{ id: "eq-uuid-1" }]);
     }
-    if (joined.includes("FROM GATEWAY_ESCALATION_QUEUE") && joined.includes("STATUS") && !joined.startsWith("UPDATE")) {
+    if (
+      joined.includes("FROM GATEWAY_ESCALATION_QUEUE") &&
+      joined.includes("STATUS") &&
+      !joined.startsWith("UPDATE")
+    ) {
       const queueId = args[1] as string;
       const resolved = resolvedQueueIds.get(queueId);
       if (resolved) {
@@ -57,7 +61,14 @@ function makeSqlMock() {
           },
         ]);
       }
-      return Promise.resolve([{ status: "PENDING", resolution_outcome: null, resolution_note: null, agent_guidance: null }]);
+      return Promise.resolve([
+        {
+          status: "PENDING",
+          resolution_outcome: null,
+          resolution_note: null,
+          agent_guidance: null,
+        },
+      ]);
     }
     if (joined.includes("UPDATE GATEWAY_ESCALATION_QUEUE")) {
       const resolutionOutcome = args[1] as string;
@@ -65,7 +76,11 @@ function makeSqlMock() {
       const agentGuidance = (args[3] as string | null | undefined) ?? null;
       const queueId = args[4] as string;
       queueResolveUpdates += 1;
-      resolvedQueueIds.set(queueId, { outcome: resolutionOutcome, note: resolutionNote, agentGuidance } as any);
+      resolvedQueueIds.set(queueId, {
+        outcome: resolutionOutcome,
+        note: resolutionNote,
+        agentGuidance,
+      } as any);
       return Promise.resolve([{ id: "eq-uuid-1" }]);
     }
     if (joined.includes("UPDATE GATEWAY_DECISION")) {
@@ -88,13 +103,11 @@ function makeSqlMock() {
 
 const sqlMock = makeSqlMock();
 
-vi.mock("@/lib/db", () => ({
-  sql: sqlMock,
-}));
+vi.mock("@/lib/db", () => ({ sql: sqlMock }));
 
 vi.mock("@/lib/demo", () => ({
   DEMO_TENANT_ID: "demo-tenant",
-  DEMO_WORKSPACE_ID: "demo-workspace"
+  DEMO_WORKSPACE_ID: "demo-workspace",
 }));
 
 vi.mock("@/lib/repositories/seed/local-dev", () => ({
@@ -102,15 +115,21 @@ vi.mock("@/lib/repositories/seed/local-dev", () => ({
 }));
 
 vi.mock("@/lib/service-tokens", () => ({
-  authenticateServiceToken: vi.fn().mockResolvedValue({
-    ok: true,
-    auth: { tenantId: "22222222-2222-4222-8222-222222222222", workspaceId: "regular-workspace", principalId: "svc-gateway-test", scopes: ["evidence:write"] },
-  }),
+  authenticateServiceToken: vi
+    .fn()
+    .mockResolvedValue({
+      ok: true,
+      auth: {
+        tenantId: "22222222-2222-4222-8222-222222222222",
+        workspaceId: "regular-workspace",
+        principalId: "svc-gateway-test",
+        scopes: ["evidence:write"],
+      },
+    }),
   // Return true only when an Authorization header is present so that the
   // evidence route (which always sends one) uses token auth, while the
   // gateway decide/resolve routes (which don't) fall through to session auth.
-  hasBearerToken: (req: Request) =>
-    (req.headers.get("authorization") ?? "").startsWith("Bearer "),
+  hasBearerToken: (req: Request) => (req.headers.get("authorization") ?? "").startsWith("Bearer "),
 }));
 
 vi.mock("@/lib/auth-session", () => ({
@@ -118,10 +137,12 @@ vi.mock("@/lib/auth-session", () => ({
 }));
 
 vi.mock("@/lib/workspace/scope", () => ({
-  getActiveScope: vi.fn().mockResolvedValue({
-    tenantId: "22222222-2222-4222-8222-222222222222",
-    workspaceId: "regular-workspace",
-  }),
+  getActiveScope: vi
+    .fn()
+    .mockResolvedValue({
+      tenantId: "22222222-2222-4222-8222-222222222222",
+      workspaceId: "regular-workspace",
+    }),
 }));
 
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
@@ -168,14 +189,11 @@ const DEMO_TOKEN = "demo-token-gateway-tests";
 
 function buildEvidenceRequest(
   decisionId: string,
-  gatewayFields: Record<string, unknown> = {}
+  gatewayFields: Record<string, unknown> = {},
 ): Request {
   return new Request("http://localhost:3000/api/evidence", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${DEMO_TOKEN}`,
-    },
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${DEMO_TOKEN}` },
     body: JSON.stringify({
       decisionId,
       tenantId: "22222222-2222-4222-8222-222222222222",
@@ -190,7 +208,12 @@ function buildEvidenceRequest(
       policyRefs: ["stripe.payment.authorize"],
       artifactHash: "sha256:gateway-test",
       policyContext: [
-        { scope: "WORKSPACE", branchId: "b-gw-1", revisionId: "r-gw-1", artifactHash: "sha256:gateway-test" }
+        {
+          scope: "WORKSPACE",
+          branchId: "b-gw-1",
+          revisionId: "r-gw-1",
+          artifactHash: "sha256:gateway-test",
+        },
       ],
       ...gatewayFields,
     }),
@@ -204,7 +227,9 @@ describe("evaluateGatewayDecision — outcome logic", () => {
     const result = evaluateGatewayDecision({
       decisionId: "dec-low",
       artifactHash: "sha256:abc",
-      policyContext: [{ scope: "WORKSPACE", branchId: "b-1", revisionId: "r-1", artifactHash: "sha256:abc" }],
+      policyContext: [
+        { scope: "WORKSPACE", branchId: "b-1", revisionId: "r-1", artifactHash: "sha256:abc" },
+      ],
     });
     expect(result.outcome).toBe("PROCEED");
     expect(result.shouldQueue).toBe(false);
@@ -215,7 +240,9 @@ describe("evaluateGatewayDecision — outcome logic", () => {
     const result = evaluateGatewayDecision({
       decisionId: "dec-high",
       artifactHash: "sha256:abc",
-      policyContext: [{ scope: "WORKSPACE", branchId: "b-1", revisionId: "r-1", artifactHash: "sha256:abc" }],
+      policyContext: [
+        { scope: "WORKSPACE", branchId: "b-1", revisionId: "r-1", artifactHash: "sha256:abc" },
+      ],
       consequence: "HIGH",
     });
     expect(result.outcome).toBe("ESCALATE");
@@ -228,7 +255,9 @@ describe("evaluateGatewayDecision — outcome logic", () => {
     const result = evaluateGatewayDecision({
       decisionId: "dec-conf",
       artifactHash: "sha256:abc",
-      policyContext: [{ scope: "WORKSPACE", branchId: "b-1", revisionId: "r-1", artifactHash: "sha256:abc" }],
+      policyContext: [
+        { scope: "WORKSPACE", branchId: "b-1", revisionId: "r-1", artifactHash: "sha256:abc" },
+      ],
       confidence: 0.55,
     });
     expect(result.outcome).toBe("ESCALATE");
@@ -239,7 +268,9 @@ describe("evaluateGatewayDecision — outcome logic", () => {
     const result = evaluateGatewayDecision({
       decisionId: "dec-trust",
       artifactHash: "sha256:abc",
-      policyContext: [{ scope: "WORKSPACE", branchId: "b-1", revisionId: "r-1", artifactHash: "sha256:abc" }],
+      policyContext: [
+        { scope: "WORKSPACE", branchId: "b-1", revisionId: "r-1", artifactHash: "sha256:abc" },
+      ],
       trustScore: 0.4,
     });
     expect(result.outcome).toBe("ESCALATE");
@@ -250,7 +281,9 @@ describe("evaluateGatewayDecision — outcome logic", () => {
     const result = evaluateGatewayDecision({
       decisionId: "dec-amt",
       artifactHash: "sha256:abc",
-      policyContext: [{ scope: "WORKSPACE", branchId: "b-1", revisionId: "r-1", artifactHash: "sha256:abc" }],
+      policyContext: [
+        { scope: "WORKSPACE", branchId: "b-1", revisionId: "r-1", artifactHash: "sha256:abc" },
+      ],
       amountUsd: 15000,
     });
     expect(result.outcome).toBe("ESCALATE");
@@ -261,7 +294,9 @@ describe("evaluateGatewayDecision — outcome logic", () => {
     const result = evaluateGatewayDecision({
       decisionId: "dec-abort",
       artifactHash: "sha256:abc",
-      policyContext: [{ scope: "WORKSPACE", branchId: "b-1", revisionId: "r-1", artifactHash: "sha256:abc" }],
+      policyContext: [
+        { scope: "WORKSPACE", branchId: "b-1", revisionId: "r-1", artifactHash: "sha256:abc" },
+      ],
       consequence: "PROHIBITED",
     });
     expect(result.outcome).toBe("ABORT");
@@ -273,7 +308,9 @@ describe("evaluateGatewayDecision — outcome logic", () => {
     const result = evaluateGatewayDecision({
       decisionId: "dec-abort2",
       artifactHash: "sha256:abc",
-      policyContext: [{ scope: "WORKSPACE", branchId: "b-1", revisionId: "r-1", artifactHash: "sha256:abc" }],
+      policyContext: [
+        { scope: "WORKSPACE", branchId: "b-1", revisionId: "r-1", artifactHash: "sha256:abc" },
+      ],
       trustScore: 0.1,
       amountUsd: 75000,
     });
@@ -285,7 +322,9 @@ describe("evaluateGatewayDecision — outcome logic", () => {
     const result = evaluateGatewayDecision({
       decisionId: "dec-abort3",
       artifactHash: "sha256:abc",
-      policyContext: [{ scope: "WORKSPACE", branchId: "b-1", revisionId: "r-1", artifactHash: "sha256:abc" }],
+      policyContext: [
+        { scope: "WORKSPACE", branchId: "b-1", revisionId: "r-1", artifactHash: "sha256:abc" },
+      ],
       trustScore: 0.15,
       dataSensitivity: "RESTRICTED",
     });
@@ -297,7 +336,9 @@ describe("evaluateGatewayDecision — outcome logic", () => {
     const result = evaluateGatewayDecision({
       decisionId: "dec-multi",
       artifactHash: "sha256:abc",
-      policyContext: [{ scope: "WORKSPACE", branchId: "b-1", revisionId: "r-1", artifactHash: "sha256:abc" }],
+      policyContext: [
+        { scope: "WORKSPACE", branchId: "b-1", revisionId: "r-1", artifactHash: "sha256:abc" },
+      ],
       confidence: 0.3,
       amountUsd: 500,
     });
@@ -308,7 +349,9 @@ describe("evaluateGatewayDecision — outcome logic", () => {
     const result = evaluateGatewayDecision({
       decisionId: "dec-boundary",
       artifactHash: "sha256:abc",
-      policyContext: [{ scope: "WORKSPACE", branchId: "b-1", revisionId: "r-1", artifactHash: "sha256:abc" }],
+      policyContext: [
+        { scope: "WORKSPACE", branchId: "b-1", revisionId: "r-1", artifactHash: "sha256:abc" },
+      ],
       trustScore: 0.45,
     });
     expect(result.outcome).toBe("PROCEED");
@@ -334,7 +377,10 @@ describe("Evidence ingest with GATEWAY_ENABLED", () => {
   it("low-risk evidence ingests without creating an escalation queue entry", async () => {
     const res = await evidencePost(buildEvidenceRequest("dec-gw-low"));
     expect(res.status).toBe(201);
-    const body = await res.json() as { evidence: unknown; gateway?: { outcome: string; shouldQueue: boolean } };
+    const body = (await res.json()) as {
+      evidence: unknown;
+      gateway?: { outcome: string; shouldQueue: boolean };
+    };
     expect(body.gateway?.outcome).toBe("PROCEED");
     expect(body.gateway?.shouldQueue).toBe(false);
     expect(insertedRows).toContain("evidence");
@@ -345,16 +391,18 @@ describe("Evidence ingest with GATEWAY_ENABLED", () => {
   it("high-risk evidence creates an escalation queue entry", async () => {
     const res = await evidencePost(buildEvidenceRequest("dec-gw-high", { amountUsd: 25000 }));
     expect(res.status).toBe(201);
-    const body = await res.json() as { gateway?: { outcome: string; shouldQueue: boolean } };
+    const body = (await res.json()) as { gateway?: { outcome: string; shouldQueue: boolean } };
     expect(body.gateway?.outcome).toBe("ESCALATE");
     expect(body.gateway?.shouldQueue).toBe(true);
     expect(insertedRows).toContain("escalation_queue");
   });
 
   it("ABORT outcome does not create an escalation queue entry", async () => {
-    const res = await evidencePost(buildEvidenceRequest("dec-gw-abort", { consequence: "PROHIBITED" }));
+    const res = await evidencePost(
+      buildEvidenceRequest("dec-gw-abort", { consequence: "PROHIBITED" }),
+    );
     expect(res.status).toBe(201);
-    const body = await res.json() as { gateway?: { outcome: string; shouldQueue: boolean } };
+    const body = (await res.json()) as { gateway?: { outcome: string; shouldQueue: boolean } };
     expect(body.gateway?.outcome).toBe("ABORT");
     expect(body.gateway?.shouldQueue).toBe(false);
     expect(insertedRows).not.toContain("escalation_queue");
@@ -364,7 +412,7 @@ describe("Evidence ingest with GATEWAY_ENABLED", () => {
     process.env.GATEWAY_ENABLED = "false";
     const res = await evidencePost(buildEvidenceRequest("dec-gw-disabled"));
     expect(res.status).toBe(201);
-    const body = await res.json() as { gateway?: unknown };
+    const body = (await res.json()) as { gateway?: unknown };
     expect(body.gateway).toBeUndefined();
     expect(insertedRows).not.toContain("gateway_decision");
   });
@@ -373,7 +421,7 @@ describe("Evidence ingest with GATEWAY_ENABLED", () => {
     conflictDecision = true;
     const res = await evidencePost(buildEvidenceRequest("dec-gw-dedup"));
     expect(res.status).toBe(200);
-    const body = await res.json() as { deduplicated: boolean };
+    const body = (await res.json()) as { deduplicated: boolean };
     expect(body.deduplicated).toBe(true);
     expect(insertedRows).not.toContain("gateway_decision");
   });
@@ -386,7 +434,14 @@ describe("Publish gating: shouldQueue semantics align with escalation count chec
     const result = evaluateGatewayDecision({
       decisionId: "dec-abort-pub",
       artifactHash: "sha256:publish-test",
-      policyContext: [{ scope: "WORKSPACE", branchId: "b-1", revisionId: "r-1", artifactHash: "sha256:publish-test" }],
+      policyContext: [
+        {
+          scope: "WORKSPACE",
+          branchId: "b-1",
+          revisionId: "r-1",
+          artifactHash: "sha256:publish-test",
+        },
+      ],
       consequence: "IRREVERSIBLE",
     });
     expect(result.outcome).toBe("ABORT");
@@ -397,7 +452,14 @@ describe("Publish gating: shouldQueue semantics align with escalation count chec
     const result = evaluateGatewayDecision({
       decisionId: "dec-escalate-pub",
       artifactHash: "sha256:publish-test",
-      policyContext: [{ scope: "WORKSPACE", branchId: "b-1", revisionId: "r-1", artifactHash: "sha256:publish-test" }],
+      policyContext: [
+        {
+          scope: "WORKSPACE",
+          branchId: "b-1",
+          revisionId: "r-1",
+          artifactHash: "sha256:publish-test",
+        },
+      ],
       dataSensitivity: "HIGH",
     });
     expect(result.outcome).toBe("ESCALATE");
@@ -409,7 +471,14 @@ describe("Publish gating: shouldQueue semantics align with escalation count chec
     const result = evaluateGatewayDecision({
       decisionId: "dec-proceed-pub",
       artifactHash: "sha256:publish-test",
-      policyContext: [{ scope: "WORKSPACE", branchId: "b-1", revisionId: "r-1", artifactHash: "sha256:publish-test" }],
+      policyContext: [
+        {
+          scope: "WORKSPACE",
+          branchId: "b-1",
+          revisionId: "r-1",
+          artifactHash: "sha256:publish-test",
+        },
+      ],
     });
     expect(result.outcome).toBe("PROCEED");
     expect(result.shouldQueue).toBe(false);
@@ -432,7 +501,7 @@ describe("Gateway resolve API — input validation", () => {
     });
     const res = await resolvePost(req);
     expect(res.status).toBe(400);
-    const body = await res.json() as { error: string };
+    const body = (await res.json()) as { error: string };
     expect(body.error).toMatch(/queueId/i);
   });
 
@@ -444,7 +513,7 @@ describe("Gateway resolve API — input validation", () => {
     });
     const res = await resolvePost(req);
     expect(res.status).toBe(400);
-    const body = await res.json() as { error: string };
+    const body = (await res.json()) as { error: string };
     expect(body.error).toMatch(/PROCEED|ESCALATE|ABORT/);
   });
 
@@ -461,7 +530,7 @@ describe("Gateway resolve API — input validation", () => {
     });
     const res = await resolvePost(req);
     expect(res.status).toBe(403);
-    const body = await res.json() as { error: string };
+    const body = (await res.json()) as { error: string };
     expect(body.error).toMatch(/Demo Mode/i);
   });
 
@@ -469,11 +538,15 @@ describe("Gateway resolve API — input validation", () => {
     const req = new Request("http://localhost:3000/api/gateway/resolve", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ queueId: "q-1", resolutionOutcome: "PROCEED", resolutionNote: "Reviewed and cleared." }),
+      body: JSON.stringify({
+        queueId: "q-1",
+        resolutionOutcome: "PROCEED",
+        resolutionNote: "Reviewed and cleared.",
+      }),
     });
     const res = await resolvePost(req);
     expect(res.status).toBe(200);
-    const body = await res.json() as { ok: boolean };
+    const body = (await res.json()) as { ok: boolean };
     expect(body.ok).toBe(true);
   });
 
@@ -485,7 +558,7 @@ describe("Gateway resolve API — input validation", () => {
     });
     const res = await resolvePost(req);
     expect(res.status).toBe(200);
-    const body = await res.json() as { ok: boolean };
+    const body = (await res.json()) as { ok: boolean };
     expect(body.ok).toBe(true);
   });
 
@@ -496,17 +569,21 @@ describe("Gateway resolve API — input validation", () => {
       resolutionNote: "Reviewed and cleared.",
     };
 
-    const firstResponse = await resolvePost(new Request("http://localhost:3000/api/gateway/resolve", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(requestBody),
-    }));
+    const firstResponse = await resolvePost(
+      new Request("http://localhost:3000/api/gateway/resolve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(requestBody),
+      }),
+    );
 
-    const secondResponse = await resolvePost(new Request("http://localhost:3000/api/gateway/resolve", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(requestBody),
-    }));
+    const secondResponse = await resolvePost(
+      new Request("http://localhost:3000/api/gateway/resolve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(requestBody),
+      }),
+    );
 
     expect(firstResponse.status).toBe(200);
     expect(secondResponse.status).toBe(200);
@@ -536,11 +613,22 @@ describe("Gateway decide API — outcome and queue routing", () => {
       body: JSON.stringify({
         decisionId: "dec-decide-low",
         artifactHash: "sha256:decide-test",
-        policyContext: [{ scope: "WORKSPACE", branchId: "b-1", revisionId: "r-1", artifactHash: "sha256:decide-test" }],
+        policyContext: [
+          {
+            scope: "WORKSPACE",
+            branchId: "b-1",
+            revisionId: "r-1",
+            artifactHash: "sha256:decide-test",
+          },
+        ],
       }),
     });
     const res = await decidePost(req);
-    const body = await res.json() as { decision: { outcome: string }; gatewayEnabled: boolean; queued: boolean };
+    const body = (await res.json()) as {
+      decision: { outcome: string };
+      gatewayEnabled: boolean;
+      queued: boolean;
+    };
     expect(body.gatewayEnabled).toBe(true);
     expect(body.decision.outcome).toBe("PROCEED");
     expect(body.queued).toBe(false);
@@ -553,12 +641,19 @@ describe("Gateway decide API — outcome and queue routing", () => {
       body: JSON.stringify({
         decisionId: "dec-decide-high",
         artifactHash: "sha256:decide-test",
-        policyContext: [{ scope: "WORKSPACE", branchId: "b-1", revisionId: "r-1", artifactHash: "sha256:decide-test" }],
+        policyContext: [
+          {
+            scope: "WORKSPACE",
+            branchId: "b-1",
+            revisionId: "r-1",
+            artifactHash: "sha256:decide-test",
+          },
+        ],
         consequence: "HIGH",
       }),
     });
     const res = await decidePost(req);
-    const body = await res.json() as { decision: { outcome: string }; queued: boolean };
+    const body = (await res.json()) as { decision: { outcome: string }; queued: boolean };
     expect(body.decision.outcome).toBe("ESCALATE");
     expect(body.queued).toBe(true);
   });
@@ -571,12 +666,23 @@ describe("Gateway decide API — outcome and queue routing", () => {
       body: JSON.stringify({
         decisionId: "dec-decide-disabled",
         artifactHash: "sha256:decide-test",
-        policyContext: [{ scope: "WORKSPACE", branchId: "b-1", revisionId: "r-1", artifactHash: "sha256:decide-test" }],
+        policyContext: [
+          {
+            scope: "WORKSPACE",
+            branchId: "b-1",
+            revisionId: "r-1",
+            artifactHash: "sha256:decide-test",
+          },
+        ],
         consequence: "HIGH",
       }),
     });
     const res = await decidePost(req);
-    const body = await res.json() as { decision: { outcome: string }; queued: boolean; gatewayEnabled: boolean };
+    const body = (await res.json()) as {
+      decision: { outcome: string };
+      queued: boolean;
+      gatewayEnabled: boolean;
+    };
     expect(body.gatewayEnabled).toBe(false);
     expect(body.decision.outcome).toBe("PROCEED");
     expect(body.queued).toBe(false);
@@ -589,12 +695,19 @@ describe("Gateway decide API — outcome and queue routing", () => {
       body: JSON.stringify({
         decisionId: "dec-decide-abort",
         artifactHash: "sha256:decide-test",
-        policyContext: [{ scope: "WORKSPACE", branchId: "b-1", revisionId: "r-1", artifactHash: "sha256:decide-test" }],
+        policyContext: [
+          {
+            scope: "WORKSPACE",
+            branchId: "b-1",
+            revisionId: "r-1",
+            artifactHash: "sha256:decide-test",
+          },
+        ],
         consequence: "PROHIBITED",
       }),
     });
     const res = await decidePost(req);
-    const body = await res.json() as { decision: { outcome: string }; queued: boolean };
+    const body = (await res.json()) as { decision: { outcome: string }; queued: boolean };
     expect(body.decision.outcome).toBe("ABORT");
     expect(body.queued).toBe(false);
   });
@@ -611,12 +724,23 @@ describe("Gateway decide API — outcome and queue routing", () => {
       body: JSON.stringify({
         decisionId: "dec-decide-demo",
         artifactHash: "sha256:decide-test",
-        policyContext: [{ scope: "WORKSPACE", branchId: "b-1", revisionId: "r-1", artifactHash: "sha256:decide-test" }],
+        policyContext: [
+          {
+            scope: "WORKSPACE",
+            branchId: "b-1",
+            revisionId: "r-1",
+            artifactHash: "sha256:decide-test",
+          },
+        ],
         consequence: "HIGH",
       }),
     });
     const res = await decidePost(req);
-    const body = await res.json() as { decision: { outcome: string }; queued: boolean; persisted: boolean };
+    const body = (await res.json()) as {
+      decision: { outcome: string };
+      queued: boolean;
+      persisted: boolean;
+    };
     expect(body.decision.outcome).toBe("ESCALATE");
     expect(body.queued).toBe(false);
     expect(body.persisted).toBe(false);
@@ -630,7 +754,14 @@ describe("Gateway decide API — outcome and queue routing", () => {
       body: JSON.stringify({
         decisionId: "dec-decide-intent",
         artifactHash: "sha256:decide-test",
-        policyContext: [{ scope: "WORKSPACE", branchId: "b-1", revisionId: "r-1", artifactHash: "sha256:decide-test" }],
+        policyContext: [
+          {
+            scope: "WORKSPACE",
+            branchId: "b-1",
+            revisionId: "r-1",
+            artifactHash: "sha256:decide-test",
+          },
+        ],
         toolIntent: "Read user file",
         planSummary: "Analyze contents and print summary",
         toolParameters: { path: "/etc/passwd", format: "json" },
@@ -644,17 +775,16 @@ describe("Gateway decide API — outcome and queue routing", () => {
     // precede the persisted intent fields in the gateway_decision insert.
     expect(lastGatewayDecisionArgs[20]).toBe("Read user file");
     expect(lastGatewayDecisionArgs[21]).toBe("Analyze contents and print summary");
-    expect(lastGatewayDecisionArgs[22]).toBe(JSON.stringify({ path: "/etc/passwd", format: "json" }));
+    expect(lastGatewayDecisionArgs[22]).toBe(
+      JSON.stringify({ path: "/etc/passwd", format: "json" }),
+    );
   });
 
   it("merges toolIntent, planSummary, and toolParameters into raw_evidence when client provides custom rawEvidence", async () => {
     conflictDecision = false;
     const req = new Request("http://localhost:3000/api/evidence", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${DEMO_TOKEN}`,
-      },
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${DEMO_TOKEN}` },
       body: JSON.stringify({
         decisionId: "dec-evidence-custom-raw",
         tenantId: "22222222-2222-4222-8222-222222222222",
@@ -669,7 +799,12 @@ describe("Gateway decide API — outcome and queue routing", () => {
         policyRefs: ["stripe.payment.authorize"],
         artifactHash: "sha256:gateway-test",
         policyContext: [
-          { scope: "WORKSPACE", branchId: "b-gw-1", revisionId: "r-gw-1", artifactHash: "sha256:gateway-test" }
+          {
+            scope: "WORKSPACE",
+            branchId: "b-gw-1",
+            revisionId: "r-gw-1",
+            artifactHash: "sha256:gateway-test",
+          },
         ],
         toolIntent: "Read user file",
         planSummary: "Analyze contents and print summary",

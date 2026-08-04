@@ -3,15 +3,13 @@ import { describe, expect, it, vi } from "vitest";
 const getBranchWithPublishStatusMock = vi.fn();
 const deletePolicyBranchMock = vi.fn();
 const getLatestPublishedBundleMock = vi.fn();
-const runWithTenantContextMock = vi.fn(async (_tenantId: string, work: () => Promise<unknown>) => work());
+const runWithTenantContextMock = vi.fn(async (_tenantId: string, work: () => Promise<unknown>) =>
+  work(),
+);
 
-vi.mock("@/lib/db", () => ({
-  sql: null,
-}));
+vi.mock("@/lib/db", () => ({ sql: null }));
 
-vi.mock("@/lib/tenant-context", () => ({
-  runWithTenantContext: runWithTenantContextMock,
-}));
+vi.mock("@/lib/tenant-context", () => ({ runWithTenantContext: runWithTenantContextMock }));
 
 vi.mock("@/lib/repositories/policy", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/repositories/policy")>();
@@ -30,10 +28,12 @@ describe("policy domain service", () => {
     const bundle = { artifactHash: "sha256:published" };
     getLatestPublishedBundleMock.mockResolvedValue(bundle);
 
-    await expect(policyService.getLatestPublishedPolicyBundle({
-      tenantId: "tenant-1",
-      workspaceId: "workspace-1",
-    })).resolves.toBe(bundle);
+    await expect(
+      policyService.getLatestPublishedPolicyBundle({
+        tenantId: "tenant-1",
+        workspaceId: "workspace-1",
+      }),
+    ).resolves.toBe(bundle);
 
     expect(runWithTenantContextMock).toHaveBeenCalledWith("tenant-1", expect.any(Function));
     expect(getLatestPublishedBundleMock).toHaveBeenCalledWith("workspace-1", "tenant-1");
@@ -50,10 +50,7 @@ describe("policy domain service", () => {
       targetStacks: [],
     });
 
-    expect(result).toMatchObject({
-      branchId: expect.any(String),
-      revisionId: expect.any(String),
-    });
+    expect(result).toMatchObject({ branchId: expect.any(String), revisionId: expect.any(String) });
   });
 
   it("requires a purpose for guided policy creation", async () => {
@@ -98,7 +95,8 @@ describe("policy domain service", () => {
     });
 
     expect(result).toEqual({
-      error: 'Stable rule ID "spctre-agent.customer.override" is reserved for Spctre Advisor Governance. Use your organization\'s namespace instead.',
+      error:
+        'Stable rule ID "spctre-agent.customer.override" is reserved for Spctre Advisor Governance. Use your organization\'s namespace instead.',
     });
   });
 
@@ -123,7 +121,9 @@ describe("policy domain service", () => {
       branchId: "branch-1",
       confirmation: "DELETE",
     });
-    expect(rejected).toEqual({ error: "Type the branch name exactly to delete: acquisition-outreach" });
+    expect(rejected).toEqual({
+      error: "Type the branch name exactly to delete: acquisition-outreach",
+    });
     expect(deletePolicyBranchMock).not.toHaveBeenCalled();
 
     const deleted = await policyService.deleteUnpublishedBranchDecision({
@@ -132,6 +132,9 @@ describe("policy domain service", () => {
       confirmation: "acquisition-outreach",
     });
     expect(deleted).toEqual({ success: true });
-    expect(deletePolicyBranchMock).toHaveBeenCalledWith({ tenantId: "tenant-1", branchId: "branch-1" });
+    expect(deletePolicyBranchMock).toHaveBeenCalledWith({
+      tenantId: "tenant-1",
+      branchId: "branch-1",
+    });
   });
 });

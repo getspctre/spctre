@@ -7,7 +7,7 @@ import {
   KeyRound,
   PackageCheck,
   Send,
-  ShieldCheck
+  ShieldCheck,
 } from "lucide-react";
 import { POLICY_PACKS } from "@spctre/policy-schema";
 import { getUsageBillingInputs } from "@/lib/domains/usage-billing/service";
@@ -40,52 +40,53 @@ const planCatalog: Record<CommercialPlanCode, PlanEntry> = {
     workspaces: 1,
     auditEvents: 1000,
     retentionWindow: "90 days",
-    simulationEvents: null
+    simulationEvents: null,
   },
   TEAM: {
     label: "Team",
     workspaces: 3,
     auditEvents: 100000,
     retentionWindow: "1 year",
-    simulationEvents: null
+    simulationEvents: null,
   },
   BUSINESS: {
     label: "Business",
     workspaces: 12,
     auditEvents: 1000000,
     retentionWindow: "3 years",
-    simulationEvents: 50000
+    simulationEvents: 50000,
   },
   ENTERPRISE: {
     label: "Enterprise",
     workspaces: 50,
     auditEvents: 10000000,
     retentionWindow: "Custom",
-    simulationEvents: 1000000
-  }
+    simulationEvents: 1000000,
+  },
 };
 
 const commercialLevers = [
   {
     label: "Retained governed events",
-    description: "Governed evidence volume kept searchable and replayable against policy (rolling capacity).",
-    icon: Database
+    description:
+      "Governed evidence volume kept searchable and replayable against policy (rolling capacity).",
+    icon: Database,
   },
   {
     label: "Retention window",
     description: "Evidence depth distinguishes operational review from audit-grade compliance.",
-    icon: ShieldCheck
+    icon: ShieldCheck,
   },
   {
     label: "Bulk simulation",
     description: "Replay proposed policy against the full retained production event log.",
-    icon: Activity
+    icon: Activity,
   },
   {
     label: "Compliance exports",
     description: "Auditor-ready evidence packets for formal compliance cycles.",
-    icon: PackageCheck
-  }
+    icon: PackageCheck,
+  },
 ];
 
 interface UsageRow {
@@ -101,10 +102,7 @@ type UsageWorkspaceContext = Awaited<ReturnType<typeof getWorkspaceContext>>;
 
 // Derive the usage meters, recommended plan, and readiness labels from the
 // measured usage.
-function computeUsagePosture(
-  inputs: UsageBillingInputs,
-  workspaceContext: UsageWorkspaceContext
-) {
+function computeUsagePosture(inputs: UsageBillingInputs, workspaceContext: UsageWorkspaceContext) {
   const { usage, profile, branches, agents, simulations } = inputs;
   const activePlan = planCatalog[profile.planCode];
   const importedPackIds = new Set(branches.map((branch) => branch.name));
@@ -118,29 +116,29 @@ function computeUsagePosture(
       value: usage.workspaceCount || workspaceContext.workspaces.length,
       included: activePlan.workspaces,
       businessIncluded: planCatalog.BUSINESS.workspaces,
-      detail: workspaceContext.tenantSlug
+      detail: workspaceContext.tenantSlug,
     },
     {
       label: "Retained governed events",
       value: usage.retainedAuditEventCount,
       included: activePlan.auditEvents,
       businessIncluded: planCatalog.BUSINESS.auditEvents,
-      detail: `${connectorCount} active connectors`
+      detail: `${connectorCount} active connectors`,
     },
     {
       label: "Retention window",
       value: 0,
       included: null,
       businessIncluded: 0,
-      detail: `${activePlan.retentionWindow} searchable evidence history`
+      detail: `${activePlan.retentionWindow} searchable evidence history`,
     },
     {
       label: "Simulation events",
       value: simulationEventCount,
       included: activePlan.simulationEvents,
       businessIncluded: planCatalog.BUSINESS.simulationEvents!,
-      detail: `${simulations.length} replay runs`
-    }
+      detail: `${simulations.length} replay runs`,
+    },
   ];
 
   const totalWorkspaces = usage.workspaceCount || workspaceContext.workspaces.length;
@@ -158,7 +156,9 @@ function computeUsagePosture(
     recommendedPlan = usagePlan;
   }
 
-  const overIncluded = usageRows.filter((row) => row.included !== null && row.value > row.included).length;
+  const overIncluded = usageRows.filter(
+    (row) => row.included !== null && row.value > row.included,
+  ).length;
   const readinessLabel =
     agents.length === 0
       ? "Hosted trial"
@@ -182,7 +182,15 @@ function computeUsagePosture(
   };
 }
 
-function UsageMetersPanel({ usageRows, activePlan, t }: { usageRows: UsageRow[]; activePlan: PlanEntry; t: UsageBillingTranslations }) {
+function UsageMetersPanel({
+  usageRows,
+  activePlan,
+  t,
+}: {
+  usageRows: UsageRow[];
+  activePlan: PlanEntry;
+  t: UsageBillingTranslations;
+}) {
   return (
     <div className="panel">
       <div>
@@ -192,7 +200,9 @@ function UsageMetersPanel({ usageRows, activePlan, t }: { usageRows: UsageRow[];
       <div className="commercialMeterList">
         {usageRows.map((row) => {
           const isSampleOnly = row.included === null;
-          const percent = isSampleOnly ? 0 : Math.min(100, Math.round((row.value / Math.max(row.included!, 1)) * 100));
+          const percent = isSampleOnly
+            ? 0
+            : Math.min(100, Math.round((row.value / Math.max(row.included!, 1)) * 100));
           const over = !isSampleOnly && row.value > row.included!;
           return (
             <article className="commercialMeter" key={row.label}>
@@ -231,15 +241,23 @@ function PlanUpgradeSection({
   workspaceSlug: string;
   siteUrl: string;
 }) {
-  if (recommendedPlan !== currentPlan && (recommendedPlan === "TEAM" || recommendedPlan === "BUSINESS")) {
+  if (
+    recommendedPlan !== currentPlan &&
+    (recommendedPlan === "TEAM" || recommendedPlan === "BUSINESS")
+  ) {
     return (
       <section className="commercialAnchorGroup" aria-label="Upgrade plan">
         <div className="commercialAnchorGroupHeader">
           <p className="eyebrow">Self-serve upgrade</p>
           <h3>Upgrade to {planCatalog[recommendedPlan].label}</h3>
         </div>
-        <p className="meta">Your usage fits the {planCatalog[recommendedPlan].label} plan. No sales call needed.</p>
-        <a className="button buttonPrimary" href={`${siteUrl}/pricing?plan=${recommendedPlan}#checkout`}>
+        <p className="meta">
+          Your usage fits the {planCatalog[recommendedPlan].label} plan. No sales call needed.
+        </p>
+        <a
+          className="button buttonPrimary"
+          href={`${siteUrl}/pricing?plan=${recommendedPlan}#checkout`}
+        >
           <Send size={16} />
           Upgrade to {planCatalog[recommendedPlan].label}
         </a>
@@ -294,11 +312,11 @@ function ValueAnchorsPanel({
         <div>
           <p className="eyebrow">{t("anchors.eyebrow")}</p>
           <h2>{t("anchors.title")}</h2>
-          <p className="meta">
-            {t("anchors.description")}
-          </p>
+          <p className="meta">{t("anchors.description")}</p>
         </div>
-        <span className="pill pillNeutral">{t("anchors.count", { count: commercialLevers.length })}</span>
+        <span className="pill pillNeutral">
+          {t("anchors.count", { count: commercialLevers.length })}
+        </span>
       </div>
 
       <section className="commercialAnchorGroup" aria-label={t("anchors.aria_label")}>
@@ -357,9 +375,7 @@ function BillingPosturePanel({
             {t("posture.title")}
             <span className="headCount">{t("posture.over_plan", { count: overIncluded })}</span>
           </h2>
-          <p className="meta">
-            {t("posture.description")}
-          </p>
+          <p className="meta">{t("posture.description")}</p>
         </div>
       </div>
 
@@ -367,7 +383,9 @@ function BillingPosturePanel({
         <div>
           <span className="meta">{t("posture.current_plan")}</span>
           <strong>{planCatalog[profile.planCode].label}</strong>
-          <p className="meta">{profile.lifecycleStatus.toLowerCase()} / sales {profile.salesStatus.toLowerCase()}</p>
+          <p className="meta">
+            {profile.lifecycleStatus.toLowerCase()} / sales {profile.salesStatus.toLowerCase()}
+          </p>
         </div>
         <div>
           <span className="meta">{t("posture.recommended_plan")}</span>
@@ -376,9 +394,13 @@ function BillingPosturePanel({
         </div>
         <div>
           <span className="meta">{t("posture.billing_status")}</span>
-          <strong>{profile.salesStatus === "REQUESTED" ? t("posture.review_requested") : readinessLabel}</strong>
+          <strong>
+            {profile.salesStatus === "REQUESTED" ? t("posture.review_requested") : readinessLabel}
+          </strong>
           <p className="meta">
-            {profile.updatedAt ? t("posture.updated", { date: profile.updatedAt.slice(0, 10) }) : t("posture.no_event")}
+            {profile.updatedAt
+              ? t("posture.updated", { date: profile.updatedAt.slice(0, 10) })
+              : t("posture.no_event")}
           </p>
         </div>
       </div>
@@ -404,7 +426,13 @@ function BillingPosturePanel({
   );
 }
 
-function BillingEventLog({ events, t }: { events: UsageBillingInputs["events"]; t: UsageBillingTranslations }) {
+function BillingEventLog({
+  events,
+  t,
+}: {
+  events: UsageBillingInputs["events"];
+  t: UsageBillingTranslations;
+}) {
   return (
     <section className="panel">
       <div className="rowHeader">
@@ -424,10 +452,13 @@ function BillingEventLog({ events, t }: { events: UsageBillingInputs["events"]; 
                 <div>
                   <h3>{event.eventType.replace(/_/g, " ").toLowerCase()}</h3>
                   <p className="meta">
-                    {event.actor ?? t("events.system")} / {event.createdAt.slice(0, 16).replace("T", " ")}
+                    {event.actor ?? t("events.system")} /{" "}
+                    {event.createdAt.slice(0, 16).replace("T", " ")}
                   </p>
                 </div>
-                {event.targetPlan ? <span className="pill pillNeutral">{event.targetPlan}</span> : null}
+                {event.targetPlan ? (
+                  <span className="pill pillNeutral">{event.targetPlan}</span>
+                ) : null}
               </div>
               {typeof event.metadata.note === "string" && event.metadata.note ? (
                 <p className="meta">{event.metadata.note}</p>
@@ -515,15 +546,15 @@ export async function UsageBillingPageContent({ workspaceSlug }: { workspaceSlug
             <div>
               <p className="eyebrow">{t("overview.eyebrow")}</p>
               <h2>{t("overview.title")}</h2>
-              <p className="meta">
-                {t("overview.description")}
-              </p>
+              <p className="meta">{t("overview.description")}</p>
             </div>
             <div className="toolbar">
               <span className={overIncluded > 0 ? "pill pillWarn" : "pill pillAllow"}>
                 {primaryHeroLabel}
               </span>
-              {showReadinessHeroPill ? <span className="pill pillNeutral">{readinessLabel}</span> : null}
+              {showReadinessHeroPill ? (
+                <span className="pill pillNeutral">{readinessLabel}</span>
+              ) : null}
             </div>
           </div>
           <div className="usageBillingHeroStats">
@@ -570,35 +601,35 @@ export async function UsageBillingPageContent({ workspaceSlug }: { workspaceSlug
         <BillingEventLog events={events} t={t} />
 
         <section className="panel">
-        <div className="rowHeader">
-          <div>
-            <p className="eyebrow">{t("proof.eyebrow")}</p>
-            <h2>{t("proof.title")}</h2>
+          <div className="rowHeader">
+            <div>
+              <p className="eyebrow">{t("proof.eyebrow")}</p>
+              <h2>{t("proof.title")}</h2>
+            </div>
           </div>
-        </div>
-        <div className="commercialProofGrid">
-          <a className="row commercialProof" href={evidenceHref}>
-            <Database size={17} />
-            <div>
-              <h3>{t("proof.evidence.title")}</h3>
-              <p className="meta">{t("proof.evidence.description")}</p>
-            </div>
-          </a>
-          <a className="row commercialProof" href={packsHref}>
-            <Activity size={17} />
-            <div>
-              <h3>{t("proof.simulation.title")}</h3>
-              <p className="meta">{t("proof.simulation.description")}</p>
-            </div>
-          </a>
-          <a className="row commercialProof" href={complianceHref}>
-            <Gauge size={17} />
-            <div>
-              <h3>{t("proof.compliance.title")}</h3>
-              <p className="meta">{t("proof.compliance.description")}</p>
-            </div>
-          </a>
-        </div>
+          <div className="commercialProofGrid">
+            <a className="row commercialProof" href={evidenceHref}>
+              <Database size={17} />
+              <div>
+                <h3>{t("proof.evidence.title")}</h3>
+                <p className="meta">{t("proof.evidence.description")}</p>
+              </div>
+            </a>
+            <a className="row commercialProof" href={packsHref}>
+              <Activity size={17} />
+              <div>
+                <h3>{t("proof.simulation.title")}</h3>
+                <p className="meta">{t("proof.simulation.description")}</p>
+              </div>
+            </a>
+            <a className="row commercialProof" href={complianceHref}>
+              <Gauge size={17} />
+              <div>
+                <h3>{t("proof.compliance.title")}</h3>
+                <p className="meta">{t("proof.compliance.description")}</p>
+              </div>
+            </a>
+          </div>
         </section>
       </section>
     </>

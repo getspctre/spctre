@@ -15,7 +15,7 @@ async function signValue(value: string, secret: string): Promise<string> {
     new TextEncoder().encode(secret),
     { name: "HMAC", hash: "SHA-256" },
     false,
-    ["sign"]
+    ["sign"],
   );
   const sig = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(value));
   return toBase64Url(new Uint8Array(sig));
@@ -55,7 +55,7 @@ async function handlePostApiAuthMagicRequest(request: Request) {
     logSecurityEvent("rate_limited", { endpoint: "/api/auth/magic/request", detail: email });
     return NextResponse.json(
       { error: "Too many magic link requests. Please wait before requesting another." },
-      { status: 429, headers: { "Retry-After": String(rateLimit.retryAfterSeconds) } }
+      { status: 429, headers: { "Retry-After": String(rateLimit.retryAfterSeconds) } },
     );
   }
 

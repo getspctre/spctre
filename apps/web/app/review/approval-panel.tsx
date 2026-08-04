@@ -3,24 +3,24 @@
 import { CheckCircle2, Clock3, Loader, Play, XCircle } from "lucide-react";
 import { useActionState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import type { ApprovalWorkflowSnapshot, PolicyApproval, PublishReadiness, SimulationRegressionSummary } from "@spctre/policy-schema";
+import type {
+  ApprovalWorkflowSnapshot,
+  PolicyApproval,
+  PublishReadiness,
+  SimulationRegressionSummary,
+} from "@spctre/policy-schema";
 import { runSimulation } from "@/app/evidence/actions";
 import type { SimulationState } from "@/app/evidence/actions";
 import { addApproval, publishRevision } from "./publish-actions";
 import type { ApprovalState, PublishState } from "./publish-actions";
 
-const statusIcon = {
-  APPROVED: CheckCircle2,
-  CHANGES_REQUESTED: XCircle,
-  PENDING: Clock3
-};
+const statusIcon = { APPROVED: CheckCircle2, CHANGES_REQUESTED: XCircle, PENDING: Clock3 };
 
 const statusClass: Record<string, string> = {
   APPROVED: "pill pillAllow",
   CHANGES_REQUESTED: "pill pillBlock",
-  PENDING: "pill pillWarn"
+  PENDING: "pill pillWarn",
 };
-
 
 interface ApprovalPanelProps {
   branchId: string;
@@ -36,7 +36,15 @@ interface ApprovalPanelProps {
   reviewBlockedReason?: string;
 }
 
-export function getPolicyApprovalRoleSummary({ approvals, role, actorId }: { approvals: PolicyApproval[]; role: string; actorId: string }) {
+export function getPolicyApprovalRoleSummary({
+  approvals,
+  role,
+  actorId,
+}: {
+  approvals: PolicyApproval[];
+  role: string;
+  actorId: string;
+}) {
   const roleApprovals = approvals.filter((approval) => approval.role === role);
   return {
     actorApproval: roleApprovals.find((approval) => approval.reviewer === actorId),
@@ -57,7 +65,9 @@ interface PublishGateProps {
   requiresManagedSimulation: boolean;
 }
 
-function isSimulationSuccess(state: SimulationState): state is Exclude<SimulationState, { error: string } | null> {
+function isSimulationSuccess(
+  state: SimulationState,
+): state is Exclude<SimulationState, { error: string } | null> {
   return !!state && !("error" in state);
 }
 
@@ -72,9 +82,17 @@ function ManagedSimulationGate({ branchId, revisionId }: { branchId: string; rev
   return (
     <div className="blockerActionRow">
       <div>
-        <p className="meta">A managed retained-log simulation is required before this revision can be published.</p>
-        {isSimulationSuccess(state) ? <p className="meta">Simulation logged. Refreshing publish readiness…</p> : null}
-        {state?.error ? <p className="meta publishError" role="alert">{state.error}</p> : null}
+        <p className="meta">
+          A managed retained-log simulation is required before this revision can be published.
+        </p>
+        {isSimulationSuccess(state) ? (
+          <p className="meta">Simulation logged. Refreshing publish readiness…</p>
+        ) : null}
+        {state?.error ? (
+          <p className="meta publishError" role="alert">
+            {state.error}
+          </p>
+        ) : null}
       </div>
       <form action={action}>
         <input type="hidden" name="branchId" value={branchId} />
@@ -102,7 +120,7 @@ export function PublishGate({
 }: PublishGateProps) {
   const [publishState, publishAction, publishPending] = useActionState<PublishState, FormData>(
     publishRevision,
-    null
+    null,
   );
   const simulationRequired = requiresManagedSimulation && !simulationRegression;
 
@@ -115,7 +133,9 @@ export function PublishGate({
         </p>
       ) : null}
 
-      {simulationRequired ? <ManagedSimulationGate branchId={branchId} revisionId={revisionId} /> : null}
+      {simulationRequired ? (
+        <ManagedSimulationGate branchId={branchId} revisionId={revisionId} />
+      ) : null}
 
       {readiness.blockingReasons.length > 0 ? (
         <div className="blockerList">
@@ -123,7 +143,9 @@ export function PublishGate({
             <div className="blockerActionRow" key={blocker.message}>
               <p className="meta">{blocker.message}</p>
               {blocker.href && blocker.cta ? (
-                <a className="button buttonSmall" href={blocker.href}>{blocker.cta}</a>
+                <a className="button buttonSmall" href={blocker.href}>
+                  {blocker.cta}
+                </a>
               ) : null}
             </div>
           ))}
@@ -135,9 +157,7 @@ export function PublishGate({
           <CheckCircle2 size={16} />
           <div>
             <p className="meta">Published</p>
-            {publishState?.artifactHash ? (
-              <code>{publishState.artifactHash}</code>
-            ) : null}
+            {publishState?.artifactHash ? <code>{publishState.artifactHash}</code> : null}
           </div>
         </div>
       ) : (
@@ -148,18 +168,20 @@ export function PublishGate({
           <button
             className="button buttonPrimary"
             type="submit"
-            disabled={readiness.status !== "READY" || publishPending || !canPublish || simulationRequired}
+            disabled={
+              readiness.status !== "READY" || publishPending || !canPublish || simulationRequired
+            }
             title={
               readiness.status === "READY" && canPublish && !simulationRequired
                 ? "Publish approved policy bundle"
-                : simulationRequired ? "Run the required managed simulation first." : publishReason ?? readiness.blockingReasons[0]?.message
+                : simulationRequired
+                  ? "Run the required managed simulation first."
+                  : (publishReason ?? readiness.blockingReasons[0]?.message)
             }
           >
             {publishPending ? "Publishing…" : "Publish bundle"}
           </button>
-          {publishState?.error ? (
-            <p className="meta publishError">{publishState.error}</p>
-          ) : null}
+          {publishState?.error ? <p className="meta publishError">{publishState.error}</p> : null}
         </form>
       )}
     </div>
@@ -189,14 +211,21 @@ function ApprovalRoleCard({
   reviewReason: string | undefined;
   approvalAction: (formData: FormData) => void;
 }) {
-  const { actorApproval, approvedCount } = getPolicyApprovalRoleSummary({ approvals, role, actorId });
+  const { actorApproval, approvedCount } = getPolicyApprovalRoleSummary({
+    approvals,
+    role,
+    actorId,
+  });
   const Icon = statusIcon[actorApproval?.status ?? "PENDING"];
 
   return (
     <article className="approvalCard">
       <div className="approvalCardHeader">
         <div>
-          <h3>{role}{isRequired ? ` · ${approvedCount} of ${requiredCount ?? 1} approved` : ""}</h3>
+          <h3>
+            {role}
+            {isRequired ? ` · ${approvedCount} of ${requiredCount ?? 1} approved` : ""}
+          </h3>
           {isRequired ? <span className="approvalRequired">required</span> : null}
         </div>
         <span className={statusClass[actorApproval?.status ?? "PENDING"]}>
@@ -224,7 +253,9 @@ function ApprovalRoleCard({
             >
               Approve
             </button>
-            <label className="srOnly" htmlFor={`review-note-${role}`}>Reason for requested changes</label>
+            <label className="srOnly" htmlFor={`review-note-${role}`}>
+              Reason for requested changes
+            </label>
             <input
               className="input"
               id={`review-note-${role}`}
@@ -250,7 +281,11 @@ function ApprovalRoleCard({
           <form
             action={approvalAction}
             onSubmit={(e) => {
-              if (!window.confirm(`Withdraw your ${role} approval? Publish will be blocked until re-approved.`)) {
+              if (
+                !window.confirm(
+                  `Withdraw your ${role} approval? Publish will be blocked until re-approved.`,
+                )
+              ) {
                 e.preventDefault();
               }
             }}
@@ -289,60 +324,69 @@ export function ApprovalPanel({
   reviewableRoles,
   reviewBlockedReason,
 }: ApprovalPanelProps) {
-  const [approvalState, approvalAction] = useActionState<ApprovalState, FormData>(addApproval, null);
+  const [approvalState, approvalAction] = useActionState<ApprovalState, FormData>(
+    addApproval,
+    null,
+  );
 
   return (
     <>
-      {approvalState?.error ? (
-        <p className="meta publishError">{approvalState.error}</p>
-      ) : null}
+      {approvalState?.error ? <p className="meta publishError">{approvalState.error}</p> : null}
       <div className="approvalGrid" id="reviews">
-        {allRoles.filter((role) => requiredRoles.includes(role)).map((role) => {
-          const canReviewRole = reviewableRoles.includes(role);
-          return (
-            <ApprovalRoleCard
-              key={role}
-              role={role}
-              revisionId={revisionId}
-              approvals={approvals.filter((approval) => approval.role === role)}
-              actorId={actorId}
-              isRequired={requiredRoles.includes(role)}
-              requiredCount={approvalRules?.find((r) => r.role === role)?.requiredCount}
-              isPublished={isPublished}
-              canReviewRole={canReviewRole}
-              reviewReason={
-                canReviewRole
-                  ? undefined
-                  : reviewBlockedReason ?? `${actorName} cannot review as ${role}.`
-              }
-              approvalAction={approvalAction}
-            />
-          );
-        })}
+        {allRoles
+          .filter((role) => requiredRoles.includes(role))
+          .map((role) => {
+            const canReviewRole = reviewableRoles.includes(role);
+            return (
+              <ApprovalRoleCard
+                key={role}
+                role={role}
+                revisionId={revisionId}
+                approvals={approvals.filter((approval) => approval.role === role)}
+                actorId={actorId}
+                isRequired={requiredRoles.includes(role)}
+                requiredCount={approvalRules?.find((r) => r.role === role)?.requiredCount}
+                isPublished={isPublished}
+                canReviewRole={canReviewRole}
+                reviewReason={
+                  canReviewRole
+                    ? undefined
+                    : (reviewBlockedReason ?? `${actorName} cannot review as ${role}.`)
+                }
+                approvalAction={approvalAction}
+              />
+            );
+          })}
       </div>
       {allRoles.some((role) => !requiredRoles.includes(role)) ? (
         <details className="optionalReviewers">
           <summary>Additional reviewers</summary>
           <p className="meta">These approvals are recorded but do not unblock publication.</p>
           <div className="approvalGrid">
-            {allRoles.filter((role) => !requiredRoles.includes(role)).map((role) => {
-              const canReviewRole = reviewableRoles.includes(role);
-              return (
-                <ApprovalRoleCard
-                  key={role}
-                  role={role}
-                  revisionId={revisionId}
-                  approvals={approvals.filter((approval) => approval.role === role)}
-                  actorId={actorId}
-                  isRequired={false}
-                  requiredCount={undefined}
-                  isPublished={isPublished}
-                  canReviewRole={canReviewRole}
-                  reviewReason={canReviewRole ? undefined : reviewBlockedReason ?? `${actorName} cannot review as ${role}.`}
-                  approvalAction={approvalAction}
-                />
-              );
-            })}
+            {allRoles
+              .filter((role) => !requiredRoles.includes(role))
+              .map((role) => {
+                const canReviewRole = reviewableRoles.includes(role);
+                return (
+                  <ApprovalRoleCard
+                    key={role}
+                    role={role}
+                    revisionId={revisionId}
+                    approvals={approvals.filter((approval) => approval.role === role)}
+                    actorId={actorId}
+                    isRequired={false}
+                    requiredCount={undefined}
+                    isPublished={isPublished}
+                    canReviewRole={canReviewRole}
+                    reviewReason={
+                      canReviewRole
+                        ? undefined
+                        : (reviewBlockedReason ?? `${actorName} cannot review as ${role}.`)
+                    }
+                    approvalAction={approvalAction}
+                  />
+                );
+              })}
           </div>
         </details>
       ) : null}

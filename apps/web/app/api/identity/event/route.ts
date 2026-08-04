@@ -10,60 +10,136 @@ import { swallow } from "@/lib/platform/swallow";
 export const dynamic = "force-dynamic";
 
 const VALID_EVENT_TYPES = new Set<IdentityLifecycleEventType>([
-  "CREATED", "UPDATED", "DELETED",
-  "CREDENTIAL_ADDED", "CREDENTIAL_REMOVED",
-  "MFA_ENROLLED", "MFA_REVOKED",
-  "SSO_LINKED", "SSO_UNLINKED",
-  "ROLE_GRANTED", "ROLE_REVOKED",
-  "SESSION_REVOKED", "TOKEN_ISSUED", "TOKEN_REVOKED",
-  "SURFACE_LINKED", "SURFACE_UNLINKED",
+  "CREATED",
+  "UPDATED",
+  "DELETED",
+  "CREDENTIAL_ADDED",
+  "CREDENTIAL_REMOVED",
+  "MFA_ENROLLED",
+  "MFA_REVOKED",
+  "SSO_LINKED",
+  "SSO_UNLINKED",
+  "ROLE_GRANTED",
+  "ROLE_REVOKED",
+  "SESSION_REVOKED",
+  "TOKEN_ISSUED",
+  "TOKEN_REVOKED",
+  "SURFACE_LINKED",
+  "SURFACE_UNLINKED",
 ]);
 
 const VALID_SOURCES = new Set<IdentityEventSource>([
-  "OIDC", "SAML", "LOCAL", "API", "ADMIN", "SYSTEM",
+  "OIDC",
+  "SAML",
+  "LOCAL",
+  "API",
+  "ADMIN",
+  "SYSTEM",
 ]);
 
 async function handlePostApiIdentityEvent(request: Request) {
   const traceId = extractTraceId(request);
   const session = await getAuthSession().catch(swallow("getAuthSession", null));
-  if (!session) return withTraceId(Response.json({ error: "Authentication required.", meta: makeMeta(traceId) }, { status: 401 }), traceId);
+  if (!session)
+    return withTraceId(
+      Response.json(
+        { error: "Authentication required.", meta: makeMeta(traceId) },
+        { status: 401 },
+      ),
+      traceId,
+    );
 
   const ctx = await getActiveScope().catch(swallow("getActiveScope", null));
-  if (!ctx) return withTraceId(Response.json({ error: "Workspace context unavailable.", meta: makeMeta(traceId) }, { status: 400 }), traceId);
+  if (!ctx)
+    return withTraceId(
+      Response.json(
+        { error: "Workspace context unavailable.", meta: makeMeta(traceId) },
+        { status: 400 },
+      ),
+      traceId,
+    );
 
   const body = await request.json().catch(() => null);
   if (!body || typeof body !== "object" || Array.isArray(body)) {
-    return withTraceId(Response.json({ error: "Request body must be an object.", meta: makeMeta(traceId) }, { status: 400 }), traceId);
+    return withTraceId(
+      Response.json(
+        { error: "Request body must be an object.", meta: makeMeta(traceId) },
+        { status: 400 },
+      ),
+      traceId,
+    );
   }
 
   const rec = body as Record<string, unknown>;
   const principalId = asString(rec.principalId);
   const eventType = asString(rec.eventType) as IdentityLifecycleEventType | undefined;
   const source = asString(rec.source) as IdentityEventSource | undefined;
-  const detail = rec.detail && typeof rec.detail === "object" && !Array.isArray(rec.detail)
-    ? rec.detail as Record<string, unknown>
-    : {};
+  const detail =
+    rec.detail && typeof rec.detail === "object" && !Array.isArray(rec.detail)
+      ? (rec.detail as Record<string, unknown>)
+      : {};
   const agentDid = asString(rec.agentDid);
   const signatureAlgorithm = asString(rec.signatureAlgorithm);
   const signatureKeyId = asString(rec.signatureKeyId);
   const payloadHash = asString(rec.payloadHash);
   const signature = asString(rec.signature);
-  const signatureVerificationOutcome = asString(rec.signatureVerificationOutcome) as "PASS" | "FAIL" | "WARN" | undefined;
+  const signatureVerificationOutcome = asString(rec.signatureVerificationOutcome) as
+    "PASS" | "FAIL" | "WARN" | undefined;
   const signatureFailureReason = asString(rec.signatureFailureReason);
   const signatureVerifiedAt = asString(rec.signatureVerifiedAt);
 
-  if (!principalId) return withTraceId(Response.json({ error: "principalId is required.", meta: makeMeta(traceId) }, { status: 400 }), traceId);
+  if (!principalId)
+    return withTraceId(
+      Response.json(
+        { error: "principalId is required.", meta: makeMeta(traceId) },
+        { status: 400 },
+      ),
+      traceId,
+    );
   if (!eventType || !VALID_EVENT_TYPES.has(eventType)) {
-    return withTraceId(Response.json({ error: "eventType must be a valid IdentityLifecycleEventType.", meta: makeMeta(traceId) }, { status: 400 }), traceId);
+    return withTraceId(
+      Response.json(
+        { error: "eventType must be a valid IdentityLifecycleEventType.", meta: makeMeta(traceId) },
+        { status: 400 },
+      ),
+      traceId,
+    );
   }
   if (!source || !VALID_SOURCES.has(source)) {
-    return withTraceId(Response.json({ error: "source must be a valid IdentityEventSource.", meta: makeMeta(traceId) }, { status: 400 }), traceId);
+    return withTraceId(
+      Response.json(
+        { error: "source must be a valid IdentityEventSource.", meta: makeMeta(traceId) },
+        { status: 400 },
+      ),
+      traceId,
+    );
   }
-  if (signatureVerificationOutcome && !["PASS", "WARN", "FAIL"].includes(signatureVerificationOutcome)) {
-    return withTraceId(Response.json({ error: "signatureVerificationOutcome must be PASS, FAIL, or WARN.", meta: makeMeta(traceId) }, { status: 400 }), traceId);
+  if (
+    signatureVerificationOutcome &&
+    !["PASS", "WARN", "FAIL"].includes(signatureVerificationOutcome)
+  ) {
+    return withTraceId(
+      Response.json(
+        {
+          error: "signatureVerificationOutcome must be PASS, FAIL, or WARN.",
+          meta: makeMeta(traceId),
+        },
+        { status: 400 },
+      ),
+      traceId,
+    );
   }
   if (signatureVerifiedAt && Number.isNaN(Date.parse(signatureVerifiedAt))) {
-    return withTraceId(Response.json({ error: "signatureVerifiedAt must be a valid date-time string when provided.", meta: makeMeta(traceId) }, { status: 400 }), traceId);
+    return withTraceId(
+      Response.json(
+        {
+          error: "signatureVerifiedAt must be a valid date-time string when provided.",
+          meta: makeMeta(traceId),
+        },
+        { status: 400 },
+      ),
+      traceId,
+    );
   }
 
   try {
@@ -86,7 +162,13 @@ async function handlePostApiIdentityEvent(request: Request) {
     });
   } catch (err) {
     console.error("[identity/event] recordIdentityLifecycleEvent failed", err);
-    return withTraceId(Response.json({ error: "Service temporarily unavailable.", meta: makeMeta(traceId) }, { status: 503 }), traceId);
+    return withTraceId(
+      Response.json(
+        { error: "Service temporarily unavailable.", meta: makeMeta(traceId) },
+        { status: 503 },
+      ),
+      traceId,
+    );
   }
 
   recordIdentityOperation({
@@ -99,7 +181,10 @@ async function handlePostApiIdentityEvent(request: Request) {
     payload: { principalId, eventType, source },
   }).catch(swallow("recordIdentityOperation", undefined));
 
-  return withTraceId(Response.json({ ok: true, meta: makeMeta(traceId) }, { status: 201 }), traceId);
+  return withTraceId(
+    Response.json({ ok: true, meta: makeMeta(traceId) }, { status: 201 }),
+    traceId,
+  );
 }
 
 export { handlePostApiIdentityEvent as POST };

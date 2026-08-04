@@ -25,14 +25,21 @@ function isSensitiveKey(key: string): boolean {
 const MAX_ATTRIBUTE_LENGTH = 300;
 const MAX_REDACTION_DEPTH = 8;
 
-function normalizeAttributeValue(value: unknown): string | number | boolean | string[] | number[] | boolean[] | undefined {
+function normalizeAttributeValue(
+  value: unknown,
+): string | number | boolean | string[] | number[] | boolean[] | undefined {
   if (value === null || value === undefined) return undefined;
-  if (typeof value === "string") return value.length > MAX_ATTRIBUTE_LENGTH ? `${value.slice(0, MAX_ATTRIBUTE_LENGTH)}...` : value;
+  if (typeof value === "string")
+    return value.length > MAX_ATTRIBUTE_LENGTH
+      ? `${value.slice(0, MAX_ATTRIBUTE_LENGTH)}...`
+      : value;
   if (typeof value === "number" || typeof value === "boolean") return value;
   if (Array.isArray(value)) {
     const normalized = value
       .map((item) => normalizeAttributeValue(item))
-      .filter((item): item is string | number | boolean => ["string", "number", "boolean"].includes(typeof item));
+      .filter((item): item is string | number | boolean =>
+        ["string", "number", "boolean"].includes(typeof item),
+      );
     if (normalized.every((item) => typeof item === "string")) return normalized as string[];
     if (normalized.every((item) => typeof item === "number")) return normalized as number[];
     if (normalized.every((item) => typeof item === "boolean")) return normalized as boolean[];
@@ -50,7 +57,12 @@ function safeStringify(value: unknown): string {
   }
 }
 
-function sanitizeForLog(value: unknown, key = "", depth = 0, seen = new WeakSet<object>()): unknown {
+function sanitizeForLog(
+  value: unknown,
+  key = "",
+  depth = 0,
+  seen = new WeakSet<object>(),
+): unknown {
   if (key && isSensitiveKey(key)) return "[REDACTED]";
   if (value === null || value === undefined) return value;
   if (typeof value === "bigint") return value.toString();
@@ -110,7 +122,11 @@ function activeTraceFields(): Record<string, string> {
   return fields;
 }
 
-export function writeLog(level: LogLevel, message: string, attrs: Record<string, unknown> = {}): void {
+export function writeLog(
+  level: LogLevel,
+  message: string,
+  attrs: Record<string, unknown> = {},
+): void {
   const payload = {
     ts: new Date().toISOString(),
     level,

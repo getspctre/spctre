@@ -34,18 +34,21 @@ export function SmsMfaTrigger() {
   return (
     <div style={{ display: "grid", gap: "6px", marginBlockEnd: "12px" }}>
       {status === "sent" ? <input type="hidden" name="method" value="sms" /> : null}
-      <button
-        className="button"
-        type="button"
-        onClick={triggerOtp}
-        disabled={status === "sending"}
-      >
+      <button className="button" type="button" onClick={triggerOtp} disabled={status === "sending"}>
         {status === "idle" && t("send")}
         {status === "sending" && t("sending")}
         {status === "sent" && t("sent")}
         {status === "error" && t("retry")}
       </button>
-      {error && <p className="meta workspaceError" role="alert" style={{ color: "var(--red)", fontSize: "12px", margin: 0 }}>{error}</p>}
+      {error && (
+        <p
+          className="meta workspaceError"
+          role="alert"
+          style={{ color: "var(--red)", fontSize: "12px", margin: 0 }}
+        >
+          {error}
+        </p>
+      )}
     </div>
   );
 }

@@ -12,16 +12,20 @@ import {
 } from "@/lib/domains/members/service";
 
 function parseRole(formData: FormData, key: string): OrgRole | null {
-  const value = String(formData.get(key) ?? "").trim().toUpperCase();
+  const value = String(formData.get(key) ?? "")
+    .trim()
+    .toUpperCase();
   return isOrgRole(value) ? value : null;
 }
 
 export async function inviteOrganizationMember(
   _prev: MemberActionState,
-  formData: FormData
+  formData: FormData,
 ): Promise<MemberActionState> {
   const displayName = String(formData.get("displayName") ?? "").trim();
-  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const email = String(formData.get("email") ?? "")
+    .trim()
+    .toLowerCase();
   const orgRole = parseRole(formData, "orgRole");
 
   const result = await inviteOrganizationMemberDecision({ displayName, email, orgRole });
@@ -36,7 +40,7 @@ export async function inviteOrganizationMember(
 
 export async function updateMemberOrgRoleForm(
   _prev: MemberActionState,
-  formData: FormData
+  formData: FormData,
 ): Promise<MemberActionState> {
   const principalId = String(formData.get("principalId") ?? "").trim();
   const orgRole = parseRole(formData, "orgRole");
@@ -52,11 +56,13 @@ export async function updateMemberOrgRoleForm(
 
 export async function updateWorkspaceOverride(
   _prev: MemberActionState,
-  formData: FormData
+  formData: FormData,
 ): Promise<MemberActionState> {
   const principalId = String(formData.get("principalId") ?? "").trim();
   const workspaceId = String(formData.get("workspaceId") ?? "").trim();
-  const roleRaw = String(formData.get("workspaceRole") ?? "").trim().toUpperCase();
+  const roleRaw = String(formData.get("workspaceRole") ?? "")
+    .trim()
+    .toUpperCase();
 
   const result = await updateWorkspaceOverrideDecision({ principalId, workspaceId, roleRaw });
   if ("error" in result) return { error: result.error };
@@ -69,7 +75,7 @@ export async function updateWorkspaceOverride(
 
 export async function revokeMemberInvite(
   _prev: MemberActionState,
-  formData: FormData
+  formData: FormData,
 ): Promise<MemberActionState> {
   const principalId = String(formData.get("principalId") ?? "").trim();
 
@@ -82,7 +88,7 @@ export async function revokeMemberInvite(
 
 export async function removeOrganizationMember(
   _prev: MemberActionState,
-  formData: FormData
+  formData: FormData,
 ): Promise<MemberActionState> {
   const principalId = String(formData.get("principalId") ?? "").trim();
 

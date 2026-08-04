@@ -39,10 +39,10 @@ describe("CLI Gateway Integration", () => {
     });
 
     it("resolves config from config.gatewayUrl", () => {
-      const cfg = resolveGatewayConfig({
-        ...mockConfig,
-        gatewayUrl: "https://gw.test/",
-      }, "observe");
+      const cfg = resolveGatewayConfig(
+        { ...mockConfig, gatewayUrl: "https://gw.test/" },
+        "observe",
+      );
       expect(cfg).toEqual({
         gatewayUrl: "https://gw.test",
         token: "test-token",
@@ -68,29 +68,24 @@ describe("CLI Gateway Integration", () => {
     });
 
     it("defaults to fail-closed in enforce mode", () => {
-      const cfg = resolveGatewayConfig({
-        ...mockConfig,
-        gatewayUrl: "https://gw.test",
-      }, "enforce");
+      const cfg = resolveGatewayConfig({ ...mockConfig, gatewayUrl: "https://gw.test" }, "enforce");
       expect(cfg?.outagePolicy).toBe("fail-closed");
     });
 
     it("honors config outagePolicy fallback", () => {
-      const cfg = resolveGatewayConfig({
-        ...mockConfig,
-        gatewayUrl: "https://gw.test",
-        gatewayOutagePolicy: "fail-closed",
-      }, "observe");
+      const cfg = resolveGatewayConfig(
+        { ...mockConfig, gatewayUrl: "https://gw.test", gatewayOutagePolicy: "fail-closed" },
+        "observe",
+      );
       expect(cfg?.outagePolicy).toBe("fail-closed");
     });
 
     it("honors environment override for outagePolicy", () => {
       process.env.SPCTRE_GATEWAY_OUTAGE_POLICY = "fail-open";
-      const cfg = resolveGatewayConfig({
-        ...mockConfig,
-        gatewayUrl: "https://gw.test",
-        gatewayOutagePolicy: "fail-closed",
-      }, "enforce");
+      const cfg = resolveGatewayConfig(
+        { ...mockConfig, gatewayUrl: "https://gw.test", gatewayOutagePolicy: "fail-closed" },
+        "enforce",
+      );
       expect(cfg?.outagePolicy).toBe("fail-open");
     });
   });
@@ -118,10 +113,9 @@ describe("CLI Gateway Integration", () => {
         },
       };
 
-      const fetchSpy = vi.fn().mockResolvedValue({
-        ok: true,
-        json: async () => mockResponse,
-      } as Response);
+      const fetchSpy = vi
+        .fn()
+        .mockResolvedValue({ ok: true, json: async () => mockResponse } as Response);
       vi.stubGlobal("fetch", fetchSpy);
 
       const decision = await requestGatewayDecision(gwConfig, mockConfig, {
@@ -133,10 +127,7 @@ describe("CLI Gateway Integration", () => {
 
       expect(fetchSpy).toHaveBeenCalledWith("https://gw.test/api/gateway/decide", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": "Bearer token-123",
-        },
+        headers: { "Content-Type": "application/json", Authorization: "Bearer token-123" },
         body: JSON.stringify({
           decisionId: "dec-1",
           artifactHash: "hash-123",
@@ -162,9 +153,7 @@ describe("CLI Gateway Integration", () => {
 
       vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("Network Error")));
 
-      const decision = await requestGatewayDecision(gwConfig, mockConfig, {
-        decisionId: "dec-1",
-      });
+      const decision = await requestGatewayDecision(gwConfig, mockConfig, { decisionId: "dec-1" });
       expect(decision).toBeNull();
     });
   });
@@ -221,10 +210,12 @@ describe("CLI Gateway Integration", () => {
         pollIntervalMs: 5,
       };
 
-      const fetchSpy = vi.fn().mockResolvedValue({
-        ok: true,
-        json: async () => ({ decisionId: "dec-1", status: "PENDING" }),
-      } as Response);
+      const fetchSpy = vi
+        .fn()
+        .mockResolvedValue({
+          ok: true,
+          json: async () => ({ decisionId: "dec-1", status: "PENDING" }),
+        } as Response);
       vi.stubGlobal("fetch", fetchSpy);
       vi.spyOn(process.stderr, "write").mockImplementation(() => true);
 

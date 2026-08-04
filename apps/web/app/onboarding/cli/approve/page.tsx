@@ -11,7 +11,7 @@ import { swallow } from "@/lib/platform/swallow";
 export const dynamic = "force-dynamic";
 
 export default async function CliOnboardingApprovePage({
-  searchParams
+  searchParams,
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
@@ -31,9 +31,7 @@ export default async function CliOnboardingApprovePage({
         <div>
           <p className="eyebrow">{t("eyebrow")}</p>
           <h1>{t("title")}</h1>
-          <p className="meta">
-            {t("description")}
-          </p>
+          <p className="meta">{t("description")}</p>
         </div>
         {approved ? (
           <span className="pill pillAllow">
@@ -50,7 +48,9 @@ export default async function CliOnboardingApprovePage({
           <Terminal size={16} />
           <div>
             <span className="meta">{t("request_code")}</span>
-            <p><code>{code || t("missing")}</code></p>
+            <p>
+              <code>{code || t("missing")}</code>
+            </p>
           </div>
         </div>
         <div className="contextNode">
@@ -64,7 +64,9 @@ export default async function CliOnboardingApprovePage({
           <KeyRound size={16} />
           <div>
             <span className="meta">{t("token_scope")}</span>
-            <p><code>bundle:read</code> / <code>evidence:write</code> / <code>heartbeat:write</code></p>
+            <p>
+              <code>bundle:read</code> / <code>evidence:write</code> / <code>heartbeat:write</code>
+            </p>
           </div>
         </div>
       </div>
@@ -89,7 +91,10 @@ export default async function CliOnboardingApprovePage({
         </form>
       ) : (
         <div className="toolbar">
-          <Link className="button buttonPrimary" href={`/login?next=${encodeURIComponent(`/onboarding/cli/approve?code=${code}`)}`}>
+          <Link
+            className="button buttonPrimary"
+            href={`/login?next=${encodeURIComponent(`/onboarding/cli/approve?code=${code}`)}`}
+          >
             <ShieldCheck size={16} />
             {t("sign_in")}
           </Link>

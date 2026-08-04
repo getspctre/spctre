@@ -4,7 +4,9 @@ const ingestRuntimeEvidenceSpy = vi.fn();
 const revalidatePathSpy = vi.fn();
 
 vi.mock("next/cache", () => ({ revalidatePath: revalidatePathSpy }));
-vi.mock("@/lib/domains/evidence/ingest-service", () => ({ ingestRuntimeEvidence: ingestRuntimeEvidenceSpy }));
+vi.mock("@/lib/domains/evidence/ingest-service", () => ({
+  ingestRuntimeEvidence: ingestRuntimeEvidenceSpy,
+}));
 
 const route = await import("../app/api/v1/evidence/git-checkpoints/route");
 
@@ -36,34 +38,43 @@ describe("POST /api/v1/evidence/git-checkpoints", () => {
   });
 
   it("normalizes checkpoint metadata into gateway-mode evidence", async () => {
-    const response = await route.POST(new Request("http://localhost:3000/api/v1/evidence/git-checkpoints", {
-      method: "POST",
-      headers: { "content-type": "application/json", "x-request-id": "git-checkpoint-test" },
-      body: JSON.stringify(validPayload),
-    }));
+    const response = await route.POST(
+      new Request("http://localhost:3000/api/v1/evidence/git-checkpoints", {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-request-id": "git-checkpoint-test" },
+        body: JSON.stringify(validPayload),
+      }),
+    );
 
     expect(response.status).toBe(201);
     await expect(response.json()).resolves.toMatchObject({
       evidence: { decisionId: validPayload.idempotencyKey },
       meta: { traceId: "git-checkpoint-test" },
     });
-    expect(ingestRuntimeEvidenceSpy).toHaveBeenCalledWith(expect.objectContaining({
-      parsed: expect.objectContaining({
-        decisionId: validPayload.idempotencyKey,
-        ingestMode: "gateway",
-        artifactHash: "abc123",
-        rawEvidence: expect.objectContaining({ _source: "git-checkpoint" }),
+    expect(ingestRuntimeEvidenceSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        parsed: expect.objectContaining({
+          decisionId: validPayload.idempotencyKey,
+          ingestMode: "gateway",
+          artifactHash: "abc123",
+          rawEvidence: expect.objectContaining({ _source: "git-checkpoint" }),
+        }),
       }),
-    }));
+    );
     expect(revalidatePathSpy).toHaveBeenCalledWith("/evidence");
   });
 
   it("rejects a diff without a representation", async () => {
-    const response = await route.POST(new Request("http://localhost:3000/api/v1/evidence/git-checkpoints", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ ...validPayload, checkpoint: { ...validPayload.checkpoint, diff: { format: "unified" } } }),
-    }));
+    const response = await route.POST(
+      new Request("http://localhost:3000/api/v1/evidence/git-checkpoints", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          ...validPayload,
+          checkpoint: { ...validPayload.checkpoint, diff: { format: "unified" } },
+        }),
+      }),
+    );
 
     expect(response.status).toBe(400);
     expect(ingestRuntimeEvidenceSpy).not.toHaveBeenCalled();

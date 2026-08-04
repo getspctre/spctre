@@ -15,9 +15,7 @@ vi.mock("@/lib/service-tokens", () => ({
 
 const eraseEvidencePiiMock = vi.fn();
 
-vi.mock("@/lib/domains/compliance/service", () => ({
-  eraseEvidencePii: eraseEvidencePiiMock,
-}));
+vi.mock("@/lib/domains/compliance/service", () => ({ eraseEvidencePii: eraseEvidencePiiMock }));
 
 const { POST: erasePost } = await import("../app/api/evidence/erase/route");
 
@@ -109,15 +107,12 @@ describe("POST /api/evidence/erase", () => {
       "demo-ws",
       "demo-tenant",
       { decisionIds: undefined, agentId: "agent-7", before: undefined },
-      "svc-test"
+      "svc-test",
     );
   });
 
   it("erases by decision ids and returns the erased set", async () => {
-    eraseEvidencePiiMock.mockResolvedValue({
-      erasedCount: 2,
-      erasedDecisionIds: ["d-1", "d-2"],
-    });
+    eraseEvidencePiiMock.mockResolvedValue({ erasedCount: 2, erasedDecisionIds: ["d-1", "d-2"] });
 
     const res = await erasePost(eraseRequest({ decisionIds: ["d-1", "d-2"] }));
     expect(res.status).toBe(200);
@@ -131,7 +126,7 @@ describe("POST /api/evidence/erase", () => {
       "demo-ws",
       "demo-tenant",
       { decisionIds: ["d-1", "d-2"], agentId: undefined, before: undefined },
-      "svc-test"
+      "svc-test",
     );
   });
 
@@ -139,7 +134,7 @@ describe("POST /api/evidence/erase", () => {
     eraseEvidencePiiMock.mockResolvedValue({ erasedCount: 0, erasedDecisionIds: [] });
 
     const res = await erasePost(
-      eraseRequest({ agentId: "agent-7", before: "2026-06-01T00:00:00+02:00" })
+      eraseRequest({ agentId: "agent-7", before: "2026-06-01T00:00:00+02:00" }),
     );
     expect(res.status).toBe(200);
 
@@ -147,7 +142,7 @@ describe("POST /api/evidence/erase", () => {
       "demo-ws",
       "demo-tenant",
       { decisionIds: undefined, agentId: "agent-7", before: "2026-05-31T22:00:00.000Z" },
-      "svc-test"
+      "svc-test",
     );
   });
 

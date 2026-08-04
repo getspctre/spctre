@@ -35,18 +35,23 @@ describe("MCP governance authorization", () => {
 
     expect(result.outcome).toBe("ALLOW");
     expect(result.capability?.id).toBe("cap-1");
-    expect(result.auditSeal).toBe(buildMcpAuditSeal({
-      decisionId: "decision-1",
-      workspaceId: "ws-1",
-      agentId: "agent-1",
-      serverName: "github-mcp",
-      toolName: "create_pull_request",
-      connector: "github",
-      action: "pull_request.create",
-      outcome: "ALLOW",
-      artifactHash: "artifact-1",
-      issuedAt: "2026-01-01T00:00:00.000Z",
-    }, "secret"));
+    expect(result.auditSeal).toBe(
+      buildMcpAuditSeal(
+        {
+          decisionId: "decision-1",
+          workspaceId: "ws-1",
+          agentId: "agent-1",
+          serverName: "github-mcp",
+          toolName: "create_pull_request",
+          connector: "github",
+          action: "pull_request.create",
+          outcome: "ALLOW",
+          artifactHash: "artifact-1",
+          issuedAt: "2026-01-01T00:00:00.000Z",
+        },
+        "secret",
+      ),
+    );
   });
 
   it("denies undiscovered MCP tools and still emits a seal for evidence", () => {
@@ -70,18 +75,21 @@ describe("MCP governance authorization", () => {
   });
 
   it("builds the same audit seal regardless of input property insertion order", () => {
-    const first = buildMcpAuditSeal({
-      decisionId: "decision-3",
-      workspaceId: "ws-1",
-      agentId: "agent-1",
-      serverName: "github-mcp",
-      toolName: "create_pull_request",
-      connector: "github",
-      action: "pull_request.create",
-      outcome: "ALLOW",
-      artifactHash: null,
-      issuedAt: "2026-01-01T00:00:00.000Z",
-    }, "secret");
+    const first = buildMcpAuditSeal(
+      {
+        decisionId: "decision-3",
+        workspaceId: "ws-1",
+        agentId: "agent-1",
+        serverName: "github-mcp",
+        toolName: "create_pull_request",
+        connector: "github",
+        action: "pull_request.create",
+        outcome: "ALLOW",
+        artifactHash: null,
+        issuedAt: "2026-01-01T00:00:00.000Z",
+      },
+      "secret",
+    );
 
     const differentlyOrdered = {
       issuedAt: "2026-01-01T00:00:00.000Z",

@@ -1,7 +1,12 @@
 import { describe, it, expect } from "vitest";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { evaluateDecision, packToDocument, parseAgtPolicyDocument, POLICY_PACKS } from "../src/index";
+import {
+  evaluateDecision,
+  packToDocument,
+  parseAgtPolicyDocument,
+  POLICY_PACKS,
+} from "../src/index";
 import type { RuntimeDecisionStatus } from "../src/index";
 
 describe("pack install round-trip", () => {
@@ -10,18 +15,41 @@ describe("pack install round-trip", () => {
     const document = packToDocument(pack);
     const parsed = parseAgtPolicyDocument({ document, sourcePath: "packs/stripe-v1.json" });
 
-    const refundRule = parsed.rules.find((r) => r.stableRuleId === "stripe.refund.high_value_review");
+    const refundRule = parsed.rules.find(
+      (r) => r.stableRuleId === "stripe.refund.high_value_review",
+    );
     expect(refundRule?.parameterConstraints).toEqual([
-      { field: "amount_cents", operator: "gte", value: 50000, parameterKey: "stripe.refund_review_threshold_cents", effect: undefined },
+      {
+        field: "amount_cents",
+        operator: "gte",
+        value: 50000,
+        parameterKey: "stripe.refund_review_threshold_cents",
+        effect: undefined,
+      },
     ]);
-    expect(refundRule?.controlMappings).toEqual([{ framework: "SOC2", controlId: "CC6.1", rationale: "Reviews high-value financial transactions before execution." }]);
+    expect(refundRule?.controlMappings).toEqual([
+      {
+        framework: "SOC2",
+        controlId: "CC6.1",
+        rationale: "Reviews high-value financial transactions before execution.",
+      },
+    ]);
 
     const zendesk = POLICY_PACKS.find((p) => p.connector === "zendesk")!;
     const zendeskDoc = packToDocument(zendesk);
-    const zendeskParsed = parseAgtPolicyDocument({ document: zendeskDoc, sourcePath: "packs/zendesk-v1.json" });
-    const replyRule = zendeskParsed.rules.find((r) => r.stableRuleId === "zendesk.reply.pii_exposure.warn");
+    const zendeskParsed = parseAgtPolicyDocument({
+      document: zendeskDoc,
+      sourcePath: "packs/zendesk-v1.json",
+    });
+    const replyRule = zendeskParsed.rules.find(
+      (r) => r.stableRuleId === "zendesk.reply.pii_exposure.warn",
+    );
     expect(replyRule?.semanticChecks).toEqual([
-      { id: "zendesk-reply-sc-1", prompt: "check for pii or regulated data exposure in customer reply", effect: "WARN" },
+      {
+        id: "zendesk-reply-sc-1",
+        prompt: "check for pii or regulated data exposure in customer reply",
+        effect: "WARN",
+      },
     ]);
   });
 
@@ -65,7 +93,10 @@ describe("pack install round-trip", () => {
       ],
     };
 
-    const parsed = parseAgtPolicyDocument({ document: packToDocument(pack), sourcePath: "packs/synthetic-v1.json" });
+    const parsed = parseAgtPolicyDocument({
+      document: packToDocument(pack),
+      sourcePath: "packs/synthetic-v1.json",
+    });
     const rule = parsed.rules.find((r) => r.stableRuleId === "synthetic.guard");
     expect(rule?.priority).toBe(7); // core field previously dropped
     expect(rule?.parameterConstraints?.[0]?.value).toBe(10);
@@ -118,7 +149,10 @@ describe("pack install round-trip", () => {
       ],
     };
 
-    const parsed = parseAgtPolicyDocument({ document: packToDocument(pack), sourcePath: "packs/dyn-v1.json" });
+    const parsed = parseAgtPolicyDocument({
+      document: packToDocument(pack),
+      sourcePath: "packs/dyn-v1.json",
+    });
     const rule = parsed.rules.find((r) => r.stableRuleId === "dyn.guard");
     const kinds = (rule?.dynamicConditions ?? []).map((c) => c.kind).sort();
     expect(kinds).toEqual(["PER_CALL_COST_LIMIT", "TIME_WINDOW"]);
@@ -152,7 +186,7 @@ function legacyPackToDocument(pack: (typeof POLICY_PACKS)[number]): string {
       })),
     },
     null,
-    2
+    2,
   );
 }
 
@@ -189,15 +223,22 @@ describe("pack install round-trip preserves fixture provenance", () => {
     const pack = POLICY_PACKS.find((p) => p.connector === connector)!;
     // Full install round-trip: pack -> document -> parse (persisted rules) ->
     // re-serialize the persisted document -> parse again (the DB read path).
-    const installParsed = parseAgtPolicyDocument({ document: packToDocument(pack), sourcePath: `packs/${pack.id}.json` });
+    const installParsed = parseAgtPolicyDocument({
+      document: packToDocument(pack),
+      sourcePath: `packs/${pack.id}.json`,
+    });
     const reparsed = parseAgtPolicyDocument({
       document: JSON.stringify(installParsed.sourceDocument),
       sourcePath: `packs/${pack.id}.json`,
     });
     const roundTrippedRules = reparsed.rules;
 
-    for (const fileName of readdirSync(join(FIXTURES_ROOT, connector)).filter((f) => f.endsWith(".json"))) {
-      const fixture = JSON.parse(readFileSync(join(FIXTURES_ROOT, connector, fileName), "utf-8")) as PackFixture;
+    for (const fileName of readdirSync(join(FIXTURES_ROOT, connector)).filter((f) =>
+      f.endsWith(".json"),
+    )) {
+      const fixture = JSON.parse(
+        readFileSync(join(FIXTURES_ROOT, connector, fileName), "utf-8"),
+      ) as PackFixture;
       it(`${connector}/${fileName} decides the same after install round-trip`, () => {
         const result = evaluateDecision({
           connector,

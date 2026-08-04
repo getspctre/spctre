@@ -16,8 +16,8 @@ async function handlePostApiGatewayIngestPortkey(request: Request) {
     getEnvironment: (raw, request) =>
       String(
         (raw.metadata as Record<string, unknown> | undefined)?.environment ??
-        request.headers.get("x-spctre-environment") ??
-        "production"
+          request.headers.get("x-spctre-environment") ??
+          "production",
       ),
   });
 }

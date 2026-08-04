@@ -1,117 +1,100 @@
 import { describe, it, expect } from "vitest";
-import { buildRuleControlMappingIndex, classifySemanticIntent, evaluateConnectorPayloadGuardrail, evaluateDecision, evaluateRuntimePolicyDrift, mapRuntimeProvenanceGaps, summarizeRuntimePolicyCoverage, diffPolicyRules } from "../src/index";
+import {
+  buildRuleControlMappingIndex,
+  classifySemanticIntent,
+  evaluateConnectorPayloadGuardrail,
+  evaluateDecision,
+  evaluateRuntimePolicyDrift,
+  mapRuntimeProvenanceGaps,
+  summarizeRuntimePolicyCoverage,
+  diffPolicyRules,
+} from "../src/index";
 import type { PolicyRuleSummary } from "../src/index";
 
 describe("classifySemanticIntent", () => {
   it("matches exact quoted patterns case-insensitively", () => {
     expect(
-      classifySemanticIntent(
-        'contains "delete database"',
-        "I need to delete database table"
-      )
+      classifySemanticIntent('contains "delete database"', "I need to delete database table"),
     ).toBe(true);
 
-    expect(
-      classifySemanticIntent(
-        'contains "delete database"',
-        "Delete database tables now"
-      )
-    ).toBe(true);
+    expect(classifySemanticIntent('contains "delete database"', "Delete database tables now")).toBe(
+      true,
+    );
 
-    expect(
-      classifySemanticIntent(
-        'contains "delete database"',
-        "do query delete tables"
-      )
-    ).toBe(false);
+    expect(classifySemanticIntent('contains "delete database"', "do query delete tables")).toBe(
+      false,
+    );
   });
 
   it("classifies credentials and secret topics", () => {
-    expect(
-      classifySemanticIntent(
-        "check for credentials",
-        "save token to environment"
-      )
-    ).toBe(true);
+    expect(classifySemanticIntent("check for credentials", "save token to environment")).toBe(true);
+
+    expect(classifySemanticIntent("detect API keys", "the private key is in auth headers")).toBe(
+      true,
+    );
 
     expect(
-      classifySemanticIntent(
-        "detect API keys",
-        "the private key is in auth headers"
-      )
-    ).toBe(true);
-
-    expect(
-      classifySemanticIntent(
-        "credentials scanner",
-        "ordinary non-sensitive execution path"
-      )
+      classifySemanticIntent("credentials scanner", "ordinary non-sensitive execution path"),
     ).toBe(false);
   });
 
   it("classifies unprofessional behavior", () => {
     expect(
-      classifySemanticIntent(
-        "rude language filter",
-        "this tool call is stupid and dumb"
-      )
+      classifySemanticIntent("rude language filter", "this tool call is stupid and dumb"),
     ).toBe(true);
 
-    expect(
-      classifySemanticIntent(
-        "harassment filter",
-        "ordinary polite message"
-      )
-    ).toBe(false);
+    expect(classifySemanticIntent("harassment filter", "ordinary polite message")).toBe(false);
   });
 
   it("classifies destructive commands", () => {
-    expect(
-      classifySemanticIntent(
-        "detect destructive action",
-        "rm -rf /usr/local/bin"
-      )
-    ).toBe(true);
+    expect(classifySemanticIntent("detect destructive action", "rm -rf /usr/local/bin")).toBe(true);
 
-    expect(
-      classifySemanticIntent(
-        "dangerous action detector",
-        "drop table users;"
-      )
-    ).toBe(true);
+    expect(classifySemanticIntent("dangerous action detector", "drop table users;")).toBe(true);
   });
 
   it("matches fallback word token set inclusion", () => {
     // Splits cleanPrompt into words: ["read", "passwd"]
     // Matches if both are present in the search space.
-    expect(
-      classifySemanticIntent(
-        "read passwd file",
-        "reading etc passwd contents"
-      )
-    ).toBe(true);
+    expect(classifySemanticIntent("read passwd file", "reading etc passwd contents")).toBe(true);
 
-    expect(
-      classifySemanticIntent(
-        "read passwd file",
-        "just reading a config file"
-      )
-    ).toBe(false);
+    expect(classifySemanticIntent("read passwd file", "just reading a config file")).toBe(false);
   });
 });
 
 describe("evaluateConnectorPayloadGuardrail", () => {
-  const rules: PolicyRuleSummary[] = [{ stableRuleId: "stripe.payload.deny_secret", title: "Deny secret payloads", effect: "DENY", sourceFormat: "SPCTRE_MANAGED", domains: [], connectors: ["stripe"], actions: ["charge"], immutable: false, semanticChecks: [{ id: "secret", prompt: "detect API keys" }] }];
+  const rules: PolicyRuleSummary[] = [
+    {
+      stableRuleId: "stripe.payload.deny_secret",
+      title: "Deny secret payloads",
+      effect: "DENY",
+      sourceFormat: "SPCTRE_MANAGED",
+      domains: [],
+      connectors: ["stripe"],
+      actions: ["charge"],
+      immutable: false,
+      semanticChecks: [{ id: "secret", prompt: "detect API keys" }],
+    },
+  ];
 
   it("returns policy provenance without retaining payload content", () => {
-    const result = evaluateConnectorPayloadGuardrail({ connector: "stripe", action: "charge", rules, toolParameters: { note: "api key sk_live_123" } });
+    const result = evaluateConnectorPayloadGuardrail({
+      connector: "stripe",
+      action: "charge",
+      rules,
+      toolParameters: { note: "api key sk_live_123" },
+    });
     expect(result.status).toBe("DENY");
     expect(result.matchedPolicyRefs).toEqual(["stripe.payload.deny_secret"]);
     expect(result.payloadHash).toMatch(/^sha256:/);
   });
 
   it("denies oversized payload inspection", () => {
-    const result = evaluateConnectorPayloadGuardrail({ connector: "stripe", action: "charge", rules, toolParameters: { body: "x".repeat(33_000) } });
+    const result = evaluateConnectorPayloadGuardrail({
+      connector: "stripe",
+      action: "charge",
+      rules,
+      toolParameters: { body: "x".repeat(33_000) },
+    });
     expect(result.status).toBe("DENY");
     expect(result.matchedPolicyRefs).toEqual(["system.payload_size_limit"]);
   });
@@ -119,28 +102,79 @@ describe("evaluateConnectorPayloadGuardrail", () => {
 
 describe("rule control mappings", () => {
   it("indexes mappings and exposes them as review-relevant rule changes", () => {
-    const base: PolicyRuleSummary = { stableRuleId: "rule", title: "Rule", effect: "DENY", sourceFormat: "SPCTRE_MANAGED", domains: [], connectors: [], actions: [], immutable: false };
-    const mapped = { ...base, controlMappings: [{ framework: "SOC2" as const, controlId: "CC6.1" }] };
-    expect(buildRuleControlMappingIndex([mapped])).toMatchObject([{ stableRuleId: "rule", controlId: "CC6.1" }]);
-    expect(diffPolicyRules({ branchId: "b", baseRevisionId: "r1", compareRevisionId: "r2", before: [base], after: [mapped] }).rules[0].changedFields).toContain("controlMappings");
+    const base: PolicyRuleSummary = {
+      stableRuleId: "rule",
+      title: "Rule",
+      effect: "DENY",
+      sourceFormat: "SPCTRE_MANAGED",
+      domains: [],
+      connectors: [],
+      actions: [],
+      immutable: false,
+    };
+    const mapped = {
+      ...base,
+      controlMappings: [{ framework: "SOC2" as const, controlId: "CC6.1" }],
+    };
+    expect(buildRuleControlMappingIndex([mapped])).toMatchObject([
+      { stableRuleId: "rule", controlId: "CC6.1" },
+    ]);
+    expect(
+      diffPolicyRules({
+        branchId: "b",
+        baseRevisionId: "r1",
+        compareRevisionId: "r2",
+        before: [base],
+        after: [mapped],
+      }).rules[0].changedFields,
+    ).toContain("controlMappings");
   });
 });
 
 describe("runtime policy drift", () => {
   it("distinguishes current, drifted, and provenance-gap heartbeats", () => {
-    expect(evaluateRuntimePolicyDrift({ agentId: "a", runtimeArtifactHash: "h", publishedArtifactHash: "h" }).status).toBe("CURRENT");
-    expect(evaluateRuntimePolicyDrift({ agentId: "a", runtimeArtifactHash: "old", publishedArtifactHash: "new" }).status).toBe("DRIFTED");
-    expect(evaluateRuntimePolicyDrift({ agentId: "a", publishedArtifactHash: "h" }).status).toBe("PROVENANCE_GAP");
+    expect(
+      evaluateRuntimePolicyDrift({
+        agentId: "a",
+        runtimeArtifactHash: "h",
+        publishedArtifactHash: "h",
+      }).status,
+    ).toBe("CURRENT");
+    expect(
+      evaluateRuntimePolicyDrift({
+        agentId: "a",
+        runtimeArtifactHash: "old",
+        publishedArtifactHash: "new",
+      }).status,
+    ).toBe("DRIFTED");
+    expect(evaluateRuntimePolicyDrift({ agentId: "a", publishedArtifactHash: "h" }).status).toBe(
+      "PROVENANCE_GAP",
+    );
   });
 });
 
 describe("bounded runtime inventory", () => {
   it("only classifies declared runtime provenance", () => {
-    expect(mapRuntimeProvenanceGaps({ publishedArtifactHash: "h", runtimes: [{ agentId: "a", runtimeTarget: "MCP", artifactHash: "h", policyContextPresent: true }, { agentId: "b", runtimeTarget: "CLI", policyContextPresent: false }] }).map((r) => r.coverage)).toEqual(["GOVERNED", "PROVENANCE_GAP"]);
+    expect(
+      mapRuntimeProvenanceGaps({
+        publishedArtifactHash: "h",
+        runtimes: [
+          { agentId: "a", runtimeTarget: "MCP", artifactHash: "h", policyContextPresent: true },
+          { agentId: "b", runtimeTarget: "CLI", policyContextPresent: false },
+        ],
+      }).map((r) => r.coverage),
+    ).toEqual(["GOVERNED", "PROVENANCE_GAP"]);
   });
 
   it("summarizes coverage and drift without discovering new assets", () => {
-    expect(summarizeRuntimePolicyCoverage({ publishedArtifactHash: "h", runtimes: [{ agentId: "a", runtimeTarget: "MCP", artifactHash: "old", policyContextPresent: true }] })).toMatchObject({ total: 1, governed: 0, provenanceGaps: 1, drifted: 1 });
+    expect(
+      summarizeRuntimePolicyCoverage({
+        publishedArtifactHash: "h",
+        runtimes: [
+          { agentId: "a", runtimeTarget: "MCP", artifactHash: "old", policyContextPresent: true },
+        ],
+      }),
+    ).toMatchObject({ total: 1, governed: 0, provenanceGaps: 1, drifted: 1 });
   });
 });
 
@@ -165,9 +199,7 @@ describe("evaluateDecision with semanticChecks", () => {
       connectors: ["github"],
       actions: ["repo.delete"],
       immutable: false,
-      semanticChecks: [
-        { id: "check-delete", prompt: 'contains "delete repository"' }
-      ]
+      semanticChecks: [{ id: "check-delete", prompt: 'contains "delete repository"' }],
     },
     {
       stableRuleId: "rule-semantic-override",
@@ -179,17 +211,13 @@ describe("evaluateDecision with semanticChecks", () => {
       actions: ["s3.upload"],
       immutable: false,
       semanticChecks: [
-        { id: "check-creds", prompt: "credentials", effect: "WARN" } // override to warn
-      ]
-    }
+        { id: "check-creds", prompt: "credentials", effect: "WARN" }, // override to warn
+      ],
+    },
   ];
 
   it("matches standard deterministic rule normally without semantic context", () => {
-    const res = evaluateDecision({
-      connector: "stripe",
-      action: "charge",
-      rules: dummyRules,
-    });
+    const res = evaluateDecision({ connector: "stripe", action: "charge", rules: dummyRules });
     expect(res.status).toBe("DENY");
     expect(res.matchedRefs).toContain("rule-deterministic");
   });
@@ -241,16 +269,12 @@ describe("diffPolicyRules with semanticChecks and conditions", () => {
       connectors: [],
       actions: [],
       immutable: false,
-      semanticChecks: [
-        { id: "check-1", prompt: "original prompt" }
-      ]
+      semanticChecks: [{ id: "check-1", prompt: "original prompt" }],
     };
 
     const afterRule: PolicyRuleSummary = {
       ...beforeRule,
-      semanticChecks: [
-        { id: "check-1", prompt: "modified prompt" }
-      ]
+      semanticChecks: [{ id: "check-1", prompt: "modified prompt" }],
     };
 
     const diff = diffPolicyRules({
@@ -258,7 +282,7 @@ describe("diffPolicyRules with semanticChecks and conditions", () => {
       baseRevisionId: "rev-1",
       compareRevisionId: "rev-2",
       before: [beforeRule],
-      after: [afterRule]
+      after: [afterRule],
     });
 
     expect(diff.summary.modified).toBe(1);
@@ -276,16 +300,12 @@ describe("diffPolicyRules with semanticChecks and conditions", () => {
       connectors: [],
       actions: [],
       immutable: false,
-      conditions: [
-        { "request.path": { "operator": "EQUALS", "value": "/foo" } }
-      ]
+      conditions: [{ "request.path": { operator: "EQUALS", value: "/foo" } }],
     };
 
     const afterRule: PolicyRuleSummary = {
       ...beforeRule,
-      conditions: [
-        { "request.path": { "operator": "EQUALS", "value": "/bar" } }
-      ]
+      conditions: [{ "request.path": { operator: "EQUALS", value: "/bar" } }],
     };
 
     const diff = diffPolicyRules({
@@ -293,7 +313,7 @@ describe("diffPolicyRules with semanticChecks and conditions", () => {
       baseRevisionId: "rev-1",
       compareRevisionId: "rev-2",
       before: [beforeRule],
-      after: [afterRule]
+      after: [afterRule],
     });
 
     expect(diff.summary.modified).toBe(1);

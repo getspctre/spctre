@@ -69,9 +69,7 @@ vi.mock("@/lib/repositories/default-policy", () => ({
   ensureDefaultPublishedPolicyPack: ensureDefaultPublishedPolicyPackSpy,
 }));
 
-vi.mock("@/lib/totp", () => ({
-  verifyTotpCode: vi.fn(({ code }) => code === "123456"),
-}));
+vi.mock("@/lib/totp", () => ({ verifyTotpCode: vi.fn(({ code }) => code === "123456") }));
 
 const authService = await import("../lib/domains/auth/service");
 
@@ -117,13 +115,21 @@ describe("auth domain service", () => {
   describe("deletePasskey", () => {
     it("returns error when database is not configured", async () => {
       isDatabaseConfiguredSpy.mockReturnValue(false);
-      const result = await authService.deletePasskey({ passkeyId: "pk1", tenantId: "t1", principalId: "u1" });
+      const result = await authService.deletePasskey({
+        passkeyId: "pk1",
+        tenantId: "t1",
+        principalId: "u1",
+      });
       expect(result).toEqual({ error: "Database not configured." });
     });
 
     it("reports successful passkey removal", async () => {
       deletePrincipalPasskeySpy.mockResolvedValue(true);
-      const result = await authService.deletePasskey({ passkeyId: "pk1", tenantId: "t1", principalId: "u1" });
+      const result = await authService.deletePasskey({
+        passkeyId: "pk1",
+        tenantId: "t1",
+        principalId: "u1",
+      });
       expect(result).toEqual({ ok: true });
     });
   });
@@ -131,7 +137,12 @@ describe("auth domain service", () => {
   describe("renamePasskey", () => {
     it("reports successful passkey rename", async () => {
       renamePasskeySpy.mockResolvedValue(true);
-      const result = await authService.renamePasskey({ passkeyId: "pk1", name: "New Name", tenantId: "t1", principalId: "u1" });
+      const result = await authService.renamePasskey({
+        passkeyId: "pk1",
+        name: "New Name",
+        tenantId: "t1",
+        principalId: "u1",
+      });
       expect(result).toEqual({ ok: true });
     });
   });
@@ -139,7 +150,11 @@ describe("auth domain service", () => {
   describe("deleteMfaEnrollment", () => {
     it("reports successful MFA enrollment removal", async () => {
       deletePrincipalMfaEnrollmentSpy.mockResolvedValue(true);
-      const result = await authService.deleteMfaEnrollment({ enrollmentId: "mfa1", tenantId: "t1", principalId: "u1" });
+      const result = await authService.deleteMfaEnrollment({
+        enrollmentId: "mfa1",
+        tenantId: "t1",
+        principalId: "u1",
+      });
       expect(result).toEqual({ ok: true });
     });
   });
@@ -216,12 +231,19 @@ describe("auth domain service", () => {
       deleteIdentityProviderByIdSpy.mockResolvedValue("OIDC");
       countIdentityProvidersByTypeSpy.mockResolvedValue(0);
 
-      const result = await authService.deleteIdentityProvider({ tenantId: "t1", providerId: "idp1" });
+      const result = await authService.deleteIdentityProvider({
+        tenantId: "t1",
+        providerId: "idp1",
+      });
 
       expect(result).toEqual({ ok: true });
       // The observable contract is that the tenant flag is disabled when the
       // final provider is removed; the repository call sequence is private.
-      expect(setTenantAuthFlagSpy).toHaveBeenCalledWith({ tenantId: "t1", flag: "oidc_enabled", value: false });
+      expect(setTenantAuthFlagSpy).toHaveBeenCalledWith({
+        tenantId: "t1",
+        flag: "oidc_enabled",
+        value: false,
+      });
     });
   });
 
@@ -239,7 +261,9 @@ describe("auth domain service", () => {
     });
 
     it("verifies TOTP code and marks session verified", async () => {
-      getVerifiedMfaEnrollmentsSpy.mockResolvedValue([{ mfa_type: "TOTP", secret_enc: "secret32" }]);
+      getVerifiedMfaEnrollmentsSpy.mockResolvedValue([
+        { mfa_type: "TOTP", secret_enc: "secret32" },
+      ]);
       const result = await authService.verifyMfaLoginCode({
         sessionId: "s1",
         tenantId: "t1",

@@ -178,10 +178,10 @@ describe("passkey login finish (assertion verification)", () => {
 
     // Tenant/principal came from the stored credential, never the client.
     expect(createAuthSessionSpy).toHaveBeenCalledWith(
-      expect.objectContaining({ tenantId: "tenant-1", principalId: "principal-1" })
+      expect.objectContaining({ tenantId: "tenant-1", principalId: "principal-1" }),
     );
     expect(setControlPlaneSessionCookiesSpy).toHaveBeenCalledWith(
-      expect.objectContaining({ tenantId: "tenant-1", principalId: "principal-1" })
+      expect.objectContaining({ tenantId: "tenant-1", principalId: "principal-1" }),
     );
   });
 
@@ -251,7 +251,7 @@ describe("passkey register finish (attestation verification)", () => {
 
     // The client body carries no public key — the server derives it from attestation.
     const res = await registerFinish.POST(
-      registerRequest({ response: { id: "verified-cred-id", publicKey: "attacker-supplied" } })
+      registerRequest({ response: { id: "verified-cred-id", publicKey: "attacker-supplied" } }),
     );
     expect(res.status).toBe(201);
 
@@ -276,13 +276,20 @@ describe("passkey register finish (attestation verification)", () => {
     verifyRegistrationResponseSpy.mockResolvedValue({
       verified: true,
       registrationInfo: {
-        credential: { id: "someone-elses-cred", publicKey: new Uint8Array([9]), counter: 0, transports: [] },
+        credential: {
+          id: "someone-elses-cred",
+          publicKey: new Uint8Array([9]),
+          counter: 0,
+          transports: [],
+        },
       },
     });
     // The store reports the credential belongs to a different principal.
     upsertPasskeyCredentialSpy.mockResolvedValue("conflict");
 
-    const res = await registerFinish.POST(registerRequest({ response: { id: "someone-elses-cred" } }));
+    const res = await registerFinish.POST(
+      registerRequest({ response: { id: "someone-elses-cred" } }),
+    );
     expect(res.status).toBe(409);
     await expect(res.json()).resolves.toMatchObject({
       error: "This passkey is already registered to another account.",

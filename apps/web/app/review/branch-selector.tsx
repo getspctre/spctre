@@ -7,7 +7,7 @@ import { buildWorkspacePath } from "@/lib/workspace/path";
 const statusClass: Record<string, string> = {
   PUBLISHED: "pill pillAllow",
   IN_REVIEW: "pill pillWarn",
-  DRAFT: "pill"
+  DRAFT: "pill",
 };
 
 interface BranchSelectorProps {
@@ -33,12 +33,16 @@ export function BranchSelector({ branches, selectedId, workspaceSlug }: BranchSe
 
   return (
     <div className="branchSelectorRow">
-      <label className="srOnly" htmlFor="review-policy-branch">Policy branch</label>
+      <label className="srOnly" htmlFor="review-policy-branch">
+        Policy branch
+      </label>
       <select
         id="review-policy-branch"
         className="input branchSelect"
         value={selectedId ?? ""}
-        onChange={(e) => router.push(buildWorkspacePath(workspaceSlug, `/review?branch=${e.target.value}`))}
+        onChange={(e) =>
+          router.push(buildWorkspacePath(workspaceSlug, `/review?branch=${e.target.value}`))
+        }
       >
         {!selectedId ? (
           <option value="" disabled>

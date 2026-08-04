@@ -88,7 +88,10 @@ export class TokenBucketRateLimiter implements RateLimiter {
     let oldestKey: string | undefined;
     let oldestAt = Infinity;
     for (const [key, bucket] of this.buckets) {
-      const projected = Math.min(this.capacity, bucket.tokens + (now - bucket.lastRefillMs) * this.refillPerMs);
+      const projected = Math.min(
+        this.capacity,
+        bucket.tokens + (now - bucket.lastRefillMs) * this.refillPerMs,
+      );
       if (projected >= this.capacity) {
         this.buckets.delete(key);
         continue;

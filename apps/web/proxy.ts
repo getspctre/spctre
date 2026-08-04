@@ -140,7 +140,7 @@ function parseAllowedSourceIps(): Set<string> {
     (process.env.SPCTRE_ALLOWED_SOURCE_IPS ?? "")
       .split(",")
       .map((ip) => ip.trim())
-      .filter(Boolean)
+      .filter(Boolean),
   );
 }
 
@@ -196,7 +196,10 @@ function applySecurityHeaders(response: NextResponse, csp?: string): NextRespons
   response.headers.set("X-Content-Type-Options", "nosniff");
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
   if (process.env.NODE_ENV === "production") {
-    response.headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
+    response.headers.set(
+      "Strict-Transport-Security",
+      "max-age=31536000; includeSubDomains; preload",
+    );
   }
   return response;
 }
@@ -229,7 +232,11 @@ const rateLimitWindowMs = rateLimitWindowSeconds * 1000;
 // is N x the configured limit and resets on every scale event. Global rate
 // limiting requires the Upstash binding (UPSTASH_REDIS_REST_URL/TOKEN).
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-function checkMemoryRateLimit(ip: string, limit: number, windowMs: number): { success: boolean; reset: number } {
+function checkMemoryRateLimit(
+  ip: string,
+  limit: number,
+  windowMs: number,
+): { success: boolean; reset: number } {
   if (rateLimitMap.size > 10000) {
     const now = Date.now();
     for (const [key, value] of rateLimitMap.entries()) {
@@ -257,12 +264,7 @@ function rateLimitedResponse(reset: number): NextResponse {
   const retryAfter = Math.max(1, Math.ceil((reset - Date.now()) / 1000));
   return NextResponse.json(
     { error: "Too many requests." },
-    {
-      status: 429,
-      headers: {
-        "Retry-After": retryAfter.toString()
-      }
-    }
+    { status: 429, headers: { "Retry-After": retryAfter.toString() } },
   );
 }
 
@@ -401,5 +403,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|_next/webpack-hmr|favicon.ico|icon.svg).*)"]
+  matcher: ["/((?!_next/static|_next/image|_next/webpack-hmr|favicon.ico|icon.svg).*)"],
 };

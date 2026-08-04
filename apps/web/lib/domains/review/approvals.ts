@@ -17,11 +17,12 @@ export interface AddApprovalInput {
   note: string | null;
 }
 
-export type AddApprovalResult =
-  | { ok: true }
-  | { error: string };
+export type AddApprovalResult = { ok: true } | { error: string };
 
-export async function addApprovalDecision(input: AddApprovalInput, scope: ActiveScope): Promise<AddApprovalResult> {
+export async function addApprovalDecision(
+  input: AddApprovalInput,
+  scope: ActiveScope,
+): Promise<AddApprovalResult> {
   if (!input.revisionId || !input.role || !input.approvalStatus) {
     return { error: "Review action is unavailable." };
   }
@@ -35,10 +36,7 @@ export async function addApprovalDecision(input: AddApprovalInput, scope: Active
   const workspaceContext = scope;
   const tenantId = workspaceContext.tenantId;
 
-  const revisionRow = await getRevisionWorkspaceScope({
-    tenantId,
-    revisionId: input.revisionId,
-  });
+  const revisionRow = await getRevisionWorkspaceScope({ tenantId, revisionId: input.revisionId });
   if (!revisionRow) return { error: "Revision not found." };
 
   const { actor } = await getActiveActor({
@@ -81,11 +79,8 @@ export async function getApprovalDetail(params: {
   return getApprovalById(params.approvalId, params.workspaceId, params.tenantId);
 }
 
-export async function listPendingApprovals(params: {
-  workspaceId: string;
-  tenantId: string;
-}) {
+export async function listPendingApprovals(params: { workspaceId: string; tenantId: string }) {
   return runWithTenantContext(params.tenantId, () =>
-    listPendingApprovalQueue(params.workspaceId, params.tenantId)
+    listPendingApprovalQueue(params.workspaceId, params.tenantId),
   );
 }

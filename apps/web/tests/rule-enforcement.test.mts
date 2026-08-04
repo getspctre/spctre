@@ -44,7 +44,7 @@ describe("assessRuleEnforcement", () => {
     it("downgrades a blocking rule to OBSERVE when no adapter covers its connector", () => {
       const a = assessRuleEnforcement(
         { effect: "DENY", connectors: ["stripe"] },
-        { adapterCount: 1, coveredConnectors: ["github"] }
+        { adapterCount: 1, coveredConnectors: ["github"] },
       );
       expect(a.disposition).toBe("OBSERVE");
       expect(a.label).toBe("Observe-only");
@@ -53,7 +53,7 @@ describe("assessRuleEnforcement", () => {
     it("keeps DETERMINISTIC when an adapter covers the connector", () => {
       const a = assessRuleEnforcement(
         { effect: "DENY", connectors: ["stripe"] },
-        { adapterCount: 1, coveredConnectors: ["stripe"] }
+        { adapterCount: 1, coveredConnectors: ["stripe"] },
       );
       expect(a.disposition).toBe("DETERMINISTIC");
     });
@@ -61,14 +61,17 @@ describe("assessRuleEnforcement", () => {
     it("stays rule-intrinsic when no adapters are declared (coverage unknown)", () => {
       const a = assessRuleEnforcement(
         { effect: "DENY", connectors: ["stripe"] },
-        { adapterCount: 0, coveredConnectors: [] }
+        { adapterCount: 0, coveredConnectors: [] },
       );
       expect(a.disposition).toBe("DETERMINISTIC");
     });
 
     it("does not downgrade non-blocking effects", () => {
       expect(
-        assessRuleEnforcement({ effect: "WARN", connectors: ["stripe"] }, { adapterCount: 1, coveredConnectors: ["github"] }).disposition
+        assessRuleEnforcement(
+          { effect: "WARN", connectors: ["stripe"] },
+          { adapterCount: 1, coveredConnectors: ["github"] },
+        ).disposition,
       ).toBe("ADVISORY");
     });
   });

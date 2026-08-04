@@ -7,17 +7,9 @@ interface PackScaffoldOptions {
   version: string;
 }
 
-type PackScaffoldContext = {
-  name: string;
-  connector: string;
-  version: string;
-  date: string;
-};
+type PackScaffoldContext = { name: string; connector: string; version: string; date: string };
 
-type ScaffoldFile = {
-  relativePath: string;
-  content: string;
-};
+type ScaffoldFile = { relativePath: string; content: string };
 
 export async function packScaffold(nameArg: string | undefined, options: PackScaffoldOptions) {
   const context = buildScaffoldContext(nameArg, options);
@@ -35,7 +27,10 @@ export async function packScaffold(nameArg: string | undefined, options: PackSca
   console.log(`  spctre lint ${path.join(outputDirName, "rules.yaml")} --offline`);
 }
 
-function buildScaffoldContext(nameArg: string | undefined, options: PackScaffoldOptions): PackScaffoldContext {
+function buildScaffoldContext(
+  nameArg: string | undefined,
+  options: PackScaffoldOptions,
+): PackScaffoldContext {
   const name = nameArg ? nameArg.trim() : "custom-connector";
   return {
     name,

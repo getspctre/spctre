@@ -8,13 +8,15 @@ const APP_ROOT = fileURLToPath(new URL("../", import.meta.url));
 
 async function collectTsFiles(dir: string): Promise<string[]> {
   const entries = await readdir(dir, { withFileTypes: true });
-  const collected = await Promise.all(entries.map(async (entry) => {
-    const fullPath = path.join(dir, entry.name);
-    if (entry.isDirectory()) {
-      return collectTsFiles(fullPath);
-    }
-    return /\.(?:mts|ts|tsx)$/.test(entry.name) ? [fullPath] : [];
-  }));
+  const collected = await Promise.all(
+    entries.map(async (entry) => {
+      const fullPath = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        return collectTsFiles(fullPath);
+      }
+      return /\.(?:mts|ts|tsx)$/.test(entry.name) ? [fullPath] : [];
+    }),
+  );
 
   return collected.flat();
 }
@@ -58,7 +60,11 @@ describe("domain import boundaries", () => {
       }
       // Flag value imports of getActiveScope from the workspace module or its
       // scope submodule; `import type { ... }` is fine.
-      if (source.match(/import\s+(?!type\b)[^;]*\bgetActiveScope\b[^;]*from\s+["']@\/lib\/workspace(?:\/scope)?["']/)) {
+      if (
+        source.match(
+          /import\s+(?!type\b)[^;]*\bgetActiveScope\b[^;]*from\s+["']@\/lib\/workspace(?:\/scope)?["']/,
+        )
+      ) {
         violations.push(`${relative} imports getActiveScope`);
       }
     }
@@ -101,7 +107,11 @@ describe("domain import boundaries", () => {
       if (relative === "lib/workspace-context.ts") continue;
 
       const source = await readFile(file, "utf8");
-      if (source.match(/from\s+["'](?:@\/lib\/workspace-context|\.{1,2}\/(?:\.{1,2}\/)*workspace-context)["']/)) {
+      if (
+        source.match(
+          /from\s+["'](?:@\/lib\/workspace-context|\.{1,2}\/(?:\.{1,2}\/)*workspace-context)["']/,
+        )
+      ) {
         violations.push(relative);
       }
     }
@@ -110,7 +120,11 @@ describe("domain import boundaries", () => {
   });
 
   it("prevents client-safe workspace modules from importing server-only APIs", async () => {
-    const CLIENT_SAFE = ["lib/workspace/types.ts", "lib/workspace/cookies.ts", "lib/workspace/format.ts"];
+    const CLIENT_SAFE = [
+      "lib/workspace/types.ts",
+      "lib/workspace/cookies.ts",
+      "lib/workspace/format.ts",
+    ];
     const SERVER_ONLY_PATTERNS = [
       /from\s+["']next\/headers["']/,
       /from\s+["']@\/lib\/auth-session["']/,

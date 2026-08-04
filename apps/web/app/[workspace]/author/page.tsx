@@ -2,7 +2,7 @@ import { AuthorPageContent } from "../../author/content";
 
 export default async function WorkspaceAuthorPage({
   params,
-  searchParams
+  searchParams,
 }: {
   params: Promise<{ workspace: string }>;
   searchParams: Promise<{ branch?: string }>;

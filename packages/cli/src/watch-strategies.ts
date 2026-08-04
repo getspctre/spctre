@@ -85,7 +85,8 @@ export function createWatchStrategies(
   const strategies: WatchStrategy[] = [];
   if (options.shadow) strategies.push(new ShadowTailStrategy());
   strategies.push(createSyncStrategy(options, intervalSeconds));
-  if (options.heartbeat) strategies.push(createHeartbeatStrategy(options, heartbeatIntervalSeconds));
+  if (options.heartbeat)
+    strategies.push(createHeartbeatStrategy(options, heartbeatIntervalSeconds));
   return strategies;
 }
 

@@ -10,19 +10,24 @@ async function handlePostApiOnboardingCliStart(request: Request) {
   try {
     payload = await request.json();
   } catch {
-    return withTraceId(Response.json({ error: "Request body must be JSON.", meta: makeMeta(traceId) }, { status: 400 }), traceId);
+    return withTraceId(
+      Response.json(
+        { error: "Request body must be JSON.", meta: makeMeta(traceId) },
+        { status: 400 },
+      ),
+      traceId,
+    );
   }
 
-  const record = payload && typeof payload === "object" && !Array.isArray(payload)
-    ? (payload as Record<string, unknown>)
-    : {};
+  const record =
+    payload && typeof payload === "object" && !Array.isArray(payload)
+      ? (payload as Record<string, unknown>)
+      : {};
   const agentId = stringValue(record.agentId) ?? "solo-agent";
   const environment = stringValue(record.environment) ?? "production";
   const bundlePath = stringValue(record.bundlePath) ?? "spctre-policy.json";
   const workspaceSlug = stringValue(record.workspaceSlug);
-  const controlPlaneUrl =
-    stringValue(record.controlPlaneUrl) ??
-    new URL(request.url).origin;
+  const controlPlaneUrl = stringValue(record.controlPlaneUrl) ?? new URL(request.url).origin;
 
   try {
     const started = await startCliOnboarding({
@@ -30,16 +35,25 @@ async function handlePostApiOnboardingCliStart(request: Request) {
       workspaceSlug,
       agentId,
       environment,
-      bundlePath
+      bundlePath,
     });
 
     return withTraceId(
-      Response.json({ ...started, meta: makeMeta(traceId) }, { status: 201, headers: { "cache-control": "no-store" } }),
-      traceId
+      Response.json(
+        { ...started, meta: makeMeta(traceId) },
+        { status: 201, headers: { "cache-control": "no-store" } },
+      ),
+      traceId,
     );
   } catch (error) {
     console.error("[onboarding/cli/start] start failed", error);
-    return withTraceId(Response.json({ error: "Service temporarily unavailable.", meta: makeMeta(traceId) }, { status: 503 }), traceId);
+    return withTraceId(
+      Response.json(
+        { error: "Service temporarily unavailable.", meta: makeMeta(traceId) },
+        { status: 503 },
+      ),
+      traceId,
+    );
   }
 }
 

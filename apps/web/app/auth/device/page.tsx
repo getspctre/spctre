@@ -36,9 +36,7 @@ export default async function DeviceAuthPage({
         <div>
           <p className="eyebrow">{t("eyebrow")}</p>
           <h1>{t("title")}</h1>
-          <p className="meta">
-            {t("description")}
-          </p>
+          <p className="meta">{t("description")}</p>
         </div>
         {approved ? (
           <span className="pill pillAllow">
@@ -81,8 +79,7 @@ export default async function DeviceAuthPage({
           <CheckCircle2 size={22} className="sectionIcon" />
           <h3>{t("approved_title")}</h3>
           <p className="meta">
-            {t("approved_description")}{" "}
-            <code>{workspace || t("default_workspace")}</code>.
+            {t("approved_description")} <code>{workspace || t("default_workspace")}</code>.
           </p>
         </div>
       ) : session ? (

@@ -31,13 +31,20 @@ export function SocialLoginsSection({
 
       <div style={{ display: "grid", gap: "16px" }}>
         {googleEnabled && (
-          <article className="row" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <article
+            className="row"
+            style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}
+          >
             <div style={{ display: "grid", gap: "2px" }}>
               <h3 style={{ margin: 0 }}>{t("google")}</h3>
               {googleLinked ? (
-                <p className="meta" style={{ margin: 0 }}>{t("linked", { value: googleLinked.externalEmail ?? t("yes") })}</p>
+                <p className="meta" style={{ margin: 0 }}>
+                  {t("linked", { value: googleLinked.externalEmail ?? t("yes") })}
+                </p>
               ) : (
-                <p className="meta" style={{ margin: 0 }}>{t("not_linked")}</p>
+                <p className="meta" style={{ margin: 0 }}>
+                  {t("not_linked")}
+                </p>
               )}
             </div>
             {googleLinked ? (
@@ -53,10 +60,7 @@ export function SocialLoginsSection({
                 </button>
               </form>
             ) : (
-              <a
-                className="button"
-                href="/api/auth/google/authorize?next=/account"
-              >
+              <a className="button" href="/api/auth/google/authorize?next=/account">
                 {t("connect")}
               </a>
             )}
@@ -64,13 +68,20 @@ export function SocialLoginsSection({
         )}
 
         {githubEnabled && (
-          <article className="row" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <article
+            className="row"
+            style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}
+          >
             <div style={{ display: "grid", gap: "2px" }}>
               <h3 style={{ margin: 0 }}>{t("github")}</h3>
               {githubLinked ? (
-                <p className="meta" style={{ margin: 0 }}>{t("linked", { value: githubLinked.externalEmail ?? t("yes") })}</p>
+                <p className="meta" style={{ margin: 0 }}>
+                  {t("linked", { value: githubLinked.externalEmail ?? t("yes") })}
+                </p>
               ) : (
-                <p className="meta" style={{ margin: 0 }}>{t("not_linked")}</p>
+                <p className="meta" style={{ margin: 0 }}>
+                  {t("not_linked")}
+                </p>
               )}
             </div>
             {githubLinked ? (
@@ -86,19 +97,14 @@ export function SocialLoginsSection({
                 </button>
               </form>
             ) : (
-              <a
-                className="button"
-                href="/api/auth/github/authorize?next=/account"
-              >
+              <a className="button" href="/api/auth/github/authorize?next=/account">
                 {t("connect")}
               </a>
             )}
           </article>
         )}
 
-        {!googleEnabled && !githubEnabled && (
-          <p className="meta">{t("empty")}</p>
-        )}
+        {!googleEnabled && !githubEnabled && <p className="meta">{t("empty")}</p>}
       </div>
     </section>
   );

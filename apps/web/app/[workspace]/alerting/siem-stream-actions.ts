@@ -14,7 +14,7 @@ export async function addSiemStreamAction(
   type: "SPLUNK_HEC" | "SENTINEL",
   url: string,
   config: Record<string, unknown>,
-  credentials: Record<string, unknown>
+  credentials: Record<string, unknown>,
 ) {
   const stream = await addSiemStreamDecision({ workspaceId, name, type, url, config, credentials });
   revalidatePath(`/${workspaceSlug}/siem-export`);
@@ -24,7 +24,7 @@ export async function addSiemStreamAction(
 export async function removeSiemStreamAction(
   workspaceId: string,
   workspaceSlug: string,
-  id: string
+  id: string,
 ) {
   const success = await removeSiemStreamDecision({ workspaceId, id });
   revalidatePath(`/${workspaceSlug}/siem-export`);
@@ -35,7 +35,7 @@ export async function toggleSiemStreamAction(
   workspaceId: string,
   workspaceSlug: string,
   id: string,
-  enabled: boolean
+  enabled: boolean,
 ) {
   const success = await toggleSiemStreamDecision({ workspaceId, id, enabled });
   revalidatePath(`/${workspaceSlug}/siem-export`);

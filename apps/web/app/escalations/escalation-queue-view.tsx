@@ -80,28 +80,61 @@ function QueueListItem({
       }}
     >
       {isSelected && (
-        <div style={{
-          position: "absolute",
-          left: 0,
-          top: 0,
-          bottom: 0,
-          width: 4,
-          background: "var(--accent)"
-        }} />
+        <div
+          style={{
+            position: "absolute",
+            left: 0,
+            top: 0,
+            bottom: 0,
+            width: 4,
+            background: "var(--accent)",
+          }}
+        />
       )}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
-        <code style={{ fontSize: 11, background: isSelected ? "oklch(0.88 0.014 250)" : "oklch(0.94 0.012 250)" }}>
+      <div
+        style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}
+      >
+        <code
+          style={{
+            fontSize: 11,
+            background: isSelected ? "oklch(0.88 0.014 250)" : "oklch(0.94 0.012 250)",
+          }}
+        >
           {formatProvenanceId(item.decisionId, appViewMode, 12, hashToFingerprint)}
         </code>
-        <span className={item.status === "IN_REVIEW" ? "pill pillWarn pillTiny" : "pill pillNeutral pillTiny"}>
+        <span
+          className={
+            item.status === "IN_REVIEW" ? "pill pillWarn pillTiny" : "pill pillNeutral pillTiny"
+          }
+        >
           {item.status}
         </span>
       </div>
-      <p className="meta" style={{ fontWeight: 600, color: "var(--ink)", fontSize: 13, textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }}>
+      <p
+        className="meta"
+        style={{
+          fontWeight: 600,
+          color: "var(--ink)",
+          fontSize: 13,
+          textOverflow: "ellipsis",
+          overflow: "hidden",
+          whiteSpace: "nowrap",
+        }}
+      >
         {[item.connector, item.action].filter(Boolean).join(".") || t("runtime_decision")}
       </p>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 2 }}>
-        <span className={slaPillClass(item.slaDueAt, currentTime)} style={{ fontSize: 9, padding: "1px 5px", minHeight: "auto" }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginTop: 2,
+        }}
+      >
+        <span
+          className={slaPillClass(item.slaDueAt, currentTime)}
+          style={{ fontSize: 9, padding: "1px 5px", minHeight: "auto" }}
+        >
           {slaLabel(item.slaDueAt, currentTime)}
         </span>
         <span className="meta" style={{ fontSize: 11 }}>
@@ -125,10 +158,26 @@ function EscalationDetailHeader({
 
   return (
     <div>
-      <p className="eyebrow" style={{ marginBottom: 6 }}>{t("eyebrow")}</p>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16 }}>
+      <p className="eyebrow" style={{ marginBottom: 6 }}>
+        {t("eyebrow")}
+      </p>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+          gap: 16,
+        }}
+      >
         <div>
-          <h2 style={{ fontFamily: "monospace", fontSize: 15, wordBreak: "break-all", fontWeight: 700 }}>
+          <h2
+            style={{
+              fontFamily: "monospace",
+              fontSize: 15,
+              wordBreak: "break-all",
+              fontWeight: 700,
+            }}
+          >
             {t("id", { id: selectedItem.decisionId })}
           </h2>
           {selectedItem.revisionId && (
@@ -138,7 +187,9 @@ function EscalationDetailHeader({
           )}
         </div>
         <div style={{ display: "flex", gap: 8 }}>
-          <span className={selectedItem.status === "IN_REVIEW" ? "pill pillWarn" : "pill pillNeutral"}>
+          <span
+            className={selectedItem.status === "IN_REVIEW" ? "pill pillWarn" : "pill pillNeutral"}
+          >
             {selectedItem.status}
           </span>
           <span className={slaPillClass(selectedItem.slaDueAt, currentTime)}>
@@ -178,20 +229,37 @@ function EscalationContextDetails({
       <h3 className="metadata">{t("title")}</h3>
 
       <div style={{ display: "grid", gridTemplateColumns: "100px 1fr", gap: "8px 16px" }}>
-        <span className="meta" style={{ fontSize: 12 }}>{t("connector")}</span>
+        <span className="meta" style={{ fontSize: 12 }}>
+          {t("connector")}
+        </span>
         <span className="meta" style={{ color: "var(--ink)", fontWeight: 600, fontSize: 12 }}>
           {selectedItem.connector || "—"}
         </span>
 
-        <span className="meta" style={{ fontSize: 12 }}>{t("action")}</span>
+        <span className="meta" style={{ fontSize: 12 }}>
+          {t("action")}
+        </span>
         <span className="meta" style={{ color: "var(--ink)", fontWeight: 600, fontSize: 12 }}>
           {selectedItem.action || "—"}
         </span>
 
         {selectedItem.agentId && (
           <>
-            <span className="meta" style={{ fontSize: 12 }}>Agent</span>
-            <span className="meta" style={{ color: "var(--ink)", fontWeight: 600, fontSize: 12, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            <span className="meta" style={{ fontSize: 12 }}>
+              Agent
+            </span>
+            <span
+              className="meta"
+              style={{
+                color: "var(--ink)",
+                fontWeight: 600,
+                fontSize: 12,
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                flexWrap: "wrap",
+              }}
+            >
               <code style={{ fontSize: 11 }}>{selectedItem.agentId}</code>
               {crossSurfaceIdentity && (
                 <a
@@ -208,7 +276,9 @@ function EscalationContextDetails({
 
         {selectedItem.riskLevel && (
           <>
-            <span className="meta" style={{ fontSize: 12 }}>{t("risk_level")}</span>
+            <span className="meta" style={{ fontSize: 12 }}>
+              {t("risk_level")}
+            </span>
             <span>
               <span className={riskLevelPillClass(selectedItem.riskLevel)}>
                 {selectedItem.riskLevel}
@@ -219,26 +289,40 @@ function EscalationContextDetails({
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 4 }}>
-        <span className="metadata" style={{ fontSize: 10 }}>{t("handoff_notes")}</span>
-        <div style={{
-          background: "var(--bg)",
-          border: "1px solid var(--line)",
-          borderRadius: 6,
-          padding: "12px 14px",
-          fontSize: 13,
-          whiteSpace: "pre-wrap",
-          wordBreak: "break-word",
-          color: "var(--ink)",
-          lineHeight: 1.45,
-        }}>
+        <span className="metadata" style={{ fontSize: 10 }}>
+          {t("handoff_notes")}
+        </span>
+        <div
+          style={{
+            background: "var(--bg)",
+            border: "1px solid var(--line)",
+            borderRadius: 6,
+            padding: "12px 14px",
+            fontSize: 13,
+            whiteSpace: "pre-wrap",
+            wordBreak: "break-word",
+            color: "var(--ink)",
+            lineHeight: 1.45,
+          }}
+        >
           {selectedItem.handoffNotes ?? t("no_handoff_notes")}
         </div>
       </div>
 
       {selectedItem.toolIntent && (
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <span className="metadata" style={{ fontSize: 10 }}>{t("tool_intent")}</span>
-          <code style={{ padding: "10px 12px", display: "block", whiteSpace: "pre-wrap", wordBreak: "break-word", fontSize: 11 }}>
+          <span className="metadata" style={{ fontSize: 10 }}>
+            {t("tool_intent")}
+          </span>
+          <code
+            style={{
+              padding: "10px 12px",
+              display: "block",
+              whiteSpace: "pre-wrap",
+              wordBreak: "break-word",
+              fontSize: 11,
+            }}
+          >
             {selectedItem.toolIntent}
           </code>
         </div>
@@ -246,31 +330,46 @@ function EscalationContextDetails({
 
       {selectedItem.planSummary && (
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <span className="metadata" style={{ fontSize: 10 }}>{t("plan_summary")}</span>
-          <div style={{
-            background: "var(--bg)",
-            border: "1px solid var(--line)",
-            borderRadius: 6,
-            padding: "12px 14px",
-            fontSize: 12,
-            whiteSpace: "pre-wrap",
-            wordBreak: "break-word",
-            fontFamily: "monospace",
-            lineHeight: 1.45,
-          }}>
+          <span className="metadata" style={{ fontSize: 10 }}>
+            {t("plan_summary")}
+          </span>
+          <div
+            style={{
+              background: "var(--bg)",
+              border: "1px solid var(--line)",
+              borderRadius: 6,
+              padding: "12px 14px",
+              fontSize: 12,
+              whiteSpace: "pre-wrap",
+              wordBreak: "break-word",
+              fontFamily: "monospace",
+              lineHeight: 1.45,
+            }}
+          >
             {selectedItem.planSummary}
           </div>
         </div>
       )}
 
-      {selectedItem.safeguardTelemetry && Object.keys(selectedItem.safeguardTelemetry).length > 0 && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <span className="metadata" style={{ fontSize: 10 }}>Gateway safeguard evaluation</span>
-          <code style={{ padding: "10px 12px", display: "block", whiteSpace: "pre-wrap", wordBreak: "break-word", fontSize: 11 }}>
-            {JSON.stringify(selectedItem.safeguardTelemetry, null, 2)}
-          </code>
-        </div>
-      )}
+      {selectedItem.safeguardTelemetry &&
+        Object.keys(selectedItem.safeguardTelemetry).length > 0 && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <span className="metadata" style={{ fontSize: 10 }}>
+              Gateway safeguard evaluation
+            </span>
+            <code
+              style={{
+                padding: "10px 12px",
+                display: "block",
+                whiteSpace: "pre-wrap",
+                wordBreak: "break-word",
+                fontSize: 11,
+              }}
+            >
+              {JSON.stringify(selectedItem.safeguardTelemetry, null, 2)}
+            </code>
+          </div>
+        )}
     </div>
   );
 }
@@ -295,7 +394,8 @@ function EscalationAssignmentSection({
             </div>
           )}
           <p className="meta" style={{ fontSize: 12 }}>
-            Claim this escalation to take responsibility for its review. Priority and SLA are shown in the queue.
+            Claim this escalation to take responsibility for its review. Priority and SLA are shown
+            in the queue.
           </p>
         </div>
       ) : (
@@ -330,12 +430,22 @@ function EscalationDetailPanel({
   const t = useTranslations("escalations.detail");
 
   return (
-    <div className="panel" style={{ padding: "24px", display: "flex", flexDirection: "column", gap: 20 }}>
-      <EscalationDetailHeader selectedItem={selectedItem} currentTime={currentTime} formatActorId={formatActorId} />
+    <div
+      className="panel"
+      style={{ padding: "24px", display: "flex", flexDirection: "column", gap: 20 }}
+    >
+      <EscalationDetailHeader
+        selectedItem={selectedItem}
+        currentTime={currentTime}
+        formatActorId={formatActorId}
+      />
 
       <hr style={{ border: 0, borderTop: "1px solid var(--line)", margin: 0 }} />
 
-      <EscalationContextDetails selectedItem={selectedItem} crossSurfaceIdentity={crossSurfaceIdentity} />
+      <EscalationContextDetails
+        selectedItem={selectedItem}
+        crossSurfaceIdentity={crossSurfaceIdentity}
+      />
 
       <hr style={{ border: 0, borderTop: "1px solid var(--line)", margin: 0 }} />
 
@@ -423,7 +533,11 @@ export function EscalationQueueView({
           {workspaceEyebrow && <p className="eyebrow">{workspaceEyebrow}</p>}
           <h1 style={{ display: "flex", alignItems: "center", gap: 12 }}>
             {t("title")}
-            {queue.length > 0 && <span className="pill pillWarn" style={{ fontSize: 13 }}>{t("open_count", { count: queue.length })}</span>}
+            {queue.length > 0 && (
+              <span className="pill pillWarn" style={{ fontSize: 13 }}>
+                {t("open_count", { count: queue.length })}
+              </span>
+            )}
           </h1>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -461,7 +575,10 @@ export function EscalationQueueView({
       ) : (
         <div className="escalationsLayout">
           {/* Left Column: Master Queue List */}
-          <div className="panel" style={{ padding: 0, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+          <div
+            className="panel"
+            style={{ padding: 0, overflow: "hidden", display: "flex", flexDirection: "column" }}
+          >
             <div style={{ padding: "16px 18px", borderBottom: "1px solid var(--line)" }}>
               <p className="eyebrow">{t("queue.eyebrow")}</p>
               <h2 style={{ fontSize: 15, marginTop: 2 }}>{t("queue.title")}</h2>
@@ -496,7 +613,10 @@ export function EscalationQueueView({
               }}
             />
           ) : (
-            <div className="panel" style={{ display: "grid", placeItems: "center", padding: 48, minHeight: 300 }}>
+            <div
+              className="panel"
+              style={{ display: "grid", placeItems: "center", padding: 48, minHeight: 300 }}
+            >
               <p className="meta">{t("select_prompt")}</p>
             </div>
           )}

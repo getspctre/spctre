@@ -5,7 +5,9 @@ const assertSessionGuardConfigurationMock = vi.fn();
 const initTelemetryMock = vi.fn();
 
 vi.mock("@/lib/config/runtime", () => ({ validateRuntimeConfig: validateRuntimeConfigMock }));
-vi.mock("@/lib/session-guard-secret", () => ({ assertSessionGuardConfiguration: assertSessionGuardConfigurationMock }));
+vi.mock("@/lib/session-guard-secret", () => ({
+  assertSessionGuardConfiguration: assertSessionGuardConfigurationMock,
+}));
 vi.mock("@spctre/platform/telemetry", () => ({ initTelemetry: initTelemetryMock }));
 
 const originalRuntime = process.env.NEXT_RUNTIME;

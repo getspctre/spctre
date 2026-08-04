@@ -29,9 +29,7 @@ export function PreferencesSection({ locale }: PreferencesSectionProps) {
       <div>
         <p className="eyebrow">{t("eyebrow")}</p>
         <h2>{t("title")}</h2>
-        <p className="meta">
-          {t("description")}
-        </p>
+        <p className="meta">{t("description")}</p>
       </div>
 
       <div style={{ display: "grid", gap: "8px", maxWidth: "320px" }}>

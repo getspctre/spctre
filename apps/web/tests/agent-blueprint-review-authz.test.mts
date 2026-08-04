@@ -22,9 +22,7 @@ const publishRevisionSpy = vi.fn();
 const createBlueprintSpy = vi.fn();
 const resolveWorkspaceForActionSpy = vi.fn();
 
-vi.mock("next/headers", () => ({
-  cookies: async () => ({ get: () => undefined, set: () => {} }),
-}));
+vi.mock("next/headers", () => ({ cookies: async () => ({ get: () => undefined, set: () => {} }) }));
 
 vi.mock("@/lib/auth-session", () => ({ getAuthSession: getAuthSessionSpy }));
 vi.mock("@/lib/workspace", () => ({ getActiveScope: getActiveScopeSpy }));
@@ -56,12 +54,10 @@ vi.mock("@/lib/repositories/workspace/core", async (importOriginal) => {
   return { ...actual, resolveWorkspaceForAction: resolveWorkspaceForActionSpy };
 });
 
-const { POST: approvalsPost } = await import(
-  "../app/api/agent-blueprints/[id]/revisions/[revisionId]/approvals/route"
-);
-const { GET: approvalsGet } = await import(
-  "../app/api/agent-blueprints/[id]/revisions/[revisionId]/approvals/route"
-);
+const { POST: approvalsPost } =
+  await import("../app/api/agent-blueprints/[id]/revisions/[revisionId]/approvals/route");
+const { GET: approvalsGet } =
+  await import("../app/api/agent-blueprints/[id]/revisions/[revisionId]/approvals/route");
 const { POST: rollbackPost } = await import("../app/api/agent-blueprints/[id]/rollback/route");
 const { PATCH: lifecyclePatch } = await import("../app/api/agent-blueprints/[id]/route");
 const { POST: blueprintPost } = await import("../app/api/agent-blueprints/[id]/route");
@@ -89,7 +85,11 @@ beforeEach(() => {
   publishRevisionSpy.mockResolvedValue({ revision: { id: "rev-1" } });
   createBlueprintSpy.mockResolvedValue({ id: "bp-new" });
   resolveWorkspaceForActionSpy.mockResolvedValue({ id: "ws-1", slug: "acme-prod" });
-  getAuthSessionSpy.mockResolvedValue({ principalId: "principal-1", tenantId: "tenant-1", subject: "sub-1" });
+  getAuthSessionSpy.mockResolvedValue({
+    principalId: "principal-1",
+    tenantId: "tenant-1",
+    subject: "sub-1",
+  });
   getActiveScopeSpy.mockResolvedValue({ tenantId: "tenant-1", workspaceId: "ws-1" });
 });
 
@@ -99,7 +99,7 @@ describe("Blueprint approvals read route scopes revisions to the active workspac
 
     const response = await approvalsGet(
       new Request("http://localhost/api/agent-blueprints/bp-1/revisions/rev-1/approvals"),
-      { params: Promise.resolve({ id: "bp-1", revisionId: "rev-1" }) }
+      { params: Promise.resolve({ id: "bp-1", revisionId: "rev-1" }) },
     );
 
     expect(response.status).toBe(404);
@@ -117,9 +117,10 @@ function approvalsRequest(body: unknown) {
 
 describe("Blueprint approvals route authorizes against the real workspace slug", () => {
   it("rejects PENDING because reviewer decisions must be explicit", async () => {
-    const response = await approvalsPost(approvalsRequest({ role: "Security", status: "PENDING" }), {
-      params: Promise.resolve({ id: "bp-1", revisionId: "rev-1" }),
-    });
+    const response = await approvalsPost(
+      approvalsRequest({ role: "Security", status: "PENDING" }),
+      { params: Promise.resolve({ id: "bp-1", revisionId: "rev-1" }) },
+    );
 
     expect(response.status).toBe(400);
     expect(submitApprovalSpy).not.toHaveBeenCalled();
@@ -127,25 +128,36 @@ describe("Blueprint approvals route authorizes against the real workspace slug",
 
   it("allows a workspace-scoped reviewer to approve in their own (non-demo) workspace", async () => {
     findActorByIdSpy.mockResolvedValue(scopedActor());
-    blueprintWorkspaceScopeSpy.mockResolvedValue({ workspace_id: "ws-1", workspace_slug: "acme-prod" });
-
-    const response = await approvalsPost(approvalsRequest({ role: "Security", status: "APPROVED" }), {
-      params: Promise.resolve({ id: "bp-1", revisionId: "rev-1" }),
+    blueprintWorkspaceScopeSpy.mockResolvedValue({
+      workspace_id: "ws-1",
+      workspace_slug: "acme-prod",
     });
+
+    const response = await approvalsPost(
+      approvalsRequest({ role: "Security", status: "APPROVED" }),
+      { params: Promise.resolve({ id: "bp-1", revisionId: "rev-1" }) },
+    );
 
     expect(response.status).toBe(200);
     expect(await response.json()).toMatchObject({ ok: true });
-    expect(blueprintWorkspaceScopeSpy).toHaveBeenCalledWith({ tenantId: "tenant-1", blueprintId: "bp-1" });
+    expect(blueprintWorkspaceScopeSpy).toHaveBeenCalledWith({
+      tenantId: "tenant-1",
+      blueprintId: "bp-1",
+    });
     expect(submitApprovalSpy).toHaveBeenCalledOnce();
   });
 
   it("denies the reviewer when the Blueprint belongs to a workspace they are not assigned to", async () => {
     findActorByIdSpy.mockResolvedValue(scopedActor());
-    blueprintWorkspaceScopeSpy.mockResolvedValue({ workspace_id: "ws-1", workspace_slug: "other-workspace" });
-
-    const response = await approvalsPost(approvalsRequest({ role: "Security", status: "APPROVED" }), {
-      params: Promise.resolve({ id: "bp-1", revisionId: "rev-1" }),
+    blueprintWorkspaceScopeSpy.mockResolvedValue({
+      workspace_id: "ws-1",
+      workspace_slug: "other-workspace",
     });
+
+    const response = await approvalsPost(
+      approvalsRequest({ role: "Security", status: "APPROVED" }),
+      { params: Promise.resolve({ id: "bp-1", revisionId: "rev-1" }) },
+    );
 
     expect(response.status).toBe(403);
     expect(submitApprovalSpy).not.toHaveBeenCalled();
@@ -153,11 +165,15 @@ describe("Blueprint approvals route authorizes against the real workspace slug",
 
   it("does not write an approval through a different active workspace", async () => {
     findActorByIdSpy.mockResolvedValue(scopedActor());
-    blueprintWorkspaceScopeSpy.mockResolvedValue({ workspace_id: "ws-2", workspace_slug: "acme-prod" });
-
-    const response = await approvalsPost(approvalsRequest({ role: "Security", status: "APPROVED" }), {
-      params: Promise.resolve({ id: "bp-1", revisionId: "rev-1" }),
+    blueprintWorkspaceScopeSpy.mockResolvedValue({
+      workspace_id: "ws-2",
+      workspace_slug: "acme-prod",
     });
+
+    const response = await approvalsPost(
+      approvalsRequest({ role: "Security", status: "APPROVED" }),
+      { params: Promise.resolve({ id: "bp-1", revisionId: "rev-1" }) },
+    );
 
     expect(response.status).toBe(404);
     expect(submitApprovalSpy).not.toHaveBeenCalled();
@@ -166,12 +182,15 @@ describe("Blueprint approvals route authorizes against the real workspace slug",
   it("rejects approvals until the Blueprint revision has been submitted for review", async () => {
     getBlueprintSpy.mockResolvedValue({ revisions: [{ id: "rev-1", status: "DRAFT" }] });
 
-    const response = await approvalsPost(approvalsRequest({ role: "Security", status: "APPROVED" }), {
-      params: Promise.resolve({ id: "bp-1", revisionId: "rev-1" }),
-    });
+    const response = await approvalsPost(
+      approvalsRequest({ role: "Security", status: "APPROVED" }),
+      { params: Promise.resolve({ id: "bp-1", revisionId: "rev-1" }) },
+    );
 
     expect(response.status).toBe(409);
-    expect(await response.json()).toMatchObject({ error: "Submit the Blueprint revision for review before recording approvals." });
+    expect(await response.json()).toMatchObject({
+      error: "Submit the Blueprint revision for review before recording approvals.",
+    });
     expect(submitApprovalSpy).not.toHaveBeenCalled();
   });
 });
@@ -188,19 +207,35 @@ describe("Blueprint lifecycle mirrors the policy authoring/publish split", () =>
   it("lets any workspace member with write access submit a draft for review", async () => {
     // Security reviewer: not an admin, no publish scope — submitting is authoring.
     findActorByIdSpy.mockResolvedValue(scopedActor());
-    blueprintWorkspaceScopeSpy.mockResolvedValue({ workspace_id: "ws-1", workspace_slug: "acme-prod" });
+    blueprintWorkspaceScopeSpy.mockResolvedValue({
+      workspace_id: "ws-1",
+      workspace_slug: "acme-prod",
+    });
 
-    const response = await lifecyclePatch(patchRequest("IN_REVIEW"), { params: Promise.resolve({ id: "bp-1" }) });
+    const response = await lifecyclePatch(patchRequest("IN_REVIEW"), {
+      params: Promise.resolve({ id: "bp-1" }),
+    });
 
     expect(response.status).toBe(200);
-    expect(setRevisionStatusSpy).toHaveBeenCalledWith({ tenantId: "tenant-1", workspaceId: "ws-1", blueprintId: "bp-1", revisionId: "rev-1", status: "IN_REVIEW" });
+    expect(setRevisionStatusSpy).toHaveBeenCalledWith({
+      tenantId: "tenant-1",
+      workspaceId: "ws-1",
+      blueprintId: "bp-1",
+      revisionId: "rev-1",
+      status: "IN_REVIEW",
+    });
   });
 
   it("denies publish to an actor without the workspace publish scope", async () => {
     findActorByIdSpy.mockResolvedValue(scopedActor({ publishScopes: [] }));
-    blueprintWorkspaceScopeSpy.mockResolvedValue({ workspace_id: "ws-1", workspace_slug: "acme-prod" });
+    blueprintWorkspaceScopeSpy.mockResolvedValue({
+      workspace_id: "ws-1",
+      workspace_slug: "acme-prod",
+    });
 
-    const response = await lifecyclePatch(patchRequest("PUBLISHED"), { params: Promise.resolve({ id: "bp-1" }) });
+    const response = await lifecyclePatch(patchRequest("PUBLISHED"), {
+      params: Promise.resolve({ id: "bp-1" }),
+    });
 
     expect(response.status).toBe(403);
     expect(publishRevisionSpy).not.toHaveBeenCalled();
@@ -208,9 +243,14 @@ describe("Blueprint lifecycle mirrors the policy authoring/publish split", () =>
 
   it("allows publish for an actor holding the workspace publish scope", async () => {
     findActorByIdSpy.mockResolvedValue(scopedActor({ publishScopes: ["WORKSPACE"] }));
-    blueprintWorkspaceScopeSpy.mockResolvedValue({ workspace_id: "ws-1", workspace_slug: "acme-prod" });
+    blueprintWorkspaceScopeSpy.mockResolvedValue({
+      workspace_id: "ws-1",
+      workspace_slug: "acme-prod",
+    });
 
-    const response = await lifecyclePatch(patchRequest("PUBLISHED"), { params: Promise.resolve({ id: "bp-1" }) });
+    const response = await lifecyclePatch(patchRequest("PUBLISHED"), {
+      params: Promise.resolve({ id: "bp-1" }),
+    });
 
     expect(response.status).toBe(200);
     expect(publishRevisionSpy).toHaveBeenCalledOnce();
@@ -228,25 +268,38 @@ describe("Appending a Blueprint revision needs only workspace write access", () 
 
   it("allows a non-admin workspace member to append a revision", async () => {
     findActorByIdSpy.mockResolvedValue(scopedActor()); // Security reviewer, not an admin
-    blueprintWorkspaceScopeSpy.mockResolvedValue({ workspace_id: "ws-1", workspace_slug: "acme-prod" });
+    blueprintWorkspaceScopeSpy.mockResolvedValue({
+      workspace_id: "ws-1",
+      workspace_slug: "acme-prod",
+    });
 
-    const response = await blueprintPost(appendRequest({ definition: {}, message: "Tighten session budget" }), { params: Promise.resolve({ id: "bp-1" }) });
+    const response = await blueprintPost(
+      appendRequest({ definition: {}, message: "Tighten session budget" }),
+      { params: Promise.resolve({ id: "bp-1" }) },
+    );
 
     expect(response.status).toBe(201);
-    expect(createRevisionSpy).toHaveBeenCalledWith(expect.objectContaining({
-      tenantId: "tenant-1",
-      workspaceId: "ws-1",
-      blueprintId: "bp-1",
-      authorId: "principal-1",
-      message: "Tighten session budget",
-    }));
+    expect(createRevisionSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tenantId: "tenant-1",
+        workspaceId: "ws-1",
+        blueprintId: "bp-1",
+        authorId: "principal-1",
+        message: "Tighten session budget",
+      }),
+    );
   });
 
   it("rejects appending to a Blueprint outside the active workspace", async () => {
     findActorByIdSpy.mockResolvedValue(scopedActor());
-    blueprintWorkspaceScopeSpy.mockResolvedValue({ workspace_id: "ws-2", workspace_slug: "acme-prod" });
+    blueprintWorkspaceScopeSpy.mockResolvedValue({
+      workspace_id: "ws-2",
+      workspace_slug: "acme-prod",
+    });
 
-    const response = await blueprintPost(appendRequest({ definition: {} }), { params: Promise.resolve({ id: "bp-1" }) });
+    const response = await blueprintPost(appendRequest({ definition: {} }), {
+      params: Promise.resolve({ id: "bp-1" }),
+    });
 
     expect(response.status).toBe(404);
     expect(createRevisionSpy).not.toHaveBeenCalled();
@@ -265,7 +318,9 @@ describe("Creating a Blueprint requires a workspace admin, like a policy branch"
   it("denies a non-admin workspace member", async () => {
     findActorByIdSpy.mockResolvedValue(scopedActor());
 
-    const response = await collectionPost(createRequest({ name: "Refund agent", agentId: "refunds", definition: {} }));
+    const response = await collectionPost(
+      createRequest({ name: "Refund agent", agentId: "refunds", definition: {} }),
+    );
 
     expect(response.status).toBe(403);
     expect(createBlueprintSpy).not.toHaveBeenCalled();
@@ -274,7 +329,9 @@ describe("Creating a Blueprint requires a workspace admin, like a policy branch"
   it("allows a workspace admin", async () => {
     findActorByIdSpy.mockResolvedValue(scopedActor({ reviewerRoles: ["Admin"] }));
 
-    const response = await collectionPost(createRequest({ name: "Refund agent", agentId: "refunds", definition: {} }));
+    const response = await collectionPost(
+      createRequest({ name: "Refund agent", agentId: "refunds", definition: {} }),
+    );
 
     expect(response.status).toBe(201);
     expect(createBlueprintSpy).toHaveBeenCalled();
@@ -284,7 +341,10 @@ describe("Creating a Blueprint requires a workspace admin, like a policy branch"
 describe("Blueprint rollback route authorizes admin against the real workspace slug", () => {
   it("allows a workspace-scoped admin to roll back in their own (non-demo) workspace", async () => {
     findActorByIdSpy.mockResolvedValue(scopedActor({ reviewerRoles: ["Admin"] }));
-    blueprintWorkspaceScopeSpy.mockResolvedValue({ workspace_id: "ws-1", workspace_slug: "acme-prod" });
+    blueprintWorkspaceScopeSpy.mockResolvedValue({
+      workspace_id: "ws-1",
+      workspace_slug: "acme-prod",
+    });
     rollbackSpy.mockResolvedValue({ id: "rev-0", definitionHash: "hash" });
 
     const response = await rollbackPost(
@@ -293,7 +353,7 @@ describe("Blueprint rollback route authorizes admin against the real workspace s
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ targetRevisionId: "rev-0" }),
       }),
-      { params: Promise.resolve({ id: "bp-1" }) }
+      { params: Promise.resolve({ id: "bp-1" }) },
     );
 
     expect(response.status).toBe(200);
@@ -302,7 +362,10 @@ describe("Blueprint rollback route authorizes admin against the real workspace s
 
   it("denies a non-admin scoped reviewer even in their own workspace", async () => {
     findActorByIdSpy.mockResolvedValue(scopedActor({ reviewerRoles: ["Security"] }));
-    blueprintWorkspaceScopeSpy.mockResolvedValue({ workspace_id: "ws-1", workspace_slug: "acme-prod" });
+    blueprintWorkspaceScopeSpy.mockResolvedValue({
+      workspace_id: "ws-1",
+      workspace_slug: "acme-prod",
+    });
 
     const response = await rollbackPost(
       new Request("http://localhost/api/agent-blueprints/bp-1/rollback", {
@@ -310,7 +373,7 @@ describe("Blueprint rollback route authorizes admin against the real workspace s
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ targetRevisionId: "rev-0" }),
       }),
-      { params: Promise.resolve({ id: "bp-1" }) }
+      { params: Promise.resolve({ id: "bp-1" }) },
     );
 
     expect(response.status).toBe(403);

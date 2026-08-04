@@ -21,7 +21,17 @@ const SPCTRE_ARTIFACT_HASH = process.env.SPCTRE_ARTIFACT_HASH || "__SPCTRE_ARTIF
  * Uses the /api/gateway/ingest/notion endpoint so the record is stored with
  * gateway source badge and provenance_gap indicator in the Evidence ledger.
  */
-async function spctreIngestEvent({ agentId, action, status, reason, toolDeclarations = [], latencyMs = 0, executionId, model = "unknown", costUsd }) {
+async function spctreIngestEvent({
+  agentId,
+  action,
+  status,
+  reason,
+  toolDeclarations = [],
+  latencyMs = 0,
+  executionId,
+  model = "unknown",
+  costUsd,
+}) {
   if (!SPCTRE_KEY) return;
   const payload = {
     id: executionId || `notion-worker-${Date.now()}-${Math.random().toString(36).slice(2)}`,
@@ -64,10 +74,7 @@ async function spctreEvaluatePolicy({ agentId, connector, action, environment })
   try {
     const res = await fetch(`${SPCTRE_URL}/api/evaluate`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${SPCTRE_KEY}`,
-      },
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${SPCTRE_KEY}` },
       body: JSON.stringify({
         agentId: agentId || SPCTRE_AGENT,
         workspaceId: SPCTRE_WORKSPACE,
@@ -101,16 +108,49 @@ async function spctreEvaluatePolicy({ agentId, connector, action, environment })
  *     fn: async () => { return await myTool(event.input); },
  *   });
  */
-async function spctreGoverned({ agentId, connector, action, notionApprovalLoopUrl, fn, toolDeclarations = [], model, executionId }) {
-  const { decision, escalationId } = await spctreEvaluatePolicy({ agentId, connector, action, environment: SPCTRE_ENV });
+async function spctreGoverned({
+  agentId,
+  connector,
+  action,
+  notionApprovalLoopUrl,
+  fn,
+  toolDeclarations = [],
+  model,
+  executionId,
+}) {
+  const { decision, escalationId } = await spctreEvaluatePolicy({
+    agentId,
+    connector,
+    action,
+    environment: SPCTRE_ENV,
+  });
 
   if (decision === "ABORT") {
-    await spctreIngestEvent({ agentId, action, status: "DENY", reason: "Spctre policy evaluation returned ABORT; execution blocked.", toolDeclarations, executionId, model });
-    return { _spctre_blocked: true, reason: "Governance policy blocked this action. Review the Spctre escalation queue." };
+    await spctreIngestEvent({
+      agentId,
+      action,
+      status: "DENY",
+      reason: "Spctre policy evaluation returned ABORT; execution blocked.",
+      toolDeclarations,
+      executionId,
+      model,
+    });
+    return {
+      _spctre_blocked: true,
+      reason: "Governance policy blocked this action. Review the Spctre escalation queue.",
+    };
   }
 
   if (decision === "ESCALATE") {
-    await spctreIngestEvent({ agentId, action, status: "WARN", reason: `Spctre policy evaluation returned ESCALATE (escalationId: ${escalationId}); surfaced via Notion approval loop.`, toolDeclarations, executionId, model });
+    await spctreIngestEvent({
+      agentId,
+      action,
+      status: "WARN",
+      reason: `Spctre policy evaluation returned ESCALATE (escalationId: ${escalationId}); surfaced via Notion approval loop.`,
+      toolDeclarations,
+      executionId,
+      model,
+    });
     // Surface the pending review via Notion's built-in approval loop URL when available.
     // The caller should check _spctre_escalated and present notionApprovalLoopUrl to the reviewer.
     return {
@@ -126,11 +166,29 @@ async function spctreGoverned({ agentId, connector, action, notionApprovalLoopUr
   try {
     const result = await fn();
     const latencyMs = Date.now() - start;
-    await spctreIngestEvent({ agentId, action, status: "ALLOW", reason: `Notion Worker executed ${action} successfully.`, toolDeclarations, latencyMs, executionId, model });
+    await spctreIngestEvent({
+      agentId,
+      action,
+      status: "ALLOW",
+      reason: `Notion Worker executed ${action} successfully.`,
+      toolDeclarations,
+      latencyMs,
+      executionId,
+      model,
+    });
     return result;
   } catch (err) {
     const latencyMs = Date.now() - start;
-    await spctreIngestEvent({ agentId, action, status: "DENY", reason: `Notion Worker tool ${action} raised ${err?.constructor?.name ?? "Error"}: ${err?.message ?? err}`, toolDeclarations, latencyMs, executionId, model });
+    await spctreIngestEvent({
+      agentId,
+      action,
+      status: "DENY",
+      reason: `Notion Worker tool ${action} raised ${err?.constructor?.name ?? "Error"}: ${err?.message ?? err}`,
+      toolDeclarations,
+      latencyMs,
+      executionId,
+      model,
+    });
     throw err;
   }
 }
@@ -159,7 +217,9 @@ export default async function handler(event) {
     connector: "notion-worker",
     action: event.action || "worker.execute",
     notionApprovalLoopUrl: event.approval_loop_url,
-    toolDeclarations: Array.isArray(event.tools) ? event.tools.map((t) => (typeof t === "string" ? t : t.name)) : [],
+    toolDeclarations: Array.isArray(event.tools)
+      ? event.tools.map((t) => (typeof t === "string" ? t : t.name))
+      : [],
     executionId,
     fn: async () => {
       // Replace with your agent tool logic. This placeholder echoes the input back.

@@ -20,10 +20,9 @@ describe("simulation regression summaries", () => {
       },
     });
 
-    expect(run.regressionSummary).toEqual(expect.objectContaining({
-      coverage: "RETAINED_LOG",
-      blockingCount: 3,
-    }));
+    expect(run.regressionSummary).toEqual(
+      expect.objectContaining({ coverage: "RETAINED_LOG", blockingCount: 3 }),
+    );
   });
 
   it("separates expected-work, escalation, and known-high-risk regressions", () => {
@@ -31,9 +30,36 @@ describe("simulation regression summaries", () => {
       coverage: "RETAINED_LOG",
       highRiskEventIds: ["high-risk-1"],
       results: [
-        { eventId: "expected-1", connector: "github", action: "deploy", previousStatus: "ALLOW", proposedStatus: "DENY", delta: "NEW_DENY", matchedPolicyRefs: [], reason: "changed" },
-        { eventId: "escalation-1", connector: "stripe", action: "refund", previousStatus: "ESCALATE", proposedStatus: "ALLOW", delta: "MODIFIED", matchedPolicyRefs: [], reason: "changed" },
-        { eventId: "high-risk-1", connector: "database", action: "delete", previousStatus: "DENY", proposedStatus: "ALLOW", delta: "NEW_ALLOW", matchedPolicyRefs: [], reason: "changed" },
+        {
+          eventId: "expected-1",
+          connector: "github",
+          action: "deploy",
+          previousStatus: "ALLOW",
+          proposedStatus: "DENY",
+          delta: "NEW_DENY",
+          matchedPolicyRefs: [],
+          reason: "changed",
+        },
+        {
+          eventId: "escalation-1",
+          connector: "stripe",
+          action: "refund",
+          previousStatus: "ESCALATE",
+          proposedStatus: "ALLOW",
+          delta: "MODIFIED",
+          matchedPolicyRefs: [],
+          reason: "changed",
+        },
+        {
+          eventId: "high-risk-1",
+          connector: "database",
+          action: "delete",
+          previousStatus: "DENY",
+          proposedStatus: "ALLOW",
+          delta: "NEW_ALLOW",
+          matchedPolicyRefs: [],
+          reason: "changed",
+        },
       ],
     });
 

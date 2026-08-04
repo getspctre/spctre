@@ -28,7 +28,7 @@ export default async function AdminAuthPage() {
 
   const actor = await findActorById(session.principalId, {
     tenantId: session.tenantId,
-    workspaceId: workspaceContext.workspaceId
+    workspaceId: workspaceContext.workspaceId,
   }).catch(swallow("findActorById", null));
   if (!actor?.reviewerRoles.includes("Admin")) {
     redirect("/?error=admin-required");
@@ -36,7 +36,9 @@ export default async function AdminAuthPage() {
 
   const { providers, tenantMfa } = await getAdminAuthPageModel(session.tenantId);
 
-  const scimEntitled = await isScimProvisioningEntitled(session.tenantId).catch(swallow("isScimProvisioningEntitled", false));
+  const scimEntitled = await isScimProvisioningEntitled(session.tenantId).catch(
+    swallow("isScimProvisioningEntitled", false),
+  );
   const scimTokens = scimEntitled
     ? await listScimTokens({ tenantId: session.tenantId }).catch(swallow("listScimTokens", []))
     : [];
@@ -49,7 +51,9 @@ export default async function AdminAuthPage() {
         title={t("title")}
         actions={
           <>
-            <span className="pill pillNeutral">{t("provider_count", { count: providers.length })}</span>
+            <span className="pill pillNeutral">
+              {t("provider_count", { count: providers.length })}
+            </span>
             <span className={tenantMfa.requireMfa ? "pill pillAllow" : "pill pillWarn"}>
               {tenantMfa.requireMfa ? t("mfa_required") : t("mfa_optional")}
             </span>
@@ -75,8 +79,10 @@ export default async function AdminAuthPage() {
               <h2>{t("access_section.title")}</h2>
             </div>
           </div>
-          <TenantMfaSettingsForm requireMfa={tenantMfa.requireMfa} mfaGraceDays={tenantMfa.mfaGraceDays} />
-
+          <TenantMfaSettingsForm
+            requireMfa={tenantMfa.requireMfa}
+            mfaGraceDays={tenantMfa.mfaGraceDays}
+          />
         </section>
 
         <aside className="adminAuthSidebar" aria-label={t("state_aria_label")}>
@@ -133,9 +139,7 @@ export default async function AdminAuthPage() {
                 </div>
                 <span className="pill pillAllow">{t("scim.plan")}</span>
               </div>
-              <p className="meta">
-                {t("scim.description")}
-              </p>
+              <p className="meta">{t("scim.description")}</p>
               <ScimTokenManager tokens={scimTokens} scimEndpoint={scimEndpoint} />
             </section>
           ) : (
@@ -148,13 +152,10 @@ export default async function AdminAuthPage() {
                   </div>
                   <span className="pill pillAllow">{t("scim.plan")}</span>
                 </div>
-                <p className="meta">
-                  {t("scim.description")}
-                </p>
+                <p className="meta">{t("scim.description")}</p>
               </section>
             </PlanGate>
           )}
-
         </aside>
       </div>
     </>

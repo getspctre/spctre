@@ -14,16 +14,22 @@ const targets = [
   { scope: "packages", path: "packages/cli/dist", reason: "CLI build output" },
   { scope: "packages", path: "packages/mcp-server/dist", reason: "MCP server build output" },
   { scope: "packages", path: "packages/policy-schema/dist", reason: "Policy schema build output" },
-  { scope: "packages", path: "packages/policy-schema/native/target", reason: "Native policy schema build output" },
+  {
+    scope: "packages",
+    path: "packages/policy-schema/native/target",
+    reason: "Native policy schema build output",
+  },
   { scope: "packages", path: "packages/ui/storybook-static", reason: "Storybook static output" },
   { scope: "root", path: ".turbo", reason: "Turborepo cache" },
-  { scope: "root", path: "target", reason: "Root build output" }
+  { scope: "root", path: "target", reason: "Root build output" },
 ];
 
 const selectedTargets = targets.filter((target) => scope === "all" || target.scope === scope);
 
 if (!selectedTargets.length) {
-  console.error(`Unknown cleanup scope "${scope}". Expected one of: all, web, worker, packages, root.`);
+  console.error(
+    `Unknown cleanup scope "${scope}". Expected one of: all, web, worker, packages, root.`,
+  );
   process.exit(1);
 }
 
@@ -48,9 +54,13 @@ for (const target of selectedTargets) {
 }
 
 if (force) {
-  console.log(`Cleaned ${removedCount} path(s), reclaimed approximately ${formatBytes(reclaimableBytes)}.`);
+  console.log(
+    `Cleaned ${removedCount} path(s), reclaimed approximately ${formatBytes(reclaimableBytes)}.`,
+  );
 } else {
-  console.log(`Dry run complete. Reclaimable space: approximately ${formatBytes(reclaimableBytes)}.`);
+  console.log(
+    `Dry run complete. Reclaimable space: approximately ${formatBytes(reclaimableBytes)}.`,
+  );
   console.log("Run with --force to remove these generated artifacts.");
 }
 

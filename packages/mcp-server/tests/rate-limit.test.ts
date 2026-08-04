@@ -49,7 +49,12 @@ describe("TokenBucketRateLimiter", () => {
 
   it("stays correct for fresh keys under churn with a bounded map", () => {
     const now = 0; // frozen clock: buckets never refill, so none look idle
-    const limiter = new TokenBucketRateLimiter({ perSecond: 1, burst: 1, maxKeys: 4, now: () => now });
+    const limiter = new TokenBucketRateLimiter({
+      perSecond: 1,
+      burst: 1,
+      maxKeys: 4,
+      now: () => now,
+    });
 
     // Exhaust and abandon far more distinct callers than maxKeys, forcing the
     // reclaim path (here the least-recently-seen eviction) to run repeatedly.

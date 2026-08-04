@@ -18,9 +18,7 @@ const sqlMock = vi.fn(async (strings: TemplateStringsArray, ...args: unknown[]) 
   throw new Error(`unexpected query: ${query} args=${JSON.stringify(args)}`);
 });
 
-vi.mock("@/lib/db", () => ({
-  sql: sqlMock,
-}));
+vi.mock("@/lib/db", () => ({ sql: sqlMock }));
 
 const preferences = await import("@/lib/repositories/i18n/preferences");
 
@@ -36,10 +34,7 @@ describe("i18n preference repository", () => {
       principalId: "principal-1",
     });
 
-    expect(result).toEqual({
-      tenantDefaultLocale: "de",
-      principalPreferredLocale: "ja",
-    });
+    expect(result).toEqual({ tenantDefaultLocale: "de", principalPreferredLocale: "ja" });
   });
 
   it("persists principal preferred locale when the column is available", async () => {
@@ -53,10 +48,7 @@ describe("i18n preference repository", () => {
   });
 
   it("persists tenant default locale when the column is available", async () => {
-    const result = await preferences.setTenantDefaultLocale({
-      tenantId: "tenant-1",
-      locale: "de",
-    });
+    const result = await preferences.setTenantDefaultLocale({ tenantId: "tenant-1", locale: "de" });
 
     expect(result).toBe("updated");
   });

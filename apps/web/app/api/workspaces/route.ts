@@ -16,15 +16,24 @@ async function handleGetApiWorkspaces(request: Request) {
     results = await listWorkspaceApiSummaries(tenantId);
   } catch (err) {
     console.error("[workspaces] listWorkspaceApiSummaries failed", err);
-    return withTraceId(Response.json({ error: "Service temporarily unavailable.", meta: makeMeta(traceId) }, { status: 503 }), traceId);
+    return withTraceId(
+      Response.json(
+        { error: "Service temporarily unavailable.", meta: makeMeta(traceId) },
+        { status: 503 },
+      ),
+      traceId,
+    );
   }
 
-  return withTraceId(Response.json({
-    workspaces: results,
-    count: results.length,
-    generatedAt: new Date().toISOString(),
-    meta: makeMeta(traceId),
-  }), traceId);
+  return withTraceId(
+    Response.json({
+      workspaces: results,
+      count: results.length,
+      generatedAt: new Date().toISOString(),
+      meta: makeMeta(traceId),
+    }),
+    traceId,
+  );
 }
 
 export { handleGetApiWorkspaces as GET };

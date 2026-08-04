@@ -18,16 +18,25 @@ async function handleGetApiWorkflowConfig(request: Request) {
     workflow = await getApprovalWorkflowConfig({ tenantId, workspaceId, environment });
   } catch (err) {
     console.error("[workflow/config] getApprovalWorkflowForContext failed", err);
-    return withTraceId(Response.json({ error: "Service temporarily unavailable.", meta: makeMeta(traceId) }, { status: 503 }), traceId);
+    return withTraceId(
+      Response.json(
+        { error: "Service temporarily unavailable.", meta: makeMeta(traceId) },
+        { status: 503 },
+      ),
+      traceId,
+    );
   }
 
-  return withTraceId(Response.json({
-    workflow,
-    workspaceId,
-    environment: environment ?? null,
-    generatedAt: new Date().toISOString(),
-    meta: makeMeta(traceId),
-  }), traceId);
+  return withTraceId(
+    Response.json({
+      workflow,
+      workspaceId,
+      environment: environment ?? null,
+      generatedAt: new Date().toISOString(),
+      meta: makeMeta(traceId),
+    }),
+    traceId,
+  );
 }
 
 export { handleGetApiWorkflowConfig as GET };

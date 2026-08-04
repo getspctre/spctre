@@ -1,7 +1,7 @@
 import { UsageBillingPageContent } from "../../usage-billing/content";
 
 export default async function WorkspaceUsageBillingPage({
-  params
+  params,
 }: {
   params: Promise<{ workspace: string }>;
 }) {

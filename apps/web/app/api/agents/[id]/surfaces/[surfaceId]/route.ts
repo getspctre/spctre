@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 async function handleDeleteAgentSurface(
   request: Request,
-  { params }: { params: Promise<{ id: string; surfaceId: string }> }
+  { params }: { params: Promise<{ id: string; surfaceId: string }> },
 ) {
   const traceId = extractTraceId(request);
 
@@ -17,8 +17,11 @@ async function handleDeleteAgentSurface(
 
   if (!isFeatureEnabled("crossSurfaceAgentIdentity")) {
     return withTraceId(
-      Response.json({ error: "Cross-surface agent identity requires a Cloud plan.", meta: makeMeta(traceId) }, { status: 402 }),
-      traceId
+      Response.json(
+        { error: "Cross-surface agent identity requires a Cloud plan.", meta: makeMeta(traceId) },
+        { status: 402 },
+      ),
+      traceId,
     );
   }
 
@@ -28,8 +31,11 @@ async function handleDeleteAgentSurface(
   const binding = surfaces.find((s) => s.id === surfaceId);
   if (!binding) {
     return withTraceId(
-      Response.json({ error: "Surface binding not found.", meta: makeMeta(traceId) }, { status: 404 }),
-      traceId
+      Response.json(
+        { error: "Surface binding not found.", meta: makeMeta(traceId) },
+        { status: 404 },
+      ),
+      traceId,
     );
   }
 
@@ -45,8 +51,11 @@ async function handleDeleteAgentSurface(
 
   if (!ok) {
     return withTraceId(
-      Response.json({ error: "Failed to remove surface binding.", meta: makeMeta(traceId) }, { status: 500 }),
-      traceId
+      Response.json(
+        { error: "Failed to remove surface binding.", meta: makeMeta(traceId) },
+        { status: 500 },
+      ),
+      traceId,
     );
   }
 

@@ -91,6 +91,8 @@ export function validateWebhookUrl(url: string): void {
  */
 export function validateSentinelWorkspaceId(value: string): void {
   if (!SENTINEL_UUID_RE.test(value)) {
-    throw new Error("Sentinel workspace ID must be a valid UUID (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx).");
+    throw new Error(
+      "Sentinel workspace ID must be a valid UUID (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx).",
+    );
   }
 }

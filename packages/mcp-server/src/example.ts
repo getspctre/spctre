@@ -1,6 +1,6 @@
 /**
  * Example MCP Client for Spctre
- * 
+ *
  * This demonstrates how to connect to the Spctre MCP server
  * and use its tools and resources.
  */
@@ -25,10 +25,7 @@ async function initializeMcpClient(): Promise<Client> {
     },
   });
 
-  const client = new Client({
-    name: "spctre-example-client",
-    version: "0.1.0",
-  });
+  const client = new Client({ name: "spctre-example-client", version: "0.1.0" });
 
   await client.connect(transport);
   return client;
@@ -46,15 +43,8 @@ async function exampleEvaluatePolicy(client: Client): Promise<void> {
     arguments: {
       connector: "stripe",
       action: "charge",
-      agent_context: {
-        agent_id: "example-agent",
-        workspace_id: "ws-example",
-        environment: "prod",
-      },
-      tool_context: {
-        amount: 5000,
-        target: "customer-789",
-      },
+      agent_context: { agent_id: "example-agent", workspace_id: "ws-example", environment: "prod" },
+      tool_context: { amount: 5000, target: "customer-789" },
       risk_level: "HIGH",
     },
   });
@@ -75,15 +65,9 @@ async function exampleCreateEvidence(client: Client): Promise<void> {
       decision_id: "hb-202605071430-stripe-charge-12345",
       connector: "stripe",
       action: "charge",
-      agent_context: {
-        agent_id: "example-agent",
-        workspace_id: "ws-example",
-      },
+      agent_context: { agent_id: "example-agent", workspace_id: "ws-example" },
       outcome: "EXECUTED",
-      result: {
-        status: "success",
-        transaction_id: "txn_abc123",
-      },
+      result: { status: "success", transaction_id: "txn_abc123" },
       tags: ["billing", "high-value"],
     },
   });
@@ -100,10 +84,7 @@ async function exampleGetPolicyStatus(client: Client): Promise<void> {
 
   const result = await client.callTool({
     name: "get_policy_status",
-    arguments: {
-      workspace_id: "ws-example",
-      environment: "prod",
-    },
+    arguments: { workspace_id: "ws-example", environment: "prod" },
   });
 
   console.log("Result:", JSON.stringify(result, null, 2));
@@ -161,9 +142,7 @@ async function exampleGetPoliciesResource(client: Client): Promise<void> {
   console.log("\n=== Example 7: Get Policies Resource ===");
   console.log("Scenario: Fetch active policy set");
 
-  const resource = await client.readResource({
-    uri: "spctre://policies/main/current",
-  });
+  const resource = await client.readResource({ uri: "spctre://policies/main/current" });
 
   const content = resource.contents[0];
   console.log("Resource content:", content && "text" in content ? content.text : content?.blob);
@@ -177,10 +156,7 @@ async function exampleGetPrompt(client: Client): Promise<void> {
 
   const prompt = await client.getPrompt({
     name: "policy-governance-101",
-    arguments: {
-      agent_id: "example-agent",
-      workspace_id: "ws-example",
-    },
+    arguments: { agent_id: "example-agent", workspace_id: "ws-example" },
   });
 
   console.log("Prompt:", prompt.messages[0]?.content);

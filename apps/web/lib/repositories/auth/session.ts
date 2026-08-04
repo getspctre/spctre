@@ -23,7 +23,10 @@ export async function ensureAuthDemoTenant(): Promise<boolean> {
 /** @eeBoundary consumed by ee/web/saml via ee-adapters (knip ignores ee/) */
 export { canBootstrapDemoTenant };
 
-export async function getPrimaryWorkspaceIdForTenant(tenantId: string, db = sql): Promise<string | null> {
+export async function getPrimaryWorkspaceIdForTenant(
+  tenantId: string,
+  db = sql,
+): Promise<string | null> {
   if (!db) return null;
 
   await ensureDemoTenant().catch(swallow("ensureDemoTenant", undefined));
@@ -47,19 +50,22 @@ export async function getPrimaryWorkspaceIdForTenant(tenantId: string, db = sql)
 export async function getTenantRequireMfa(tenantId: string): Promise<boolean | null> {
   if (!sql) return null;
 
-  const rows = await runWithTenantContext(tenantId, () => sql<{ require_mfa: boolean }[]>`
+  const rows = await runWithTenantContext(
+    tenantId,
+    () => sql<{ require_mfa: boolean }[]>`
       SELECT require_mfa
       FROM tenant
       WHERE id = ${tenantId}
       LIMIT 1
-    `);
+    `,
+  );
 
   return rows[0]?.require_mfa ?? false;
 }
 
 export async function getPrincipalForLogin(
   principalId: string,
-  db = rawSql
+  db = rawSql,
 ): Promise<{
   id: string;
   tenant_id: string;
@@ -68,7 +74,15 @@ export async function getPrincipalForLogin(
   disabled_at: Date | null;
 } | null> {
   if (!db || !principalId) return null;
-  const rows = await db<{ id: string; tenant_id: string; subject: string; require_mfa: boolean; disabled_at: Date | null }[]>`
+  const rows = await db<
+    {
+      id: string;
+      tenant_id: string;
+      subject: string;
+      require_mfa: boolean;
+      disabled_at: Date | null;
+    }[]
+  >`
     SELECT p.id, p.tenant_id, p.subject, p.disabled_at, t.require_mfa
     FROM app_principal p
     JOIN tenant t ON t.id = p.tenant_id
@@ -84,16 +98,17 @@ export async function getTenantPrincipalBySubject(params: {
   subject: string;
 }): Promise<{ id: string; principal_id: string; principal_subject: string } | null> {
   if (!sql) return null;
-  const rows = await runWithTenantContext(params.tenantId, () => sql<
-    { id: string; principal_id: string; principal_subject: string }[]
-  >`
+  const rows = await runWithTenantContext(
+    params.tenantId,
+    () => sql<{ id: string; principal_id: string; principal_subject: string }[]>`
       SELECT t.id, p.id AS principal_id, p.subject AS principal_subject
       FROM tenant t
       JOIN app_principal p ON p.tenant_id = t.id
       WHERE t.id = ${params.tenantId}
         AND p.subject = ${params.subject}
       LIMIT 1
-    `);
+    `,
+  );
   return rows[0] ?? null;
 }
 
@@ -132,23 +147,27 @@ export async function updateSessionForActorSwitch(params: {
 export async function listPrincipalSessions(params: {
   tenantId: string;
   principalId: string;
-}): Promise<{
-  id: string;
-  created_at: Date;
-  last_seen_at: Date;
-  expires_at: Date;
-  user_agent: string | null;
-  ip_address: string | null;
-}[]> {
-  if (!sql) return [];
-  return sql<{
+}): Promise<
+  {
     id: string;
     created_at: Date;
     last_seen_at: Date;
     expires_at: Date;
     user_agent: string | null;
     ip_address: string | null;
-  }[]>`
+  }[]
+> {
+  if (!sql) return [];
+  return sql<
+    {
+      id: string;
+      created_at: Date;
+      last_seen_at: Date;
+      expires_at: Date;
+      user_agent: string | null;
+      ip_address: string | null;
+    }[]
+  >`
     SELECT id, created_at, last_seen_at, expires_at, user_agent, ip_address
     FROM app_session
     WHERE tenant_id = ${params.tenantId}
@@ -202,11 +221,7 @@ export async function revokeSessionAndRecord(params: {
         'SESSION_REVOKED',
         ${params.actorId},
         ${params.source},
-        ${tx.json({
-          sessionId: params.sessionId,
-          ipAddress,
-          userAgent,
-        })}
+        ${tx.json({ sessionId: params.sessionId, ipAddress, userAgent })}
       )
     `;
 
@@ -294,7 +309,7 @@ export async function fetchSessionForAuth(sessionId: string): Promise<AuthSessio
 export async function updateSessionAndPrincipalActivity(
   sessionId: string,
   principalId: string,
-  tenantId: string
+  tenantId: string,
 ): Promise<void> {
   if (!sql) return;
   await sql`
@@ -316,15 +331,18 @@ export async function updateSessionAndPrincipalActivity(
   `;
 }
 
-export async function createSessionRow(params: {
-  principalId: string;
-  tenantId: string;
-  expiresAt: string;
-  userAgent?: string | null;
-  ipAddress?: string | null;
-  authMethod: string;
-  mfaVerifiedAt?: string | null;
-}, db = sql): Promise<string> {
+export async function createSessionRow(
+  params: {
+    principalId: string;
+    tenantId: string;
+    expiresAt: string;
+    userAgent?: string | null;
+    ipAddress?: string | null;
+    authMethod: string;
+    mfaVerifiedAt?: string | null;
+  },
+  db = sql,
+): Promise<string> {
   if (!db) throw new Error("Database not configured.");
 
   // Session creation is the shared chokepoint for every login method (magic,
@@ -382,16 +400,15 @@ export async function revokeSessionRow(sessionId: string, tenantId: string): Pro
 }
 
 export async function listAllLoginPrincipals() {
-  if (!rawSql) return [] as { id: string; tenant_id: string; display_name: string; email: string | null }[];
+  if (!rawSql)
+    return [] as { id: string; tenant_id: string; display_name: string; email: string | null }[];
 
   await ensureAuthDemoTenant().catch(swallow("ensureAuthDemoTenant", undefined));
 
   // This powers the explicitly enabled configured-user login chooser before a
   // tenant is known, so use the owner connection rather than inventing a tenant
   // context. The page filters demo principals before rendering.
-  return rawSql<
-    { id: string; tenant_id: string; display_name: string; email: string | null }[]
-  >`
+  return rawSql<{ id: string; tenant_id: string; display_name: string; email: string | null }[]>`
     SELECT id, tenant_id, display_name, email
     FROM app_principal
     WHERE principal_type = 'USER'

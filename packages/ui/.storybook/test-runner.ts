@@ -8,9 +8,9 @@ const config: TestRunnerConfig = {
   async postVisit(page) {
     await checkA11y(page, "#storybook-root", {
       detailedReport: true,
-      detailedReportOptions: { html: true }
+      detailedReportOptions: { html: true },
     });
-  }
+  },
 };
 
 export default config;

@@ -43,25 +43,28 @@ export interface GatewayConfig {
 
 export function resolveGatewayConfig(
   config: SpctreCliConfig,
-  mode: "observe" | "enforce"
+  mode: "observe" | "enforce",
 ): GatewayConfig | null {
   const gatewayUrl = config.gatewayUrl || process.env.SPCTRE_GATEWAY_URL;
   if (!gatewayUrl) return null;
 
   const timeoutMs = Math.max(
     5000,
-    (Number.parseInt(process.env.SPCTRE_GATEWAY_TIMEOUT ?? "1800", 10) || 1800) * 1000
+    (Number.parseInt(process.env.SPCTRE_GATEWAY_TIMEOUT ?? "1800", 10) || 1800) * 1000,
   );
   const pollIntervalMs = Math.max(
     2000,
-    (Number.parseInt(process.env.SPCTRE_GATEWAY_POLL_INTERVAL ?? "10", 10) || 10) * 1000
+    (Number.parseInt(process.env.SPCTRE_GATEWAY_POLL_INTERVAL ?? "10", 10) || 10) * 1000,
   );
 
   let outagePolicy: "fail-open" | "fail-closed" = mode === "enforce" ? "fail-closed" : "fail-open";
   const envPolicy = process.env.SPCTRE_GATEWAY_OUTAGE_POLICY;
   if (envPolicy === "fail-open" || envPolicy === "fail-closed") {
     outagePolicy = envPolicy;
-  } else if (config.gatewayOutagePolicy === "fail-open" || config.gatewayOutagePolicy === "fail-closed") {
+  } else if (
+    config.gatewayOutagePolicy === "fail-open" ||
+    config.gatewayOutagePolicy === "fail-closed"
+  ) {
     outagePolicy = config.gatewayOutagePolicy;
   }
 
@@ -85,7 +88,7 @@ export async function requestGatewayDecision(
     toolIntent?: string;
     planSummary?: string;
     toolParameters?: Record<string, unknown>;
-  }
+  },
 ): Promise<GatewayDecisionResponse | null> {
   const url = `${gwConfig.gatewayUrl}/api/gateway/decide`;
   try {
@@ -94,10 +97,7 @@ export async function requestGatewayDecision(
 
     const response = await fetch(url, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${gwConfig.token}`,
-      },
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${gwConfig.token}` },
       body: JSON.stringify({
         decisionId: params.decisionId,
         artifactHash: config.artifactHash,
@@ -126,7 +126,7 @@ export async function requestGatewayDecision(
 
 export async function pollEscalationResolution(
   gwConfig: GatewayConfig,
-  decisionId: string
+  decisionId: string,
 ): Promise<EscalationStatusResponse> {
   const startTime = Date.now();
   const url = `${gwConfig.gatewayUrl}/api/gateway/escalations/status?decisionId=${encodeURIComponent(decisionId)}`;
@@ -134,18 +134,13 @@ export async function pollEscalationResolution(
   while (true) {
     const elapsed = Date.now() - startTime;
     if (elapsed >= gwConfig.timeoutMs) {
-      return {
-        decisionId,
-        status: "EXPIRED",
-      };
+      return { decisionId, status: "EXPIRED" };
     }
 
     try {
       const response = await fetch(url, {
         method: "GET",
-        headers: {
-          "Authorization": `Bearer ${gwConfig.token}`,
-        },
+        headers: { Authorization: `Bearer ${gwConfig.token}` },
       });
 
       if (response.ok) {

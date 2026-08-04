@@ -8,16 +8,16 @@ const EE_IMPORT_RULE = {
   patterns: [
     {
       group: ["ee", "ee/*", "@/ee/*", "~/ee/*", "**/ee/*"],
-      message: "OSS code must not import commercial-only implementations from ee/."
-    }
-  ]
+      message: "OSS code must not import commercial-only implementations from ee/.",
+    },
+  ],
 };
 
 // Files that may import @/lib/db directly. Everything else goes through
 // lib/repositories/* (query access) or @/lib/tenant-context (tenant scoping).
 const DB_BOUNDARY_INFRA_ALLOWLIST = [
   "apps/web/app/api/ready/route.ts",
-  "apps/web/lib/auth-rate-limit.ts"
+  "apps/web/lib/auth-rate-limit.ts",
 ];
 
 export default [
@@ -31,23 +31,18 @@ export default [
       "**/.worktrees/**",
       "**/target/**",
       "**/coverage/**",
-      "**/storybook-static/**"
-    ]
+      "**/storybook-static/**",
+    ],
   },
   {
     // This config only enforces import boundaries; inline directives for
     // plugin rules (react-hooks, @typescript-eslint) would otherwise error.
-    linterOptions: { noInlineConfig: true, reportUnusedDisableDirectives: "off" }
+    linterOptions: { noInlineConfig: true, reportUnusedDisableDirectives: "off" },
   },
-  {
-    files: ["**/*.{ts,tsx,mts,cts}"],
-    languageOptions: { parser: tseslint.parser }
-  },
+  { files: ["**/*.{ts,tsx,mts,cts}"], languageOptions: { parser: tseslint.parser } },
   {
     files: ["**/*.{js,jsx,mjs,cjs,ts,tsx,mts,cts}"],
-    rules: {
-      "no-restricted-imports": ["error", EE_IMPORT_RULE]
-    }
+    rules: { "no-restricted-imports": ["error", EE_IMPORT_RULE] },
   },
   {
     files: ["apps/web/**/*.{js,jsx,mjs,cjs,ts,tsx,mts,cts}"],
@@ -60,12 +55,12 @@ export default [
             {
               name: "@/lib/db",
               message:
-                "Route database access through lib/repositories/*; use @/lib/tenant-context for tenant scoping."
-            }
-          ]
-        }
-      ]
-    }
+                "Route database access through lib/repositories/*; use @/lib/tenant-context for tenant scoping.",
+            },
+          ],
+        },
+      ],
+    },
   },
   {
     // Domain services own business logic and must stay ignorant of the HTTP
@@ -83,41 +78,41 @@ export default [
             {
               group: ["next/headers"],
               message:
-                "Domain services must not read request cookies/headers. Resolve scope at the route/action boundary and pass an explicit ActiveScope parameter in."
-            }
+                "Domain services must not read request cookies/headers. Resolve scope at the route/action boundary and pass an explicit ActiveScope parameter in.",
+            },
           ],
           paths: [
             {
               name: "@/lib/db",
               message:
-                "Route database access through lib/repositories/*; use @/lib/tenant-context for tenant scoping."
+                "Route database access through lib/repositories/*; use @/lib/tenant-context for tenant scoping.",
             },
             {
               name: "@/lib/workspace",
               importNames: ["getActiveScope"],
               message:
-                "Domain services must not resolve active scope themselves. Accept an explicit ActiveScope parameter resolved at the route/action boundary (importing the ActiveScope type is fine)."
+                "Domain services must not resolve active scope themselves. Accept an explicit ActiveScope parameter resolved at the route/action boundary (importing the ActiveScope type is fine).",
             },
             {
               name: "@/lib/workspace/scope",
               importNames: ["getActiveScope"],
               message:
-                "Domain services must not resolve active scope themselves. Accept an explicit ActiveScope parameter resolved at the route/action boundary (importing the ActiveScope type is fine)."
-            }
-          ]
-        }
-      ]
-    }
+                "Domain services must not resolve active scope themselves. Accept an explicit ActiveScope parameter resolved at the route/action boundary (importing the ActiveScope type is fine).",
+            },
+          ],
+        },
+      ],
+    },
   },
   {
     files: [
       "apps/web/lib/repositories/**/*.{js,jsx,mjs,cjs,ts,tsx,mts,cts}",
-      ...DB_BOUNDARY_INFRA_ALLOWLIST
+      ...DB_BOUNDARY_INFRA_ALLOWLIST,
     ],
     rules: {
       // Repositories may import @/lib/db, but the ee/ boundary still applies.
-      "no-restricted-imports": ["error", EE_IMPORT_RULE]
-    }
+      "no-restricted-imports": ["error", EE_IMPORT_RULE],
+    },
   },
   {
     // Advisory complexity guardrails (warn-level, non-blocking) so the files
@@ -125,22 +120,25 @@ export default [
     // new regressions surface at PR time. Thresholds are generous — they catch
     // the worst offenders, not ordinary code. Generated and test files are
     // exempt because their size is not a maintenance signal.
-    files: [
-      "apps/web/{app,lib}/**/*.{ts,tsx}",
-      "packages/*/src/**/*.{ts,tsx}"
-    ],
+    files: ["apps/web/{app,lib}/**/*.{ts,tsx}", "packages/*/src/**/*.{ts,tsx}"],
     ignores: [
       "**/*.test.{ts,tsx,mts,cts}",
       "**/*.gen.ts",
       "apps/web/lib/mock-data.ts",
       "packages/policy-schema/src/schema.ts",
       "packages/sdk/src/schema.ts",
-      "packages/api-contracts/src/openapi.ts"
+      "packages/api-contracts/src/openapi.ts",
     ],
     rules: {
       complexity: ["warn", 20],
       "max-depth": ["warn", 5],
-      "max-lines-per-function": ["warn", { max: 150, skipBlankLines: true, skipComments: true }]
-    }
-  }
+      // 200, not 150: line counts are formatting-dependent, and Prettier's
+      // wrapping inflated them by ~1.1x for plain logic and ~1.5x for JSX-heavy
+      // code. At 150 the rule flagged 25 functions, mostly wrapping artifacts,
+      // which buries the real offenders. At 200 every function it flags is
+      // oversized regardless of formatting. `complexity` above is unaffected by
+      // formatting and remains the stronger of these two signals.
+      "max-lines-per-function": ["warn", { max: 200, skipBlankLines: true, skipComments: true }],
+    },
+  },
 ];

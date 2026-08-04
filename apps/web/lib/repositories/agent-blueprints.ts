@@ -39,7 +39,10 @@ function canonicalize(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(canonicalize).join(",")}]`;
   if (value && typeof value === "object") {
     const record = value as Record<string, unknown>;
-    return `{${Object.keys(record).sort().map((key) => [JSON.stringify(key), canonicalize(record[key])].join(":")).join(",")}}`;
+    return `{${Object.keys(record)
+      .sort()
+      .map((key) => [JSON.stringify(key), canonicalize(record[key])].join(":"))
+      .join(",")}}`;
   }
   return JSON.stringify(value);
 }
@@ -77,7 +80,10 @@ function mapRevision(row: RevisionRow): AgentBlueprintRevision {
   };
 }
 
-export async function listAgentBlueprints(params: { tenantId: string; workspaceId: string }): Promise<AgentBlueprintSummary[]> {
+export async function listAgentBlueprints(params: {
+  tenantId: string;
+  workspaceId: string;
+}): Promise<AgentBlueprintSummary[]> {
   if (!sql) return [];
   const rows = await sql<BlueprintRow[]>`
     SELECT b.id, b.name, b.agent_id, b.workspace_id, b.active_revision_id, b.updated_at,
@@ -91,7 +97,11 @@ export async function listAgentBlueprints(params: { tenantId: string; workspaceI
   return rows.map(mapSummary);
 }
 
-export async function getAgentBlueprint(params: { tenantId: string; workspaceId: string; blueprintId: string }): Promise<{ blueprint: AgentBlueprintSummary; revisions: AgentBlueprintRevision[] } | null> {
+export async function getAgentBlueprint(params: {
+  tenantId: string;
+  workspaceId: string;
+  blueprintId: string;
+}): Promise<{ blueprint: AgentBlueprintSummary; revisions: AgentBlueprintRevision[] } | null> {
   if (!sql) return null;
   const blueprints = await sql<BlueprintRow[]>`
     SELECT b.id, b.name, b.agent_id, b.workspace_id, b.active_revision_id, b.updated_at,
@@ -121,16 +131,28 @@ export async function getAgentBlueprintByAgent(params: {
   tenantId: string;
   workspaceId: string;
   agentId: string;
-}): Promise<{ id: string; activeRevisionId: string | null; activeDefinitionHash: string | null } | null> {
+}): Promise<{
+  id: string;
+  activeRevisionId: string | null;
+  activeDefinitionHash: string | null;
+} | null> {
   if (!sql) return null;
-  const rows = await sql<{ id: string; active_revision_id: string | null; active_definition_hash: string | null }[]>`
+  const rows = await sql<
+    { id: string; active_revision_id: string | null; active_definition_hash: string | null }[]
+  >`
     SELECT b.id, b.active_revision_id, r.definition_hash AS active_definition_hash
     FROM agent_blueprint b
     LEFT JOIN agent_blueprint_revision r ON r.id = b.active_revision_id AND r.tenant_id = b.tenant_id
     WHERE b.tenant_id = ${params.tenantId} AND b.workspace_id = ${params.workspaceId} AND b.agent_id = ${params.agentId}
   `;
   const row = rows[0];
-  return row ? { id: row.id, activeRevisionId: row.active_revision_id, activeDefinitionHash: row.active_definition_hash } : null;
+  return row
+    ? {
+        id: row.id,
+        activeRevisionId: row.active_revision_id,
+        activeDefinitionHash: row.active_definition_hash,
+      }
+    : null;
 }
 
 /**
@@ -161,12 +183,9 @@ export async function getPublishedBlueprintContext(params: {
   policyRevisionIds: string[];
 }): Promise<RuntimeBlueprintContext | undefined> {
   if (!sql) return undefined;
-  const rows = await sql<{
-    blueprint_id: string;
-    revision_id: string;
-    definition_hash: string;
-    name: string;
-  }[]>`
+  const rows = await sql<
+    { blueprint_id: string; revision_id: string; definition_hash: string; name: string }[]
+  >`
     SELECT b.id AS blueprint_id, r.id AS revision_id, r.definition_hash, b.name
     FROM agent_blueprint b
     JOIN LATERAL (
@@ -188,19 +207,25 @@ export async function getPublishedBlueprintContext(params: {
     LIMIT 1
   `;
   const row = rows[0];
-  return row ? {
-    blueprintId: row.blueprint_id,
-    revisionId: row.revision_id,
-    definitionHash: row.definition_hash,
-    name: row.name,
-  } : undefined;
+  return row
+    ? {
+        blueprintId: row.blueprint_id,
+        revisionId: row.revision_id,
+        definitionHash: row.definition_hash,
+        name: row.name,
+      }
+    : undefined;
 }
 
 export async function getPublishedAgentBlueprintRuntime(params: {
   tenantId: string;
   workspaceId: string;
   blueprintId: string;
-}): Promise<{ name: string; revision: AgentBlueprintRevision; policyArtifactHash?: string } | null> {
+}): Promise<{
+  name: string;
+  revision: AgentBlueprintRevision;
+  policyArtifactHash?: string;
+} | null> {
   if (!sql) return null;
   const rows = await sql<(RevisionRow & { name: string; policy_artifact_hash: string | null })[]>`
     SELECT r.id, r.blueprint_id, r.parent_revision_id, r.definition, r.definition_hash,
@@ -219,12 +244,24 @@ export async function getPublishedAgentBlueprintRuntime(params: {
     LIMIT 1
   `;
   const row = rows[0];
-  return row ? { name: row.name, revision: mapRevision(row), policyArtifactHash: row.policy_artifact_hash ?? undefined } : null;
+  return row
+    ? {
+        name: row.name,
+        revision: mapRevision(row),
+        policyArtifactHash: row.policy_artifact_hash ?? undefined,
+      }
+    : null;
 }
 
 export async function getPublishedAgentBlueprintRuntimeByAgent(params: {
-  tenantId: string; workspaceId: string; agentId: string;
-}): Promise<{ name: string; revision: AgentBlueprintRevision; policyArtifactHash?: string } | null> {
+  tenantId: string;
+  workspaceId: string;
+  agentId: string;
+}): Promise<{
+  name: string;
+  revision: AgentBlueprintRevision;
+  policyArtifactHash?: string;
+} | null> {
   if (!sql) return null;
   const rows = await sql<(RevisionRow & { name: string; policy_artifact_hash: string | null })[]>`
     SELECT r.id, r.blueprint_id, r.parent_revision_id, r.definition, r.definition_hash, r.message, r.author_id, r.status, r.created_at, r.published_at, b.name,
@@ -234,10 +271,22 @@ export async function getPublishedAgentBlueprintRuntimeByAgent(params: {
     WHERE b.tenant_id = ${params.tenantId} AND b.workspace_id = ${params.workspaceId} AND b.agent_id = ${params.agentId} AND r.status = 'PUBLISHED'
     ORDER BY r.published_at DESC, r.created_at DESC LIMIT 1
   `;
-  const row = rows[0]; return row ? { name: row.name, revision: mapRevision(row), policyArtifactHash: row.policy_artifact_hash ?? undefined } : null;
+  const row = rows[0];
+  return row
+    ? {
+        name: row.name,
+        revision: mapRevision(row),
+        policyArtifactHash: row.policy_artifact_hash ?? undefined,
+      }
+    : null;
 }
 
-export async function getPublishedBlueprintForGateway(params: { tenantId: string; workspaceId: string; agentId: string; policyRevisionIds: string[] }): Promise<AgentBlueprintRevision | null> {
+export async function getPublishedBlueprintForGateway(params: {
+  tenantId: string;
+  workspaceId: string;
+  agentId: string;
+  policyRevisionIds: string[];
+}): Promise<AgentBlueprintRevision | null> {
   if (!sql) return null;
   const rows = await sql<RevisionRow[]>`
     SELECT r.id, r.blueprint_id, r.parent_revision_id, r.definition, r.definition_hash, r.message, r.author_id, r.status, r.created_at, r.published_at
@@ -252,7 +301,13 @@ export async function getPublishedBlueprintForGateway(params: { tenantId: string
 }
 
 export async function createAgentBlueprint(params: {
-  tenantId: string; workspaceId: string; name: string; agentId: string; authorId: string; message: string; definition: AgentBlueprintDefinition;
+  tenantId: string;
+  workspaceId: string;
+  name: string;
+  agentId: string;
+  authorId: string;
+  message: string;
+  definition: AgentBlueprintDefinition;
 }): Promise<AgentBlueprintSummary | null> {
   if (!sql) return null;
   const definitionHash = hashBlueprintDefinition(params.definition);
@@ -295,7 +350,12 @@ export async function createAgentBlueprint(params: {
 }
 
 export async function createAgentBlueprintRevision(params: {
-  tenantId: string; workspaceId: string; blueprintId: string; authorId: string; message: string; definition: AgentBlueprintDefinition;
+  tenantId: string;
+  workspaceId: string;
+  blueprintId: string;
+  authorId: string;
+  message: string;
+  definition: AgentBlueprintDefinition;
 }): Promise<AgentBlueprintRevision | null> {
   if (!sql) return null;
   const definitionHash = hashBlueprintDefinition(params.definition);
@@ -347,19 +407,41 @@ export async function createAgentBlueprintRevision(params: {
   return rows[0] ? mapRevision(rows[0] as RevisionRow) : null;
 }
 
-export async function getAgentBlueprintApprovals(params: { tenantId: string; revisionId: string }): Promise<PolicyApproval[]> {
+export async function getAgentBlueprintApprovals(params: {
+  tenantId: string;
+  revisionId: string;
+}): Promise<PolicyApproval[]> {
   if (!sql) return [];
-  const rows = await sql<{ reviewer_id: string; reviewer_role: string; status: PolicyApproval["status"]; reviewed_at: Date | null }[]>`
+  const rows = await sql<
+    {
+      reviewer_id: string;
+      reviewer_role: string;
+      status: PolicyApproval["status"];
+      reviewed_at: Date | null;
+    }[]
+  >`
     SELECT reviewer_id, reviewer_role, status, reviewed_at
     FROM agent_blueprint_approval
     WHERE tenant_id = ${params.tenantId} AND revision_id = ${params.revisionId}
     ORDER BY reviewed_at DESC
   `;
-  return rows.map((row) => ({ reviewer: row.reviewer_id, role: row.reviewer_role, status: row.status, reviewedAt: row.reviewed_at?.toISOString() }));
+  return rows.map((row) => ({
+    reviewer: row.reviewer_id,
+    role: row.reviewer_role,
+    status: row.status,
+    reviewedAt: row.reviewed_at?.toISOString(),
+  }));
 }
 
 export async function upsertAgentBlueprintApproval(params: {
-  tenantId: string; workspaceId: string; blueprintId: string; revisionId: string; reviewerId: string; reviewerRole: string; status: PolicyApproval["status"]; note?: string | null;
+  tenantId: string;
+  workspaceId: string;
+  blueprintId: string;
+  revisionId: string;
+  reviewerId: string;
+  reviewerRole: string;
+  status: PolicyApproval["status"];
+  note?: string | null;
 }): Promise<boolean> {
   if (!sql) return false;
   const rows = await sql<{ id: string }[]>`
@@ -373,7 +455,11 @@ export async function upsertAgentBlueprintApproval(params: {
 }
 
 export async function setAgentBlueprintRevisionStatus(params: {
-  tenantId: string; workspaceId: string; blueprintId: string; revisionId: string; status: AgentBlueprintStatus;
+  tenantId: string;
+  workspaceId: string;
+  blueprintId: string;
+  revisionId: string;
+  status: AgentBlueprintStatus;
 }): Promise<AgentBlueprintRevision | null> {
   if (!sql) return null;
   if (params.status === "DRAFT") return null;
@@ -434,23 +520,51 @@ export async function rollbackAgentBlueprint(params: {
 }
 
 export async function simulateAgentBlueprintRevision(params: {
-  tenantId: string; workspaceId: string; blueprintId: string; revisionId: string; limit?: number;
-}): Promise<{ sourceEventCount: number; newlyBlockedCount: number; examples: Array<{ decisionId: string; connector: string; action: string }> } | null> {
+  tenantId: string;
+  workspaceId: string;
+  blueprintId: string;
+  revisionId: string;
+  limit?: number;
+}): Promise<{
+  sourceEventCount: number;
+  newlyBlockedCount: number;
+  examples: Array<{ decisionId: string; connector: string; action: string }>;
+} | null> {
   if (!sql) return null;
   const revisions = await sql<RevisionRow[]>`
     SELECT r.id, r.blueprint_id, r.parent_revision_id, r.definition, r.definition_hash, r.message, r.author_id, r.status, r.created_at, r.published_at
     FROM agent_blueprint_revision r JOIN agent_blueprint b ON b.id = r.blueprint_id AND b.tenant_id = r.tenant_id
     WHERE r.tenant_id = ${params.tenantId} AND b.workspace_id = ${params.workspaceId} AND r.blueprint_id = ${params.blueprintId} AND r.id = ${params.revisionId}
   `;
-  const revision = revisions[0]; if (!revision) return null;
-  const blueprint = await sql<{ agent_id: string }[]>`SELECT agent_id FROM agent_blueprint WHERE id = ${params.blueprintId} AND tenant_id = ${params.tenantId} AND workspace_id = ${params.workspaceId}`;
-  const agentId = blueprint[0]?.agent_id; if (!agentId) return null;
+  const revision = revisions[0];
+  if (!revision) return null;
+  const blueprint = await sql<
+    { agent_id: string }[]
+  >`SELECT agent_id FROM agent_blueprint WHERE id = ${params.blueprintId} AND tenant_id = ${params.tenantId} AND workspace_id = ${params.workspaceId}`;
+  const agentId = blueprint[0]?.agent_id;
+  if (!agentId) return null;
   const events = await sql<{ decision_id: string; connector: string; action: string }[]>`
     SELECT decision_id, connector, action FROM runtime_evidence_event
     WHERE tenant_id = ${params.tenantId} AND workspace_id = ${params.workspaceId} AND agent_id = ${agentId}
     ORDER BY created_at DESC LIMIT ${params.limit ?? 200}
   `;
   const definition = mapRevision(revision).definition;
-  const blocked = events.filter((event) => !definition.connectors.includes(event.connector) || !definition.tools.some((tool) => tool === event.action || tool === `${event.connector}.${event.action}`));
-  return { sourceEventCount: events.length, newlyBlockedCount: blocked.length, examples: blocked.slice(0, 20).map((event) => ({ decisionId: event.decision_id, connector: event.connector, action: event.action })) };
+  const blocked = events.filter(
+    (event) =>
+      !definition.connectors.includes(event.connector) ||
+      !definition.tools.some(
+        (tool) => tool === event.action || tool === `${event.connector}.${event.action}`,
+      ),
+  );
+  return {
+    sourceEventCount: events.length,
+    newlyBlockedCount: blocked.length,
+    examples: blocked
+      .slice(0, 20)
+      .map((event) => ({
+        decisionId: event.decision_id,
+        connector: event.connector,
+        action: event.action,
+      })),
+  };
 }

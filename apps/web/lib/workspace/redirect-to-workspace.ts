@@ -10,7 +10,7 @@ import { swallow } from "@/lib/platform/swallow";
  */
 export async function redirectToWorkspace(
   path: string,
-  searchParams?: Promise<Record<string, string | string[] | undefined>>
+  searchParams?: Promise<Record<string, string | string[] | undefined>>,
 ): Promise<void> {
   const ctx = await getWorkspaceContext().catch(swallow("getWorkspaceContext", null));
   if (ctx?.workspaceSlug) {

@@ -13,16 +13,14 @@ const FeatureFlagContext = createContext<FeatureFlagContextValue | null>(null);
 export function FeatureFlagProvider({
   children,
   flags,
-  plan
+  plan,
 }: {
   children: React.ReactNode;
   flags: FeatureFlagSnapshot;
   plan: SpctrePlan;
 }) {
   return (
-    <FeatureFlagContext.Provider value={{ flags, plan }}>
-      {children}
-    </FeatureFlagContext.Provider>
+    <FeatureFlagContext.Provider value={{ flags, plan }}>{children}</FeatureFlagContext.Provider>
   );
 }
 

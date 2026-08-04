@@ -1,4 +1,9 @@
-import type { PolicyRuleSummary, PolicyPack, PolicyPackChangelogEntry, PolicyPackMetadata } from "./types";
+import type {
+  PolicyRuleSummary,
+  PolicyPack,
+  PolicyPackChangelogEntry,
+  PolicyPackMetadata,
+} from "./types";
 
 export type { PolicyPack, PolicyPackChangelogEntry, PolicyPackMetadata };
 
@@ -34,8 +39,9 @@ export function getPackMetadata(pack: PolicyPack): PolicyPackMetadata {
 
   const changelog = Array.isArray(metadata.changelog)
     ? metadata.changelog
-        .filter((entry): entry is Record<string, unknown> =>
-          !!entry && typeof entry === "object" && !Array.isArray(entry)
+        .filter(
+          (entry): entry is Record<string, unknown> =>
+            !!entry && typeof entry === "object" && !Array.isArray(entry),
         )
         .map((entry) => ({
           version:
@@ -43,9 +49,7 @@ export function getPackMetadata(pack: PolicyPack): PolicyPackMetadata {
               ? entry.version.trim()
               : version,
           date:
-            typeof entry.date === "string" && entry.date.trim()
-              ? entry.date.trim()
-              : "1970-01-01",
+            typeof entry.date === "string" && entry.date.trim() ? entry.date.trim() : "1970-01-01",
           summary:
             typeof entry.summary === "string" && entry.summary.trim()
               ? entry.summary.trim()
@@ -66,7 +70,9 @@ export function getPackMetadata(pack: PolicyPack): PolicyPackMetadata {
     generated: Boolean(metadata.generated),
     category: typeof metadata.category === "string" ? metadata.category : "connector governance",
     compatibilityTargets: Array.isArray(metadata.compatibilityTargets)
-      ? metadata.compatibilityTargets.filter((target): target is string => typeof target === "string")
+      ? metadata.compatibilityTargets.filter(
+          (target): target is string => typeof target === "string",
+        )
       : ["AGT_PREVIEW"],
     reviewRoles: Array.isArray(metadata.reviewRoles)
       ? metadata.reviewRoles.filter((role): role is string => typeof role === "string")
@@ -129,13 +135,19 @@ export function packToDocument(pack: PolicyPack): string {
         // fields, condition sources are folded into `conditions`. This lets a
         // pack rule's dynamic conditions survive pack -> document -> parse.
         const nativeFields: Record<string, unknown> = {};
-        const mergedConditions: Record<string, unknown>[] = Array.isArray(conditions) ? [...conditions] : [];
+        const mergedConditions: Record<string, unknown>[] = Array.isArray(conditions)
+          ? [...conditions]
+          : [];
         for (const dc of Array.isArray(dynamicConditions) ? dynamicConditions : []) {
           const original = dc?.originalCondition;
           if (!original || typeof original !== "object" || Array.isArray(original)) continue;
           if (dc.source === "AGT_NATIVE_FIELD") {
             Object.assign(nativeFields, original);
-          } else if (!mergedConditions.some((existing) => JSON.stringify(existing) === JSON.stringify(original))) {
+          } else if (
+            !mergedConditions.some(
+              (existing) => JSON.stringify(existing) === JSON.stringify(original),
+            )
+          ) {
             mergedConditions.push(original as Record<string, unknown>);
           }
         }
@@ -158,13 +170,9 @@ export function packToDocument(pack: PolicyPack): string {
       }),
     },
     null,
-    2
+    2,
   );
 }
 
-export {
-  CANONICAL_PACK_CONNECTORS,
-  getPackCatalogTier,
-  POLICY_PACKS,
-} from "./pack-definitions";
+export { CANONICAL_PACK_CONNECTORS, getPackCatalogTier, POLICY_PACKS } from "./pack-definitions";
 export type { PackCatalogTier } from "./pack-definitions";

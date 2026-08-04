@@ -33,13 +33,7 @@ function getLastModified(filePath: string): Promise<Date | null> {
 
 export const docs = defineDocs({
   dir: "content/docs",
-  docs: {
-    postprocess: {
-      includeProcessedMarkdown: true,
-    },
-  },
+  docs: { postprocess: { includeProcessedMarkdown: true } },
 });
 
-export default defineConfig({
-  plugins: [lastModified({ versionControl: getLastModified })],
-});
+export default defineConfig({ plugins: [lastModified({ versionControl: getLastModified })] });

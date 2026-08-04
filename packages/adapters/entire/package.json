@@ -19,7 +19,10 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
-  "files": ["dist", "README.md"],
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "devDependencies": {
     "@types/node": "^26.0.0",
     "typescript": "^6.0.3",

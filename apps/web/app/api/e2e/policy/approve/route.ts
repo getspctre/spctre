@@ -52,45 +52,71 @@ function parseApproveRequest(body: unknown): ApproveRequestFields | { error: str
 async function handlePostApiE2ePolicyApprove(request: Request) {
   const traceId = extractTraceId(request);
   if (!getBooleanEnv("SPCTRE_E2E_API_ENABLED", false)) {
-    return withTraceId(Response.json({ error: "E2E support API is disabled.", meta: makeMeta(traceId) }, { status: 404 }), traceId);
+    return withTraceId(
+      Response.json(
+        { error: "E2E support API is disabled.", meta: makeMeta(traceId) },
+        { status: 404 },
+      ),
+      traceId,
+    );
   }
 
   const tokenAuth = await authenticateServiceToken(request, "e2e:write");
   if (!tokenAuth.ok) {
-    return withTraceId(Response.json({ error: tokenAuth.error, meta: makeMeta(traceId) }, { status: 401 }), traceId);
+    return withTraceId(
+      Response.json({ error: tokenAuth.error, meta: makeMeta(traceId) }, { status: 401 }),
+      traceId,
+    );
   }
 
   const body = await request.json().catch(() => null);
   const parsed = parseApproveRequest(body);
   if ("error" in parsed) {
-    return withTraceId(Response.json({ error: parsed.error, meta: makeMeta(traceId) }, { status: 400 }), traceId);
+    return withTraceId(
+      Response.json({ error: parsed.error, meta: makeMeta(traceId) }, { status: 400 }),
+      traceId,
+    );
   }
   const { revisionId, role, actorId, approvalStatus, note } = parsed;
 
   const revisionRow = await runWithTenantContext(tokenAuth.auth.tenantId, () =>
-    getRevisionWorkspaceScope({
-      tenantId: tokenAuth.auth.tenantId,
-      revisionId,
-    }).catch(swallow("getRevisionWorkspaceScope", null))
+    getRevisionWorkspaceScope({ tenantId: tokenAuth.auth.tenantId, revisionId }).catch(
+      swallow("getRevisionWorkspaceScope", null),
+    ),
   );
   if (!revisionRow) {
-    return withTraceId(Response.json({ error: "Revision not found.", meta: makeMeta(traceId) }, { status: 404 }), traceId);
+    return withTraceId(
+      Response.json({ error: "Revision not found.", meta: makeMeta(traceId) }, { status: 404 }),
+      traceId,
+    );
   }
 
   const actor = await runWithTenantContext(tokenAuth.auth.tenantId, () =>
     findActorById(actorId, {
       workspaceId: revisionRow.workspace_id ?? tokenAuth.auth.workspaceId,
       tenantId: tokenAuth.auth.tenantId,
-    })
+    }),
   );
   if (!actor) {
-    return withTraceId(Response.json({ error: "Actor not found.", meta: makeMeta(traceId) }, { status: 404 }), traceId);
+    return withTraceId(
+      Response.json({ error: "Actor not found.", meta: makeMeta(traceId) }, { status: 404 }),
+      traceId,
+    );
   }
 
   const workspaceSlug = revisionRow.workspace_slug ?? "workspace-demo";
   const reviewCheck = canActorReviewRole(actor, workspaceSlug, role);
   if (!reviewCheck.allowed) {
-    return withTraceId(Response.json({ error: reviewCheck.reason ?? "Actor does not have the required reviewer role.", meta: makeMeta(traceId) }, { status: 403 }), traceId);
+    return withTraceId(
+      Response.json(
+        {
+          error: reviewCheck.reason ?? "Actor does not have the required reviewer role.",
+          meta: makeMeta(traceId),
+        },
+        { status: 403 },
+      ),
+      traceId,
+    );
   }
 
   await runWithTenantContext(tokenAuth.auth.tenantId, () =>
@@ -101,7 +127,7 @@ async function handlePostApiE2ePolicyApprove(request: Request) {
       role,
       approvalStatus: approvalStatus as "APPROVED" | "CHANGES_REQUESTED",
       note,
-    })
+    }),
   );
 
   return withTraceId(Response.json({ ok: true, meta: makeMeta(traceId) }), traceId);

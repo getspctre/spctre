@@ -11,9 +11,10 @@ async function handleGetApiReady() {
 
   // 1. Required env vars
   const missingEnv = REQUIRED_ENV_VARS.filter((v) => !process.env[v]?.trim());
-  checks.env = missingEnv.length === 0
-    ? { ok: true }
-    : { ok: false, reason: `Missing: ${missingEnv.join(", ")}` };
+  checks.env =
+    missingEnv.length === 0
+      ? { ok: true }
+      : { ok: false, reason: `Missing: ${missingEnv.join(", ")}` };
 
   // 2. Database connectivity
   if (!rawSql) {
@@ -35,12 +36,13 @@ async function handleGetApiReady() {
         SELECT COUNT(*)::text AS count FROM schema_migrations
       `;
       const applied = Number.parseInt(rows[0]?.count ?? "0", 10);
-      checks.migrations = applied >= EXPECTED_MIGRATION_COUNT
-        ? { ok: true }
-        : {
-            ok: false,
-            reason: `${applied}/${EXPECTED_MIGRATION_COUNT} migrations applied — run pnpm migrate`,
-          };
+      checks.migrations =
+        applied >= EXPECTED_MIGRATION_COUNT
+          ? { ok: true }
+          : {
+              ok: false,
+              reason: `${applied}/${EXPECTED_MIGRATION_COUNT} migrations applied — run pnpm migrate`,
+            };
     } catch {
       checks.migrations = {
         ok: false,
@@ -53,10 +55,7 @@ async function handleGetApiReady() {
 
   const allOk = Object.values(checks).every((c) => c.ok);
 
-  return Response.json(
-    { ok: allOk, checks },
-    { status: allOk ? 200 : 503 }
-  );
+  return Response.json({ ok: allOk, checks }, { status: allOk ? 200 : 503 });
 }
 
 export { handleGetApiReady as GET };

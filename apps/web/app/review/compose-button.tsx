@@ -18,13 +18,14 @@ export function ComposeReviewButton({
 }: ComposeReviewButtonProps) {
   const [state, action, isPending] = useActionState<ComposeState, FormData>(
     refreshReviewComposition,
-    null
+    null,
   );
 
   const isDisabled = isPending || !branchId || !revisionId;
-  const title = branchId && revisionId
-    ? "Recompute the effective policy composition for this revision"
-    : "Select a branch to compose.";
+  const title =
+    branchId && revisionId
+      ? "Recompute the effective policy composition for this revision"
+      : "Select a branch to compose.";
 
   return (
     <form action={action}>
@@ -35,7 +36,11 @@ export function ComposeReviewButton({
         {isPending ? <Loader size={16} className="spin" /> : <Combine size={16} />}
         {isPending ? "Preparing review bundle..." : "Prepare review bundle"}
       </button>
-      {state?.error ? <p className="meta publishError" role="alert">{state.error}</p> : null}
+      {state?.error ? (
+        <p className="meta publishError" role="alert">
+          {state.error}
+        </p>
+      ) : null}
     </form>
   );
 }

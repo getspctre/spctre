@@ -8,7 +8,10 @@ import { makePackMetadata } from "./pack-helpers";
 // shape/row-count already present in the governed tool call, not a live SQL
 // parser or query plan inspector.
 
-function destructiveStatementRule(connector: string, actions: string[]): Omit<PolicyRuleSummary, "sourceFormat" | "sourcePath"> {
+function destructiveStatementRule(
+  connector: string,
+  actions: string[],
+): Omit<PolicyRuleSummary, "sourceFormat" | "sourcePath"> {
   return {
     stableRuleId: `${connector}.statement.destructive_ddl.block`,
     title: `Block destructive schema statements (DROP/TRUNCATE) without approval`,
@@ -21,12 +24,20 @@ function destructiveStatementRule(connector: string, actions: string[]): Omit<Po
       { field: "statement_type", operator: "in", value: ["DROP", "TRUNCATE"] },
     ],
     controlMappings: [
-      { framework: "SOC2", controlId: "CC8.1", rationale: "Blocks unreviewed destructive schema changes." },
+      {
+        framework: "SOC2",
+        controlId: "CC8.1",
+        rationale: "Blocks unreviewed destructive schema changes.",
+      },
     ],
   };
 }
 
-function bulkDeleteRule(connector: string, threshold: number, parameterKey: string): Omit<PolicyRuleSummary, "sourceFormat" | "sourcePath"> {
+function bulkDeleteRule(
+  connector: string,
+  threshold: number,
+  parameterKey: string,
+): Omit<PolicyRuleSummary, "sourceFormat" | "sourcePath"> {
   return {
     stableRuleId: `${connector}.data.bulk_delete_review`,
     title: `Escalate bulk deletes affecting a large row/document count`,
@@ -51,7 +62,12 @@ export const POSTGRESQL_PACK: PolicyPack = {
   tags: ["database", "postgresql", "sql", "schema", "data", "migrations"],
   domains: ["schema", "data", "migrations", "exports", "backups"],
   parameters: [
-    { key: "postgresql.bulk_delete_review_rows", label: "Row count requiring review for bulk deletes", type: "number", default: 10000 },
+    {
+      key: "postgresql.bulk_delete_review_rows",
+      label: "Row count requiring review for bulk deletes",
+      type: "number",
+      default: 10000,
+    },
   ],
   metadata: makePackMetadata({
     name: "PostgreSQL Operations Pack",
@@ -59,7 +75,13 @@ export const POSTGRESQL_PACK: PolicyPack = {
     riskLevel: "HIGH",
     riskTags: ["database", "sql", "schema"],
     category: "database operations",
-    changelog: [{ version: "1.0.0", date: "2026-07-20", summary: "Hand-authored replacement for the generated PostgreSQL pack." }],
+    changelog: [
+      {
+        version: "1.0.0",
+        date: "2026-07-20",
+        summary: "Hand-authored replacement for the generated PostgreSQL pack.",
+      },
+    ],
   }),
   rules: [
     destructiveStatementRule("postgresql", ["schema.migrate", "schema.execute"]),
@@ -73,7 +95,11 @@ export const POSTGRESQL_PACK: PolicyPack = {
       actions: ["data.export", "backup.download"],
       immutable: true,
       semanticChecks: [
-        { id: "postgresql-export-sc-1", prompt: "check for pii or regulated data in export request", effect: "DENY" },
+        {
+          id: "postgresql-export-sc-1",
+          prompt: "check for pii or regulated data in export request",
+          effect: "DENY",
+        },
       ],
     },
   ],
@@ -89,7 +115,12 @@ export const MONGODB_PACK: PolicyPack = {
   tags: ["database", "documents", "exports", "clusters"],
   domains: ["clusters", "databases", "collections", "indexes", "exports"],
   parameters: [
-    { key: "mongodb.bulk_delete_review_rows", label: "Document count requiring review for bulk deletes", type: "number", default: 10000 },
+    {
+      key: "mongodb.bulk_delete_review_rows",
+      label: "Document count requiring review for bulk deletes",
+      type: "number",
+      default: 10000,
+    },
   ],
   metadata: makePackMetadata({
     name: "MongoDB Governance Pack",
@@ -97,7 +128,13 @@ export const MONGODB_PACK: PolicyPack = {
     riskLevel: "HIGH",
     riskTags: ["database", "documents", "clusters"],
     category: "database",
-    changelog: [{ version: "1.0.0", date: "2026-07-20", summary: "Hand-authored replacement for the generated MongoDB pack." }],
+    changelog: [
+      {
+        version: "1.0.0",
+        date: "2026-07-20",
+        summary: "Hand-authored replacement for the generated MongoDB pack.",
+      },
+    ],
   }),
   rules: [
     {
@@ -132,7 +169,12 @@ export const SNOWFLAKE_PACK: PolicyPack = {
   tags: ["data", "warehouse", "exports", "sql"],
   domains: ["warehouses", "schemas", "tables", "shares", "queries"],
   parameters: [
-    { key: "snowflake.query_cost_review_credits", label: "Estimated query cost (credits) requiring review", type: "number", default: 50 },
+    {
+      key: "snowflake.query_cost_review_credits",
+      label: "Estimated query cost (credits) requiring review",
+      type: "number",
+      default: 50,
+    },
   ],
   metadata: makePackMetadata({
     name: "Snowflake Governance Pack",
@@ -140,7 +182,13 @@ export const SNOWFLAKE_PACK: PolicyPack = {
     riskLevel: "HIGH",
     riskTags: ["data", "warehouse", "sql"],
     category: "data warehouse",
-    changelog: [{ version: "1.0.0", date: "2026-07-20", summary: "Hand-authored replacement for the generated Snowflake pack." }],
+    changelog: [
+      {
+        version: "1.0.0",
+        date: "2026-07-20",
+        summary: "Hand-authored replacement for the generated Snowflake pack.",
+      },
+    ],
   }),
   rules: [
     destructiveStatementRule("snowflake", ["table.execute", "schema.execute"]),
@@ -153,7 +201,12 @@ export const SNOWFLAKE_PACK: PolicyPack = {
       actions: ["query.execute"],
       immutable: false,
       parameterConstraints: [
-        { field: "estimated_credits", operator: "gte", value: 50, parameterKey: "snowflake.query_cost_review_credits" },
+        {
+          field: "estimated_credits",
+          operator: "gte",
+          value: 50,
+          parameterKey: "snowflake.query_cost_review_credits",
+        },
       ],
     },
     {
@@ -165,7 +218,11 @@ export const SNOWFLAKE_PACK: PolicyPack = {
       actions: ["share.create", "share.update_grants"],
       immutable: true,
       controlMappings: [
-        { framework: "SOC2", controlId: "CC6.3", rationale: "Prevents unreviewed cross-account data sharing." },
+        {
+          framework: "SOC2",
+          controlId: "CC6.3",
+          rationale: "Prevents unreviewed cross-account data sharing.",
+        },
       ],
     },
   ],
@@ -181,7 +238,12 @@ export const AWS_DYNAMODB_PACK: PolicyPack = {
   tags: ["cloud", "database", "nosql", "backups"],
   domains: ["tables", "backups", "capacity"],
   parameters: [
-    { key: "aws-dynamodb.capacity_increase_review_units", label: "Capacity unit increase requiring review", type: "number", default: 40000 },
+    {
+      key: "aws-dynamodb.capacity_increase_review_units",
+      label: "Capacity unit increase requiring review",
+      type: "number",
+      default: 40000,
+    },
   ],
   metadata: makePackMetadata({
     name: "DynamoDB (AWS) Governance Pack",
@@ -189,7 +251,13 @@ export const AWS_DYNAMODB_PACK: PolicyPack = {
     riskLevel: "HIGH",
     riskTags: ["cloud", "database", "nosql"],
     category: "database operations",
-    changelog: [{ version: "1.0.0", date: "2026-07-20", summary: "Hand-authored replacement for the generated DynamoDB pack." }],
+    changelog: [
+      {
+        version: "1.0.0",
+        date: "2026-07-20",
+        summary: "Hand-authored replacement for the generated DynamoDB pack.",
+      },
+    ],
   }),
   rules: [
     {
@@ -209,7 +277,9 @@ export const AWS_DYNAMODB_PACK: PolicyPack = {
       connectors: ["aws-dynamodb"],
       actions: ["backup.update_continuous"],
       immutable: true,
-      parameterConstraints: [{ field: "point_in_time_recovery_enabled", operator: "eq", value: false }],
+      parameterConstraints: [
+        { field: "point_in_time_recovery_enabled", operator: "eq", value: false },
+      ],
     },
     {
       stableRuleId: "aws-dynamodb.capacity.large_increase_review",
@@ -220,7 +290,12 @@ export const AWS_DYNAMODB_PACK: PolicyPack = {
       actions: ["capacity.update"],
       immutable: false,
       parameterConstraints: [
-        { field: "new_write_capacity_units", operator: "gte", value: 40000, parameterKey: "aws-dynamodb.capacity_increase_review_units" },
+        {
+          field: "new_write_capacity_units",
+          operator: "gte",
+          value: 40000,
+          parameterKey: "aws-dynamodb.capacity_increase_review_units",
+        },
       ],
     },
   ],

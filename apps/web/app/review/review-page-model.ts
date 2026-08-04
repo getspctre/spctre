@@ -15,10 +15,20 @@ import {
   getBlastRadius,
   getBundleCompatibilityReport,
 } from "@/lib/repositories/policy";
-import { approvalRulesFromWorkflow, getApprovalWorkflowForContext } from "@/lib/repositories/approval-workflow";
+import {
+  approvalRulesFromWorkflow,
+  getApprovalWorkflowForContext,
+} from "@/lib/repositories/approval-workflow";
 import { getLatestVerificationStatus } from "@/lib/repositories/verification";
-import { getLatestManagedSimulationRegression, countRuntimeEvidence } from "@/lib/repositories/evidence";
-import { getAuthoringVocabulary, listAdapterDeclarationsForWorkspace, type AuthoringVocabularyEntry } from "@/lib/domains/packs/service";
+import {
+  getLatestManagedSimulationRegression,
+  countRuntimeEvidence,
+} from "@/lib/repositories/evidence";
+import {
+  getAuthoringVocabulary,
+  listAdapterDeclarationsForWorkspace,
+  type AuthoringVocabularyEntry,
+} from "@/lib/domains/packs/service";
 import type { EnforcementCoverage } from "@/lib/policy/rule-enforcement";
 import type { SimulationRegressionSummary } from "@spctre/policy-schema";
 import { isFeatureEnabledForPlan } from "@/lib/feature-flags";
@@ -94,7 +104,7 @@ export interface ReviewPageModel {
 // Load branches from the database, degrading to the demo/empty fallback.
 async function resolveReviewBranches(
   workspaceContext: ReviewWorkspaceContext,
-  fallback: Branch[]
+  fallback: Branch[],
 ): Promise<Branch[]> {
   let branches = fallback;
   try {
@@ -114,25 +124,29 @@ async function resolveReviewBranches(
 async function loadActiveRevisionData(
   workspaceContext: ReviewWorkspaceContext,
   activeBranch: Branch | undefined,
-  usingRealBranch: boolean
+  usingRealBranch: boolean,
 ): Promise<[Approval[], ReviewArtifactsModel | null, BranchRevision[], RevisionRule[]]> {
   if (!usingRealBranch || !activeBranch?.activeRevision) {
     return [[], null, [], []];
   }
   return Promise.all([
-    getApprovals(activeBranch.activeRevision, workspaceContext.tenantId).catch(swallow("getApprovals", [])),
+    getApprovals(activeBranch.activeRevision, workspaceContext.tenantId).catch(
+      swallow("getApprovals", []),
+    ),
     getReviewArtifacts(
       activeBranch.id,
       activeBranch.activeRevision,
       workspaceContext.workspaceId,
-      workspaceContext.tenantId
+      workspaceContext.tenantId,
     ).catch(swallow("getReviewArtifacts", null)),
     listBranchRevisions(
       activeBranch.id,
       workspaceContext.workspaceId,
-      workspaceContext.tenantId
+      workspaceContext.tenantId,
     ).catch(swallow("listBranchRevisions", [])),
-    getRulesForRevision(activeBranch.activeRevision, workspaceContext.tenantId).catch(swallow("getRulesForRevision", []))
+    getRulesForRevision(activeBranch.activeRevision, workspaceContext.tenantId).catch(
+      swallow("getRulesForRevision", []),
+    ),
   ]);
 }
 
@@ -142,14 +156,22 @@ async function loadReviewAugments(
   activeBranch: Branch | undefined,
   usingRealBranch: boolean,
   changedRuleIds: string[],
-  activeBundle: PolicyBundle | null
+  activeBundle: PolicyBundle | null,
 ): Promise<[BlastRadius, CompatibilityReport | null, ApprovalWorkflow | null]> {
   return Promise.all([
     usingRealBranch && changedRuleIds.length > 0
-      ? getBlastRadius(changedRuleIds, workspaceContext.workspaceId, workspaceContext.tenantId).catch(swallow("getBlastRadius", null))
+      ? getBlastRadius(
+          changedRuleIds,
+          workspaceContext.workspaceId,
+          workspaceContext.tenantId,
+        ).catch(swallow("getBlastRadius", null))
       : Promise.resolve(null),
     usingRealBranch && activeBundle
-      ? getBundleCompatibilityReport(activeBundle, workspaceContext.workspaceId, workspaceContext.tenantId).catch(swallow("getBundleCompatibilityReport", null))
+      ? getBundleCompatibilityReport(
+          activeBundle,
+          workspaceContext.workspaceId,
+          workspaceContext.tenantId,
+        ).catch(swallow("getBundleCompatibilityReport", null))
       : Promise.resolve(null),
     usingRealBranch && activeBranch
       ? getApprovalWorkflowForContext({
@@ -165,16 +187,26 @@ async function loadReviewAugments(
 function resolveActiveArtifacts(
   reviewArtifacts: ReviewArtifactsModel | null,
   useDemoFallbackData: boolean,
-  mocks: { compositionPreview: Composition; revisionDiff: RevisionDiff; artifactExport: ArtifactExport; agtBundlePreview: PolicyBundle }
+  mocks: {
+    compositionPreview: Composition;
+    revisionDiff: RevisionDiff;
+    artifactExport: ArtifactExport;
+    agtBundlePreview: PolicyBundle;
+  },
 ) {
-  const activeComposition: Composition | null = reviewArtifacts?.composition ?? (useDemoFallbackData ? mocks.compositionPreview : null);
-  const activeDiff: RevisionDiff | null = reviewArtifacts?.diff ?? (useDemoFallbackData ? mocks.revisionDiff : null);
-  const activeArtifact: ArtifactExport | null = reviewArtifacts?.artifact ?? (useDemoFallbackData ? mocks.artifactExport : null);
-  const activeBundle: PolicyBundle | null = reviewArtifacts?.bundle ?? (useDemoFallbackData ? mocks.agtBundlePreview : null);
+  const activeComposition: Composition | null =
+    reviewArtifacts?.composition ?? (useDemoFallbackData ? mocks.compositionPreview : null);
+  const activeDiff: RevisionDiff | null =
+    reviewArtifacts?.diff ?? (useDemoFallbackData ? mocks.revisionDiff : null);
+  const activeArtifact: ArtifactExport | null =
+    reviewArtifacts?.artifact ?? (useDemoFallbackData ? mocks.artifactExport : null);
+  const activeBundle: PolicyBundle | null =
+    reviewArtifacts?.bundle ?? (useDemoFallbackData ? mocks.agtBundlePreview : null);
 
-  const changedRuleIds: string[] = activeDiff?.rules
-    .filter((r) => r.status === "ADDED" || r.status === "MODIFIED")
-    .map((r) => r.stableRuleId) ?? [];
+  const changedRuleIds: string[] =
+    activeDiff?.rules
+      .filter((r) => r.status === "ADDED" || r.status === "MODIFIED")
+      .map((r) => r.stableRuleId) ?? [];
 
   return { activeComposition, activeDiff, activeArtifact, activeBundle, changedRuleIds };
 }
@@ -205,32 +237,34 @@ function computeReadinessView(params: {
   const emptyDiffSummary = { added: 0, modified: 0, removed: 0, unchanged: 0 };
   const diffSummary = activeDiff?.summary ?? emptyDiffSummary;
   const changedRuleCount = diffSummary.added + diffSummary.modified + diffSummary.removed;
-  const readinessPillClass =
-    isPublished
+  const readinessPillClass = isPublished
+    ? "pill pillAllow"
+    : readiness.status === "READY"
       ? "pill pillAllow"
-      : readiness.status === "READY"
-        ? "pill pillAllow"
-        : "pill pillWarn";
+      : "pill pillWarn";
 
-  return { readiness, isPublished, approvedRequiredCount, diffSummary, changedRuleCount, readinessPillClass };
+  return {
+    readiness,
+    isPublished,
+    approvedRequiredCount,
+    diffSummary,
+    changedRuleCount,
+    readinessPillClass,
+  };
 }
 
 function resolveBranchPermissions(
   actor: Actor,
   activeBranch: Branch | undefined,
-  workspaceSlug: string
+  workspaceSlug: string,
 ): BranchPermissions {
   return activeBranch
-    ? getBranchPermissions({
-        actor,
-        branch: activeBranch,
-        workspaceSlug
-      })
+    ? getBranchPermissions({ actor, branch: activeBranch, workspaceSlug })
     : {
         canPublish: false,
         publishReason: "Select a branch to publish.",
         reviewableRoles: [],
-        reviewBlockedReason: "Select a branch to review."
+        reviewBlockedReason: "Select a branch to review.",
       };
 }
 
@@ -253,23 +287,30 @@ export async function getReviewPageModel({
   const appViewMode = await getAppViewMode();
   const { actor } = await getActiveActor({
     workspaceId: workspaceContext.workspaceId,
-    tenantId: workspaceContext.tenantId
+    tenantId: workspaceContext.tenantId,
   });
 
   const useDemoFallbackData = canUseDemoFallbackData(workspaceContext.tenantId);
-  const branches = await resolveReviewBranches(workspaceContext, useDemoFallbackData ? mockBranches : []);
+  const branches = await resolveReviewBranches(
+    workspaceContext,
+    useDemoFallbackData ? mockBranches : [],
+  );
 
-  const requestedBranchUnavailable = Boolean(selectedBranchId) && !branches.some((branch) => branch.id === selectedBranchId);
+  const requestedBranchUnavailable =
+    Boolean(selectedBranchId) && !branches.some((branch) => branch.id === selectedBranchId);
   const activeBranch = requestedBranchUnavailable
     ? undefined
-    : branches.find((branch) => branch.id === selectedBranchId) ??
+    : (branches.find((branch) => branch.id === selectedBranchId) ??
       branches.find((branch) => branch.status !== "PUBLISHED") ??
-      branches[0];
+      branches[0]);
 
   const usingRealBranch = branches !== mockBranches && !!activeBranch;
 
-  const [approvals, reviewArtifacts, revisions, activeRevisionRules] =
-    await loadActiveRevisionData(workspaceContext, activeBranch, usingRealBranch);
+  const [approvals, reviewArtifacts, revisions, activeRevisionRules] = await loadActiveRevisionData(
+    workspaceContext,
+    activeBranch,
+    usingRealBranch,
+  );
 
   const { activeComposition, activeDiff, activeArtifact, activeBundle, changedRuleIds } =
     resolveActiveArtifacts(reviewArtifacts, useDemoFallbackData && !requestedBranchUnavailable, {
@@ -279,43 +320,62 @@ export async function getReviewPageModel({
       agtBundlePreview,
     });
 
-  const [blastRadius, compatibilityReport, approvalWorkflow] =
-    await loadReviewAugments(workspaceContext, activeBranch, usingRealBranch, changedRuleIds, activeBundle);
+  const [blastRadius, compatibilityReport, approvalWorkflow] = await loadReviewAugments(
+    workspaceContext,
+    activeBranch,
+    usingRealBranch,
+    changedRuleIds,
+    activeBundle,
+  );
 
-  const approvalRules = approvalWorkflow ? approvalRulesFromWorkflow(approvalWorkflow) : REQUIRED_APPROVAL_RULES;
+  const approvalRules = approvalWorkflow
+    ? approvalRulesFromWorkflow(approvalWorkflow)
+    : REQUIRED_APPROVAL_RULES;
   const verificationPolicy = approvalWorkflow?.verificationPolicy ?? { requireVerification: false };
   const verificationRequired = verificationPolicy.requireVerification === true;
-  const verificationSummary = usingRealBranch && activeBranch?.activeRevision && activeArtifact && verificationRequired
-    ? await getLatestVerificationStatus(workspaceContext.workspaceId, workspaceContext.tenantId, {
-        revisionId: activeBranch.activeRevision,
-        artifactHash: activeArtifact.artifactHash,
-      }).catch(swallow("getLatestVerificationStatus", null))
-    : null;
+  const verificationSummary =
+    usingRealBranch && activeBranch?.activeRevision && activeArtifact && verificationRequired
+      ? await getLatestVerificationStatus(workspaceContext.workspaceId, workspaceContext.tenantId, {
+          revisionId: activeBranch.activeRevision,
+          artifactHash: activeArtifact.artifactHash,
+        }).catch(swallow("getLatestVerificationStatus", null))
+      : null;
   // Only surface the managed-simulation publish gate when there is runtime
   // evidence to replay; a workspace with none has nothing to regress against, so
   // the server waives the requirement (see review/publish.ts) and the UI must not
   // show an unsatisfiable "run simulation" step.
-  const managedSimulationEligible = usingRealBranch && Boolean(activeBranch?.activeRevision) && isFeatureEnabledForPlan("bulkProductionSimulation", getSpctrePlan());
-  const requiresManagedSimulation = managedSimulationEligible
-    && (await countRuntimeEvidence(workspaceContext.workspaceId, workspaceContext.tenantId)) > 0;
-  const simulationRegression = usingRealBranch && activeBranch?.activeRevision
-    ? await getLatestManagedSimulationRegression({
-        tenantId: workspaceContext.tenantId,
-        workspaceId: workspaceContext.workspaceId,
-        revisionId: activeBranch.activeRevision,
-      }).catch(swallow("getLatestManagedSimulationRegression", null))
-    : null;
+  const managedSimulationEligible =
+    usingRealBranch &&
+    Boolean(activeBranch?.activeRevision) &&
+    isFeatureEnabledForPlan("bulkProductionSimulation", getSpctrePlan());
+  const requiresManagedSimulation =
+    managedSimulationEligible &&
+    (await countRuntimeEvidence(workspaceContext.workspaceId, workspaceContext.tenantId)) > 0;
+  const simulationRegression =
+    usingRealBranch && activeBranch?.activeRevision
+      ? await getLatestManagedSimulationRegression({
+          tenantId: workspaceContext.tenantId,
+          workspaceId: workspaceContext.workspaceId,
+          revisionId: activeBranch.activeRevision,
+        }).catch(swallow("getLatestManagedSimulationRegression", null))
+      : null;
 
-  const { readiness, isPublished, approvedRequiredCount, diffSummary, changedRuleCount, readinessPillClass } =
-    computeReadinessView({
-      activeBranch,
-      approvalRules,
-      approvals,
-      verificationSummary,
-      verificationPolicy,
-      approvalWorkflow,
-      activeDiff,
-    });
+  const {
+    readiness,
+    isPublished,
+    approvedRequiredCount,
+    diffSummary,
+    changedRuleCount,
+    readinessPillClass,
+  } = computeReadinessView({
+    activeBranch,
+    approvalRules,
+    approvals,
+    verificationSummary,
+    verificationPolicy,
+    approvalWorkflow,
+    activeDiff,
+  });
   const permissions = resolveBranchPermissions(actor, activeBranch, workspaceContext.workspaceSlug);
 
   const [authoringVocabulary, adapters] = usingRealBranch
@@ -333,7 +393,9 @@ export async function getReviewPageModel({
 
   const enforcementCoverage: EnforcementCoverage = {
     adapterCount: adapters.length,
-    coveredConnectors: Array.from(new Set(adapters.flatMap((adapter) => adapter.supportedConnectors ?? []))),
+    coveredConnectors: Array.from(
+      new Set(adapters.flatMap((adapter) => adapter.supportedConnectors ?? [])),
+    ),
   };
 
   return {

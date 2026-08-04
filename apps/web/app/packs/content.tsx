@@ -17,7 +17,16 @@ export async function PacksPageContent({ workspaceSlug }: { workspaceSlug?: stri
   const t = await getTranslations("packs");
   const workspaceContext = await getWorkspaceContext({ workspaceSlug });
   const appViewMode = await getAppViewMode();
-  let installedByConnector: Record<string, { branchId: string; revisionId: string; installedVersion: string; installedAt: string; hasCustomizations: boolean }> = {};
+  let installedByConnector: Record<
+    string,
+    {
+      branchId: string;
+      revisionId: string;
+      installedVersion: string;
+      installedAt: string;
+      hasCustomizations: boolean;
+    }
+  > = {};
   let upgradeSummaryByConnector: Record<string, PackUpgradeSummary> = {};
   let immediatePublishAllowed = false;
   let catalogStatusLoaded = false;
@@ -45,7 +54,9 @@ export async function PacksPageContent({ workspaceSlug }: { workspaceSlug?: stri
     if (!status) return false;
     return comparePackVersions(status.installedVersion, getPackVersion(pack)) < 0;
   }).length;
-  const highRiskCount = POLICY_PACKS.filter((pack) => pack.riskLevel === "HIGH" && installedByConnector[pack.connector]).length;
+  const highRiskCount = POLICY_PACKS.filter(
+    (pack) => pack.riskLevel === "HIGH" && installedByConnector[pack.connector],
+  ).length;
 
   return (
     <>
@@ -60,9 +71,7 @@ export async function PacksPageContent({ workspaceSlug }: { workspaceSlug?: stri
         <div className="packsHeroMain">
           <p className="eyebrow">{t("hero.eyebrow")}</p>
           <h2>{t("hero.title")}</h2>
-          <p className="meta">
-            {t("hero.description")}
-          </p>
+          <p className="meta">{t("hero.description")}</p>
         </div>
         <div className="packsHeroStats">
           <div>
@@ -85,11 +94,11 @@ export async function PacksPageContent({ workspaceSlug }: { workspaceSlug?: stri
           <div>
             <p className="eyebrow">{t("catalog.eyebrow")}</p>
             <h2>{t("catalog.title")}</h2>
-            <p className="meta">
-              {t("catalog.description")}
-            </p>
+            <p className="meta">{t("catalog.description")}</p>
           </div>
-          {outdatedCount > 0 ? <span className="pill pillWarn">{t("catalog.updates", { count: outdatedCount })}</span> : null}
+          {outdatedCount > 0 ? (
+            <span className="pill pillWarn">{t("catalog.updates", { count: outdatedCount })}</span>
+          ) : null}
         </div>
 
         <PackCatalogFilter

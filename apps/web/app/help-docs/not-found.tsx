@@ -14,9 +14,7 @@ export default function HelpDocsNotFound() {
         padding: "40px 24px",
       }}
     >
-      <p style={{ fontSize: "14px", color: "var(--color-fd-muted-foreground)" }}>
-        404
-      </p>
+      <p style={{ fontSize: "14px", color: "var(--color-fd-muted-foreground)" }}>404</p>
       <h1 style={{ fontSize: "24px", fontWeight: 600, margin: 0 }}>Page not found</h1>
       <p style={{ color: "var(--color-fd-muted-foreground)", margin: 0 }}>
         This page doesn&apos;t exist in the help docs.

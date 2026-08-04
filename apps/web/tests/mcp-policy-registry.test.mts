@@ -1,9 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { state, sqlMock, hasBearerTokenMock, authenticateServiceTokenMock, getAuthSessionMock, getActiveScopeMock } = vi.hoisted(() => {
-  const state = {
-    registryRows: [] as any[],
-  };
+const {
+  state,
+  sqlMock,
+  hasBearerTokenMock,
+  authenticateServiceTokenMock,
+  getAuthSessionMock,
+  getActiveScopeMock,
+} = vi.hoisted(() => {
+  const state = { registryRows: [] as any[] };
 
   const fn = (...args: unknown[]): Promise<unknown[]> => {
     const strings = args[0] as TemplateStringsArray;
@@ -24,9 +29,7 @@ const { state, sqlMock, hasBearerTokenMock, authenticateServiceTokenMock, getAut
   };
 });
 
-vi.mock("@/lib/db", () => ({
-  sql: sqlMock,
-}));
+vi.mock("@/lib/db", () => ({ sql: sqlMock }));
 
 vi.mock("@/lib/tenant-context", () => ({
   runWithTenantContext: (_tenantId: string, work: () => Promise<unknown>) => work(),
@@ -37,13 +40,9 @@ vi.mock("@/lib/service-tokens", () => ({
   authenticateServiceToken: authenticateServiceTokenMock,
 }));
 
-vi.mock("@/lib/auth-session", () => ({
-  getAuthSession: getAuthSessionMock,
-}));
+vi.mock("@/lib/auth-session", () => ({ getAuthSession: getAuthSessionMock }));
 
-vi.mock("@/lib/workspace", () => ({
-  getActiveScope: getActiveScopeMock,
-}));
+vi.mock("@/lib/workspace", () => ({ getActiveScope: getActiveScopeMock }));
 
 import { GET } from "../app/api/workspace/mcp-policy/route";
 
@@ -69,9 +68,11 @@ describe("workspace MCP policy registry", () => {
   });
 
   it("returns fallback capabilities when no registry grants exist", async () => {
-    const response = await GET(new Request("http://localhost/api/workspace/mcp-policy?agentId=agent-1", {
-      headers: { Authorization: "Bearer token" },
-    }));
+    const response = await GET(
+      new Request("http://localhost/api/workspace/mcp-policy?agentId=agent-1", {
+        headers: { Authorization: "Bearer token" },
+      }),
+    );
 
     expect(response.status).toBe(200);
     const data = await response.json();
@@ -98,9 +99,11 @@ describe("workspace MCP policy registry", () => {
       },
     ];
 
-    const response = await GET(new Request("http://localhost/api/workspace/mcp-policy?agentId=agent-1", {
-      headers: { Authorization: "Bearer token" },
-    }));
+    const response = await GET(
+      new Request("http://localhost/api/workspace/mcp-policy?agentId=agent-1", {
+        headers: { Authorization: "Bearer token" },
+      }),
+    );
 
     expect(response.status).toBe(200);
     const data = await response.json();
@@ -118,28 +121,36 @@ describe("workspace MCP policy registry", () => {
   });
 
   it("returns a stable denial envelope when the service token is invalid", async () => {
-    authenticateServiceTokenMock.mockResolvedValueOnce({ ok: false, error: "Token is missing bundle:read scope." });
+    authenticateServiceTokenMock.mockResolvedValueOnce({
+      ok: false,
+      error: "Token is missing bundle:read scope.",
+    });
 
-    const response = await GET(new Request("http://localhost/api/workspace/mcp-policy", {
-      headers: { Authorization: "Bearer token" },
-    }));
+    const response = await GET(
+      new Request("http://localhost/api/workspace/mcp-policy", {
+        headers: { Authorization: "Bearer token" },
+      }),
+    );
 
     expect(response.status).toBe(401);
     expect(response.headers.get("x-request-id")).toBeTruthy();
     await expect(response.json()).resolves.toMatchObject({
       error: "Token is missing bundle:read scope.",
-      meta: {
-        version: "2026-01",
-      },
+      meta: { version: "2026-01" },
     });
   });
 
   it("uses session workspace scope when no bearer token is present", async () => {
     hasBearerTokenMock.mockReturnValueOnce(false);
     getAuthSessionMock.mockResolvedValueOnce({ principalId: "principal-1" });
-    getActiveScopeMock.mockResolvedValueOnce({ tenantId: "tenant-session", workspaceId: "workspace-session" });
+    getActiveScopeMock.mockResolvedValueOnce({
+      tenantId: "tenant-session",
+      workspaceId: "workspace-session",
+    });
 
-    const response = await GET(new Request("http://localhost/api/workspace/mcp-policy?environment=staging"));
+    const response = await GET(
+      new Request("http://localhost/api/workspace/mcp-policy?environment=staging"),
+    );
 
     expect(response.status).toBe(200);
     const data = await response.json();
@@ -160,9 +171,7 @@ describe("workspace MCP policy registry", () => {
     expect(response.status).toBe(401);
     await expect(response.json()).resolves.toMatchObject({
       error: "Authentication required.",
-      meta: {
-        version: "2026-01",
-      },
+      meta: { version: "2026-01" },
     });
     expect(getActiveScopeMock).not.toHaveBeenCalled();
   });

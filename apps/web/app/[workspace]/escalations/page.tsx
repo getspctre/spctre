@@ -1,7 +1,7 @@
 import { EscalationsPageContent } from "../../escalations/content";
 
 export default async function WorkspaceEscalationsPage({
-  params
+  params,
 }: {
   params: Promise<{ workspace: string }>;
 }) {

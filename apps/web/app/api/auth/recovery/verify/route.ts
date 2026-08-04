@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
-import { isAuthDatabaseConfigured, getPrimaryWorkspaceIdForTenant } from "@/lib/domains/auth/service";
+import {
+  isAuthDatabaseConfigured,
+  getPrimaryWorkspaceIdForTenant,
+} from "@/lib/domains/auth/service";
 import { findPrincipalByEmail, consumeRecoveryCode } from "@/lib/domains/auth/service";
 import { createAuthSession } from "@/lib/auth-session";
 import { setControlPlaneSessionCookies } from "@/lib/auth-session-cookies";
@@ -37,7 +40,7 @@ async function handlePostApiAuthRecoveryVerify(request: Request) {
     logSecurityEvent("rate_limited", { endpoint: "/api/auth/recovery/verify", detail: email });
     return NextResponse.json(
       { error: "Too many recovery attempts. Please wait and try again." },
-      { status: 429, headers: { "Retry-After": String(rateLimit.retryAfterSeconds) } }
+      { status: 429, headers: { "Retry-After": String(rateLimit.retryAfterSeconds) } },
     );
   }
 
@@ -82,7 +85,9 @@ async function handlePostApiAuthRecoveryVerify(request: Request) {
   // the RLS-gated app_principal row via the owner connection (rawSql), deriving
   // the trusted principal/tenant from that row. createAuthSession and the
   // workspace lookup below bind the tenant themselves.
-  const loginPrincipal = await getPrincipalForLogin(principal.principalId, rawSql).catch(swallow("getPrincipalForLogin", null));
+  const loginPrincipal = await getPrincipalForLogin(principal.principalId, rawSql).catch(
+    swallow("getPrincipalForLogin", null),
+  );
   if (!loginPrincipal || loginPrincipal.disabled_at) {
     return NextResponse.json({ error: "principal_unavailable" }, { status: 403 });
   }

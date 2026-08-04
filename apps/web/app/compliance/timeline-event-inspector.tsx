@@ -72,11 +72,15 @@ export function TimelineEventInspector({ event, viewMode }: Props) {
           </div>
           <div>
             <span className="meta">Branch</span>
-            <code className="smallCode">{formatProvenanceId(event.branchId, viewMode, 16, hashToFingerprint)}</code>
+            <code className="smallCode">
+              {formatProvenanceId(event.branchId, viewMode, 16, hashToFingerprint)}
+            </code>
           </div>
           <div>
             <span className="meta">Revision</span>
-            <code className="smallCode">{formatProvenanceId(event.revisionId, viewMode, 16, hashToFingerprint)}</code>
+            <code className="smallCode">
+              {formatProvenanceId(event.revisionId, viewMode, 16, hashToFingerprint)}
+            </code>
           </div>
           <div>
             <span className="meta">Timestamp</span>

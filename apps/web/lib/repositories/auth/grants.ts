@@ -10,7 +10,9 @@ export async function ensurePrincipalGrantAndCheckAccess(params: {
   // principal_permission_grant is RLS-gated; login/SSO flows reach here before a
   // tenant is bound, so scope the read/insert to the trusted tenant explicitly.
   return runWithTenantContext(params.tenantId, async () => {
-    const grants = await sql<{ reviewer_roles: string[] | null; publish_scopes: string[] | null }[]>`
+    const grants = await sql<
+      { reviewer_roles: string[] | null; publish_scopes: string[] | null }[]
+    >`
       SELECT reviewer_roles, publish_scopes
       FROM principal_permission_grant
       WHERE tenant_id = ${params.tenantId}
@@ -18,8 +20,8 @@ export async function ensurePrincipalGrantAndCheckAccess(params: {
       LIMIT 1
     `;
 
-    const hasAccess = grants.some(
-      (g) => Boolean(g.reviewer_roles?.length || g.publish_scopes?.length)
+    const hasAccess = grants.some((g) =>
+      Boolean(g.reviewer_roles?.length || g.publish_scopes?.length),
     );
 
     if (!grants.length) {

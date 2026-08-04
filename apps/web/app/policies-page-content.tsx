@@ -34,9 +34,20 @@ function EffectivePolicySection({
       <div className="rowHeader">
         <div>
           <h2>Effective policy</h2>
-          <p className="meta">Organization baseline <span aria-hidden="true">→</span> Workspace policy <span aria-hidden="true">→</span> Environment or connector policy <span aria-hidden="true">→</span> Enforced rules</p>
+          <p className="meta">
+            Organization baseline <span aria-hidden="true">→</span> Workspace policy{" "}
+            <span aria-hidden="true">→</span> Environment or connector policy{" "}
+            <span aria-hidden="true">→</span> Enforced rules
+          </p>
         </div>
-        <a className="button buttonSmall" href="/help-docs/ui-guides/policy-creator/creating-a-branch" target="_blank" rel="noreferrer">Learn precedence</a>
+        <a
+          className="button buttonSmall"
+          href="/help-docs/ui-guides/policy-creator/creating-a-branch"
+          target="_blank"
+          rel="noreferrer"
+        >
+          Learn precedence
+        </a>
       </div>
       <div className="effectivePolicyList">
         {environmentMappings.map(({ environment, branch }) => (
@@ -49,17 +60,35 @@ function EffectivePolicySection({
               {branch ? (
                 <>
                   <strong>{branch.name}</strong>
-                  <span className="meta">Environment policy is active at {formatProvenanceId(branch.activeRevision, appViewMode, 12, hashToFingerprint)}.</span>
+                  <span className="meta">
+                    Environment policy is active at{" "}
+                    {formatProvenanceId(branch.activeRevision, appViewMode, 12, hashToFingerprint)}.
+                  </span>
                 </>
               ) : (
                 <>
                   <strong>No environment-specific policy</strong>
-                  <span className="meta">{environment.label} uses the organization baseline and workspace policy above.</span>
+                  <span className="meta">
+                    {environment.label} uses the organization baseline and workspace policy above.
+                  </span>
                 </>
               )}
             </div>
             <div className="effectivePolicyAction">
-              {branch ? <a className="button buttonSmall" href={branchAnchor(branch.id)}>Inspect branch</a> : <ImportPolicyPanel label={`Add ${environment.label} policy`} variant="secondary" workspaceId={workspaceId} workspaceSlug={workspaceSlug} initialScope="ENVIRONMENT" initialEnvironment={environment.id} />}
+              {branch ? (
+                <a className="button buttonSmall" href={branchAnchor(branch.id)}>
+                  Inspect branch
+                </a>
+              ) : (
+                <ImportPolicyPanel
+                  label={`Add ${environment.label} policy`}
+                  variant="secondary"
+                  workspaceId={workspaceId}
+                  workspaceSlug={workspaceSlug}
+                  initialScope="ENVIRONMENT"
+                  initialEnvironment={environment.id}
+                />
+              )}
             </div>
           </article>
         ))}
@@ -68,30 +97,105 @@ function EffectivePolicySection({
   );
 }
 
-function NeedsAttention({ awaitingReviewCount, missingEnvironmentPolicies, hasBranches, workspaceSlug, workspaceId }: { awaitingReviewCount: number; missingEnvironmentPolicies: number; hasBranches: boolean; workspaceSlug: string; workspaceId: string }) {
+function NeedsAttention({
+  awaitingReviewCount,
+  missingEnvironmentPolicies,
+  hasBranches,
+  workspaceSlug,
+  workspaceId,
+}: {
+  awaitingReviewCount: number;
+  missingEnvironmentPolicies: number;
+  hasBranches: boolean;
+  workspaceSlug: string;
+  workspaceId: string;
+}) {
   if (!hasBranches) {
-    return <section className="panel policiesAttention" aria-label="Get started with policies"><div><p className="eyebrow">Get started</p><h2>Create or install your first policy</h2><p className="meta">Policy branches are drafts. They do not affect agents until review and publish are complete.</p></div><div className="toolbar"><ImportPolicyPanel label="Create policy branch" workspaceId={workspaceId} workspaceSlug={workspaceSlug} /><a className="button" href={`/${workspaceSlug}/packs`}>Browse packs</a><a className="button" href={`/${workspaceSlug}/onboarding`}>Try a sample decision</a></div></section>;
+    return (
+      <section className="panel policiesAttention" aria-label="Get started with policies">
+        <div>
+          <p className="eyebrow">Get started</p>
+          <h2>Create or install your first policy</h2>
+          <p className="meta">
+            Policy branches are drafts. They do not affect agents until review and publish are
+            complete.
+          </p>
+        </div>
+        <div className="toolbar">
+          <ImportPolicyPanel
+            label="Create policy branch"
+            workspaceId={workspaceId}
+            workspaceSlug={workspaceSlug}
+          />
+          <a className="button" href={`/${workspaceSlug}/packs`}>
+            Browse packs
+          </a>
+          <a className="button" href={`/${workspaceSlug}/onboarding`}>
+            Try a sample decision
+          </a>
+        </div>
+      </section>
+    );
   }
-  return <section className="panel policiesAttention" aria-label="Policy work needing attention"><div><p className="eyebrow">Needs attention</p><h2>{awaitingReviewCount ? `${awaitingReviewCount} branch${awaitingReviewCount === 1 ? "" : "es"} awaiting review` : "Policy workspace is up to date"}</h2><p className="meta">{missingEnvironmentPolicies ? `${missingEnvironmentPolicies} environment${missingEnvironmentPolicies === 1 ? "" : "s"} use the shared policy with no environment-specific controls.` : "Every declared environment has a specific policy or uses the shared policy by design."}</p></div><div className="toolbar">{awaitingReviewCount ? <a className="button buttonPrimary" href={`/${workspaceSlug}/review`}>Review changes</a> : null}<a className="button" href="#effective-policy">Inspect effective policy</a></div></section>;
+  return (
+    <section className="panel policiesAttention" aria-label="Policy work needing attention">
+      <div>
+        <p className="eyebrow">Needs attention</p>
+        <h2>
+          {awaitingReviewCount
+            ? `${awaitingReviewCount} branch${awaitingReviewCount === 1 ? "" : "es"} awaiting review`
+            : "Policy workspace is up to date"}
+        </h2>
+        <p className="meta">
+          {missingEnvironmentPolicies
+            ? `${missingEnvironmentPolicies} environment${missingEnvironmentPolicies === 1 ? "" : "s"} use the shared policy with no environment-specific controls.`
+            : "Every declared environment has a specific policy or uses the shared policy by design."}
+        </p>
+      </div>
+      <div className="toolbar">
+        {awaitingReviewCount ? (
+          <a className="button buttonPrimary" href={`/${workspaceSlug}/review`}>
+            Review changes
+          </a>
+        ) : null}
+        <a className="button" href="#effective-policy">
+          Inspect effective policy
+        </a>
+      </div>
+    </section>
+  );
 }
 
-function OrgBaselineSummary({ organizationBranches }: { organizationBranches: PoliciesModel["branches"] }) {
+function OrgBaselineSummary({
+  organizationBranches,
+}: {
+  organizationBranches: PoliciesModel["branches"];
+}) {
   return (
     <section className="panel policiesPanel policyBaselineSummary" id="org-baseline">
       <div className="rowHeader">
         <div>
           <p className="eyebrow">Organization baseline</p>
           <h2>Shared controls</h2>
-          <p className="meta">These branches apply across workspaces. Inspect them in the branch inventory rather than managing a second copy here.</p>
+          <p className="meta">
+            These branches apply across workspaces. Inspect them in the branch inventory rather than
+            managing a second copy here.
+          </p>
         </div>
       </div>
       <div className="policyBaselineLinks">
         {organizationBranches.length ? (
           organizationBranches.map((branch) => (
-            <a href={branchAnchor(branch.id)} key={branch.id}><strong>{branch.name}</strong><span className="meta">{branch.message}</span></a>
+            <a href={branchAnchor(branch.id)} key={branch.id}>
+              <strong>{branch.name}</strong>
+              <span className="meta">{branch.message}</span>
+            </a>
           ))
         ) : (
-          <p className="meta">No organization baseline is configured. Create a policy branch with Organization scope to add one.</p>
+          <p className="meta">
+            No organization baseline is configured. Create a policy branch with Organization scope
+            to add one.
+          </p>
         )}
       </div>
     </section>
@@ -117,7 +221,9 @@ function RulePreviewSection({
             <span className="headCount">{rules.length}</span>
           </h2>
         </div>
-        <Link className="button" href={rulesHref}>View all</Link>
+        <Link className="button" href={rulesHref}>
+          View all
+        </Link>
       </div>
       {previewRules.length === 0 ? (
         <div className="emptyState">
@@ -139,9 +245,7 @@ function RulePreviewSection({
                 <tr key={rule.stableRuleId} className="auditRow policiesPreviewRow">
                   <td>
                     <strong>{rule.title}</strong>
-                    {rule.immutable ? (
-                      <span className="pill ruleInlinePill">IMMUTABLE</span>
-                    ) : null}
+                    {rule.immutable ? <span className="pill ruleInlinePill">IMMUTABLE</span> : null}
                   </td>
                   <td>
                     <span className={rule.effect === "DENY" ? "pill pillBlock" : "pill pillWarn"}>
@@ -150,7 +254,9 @@ function RulePreviewSection({
                   </td>
                   <td>
                     <span className="meta">
-                      {[rule.connectors?.join(", "), rule.actions?.join(", ")].filter(Boolean).join(" / ")}
+                      {[rule.connectors?.join(", "), rule.actions?.join(", ")]
+                        .filter(Boolean)
+                        .join(" / ")}
                     </span>
                   </td>
                 </tr>
@@ -165,19 +271,10 @@ function RulePreviewSection({
 
 export async function PoliciesPageContent({
   workspaceSlug,
-  searchParams
-}: {
-  workspaceSlug?: string;
-  searchParams?: Promise<PoliciesSearchParams>;
-} = {}) {
-  const {
-    workspaceContext,
-    appViewMode,
-    isAdmin,
-    branches,
-    rules,
-    degraded,
-  } = await getPoliciesPageModel({ workspaceSlug });
+  searchParams,
+}: { workspaceSlug?: string; searchParams?: Promise<PoliciesSearchParams> } = {}) {
+  const { workspaceContext, appViewMode, isAdmin, branches, rules, degraded } =
+    await getPoliciesPageModel({ workspaceSlug });
   if (searchParams) await searchParams;
 
   const environmentMappings = mapEnvironmentBranches(branches);
@@ -204,9 +301,20 @@ export async function PoliciesPageContent({
       </section>
       {degraded ? <DegradedDataNotice /> : null}
 
-      <NeedsAttention awaitingReviewCount={awaitingReviewCount} missingEnvironmentPolicies={missingEnvironmentPolicies} hasBranches={branches.length > 0} workspaceId={workspaceContext.workspaceId} workspaceSlug={workspaceContext.workspaceSlug} />
+      <NeedsAttention
+        awaitingReviewCount={awaitingReviewCount}
+        missingEnvironmentPolicies={missingEnvironmentPolicies}
+        hasBranches={branches.length > 0}
+        workspaceId={workspaceContext.workspaceId}
+        workspaceSlug={workspaceContext.workspaceSlug}
+      />
 
-      <EffectivePolicySection environmentMappings={environmentMappings} appViewMode={appViewMode} workspaceId={workspaceContext.workspaceId} workspaceSlug={workspaceContext.workspaceSlug} />
+      <EffectivePolicySection
+        environmentMappings={environmentMappings}
+        appViewMode={appViewMode}
+        workspaceId={workspaceContext.workspaceId}
+        workspaceSlug={workspaceContext.workspaceSlug}
+      />
 
       <section className="panel policiesPanel" id="branches">
         <div className="rowHeader">

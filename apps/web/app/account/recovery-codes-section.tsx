@@ -26,7 +26,10 @@ export function RecoveryCodesSection({ unusedCount }: RecoveryCodesSectionProps)
     setError(null);
     try {
       const res = await fetch("/api/auth/recovery/generate", { method: "POST" });
-      const data = (await res.json().catch(() => null)) as { codes?: string[]; error?: string } | null;
+      const data = (await res.json().catch(() => null)) as {
+        codes?: string[];
+        error?: string;
+      } | null;
       if (!res.ok) throw new Error(data?.error || t("errors.generate"));
       if (!data?.codes?.length) throw new Error(t("errors.empty_response"));
       setCodes(data.codes!);
@@ -44,16 +47,12 @@ export function RecoveryCodesSection({ unusedCount }: RecoveryCodesSectionProps)
       <div>
         <p className="eyebrow">{t("eyebrow")}</p>
         <h2>{t("title")}</h2>
-        <p className="meta">
-          {t("description")}
-        </p>
+        <p className="meta">{t("description")}</p>
       </div>
 
       {codes ? (
         <div style={{ display: "grid", gap: "10px" }}>
-          <p className="meta">
-            {t("save_codes")}
-          </p>
+          <p className="meta">{t("save_codes")}</p>
           <div
             style={{
               display: "grid",
@@ -91,11 +90,7 @@ export function RecoveryCodesSection({ unusedCount }: RecoveryCodesSectionProps)
             <p className="meta">{t("empty")}</p>
           )}
 
-          {confirmed ? (
-            <p className="meta workspaceError">
-              {t("replace_warning")}
-            </p>
-          ) : null}
+          {confirmed ? <p className="meta workspaceError">{t("replace_warning")}</p> : null}
 
           <button
             className="button buttonPrimary accountAction"
@@ -106,10 +101,10 @@ export function RecoveryCodesSection({ unusedCount }: RecoveryCodesSectionProps)
             {busy
               ? t("generating")
               : unusedCount > 0
-              ? confirmed
-                ? t("confirm_replace")
-                : t("generate_new")
-              : t("generate")}
+                ? confirmed
+                  ? t("confirm_replace")
+                  : t("generate_new")
+                : t("generate")}
           </button>
         </div>
       )}

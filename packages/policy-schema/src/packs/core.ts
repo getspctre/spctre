@@ -29,7 +29,8 @@ export const SPCTRE_AGENT_GOVERNANCE_PACK: PolicyPack = {
       {
         version: "1.0.0",
         date: "2026-05-11",
-        summary: "Initial release: named system attribution, SIMULATION_GUIDANCE audit requirements, reviewer rationale gates, and human authority for resolution, approval, publishing, and policy changes.",
+        summary:
+          "Initial release: named system attribution, SIMULATION_GUIDANCE audit requirements, reviewer rationale gates, and human authority for resolution, approval, publishing, and policy changes.",
       },
     ],
   },
@@ -51,7 +52,10 @@ export const SPCTRE_AGENT_GOVERNANCE_PACK: PolicyPack = {
       effect: "DENY",
       domains: ["simulation", "audit"],
       connectors: ["spctre-agent"],
-      actions: ["simulation.guidance_without_operations_log", "simulation.guidance_without_source_payload"],
+      actions: [
+        "simulation.guidance_without_operations_log",
+        "simulation.guidance_without_source_payload",
+      ],
       immutable: true,
     },
     {
@@ -67,11 +71,16 @@ export const SPCTRE_AGENT_GOVERNANCE_PACK: PolicyPack = {
     // resolutions, publishing, and policy changes.
     {
       stableRuleId: "spctre-agent.triage.require_human_rationale",
-      title: "Require human reviewer rationale before triage recommendations are accepted, edited, or rejected",
+      title:
+        "Require human reviewer rationale before triage recommendations are accepted, edited, or rejected",
       effect: "DENY",
       domains: ["triage", "agent-actions"],
       connectors: ["spctre-agent"],
-      actions: ["triage.accept_without_rationale", "triage.edit_without_rationale", "triage.reject_without_rationale"],
+      actions: [
+        "triage.accept_without_rationale",
+        "triage.edit_without_rationale",
+        "triage.reject_without_rationale",
+      ],
       immutable: true,
     },
     {
@@ -98,7 +107,13 @@ export const SPCTRE_AGENT_GOVERNANCE_PACK: PolicyPack = {
       effect: "DENY",
       domains: ["policy", "agent-actions"],
       connectors: ["spctre-agent"],
-      actions: ["policy.publish", "policy.commit", "rule.modify", "rule.delete", "baseline.promote"],
+      actions: [
+        "policy.publish",
+        "policy.commit",
+        "rule.modify",
+        "rule.delete",
+        "baseline.promote",
+      ],
       immutable: true,
     },
     // Guidance quality warnings surface missing risk context without blocking
@@ -142,8 +157,15 @@ export const TRUST_GOVERNANCE_PACK: PolicyPack = {
     generated: false,
     category: "Trust and context budget governance",
     compatibilityTargets: [
-      "AGT_PREVIEW", "OPENAI_AGENTS", "LANGCHAIN", "CREWAI",
-      "AUTOGEN", "AWS_BEDROCK", "GOOGLE_ADK", "AZURE_AI", "CUSTOM",
+      "AGT_PREVIEW",
+      "OPENAI_AGENTS",
+      "LANGCHAIN",
+      "CREWAI",
+      "AUTOGEN",
+      "AWS_BEDROCK",
+      "GOOGLE_ADK",
+      "AZURE_AI",
+      "CUSTOM",
     ],
     reviewRoles: ["SECURITY", "COMPLIANCE"],
     minimumApprovals: 2,
@@ -217,7 +239,8 @@ export const TRUST_GOVERNANCE_PACK: PolicyPack = {
     },
     {
       stableRuleId: "trust-governance.restoration.require_review",
-      title: "Require human policy review before restoring trust score above a previously breached threshold",
+      title:
+        "Require human policy review before restoring trust score above a previously breached threshold",
       effect: "DENY",
       domains: ["trust", "gateway"],
       connectors: ["trust-governance"],
@@ -226,7 +249,8 @@ export const TRUST_GOVERNANCE_PACK: PolicyPack = {
     },
     {
       stableRuleId: "trust-governance.context_budget.warn_high_summarization",
-      title: "Warn when a session records multiple summarization events indicating context pressure",
+      title:
+        "Warn when a session records multiple summarization events indicating context pressure",
       effect: "WARN",
       domains: ["context", "sessions"],
       connectors: ["trust-governance"],

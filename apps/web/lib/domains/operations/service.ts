@@ -27,7 +27,7 @@ export async function listOperationsLedger(params: {
       eventType: params.eventType,
       limit: params.limit,
       offset: params.offset,
-    })
+    }),
   );
 }
 
@@ -47,9 +47,12 @@ export async function listOperationsLedgerKeyset(params: {
       eventType: params.eventType,
       limit: params.limit,
       cursor: decoded,
-    })
+    }),
   );
-  return buildKeysetPage(rows, params.limit, decoded, (entry) => ({ ts: entry.createdAt, id: entry.id }));
+  return buildKeysetPage(rows, params.limit, decoded, (entry) => ({
+    ts: entry.createdAt,
+    id: entry.id,
+  }));
 }
 
 export async function verifyOperationsLedger(params: {
@@ -71,6 +74,6 @@ export async function listBundleExportHistory(params: {
       workspaceId: params.workspaceId,
       limit: params.limit,
       offset: params.offset,
-    })
+    }),
   );
 }

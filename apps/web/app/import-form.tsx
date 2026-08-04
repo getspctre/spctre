@@ -22,7 +22,7 @@ const RUNTIME_STACKS = [
   { value: "OPENCODE", label: "OpenCode" },
   { value: "CLAUDE_CODE", label: "Claude Code" },
   { value: "LOCAL", label: "Local" },
-  { value: "CUSTOM", label: "Custom" }
+  { value: "CUSTOM", label: "Custom" },
 ];
 
 const PLACEHOLDER_YAML = `name: my-policy
@@ -79,7 +79,12 @@ function AdvancedScopeFields({
           <label className="meta" htmlFor="environment">
             Environment
           </label>
-          <select className="input" id="environment" name="environment" defaultValue={initialEnvironment ?? "production"}>
+          <select
+            className="input"
+            id="environment"
+            name="environment"
+            defaultValue={initialEnvironment ?? "production"}
+          >
             {ENVIRONMENT_DECLARATIONS.map((environment) => (
               <option key={environment.id} value={environment.id}>
                 {environment.label}
@@ -150,8 +155,7 @@ function ImportResultView({
             {(result.importedAt ?? "pending").slice(0, 10)}
           </p>
           <p className="meta">
-            Branch <code>{result.branchId}</code> now points at{" "}
-            <code>{result.revisionId}</code>
+            Branch <code>{result.branchId}</code> now points at <code>{result.revisionId}</code>
           </p>
           <p className="meta">
             <Link href={buildWorkspacePath(workspaceSlug, `/review?branch=${result.branchId}`)}>
@@ -203,15 +207,22 @@ function ImportSourceFields() {
         rows={10}
         placeholder={PLACEHOLDER_YAML}
       />
-
     </div>
   );
 }
 
-export function ImportForm({ workspaceId, workspaceSlug, initialScope = "WORKSPACE", initialEnvironment }: ImportFormProps) {
+export function ImportForm({
+  workspaceId,
+  workspaceSlug,
+  initialScope = "WORKSPACE",
+  initialEnvironment,
+}: ImportFormProps) {
   const router = useRouter();
   const [state, formAction, pending] = useActionState<ImportState, FormData>(importPolicy, null);
-  const [createState, createAction, creating] = useActionState<CreatePolicyBranchState, FormData>(createPolicyBranch, null);
+  const [createState, createAction, creating] = useActionState<CreatePolicyBranchState, FormData>(
+    createPolicyBranch,
+    null,
+  );
   const [scope, setScope] = useState(initialScope);
   const [creationMode, setCreationMode] = useState<CreationMode>("guided");
   const [showAdvanced, setShowAdvanced] = useState(initialScope !== "WORKSPACE");
@@ -286,12 +297,20 @@ export function ImportForm({ workspaceId, workspaceSlug, initialScope = "WORKSPA
               aria-expanded={showAdvanced}
               onClick={() => setShowAdvanced((current) => !current)}
             >
-              <ChevronDown size={14} aria-hidden className={showAdvanced ? "advancedOptionsChevronOpen" : undefined} />
+              <ChevronDown
+                size={14}
+                aria-hidden
+                className={showAdvanced ? "advancedOptionsChevronOpen" : undefined}
+              />
               {showAdvanced ? "Hide advanced options" : "Advanced options"}
             </button>
 
             {showAdvanced ? (
-              <AdvancedScopeFields scope={scope} setScope={setScope} initialEnvironment={initialEnvironment} />
+              <AdvancedScopeFields
+                scope={scope}
+                setScope={setScope}
+                initialEnvironment={initialEnvironment}
+              />
             ) : (
               <input type="hidden" name="scope" value="WORKSPACE" />
             )}
@@ -301,7 +320,10 @@ export function ImportForm({ workspaceId, workspaceSlug, initialScope = "WORKSPA
             <div className="importFormSource policyDraftSummary">
               <span className="eyebrow">Draft policy</span>
               <h3>Set the policy context first</h3>
-              <p className="meta">Record the purpose, then create an empty branch with the scope and targets above. You&apos;ll add and test the first rule next, before anything can affect agents.</p>
+              <p className="meta">
+                Record the purpose, then create an empty branch with the scope and targets above.
+                You&apos;ll add and test the first rule next, before anything can affect agents.
+              </p>
             </div>
           ) : (
             <ImportSourceFields />
@@ -309,11 +331,19 @@ export function ImportForm({ workspaceId, workspaceSlug, initialScope = "WORKSPA
         </div>
 
         <div className="importFormFooter">
-          <button className="button buttonPrimary" type="submit" disabled={creationMode === "guided" ? creating : pending}>
+          <button
+            className="button buttonPrimary"
+            type="submit"
+            disabled={creationMode === "guided" ? creating : pending}
+          >
             {creationMode === "guided" ? <FilePlus2 size={16} /> : <UploadCloud size={16} />}
             {creationMode === "guided"
-              ? creating ? "Creating draft…" : "Create draft and add rules"
-              : pending ? "Importing…" : "Import policy"}
+              ? creating
+                ? "Creating draft…"
+                : "Create draft and add rules"
+              : pending
+                ? "Importing…"
+                : "Import policy"}
           </button>
         </div>
       </form>

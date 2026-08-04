@@ -22,11 +22,22 @@ export function InviteMemberForm() {
       <div className="adminAuthTwoColumn">
         <label className="field">
           <span>{t("display_name")}</span>
-          <input className="input" name="displayName" placeholder={t("display_name_placeholder")} required />
+          <input
+            className="input"
+            name="displayName"
+            placeholder={t("display_name_placeholder")}
+            required
+          />
         </label>
         <label className="field">
           <span>{t("email")}</span>
-          <input className="input" name="email" type="email" placeholder={t("email_placeholder")} required />
+          <input
+            className="input"
+            name="email"
+            type="email"
+            placeholder={t("email_placeholder")}
+            required
+          />
         </label>
       </div>
 

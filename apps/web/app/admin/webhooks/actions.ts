@@ -13,8 +13,22 @@ import {
 import { swallow } from "@/lib/platform/swallow";
 
 export type WebhookActionState =
-  | { ok: true; secret: string; provider: string; label: string | null; error?: never; errorCode?: never }
-  | { ok?: never; secret?: never; provider?: never; label?: never; error: string; errorCode?: string }
+  | {
+      ok: true;
+      secret: string;
+      provider: string;
+      label: string | null;
+      error?: never;
+      errorCode?: never;
+    }
+  | {
+      ok?: never;
+      secret?: never;
+      provider?: never;
+      label?: never;
+      error: string;
+      errorCode?: string;
+    }
   | null;
 
 export type WebhookMutationState =
@@ -26,7 +40,8 @@ async function requireWebhookAdmin() {
   const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (!session) return { error: "Authentication required.", errorCode: "auth_required" } as const;
   const ctx = await getActiveScope().catch(swallow("getActiveScope", null));
-  if (!ctx) return { error: "Workspace context unavailable.", errorCode: "workspace_unavailable" } as const;
+  if (!ctx)
+    return { error: "Workspace context unavailable.", errorCode: "workspace_unavailable" } as const;
   const actor = await findActorById(session.principalId, {
     tenantId: session.tenantId,
     workspaceId: ctx.workspaceId,
@@ -39,7 +54,7 @@ async function requireWebhookAdmin() {
 
 export async function createGatewayWebhook(
   _prev: WebhookActionState,
-  formData: FormData
+  formData: FormData,
 ): Promise<WebhookActionState> {
   const guard = await requireWebhookAdmin();
   if ("error" in guard) {
@@ -59,7 +74,9 @@ export async function createGatewayWebhook(
     return { error: "Select a supported provider.", errorCode: "unsupported_provider" };
   }
 
-  const labelRaw = String(formData.get("label") ?? "").trim().slice(0, 64);
+  const labelRaw = String(formData.get("label") ?? "")
+    .trim()
+    .slice(0, 64);
   const label = labelRaw || undefined;
 
   const result = await createGatewayWebhookRegistration({
@@ -76,7 +93,7 @@ export async function createGatewayWebhook(
 
 export async function revokeGatewayWebhook(
   _prev: WebhookMutationState,
-  formData: FormData
+  formData: FormData,
 ): Promise<WebhookMutationState> {
   const guard = await requireWebhookAdmin();
   if ("error" in guard) {

@@ -31,7 +31,8 @@ export interface SkillContext {
   promptSurface?: string;
 }
 
-export type PluginSource = "public_marketplace" | "corporate_marketplace" | "corporate_private" | "user_built";
+export type PluginSource =
+  "public_marketplace" | "corporate_marketplace" | "corporate_private" | "user_built";
 
 export type PolicySourceDialect = "AGT_YAML" | "OPA_REGO" | "CEDAR" | "SPCTRE_MANAGED";
 
@@ -43,7 +44,8 @@ export interface SemanticCheck {
 
 /** A standards control supported by a versioned policy rule. */
 export interface PolicyControlMapping {
-  framework: "SOC2" | "HIPAA" | "ISO_27001" | "ISO_42001" | "EU_AI_ACT" | "NIST_AI_RMF" | "OWASP_AGENTIC";
+  framework:
+    "SOC2" | "HIPAA" | "ISO_27001" | "ISO_42001" | "EU_AI_ACT" | "NIST_AI_RMF" | "OWASP_AGENTIC";
   controlId: string;
   rationale?: string;
 }
@@ -66,15 +68,7 @@ export interface PolicyDynamicCondition {
 }
 
 export type PolicyParameterConstraintOperator =
-  | "gt"
-  | "gte"
-  | "lt"
-  | "lte"
-  | "eq"
-  | "neq"
-  | "in"
-  | "not_in"
-  | "contains";
+  "gt" | "gte" | "lt" | "lte" | "eq" | "neq" | "in" | "not_in" | "contains";
 
 /**
  * A deterministic tool-parameter check evaluated at decision time. Distinct
@@ -149,16 +143,10 @@ export interface PolicyArtifactExport {
 }
 
 export type PolicyBundleExportFormat =
-  | "spctre-json"
-  | "opa-rego"
-  | "opa-bundle"
-  | "cedar"
-  | "mcp-proxy-config";
+  "spctre-json" | "opa-rego" | "opa-bundle" | "cedar" | "mcp-proxy-config";
 
 export type PolicyBundleExportCompatibilityLevel =
-  | "NATIVE"
-  | "LOSSLESS_PRESERVED"
-  | "PARTIAL_SEMANTIC_MAP";
+  "NATIVE" | "LOSSLESS_PRESERVED" | "PARTIAL_SEMANTIC_MAP";
 
 export interface PolicyBundleExportManifest {
   format: PolicyBundleExportFormat;
@@ -320,11 +308,7 @@ export interface AgentBlueprintRuntimeArtifact {
   runtimeTargets: RuntimeTarget[];
   budgets?: AgentBlueprintDefinition["budgets"];
   approvalPath?: string[];
-  policy?: {
-    branchId?: string;
-    revisionId?: string;
-    artifactHash?: string;
-  };
+  policy?: { branchId?: string; revisionId?: string; artifactHash?: string };
   generatedAt: string;
 }
 
@@ -384,7 +368,10 @@ export interface RuntimeDecisionEvidenceRecord {
   blueprintContext?: RuntimeBlueprintContext;
 }
 
-export interface AgtRuntimeDecisionInput extends Omit<RuntimeDecisionEvidenceRecord, "runtimeTarget"> {
+export interface AgtRuntimeDecisionInput extends Omit<
+  RuntimeDecisionEvidenceRecord,
+  "runtimeTarget"
+> {
   runtimeTarget: RuntimeTarget;
 }
 

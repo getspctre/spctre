@@ -29,12 +29,21 @@ async function handlePostApiV1BlueprintImports(request: Request) {
 
   const tokenAuth = await authenticateServiceToken(request, "blueprint:import");
   if (!tokenAuth.ok) {
-    return withTraceId(Response.json({ error: tokenAuth.error, meta: makeMeta(traceId) }, { status: 401 }), traceId);
+    return withTraceId(
+      Response.json({ error: tokenAuth.error, meta: makeMeta(traceId) }, { status: 401 }),
+      traceId,
+    );
   }
 
   const body = await request.json().catch(() => null);
   if (!body || typeof body !== "object" || Array.isArray(body)) {
-    return withTraceId(Response.json({ error: "Request body must be an object.", meta: makeMeta(traceId) }, { status: 400 }), traceId);
+    return withTraceId(
+      Response.json(
+        { error: "Request body must be an object.", meta: makeMeta(traceId) },
+        { status: 400 },
+      ),
+      traceId,
+    );
   }
 
   const rec = body as Record<string, unknown>;
@@ -43,7 +52,10 @@ async function handlePostApiV1BlueprintImports(request: Request) {
 
   const parsedSource = parseAgentBlueprintSource({ document: source, sourcePath });
   if ("error" in parsedSource) {
-    return withTraceId(Response.json({ error: parsedSource.error, meta: makeMeta(traceId) }, { status: 400 }), traceId);
+    return withTraceId(
+      Response.json({ error: parsedSource.error, meta: makeMeta(traceId) }, { status: 400 }),
+      traceId,
+    );
   }
   const { envelope } = parsedSource;
 
@@ -58,7 +70,10 @@ async function handlePostApiV1BlueprintImports(request: Request) {
   });
 
   if ("error" in outcome) {
-    return withTraceId(Response.json({ error: outcome.error, meta: makeMeta(traceId) }, { status: outcome.status }), traceId);
+    return withTraceId(
+      Response.json({ error: outcome.error, meta: makeMeta(traceId) }, { status: outcome.status }),
+      traceId,
+    );
   }
 
   const { result } = outcome;
@@ -74,9 +89,9 @@ async function handlePostApiV1BlueprintImports(request: Request) {
         policyRevisionId: result.policyRevisionId,
         meta: makeMeta(traceId),
       },
-      { status: result.created ? 201 : 200, headers: { "cache-control": "no-store" } }
+      { status: result.created ? 201 : 200, headers: { "cache-control": "no-store" } },
     ),
-    traceId
+    traceId,
   );
 }
 

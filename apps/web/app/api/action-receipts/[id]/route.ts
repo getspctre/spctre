@@ -14,12 +14,31 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     getActiveScope().catch(swallow("getActiveScope", null)),
   ]);
   if (!session || !scope) {
-    return withTraceId(Response.json({ error: "Authentication and workspace context are required.", meta: makeMeta(traceId) }, { status: 401 }), traceId);
+    return withTraceId(
+      Response.json(
+        { error: "Authentication and workspace context are required.", meta: makeMeta(traceId) },
+        { status: 401 },
+      ),
+      traceId,
+    );
   }
   const { id } = await params;
-  const receipt = await getActionReceipt({ tenantId: scope.tenantId, workspaceId: scope.workspaceId, receiptId: id }).catch(swallow("getActionReceipt", null));
+  const receipt = await getActionReceipt({
+    tenantId: scope.tenantId,
+    workspaceId: scope.workspaceId,
+    receiptId: id,
+  }).catch(swallow("getActionReceipt", null));
   if (!receipt) {
-    return withTraceId(Response.json({ error: "Action receipt not found.", meta: makeMeta(traceId) }, { status: 404 }), traceId);
+    return withTraceId(
+      Response.json(
+        { error: "Action receipt not found.", meta: makeMeta(traceId) },
+        { status: 404 },
+      ),
+      traceId,
+    );
   }
-  return withTraceId(Response.json({ receipt, verification: verifyActionReceipt(receipt), meta: makeMeta(traceId) }), traceId);
+  return withTraceId(
+    Response.json({ receipt, verification: verifyActionReceipt(receipt), meta: makeMeta(traceId) }),
+    traceId,
+  );
 }

@@ -11,7 +11,7 @@ interface WorkspaceCookieNormalizerProps {
 export function WorkspaceCookieNormalizer({
   tenantId,
   workspaceId,
-  enabled
+  enabled,
 }: WorkspaceCookieNormalizerProps) {
   const sentRef = useRef(false);
 
@@ -21,10 +21,8 @@ export function WorkspaceCookieNormalizer({
 
     void fetch("/api/workspace/normalize", {
       method: "POST",
-      headers: {
-        "content-type": "application/json"
-      },
-      body: JSON.stringify({ tenantId, workspaceId })
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ tenantId, workspaceId }),
     }).catch(() => {
       // Keep using the resolved fallback workspace; this browser-only normalization is retried on navigation.
     });

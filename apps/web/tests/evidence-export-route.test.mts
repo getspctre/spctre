@@ -7,17 +7,11 @@ const listRuntimeEvidenceSpy = vi.fn();
 const listResolvedEscalationsForRevisionSpy = vi.fn();
 const listVerificationResultsSpy = vi.fn();
 
-vi.mock("@/lib/auth-session", () => ({
-  getAuthSession: getAuthSessionSpy,
-}));
+vi.mock("@/lib/auth-session", () => ({ getAuthSession: getAuthSessionSpy }));
 
-vi.mock("@/lib/workspace/scope", () => ({
-  getActiveScope: getWorkspaceContextSpy,
-}));
+vi.mock("@/lib/workspace/scope", () => ({ getActiveScope: getWorkspaceContextSpy }));
 
-vi.mock("@/lib/repositories/evidence", () => ({
-  listRuntimeEvidence: listRuntimeEvidenceSpy,
-}));
+vi.mock("@/lib/repositories/evidence", () => ({ listRuntimeEvidence: listRuntimeEvidenceSpy }));
 
 vi.mock("@/lib/repositories/gateway", () => ({
   getGatewayOutcomesForDecisions: vi.fn().mockResolvedValue(new Map()),
@@ -84,7 +78,7 @@ describe("evidence export route", () => {
     ]);
 
     const response = await route.GET(
-      new Request("http://localhost:3000/api/evidence/export?format=agt-verification")
+      new Request("http://localhost:3000/api/evidence/export?format=agt-verification"),
     );
 
     expect(response.status).toBe(200);
@@ -93,10 +87,7 @@ describe("evidence export route", () => {
       "decision-current",
       "decision-context",
     ]);
-    expect(body.provenance).toMatchObject({
-      artifactHash: "sha256:current",
-      evidenceCount: 2,
-    });
+    expect(body.provenance).toMatchObject({ artifactHash: "sha256:current", evidenceCount: 2 });
     expect(body.verificationResults[0]).toMatchObject({
       agtVersion: "4.1.0",
       escrowSignerId: "did:example:escrow",
@@ -118,14 +109,7 @@ function evidenceRecord(decisionId: string, artifactHash: string, revisionId: st
     reason: "allowed",
     policyRefs: [],
     artifactHash,
-    policyContext: [
-      {
-        scope: "WORKSPACE",
-        branchId: "branch-1",
-        revisionId,
-        artifactHash,
-      },
-    ],
+    policyContext: [{ scope: "WORKSPACE", branchId: "branch-1", revisionId, artifactHash }],
     latencyMs: 1,
     createdAt: "2026-05-07T00:00:00.000Z",
     rawEvidence: {},

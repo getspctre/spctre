@@ -1,4 +1,1 @@
-{
-  "title": "Adapters",
-  "pages": ["framework-adapters", "harness-hooks"]
-}
+{ "title": "Adapters", "pages": ["framework-adapters", "harness-hooks"] }

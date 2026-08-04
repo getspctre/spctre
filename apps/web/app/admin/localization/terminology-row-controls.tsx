@@ -3,10 +3,7 @@
 import { useRef, useState, useTransition } from "react";
 import { RotateCcw } from "lucide-react";
 import { useRouter } from "next/navigation";
-import {
-  resetTerminologyTermInline,
-  saveTerminologyTermInline,
-} from "./localization-actions";
+import { resetTerminologyTermInline, saveTerminologyTermInline } from "./localization-actions";
 
 interface TerminologyRowControlsProps {
   initialValue?: string;
@@ -43,20 +40,26 @@ export function TerminologyOverrideInput({
     });
   };
 
-  return <>
-    <input
-      aria-label={`Override ${label}`}
-      className="input"
-      defaultValue={initialValue}
-      disabled={isPending}
-      onBlur={(event) => save(event.currentTarget.value)}
-      placeholder={placeholder}
-    />
-    {error ? <p className="meta workspaceError">{error}</p> : null}
-  </>;
+  return (
+    <>
+      <input
+        aria-label={`Override ${label}`}
+        className="input"
+        defaultValue={initialValue}
+        disabled={isPending}
+        onBlur={(event) => save(event.currentTarget.value)}
+        placeholder={placeholder}
+      />
+      {error ? <p className="meta workspaceError">{error}</p> : null}
+    </>
+  );
 }
 
-export function TerminologyResetButton({ label, locale, term }: Omit<TerminologyRowControlsProps, "initialValue" | "placeholder">) {
+export function TerminologyResetButton({
+  label,
+  locale,
+  term,
+}: Omit<TerminologyRowControlsProps, "initialValue" | "placeholder">) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -73,17 +76,19 @@ export function TerminologyResetButton({ label, locale, term }: Omit<Terminology
     });
   };
 
-  return <>
-    <button
-      aria-label={`Restore ${label}`}
-      className="iconButton"
-      disabled={isPending}
-      onClick={reset}
-      title={`Restore ${label}`}
-      type="button"
-    >
-      <RotateCcw size={16} />
-    </button>
-    {error ? <p className="meta workspaceError">{error}</p> : null}
-  </>;
+  return (
+    <>
+      <button
+        aria-label={`Restore ${label}`}
+        className="iconButton"
+        disabled={isPending}
+        onClick={reset}
+        title={`Restore ${label}`}
+        type="button"
+      >
+        <RotateCcw size={16} />
+      </button>
+      {error ? <p className="meta workspaceError">{error}</p> : null}
+    </>
+  );
 }

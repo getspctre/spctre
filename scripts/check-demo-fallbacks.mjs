@@ -44,12 +44,16 @@ for (const root of checkedRoots) {
     }
 
     if (hasInlineMockConstant && !allowedMockDataConsumers.has(file)) {
-      violations.push(`${file}: defines inline MOCK_* sample data outside the audited demo-fallback allowlist`);
+      violations.push(
+        `${file}: defines inline MOCK_* sample data outside the audited demo-fallback allowlist`,
+      );
       continue;
     }
 
     if (file !== "apps/web/lib/mock-data.ts" && !source.includes("canUseDemoFallbackData")) {
-      violations.push(`${file}: sample fallback data must be gated with canUseDemoFallbackData(...)`);
+      violations.push(
+        `${file}: sample fallback data must be gated with canUseDemoFallbackData(...)`,
+      );
     }
   }
 }

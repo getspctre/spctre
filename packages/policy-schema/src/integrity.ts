@@ -30,28 +30,38 @@ export interface OperationsLogChainValidation {
 }
 
 export function buildOperationsContentHash(input: OperationsLogHashInput): string {
-  return jsBuildOperationsContentHash(JSON.stringify({
-    eventType: input.eventType,
-    sourceId: input.sourceId ?? null,
-    sourceTable: input.sourceTable ?? null,
-    actorId: input.actorId,
-    payload: input.payload,
-    prevHash: input.prevHash ?? null,
-  }));
+  return jsBuildOperationsContentHash(
+    JSON.stringify({
+      eventType: input.eventType,
+      sourceId: input.sourceId ?? null,
+      sourceTable: input.sourceTable ?? null,
+      actorId: input.actorId,
+      payload: input.payload,
+      prevHash: input.prevHash ?? null,
+    }),
+  );
 }
 
-export function validateOperationsLogChain(entries: OperationsLogChainEntry[]): OperationsLogChainValidation {
-  const issues = JSON.parse(jsValidateOperationsLogChain(JSON.stringify(entries.map((e) => ({
-    id: e.id,
-    eventType: e.eventType,
-    sourceId: e.sourceId ?? null,
-    sourceTable: e.sourceTable ?? null,
-    actorId: e.actorId,
-    payload: e.payload,
-    prevHash: e.prevHash ?? null,
-    contentHash: e.contentHash,
-    createdAt: e.createdAt,
-  }))))) as OperationsLogChainIssue[];
+export function validateOperationsLogChain(
+  entries: OperationsLogChainEntry[],
+): OperationsLogChainValidation {
+  const issues = JSON.parse(
+    jsValidateOperationsLogChain(
+      JSON.stringify(
+        entries.map((e) => ({
+          id: e.id,
+          eventType: e.eventType,
+          sourceId: e.sourceId ?? null,
+          sourceTable: e.sourceTable ?? null,
+          actorId: e.actorId,
+          payload: e.payload,
+          prevHash: e.prevHash ?? null,
+          contentHash: e.contentHash,
+          createdAt: e.createdAt,
+        })),
+      ),
+    ),
+  ) as OperationsLogChainIssue[];
   return { verified: issues.length === 0, issues };
 }
 

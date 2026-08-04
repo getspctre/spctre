@@ -1,9 +1,5 @@
 {
-  "common": {
-    "cancel": "Cancel",
-    "delete": "Delete",
-    "save": "Save"
-  },
+  "common": { "cancel": "Cancel", "delete": "Delete", "save": "Save" },
   "shared": {
     "advisor_decision": {
       "accept": "Accept",
@@ -23,9 +19,7 @@
       "reject": "Dismiss guidance",
       "reviewer_rationale": "Reviewer rationale"
     },
-    "slide_out": {
-      "close": "Close panel"
-    }
+    "slide_out": { "close": "Close panel" }
   },
   "navigation": {
     "agents": "Agents",
@@ -64,21 +58,10 @@
     "no_results": "No results for “{query}”",
     "placeholder": "Go to…",
     "search_aria_label": "Search navigation",
-    "footer": {
-      "close": "close",
-      "navigate": "navigate",
-      "open": "open",
-      "toggle": "toggle"
-    },
+    "footer": { "close": "close", "navigate": "navigate", "open": "open", "toggle": "toggle" },
     "items": {
-      "advisors": {
-        "description": "Advisor performance and recommendations",
-        "label": "Advisors"
-      },
-      "agents": {
-        "description": "Agent fleet health and status",
-        "label": "Agents"
-      },
+      "advisors": { "description": "Advisor performance and recommendations", "label": "Advisors" },
+      "agents": { "description": "Agent fleet health and status", "label": "Agents" },
       "audit_ledger": {
         "description": "Hash-chained tamper-evident event log",
         "label": "Audit Ledger"
@@ -87,10 +70,7 @@
         "description": "Runtime agent decision records and simulations",
         "label": "Audit Log"
       },
-      "billing": {
-        "description": "Subscription plan and billing",
-        "label": "Usage & Billing"
-      },
+      "billing": { "description": "Subscription plan and billing", "label": "Usage & Billing" },
       "compliance": {
         "description": "Curated compliance packet, retention, and export",
         "label": "Compliance Report"
@@ -99,34 +79,19 @@
         "description": "Spend, usage, budgets, and breach enforcement",
         "label": "Cost & Usage"
       },
-      "escalations": {
-        "description": "Human-in-the-loop review queue",
-        "label": "Escalations"
-      },
+      "escalations": { "description": "Human-in-the-loop review queue", "label": "Escalations" },
       "escalation_routing": {
         "description": "Route policy violations and reviewer notifications",
         "label": "Escalation routing"
       },
-      "packs": {
-        "description": "Browse and install policy packs",
-        "label": "Packs"
-      },
-      "policies": {
-        "description": "Manage policy branches",
-        "label": "Policies"
-      },
-      "review": {
-        "description": "Review diffs and publish",
-        "label": "Review & Publish"
-      },
+      "packs": { "description": "Browse and install policy packs", "label": "Packs" },
+      "policies": { "description": "Manage policy branches", "label": "Policies" },
+      "review": { "description": "Review diffs and publish", "label": "Review & Publish" },
       "siem_export": {
         "description": "Export governed runtime evidence to Splunk or Sentinel",
         "label": "SIEM export"
       },
-      "rules": {
-        "description": "Browse the rules inventory",
-        "label": "Rules"
-      }
+      "rules": { "description": "Browse the rules inventory", "label": "Rules" }
     }
   },
   "import_policy_panel": {
@@ -190,9 +155,7 @@
         "chain_health": "Chain health"
       }
     },
-    "filters": {
-      "clear": "Clear filter"
-    },
+    "filters": { "clear": "Clear filter" },
     "events": {
       "eyebrow": "Audit · Events",
       "title": "Events",
@@ -228,10 +191,7 @@
       "actor": "Actor",
       "hash": "Hash"
     },
-    "pagination": {
-      "previous": "Previous",
-      "next": "Next"
-    }
+    "pagination": { "previous": "Previous", "next": "Next" }
   },
   "account": {
     "eyebrow": "Account · Security",
@@ -380,10 +340,7 @@
       "provider_count": "{count, plural, one {# provider} other {# providers}}",
       "state_aria_label": "Authentication state",
       "title": "Authentication settings",
-      "access_section": {
-        "eyebrow": "Admin · Tenant controls",
-        "title": "Access policy"
-      },
+      "access_section": { "eyebrow": "Admin · Tenant controls", "title": "Access policy" },
       "idp": {
         "add_provider": "Add provider",
         "add_title": "Add identity provider",
@@ -425,9 +382,7 @@
         "saving": "Saving...",
         "submit": "Save tenant settings",
         "title": "MFA requirements",
-        "status": {
-          "updated": "Tenant MFA settings updated."
-        }
+        "status": { "updated": "Tenant MFA settings updated." }
       },
       "provider_section": {
         "eyebrow": "Admin · Identity federation",
@@ -446,9 +401,7 @@
         "remove": "Remove provider",
         "removed": "Removed",
         "removing": "Removing...",
-        "status": {
-          "removed": "Identity provider removed."
-        }
+        "status": { "removed": "Identity provider removed." }
       },
       "scim": {
         "description": "Keep users, groups, and workspace grants synchronized from your identity provider.",
@@ -492,10 +445,7 @@
       "generate_aria_label": "Generate new key",
       "never": "Never",
       "title": "Service account keys",
-      "active": {
-        "eyebrow": "Service keys · Active",
-        "title": "API keys for this workspace"
-      },
+      "active": { "eyebrow": "Service keys · Active", "title": "API keys for this workspace" },
       "empty": {
         "description": "Generate a key to enable headless CLI and CI/CD access.",
         "title": "No active keys"
@@ -525,10 +475,7 @@
           "scope_required": "Select at least one scope."
         }
       },
-      "new": {
-        "eyebrow": "Service keys · New",
-        "title": "Generate service account key"
-      },
+      "new": { "eyebrow": "Service keys · New", "title": "Generate service account key" },
       "revoke": {
         "confirm": "Revoke service key {label}? Existing CI, CLI, and automation using this key will stop authenticating.",
         "revoke": "Revoke",
@@ -601,10 +548,7 @@
           "workspace_unavailable": "Workspace context unavailable."
         }
       },
-      "new": {
-        "eyebrow": "Gateway webhooks · New",
-        "title": "Generate webhook secret"
-      },
+      "new": { "eyebrow": "Gateway webhooks · New", "title": "Generate webhook secret" },
       "revoke": {
         "confirm": "Revoke webhook secret {label}? Inbound webhooks using this secret will stop authenticating immediately.",
         "revoke": "Revoke",
@@ -692,10 +636,7 @@
         "role": "Role",
         "title": "Permission matrix"
       },
-      "invite_section": {
-        "eyebrow": "Workflow · User lifecycle",
-        "title": "Invite member"
-      },
+      "invite_section": { "eyebrow": "Workflow · User lifecycle", "title": "Invite member" },
       "invite_form": {
         "create": "Create invite",
         "creating": "Creating...",
@@ -790,10 +731,7 @@
         "enabled": "{count, plural, one {# enabled} other {# enabled}}",
         "workflows": "{count, plural, one {# workflow} other {# workflows}}"
       },
-      "rules": {
-        "eyebrow": "Workflow · Gates",
-        "title": "Active workflow rules"
-      },
+      "rules": { "eyebrow": "Workflow · Gates", "title": "Active workflow rules" },
       "enforcement": {
         "description": "Route high-risk policies automatically, expire stale approvals, and notify reviewers.",
         "eyebrow": "Workflow · Enforcement",
@@ -828,10 +766,7 @@
         "saving": "Saving...",
         "tenant_default": "Tenant default",
         "workspace_scope": "Workspace scope",
-        "review_modes": {
-          "parallel": "Parallel",
-          "sequential": "Sequential"
-        }
+        "review_modes": { "parallel": "Parallel", "sequential": "Sequential" }
       },
       "table": {
         "active_approval_gates": "Active approval gates",
@@ -941,10 +876,7 @@
         "submit": "Save default language",
         "title": "Default language"
       },
-      "manage": {
-        "eyebrow": "Workspace · Manage",
-        "title": "Existing workspaces"
-      },
+      "manage": { "eyebrow": "Workspace · Manage", "title": "Existing workspaces" },
       "card": {
         "active": "ACTIVE",
         "confirm_label": "Type DELETE to confirm",
@@ -995,9 +927,7 @@
       "sign_in": "Sign in to approve",
       "title": "Connect a CLI or CI agent",
       "token_scope": "Token scope",
-      "errors": {
-        "missing_code": "Missing device code."
-      }
+      "errors": { "missing_code": "Missing device code." }
     },
     "login": {
       "email": {
@@ -1412,10 +1342,7 @@
       "title": "No advisor data",
       "body": "Advisors appear here once recommendations have been generated."
     },
-    "rate": {
-      "awaiting": "Awaiting first recommendation",
-      "no_data": "No data yet"
-    },
+    "rate": { "awaiting": "Awaiting first recommendation", "no_data": "No data yet" },
     "boundary": {
       "eyebrow": "Published policy boundary",
       "revision": "Revision",
@@ -1471,10 +1398,7 @@
     }
   },
   "economic": {
-    "header": {
-      "title": "Cost & Usage",
-      "manage_budgets": "Manage Budgets"
-    },
+    "header": { "title": "Cost & Usage", "manage_budgets": "Manage Budgets" },
     "advisory": {
       "eyebrow": "Governance Advisory Note",
       "title": "Heuristic & Telemetry Estimates",
@@ -1531,9 +1455,7 @@
       "name_required": "Please specify a policy name.",
       "threshold_required": "At least one cost or token threshold limit must be defined."
     },
-    "scope": {
-      "wildcard": "All events (Wildcard)"
-    },
+    "scope": { "wildcard": "All events (Wildcard)" },
     "error": {
       "save_failed": "Failed to save budget policy",
       "delete_failed": "Failed to delete budget policy",
@@ -1670,10 +1592,7 @@
     }
   },
   "alerting": {
-    "header": {
-      "eyebrow": "Workspace · Alerting",
-      "title": "Alerting"
-    },
+    "header": { "eyebrow": "Workspace · Alerting", "title": "Alerting" },
     "validate": {
       "channel_name": "Please specify a channel name.",
       "pagerduty_key": "Please provide a PagerDuty routing key.",

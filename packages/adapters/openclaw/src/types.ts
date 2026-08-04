@@ -79,12 +79,10 @@ export interface EvaluateParams {
   toolParameters?: Record<string, unknown>;
 }
 
-export type BeforeToolCallResult =
-  | { action: "allow" }
-  | { action: "block"; reason: string };
+export type BeforeToolCallResult = { action: "allow" } | { action: "block"; reason: string };
 
 export type BeforeToolCallHook = (
   toolName: string,
   args: Record<string, unknown>,
-  hookContext: Record<string, unknown>
+  hookContext: Record<string, unknown>,
 ) => Promise<BeforeToolCallResult>;

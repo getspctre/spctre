@@ -80,7 +80,11 @@ function OrgRoleForm({ member }: { member: OrganizationMember }) {
         </select>
       </label>
       <ApplyRoleButton />
-      {state?.message ? <p className="meta" style={{ color: "var(--allow)" }}>{state.message}</p> : null}
+      {state?.message ? (
+        <p className="meta" style={{ color: "var(--allow)" }}>
+          {state.message}
+        </p>
+      ) : null}
       {state?.error ? <p className="meta publishError">{state.error}</p> : null}
     </form>
   );
@@ -102,7 +106,12 @@ function WorkspaceOverrideForm({
       <div className="adminAuthTwoColumn">
         <label className="field">
           <span>{t("workspace")}</span>
-          <select className="input" name="workspaceId" defaultValue={workspaces[0]?.id ?? ""} disabled={!workspaces.length}>
+          <select
+            className="input"
+            name="workspaceId"
+            defaultValue={workspaces[0]?.id ?? ""}
+            disabled={!workspaces.length}
+          >
             {workspaces.length ? (
               workspaces.map((workspace) => (
                 <option key={workspace.id} value={workspace.id}>
@@ -116,7 +125,12 @@ function WorkspaceOverrideForm({
         </label>
         <label className="field">
           <span>{t("override_role")}</span>
-          <select className="input" name="workspaceRole" defaultValue="INHERIT" disabled={!workspaces.length}>
+          <select
+            className="input"
+            name="workspaceRole"
+            defaultValue="INHERIT"
+            disabled={!workspaces.length}
+          >
             <option value="INHERIT">{t("inherit_org_role")}</option>
             {ORG_ROLES.map((role) => (
               <option key={role} value={role}>
@@ -148,7 +162,11 @@ function RevokeInviteForm({ member }: { member: OrganizationMember }) {
       }}
     >
       <input type="hidden" name="principalId" value={member.id} />
-      <LifecycleSubmitButton pendingLabel={t("revoking")} completed={revoked} completedLabel={t("invite_revoked")}>
+      <LifecycleSubmitButton
+        pendingLabel={t("revoking")}
+        completed={revoked}
+        completedLabel={t("invite_revoked")}
+      >
         {t("revoke_invite")}
       </LifecycleSubmitButton>
       <AdminMutationStatus error={state?.error} message={state?.message} />
@@ -172,7 +190,11 @@ function RemoveMemberForm({ member }: { member: OrganizationMember }) {
       }}
     >
       <input type="hidden" name="principalId" value={member.id} />
-      <LifecycleSubmitButton pendingLabel={t("removing")} completed={removed} completedLabel={t("member_removed")}>
+      <LifecycleSubmitButton
+        pendingLabel={t("removing")}
+        completed={removed}
+        completedLabel={t("member_removed")}
+      >
         {t("remove_member")}
       </LifecycleSubmitButton>
       <AdminMutationStatus error={state?.error} message={state?.message} />
@@ -201,7 +223,9 @@ export function MemberInspector({ member, workspaces, isCurrentUser }: MemberIns
         <div className="adminMembersInspectorGrid">
           <div>
             <p className="eyebrow">{t("status")}</p>
-            <span className={member.inviteStatus === "ACCEPTED" ? "pill pillAllow" : "pill pillWarn"}>
+            <span
+              className={member.inviteStatus === "ACCEPTED" ? "pill pillAllow" : "pill pillWarn"}
+            >
               {member.inviteStatus === "ACCEPTED" ? t("active") : t("pending")}
             </span>
           </div>
@@ -239,7 +263,10 @@ export function MemberInspector({ member, workspaces, isCurrentUser }: MemberIns
         </p>
       </section>
 
-      <section className="adminMembersInspectorSection" aria-labelledby={`${member.id}-workspace-role`}>
+      <section
+        className="adminMembersInspectorSection"
+        aria-labelledby={`${member.id}-workspace-role`}
+      >
         <div className="adminMembersInspectorHeader">
           <div>
             <p className="eyebrow">{t("workspace_access")}</p>
@@ -265,7 +292,10 @@ export function MemberInspector({ member, workspaces, isCurrentUser }: MemberIns
         </div>
       </section>
 
-      <section className="adminMembersInspectorSection" aria-labelledby={`${member.id}-danger-zone`}>
+      <section
+        className="adminMembersInspectorSection"
+        aria-labelledby={`${member.id}-danger-zone`}
+      >
         <div className="adminMembersInspectorHeader">
           <div>
             <p className="eyebrow">{t("lifecycle")}</p>
@@ -274,9 +304,7 @@ export function MemberInspector({ member, workspaces, isCurrentUser }: MemberIns
           {isCurrentUser ? <span className="pill pillNeutral">{t("current_user")}</span> : null}
         </div>
         <div className="adminMembersInspectorActions">
-          {member.inviteStatus === "PENDING" ? (
-            <RevokeInviteForm member={member} />
-          ) : null}
+          {member.inviteStatus === "PENDING" ? <RevokeInviteForm member={member} /> : null}
           {!isCurrentUser ? (
             <RemoveMemberForm member={member} />
           ) : (

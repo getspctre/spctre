@@ -297,7 +297,9 @@ code {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .spin {
@@ -306,8 +308,12 @@ code {
 
 /* Evidence row highlighted via ?highlight= param */
 @keyframes evidenceHighlight {
-  0%   { background: oklch(0.92 0.06 150 / 0.5); }
-  100% { background: transparent; }
+  0% {
+    background: oklch(0.92 0.06 150 / 0.5);
+  }
+  100% {
+    background: transparent;
+  }
 }
 
 .auditRowHighlight td {

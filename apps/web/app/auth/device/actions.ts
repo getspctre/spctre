@@ -6,7 +6,9 @@ import { approveDeviceOnboarding } from "@/lib/onboarding";
 import { swallow } from "@/lib/platform/swallow";
 
 export async function approveDevice(formData: FormData): Promise<void> {
-  const userCode = String(formData.get("user_code") ?? "").trim().toUpperCase();
+  const userCode = String(formData.get("user_code") ?? "")
+    .trim()
+    .toUpperCase();
   if (!userCode) redirect("/auth/device?errorCode=missing_code");
 
   const session = await getAuthSession().catch(swallow("getAuthSession", null));

@@ -6,7 +6,7 @@ export function PlanGate({
   children,
   feature,
   fallback,
-  prompt = "panel"
+  prompt = "panel",
 }: {
   children: React.ReactNode;
   feature: FeatureFlag;
@@ -21,7 +21,7 @@ export function PlanGate({
 
 export function UpgradePrompt({
   feature,
-  variant = "panel"
+  variant = "panel",
 }: {
   feature: FeatureFlag;
   variant?: "panel" | "inline";

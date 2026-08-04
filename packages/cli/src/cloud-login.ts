@@ -32,7 +32,9 @@ export async function cloudLogin(options: CloudLoginOptions) {
   const bundlePath = options.output;
 
   if (isNonInteractive()) {
-    console.error("Error: spctre cloud login requires interactive mode for browser/device authorization.");
+    console.error(
+      "Error: spctre cloud login requires interactive mode for browser/device authorization.",
+    );
     process.exit(1);
   }
 
@@ -89,7 +91,10 @@ export async function cloudLogin(options: CloudLoginOptions) {
 
   const config = configFromCloudExchange({ baseUrl, bundlePath, exchange: exchanged });
 
-  await persistAndSyncCloudSession(config, { refreshBundle: true, sampleSource: "spctre cloud login" });
+  await persistAndSyncCloudSession(config, {
+    refreshBundle: true,
+    sampleSource: "spctre cloud login",
+  });
 
   console.log("");
   console.log("Spctre CLI connected successfully.");

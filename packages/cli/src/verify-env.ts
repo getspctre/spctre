@@ -71,7 +71,9 @@ export function verifyEnv(options: { framework?: string; python?: string }) {
   const manifestPath = path.join(spctreDir, MANIFEST_FILENAME);
 
   if (!fs.existsSync(adapterPath) || !fs.existsSync(wrapperPath) || !fs.existsSync(manifestPath)) {
-    console.error(`Error: .spctre adapter files were not found. Run "spctre watch --framework ${framework}" first.`);
+    console.error(
+      `Error: .spctre adapter files were not found. Run "spctre watch --framework ${framework}" first.`,
+    );
     process.exit(1);
   }
   verifyManifest({ manifestPath, framework, spctreDir, adapterPath, wrapperPath });
@@ -107,7 +109,9 @@ function verifyNotionWorkerAdapter() {
   const manifestPath = path.join(spctreDir, "governance-manifest-notion-worker.json");
 
   if (!fs.existsSync(workerPath) || !fs.existsSync(manifestPath)) {
-    console.error(`Error: .spctre/notion-worker.js was not found. Run "spctre watch --framework notion-worker" first.`);
+    console.error(
+      `Error: .spctre/notion-worker.js was not found. Run "spctre watch --framework notion-worker" first.`,
+    );
     process.exit(1);
   }
 
@@ -117,19 +121,27 @@ function verifyNotionWorkerAdapter() {
       files?: { workerSha256?: string };
     };
     if (manifest.framework !== "notion-worker") {
-      console.error(`Error: governance manifest is for "${manifest.framework ?? "unknown"}", not "notion-worker".`);
+      console.error(
+        `Error: governance manifest is for "${manifest.framework ?? "unknown"}", not "notion-worker".`,
+      );
       process.exit(1);
     }
     if (manifest.files?.workerSha256 !== sha256File(workerPath)) {
-      console.error("Error: .spctre/notion-worker.js does not match governance-manifest-notion-worker.json. Re-run spctre watch --framework notion-worker.");
+      console.error(
+        "Error: .spctre/notion-worker.js does not match governance-manifest-notion-worker.json. Re-run spctre watch --framework notion-worker.",
+      );
       process.exit(1);
     }
   } catch (error) {
-    console.error(`Error: could not read Notion Worker governance manifest: ${error instanceof Error ? error.message : String(error)}`);
+    console.error(
+      `Error: could not read Notion Worker governance manifest: ${error instanceof Error ? error.message : String(error)}`,
+    );
     process.exit(1);
   }
 
-  console.log("Governance active: Notion Worker template is present and matches governance manifest.");
+  console.log(
+    "Governance active: Notion Worker template is present and matches governance manifest.",
+  );
   console.log("Deploy with: notion worker deploy .spctre/notion-worker.js");
 }
 
@@ -139,7 +151,9 @@ function verifyOmnigentAdapter(python: string) {
   const manifestPath = path.join(spctreDir, "governance-manifest-omnigent.json");
 
   if (!fs.existsSync(policyPath) || !fs.existsSync(manifestPath)) {
-    console.error(`Error: .spctre/spctre_policy.py was not found. Run "spctre watch --framework omnigent" first.`);
+    console.error(
+      `Error: .spctre/spctre_policy.py was not found. Run "spctre watch --framework omnigent" first.`,
+    );
     process.exit(1);
   }
 
@@ -149,24 +163,36 @@ function verifyOmnigentAdapter(python: string) {
       files?: { policySha256?: string };
     };
     if (manifest.framework !== "omnigent") {
-      console.error(`Error: governance manifest is for "${manifest.framework ?? "unknown"}", not "omnigent".`);
+      console.error(
+        `Error: governance manifest is for "${manifest.framework ?? "unknown"}", not "omnigent".`,
+      );
       process.exit(1);
     }
     if (manifest.files?.policySha256 !== sha256File(policyPath)) {
-      console.error("Error: .spctre/spctre_policy.py does not match governance-manifest-omnigent.json. Re-run spctre watch --framework omnigent.");
+      console.error(
+        "Error: .spctre/spctre_policy.py does not match governance-manifest-omnigent.json. Re-run spctre watch --framework omnigent.",
+      );
       process.exit(1);
     }
     const spctreMode = fs.statSync(spctreDir).mode;
     if ((spctreMode & 0o022) !== 0) {
-      console.error("Error: .spctre is group/world writable. Re-run spctre watch --framework omnigent to restore safe permissions.");
+      console.error(
+        "Error: .spctre is group/world writable. Re-run spctre watch --framework omnigent to restore safe permissions.",
+      );
       process.exit(1);
     }
   } catch (error) {
-    console.error(`Error: could not read Omnigent governance manifest: ${error instanceof Error ? error.message : String(error)}`);
+    console.error(
+      `Error: could not read Omnigent governance manifest: ${error instanceof Error ? error.message : String(error)}`,
+    );
     process.exit(1);
   }
 
-  const result = spawnSync(python, ["-c", `
+  const result = spawnSync(
+    python,
+    [
+      "-c",
+      `
 import importlib
 import asyncio
 import inspect
@@ -190,16 +216,19 @@ result = asyncio.run(policy({"type": "message", "target": "not_a_tool", "data": 
 if result is not None:
     print("Governance inactive: non-tool Omnigent events should return None to abstain.", file=sys.stderr)
     sys.exit(1)
-`.trim()], {
-    cwd: process.cwd(),
-    encoding: "utf8",
-    env: {
-      ...process.env,
-      PYTHONPATH: `${spctreDir}${process.env.PYTHONPATH ? path.delimiter + process.env.PYTHONPATH : ""}`,
-      SPCTRE_KEY: process.env.SPCTRE_KEY ?? "",
-      SPCTRE_API_TOKEN: process.env.SPCTRE_API_TOKEN ?? "",
+`.trim(),
+    ],
+    {
+      cwd: process.cwd(),
+      encoding: "utf8",
+      env: {
+        ...process.env,
+        PYTHONPATH: `${spctreDir}${process.env.PYTHONPATH ? path.delimiter + process.env.PYTHONPATH : ""}`,
+        SPCTRE_KEY: process.env.SPCTRE_KEY ?? "",
+        SPCTRE_API_TOKEN: process.env.SPCTRE_API_TOKEN ?? "",
+      },
     },
-  });
+  );
 
   if (result.error) {
     console.error(`Error: could not run ${python}: ${result.error.message}`);
@@ -212,9 +241,13 @@ if result is not None:
     process.exit(result.status ?? 1);
   }
 
-  console.log("Governance active: Omnigent spctre_policy module is present and matches governance manifest.");
+  console.log(
+    "Governance active: Omnigent spctre_policy module is present and matches governance manifest.",
+  );
   console.log("Verified native Omnigent async policy factory import and abstain behavior.");
-  console.log("Verify that server_config.yaml lists 'spctre_policy' under policy_modules and that SPCTRE_API_TOKEN or SPCTRE_KEY is set at runtime.");
+  console.log(
+    "Verify that server_config.yaml lists 'spctre_policy' under policy_modules and that SPCTRE_API_TOKEN or SPCTRE_KEY is set at runtime.",
+  );
 }
 
 function verifyManifest(params: {
@@ -229,19 +262,20 @@ function verifyManifest(params: {
       framework?: string;
       runtimePatching?: boolean;
       patchTargets?: unknown[];
-      files?: {
-        adapterSha256?: string;
-        wrapperSha256?: string;
-      };
+      files?: { adapterSha256?: string; wrapperSha256?: string };
     };
-    const requestedFramework = params.framework.replace("_", "-") === "google-antigravity"
-      ? "antigravity-sdk"
-      : params.framework;
-    const manifestFramework = manifest.framework === "langchain" && params.framework === "langgraph"
-      ? "langgraph"
-      : manifest.framework;
+    const requestedFramework =
+      params.framework.replace("_", "-") === "google-antigravity"
+        ? "antigravity-sdk"
+        : params.framework;
+    const manifestFramework =
+      manifest.framework === "langchain" && params.framework === "langgraph"
+        ? "langgraph"
+        : manifest.framework;
     if (manifestFramework !== requestedFramework.replace("_", "-")) {
-      console.error(`Error: governance manifest is for "${manifest.framework ?? "unknown"}", not "${params.framework}".`);
+      console.error(
+        `Error: governance manifest is for "${manifest.framework ?? "unknown"}", not "${params.framework}".`,
+      );
       process.exit(1);
     }
     if (manifest.runtimePatching !== true || !manifest.patchTargets?.length) {
@@ -250,7 +284,9 @@ function verifyManifest(params: {
     }
     const spctreMode = fs.statSync(params.spctreDir).mode;
     if ((spctreMode & 0o022) !== 0) {
-      console.error("Error: .spctre is group/world writable. Re-run spctre watch --framework to restore safe permissions.");
+      console.error(
+        "Error: .spctre is group/world writable. Re-run spctre watch --framework to restore safe permissions.",
+      );
       process.exit(1);
     }
     if (manifest.files?.adapterSha256 !== sha256File(params.adapterPath)) {
@@ -262,7 +298,9 @@ function verifyManifest(params: {
       process.exit(1);
     }
   } catch (error) {
-    console.error(`Error: could not read governance manifest: ${error instanceof Error ? error.message : String(error)}`);
+    console.error(
+      `Error: could not read governance manifest: ${error instanceof Error ? error.message : String(error)}`,
+    );
     process.exit(1);
   }
 }
@@ -274,7 +312,9 @@ function sha256File(filePath: string) {
 function normalizeFramework(value?: string): VerifyFramework {
   const framework = (value ?? "").toLowerCase().trim() as VerifyFramework;
   if (!supportedFrameworks.has(framework)) {
-    console.error("Error: --framework is required. Supported values: crewai, langchain, openai-agents, autogen, google-adk, antigravity-sdk, claude-agent-sdk, strands, notion-worker, omnigent");
+    console.error(
+      "Error: --framework is required. Supported values: crewai, langchain, openai-agents, autogen, google-adk, antigravity-sdk, claude-agent-sdk, strands, notion-worker, omnigent",
+    );
     process.exit(1);
   }
   return framework;
@@ -282,11 +322,12 @@ function normalizeFramework(value?: string): VerifyFramework {
 
 function buildVerificationSnippet(framework: VerifyFramework) {
   const dashed = framework.replace("_", "-");
-  const normalized = framework === "langgraph"
-    ? "langchain"
-    : dashed === "google-antigravity"
-      ? "antigravity-sdk"
-      : dashed;
+  const normalized =
+    framework === "langgraph"
+      ? "langchain"
+      : dashed === "google-antigravity"
+        ? "antigravity-sdk"
+        : dashed;
   return `
 import importlib
 import sys

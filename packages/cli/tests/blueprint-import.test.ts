@@ -8,22 +8,23 @@ let tmpDir: string;
 let blueprintFile: string;
 let logs: string[];
 
-const BLUEPRINT = [
-  "name: Acquisition Scout",
-  "agentId: scout",
-  "message: Read-only researcher",
-  "definition:",
-  "  purpose: Read-only acquisition researcher.",
-  "  allowedTaskClasses: [research]",
-  "  tools: [research.fetch]",
-  "  connectors: [acquisition-scout]",
-  "  services: [github]",
-  "  environments: [production]",
-  "  runtimeTargets:",
-  "    - stack: CUSTOM",
-  "      adapter: spctre-scout",
-  "  policyBranchId: acquisition-scout",
-].join("\n") + "\n";
+const BLUEPRINT =
+  [
+    "name: Acquisition Scout",
+    "agentId: scout",
+    "message: Read-only researcher",
+    "definition:",
+    "  purpose: Read-only acquisition researcher.",
+    "  allowedTaskClasses: [research]",
+    "  tools: [research.fetch]",
+    "  connectors: [acquisition-scout]",
+    "  services: [github]",
+    "  environments: [production]",
+    "  runtimeTargets:",
+    "    - stack: CUSTOM",
+    "      adapter: spctre-scout",
+    "  policyBranchId: acquisition-scout",
+  ].join("\n") + "\n";
 
 function okResponse(body: Record<string, unknown>, status = 200) {
   return { ok: status < 400, status, json: async () => body };
@@ -44,10 +45,14 @@ describe("spctre blueprint import", () => {
     fs.writeFileSync(blueprintFile, BLUEPRINT);
     process.env.SPCTRE_CONFIG_DIR = path.join(tmpDir, ".spctre");
     logs = [];
-    vi.spyOn(console, "log").mockImplementation((...args) => { logs.push(args.join(" ")); });
+    vi.spyOn(console, "log").mockImplementation((...args) => {
+      logs.push(args.join(" "));
+    });
     vi.spyOn(console, "error").mockImplementation(() => {});
     vi.spyOn(process.stderr, "write").mockImplementation(() => true);
-    vi.spyOn(process, "exit").mockImplementation(((code?: number) => { throw new Error(`exit:${code}`); }) as never);
+    vi.spyOn(process, "exit").mockImplementation(((code?: number) => {
+      throw new Error(`exit:${code}`);
+    }) as never);
   });
 
   afterEach(() => {
@@ -58,7 +63,9 @@ describe("spctre blueprint import", () => {
   });
 
   it("POSTs the raw source to the Blueprint import API", async () => {
-    const fetchSpy = vi.fn().mockResolvedValue(okResponse({ ...SUCCESS, created: true, alreadyCurrent: false }, 201));
+    const fetchSpy = vi
+      .fn()
+      .mockResolvedValue(okResponse({ ...SUCCESS, created: true, alreadyCurrent: false }, 201));
     vi.stubGlobal("fetch", fetchSpy);
 
     await blueprintImport(blueprintFile, { key: "spctre_svc_xyz", url: "https://control.test/" });
@@ -75,7 +82,12 @@ describe("spctre blueprint import", () => {
   });
 
   it("reports an already-current import without the draft reminder", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(okResponse({ ...SUCCESS, created: false, alreadyCurrent: true }, 200)));
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValue(okResponse({ ...SUCCESS, created: false, alreadyCurrent: true }, 200)),
+    );
 
     await blueprintImport(blueprintFile, { key: "k", url: "https://control.test" });
 
@@ -102,18 +114,29 @@ describe("spctre blueprint import", () => {
   });
 
   it("exits non-zero when the API returns an error", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(okResponse({ error: "Token is missing blueprint:import scope." }, 401)));
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValue(okResponse({ error: "Token is missing blueprint:import scope." }, 401)),
+    );
 
-    await expect(blueprintImport(blueprintFile, { key: "k", url: "https://control.test" })).rejects.toThrow("exit:1");
+    await expect(
+      blueprintImport(blueprintFile, { key: "k", url: "https://control.test" }),
+    ).rejects.toThrow("exit:1");
   });
 
   it("exits non-zero when no key is available", async () => {
     vi.stubGlobal("fetch", vi.fn());
-    await expect(blueprintImport(blueprintFile, { url: "https://control.test" })).rejects.toThrow("exit:1");
+    await expect(blueprintImport(blueprintFile, { url: "https://control.test" })).rejects.toThrow(
+      "exit:1",
+    );
   });
 
   it("exits non-zero when the file does not exist", async () => {
     vi.stubGlobal("fetch", vi.fn());
-    await expect(blueprintImport(path.join(tmpDir, "missing.yaml"), { key: "k" })).rejects.toThrow("exit:1");
+    await expect(blueprintImport(path.join(tmpDir, "missing.yaml"), { key: "k" })).rejects.toThrow(
+      "exit:1",
+    );
   });
 });

@@ -4,7 +4,11 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Plus, Power, Trash2, X } from "lucide-react";
 import { resolveErrorMessage } from "@/lib/errors/coded-error";
-import { addSiemStreamAction, removeSiemStreamAction, toggleSiemStreamAction } from "./siem-stream-actions";
+import {
+  addSiemStreamAction,
+  removeSiemStreamAction,
+  toggleSiemStreamAction,
+} from "./siem-stream-actions";
 import type { SiemStream } from "@/lib/domains/siem-stream/service";
 import type { SharedHandlerContext } from "./alerting-shared";
 
@@ -43,7 +47,9 @@ export function SiemStreamModal({
             <X size={16} />
           </button>
         </div>
-        {error && <div style={{ color: "var(--block)", fontSize: 12, marginBottom: 12 }}>{error}</div>}
+        {error && (
+          <div style={{ color: "var(--block)", fontSize: 12, marginBottom: 12 }}>{error}</div>
+        )}
         <form onSubmit={onSubmit}>
           <div className="formGroup">
             <label htmlFor="siem-name">{t("siem.stream_name")}</label>
@@ -178,7 +184,9 @@ export function SiemStreamsSection({
       {siemStreams.length === 0 ? (
         <div className="emptyState">
           <p>{t("siem.empty_title")}</p>
-          <p className="meta" style={{ marginTop: 4 }}>{t("siem.empty_body")}</p>
+          <p className="meta" style={{ marginTop: 4 }}>
+            {t("siem.empty_body")}
+          </p>
         </div>
       ) : (
         <div className="denseList">
@@ -187,18 +195,26 @@ export function SiemStreamsSection({
               <div className="itemInfo">
                 <div className="itemTitle">
                   <span>{stream.name}</span>
-                  <span className="badge badgeSiem">{stream.type === "SPLUNK_HEC" ? "Splunk HEC" : "Sentinel"}</span>
+                  <span className="badge badgeSiem">
+                    {stream.type === "SPLUNK_HEC" ? "Splunk HEC" : "Sentinel"}
+                  </span>
                   {stream.enabled ? (
-                    <span className="pill pillAllow" style={{ fontSize: 9, padding: "1px 4px" }}>{t("siem.active")}</span>
+                    <span className="pill pillAllow" style={{ fontSize: 9, padding: "1px 4px" }}>
+                      {t("siem.active")}
+                    </span>
                   ) : (
-                    <span className="pill" style={{ fontSize: 9, padding: "1px 4px" }}>{t("siem.paused")}</span>
+                    <span className="pill" style={{ fontSize: 9, padding: "1px 4px" }}>
+                      {t("siem.paused")}
+                    </span>
                   )}
                 </div>
                 <div className="itemMeta">
                   {stream.url.length > 60 ? stream.url.slice(0, 57) + "…" : stream.url}
                   {stream.lastForwardedAt ? (
                     <span style={{ marginLeft: 8 }}>
-                      {t("siem.last_forwarded", { time: new Date(stream.lastForwardedAt).toLocaleString() })}
+                      {t("siem.last_forwarded", {
+                        time: new Date(stream.lastForwardedAt).toLocaleString(),
+                      })}
                     </span>
                   ) : (
                     <span style={{ marginLeft: 8 }}>{t("siem.not_forwarded")}</span>
@@ -250,31 +266,41 @@ export function useSiemHandlers(ctx: SharedHandlerContext) {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
 
-  const updateForm = (patch: Partial<SiemFormState>) =>
-    setForm((prev) => ({ ...prev, ...patch }));
+  const updateForm = (patch: Partial<SiemFormState>) => setForm((prev) => ({ ...prev, ...patch }));
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
-    if (!form.name) { ctx.setError(t("siem.name_required")); return; }
+    if (!form.name) {
+      ctx.setError(t("siem.name_required"));
+      return;
+    }
     if (form.type === "SPLUNK_HEC" && (!form.url || !form.splunkToken)) {
-      ctx.setError(t("validate.splunk")); return;
+      ctx.setError(t("validate.splunk"));
+      return;
     }
     if (form.type === "SENTINEL" && (!form.url || !form.sentinelPrimaryKey)) {
-      ctx.setError(t("validate.sentinel")); return;
+      ctx.setError(t("validate.sentinel"));
+      return;
     }
     ctx.setLoading(true);
     ctx.setError(null);
     setStatus(null);
     try {
       const finalConfig: Record<string, unknown> =
-        form.type === "SPLUNK_HEC"
-          ? {}
-          : { logType: form.sentinelLogType || "SpctrePolicyEvent" };
+        form.type === "SPLUNK_HEC" ? {} : { logType: form.sentinelLogType || "SpctrePolicyEvent" };
       const finalCredentials: Record<string, unknown> =
         form.type === "SPLUNK_HEC"
           ? { token: form.splunkToken }
           : { primaryKey: form.sentinelPrimaryKey };
-      await addSiemStreamAction(ctx.workspaceId, ctx.workspaceSlug, form.name, form.type, form.url, finalConfig, finalCredentials);
+      await addSiemStreamAction(
+        ctx.workspaceId,
+        ctx.workspaceSlug,
+        form.name,
+        form.type,
+        form.url,
+        finalConfig,
+        finalCredentials,
+      );
       setForm((prev) => ({ ...EMPTY_SIEM_FORM, type: prev.type }));
       setModalOpen(false);
       setStatus(t("siem.saved"));
@@ -314,5 +340,16 @@ export function useSiemHandlers(ctx: SharedHandlerContext) {
     }
   }
 
-  return { modalOpen, setModalOpen, form, updateForm, status, deletingId, togglingId, handleAdd, handleRemove, handleToggle };
+  return {
+    modalOpen,
+    setModalOpen,
+    form,
+    updateForm,
+    status,
+    deletingId,
+    togglingId,
+    handleAdd,
+    handleRemove,
+    handleToggle,
+  };
 }

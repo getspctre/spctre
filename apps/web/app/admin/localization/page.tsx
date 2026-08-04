@@ -18,7 +18,7 @@ export const dynamic = "force-dynamic";
 function statusMessage(
   t: Awaited<ReturnType<typeof getTranslations>>,
   code: string | null,
-  params: Record<string, string | string[] | undefined>
+  params: Record<string, string | string[] | undefined>,
 ): string | null {
   if (!code) return null;
   const key = typeof params.key === "string" ? params.key : "";
@@ -46,9 +46,9 @@ function statusMessage(
 
 function customTermValue(
   option: (typeof terminologyOptions)[number],
-  locale: typeof supportedLocales[number],
+  locale: (typeof supportedLocales)[number],
   baseMessages: Record<string, string>,
-  overrides: Map<string, string>
+  overrides: Map<string, string>,
 ): string | undefined {
   const sourceTerm = sourceTermForLocale(option, locale);
   for (const key of option.keys) {
@@ -76,9 +76,13 @@ export default async function AdminLocalizationPage({
   const localeParam = typeof params.locale === "string" ? params.locale : "en";
   const locale = normalizeLocale(localeParam);
   const { tenantId } = await getActiveScope();
-  const overrides = await createTenantTerminologyStore().listOverrides(tenantId, locale).catch(swallow("listOverrides", []));
+  const overrides = await createTenantTerminologyStore()
+    .listOverrides(tenantId, locale)
+    .catch(swallow("listOverrides", []));
   const baseMessages = flattenMessages(getStaticMessages(locale));
-  const overrideValues = new Map(overrides.map((override) => [override.translationKey, override.customValue]));
+  const overrideValues = new Map(
+    overrides.map((override) => [override.translationKey, override.customValue]),
+  );
 
   const message =
     statusMessage(t, typeof params.okCode === "string" ? params.okCode : null, params) ??
@@ -89,20 +93,14 @@ export default async function AdminLocalizationPage({
 
   return (
     <>
-      <SettingsHeader
-        eyebrow={t("eyebrow")}
-        title={t("title")}
-        description={t("description")}
-      />
+      <SettingsHeader eyebrow={t("eyebrow")} title={t("title")} description={t("description")} />
 
       <section className="adminAuthStack" aria-label={t("aria_label")}>
         <section className="panel adminWorkspacePanelCompact">
           <div>
             <p className="eyebrow">{t("language.eyebrow")}</p>
             <h2>{t("language.title")}</h2>
-            <p className="meta">
-              {t("language.description")}
-            </p>
+            <p className="meta">{t("language.description")}</p>
           </div>
           <form method="get" className="adminWorkspaceForm adminInlineSelectActionForm">
             <label>
@@ -127,7 +125,10 @@ export default async function AdminLocalizationPage({
           <div>
             <p className="eyebrow">Terminology</p>
             <h2>Use the terms your team already uses</h2>
-            <p className="meta">Change the common labels shown across the selected language, without editing translation keys.</p>
+            <p className="meta">
+              Change the common labels shown across the selected language, without editing
+              translation keys.
+            </p>
           </div>
           <div className="auditTableWrapper">
             <table className="auditTable">
@@ -155,7 +156,11 @@ export default async function AdminLocalizationPage({
                       />
                     </td>
                     <td>
-                      <TerminologyResetButton label={option.label} locale={locale} term={option.id} />
+                      <TerminologyResetButton
+                        label={option.label}
+                        locale={locale}
+                        term={option.id}
+                      />
                     </td>
                   </tr>
                 ))}

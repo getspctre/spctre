@@ -2,5 +2,14 @@
   "title": "Policies",
   "description": "Configure and manage organizational policies, rules, and connector packs.",
   "icon": "GitBranch",
-  "pages": ["policies", "rules", "packs", "trust-governance", "baseline-drift", "importing", "review", "simulate"]
+  "pages": [
+    "policies",
+    "rules",
+    "packs",
+    "trust-governance",
+    "baseline-drift",
+    "importing",
+    "review",
+    "simulate"
+  ]
 }

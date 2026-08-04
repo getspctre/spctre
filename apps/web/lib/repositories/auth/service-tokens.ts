@@ -21,7 +21,12 @@ export type ServiceTokenScope =
 // deliberately exclude policy:import and blueprint:import so a runtime agent can
 // never author, import, approve, or publish its own governing policy or its own
 // authority Blueprint.
-export const DEV_TOKEN_SCOPES: ServiceTokenScope[] = ["bundle:read", "decision:evaluate", "evidence:write", "heartbeat:write"];
+export const DEV_TOKEN_SCOPES: ServiceTokenScope[] = [
+  "bundle:read",
+  "decision:evaluate",
+  "evidence:write",
+  "heartbeat:write",
+];
 export const ALL_API_KEY_SCOPES: ServiceTokenScope[] = [
   ...DEV_TOKEN_SCOPES,
   "policy:import",
@@ -36,7 +41,7 @@ export const ALL_API_KEY_SCOPES: ServiceTokenScope[] = [
   "e2e:write",
 ];
 export const ADMIN_ISSUABLE_API_KEY_SCOPES: ServiceTokenScope[] = ALL_API_KEY_SCOPES.filter(
-  (scope) => scope !== "e2e:write"
+  (scope) => scope !== "e2e:write",
 );
 
 export interface ServiceTokenAuth {
@@ -77,7 +82,7 @@ function createRawRefreshToken() {
 
 export async function authenticateServiceToken(
   request: Request,
-  requiredScope: ServiceTokenScope
+  requiredScope: ServiceTokenScope,
 ): Promise<{ ok: true; auth: ServiceTokenAuth } | { ok: false; error: string }> {
   if (!sql) return { ok: false, error: "Database not configured." };
   // Authentication starts without a tenant context. Use the owner connection
@@ -91,22 +96,24 @@ export async function authenticateServiceToken(
   const bearer = authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : "";
   if (!bearer) return { ok: false, error: "Missing bearer token." };
 
-  const rows = await runWithTransientReadRetry(() => db<
-    {
-      id: string;
-      tenant_id: string;
-      workspace_id: string;
-      principal_id: string;
-      scopes: string[];
-    }[]
-  >`
+  const rows = await runWithTransientReadRetry(
+    () => db<
+      {
+        id: string;
+        tenant_id: string;
+        workspace_id: string;
+        principal_id: string;
+        scopes: string[];
+      }[]
+    >`
     SELECT id, tenant_id, workspace_id, principal_id, scopes
     FROM service_token
     WHERE token_hash = ${hashServiceToken(bearer)}
       AND revoked_at IS NULL
       AND (expires_at IS NULL OR expires_at > now())
     LIMIT 1
-  `);
+  `,
+  );
 
   const row = rows[0];
   if (!row) return { ok: false, error: "Missing or invalid bearer token." };
@@ -129,8 +136,8 @@ export async function authenticateServiceToken(
       tenantId: row.tenant_id,
       workspaceId: row.workspace_id,
       principalId: row.principal_id,
-      scopes
-    }
+      scopes,
+    },
   };
 }
 
@@ -151,7 +158,7 @@ export async function issueAccessRefreshPair(
     label: string;
     scopes: ServiceTokenScope[];
     environment: string;
-  }
+  },
 ): Promise<TokenPair> {
   const rawAccess = createRawServiceToken();
   const rawRefresh = createRawRefreshToken();
@@ -159,10 +166,10 @@ export async function issueAccessRefreshPair(
   const refreshHash = hashServiceToken(rawRefresh);
 
   const accessExpiresAt = new Date(
-    Date.now() + ACCESS_TOKEN_TTL_HOURS * 60 * 60 * 1000
+    Date.now() + ACCESS_TOKEN_TTL_HOURS * 60 * 60 * 1000,
   ).toISOString();
   const refreshExpiresAt = new Date(
-    Date.now() + REFRESH_TOKEN_TTL_DAYS * 24 * 60 * 60 * 1000
+    Date.now() + REFRESH_TOKEN_TTL_DAYS * 24 * 60 * 60 * 1000,
   ).toISOString();
 
   const tokenRows = await tx<{ id: string }[]>`
@@ -205,7 +212,7 @@ export async function issueAccessRefreshPair(
  * tokens, issues a fresh pair.
  */
 export async function rotateRefreshToken(
-  rawRefreshToken: string
+  rawRefreshToken: string,
 ): Promise<{ ok: true; pair: TokenPair } | { ok: false; error: string; status: number }> {
   if (!sql) return { ok: false, error: "Database not configured.", status: 503 };
   const db = rawSql ?? sql;
@@ -248,16 +255,44 @@ export async function rotateRefreshToken(
     const row = rows[0];
     if (!row) return { ok: false as const, error: "Refresh token not found.", status: 401 };
     if (row.revoked_at) {
-      console.error(JSON.stringify({ event: "token.revoked_reuse_attempt", token_id: row.id, tenant_id: row.tenant_id, revoked_at: row.revoked_at, ts: new Date().toISOString() }));
+      console.error(
+        JSON.stringify({
+          event: "token.revoked_reuse_attempt",
+          token_id: row.id,
+          tenant_id: row.tenant_id,
+          revoked_at: row.revoked_at,
+          ts: new Date().toISOString(),
+        }),
+      );
       return { ok: false as const, error: "Refresh token has been revoked.", status: 401 };
     }
     if (row.rotated_at) {
-      console.error(JSON.stringify({ event: "token.rotated_reuse_attempt", token_id: row.id, tenant_id: row.tenant_id, rotated_at: row.rotated_at, ts: new Date().toISOString() }));
+      console.error(
+        JSON.stringify({
+          event: "token.rotated_reuse_attempt",
+          token_id: row.id,
+          tenant_id: row.tenant_id,
+          rotated_at: row.rotated_at,
+          ts: new Date().toISOString(),
+        }),
+      );
       return { ok: false as const, error: "Refresh token has already been rotated.", status: 401 };
     }
     if (new Date(row.expires_at) <= new Date()) {
-      console.error(JSON.stringify({ event: "token.expired_refresh_attempt", token_id: row.id, tenant_id: row.tenant_id, expired_at: row.expires_at, ts: new Date().toISOString() }));
-      return { ok: false as const, error: "Refresh token expired. Run spctre init to reconnect.", status: 401 };
+      console.error(
+        JSON.stringify({
+          event: "token.expired_refresh_attempt",
+          token_id: row.id,
+          tenant_id: row.tenant_id,
+          expired_at: row.expires_at,
+          ts: new Date().toISOString(),
+        }),
+      );
+      return {
+        ok: false as const,
+        error: "Refresh token expired. Run spctre init to reconnect.",
+        status: 401,
+      };
     }
 
     const scopes = (row.scopes ?? []) as ServiceTokenScope[];
@@ -338,11 +373,5 @@ export async function issueServiceAccountKey(params: {
     RETURNING id
   `;
 
-  return {
-    rawToken,
-    tokenId: rows[0].id,
-    tokenPrefix,
-    expiresAt,
-    scopes: params.scopes,
-  };
+  return { rawToken, tokenId: rows[0].id, tokenPrefix, expiresAt, scopes: params.scopes };
 }

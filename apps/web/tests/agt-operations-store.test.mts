@@ -30,7 +30,13 @@ let store: RowStore;
 let opLogSeq = 0;
 
 function resetStore() {
-  store = { operationsLog: [], trustScoreEvents: [], identityLifecycleEvents: [], verificationResults: [], chainHead: new Map() };
+  store = {
+    operationsLog: [],
+    trustScoreEvents: [],
+    identityLifecycleEvents: [],
+    verificationResults: [],
+    chainHead: new Map(),
+  };
   opLogSeq = 0;
 }
 
@@ -85,7 +91,14 @@ function makeOperationRow(params: {
     source_table: sourceTable,
     actor_id: actorId,
     payload,
-    content_hash: buildContentHash({ eventType, sourceId, sourceTable, actorId, payload, prevHash: prevHash ?? undefined }),
+    content_hash: buildContentHash({
+      eventType,
+      sourceId,
+      sourceTable,
+      actorId,
+      payload,
+      prevHash: prevHash ?? undefined,
+    }),
     prev_hash: params.storedPrevHash !== undefined ? params.storedPrevHash : prevHash,
     created_at: params.createdAt ?? new Date(),
   };
@@ -174,7 +187,7 @@ function makeSqlMock() {
           reason: null,
           created_at: new Date(),
           ...r,
-        }))
+        })),
       );
     }
 
@@ -198,7 +211,7 @@ function makeSqlMock() {
           detail: {},
           created_at: new Date(),
           ...r,
-        }))
+        })),
       );
     }
 
@@ -224,7 +237,7 @@ function makeSqlMock() {
           runtime_version: null,
           created_at: new Date(),
           ...r,
-        }))
+        })),
       );
     }
 
@@ -234,15 +247,14 @@ function makeSqlMock() {
     }
 
     // ── evidence policy-context boundary check ────────────────────────────
-    if (joined.includes("POLICY_REVISION") && joined.includes("POLICY_BRANCH") && joined.startsWith("SELECT")) {
+    if (
+      joined.includes("POLICY_REVISION") &&
+      joined.includes("POLICY_BRANCH") &&
+      joined.startsWith("SELECT")
+    ) {
       const revisionIds = Array.isArray(args[2]) ? args[2] : [];
       const branchIds = Array.isArray(args[3]) ? args[3] : [];
-      return Promise.resolve(
-        revisionIds.map((id, index) => ({
-          id,
-          branch_id: branchIds[index],
-        }))
-      );
+      return Promise.resolve(revisionIds.map((id, index) => ({ id, branch_id: branchIds[index] })));
     }
 
     // Generic SELECT → valid auth / workspace rows
@@ -273,20 +285,24 @@ vi.mock("@/lib/tenant-context", () => ({
   runWithTenantContext: vi.fn((_tenantId: string, fn: () => Promise<unknown>) => fn()),
 }));
 
-vi.mock("@/lib/demo", () => ({
-  DEMO_TENANT_ID: "demo-tenant",
-  DEMO_WORKSPACE_ID: "demo-ws"
-}));
+vi.mock("@/lib/demo", () => ({ DEMO_TENANT_ID: "demo-tenant", DEMO_WORKSPACE_ID: "demo-ws" }));
 
 vi.mock("@/lib/repositories/seed/local-dev", () => ({
   ensureDemoTenant: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock("@/lib/service-tokens", () => ({
-  authenticateServiceToken: vi.fn().mockResolvedValue({
-    ok: true,
-    auth: { tenantId: "demo-tenant", workspaceId: "demo-ws", principalId: "svc-test", scopes: [] },
-  }),
+  authenticateServiceToken: vi
+    .fn()
+    .mockResolvedValue({
+      ok: true,
+      auth: {
+        tenantId: "demo-tenant",
+        workspaceId: "demo-ws",
+        principalId: "svc-test",
+        scopes: [],
+      },
+    }),
   hasBearerToken: () => true,
 }));
 
@@ -295,10 +311,7 @@ vi.mock("@/lib/auth-session", () => ({
 }));
 
 vi.mock("@/lib/workspace/scope", () => ({
-  getActiveScope: vi.fn().mockResolvedValue({
-    tenantId: "demo-tenant",
-    workspaceId: "demo-ws",
-  }),
+  getActiveScope: vi.fn().mockResolvedValue({ tenantId: "demo-tenant", workspaceId: "demo-ws" }),
 }));
 
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
@@ -320,7 +333,9 @@ vi.mock("@spctre/policy-schema", async (importOriginal) => {
       reason: input.reason ?? "test",
       policyRefs: input.policyRefs ?? ["default.policy"],
       artifactHash: input.artifactHash ?? "sha256:test",
-      policyContext: input.policyContext ?? [{ scope: "WORKSPACE", branchId: "b-1", revisionId: "r-1", artifactHash: "sha256:test" }],
+      policyContext: input.policyContext ?? [
+        { scope: "WORKSPACE", branchId: "b-1", revisionId: "r-1", artifactHash: "sha256:test" },
+      ],
       latencyMs: 0,
       createdAt: new Date().toISOString(),
       rawEvidence: {},
@@ -329,10 +344,13 @@ vi.mock("@spctre/policy-schema", async (importOriginal) => {
 });
 
 // Import routes and query helpers after mocks are registered.
-const { appendOperationsLog, listOperationsLog, verifyOperationsLogChain } = await import("../lib/repositories/operations-log");
+const { appendOperationsLog, listOperationsLog, verifyOperationsLogChain } =
+  await import("../lib/repositories/operations-log");
 const { ingestTrustScoreEvent, listTrustScoreHistory } = await import("../lib/repositories/trust");
-const { recordIdentityLifecycleEvent, listIdentityLifecycleEvents } = await import("../lib/repositories/identity");
-const { ingestVerificationResult, listVerificationResults, getLatestVerificationStatus } = await import("../lib/repositories/verification");
+const { recordIdentityLifecycleEvent, listIdentityLifecycleEvents } =
+  await import("../lib/repositories/identity");
+const { ingestVerificationResult, listVerificationResults, getLatestVerificationStatus } =
+  await import("../lib/repositories/verification");
 
 const { GET: operationsGet } = await import("../app/api/operations/route");
 const { GET: chainVerifyGet } = await import("../app/api/operations/verify/route");
@@ -340,7 +358,8 @@ const { POST: trustIngestPost } = await import("../app/api/trust/ingest/route");
 const { GET: trustHistoryGet } = await import("../app/api/trust/history/route");
 const { POST: identityEventPost } = await import("../app/api/identity/event/route");
 const { GET: identityEventsGet } = await import("../app/api/identity/events/route");
-const { POST: verificationPost, GET: verificationGet } = await import("../app/api/verification/route");
+const { POST: verificationPost, GET: verificationGet } =
+  await import("../app/api/verification/route");
 const { POST: evidencePost } = await import("../app/api/evidence/route");
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -360,7 +379,7 @@ describe("appendOperationsLog", () => {
         sourceTable: "runtime_evidence_event",
         actorId: "actor-1",
         payload: { key: "value" },
-      })
+      }),
     ).resolves.not.toThrow();
 
     expect(store.operationsLog).toHaveLength(1);
@@ -417,7 +436,7 @@ describe("appendOperationsLog", () => {
         sourceTable: "runtime_evidence_event",
         actorId: null,
         payload: {},
-      })
+      }),
     ).resolves.not.toThrow();
   });
 });
@@ -441,10 +460,18 @@ describe("verifyOperationsLogChain", () => {
   });
 
   it("returns verified=true when the chain is intact", async () => {
-    const first = makeOperationRow({ id: "op-1", prevHash: null, createdAt: new Date(Date.now() - 2000) });
+    const first = makeOperationRow({
+      id: "op-1",
+      prevHash: null,
+      createdAt: new Date(Date.now() - 2000),
+    });
     store.operationsLog.push(
       first,
-      makeOperationRow({ id: "op-2", prevHash: first.content_hash as string, createdAt: new Date(Date.now() - 1000) })
+      makeOperationRow({
+        id: "op-2",
+        prevHash: first.content_hash as string,
+        createdAt: new Date(Date.now() - 1000),
+      }),
     );
 
     const result = await verifyOperationsLogChain("demo-tenant", 100);
@@ -453,7 +480,11 @@ describe("verifyOperationsLogChain", () => {
   });
 
   it("verifies by hash linkage when created_at order is inverted by lock waits", async () => {
-    const first = makeOperationRow({ id: "op-1", prevHash: null, createdAt: new Date(Date.now() - 1000) });
+    const first = makeOperationRow({
+      id: "op-1",
+      prevHash: null,
+      createdAt: new Date(Date.now() - 1000),
+    });
     const second = makeOperationRow({
       id: "op-2",
       prevHash: first.content_hash as string,
@@ -467,7 +498,11 @@ describe("verifyOperationsLogChain", () => {
   });
 
   it("returns verified=false when prev_hash mismatch detected", async () => {
-    const first = makeOperationRow({ id: "op-1", prevHash: null, createdAt: new Date(Date.now() - 2000) });
+    const first = makeOperationRow({
+      id: "op-1",
+      prevHash: null,
+      createdAt: new Date(Date.now() - 2000),
+    });
     store.operationsLog.push(
       first,
       makeOperationRow({
@@ -475,7 +510,7 @@ describe("verifyOperationsLogChain", () => {
         prevHash: first.content_hash as string,
         storedPrevHash: "WRONG_HASH",
         createdAt: new Date(Date.now() - 1000),
-      })
+      }),
     );
 
     const result = await verifyOperationsLogChain("demo-tenant", 100);
@@ -497,7 +532,7 @@ describe("ingestTrustScoreEvent", () => {
         runtimeStack: "BEDROCK",
         trustScore: 0.85,
         source: "AGT_RUNTIME",
-      })
+      }),
     ).resolves.not.toThrow();
 
     expect(store.trustScoreEvents).toHaveLength(1);
@@ -533,8 +568,13 @@ describe("ingestTrustScoreEvent", () => {
 describe("listTrustScoreHistory", () => {
   it("returns entries for the given agentId", async () => {
     store.trustScoreEvents.push(
-      { id: "ts-1", agent_id: "agent-h", trust_score: "0.9", created_at: new Date(Date.now() - 1000) },
-      { id: "ts-2", agent_id: "agent-h", trust_score: "0.7", created_at: new Date() }
+      {
+        id: "ts-1",
+        agent_id: "agent-h",
+        trust_score: "0.9",
+        created_at: new Date(Date.now() - 1000),
+      },
+      { id: "ts-2", agent_id: "agent-h", trust_score: "0.7", created_at: new Date() },
     );
 
     const history = await listTrustScoreHistory("agent-h", "demo-ws", "demo-tenant", 10);
@@ -555,7 +595,7 @@ describe("recordIdentityLifecycleEvent", () => {
         source: "ADMIN",
         detail: { role: "reviewer" },
         actorId: "admin-1",
-      })
+      }),
     ).resolves.not.toThrow();
 
     expect(store.identityLifecycleEvents).toHaveLength(1);
@@ -637,7 +677,9 @@ describe("listIdentityLifecycleEvents", () => {
       created_at: new Date(),
     });
 
-    const events = await listIdentityLifecycleEvents("demo-tenant", { principalId: "user-filtered" });
+    const events = await listIdentityLifecycleEvents("demo-tenant", {
+      principalId: "user-filtered",
+    });
     // Mock doesn't filter client-side — we verify the function returns something, not that it filtered.
     expect(Array.isArray(events)).toBe(true);
   });
@@ -770,7 +812,9 @@ describe("getLatestVerificationStatus", () => {
       created_at: new Date(),
     });
 
-    const status = await getLatestVerificationStatus("demo-ws", "demo-tenant", { artifactHash: "sha256:status" });
+    const status = await getLatestVerificationStatus("demo-ws", "demo-tenant", {
+      artifactHash: "sha256:status",
+    });
     expect(status).toMatchObject({
       hasResults: true,
       latestAgtVersion: "4.1.0",
@@ -798,7 +842,7 @@ describe("GET /api/operations", () => {
     const res = await operationsGet(req);
     expect(res.status).toBe(200);
 
-    const body = await res.json() as Record<string, unknown>;
+    const body = (await res.json()) as Record<string, unknown>;
     expect(body).toHaveProperty("entries");
     expect(body).toHaveProperty("count");
     expect(body).toHaveProperty("generatedAt");
@@ -821,32 +865,49 @@ describe("GET /api/operations", () => {
 
 describe("GET /api/operations/verify", () => {
   it("returns 200 when chain is intact", async () => {
-    const first = makeOperationRow({ id: "cv-1", prevHash: null, createdAt: new Date(Date.now() - 1000) });
+    const first = makeOperationRow({
+      id: "cv-1",
+      prevHash: null,
+      createdAt: new Date(Date.now() - 1000),
+    });
     store.operationsLog.push(
       first,
-      makeOperationRow({ id: "cv-2", prevHash: first.content_hash as string, createdAt: new Date() })
+      makeOperationRow({
+        id: "cv-2",
+        prevHash: first.content_hash as string,
+        createdAt: new Date(),
+      }),
     );
 
     const req = new Request("http://localhost:3000/api/operations/verify");
     const res = await chainVerifyGet(req);
     expect(res.status).toBe(200);
 
-    const body = await res.json() as { verified: boolean };
+    const body = (await res.json()) as { verified: boolean };
     expect(body.verified).toBe(true);
   });
 
   it("returns 409 when chain is broken", async () => {
-    const first = makeOperationRow({ id: "cv-1", prevHash: null, createdAt: new Date(Date.now() - 1000) });
+    const first = makeOperationRow({
+      id: "cv-1",
+      prevHash: null,
+      createdAt: new Date(Date.now() - 1000),
+    });
     store.operationsLog.push(
       first,
-      makeOperationRow({ id: "cv-2", prevHash: first.content_hash as string, storedPrevHash: "TAMPERED", createdAt: new Date() })
+      makeOperationRow({
+        id: "cv-2",
+        prevHash: first.content_hash as string,
+        storedPrevHash: "TAMPERED",
+        createdAt: new Date(),
+      }),
     );
 
     const req = new Request("http://localhost:3000/api/operations/verify");
     const res = await chainVerifyGet(req);
     expect(res.status).toBe(409);
 
-    const body = await res.json() as { verified: boolean };
+    const body = (await res.json()) as { verified: boolean };
     expect(body.verified).toBe(false);
   });
 });
@@ -870,7 +931,7 @@ describe("POST /api/trust/ingest", () => {
     const res = await trustIngestPost(req);
     expect(res.status).toBe(201);
 
-    const body = await res.json() as { ok: boolean };
+    const body = (await res.json()) as { ok: boolean };
     expect(body.ok).toBe(true);
   });
 
@@ -878,7 +939,13 @@ describe("POST /api/trust/ingest", () => {
     const req = new Request("http://localhost:3000/api/trust/ingest", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: "Bearer svc-token" },
-      body: JSON.stringify({ agentId: "a", environment: "test", runtimeStack: "LOCAL", trustScore: 1.5, source: "MANUAL" }),
+      body: JSON.stringify({
+        agentId: "a",
+        environment: "test",
+        runtimeStack: "LOCAL",
+        trustScore: 1.5,
+        source: "MANUAL",
+      }),
     });
 
     const res = await trustIngestPost(req);
@@ -889,7 +956,13 @@ describe("POST /api/trust/ingest", () => {
     const req = new Request("http://localhost:3000/api/trust/ingest", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: "Bearer svc-token" },
-      body: JSON.stringify({ agentId: "a", environment: "test", runtimeStack: "LOCAL", trustScore: -0.1, source: "MANUAL" }),
+      body: JSON.stringify({
+        agentId: "a",
+        environment: "test",
+        runtimeStack: "LOCAL",
+        trustScore: -0.1,
+        source: "MANUAL",
+      }),
     });
 
     const res = await trustIngestPost(req);
@@ -900,7 +973,12 @@ describe("POST /api/trust/ingest", () => {
     const req = new Request("http://localhost:3000/api/trust/ingest", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: "Bearer svc-token" },
-      body: JSON.stringify({ environment: "test", runtimeStack: "LOCAL", trustScore: 0.5, source: "MANUAL" }),
+      body: JSON.stringify({
+        environment: "test",
+        runtimeStack: "LOCAL",
+        trustScore: 0.5,
+        source: "MANUAL",
+      }),
     });
 
     const res = await trustIngestPost(req);
@@ -922,7 +1000,7 @@ describe("GET /api/trust/history", () => {
     const res = await trustHistoryGet(req);
     expect(res.status).toBe(200);
 
-    const body = await res.json() as { events: unknown[] };
+    const body = (await res.json()) as { events: unknown[] };
     expect(Array.isArray(body.events)).toBe(true);
   });
 });
@@ -973,11 +1051,7 @@ describe("POST /api/identity/event", () => {
     const req = new Request("http://localhost:3000/api/identity/event", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        principalId: "user-bad",
-        eventType: "INVALID_TYPE",
-        source: "ADMIN",
-      }),
+      body: JSON.stringify({ principalId: "user-bad", eventType: "INVALID_TYPE", source: "ADMIN" }),
     });
 
     const res = await identityEventPost(req);
@@ -1004,7 +1078,7 @@ describe("GET /api/identity/events", () => {
     const res = await identityEventsGet(req);
     expect(res.status).toBe(200);
 
-    const body = await res.json() as { events: unknown[] };
+    const body = (await res.json()) as { events: unknown[] };
     expect(Array.isArray(body.events)).toBe(true);
   });
 });
@@ -1029,7 +1103,7 @@ describe("POST /api/verification", () => {
     const res = await verificationPost(req);
     expect(res.status).toBe(201);
 
-    const body = await res.json() as { ok: boolean; outcome: string };
+    const body = (await res.json()) as { ok: boolean; outcome: string };
     expect(body.ok).toBe(true);
     expect(body.outcome).toBe("PASS");
   });
@@ -1083,7 +1157,11 @@ describe("POST /api/verification", () => {
     const req = new Request("http://localhost:3000/api/verification", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: "Bearer svc-token" },
-      body: JSON.stringify({ artifactHash: "sha256:bad", verificationType: "NOT_REAL", outcome: "PASS" }),
+      body: JSON.stringify({
+        artifactHash: "sha256:bad",
+        verificationType: "NOT_REAL",
+        outcome: "PASS",
+      }),
     });
 
     const res = await verificationPost(req);
@@ -1094,7 +1172,11 @@ describe("POST /api/verification", () => {
     const req = new Request("http://localhost:3000/api/verification", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: "Bearer svc-token" },
-      body: JSON.stringify({ artifactHash: "sha256:bad", verificationType: "AGT_VERIFY", outcome: "UNKNOWN" }),
+      body: JSON.stringify({
+        artifactHash: "sha256:bad",
+        verificationType: "AGT_VERIFY",
+        outcome: "UNKNOWN",
+      }),
     });
 
     const res = await verificationPost(req);
@@ -1153,7 +1235,7 @@ describe("GET /api/verification", () => {
     const res = await verificationGet(req);
     expect(res.status).toBe(200);
 
-    const body = await res.json() as { results: unknown[] };
+    const body = (await res.json()) as { results: unknown[] };
     expect(Array.isArray(body.results)).toBe(true);
   });
 });
@@ -1185,7 +1267,12 @@ describe("Evidence ingest → operations log side-effect", () => {
         policyRefs: ["stripe.payment.test"],
         artifactHash: "sha256:e2e-ops",
         policyContext: [
-          { scope: "WORKSPACE", branchId: "b-e2e", revisionId: "r-e2e", artifactHash: "sha256:e2e-ops" }
+          {
+            scope: "WORKSPACE",
+            branchId: "b-e2e",
+            revisionId: "r-e2e",
+            artifactHash: "sha256:e2e-ops",
+          },
         ],
       }),
     });
@@ -1200,10 +1287,7 @@ describe("Evidence ingest → operations log side-effect", () => {
   it("evidence response includes gateway field", async () => {
     const req = new Request("http://localhost:3000/api/evidence", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: "Bearer svc-token",
-      },
+      headers: { "Content-Type": "application/json", Authorization: "Bearer svc-token" },
       body: JSON.stringify({
         decisionId: "dec-gw-e2e",
         tenantId: "demo-tenant",
@@ -1218,7 +1302,12 @@ describe("Evidence ingest → operations log side-effect", () => {
         policyRefs: ["openai.completion.basic"],
         artifactHash: "sha256:gw-e2e",
         policyContext: [
-          { scope: "WORKSPACE", branchId: "b-gw", revisionId: "r-gw", artifactHash: "sha256:gw-e2e" }
+          {
+            scope: "WORKSPACE",
+            branchId: "b-gw",
+            revisionId: "r-gw",
+            artifactHash: "sha256:gw-e2e",
+          },
         ],
       }),
     });
@@ -1226,7 +1315,7 @@ describe("Evidence ingest → operations log side-effect", () => {
     const res = await evidencePost(req);
     expect(res.status).toBe(201);
 
-    const body = await res.json() as Record<string, unknown>;
+    const body = (await res.json()) as Record<string, unknown>;
     // evidence is always present; gateway only appears when GATEWAY_ENABLED=true.
     expect(body).toHaveProperty("evidence");
     // gateway key absent (undefined) is fine — the field is conditionally serialized.

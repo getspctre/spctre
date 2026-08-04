@@ -13,14 +13,15 @@ function deriveRuleDefaults(workflow: ApprovalWorkflowConfigSummary | undefined)
   return {
     role: defaultRule?.role ?? "Security",
     requiredCount: defaultRule?.requiredCount ?? 1,
-    isRoleEligible: (role: string) => defaultRule?.eligibleRoles?.includes(role) ?? role === "Security",
+    isRoleEligible: (role: string) =>
+      defaultRule?.eligibleRoles?.includes(role) ?? role === "Security",
   };
 }
 
 // Prefill values for the form, falling back to sensible new-workflow defaults.
 function deriveWorkflowFormDefaults(
   workflow: ApprovalWorkflowConfigSummary | undefined,
-  workspaces: { id: string }[]
+  workspaces: { id: string }[],
 ) {
   return {
     workspaceId: workflow?.workspaceId ?? workspaces[0]?.id ?? "TENANT",
@@ -33,7 +34,11 @@ function deriveWorkflowFormDefaults(
   };
 }
 
-function RequiredRuleFieldset({ defaults }: { defaults: ReturnType<typeof deriveWorkflowFormDefaults> }) {
+function RequiredRuleFieldset({
+  defaults,
+}: {
+  defaults: ReturnType<typeof deriveWorkflowFormDefaults>;
+}) {
   const t = useTranslations("admin.workflows.form");
   return (
     <fieldset className="adminAuthFieldset">
@@ -43,7 +48,9 @@ function RequiredRuleFieldset({ defaults }: { defaults: ReturnType<typeof derive
           <span>{t("approval_role")}</span>
           <select className="input" name="role" defaultValue={defaults.role}>
             {REVIEWER_ROLES.map((role) => (
-              <option key={role} value={role}>{role}</option>
+              <option key={role} value={role}>
+                {role}
+              </option>
             ))}
           </select>
         </label>
@@ -93,22 +100,13 @@ export function WorkflowForm({
       {workflow ? <input type="hidden" name="workflowId" value={workflow.id} /> : null}
       <div className="adminAuthFormIntro">
         <h3>{workflow ? t("edit_title") : t("create_title")}</h3>
-        <p className="meta">
-          {workflow
-            ? t("edit_description")
-            : t("create_description")}
-        </p>
+        <p className="meta">{workflow ? t("edit_description") : t("create_description")}</p>
       </div>
 
       <div className="adminAuthTwoColumn">
         <label className="field">
           <span>{t("name")}</span>
-          <input
-            className="input"
-            name="name"
-            defaultValue={defaults.name}
-            required
-          />
+          <input className="input" name="name" defaultValue={defaults.name} required />
         </label>
         <label className="field">
           <span>{t("review_mode")}</span>
@@ -133,7 +131,12 @@ export function WorkflowForm({
         </label>
         <label className="field">
           <span>{t("environment")}</span>
-          <input className="input" name="environment" placeholder={t("environment_placeholder")} defaultValue={defaults.environment} />
+          <input
+            className="input"
+            name="environment"
+            placeholder={t("environment_placeholder")}
+            defaultValue={defaults.environment}
+          />
         </label>
       </div>
 

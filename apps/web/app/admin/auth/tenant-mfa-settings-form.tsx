@@ -9,7 +9,7 @@ const initialState: AdminAuthActionState = null;
 
 export function TenantMfaSettingsForm({
   requireMfa,
-  mfaGraceDays
+  mfaGraceDays,
 }: {
   requireMfa: boolean;
   mfaGraceDays: number;
@@ -34,7 +34,14 @@ export function TenantMfaSettingsForm({
 
       <label className="field">
         <span>{t("grace_days")}</span>
-        <input className="input" type="number" min={0} max={365} name="mfaGraceDays" defaultValue={mfaGraceDays} />
+        <input
+          className="input"
+          type="number"
+          min={0}
+          max={365}
+          name="mfaGraceDays"
+          defaultValue={mfaGraceDays}
+        />
       </label>
 
       <button className="button buttonPrimary" type="submit" disabled={pending}>
@@ -42,7 +49,11 @@ export function TenantMfaSettingsForm({
       </button>
 
       {state?.error ? <p className="meta workspaceError">{state.error}</p> : null}
-      {state?.ok ? <p className="meta">{state.messageCode ? t(`status.${state.messageCode}`) : state.message}</p> : null}
+      {state?.ok ? (
+        <p className="meta">
+          {state.messageCode ? t(`status.${state.messageCode}`) : state.message}
+        </p>
+      ) : null}
     </form>
   );
 }

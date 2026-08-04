@@ -4,7 +4,10 @@
 
 import { errorMessage, type McpServerContext } from "./context.js";
 
-export async function getPoliciesResource(ctx: McpServerContext, uri: string): Promise<{ contents: Array<{ uri: string; mimeType: string; text: string }> }> {
+export async function getPoliciesResource(
+  ctx: McpServerContext,
+  uri: string,
+): Promise<{ contents: Array<{ uri: string; mimeType: string; text: string }> }> {
   const response = await ctx.getWithAuth("/api/bundle/latest", {
     workspace_id: ctx.config.workspaceId,
   });
@@ -35,22 +38,20 @@ export async function getPoliciesResource(ctx: McpServerContext, uri: string): P
   };
 }
 
-export async function getEvidenceResource(ctx: McpServerContext, uri: string): Promise<{ contents: Array<{ uri: string; mimeType: string; text: string }> }> {
+export async function getEvidenceResource(
+  ctx: McpServerContext,
+  uri: string,
+): Promise<{ contents: Array<{ uri: string; mimeType: string; text: string }> }> {
   const decisionId = uri.split("/").pop();
   const response = await ctx.getWithAuth(`/api/evidence/${decisionId}`);
 
-  return {
-    contents: [
-      {
-        uri,
-        mimeType: "application/json",
-        text: JSON.stringify(response.data),
-      },
-    ],
-  };
+  return { contents: [{ uri, mimeType: "application/json", text: JSON.stringify(response.data) }] };
 }
 
-export async function getApprovalsResource(ctx: McpServerContext, uri: string): Promise<{ contents: Array<{ uri: string; mimeType: string; text: string }> }> {
+export async function getApprovalsResource(
+  ctx: McpServerContext,
+  uri: string,
+): Promise<{ contents: Array<{ uri: string; mimeType: string; text: string }> }> {
   const approvalId = uri.split("/").pop();
 
   try {
@@ -70,14 +71,20 @@ export async function getApprovalsResource(ctx: McpServerContext, uri: string): 
         {
           uri,
           mimeType: "application/json",
-          text: JSON.stringify({ error: `Approval lookup failed: ${errorMessage(error)}`, approval_id: approvalId }),
+          text: JSON.stringify({
+            error: `Approval lookup failed: ${errorMessage(error)}`,
+            approval_id: approvalId,
+          }),
         },
       ],
     };
   }
 }
 
-export async function getAgentAuditResource(ctx: McpServerContext, uri: string): Promise<{ contents: Array<{ uri: string; mimeType: string; text: string }> }> {
+export async function getAgentAuditResource(
+  ctx: McpServerContext,
+  uri: string,
+): Promise<{ contents: Array<{ uri: string; mimeType: string; text: string }> }> {
   const agentId = uri.split("/")[2];
   const response = await ctx.getWithAuth(`/api/agents/${agentId}/audit`, {
     workspace_id: ctx.config.workspaceId,
@@ -107,7 +114,10 @@ export async function getAgentAuditResource(ctx: McpServerContext, uri: string):
   };
 }
 
-export async function getTrustHistoryResource(ctx: McpServerContext, uri: string): Promise<{ contents: Array<{ uri: string; mimeType: string; text: string }> }> {
+export async function getTrustHistoryResource(
+  ctx: McpServerContext,
+  uri: string,
+): Promise<{ contents: Array<{ uri: string; mimeType: string; text: string }> }> {
   // URI: spctre://trust/{agent_id}/history
   const parts = uri.replace("spctre://trust/", "").split("/");
   const agentId = parts[0];
@@ -122,12 +132,24 @@ export async function getTrustHistoryResource(ctx: McpServerContext, uri: string
     };
   } catch (error: unknown) {
     return {
-      contents: [{ uri, mimeType: "application/json", text: JSON.stringify({ error: `Trust history unavailable: ${errorMessage(error)}`, agentId }) }],
+      contents: [
+        {
+          uri,
+          mimeType: "application/json",
+          text: JSON.stringify({
+            error: `Trust history unavailable: ${errorMessage(error)}`,
+            agentId,
+          }),
+        },
+      ],
     };
   }
 }
 
-export async function getIdentityEventsResource(ctx: McpServerContext, uri: string): Promise<{ contents: Array<{ uri: string; mimeType: string; text: string }> }> {
+export async function getIdentityEventsResource(
+  ctx: McpServerContext,
+  uri: string,
+): Promise<{ contents: Array<{ uri: string; mimeType: string; text: string }> }> {
   // URI: spctre://identity/{principal_id}/events
   const parts = uri.replace("spctre://identity/", "").split("/");
   const principalId = parts[0];
@@ -142,12 +164,24 @@ export async function getIdentityEventsResource(ctx: McpServerContext, uri: stri
     };
   } catch (error: unknown) {
     return {
-      contents: [{ uri, mimeType: "application/json", text: JSON.stringify({ error: `Identity events unavailable: ${errorMessage(error)}`, principalId }) }],
+      contents: [
+        {
+          uri,
+          mimeType: "application/json",
+          text: JSON.stringify({
+            error: `Identity events unavailable: ${errorMessage(error)}`,
+            principalId,
+          }),
+        },
+      ],
     };
   }
 }
 
-export async function getVerificationResultsResource(ctx: McpServerContext, uri: string): Promise<{ contents: Array<{ uri: string; mimeType: string; text: string }> }> {
+export async function getVerificationResultsResource(
+  ctx: McpServerContext,
+  uri: string,
+): Promise<{ contents: Array<{ uri: string; mimeType: string; text: string }> }> {
   try {
     const response = await ctx.getWithAuth("/api/verification", {
       workspace_id: ctx.config.workspaceId,
@@ -157,12 +191,23 @@ export async function getVerificationResultsResource(ctx: McpServerContext, uri:
     };
   } catch (error: unknown) {
     return {
-      contents: [{ uri, mimeType: "application/json", text: JSON.stringify({ error: `Verification results unavailable: ${errorMessage(error)}` }) }],
+      contents: [
+        {
+          uri,
+          mimeType: "application/json",
+          text: JSON.stringify({
+            error: `Verification results unavailable: ${errorMessage(error)}`,
+          }),
+        },
+      ],
     };
   }
 }
 
-export async function getWorkspacesListResource(ctx: McpServerContext, uri: string): Promise<{ contents: Array<{ uri: string; mimeType: string; text: string }> }> {
+export async function getWorkspacesListResource(
+  ctx: McpServerContext,
+  uri: string,
+): Promise<{ contents: Array<{ uri: string; mimeType: string; text: string }> }> {
   try {
     const response = await ctx.getWithAuth("/api/workspaces");
     return {
@@ -170,12 +215,21 @@ export async function getWorkspacesListResource(ctx: McpServerContext, uri: stri
     };
   } catch (error: unknown) {
     return {
-      contents: [{ uri, mimeType: "application/json", text: JSON.stringify({ error: `Workspace list unavailable: ${errorMessage(error)}` }) }],
+      contents: [
+        {
+          uri,
+          mimeType: "application/json",
+          text: JSON.stringify({ error: `Workspace list unavailable: ${errorMessage(error)}` }),
+        },
+      ],
     };
   }
 }
 
-export async function getApprovalsQueueResource(ctx: McpServerContext, uri: string): Promise<{ contents: Array<{ uri: string; mimeType: string; text: string }> }> {
+export async function getApprovalsQueueResource(
+  ctx: McpServerContext,
+  uri: string,
+): Promise<{ contents: Array<{ uri: string; mimeType: string; text: string }> }> {
   try {
     const response = await ctx.getWithAuth("/api/approvals/queue");
     return {
@@ -183,12 +237,21 @@ export async function getApprovalsQueueResource(ctx: McpServerContext, uri: stri
     };
   } catch (error: unknown) {
     return {
-      contents: [{ uri, mimeType: "application/json", text: JSON.stringify({ error: `Approval queue unavailable: ${errorMessage(error)}` }) }],
+      contents: [
+        {
+          uri,
+          mimeType: "application/json",
+          text: JSON.stringify({ error: `Approval queue unavailable: ${errorMessage(error)}` }),
+        },
+      ],
     };
   }
 }
 
-export async function getWorkflowConfigResource(ctx: McpServerContext, uri: string): Promise<{ contents: Array<{ uri: string; mimeType: string; text: string }> }> {
+export async function getWorkflowConfigResource(
+  ctx: McpServerContext,
+  uri: string,
+): Promise<{ contents: Array<{ uri: string; mimeType: string; text: string }> }> {
   try {
     const response = await ctx.getWithAuth("/api/workflow/config", {
       workspace_id: ctx.config.workspaceId,
@@ -198,12 +261,21 @@ export async function getWorkflowConfigResource(ctx: McpServerContext, uri: stri
     };
   } catch (error: unknown) {
     return {
-      contents: [{ uri, mimeType: "application/json", text: JSON.stringify({ error: `Workflow config unavailable: ${errorMessage(error)}` }) }],
+      contents: [
+        {
+          uri,
+          mimeType: "application/json",
+          text: JSON.stringify({ error: `Workflow config unavailable: ${errorMessage(error)}` }),
+        },
+      ],
     };
   }
 }
 
-export async function getMembersListResource(ctx: McpServerContext, uri: string): Promise<{ contents: Array<{ uri: string; mimeType: string; text: string }> }> {
+export async function getMembersListResource(
+  ctx: McpServerContext,
+  uri: string,
+): Promise<{ contents: Array<{ uri: string; mimeType: string; text: string }> }> {
   try {
     const response = await ctx.getWithAuth("/api/members");
     return {
@@ -211,7 +283,13 @@ export async function getMembersListResource(ctx: McpServerContext, uri: string)
     };
   } catch (error: unknown) {
     return {
-      contents: [{ uri, mimeType: "application/json", text: JSON.stringify({ error: `Member list unavailable: ${errorMessage(error)}` }) }],
+      contents: [
+        {
+          uri,
+          mimeType: "application/json",
+          text: JSON.stringify({ error: `Member list unavailable: ${errorMessage(error)}` }),
+        },
+      ],
     };
   }
 }

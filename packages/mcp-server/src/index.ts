@@ -40,7 +40,9 @@ async function main(): Promise<void> {
 }
 
 main().catch((error) => {
-  logger.error("Failed to start Spctre MCP Server", { error: error instanceof Error ? error.message : String(error) });
+  logger.error("Failed to start Spctre MCP Server", {
+    error: error instanceof Error ? error.message : String(error),
+  });
   process.exit(1);
 });
 

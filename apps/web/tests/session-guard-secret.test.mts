@@ -46,8 +46,13 @@ describe("session-guard secret resolution", () => {
     delete process.env.SPCTRE_SESSION_GUARD_SECRET;
     delete process.env.SPCTRE_DEV_SESSION_GUARD_SECRET;
 
-    const { assertSessionGuardConfiguration, getSessionGuardSecret } = await import("../lib/session-guard-secret");
-    expect(() => getSessionGuardSecret()).toThrow("SPCTRE_SESSION_GUARD_SECRET is required in production.");
-    expect(() => assertSessionGuardConfiguration()).toThrow("SPCTRE_SESSION_GUARD_SECRET is required in production.");
+    const { assertSessionGuardConfiguration, getSessionGuardSecret } =
+      await import("../lib/session-guard-secret");
+    expect(() => getSessionGuardSecret()).toThrow(
+      "SPCTRE_SESSION_GUARD_SECRET is required in production.",
+    );
+    expect(() => assertSessionGuardConfiguration()).toThrow(
+      "SPCTRE_SESSION_GUARD_SECRET is required in production.",
+    );
   });
 });

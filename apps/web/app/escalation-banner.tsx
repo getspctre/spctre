@@ -67,10 +67,8 @@ export function EscalationBanner({ count, escalationsHref, items }: EscalationBa
 
   const sortedItems = useMemo(
     () =>
-      [...items].sort(
-        (a, b) => new Date(a.slaDueAt).getTime() - new Date(b.slaDueAt).getTime()
-      ),
-    [items]
+      [...items].sort((a, b) => new Date(a.slaDueAt).getTime() - new Date(b.slaDueAt).getTime()),
+    [items],
   );
 
   if (count === 0 || isEscalationsPage || hiddenByDismissal) return null;
@@ -85,8 +83,12 @@ export function EscalationBanner({ count, escalationsHref, items }: EscalationBa
           type="button"
         >
           <span>
-            <strong>{count} escalation{count === 1 ? "" : "s"} pending</strong>
-            {nearestSlaLabel ? `, nearest SLA ${nearestSlaLabel}` : ", agents are waiting for review"}
+            <strong>
+              {count} escalation{count === 1 ? "" : "s"} pending
+            </strong>
+            {nearestSlaLabel
+              ? `, nearest SLA ${nearestSlaLabel}`
+              : ", agents are waiting for review"}
           </span>
           <span className="escalationBannerInspect">
             Inspect
@@ -101,7 +103,9 @@ export function EscalationBanner({ count, escalationsHref, items }: EscalationBa
           className="escalationBannerDismiss"
           disabled={hasOverdue}
           onClick={() => setDismissed(true)}
-          title={hasOverdue ? "Overdue escalations cannot be dismissed." : "Dismiss escalation alert"}
+          title={
+            hasOverdue ? "Overdue escalations cannot be dismissed." : "Dismiss escalation alert"
+          }
           type="button"
         >
           <X size={14} />
@@ -120,10 +124,10 @@ export function EscalationBanner({ count, escalationsHref, items }: EscalationBa
             <header className="escalationDrawerHeader">
               <div>
                 <p className="eyebrow">Escalations</p>
-                <h2>{count} pending review{count === 1 ? "" : "s"}</h2>
-                {nearestSlaLabel ? (
-                  <p className="meta">Nearest SLA {nearestSlaLabel}.</p>
-                ) : null}
+                <h2>
+                  {count} pending review{count === 1 ? "" : "s"}
+                </h2>
+                {nearestSlaLabel ? <p className="meta">Nearest SLA {nearestSlaLabel}.</p> : null}
               </div>
               <button
                 aria-label="Close escalation drawer"
@@ -139,7 +143,8 @@ export function EscalationBanner({ count, escalationsHref, items }: EscalationBa
               {sortedItems.length ? (
                 sortedItems.map((item) => {
                   const slaState = getSlaState(item.slaDueAt, now);
-                  const title = [item.connector, item.action].filter(Boolean).join(".") || "runtime decision";
+                  const title =
+                    [item.connector, item.action].filter(Boolean).join(".") || "runtime decision";
                   return (
                     <article className="escalationDrawerItem" key={item.id} data-sla={slaState}>
                       <div className="rowHeader">
@@ -147,7 +152,15 @@ export function EscalationBanner({ count, escalationsHref, items }: EscalationBa
                           <h3>{title}</h3>
                           <p className="meta">{compactDecisionId(item.decisionId)}</p>
                         </div>
-                        <span className={slaState === "overdue" ? "pill pillBlock" : slaState === "soon" ? "pill pillWarn" : "pill pillAllow"}>
+                        <span
+                          className={
+                            slaState === "overdue"
+                              ? "pill pillBlock"
+                              : slaState === "soon"
+                                ? "pill pillWarn"
+                                : "pill pillAllow"
+                          }
+                        >
                           {formatSlaLabel(item.slaDueAt, now)}
                         </span>
                       </div>

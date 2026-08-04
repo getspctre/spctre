@@ -37,9 +37,7 @@ async function main() {
     `;
 
     const allFiles = await readdir(MIGRATIONS_DIR);
-    const migrationFiles = allFiles
-      .filter((f) => f.endsWith(".sql"))
-      .sort();
+    const migrationFiles = allFiles.filter((f) => f.endsWith(".sql")).sort();
 
     if (!migrationFiles.includes(LAUNCH_SCHEMA)) {
       throw new Error(`Missing required public launch schema: ${LAUNCH_SCHEMA}`);
@@ -55,8 +53,8 @@ async function main() {
     if (legacyFiles.length > 0) {
       throw new Error(
         "Legacy migration state detected. The public launch schema is a clean-install " +
-        "baseline; rebuild this database from a backup or restore it before running pnpm migrate. " +
-        `Unexpected entries: ${legacyFiles.join(", ")}`
+          "baseline; rebuild this database from a backup or restore it before running pnpm migrate. " +
+          `Unexpected entries: ${legacyFiles.join(", ")}`,
       );
     }
     const applied = new Set(appliedRows.map((r) => r.filename));

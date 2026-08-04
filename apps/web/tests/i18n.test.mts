@@ -23,21 +23,24 @@ function createStore(initial: TenantTerminologyOverride[] = []): TenantTerminolo
   const rows = [...initial];
   return {
     listOverrides: vi.fn(async (tenantId, locale) =>
-      rows.filter((row) => row.tenantId === tenantId && row.locale === locale)
+      rows.filter((row) => row.tenantId === tenantId && row.locale === locale),
     ),
     upsertOverride: vi.fn(async (override) => {
       const index = rows.findIndex(
         (row) =>
           row.tenantId === override.tenantId &&
           row.locale === override.locale &&
-          row.translationKey === override.translationKey
+          row.translationKey === override.translationKey,
       );
       if (index >= 0) rows[index] = override;
       else rows.push(override);
     }),
     deleteOverride: vi.fn(async (tenantId, locale, translationKey) => {
       const index = rows.findIndex(
-        (row) => row.tenantId === tenantId && row.locale === locale && row.translationKey === translationKey
+        (row) =>
+          row.tenantId === tenantId &&
+          row.locale === locale &&
+          row.translationKey === translationKey,
       );
       if (index >= 0) rows.splice(index, 1);
     }),
@@ -51,14 +54,22 @@ describe("web i18n message catalogs", () => {
     expect(normalizeLocale("pt-BR")).toBe("en");
     expect(resolveLocalePreference({ profileLocale: "pt-BR", cookieLocale: "fr" })).toBe("fr");
     expect(resolveLocaleFromAcceptLanguage("fr-CA,fr;q=0.9,en;q=0.8")).toBe("fr");
-    expect(resolveLocalePreference({ tenantLocale: "de", cookieLocale: "ja", acceptLanguage: "fr-CA,fr;q=0.9" })).toBe("de");
-    expect(resolveLocalePreference({ profileLocale: "ja", tenantLocale: "de", cookieLocale: "fr" })).toBe("ja");
+    expect(
+      resolveLocalePreference({
+        tenantLocale: "de",
+        cookieLocale: "ja",
+        acceptLanguage: "fr-CA,fr;q=0.9",
+      }),
+    ).toBe("de");
+    expect(
+      resolveLocalePreference({ profileLocale: "ja", tenantLocale: "de", cookieLocale: "fr" }),
+    ).toBe("ja");
   });
 
   it("extracts typed message keys and formats placeholders", () => {
     expect(extractMessageKeys()).toContain("policies.workspace_policy");
     expect(formatMessage("en", "policies.meta_summary", { branchesCount: 2, rulesCount: 5 })).toBe(
-      "2 branches · 5 active rules"
+      "2 branches · 5 active rules",
     );
   });
 
@@ -70,7 +81,9 @@ describe("web i18n message catalogs", () => {
 
     expect((messages.navigation as Record<string, string>).evidence).toBe("Audit trail");
     expect((messages.policies as Record<string, string>).workspace_policy).toBe("Division policy");
-    expect((getStaticMessages("en").navigation as Record<string, string>).evidence).toBe("Evidence");
+    expect((getStaticMessages("en").navigation as Record<string, string>).evidence).toBe(
+      "Evidence",
+    );
   });
 
   it("keeps secondary locale catalogs aligned with the English extraction manifest", () => {

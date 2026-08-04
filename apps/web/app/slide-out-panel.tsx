@@ -21,7 +21,7 @@ export function SlideOutPanel({
   defaultOpen = false,
   width = "standard",
   trigger,
-  children
+  children,
 }: SlideOutPanelProps) {
   const t = useTranslations("shared.slide_out");
   const [isOpen, setIsOpen] = useState(defaultOpen);

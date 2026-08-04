@@ -18,9 +18,7 @@ import type { Principal } from "@/lib/actors";
 import type { BranchPermissionSnapshot } from "@/lib/actors";
 import { ApprovalPanel, PublishGate } from "./approval-panel";
 import { RevisionHistory } from "./revision-history";
-import {
-  MockApprovalSummary,
-} from "./review-approval-subsections";
+import { MockApprovalSummary } from "./review-approval-subsections";
 import { PublishSubsectionTabs } from "./publish-subsection-tabs";
 
 interface ReviewApprovalsSectionProps {
@@ -88,7 +86,13 @@ export function ReviewApprovalsSection({
                 {usingRealBranch
                   ? `${approvalRules.reduce((count, rule) => count + Math.min(rule.requiredCount, approvals.filter((approval) => approval.role === rule.role && approval.status === "APPROVED").length), 0)} of ${approvalRules.reduce((count, rule) => count + rule.requiredCount, 0)} required approvals · ${(() => {
                       const pendingRoles = approvalRules
-                        .filter((rule) => approvals.filter((approval) => approval.role === rule.role && approval.status === "APPROVED").length < rule.requiredCount)
+                        .filter(
+                          (rule) =>
+                            approvals.filter(
+                              (approval) =>
+                                approval.role === rule.role && approval.status === "APPROVED",
+                            ).length < rule.requiredCount,
+                        )
                         .map((rule) => rule.role);
                       if (pendingRoles.length === 0) return "all required approvals complete.";
                       if (pendingRoles.length === 1) return `1 pending ${pendingRoles[0]} review.`;

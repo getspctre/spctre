@@ -55,14 +55,7 @@ export async function getMembersPageModel(): Promise<MembersPageModel> {
     listRecentRbacAuditEvents(session.tenantId, 8),
   ]);
 
-  return {
-    workspaceContext,
-    actor,
-    members,
-    workspaces,
-    auditEvents,
-    session,
-  };
+  return { workspaceContext, actor, members, workspaces, auditEvents, session };
 }
 
 export async function listOrganizationMembersForApi(tenantId: string) {
@@ -100,15 +93,17 @@ export async function inviteOrganizationMemberDecision(params: {
   const { displayName, email, orgRole } = params;
 
   if (!displayName) return { error: "Display name is required." };
-  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return { error: "A valid email address is required." };
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))
+    return { error: "A valid email address is required." };
   if (!orgRole) return { error: "Select a built-in organization role." };
-  if (!canGrantRole(guard.actorOrgRole, orgRole)) return { error: "You cannot assign a role higher than your own." };
+  if (!canGrantRole(guard.actorOrgRole, orgRole))
+    return { error: "You cannot assign a role higher than your own." };
 
   const subject = email.trim().toLowerCase();
 
   const existingRow = await getPrincipalBySubject({ tenantId: guard.session.tenantId, subject });
   if (existingRow) {
-    const existingRole = isOrgRole(existingRow.org_role) ? existingRow.org_role as OrgRole : null;
+    const existingRole = isOrgRole(existingRow.org_role) ? (existingRow.org_role as OrgRole) : null;
     if (existingRole && !canGrantRole(guard.actorOrgRole, existingRole)) {
       return { error: "You cannot modify a member with a higher role than your own." };
     }
@@ -140,7 +135,11 @@ export async function inviteOrganizationMemberDecision(params: {
     detail: { email, orgRole, roleSummary: roleDefinition(orgRole).summary },
   });
 
-  const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? process.env.SPCTRE_APP_URL ?? "http://localhost:3000").replace(/\/$/, "");
+  const appUrl = (
+    process.env.NEXT_PUBLIC_APP_URL ??
+    process.env.SPCTRE_APP_URL ??
+    "http://localhost:3000"
+  ).replace(/\/$/, "");
   const loginUrl = `${appUrl}/login?email=${encodeURIComponent(subject)}`;
   sendMemberInviteEmail({
     to: email,
@@ -148,7 +147,9 @@ export async function inviteOrganizationMemberDecision(params: {
     role: roleDefinition(orgRole).label,
     loginUrl,
   }).catch((err) => {
-    logger.error("[members] invite email delivery failed", { error: err instanceof Error ? err.message : String(err) });
+    logger.error("[members] invite email delivery failed", {
+      error: err instanceof Error ? err.message : String(err),
+    });
   });
 
   return {
@@ -174,9 +175,10 @@ export async function updateMemberOrgRoleDecision(params: {
   if (!canGrantRole(guard.actorOrgRole, orgRole)) return { error: "You cannot grant this role." };
 
   const targetRow = await getPrincipalOrgRole({ tenantId: guard.session.tenantId, principalId });
-  const targetRole = isOrgRole(targetRow?.org_role ?? "") ? targetRow!.org_role as OrgRole : null;
+  const targetRole = isOrgRole(targetRow?.org_role ?? "") ? (targetRow!.org_role as OrgRole) : null;
   if (!targetRole) return { error: "Member not found." };
-  if (!canGrantRole(guard.actorOrgRole, targetRole)) return { error: "Insufficient privileges to modify this member." };
+  if (!canGrantRole(guard.actorOrgRole, targetRole))
+    return { error: "Insufficient privileges to modify this member." };
 
   await updatePrincipalOrgRole({ tenantId: guard.session.tenantId, principalId, orgRole });
   await upsertPrincipalGrant({
@@ -209,17 +211,29 @@ export async function updateWorkspaceOverrideDecision(params: {
   const { principalId, workspaceId, roleRaw } = params;
   if (!principalId || !workspaceId) return { error: "Member and workspace are required." };
 
-  const workspaceOk = await verifyWorkspaceAccess({ tenantId: guard.session.tenantId, workspaceId });
+  const workspaceOk = await verifyWorkspaceAccess({
+    tenantId: guard.session.tenantId,
+    workspaceId,
+  });
   if (!workspaceOk) return { error: "Workspace is not available." };
 
-  const targetPrincipalRow = await getPrincipalOrgRole({ tenantId: guard.session.tenantId, principalId });
-  const targetPrincipalRole = isOrgRole(targetPrincipalRow?.org_role ?? "") ? targetPrincipalRow!.org_role as OrgRole : null;
+  const targetPrincipalRow = await getPrincipalOrgRole({
+    tenantId: guard.session.tenantId,
+    principalId,
+  });
+  const targetPrincipalRole = isOrgRole(targetPrincipalRow?.org_role ?? "")
+    ? (targetPrincipalRow!.org_role as OrgRole)
+    : null;
   if (!targetPrincipalRole || !canGrantRole(guard.actorOrgRole, targetPrincipalRole)) {
     return { error: "Insufficient privileges to modify this member." };
   }
 
   if (roleRaw === "INHERIT") {
-    await deletePrincipalWorkspaceGrant({ tenantId: guard.session.tenantId, principalId, workspaceId });
+    await deletePrincipalWorkspaceGrant({
+      tenantId: guard.session.tenantId,
+      principalId,
+      workspaceId,
+    });
     await auditRbacAndLifecycle({
       tenantId: guard.session.tenantId,
       workspaceId,
@@ -286,7 +300,8 @@ export async function removeOrganizationMemberDecision(params: {
 
   const { principalId } = params;
   if (!principalId) return { error: "Member is missing." };
-  if (principalId === guard.session.principalId) return { error: "You cannot remove your own membership from this screen." };
+  if (principalId === guard.session.principalId)
+    return { error: "You cannot remove your own membership from this screen." };
 
   await removeOrganizationMember({ tenantId: guard.session.tenantId, principalId });
   await auditRbacAndLifecycle({

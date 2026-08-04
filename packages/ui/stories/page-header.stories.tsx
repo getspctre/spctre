@@ -8,8 +8,8 @@ const meta = {
   args: {
     eyebrow: "tenant-demo / workspace-demo",
     title: "Evidence",
-    actions: <Button>Export CSV</Button>
-  }
+    actions: <Button>Export CSV</Button>,
+  },
 } satisfies Meta<typeof PageHeader>;
 
 export default meta;

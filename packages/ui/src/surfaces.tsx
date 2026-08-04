@@ -23,9 +23,15 @@ export function EvidenceSurfaceFrame() {
             </thead>
             <tbody>
               <tr>
-                <TableCell><code>stripe.refund.create</code></TableCell>
-                <TableCell><StatusPill tone="block">DENY</StatusPill></TableCell>
-                <TableCell><code>agent-demo</code></TableCell>
+                <TableCell>
+                  <code>stripe.refund.create</code>
+                </TableCell>
+                <TableCell>
+                  <StatusPill tone="block">DENY</StatusPill>
+                </TableCell>
+                <TableCell>
+                  <code>agent-demo</code>
+                </TableCell>
               </tr>
             </tbody>
           </DataTable>
@@ -38,7 +44,11 @@ export function EvidenceSurfaceFrame() {
 export function ReviewSurfaceFrame() {
   return (
     <div>
-      <PageHeader eyebrow="tenant-demo / workspace-demo" title="Review & publish" actions={<Button tone="primary">Publish</Button>} />
+      <PageHeader
+        eyebrow="tenant-demo / workspace-demo"
+        title="Review & publish"
+        actions={<Button tone="primary">Publish</Button>}
+      />
       <div className="diffBar" style={{ marginTop: 16 }}>
         <div className="diffBarChips">
           <StatusPill tone="allow">+3 added</StatusPill>
@@ -53,7 +63,11 @@ export function ReviewSurfaceFrame() {
 export function ComplianceSurfaceFrame() {
   return (
     <div>
-      <PageHeader eyebrow="tenant-demo / workspace-demo" title="Compliance" actions={<Button>Seal audit</Button>} />
+      <PageHeader
+        eyebrow="tenant-demo / workspace-demo"
+        title="Compliance"
+        actions={<Button>Seal audit</Button>}
+      />
       <section className="panel" style={{ marginTop: 16 }}>
         <div className="split">
           <div className="metric">

@@ -28,8 +28,8 @@ const meta = {
           <TextArea value="Tightened controls for financial operations." readOnly rows={3} />
         </FormField>
       </div>
-    )
-  }
+    ),
+  },
 } satisfies Meta<typeof Drawer>;
 
 export default meta;
@@ -38,8 +38,4 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {};
 
-export const Closed: Story = {
-  args: {
-    open: false
-  }
-};
+export const Closed: Story = { args: { open: false } };

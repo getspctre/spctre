@@ -2,7 +2,12 @@ import type { JSONValue } from "postgres";
 import { sql, rawSql } from "@/lib/db";
 import { ensureDemoTenant } from "@/lib/repositories/seed/local-dev";
 import { getPackVersion, POLICY_PACKS } from "@spctre/policy-schema/packs";
-import type { AdapterCapabilityDeclaration, AgtCompatibilityReport, PolicyRuleSummary, RuntimeStack } from "@spctre/policy-schema";
+import type {
+  AdapterCapabilityDeclaration,
+  AgtCompatibilityReport,
+  PolicyRuleSummary,
+  RuntimeStack,
+} from "@spctre/policy-schema";
 import {
   listRulesForRevision as listRulesForRevisionShared,
   listRulesForRevisions as listRulesForRevisionsShared,
@@ -23,7 +28,7 @@ export interface PackInstallStatus {
 
 export async function listPackInstallStatuses(
   workspaceId: string | null,
-  tenantId: string
+  tenantId: string,
 ): Promise<PackInstallStatus[]> {
   if (!sql) return [];
 
@@ -99,7 +104,7 @@ export async function listPackInstallStatuses(
           : undefined;
 
     const catalogPack = POLICY_PACKS.find(
-      (pack) => (packId && pack.id === packId) || pack.connector === row.connector
+      (pack) => (packId && pack.id === packId) || pack.connector === row.connector,
     );
 
     const installedVersion =
@@ -127,7 +132,7 @@ export async function listPackInstallStatuses(
 export async function listAdapterDeclarations(
   workspaceId: string | null,
   tenantId: string,
-  environment?: string
+  environment?: string,
 ): Promise<AdapterCapabilityDeclaration[]> {
   if (!sql) return [];
   const rows = await sql<
@@ -350,7 +355,7 @@ export async function persistPackUpgradeRevision(params: {
 export async function upsertAdapterDeclaration(
   declaration: Omit<AdapterCapabilityDeclaration, "id" | "registeredAt">,
   workspaceId: string | null,
-  tenantId: string
+  tenantId: string,
 ): Promise<string> {
   if (!sql) throw new Error("Database not configured.");
   await ensureDemoTenant();

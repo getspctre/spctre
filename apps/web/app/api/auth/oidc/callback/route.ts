@@ -8,17 +8,10 @@ import {
   getOidcConfig,
   getOidcProviderForTenant,
   getOidcProviderByIssuer,
-  oidcCookieOptions
+  oidcCookieOptions,
 } from "@/lib/enterprise-auth";
-import {
-  SESSION_COOKIE,
-  createAuthSession,
-  sessionTtlHours
-} from "@/lib/auth-session";
-import {
-  ACTIVE_TENANT_COOKIE,
-  ACTIVE_WORKSPACE_COOKIE
-} from "@/lib/workspace/cookies";
+import { SESSION_COOKIE, createAuthSession, sessionTtlHours } from "@/lib/auth-session";
+import { ACTIVE_TENANT_COOKIE, ACTIVE_WORKSPACE_COOKIE } from "@/lib/workspace/cookies";
 import { fetchWithRetry } from "@/lib/platform/fetch-retry";
 import { fetchWithTimeout } from "@/lib/platform/fetch-timeout";
 import { createSessionGuardToken, SESSION_GUARD_COOKIE } from "@/lib/session-guard";
@@ -61,7 +54,8 @@ async function discover(issuer: string): Promise<OidcDiscoveryDocument> {
   const res = await fetchWithRetry(url, { cache: "no-store" });
   if (!res.ok) throw new Error("OIDC discovery failed.");
   const doc = (await res.json()) as Partial<OidcDiscoveryDocument>;
-  if (!doc.token_endpoint || !doc.issuer || !doc.jwks_uri) throw new Error("OIDC discovery document is invalid.");
+  if (!doc.token_endpoint || !doc.issuer || !doc.jwks_uri)
+    throw new Error("OIDC discovery document is invalid.");
   return { token_endpoint: doc.token_endpoint, issuer: doc.issuer, jwks_uri: doc.jwks_uri };
 }
 
@@ -130,10 +124,19 @@ type OidcProvider = NonNullable<Awaited<ReturnType<typeof getOidcProviderForTena
 async function resolveOidcClaims(
   request: Request,
   envIssuer: string,
-  params: ValidatedOidcCallback
-): Promise<{ discovery: OidcDiscoveryDocument; provider: OidcProvider; claims: OidcIdTokenClaims & { sub: string } } | NextResponse> {
+  params: ValidatedOidcCallback,
+): Promise<
+  | {
+      discovery: OidcDiscoveryDocument;
+      provider: OidcProvider;
+      claims: OidcIdTokenClaims & { sub: string };
+    }
+  | NextResponse
+> {
   const tenantProvider = params.tenantCookie
-    ? await getOidcProviderForTenant(params.tenantCookie).catch(swallow("getOidcProviderForTenant", null))
+    ? await getOidcProviderForTenant(params.tenantCookie).catch(
+        swallow("getOidcProviderForTenant", null),
+      )
     : null;
 
   let discovery: OidcDiscoveryDocument;
@@ -148,7 +151,7 @@ async function resolveOidcClaims(
       ? tenantProvider
       : await getOidcProviderByIssuer({
           issuer: discovery.issuer,
-          tenantId: params.tenantCookie || undefined
+          tenantId: params.tenantCookie || undefined,
         }).catch(swallow("getOidcProviderByIssuer", null));
   if (!provider) {
     return loginRedirect(request, "provider_not_configured");
@@ -156,18 +159,16 @@ async function resolveOidcClaims(
 
   const tokenRes = await fetchWithTimeout(discovery.token_endpoint, {
     method: "POST",
-    headers: {
-      "content-type": "application/x-www-form-urlencoded"
-    },
+    headers: { "content-type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
       grant_type: "authorization_code",
       code: params.code,
       redirect_uri: provider.redirectUri,
       client_id: provider.clientId,
       client_secret: provider.clientSecret,
-      code_verifier: params.verifier
+      code_verifier: params.verifier,
     }),
-    cache: "no-store"
+    cache: "no-store",
   });
 
   if (!tokenRes.ok) {
@@ -251,7 +252,7 @@ async function handleGetApiAuthOidcCallback(request: Request) {
     principalId,
     tenantId,
     authMethod: "OIDC",
-    mfaVerifiedAt: requireMfa ? null : new Date().toISOString()
+    mfaVerifiedAt: requireMfa ? null : new Date().toISOString(),
   });
   const ttlSeconds = sessionTtlHours() * 60 * 60;
   const guardToken = await createSessionGuardToken({
@@ -260,7 +261,7 @@ async function handleGetApiAuthOidcCallback(request: Request) {
     pid: principalId,
     sub: claims.sub,
     mfaVerified: !requireMfa,
-    ttlSeconds
+    ttlSeconds,
   });
 
   const workspaceId = await getPrimaryWorkspaceIdForTenant(tenantId);
@@ -269,11 +270,7 @@ async function handleGetApiAuthOidcCallback(request: Request) {
   response.cookies.set(SESSION_COOKIE, sessionId, oidcCookieOptions(ttlSeconds));
   response.cookies.set(SESSION_GUARD_COOKIE, guardToken, oidcCookieOptions(ttlSeconds));
   response.cookies.set(ACTIVE_TENANT_COOKIE, tenantId, oidcCookieOptions(ttlSeconds));
-  response.cookies.set(
-    ACTIVE_WORKSPACE_COOKIE,
-    workspaceId ?? "",
-    oidcCookieOptions(ttlSeconds)
-  );
+  response.cookies.set(ACTIVE_WORKSPACE_COOKIE, workspaceId ?? "", oidcCookieOptions(ttlSeconds));
 
   response.cookies.delete(OIDC_STATE_COOKIE);
   response.cookies.delete(OIDC_NONCE_COOKIE);

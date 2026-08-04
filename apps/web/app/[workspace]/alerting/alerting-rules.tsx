@@ -45,7 +45,9 @@ export function RuleModal({
             <X size={16} />
           </button>
         </div>
-        {error && <div style={{ color: "var(--block)", fontSize: 12, marginBottom: 12 }}>{error}</div>}
+        {error && (
+          <div style={{ color: "var(--block)", fontSize: 12, marginBottom: 12 }}>{error}</div>
+        )}
         <form onSubmit={onSubmit}>
           <div className="formGroup">
             <label htmlFor="rule-name">{t("rule.name")}</label>
@@ -77,7 +79,9 @@ export function RuleModal({
                 id="rule-risk"
                 className="formSelect"
                 value={form.minRiskLevel}
-                onChange={(e) => update({ minRiskLevel: e.target.value as RuleFormState["minRiskLevel"] })}
+                onChange={(e) =>
+                  update({ minRiskLevel: e.target.value as RuleFormState["minRiskLevel"] })
+                }
               >
                 <option value="">{t("rule.risk_all")}</option>
                 <option value="LOW">{t("rule.risk_low")}</option>
@@ -165,7 +169,9 @@ export function RulesPane({
       {rules.length === 0 ? (
         <div className="emptyState">
           <p>{t("rule.empty_title")}</p>
-          <p className="meta" style={{ marginTop: 4 }}>{t("rule.empty_body")}</p>
+          <p className="meta" style={{ marginTop: 4 }}>
+            {t("rule.empty_body")}
+          </p>
         </div>
       ) : (
         <div className="denseList">
@@ -175,26 +181,49 @@ export function RulesPane({
                 <div className="itemTitle">
                   <span>{rule.name}</span>
                   {rule.enabled ? (
-                    <span className="pill pillAllow" style={{ fontSize: 9, padding: "1px 4px" }}>{t("rule.active")}</span>
+                    <span className="pill pillAllow" style={{ fontSize: 9, padding: "1px 4px" }}>
+                      {t("rule.active")}
+                    </span>
                   ) : (
-                    <span className="pill" style={{ fontSize: 9, padding: "1px 4px" }}>{t("rule.disabled")}</span>
+                    <span className="pill" style={{ fontSize: 9, padding: "1px 4px" }}>
+                      {t("rule.disabled")}
+                    </span>
                   )}
                 </div>
-                <div className="itemMeta" style={{ display: "flex", flexDirection: "column", gap: 2, marginTop: 4 }}>
+                <div
+                  className="itemMeta"
+                  style={{ display: "flex", flexDirection: "column", gap: 2, marginTop: 4 }}
+                >
                   <div>
-                    {t("rule.connector_label")} <strong style={{ color: "var(--ink)" }}>{rule.connector || t("rule.all")}</strong>
+                    {t("rule.connector_label")}{" "}
+                    <strong style={{ color: "var(--ink)" }}>
+                      {rule.connector || t("rule.all")}
+                    </strong>
                     {" · "}
-                    {t("rule.min_risk_label")} <strong style={{ color: "var(--ink)" }}>{rule.minRiskLevel || t("rule.all")}</strong>
+                    {t("rule.min_risk_label")}{" "}
+                    <strong style={{ color: "var(--ink)" }}>
+                      {rule.minRiskLevel || t("rule.all")}
+                    </strong>
                   </div>
                   <div>
-                    {t("rule.frequency_label")} <strong style={{ color: "var(--ink)" }}>
+                    {t("rule.frequency_label")}{" "}
+                    <strong style={{ color: "var(--ink)" }}>
                       {rule.minFrequency > 1
-                        ? t("rule.freq_threshold", { count: rule.minFrequency, minutes: rule.frequencyWindowMinutes || 1 })
+                        ? t("rule.freq_threshold", {
+                            count: rule.minFrequency,
+                            minutes: rule.frequencyWindowMinutes || 1,
+                          })
                         : t("rule.freq_every")}
                     </strong>
                   </div>
                   <div>
-                    {t("rule.target_label")} <span className={getBadgeClass(rule.integrationType || "")} style={{ fontSize: 9, padding: "1px 4px" }}>{rule.integrationName || t("rule.unknown")}</span>
+                    {t("rule.target_label")}{" "}
+                    <span
+                      className={getBadgeClass(rule.integrationType || "")}
+                      style={{ fontSize: 9, padding: "1px 4px" }}
+                    >
+                      {rule.integrationName || t("rule.unknown")}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -234,8 +263,7 @@ export function useRuleHandlers(ctx: SharedHandlerContext, integrations: Alertin
   const [status, setStatus] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const updateForm = (patch: Partial<RuleFormState>) =>
-    setForm((prev) => ({ ...prev, ...patch }));
+  const updateForm = (patch: Partial<RuleFormState>) => setForm((prev) => ({ ...prev, ...patch }));
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
@@ -257,7 +285,7 @@ export function useRuleHandlers(ctx: SharedHandlerContext, integrations: Alertin
         form.minRiskLevel || null,
         form.minFrequency,
         windowVal,
-        form.integrationId
+        form.integrationId,
       );
       setForm(EMPTY_RULE_FORM);
       setModalOpen(false);
@@ -294,5 +322,15 @@ export function useRuleHandlers(ctx: SharedHandlerContext, integrations: Alertin
     setModalOpen(true);
   }
 
-  return { modalOpen, setModalOpen, form, updateForm, status, deletingId, handleAdd, handleRemove, openModal };
+  return {
+    modalOpen,
+    setModalOpen,
+    form,
+    updateForm,
+    status,
+    deletingId,
+    handleAdd,
+    handleRemove,
+    openModal,
+  };
 }

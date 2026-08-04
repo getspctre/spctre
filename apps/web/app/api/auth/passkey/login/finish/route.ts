@@ -1,7 +1,10 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { verifyAuthenticationResponse } from "@simplewebauthn/server";
-import type { AuthenticationResponseJSON, AuthenticatorTransportFuture } from "@simplewebauthn/server";
+import type {
+  AuthenticationResponseJSON,
+  AuthenticatorTransportFuture,
+} from "@simplewebauthn/server";
 import { createAuthSession } from "@/lib/auth-session";
 import { PASSKEY_LOGIN_CHALLENGE_COOKIE } from "@/lib/auth-challenge";
 import { setControlPlaneSessionCookies } from "@/lib/auth-session-cookies";
@@ -11,7 +14,7 @@ import {
   getPrimaryWorkspaceIdForTenant,
   getPrincipalSubject,
   isAuthDatabaseConfigured,
-  recordPasskeyAuthentication
+  recordPasskeyAuthentication,
 } from "@/lib/domains/auth/service";
 import { getPasskeyExpectedOrigins, getPasskeyRpId } from "@/lib/webauthn-config";
 import { fromBase64Url } from "@/lib/crypto-utils";
@@ -73,9 +76,9 @@ async function handlePostApiAuthPasskeyLoginFinish(request: Request) {
         id: credential.credentialIdB64,
         publicKey: fromBase64Url(credential.publicKeyB64),
         counter: credential.counter,
-        transports: credential.transports as AuthenticatorTransportFuture[]
+        transports: credential.transports as AuthenticatorTransportFuture[],
       },
-      requireUserVerification: false
+      requireUserVerification: false,
     });
   } catch {
     return jsonError(traceId, "Passkey assertion could not be verified.", 403, true);
@@ -93,7 +96,7 @@ async function handlePostApiAuthPasskeyLoginFinish(request: Request) {
   const touchResult = await recordPasskeyAuthentication({
     credentialId: credential.credentialIdB64,
     expectedCounter: credential.counter,
-    newCounter: verification.authenticationInfo.newCounter
+    newCounter: verification.authenticationInfo.newCounter,
   });
   if (touchResult === "db-unavailable") {
     return jsonError(traceId, "Database not configured.", 503, true);
@@ -114,7 +117,7 @@ async function handlePostApiAuthPasskeyLoginFinish(request: Request) {
     principalId,
     tenantId,
     authMethod: "SESSION",
-    mfaVerifiedAt: new Date().toISOString()
+    mfaVerifiedAt: new Date().toISOString(),
   });
   const sessionResult = { subject, workspaceId, sessionId };
 
@@ -127,7 +130,7 @@ async function handlePostApiAuthPasskeyLoginFinish(request: Request) {
     workspaceId: sessionResult.workspaceId ?? "",
     principalId,
     subject: sessionResult.subject,
-    mfaVerified: true
+    mfaVerified: true,
   });
   response.cookies.delete(PASSKEY_LOGIN_CHALLENGE_COOKIE);
 

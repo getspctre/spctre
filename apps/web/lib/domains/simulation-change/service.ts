@@ -11,7 +11,8 @@ type SimulationChangeCategory = "SIMULATION_GUIDED_CHANGE";
 
 interface SimulationChangeProposal {
   ruleRef: string;
-  changeType: "REVIEW_DENY_SCOPE" | "REVIEW_ALLOW_SCOPE" | "INSPECT_MATCH_CONDITIONS" | "HOLD_POLICY";
+  changeType:
+    "REVIEW_DENY_SCOPE" | "REVIEW_ALLOW_SCOPE" | "INSPECT_MATCH_CONDITIONS" | "HOLD_POLICY";
   affectedEvents: number;
   reason: string;
 }
@@ -43,11 +44,18 @@ function confidenceForRun(run: SimulationRun): SimulationChangeRecommendation["c
   return "LOW";
 }
 
-function topRuleRefs(results: SimulationReplayInput[]): Array<{ ruleRef: string; affectedEvents: number; denyEvents: number; allowEvents: number }> {
-  const counts = new Map<string, { affectedEvents: number; denyEvents: number; allowEvents: number }>();
+function topRuleRefs(
+  results: SimulationReplayInput[],
+): Array<{ ruleRef: string; affectedEvents: number; denyEvents: number; allowEvents: number }> {
+  const counts = new Map<
+    string,
+    { affectedEvents: number; denyEvents: number; allowEvents: number }
+  >();
   for (const result of results) {
     if (result.delta === "UNCHANGED") continue;
-    const refs = result.matchedPolicyRefs.length ? result.matchedPolicyRefs : ["unmatched-policy-path"];
+    const refs = result.matchedPolicyRefs.length
+      ? result.matchedPolicyRefs
+      : ["unmatched-policy-path"];
     for (const ruleRef of refs) {
       const entry = counts.get(ruleRef) ?? { affectedEvents: 0, denyEvents: 0, allowEvents: 0 };
       entry.affectedEvents += 1;
@@ -83,7 +91,8 @@ function proposalForRule(rule: ReturnType<typeof topRuleRefs>[number]): Simulati
     ruleRef: rule.ruleRef,
     changeType: "INSPECT_MATCH_CONDITIONS",
     affectedEvents: rule.affectedEvents,
-    reason: "Mixed simulation deltas point to selector or condition changes that need reviewer calibration.",
+    reason:
+      "Mixed simulation deltas point to selector or condition changes that need reviewer calibration.",
   };
 }
 
@@ -92,12 +101,14 @@ function buildSimulationChangeRecommendation(run: SimulationRun): SimulationChan
   const topRules = topRuleRefs(run.results);
   const proposals = topRules.length
     ? topRules.map(proposalForRule)
-    : [{
-        ruleRef: "no-material-change",
-        changeType: "HOLD_POLICY" as const,
-        affectedEvents: 0,
-        reason: "No sampled outcomes changed, so hold the policy steady.",
-      }];
+    : [
+        {
+          ruleRef: "no-material-change",
+          changeType: "HOLD_POLICY" as const,
+          affectedEvents: 0,
+          reason: "No sampled outcomes changed, so hold the policy steady.",
+        },
+      ];
   const leadingRule = proposals[0]?.ruleRef ?? "the simulated revision";
   const generatedAt = new Date().toISOString();
 
@@ -128,13 +139,12 @@ function buildSimulationChangeRecommendation(run: SimulationRun): SimulationChan
 }
 
 export type GenerateSimulationChangeResult =
-  | { error: string }
-  | { ok: true; recommendation: SimulationChangeRecommendation };
+  { error: string } | { ok: true; recommendation: SimulationChangeRecommendation };
 
-export async function generateSimulationChangeRecommendation(input: {
-  branchId: string;
-  revisionId: string;
-}, scope: ActiveScope | null): Promise<GenerateSimulationChangeResult> {
+export async function generateSimulationChangeRecommendation(
+  input: { branchId: string; revisionId: string },
+  scope: ActiveScope | null,
+): Promise<GenerateSimulationChangeResult> {
   const workspaceContext = scope;
   if (!workspaceContext) return { error: "Workspace context unavailable." };
 
@@ -149,7 +159,7 @@ export async function generateSimulationChangeRecommendation(input: {
     input.revisionId || undefined,
     workspaceContext.workspaceId,
     workspaceContext.tenantId,
-    SIMULATION_GUIDANCE_SOURCE_ID
+    SIMULATION_GUIDANCE_SOURCE_ID,
   );
   if (!run) return { error: "No completed simulation result is available for this revision." };
 
@@ -173,16 +183,19 @@ export async function generateSimulationChangeRecommendation(input: {
 
 export type ApplySimulationChangeResult = { error: string } | { ok: true };
 
-export async function applySimulationChangeDecision(input: {
-  decision: string;
-  rationale?: string;
-  recommendationId?: string;
-  branchId?: string;
-  revisionId?: string;
-  runId?: string;
-  recommendationSummary?: string;
-  editedSummary?: string;
-}, scope: ActiveScope | null): Promise<ApplySimulationChangeResult> {
+export async function applySimulationChangeDecision(
+  input: {
+    decision: string;
+    rationale?: string;
+    recommendationId?: string;
+    branchId?: string;
+    revisionId?: string;
+    runId?: string;
+    recommendationSummary?: string;
+    editedSummary?: string;
+  },
+  scope: ActiveScope | null,
+): Promise<ApplySimulationChangeResult> {
   const workspaceContext = scope;
   if (!workspaceContext) return { error: "Workspace context unavailable." };
 

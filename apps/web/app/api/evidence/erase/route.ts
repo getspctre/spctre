@@ -25,13 +25,20 @@ export const POST = withApiRoute("/api/evidence/erase", async (request, ctx) => 
   const filters = parsed.value;
 
   if (!filters.decisionIds && !filters.agentId && !filters.before) {
-    return ctx.error(400, "Erasure requires at least one filter: decisionIds, agentId, or before (ISO timestamp).");
+    return ctx.error(
+      400,
+      "Erasure requires at least one filter: decisionIds, agentId, or before (ISO timestamp).",
+    );
   }
 
-  const result = await eraseEvidencePii(workspaceId, tenantId, filters, principalId).catch((err) => {
-    logger.error("evidence.erasure_failed", { error: err instanceof Error ? err.message : String(err) });
-    return null;
-  });
+  const result = await eraseEvidencePii(workspaceId, tenantId, filters, principalId).catch(
+    (err) => {
+      logger.error("evidence.erasure_failed", {
+        error: err instanceof Error ? err.message : String(err),
+      });
+      return null;
+    },
+  );
 
   if (!result) {
     return ctx.error(500, "Erasure operation failed.");

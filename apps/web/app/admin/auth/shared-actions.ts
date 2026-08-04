@@ -1,4 +1,1 @@
-export {
-  requireAdminSession,
-  type AdminAuthActionState
-} from "../admin-session";
+export { requireAdminSession, type AdminAuthActionState } from "../admin-session";

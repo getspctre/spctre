@@ -41,10 +41,7 @@ export function RemoveIdpForm({
   return (
     <form action={action} className="adminMutationForm">
       <input type="hidden" name="providerId" value={providerId} />
-      <RemoveProviderButton
-        confirmMessage={t("confirm", { providerName })}
-        removed={removed}
-      />
+      <RemoveProviderButton confirmMessage={t("confirm", { providerName })} removed={removed} />
       <AdminMutationStatus
         error={state?.error}
         message={state?.messageCode ? t(`status.${state.messageCode}`) : state?.message}

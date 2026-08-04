@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { editableRuleFromRawJson, parseSemanticChecksText, rawJsonForRule, scopeVocabulary, serializeConstraints, toEditableRule } from "../app/review/rule-authoring-panel";
+import {
+  editableRuleFromRawJson,
+  parseSemanticChecksText,
+  rawJsonForRule,
+  scopeVocabulary,
+  serializeConstraints,
+  toEditableRule,
+} from "../app/review/rule-authoring-panel";
 import { parseRulesPayload, unmodeledRuleFieldsMatch } from "../lib/domains/review/rule-authoring";
 import type { PolicyRuleSummary } from "@spctre/policy-schema";
 import type { AuthoringVocabularyEntry } from "../lib/domains/packs/service";
@@ -25,7 +32,7 @@ describe("Rule Authoring Logic", () => {
 
       const editable = toEditableRule(mockRule);
       expect(editable.semanticChecksText).toBe(
-        "first check\nsecond check -> WARN\nthird check -> ALLOW"
+        "first check\nsecond check -> WARN\nthird check -> ALLOW",
       );
       expect(editable.originalSemanticChecks).toEqual([
         { id: "check-1", prompt: "first check", effect: undefined },
@@ -68,18 +75,44 @@ describe("Rule Authoring Logic", () => {
 
       // Re-serialize the untouched editable form and confirm the original
       // constraint is reproduced (the data-loss regression this guards against).
-      expect(serializeConstraints(editable.parameterConstraints)).toEqual(mockRule.parameterConstraints);
+      expect(serializeConstraints(editable.parameterConstraints)).toEqual(
+        mockRule.parameterConstraints,
+      );
     });
   });
 
   describe("serializeConstraints", () => {
     it("coerces value text by operator: number, boolean, list, and string", () => {
       const result = serializeConstraints([
-        { field: "amount_cents", operator: "gte", valueText: "50000", effect: "", parameterKey: "" },
-        { field: "branch.protected", operator: "eq", valueText: "true", effect: "DENY", parameterKey: "" },
-        { field: "region", operator: "in", valueText: "us-east-1, eu-west-1", effect: "", parameterKey: "" },
+        {
+          field: "amount_cents",
+          operator: "gte",
+          valueText: "50000",
+          effect: "",
+          parameterKey: "",
+        },
+        {
+          field: "branch.protected",
+          operator: "eq",
+          valueText: "true",
+          effect: "DENY",
+          parameterKey: "",
+        },
+        {
+          field: "region",
+          operator: "in",
+          valueText: "us-east-1, eu-west-1",
+          effect: "",
+          parameterKey: "",
+        },
         { field: "ports", operator: "not_in", valueText: "22, 443", effect: "", parameterKey: "" },
-        { field: "command", operator: "contains", valueText: "rm -rf", effect: "WARN", parameterKey: "" },
+        {
+          field: "command",
+          operator: "contains",
+          valueText: "rm -rf",
+          effect: "WARN",
+          parameterKey: "",
+        },
       ]);
 
       expect(result).toEqual([
@@ -106,14 +139,28 @@ describe("Rule Authoring Logic", () => {
         connector: "stripe",
         domains: ["refunds", "payments"],
         actions: ["refund.create", "payout.update_destination"],
-        parameters: [{ key: "stripe.refund_review_threshold_cents", label: "Refund threshold", type: "number", default: 50000 }],
+        parameters: [
+          {
+            key: "stripe.refund_review_threshold_cents",
+            label: "Refund threshold",
+            type: "number",
+            default: 50000,
+          },
+        ],
         constraintFields: ["amount_cents"],
       },
       {
         connector: "github",
         domains: ["repos"],
         actions: ["pr.merge"],
-        parameters: [{ key: "github.protected_branches", label: "Protected branches", type: "string", default: "main" }],
+        parameters: [
+          {
+            key: "github.protected_branches",
+            label: "Protected branches",
+            type: "string",
+            default: "main",
+          },
+        ],
         constraintFields: ["branch.protected"],
       },
     ];
@@ -171,7 +218,9 @@ describe("Rule Authoring Logic", () => {
       if (!("rule" in result)) return;
       // Re-serialize and confirm the constraint and unmodeled priority survive.
       const reserialized = JSON.parse(rawJsonForRule(result.rule));
-      expect(reserialized.parameterConstraints).toEqual([{ field: "amount_cents", operator: "gte", value: 50000 }]);
+      expect(reserialized.parameterConstraints).toEqual([
+        { field: "amount_cents", operator: "gte", value: 50000 },
+      ]);
       expect(reserialized.priority).toBe(7);
       expect(reserialized.effect).toBe("ESCALATE");
     });
@@ -186,8 +235,12 @@ describe("Rule Authoring Logic", () => {
 
     it("rejects invalid JSON and non-object payloads", () => {
       const editable = toEditableRule(base);
-      expect(editableRuleFromRawJson("{ not json", editable)).toEqual({ error: expect.stringContaining("not valid") });
-      expect(editableRuleFromRawJson("[]", editable)).toEqual({ error: expect.stringContaining("single object") });
+      expect(editableRuleFromRawJson("{ not json", editable)).toEqual({
+        error: expect.stringContaining("not valid"),
+      });
+      expect(editableRuleFromRawJson("[]", editable)).toEqual({
+        error: expect.stringContaining("single object"),
+      });
     });
 
     it("preserves inherited-immutable status from the base rule", () => {
@@ -247,10 +300,7 @@ describe("Rule Authoring Logic", () => {
 
     it("avoids ID conflicts when generating new IDs", () => {
       // If original contains a check named rule-1-sc-3, the generator must skip it
-      const originalWithConflict = [
-        ...originalChecks,
-        { id: "rule-1-sc-3", prompt: "some other" },
-      ];
+      const originalWithConflict = [...originalChecks, { id: "rule-1-sc-3", prompt: "some other" }];
       const text = "first check\nsecond check -> WARN\nsome other\nnew check";
       const result = parseSemanticChecksText(text, "rule-1", originalWithConflict);
 
@@ -276,9 +326,19 @@ describe("Rule Authoring Logic", () => {
       actions: ["agent.unnamed_action", "agent.unversioned_action", "agent.missing_principal"],
       immutable: true,
       conditions: [],
-      controlMappings: [{ framework: "SOC2", controlId: "CC6.1", rationale: "Access control for governed tool use" }],
+      controlMappings: [
+        {
+          framework: "SOC2",
+          controlId: "CC6.1",
+          rationale: "Access control for governed tool use",
+        },
+      ],
       // AGT-native provenance the form never surfaces.
-      originalRule: { stable_rule_id: "org.identity.block_unnamed_principal", agt_native: true, priority: 3 },
+      originalRule: {
+        stable_rule_id: "org.identity.block_unnamed_principal",
+        agt_native: true,
+        priority: 3,
+      },
     };
 
     function roundTrip(base: PolicyRuleSummary) {
@@ -290,14 +350,22 @@ describe("Rule Authoring Logic", () => {
 
     it("passes the guard for an unchanged immutable rule", () => {
       const candidate = roundTrip(baseline);
-      expect(unmodeledRuleFieldsMatch(baseline as unknown as Record<string, unknown>, candidate)).toBe(true);
+      expect(
+        unmodeledRuleFieldsMatch(baseline as unknown as Record<string, unknown>, candidate),
+      ).toBe(true);
     });
 
     it("catches tampering with an unmodeled AGT-native field after the round-trip", () => {
       // Simulate a raw-JSON edit that flips a preserved AGT-native field.
       const tampered = roundTrip(baseline) as Record<string, unknown>;
-      tampered.originalRule = { stable_rule_id: "org.identity.block_unnamed_principal", agt_native: false, priority: 3 };
-      expect(unmodeledRuleFieldsMatch(baseline as unknown as Record<string, unknown>, tampered)).toBe(false);
+      tampered.originalRule = {
+        stable_rule_id: "org.identity.block_unnamed_principal",
+        agt_native: false,
+        priority: 3,
+      };
+      expect(
+        unmodeledRuleFieldsMatch(baseline as unknown as Record<string, unknown>, tampered),
+      ).toBe(false);
     });
   });
 });

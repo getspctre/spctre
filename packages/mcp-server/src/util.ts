@@ -27,7 +27,7 @@ export function parseAllowedSourceIps(): Set<string> {
     (process.env.SPCTRE_ALLOWED_SOURCE_IPS || "")
       .split(",")
       .map((ip) => ip.trim())
-      .filter(Boolean)
+      .filter(Boolean),
   );
 }
 

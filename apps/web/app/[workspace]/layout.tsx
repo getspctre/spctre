@@ -1,7 +1,10 @@
 import { notFound } from "next/navigation";
 import { getWorkspaceContext } from "@/lib/workspace";
 
-export default async function WorkspaceLayout({ children, params }: {
+export default async function WorkspaceLayout({
+  children,
+  params,
+}: {
   children: React.ReactNode;
   params: Promise<{ workspace: string }>;
 }) {

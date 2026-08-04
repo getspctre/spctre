@@ -1,4 +1,11 @@
-import { CheckCircle2, Download, ExternalLink, PackageCheck, ShieldAlert, ShieldCheck } from "lucide-react";
+import {
+  CheckCircle2,
+  Download,
+  ExternalLink,
+  PackageCheck,
+  ShieldAlert,
+  ShieldCheck,
+} from "lucide-react";
 import type { CompliancePageModel } from "@/lib/domains/compliance/service";
 import type { PostureModel } from "@/lib/domains/posture/service";
 import type {
@@ -52,7 +59,9 @@ function getPacketReadiness({
   verificationSummary: VerificationSummary;
 }) {
   const verificationCurrent = Boolean(
-    verificationSummary?.hasResults && verificationSummary.overallOutcome === "PASS" && !verificationSummary.isStale,
+    verificationSummary?.hasResults &&
+    verificationSummary.overallOutcome === "PASS" &&
+    !verificationSummary.isStale,
   );
   const evidenceLinked = Boolean(activeExport && activeExport.evidenceCount > 0);
   const retentionClear = (activeRetentionPlan?.expiredCount ?? 0) === 0;
@@ -61,31 +70,41 @@ function getPacketReadiness({
   const gates: ReadinessGate[] = [
     {
       label: "Published artifact",
-      detail: activeExport ? "Current revision is included in this packet." : "Publish a revision to create a packet.",
+      detail: activeExport
+        ? "Current revision is included in this packet."
+        : "Publish a revision to create a packet.",
       status: activeExport ? "ready" : "unavailable",
       href: "#packet",
     },
     {
       label: "Runtime evidence",
-      detail: evidenceLinked ? `${activeExport?.evidenceCount} records are linked.` : "No runtime evidence is linked yet.",
+      detail: evidenceLinked
+        ? `${activeExport?.evidenceCount} records are linked.`
+        : "No runtime evidence is linked yet.",
       status: evidenceLinked ? "ready" : "attention",
       href: "#lifecycle",
     },
     {
       label: "Verification",
-      detail: verificationCurrent ? "Current verification passed for this artifact." : "Run or attach a current passing verification before handoff.",
+      detail: verificationCurrent
+        ? "Current verification passed for this artifact."
+        : "Run or attach a current passing verification before handoff.",
       status: verificationCurrent ? "ready" : "attention",
       href: "#verification",
     },
     {
       label: "Retention",
-      detail: retentionClear ? "No linked evidence has expired." : `${activeRetentionPlan?.expiredCount} linked records have expired.`,
+      detail: retentionClear
+        ? "No linked evidence has expired."
+        : `${activeRetentionPlan?.expiredCount} linked records have expired.`,
       status: retentionClear ? "ready" : "attention",
       href: "#retention",
     },
     {
       label: "Control mappings",
-      detail: controlsMapped ? `${controlMappingCount} mappings are included.` : "No control mappings are attached. Review before external handoff.",
+      detail: controlsMapped
+        ? `${controlMappingCount} mappings are included.`
+        : "No control mappings are attached. Review before external handoff.",
       status: controlsMapped ? "ready" : "attention",
       href: "#control-mappings",
     },
@@ -110,13 +129,20 @@ function PacketReadiness({
   const readiness = getPacketReadiness({ activeExport, activeRetentionPlan, verificationSummary });
   const nextAction = readiness.ready
     ? { href: "/api/compliance/export", label: "Download ready JSON packet" }
-    : { href: readiness.nextGate?.href ?? "#packet", label: `Review ${readiness.nextGate?.label.toLowerCase() ?? "packet"}` };
+    : {
+        href: readiness.nextGate?.href ?? "#packet",
+        label: `Review ${readiness.nextGate?.label.toLowerCase() ?? "packet"}`,
+      };
 
   return (
     <section className="packetReadiness" aria-labelledby="packet-readiness-title">
       <div className="packetReadinessIntro">
         <p className="eyebrow">Packet readiness</p>
-        <h2 id="packet-readiness-title">{readiness.ready ? "Ready for external handoff" : "Action required before external handoff"}</h2>
+        <h2 id="packet-readiness-title">
+          {readiness.ready
+            ? "Ready for external handoff"
+            : "Action required before external handoff"}
+        </h2>
         <p className="meta">
           {readiness.ready
             ? "The current packet has linked evidence, current passing verification, and no expired evidence."
@@ -125,13 +151,22 @@ function PacketReadiness({
       </div>
       <div className="packetReadinessGates" aria-label="Packet readiness checks">
         {readiness.gates.map((gate) => (
-          <a className={`packetReadinessGate packetReadinessGate${gate.status}`} href={gate.href} key={gate.label}>
+          <a
+            className={`packetReadinessGate packetReadinessGate${gate.status}`}
+            href={gate.href}
+            key={gate.label}
+          >
             {gate.status === "ready" ? <CheckCircle2 size={16} /> : <ShieldAlert size={16} />}
-            <span><strong>{gate.label}</strong><small>{gate.detail}</small></span>
+            <span>
+              <strong>{gate.label}</strong>
+              <small>{gate.detail}</small>
+            </span>
           </a>
         ))}
       </div>
-      <a className="button buttonPrimary" href={nextAction.href}>{nextAction.label}</a>
+      <a className="button buttonPrimary" href={nextAction.href}>
+        {nextAction.label}
+      </a>
     </section>
   );
 }
@@ -169,7 +204,8 @@ function PacketHero({
         {activeExport && activeTimeline ? (
           <>
             <h2>
-              {t("packet_title")} <code>{formatProvenanceId(activeExport.id, appViewMode, 16, hashToFingerprint)}</code>
+              {t("packet_title")}{" "}
+              <code>{formatProvenanceId(activeExport.id, appViewMode, 16, hashToFingerprint)}</code>
             </h2>
             <p className="meta">
               {t("packet_meta", {
@@ -182,9 +218,7 @@ function PacketHero({
         ) : (
           <>
             <h2>{t("empty_title")}</h2>
-            <p className="meta">
-              {t("empty_description")}
-            </p>
+            <p className="meta">{t("empty_description")}</p>
           </>
         )}
         <div className="complianceHeroActions">
@@ -202,7 +236,9 @@ function PacketHero({
             <ShieldCheck size={13} />
             {verificationStatus}
           </span>
-          <span className="pill pillNeutral">{t("sections", { count: activeExport?.packageSections.length ?? 0 })}</span>
+          <span className="pill pillNeutral">
+            {t("sections", { count: activeExport?.packageSections.length ?? 0 })}
+          </span>
         </div>
       </div>
     </section>
@@ -231,61 +267,71 @@ function PacketContentsSection({
           <div className="emptyState">
             <h3>No compliance packet generated</h3>
             <p className="meta">
-              Packet contents appear after a policy revision is published and runtime evidence is recorded.
+              Packet contents appear after a policy revision is published and runtime evidence is
+              recorded.
             </p>
           </div>
         </>
       ) : (
-      <>
-      <div className="rowHeader">
-        <div>
-          <p className="eyebrow">Export · Packet contents</p>
-          <h2>
-            Packet contents
-            <span className="headCount">{activeExport.packageSections.length}</span>
-          </h2>
-          <p className="meta">
-            Artifact {formatArtifactHash(activeExport.artifactHash, appViewMode, hashToFingerprint)} · generated {activeExport.generatedAt?.slice(0, 10) || "pending"}.
-          </p>
-        </div>
-      </div>
-
-      <div className="complianceLayout">
-        <div className="complianceCard">
-          <PackageCheck size={18} />
-          <div>
-            <span className="meta">Artifact</span>
-            <strong>{formatArtifactHash(activeExport.artifactHash, appViewMode, hashToFingerprint)}</strong>
+        <>
+          <div className="rowHeader">
+            <div>
+              <p className="eyebrow">Export · Packet contents</p>
+              <h2>
+                Packet contents
+                <span className="headCount">{activeExport.packageSections.length}</span>
+              </h2>
+              <p className="meta">
+                Artifact{" "}
+                {formatArtifactHash(activeExport.artifactHash, appViewMode, hashToFingerprint)} ·
+                generated {activeExport.generatedAt?.slice(0, 10) || "pending"}.
+              </p>
+            </div>
           </div>
-          <div>
-            <span className="meta">Generated</span>
-            <strong>{activeExport.generatedAt?.slice(0, 10) || "pending"}</strong>
+
+          <div className="complianceLayout">
+            <div className="complianceCard">
+              <PackageCheck size={18} />
+              <div>
+                <span className="meta">Artifact</span>
+                <strong>
+                  {formatArtifactHash(activeExport.artifactHash, appViewMode, hashToFingerprint)}
+                </strong>
+              </div>
+              <div>
+                <span className="meta">Generated</span>
+                <strong>{activeExport.generatedAt?.slice(0, 10) || "pending"}</strong>
+              </div>
+              <div>
+                <span className="meta">Replay volume</span>
+                <strong>{activeExport.simulationEventCount}</strong>
+              </div>
+            </div>
+
+            <div className="packageSections">
+              {activeExport.packageSections.map((section: string) => (
+                <span className="ruleRef" key={section}>
+                  {section}
+                </span>
+              ))}
+            </div>
           </div>
-          <div>
-            <span className="meta">Replay volume</span>
-            <strong>{activeExport.simulationEventCount}</strong>
+
+          <div className="complianceOutcomes">
+            <p className="meta">
+              {activeExport.deniedDecisionCount} deny · {activeExport.warnedDecisionCount} warn ·
+              tied to revision{" "}
+              {formatProvenanceId(activeTimeline.revisionId, appViewMode, 12, hashToFingerprint)}.
+            </p>
           </div>
-        </div>
 
-        <div className="packageSections">
-          {activeExport.packageSections.map((section: string) => (
-            <span className="ruleRef" key={section}>
-              {section}
-            </span>
-          ))}
-        </div>
-      </div>
-
-      <div className="complianceOutcomes">
-        <p className="meta">
-          {activeExport.deniedDecisionCount} deny · {activeExport.warnedDecisionCount} warn · tied to revision {formatProvenanceId(activeTimeline.revisionId, appViewMode, 12, hashToFingerprint)}.
-        </p>
-      </div>
-
-      <PlanGate feature="compliancePdfExport" fallback={<UpgradePrompt feature="compliancePdfExport" variant="inline" />}>
-        <p className="meta">PDF export is available for this compliance packet.</p>
-      </PlanGate>
-      </>
+          <PlanGate
+            feature="compliancePdfExport"
+            fallback={<UpgradePrompt feature="compliancePdfExport" variant="inline" />}
+          >
+            <p className="meta">PDF export is available for this compliance packet.</p>
+          </PlanGate>
+        </>
       )}
     </section>
   );
@@ -312,44 +358,57 @@ function LifecycleTimelineSection({
           </div>
           <div className="emptyState">
             <h3>No lifecycle events yet</h3>
-            <p className="meta">Timeline events appear once policy branches are reviewed and published.</p>
+            <p className="meta">
+              Timeline events appear once policy branches are reviewed and published.
+            </p>
           </div>
         </>
       ) : (
-      <>
-      <div className="rowHeader">
-        <div>
-          <p className="eyebrow">Audit · Lifecycle timeline</p>
-          <h2>
-            Lifecycle timeline
-            <span className="headCount">{activeTimeline.events.length}</span>
-          </h2>
-          <p className="meta">
-            <code>{formatProvenanceId(activeTimeline.branchId, appViewMode, 16, hashToFingerprint)}</code> /{" "}
-            <code>{formatProvenanceId(activeTimeline.revisionId, appViewMode, 16, hashToFingerprint)}</code> from{" "}
-            {activeTimeline.firstEventAt?.slice(0, 10)} to {activeTimeline.latestEventAt?.slice(0, 10)}
-          </p>
-        </div>
-      </div>
+        <>
+          <div className="rowHeader">
+            <div>
+              <p className="eyebrow">Audit · Lifecycle timeline</p>
+              <h2>
+                Lifecycle timeline
+                <span className="headCount">{activeTimeline.events.length}</span>
+              </h2>
+              <p className="meta">
+                <code>
+                  {formatProvenanceId(activeTimeline.branchId, appViewMode, 16, hashToFingerprint)}
+                </code>{" "}
+                /{" "}
+                <code>
+                  {formatProvenanceId(
+                    activeTimeline.revisionId,
+                    appViewMode,
+                    16,
+                    hashToFingerprint,
+                  )}
+                </code>{" "}
+                from {activeTimeline.firstEventAt?.slice(0, 10)} to{" "}
+                {activeTimeline.latestEventAt?.slice(0, 10)}
+              </p>
+            </div>
+          </div>
 
-      <div className="timelineList complianceTimelineList">
-        {activeTimeline.events.map((event) => (
-          <TimelineEventInspector
-            key={event.id}
-            event={
-              !isForensicViewMode(appViewMode) && event.actor
-                ? {
-                    ...event,
-                    actor: formatActorId(event.actor),
-                    detail: event.detail.replaceAll(event.actor, formatActorId(event.actor)),
-                  }
-                : event
-            }
-            viewMode={appViewMode}
-          />
-        ))}
-      </div>
-      </>
+          <div className="timelineList complianceTimelineList">
+            {activeTimeline.events.map((event) => (
+              <TimelineEventInspector
+                key={event.id}
+                event={
+                  !isForensicViewMode(appViewMode) && event.actor
+                    ? {
+                        ...event,
+                        actor: formatActorId(event.actor),
+                        detail: event.detail.replaceAll(event.actor, formatActorId(event.actor)),
+                      }
+                    : event
+                }
+                viewMode={appViewMode}
+              />
+            ))}
+          </div>
+        </>
       )}
     </section>
   );
@@ -381,61 +440,69 @@ function RetentionSection({
           <div className="emptyState">
             <h3>No retention plan generated</h3>
             <p className="meta">
-              A retention plan is generated once retention rules are configured and evidence is recorded.
+              A retention plan is generated once retention rules are configured and evidence is
+              recorded.
             </p>
           </div>
         </>
       ) : (
-      <>
-      <div className="rowHeader">
-        <div>
-          <p className="eyebrow">Workflow · Retention</p>
-          <h2>
-            Retention plan <code>{formatProvenanceId(activeRetentionPlan.id, appViewMode, 16, hashToFingerprint)}</code>
-          </h2>
-          <p className="meta">
-            Generated {activeRetentionPlan.generatedAt?.slice(0, 10)} · {activeRetentionPlan.exportableCount} exportable records.
-          </p>
-        </div>
-      </div>
+        <>
+          <div className="rowHeader">
+            <div>
+              <p className="eyebrow">Workflow · Retention</p>
+              <h2>
+                Retention plan{" "}
+                <code>
+                  {formatProvenanceId(activeRetentionPlan.id, appViewMode, 16, hashToFingerprint)}
+                </code>
+              </h2>
+              <p className="meta">
+                Generated {activeRetentionPlan.generatedAt?.slice(0, 10)} ·{" "}
+                {activeRetentionPlan.exportableCount} exportable records.
+              </p>
+            </div>
+          </div>
 
-      <div className="retentionSummary" aria-label="Evidence retention summary">
-        <div>
-          <span className="meta">Active</span>
-          <strong>{activeRetentionPlan.activeCount}</strong>
-        </div>
-        <div>
-          <span className="meta">Expiring</span>
-          <strong>{activeRetentionPlan.expiringCount}</strong>
-        </div>
-        <div>
-          <span className="meta">Expired</span>
-          <strong>{activeRetentionPlan.expiredCount}</strong>
-        </div>
-        <div>
-          <span className="meta">Longest</span>
-          <strong>{activeRetentionPlan.longestRetentionDays}d</strong>
-        </div>
-      </div>
+          <div className="retentionSummary" aria-label="Evidence retention summary">
+            <div>
+              <span className="meta">Active</span>
+              <strong>{activeRetentionPlan.activeCount}</strong>
+            </div>
+            <div>
+              <span className="meta">Expiring</span>
+              <strong>{activeRetentionPlan.expiringCount}</strong>
+            </div>
+            <div>
+              <span className="meta">Expired</span>
+              <strong>{activeRetentionPlan.expiredCount}</strong>
+            </div>
+            <div>
+              <span className="meta">Longest</span>
+              <strong>{activeRetentionPlan.longestRetentionDays}d</strong>
+            </div>
+          </div>
 
-      <RetentionPlanTabs
-        rules={activeRetentionPlan.rules}
-        decisions={activeRetentionPlan.decisions}
-        appViewMode={appViewMode}
-        activeTab={retentionTab}
-        rulesHref={retentionRulesHref}
-        decisionsHref={retentionDecisionsHref}
-      />
-      </>
+          <RetentionPlanTabs
+            rules={activeRetentionPlan.rules}
+            decisions={activeRetentionPlan.decisions}
+            appViewMode={appViewMode}
+            activeTab={retentionTab}
+            rulesHref={retentionRulesHref}
+            decisionsHref={retentionDecisionsHref}
+          />
+        </>
       )}
 
-      <PlanGate feature="longTermForensicArchival" fallback={<UpgradePrompt feature="longTermForensicArchival" variant="inline" />}>
+      <PlanGate
+        feature="longTermForensicArchival"
+        fallback={<UpgradePrompt feature="longTermForensicArchival" variant="inline" />}
+      >
         <div className="upgradePrompt upgradePromptInline">
           <div>
-              <p className="eyebrow">Cloud · Forensic archival</p>
-              <h3>Extended forensic retention</h3>
+            <p className="eyebrow">Cloud · Forensic archival</p>
+            <h3>Extended forensic retention</h3>
             <p className="meta">
-                Managed tamper-evident storage beyond the local retention window.
+              Managed tamper-evident storage beyond the local retention window.
             </p>
           </div>
         </div>
@@ -446,7 +513,8 @@ function RetentionSection({
 
 function verificationPillClass(verificationSummary: VerificationSummary): string {
   if (!verificationSummary?.hasResults) return "pill pillNeutral";
-  if (verificationSummary.overallOutcome === "PASS" && !verificationSummary.isStale) return "pill pillAllow";
+  if (verificationSummary.overallOutcome === "PASS" && !verificationSummary.isStale)
+    return "pill pillAllow";
   if (verificationSummary.overallOutcome === "FAIL") return "pill pillBlock";
   return "pill pillWarn";
 }
@@ -457,13 +525,22 @@ function outcomePillClass(outcome: string): string {
   return "pill pillWarn";
 }
 
-function agtDriftStatusLabel(verificationSummary: VerificationSummary, latestAgtVersion: string): string {
+function agtDriftStatusLabel(
+  verificationSummary: VerificationSummary,
+  latestAgtVersion: string,
+): string {
   if (!verificationSummary?.hasResults) return "UNVERIFIED";
   if (latestAgtVersion === "unreported") return "UNKNOWN";
-  return latestAgtVersion === AGT_COMPATIBILITY_TARGET && !verificationSummary.isStale ? "CURRENT" : "RECHECK";
+  return latestAgtVersion === AGT_COMPATIBILITY_TARGET && !verificationSummary.isStale
+    ? "CURRENT"
+    : "RECHECK";
 }
 
-function VerificationSection({ verificationSummary }: { verificationSummary: VerificationSummary }) {
+function VerificationSection({
+  verificationSummary,
+}: {
+  verificationSummary: VerificationSummary;
+}) {
   const latestAgtVersion = verificationSummary?.latestAgtVersion ?? "unreported";
   const latestPoliciesVersion = verificationSummary?.latestAgtPoliciesVersion ?? "unreported";
   const latestCedarVersion = verificationSummary?.latestCedarPolicyVersion ?? "unreported";
@@ -491,58 +568,63 @@ function VerificationSection({ verificationSummary }: { verificationSummary: Ver
       <details className="verificationDetails">
         <summary>Verification details</summary>
         <div className="complianceSummary" aria-label="AGT compatibility drift status">
-        <div>
-          <span className="meta">Target</span>
-          <strong>AGT {AGT_COMPATIBILITY_TARGET}</strong>
+          <div>
+            <span className="meta">Target</span>
+            <strong>AGT {AGT_COMPATIBILITY_TARGET}</strong>
+          </div>
+          <div>
+            <span className="meta">Latest verified</span>
+            <strong>
+              {latestAgtVersion === "unreported" ? "Unreported" : `AGT ${latestAgtVersion}`}
+            </strong>
+          </div>
+          <div>
+            <span className="meta">agt-policies</span>
+            <strong>{latestPoliciesVersion}</strong>
+          </div>
+          <div>
+            <span className="meta">Cedar policy</span>
+            <strong>{latestCedarVersion}</strong>
+          </div>
+          <div>
+            <span className="meta">Drift</span>
+            <strong>{agtDriftStatus}</strong>
+          </div>
         </div>
-        <div>
-          <span className="meta">Latest verified</span>
-          <strong>{latestAgtVersion === "unreported" ? "Unreported" : `AGT ${latestAgtVersion}`}</strong>
-        </div>
-        <div>
-          <span className="meta">agt-policies</span>
-          <strong>{latestPoliciesVersion}</strong>
-        </div>
-        <div>
-          <span className="meta">Cedar policy</span>
-          <strong>{latestCedarVersion}</strong>
-        </div>
-        <div>
-          <span className="meta">Drift</span>
-          <strong>{agtDriftStatus}</strong>
-        </div>
-        </div>
-        {verificationSummary?.hasResults && Object.keys(verificationSummary.resultsByType).length > 0 ? (
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Check type</th>
-              <th>Outcome</th>
-              <th>Run at</th>
-            </tr>
-          </thead>
-          <tbody>
-            {(Object.entries(verificationSummary.resultsByType) as [string, { outcome: string; createdAt: string }][]).map(
-              ([type, result]) => (
+        {verificationSummary?.hasResults &&
+        Object.keys(verificationSummary.resultsByType).length > 0 ? (
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Check type</th>
+                <th>Outcome</th>
+                <th>Run at</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(
+                Object.entries(verificationSummary.resultsByType) as [
+                  string,
+                  { outcome: string; createdAt: string },
+                ][]
+              ).map(([type, result]) => (
                 <tr key={type}>
                   <td>
                     <code>{type}</code>
                   </td>
                   <td>
-                    <span className={outcomePillClass(result.outcome)}>
-                      {result.outcome}
-                    </span>
+                    <span className={outcomePillClass(result.outcome)}>{result.outcome}</span>
                   </td>
                   <td className="meta">{new Date(result.createdAt).toLocaleString()}</td>
                 </tr>
-              )
-            )}
-          </tbody>
-        </table>
+              ))}
+            </tbody>
+          </table>
         ) : null}
       </details>
       <p className="meta compliancePostHint">
-        Verification is posted by the platform verification workflow. <a href="/api-docs">View verification API reference</a> for manual integration.
+        Verification is posted by the platform verification workflow.{" "}
+        <a href="/api-docs">View verification API reference</a> for manual integration.
       </p>
     </section>
   );
@@ -562,7 +644,11 @@ function DeliverySection({
         <div>
           <p className="eyebrow">External evidence handoff</p>
           <h2>Delivery</h2>
-          <p className="meta">{destinations.length ? `${destinations.filter((destination) => destination.enabled).length} active destinations · ${attempts.length} recent attempts${failureCount ? ` · ${failureCount} need attention` : ""}.` : "No delivery destination is configured for this workspace."}</p>
+          <p className="meta">
+            {destinations.length
+              ? `${destinations.filter((destination) => destination.enabled).length} active destinations · ${attempts.length} recent attempts${failureCount ? ` · ${failureCount} need attention` : ""}.`
+              : "No delivery destination is configured for this workspace."}
+          </p>
         </div>
         <ShieldCheck size={20} className="sectionIcon" />
       </div>
@@ -570,19 +656,44 @@ function DeliverySection({
         <div className="deliveryList">
           {destinations.map((destination) => (
             <div className="deliveryRow" key={destination.id}>
-              <div><strong>{destination.label}</strong><p className="meta">Webhook · {destination.hasCredential ? "Credential configured" : "No credential configured"}</p></div>
-              <span className={destination.enabled ? "pill pillAllow" : "pill pillNeutral"}>{destination.enabled ? "ACTIVE" : "PAUSED"}</span>
+              <div>
+                <strong>{destination.label}</strong>
+                <p className="meta">
+                  Webhook ·{" "}
+                  {destination.hasCredential ? "Credential configured" : "No credential configured"}
+                </p>
+              </div>
+              <span className={destination.enabled ? "pill pillAllow" : "pill pillNeutral"}>
+                {destination.enabled ? "ACTIVE" : "PAUSED"}
+              </span>
             </div>
           ))}
         </div>
-      ) : <div className="emptyState"><h3>No delivery destination configured</h3><p className="meta">This packet stays in Spctre until a delivery destination is configured by a platform administrator.</p></div>}
+      ) : (
+        <div className="emptyState">
+          <h3>No delivery destination configured</h3>
+          <p className="meta">
+            This packet stays in Spctre until a delivery destination is configured by a platform
+            administrator.
+          </p>
+        </div>
+      )}
       <details className="developerDelivery">
         <summary>Developer delivery integration</summary>
-        <p className="meta">Use these endpoints only from an authenticated integration. They operate on the current workspace, not a selected packet.</p>
+        <p className="meta">
+          Use these endpoints only from an authenticated integration. They operate on the current
+          workspace, not a selected packet.
+        </p>
         <div className="toolbar">
-          <a className="button" href="/api/compliance/grc-destinations">Destination API <ExternalLink size={14} /></a>
-          <a className="button" href="/api/compliance/grc-destinations/attempts">Delivery attempts API <ExternalLink size={14} /></a>
-          <a className="button" href="/api/compliance/export?format=grc">Download GRC bridge export <Download size={14} /></a>
+          <a className="button" href="/api/compliance/grc-destinations">
+            Destination API <ExternalLink size={14} />
+          </a>
+          <a className="button" href="/api/compliance/grc-destinations/attempts">
+            Delivery attempts API <ExternalLink size={14} />
+          </a>
+          <a className="button" href="/api/compliance/export?format=grc">
+            Download GRC bridge export <Download size={14} />
+          </a>
         </div>
       </details>
     </section>
@@ -597,14 +708,19 @@ function ControlMappingsSection({
   controlEvidenceRollup: ControlEvidenceRollupEntry[];
 }) {
   const mappings = activeExport?.controlMappings ?? [];
-  const rollupByControl = new Map(controlEvidenceRollup.map((entry) => [`${entry.framework}:${entry.controlId}`, entry]));
+  const rollupByControl = new Map(
+    controlEvidenceRollup.map((entry) => [`${entry.framework}:${entry.controlId}`, entry]),
+  );
   return (
     <section className="panel compliancePanel" id="control-mappings">
       <div className="rowHeader">
         <div>
           <p className="eyebrow">Reviewed policy metadata</p>
           <h2>Control mappings</h2>
-          <p className="meta">Rule-to-control links included in evidence and GRC bridge exports, with runtime evidence proving each control operated.</p>
+          <p className="meta">
+            Rule-to-control links included in evidence and GRC bridge exports, with runtime evidence
+            proving each control operated.
+          </p>
         </div>
         <ShieldCheck size={20} className="sectionIcon" />
       </div>
@@ -614,7 +730,9 @@ function ControlMappingsSection({
             const rollup = rollupByControl.get(`${mapping.framework}:${mapping.controlId}`);
             return (
               <div key={`${mapping.stableRuleId}-${mapping.framework}-${mapping.controlId}`}>
-                <span className="meta">{mapping.framework} · {mapping.controlId}</span>
+                <span className="meta">
+                  {mapping.framework} · {mapping.controlId}
+                </span>
                 <code className="smallCode">{mapping.stableRuleId}</code>
                 {mapping.rationale ? <span className="meta">{mapping.rationale}</span> : null}
                 {rollup ? (
@@ -628,7 +746,9 @@ function ControlMappingsSection({
             );
           })}
         </div>
-      ) : <p className="meta">No explicit control mappings are attached to the published rules.</p>}
+      ) : (
+        <p className="meta">No explicit control mappings are attached to the published rules.</p>
+      )}
     </section>
   );
 }
@@ -730,11 +850,22 @@ export function CompliancePresenter({
         />
       ) : null}
 
-      <PacketContentsSection activeExport={activeExport} activeTimeline={activeTimeline} appViewMode={appViewMode} />
+      <PacketContentsSection
+        activeExport={activeExport}
+        activeTimeline={activeTimeline}
+        appViewMode={appViewMode}
+      />
 
-      <ControlMappingsSection activeExport={activeExport} controlEvidenceRollup={packet?.controlEvidenceRollup ?? []} />
+      <ControlMappingsSection
+        activeExport={activeExport}
+        controlEvidenceRollup={packet?.controlEvidenceRollup ?? []}
+      />
 
-      <LifecycleTimelineSection activeTimeline={activeTimeline} appViewMode={appViewMode} formatActorId={formatActorId} />
+      <LifecycleTimelineSection
+        activeTimeline={activeTimeline}
+        appViewMode={appViewMode}
+        formatActorId={formatActorId}
+      />
 
       <RetentionSection
         activeRetentionPlan={activeRetentionPlan}

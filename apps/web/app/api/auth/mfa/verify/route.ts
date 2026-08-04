@@ -3,7 +3,10 @@ import { getAuthSession } from "@/lib/auth-session";
 import { verifyFirebasePhoneAuth } from "@/lib/platform/sms";
 import { verifyTotpCode } from "@/lib/totp";
 import { setControlPlaneSessionCookies } from "@/lib/auth-session-cookies";
-import { getPrimaryWorkspaceIdForTenant, isAuthDatabaseConfigured } from "@/lib/domains/auth/service";
+import {
+  getPrimaryWorkspaceIdForTenant,
+  isAuthDatabaseConfigured,
+} from "@/lib/domains/auth/service";
 import {
   getLatestVerifiedTotpSecret,
   markSessionMfaVerified,
@@ -30,7 +33,7 @@ type MfaEnrollments = Awaited<ReturnType<typeof getVerifiedMfaEnrollments>>;
 async function verifySmsCode(
   enrollments: MfaEnrollments,
   code: string,
-  session: MfaSession
+  session: MfaSession,
 ): Promise<boolean> {
   for (const enrollment of enrollments) {
     if (enrollment.mfa_type !== "SMS") continue;
@@ -68,7 +71,7 @@ async function verifySmsCode(
 
 // Parse and validate the request body into a code + declared factor.
 async function parseMfaPayload(
-  request: Request
+  request: Request,
 ): Promise<{ code: string; factor: "totp" | "sms" | null } | { error: string }> {
   let payload: MfaVerifyPayload;
   try {
@@ -92,14 +95,20 @@ async function parseMfaPayload(
 async function handlePostApiAuthMfaVerify(request: Request) {
   const traceId = extractTraceId(request);
   if (!isAuthDatabaseConfigured()) {
-    const response = NextResponse.json({ error: "Database not configured.", meta: makeMeta(traceId) }, { status: 503 });
+    const response = NextResponse.json(
+      { error: "Database not configured.", meta: makeMeta(traceId) },
+      { status: 503 },
+    );
     response.headers.set("x-request-id", traceId);
     return response;
   }
 
   const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (!session) {
-    const response = NextResponse.json({ error: "Authentication required.", meta: makeMeta(traceId) }, { status: 401 });
+    const response = NextResponse.json(
+      { error: "Authentication required.", meta: makeMeta(traceId) },
+      { status: 401 },
+    );
     response.headers.set("x-request-id", traceId);
     return response;
   }
@@ -112,7 +121,10 @@ async function handlePostApiAuthMfaVerify(request: Request) {
 
   const parsed = await parseMfaPayload(request);
   if ("error" in parsed) {
-    const response = NextResponse.json({ error: parsed.error, meta: makeMeta(traceId) }, { status: 400 });
+    const response = NextResponse.json(
+      { error: parsed.error, meta: makeMeta(traceId) },
+      { status: 400 },
+    );
     response.headers.set("x-request-id", traceId);
     return response;
   }
@@ -133,7 +145,7 @@ async function handlePostApiAuthMfaVerify(request: Request) {
     });
     const response = NextResponse.json(
       { error: "Too many MFA attempts. Please wait.", meta: makeMeta(traceId) },
-      { status: 429, headers: { "Retry-After": String(rateLimit.retryAfterSeconds) } }
+      { status: 429, headers: { "Retry-After": String(rateLimit.retryAfterSeconds) } },
     );
     response.headers.set("x-request-id", traceId);
     return response;
@@ -145,7 +157,10 @@ async function handlePostApiAuthMfaVerify(request: Request) {
   });
 
   if (!enrollments.length) {
-    const response = NextResponse.json({ error: "No verified MFA enrollment found.", meta: makeMeta(traceId) }, { status: 404 });
+    const response = NextResponse.json(
+      { error: "No verified MFA enrollment found.", meta: makeMeta(traceId) },
+      { status: 404 },
+    );
     response.headers.set("x-request-id", traceId);
     return response;
   }
@@ -187,7 +202,10 @@ async function handlePostApiAuthMfaVerify(request: Request) {
       sessionId: session.sessionId,
       endpoint: "/api/auth/mfa/verify",
     });
-    const response = NextResponse.json({ error: "Invalid MFA code.", meta: makeMeta(traceId) }, { status: 400 });
+    const response = NextResponse.json(
+      { error: "Invalid MFA code.", meta: makeMeta(traceId) },
+      { status: 400 },
+    );
     response.headers.set("x-request-id", traceId);
     return response;
   }
@@ -204,7 +222,10 @@ async function handlePostApiAuthMfaVerify(request: Request) {
     tenantId: session.tenantId,
   });
   if (sessionResult === "db-unavailable") {
-    const response = NextResponse.json({ error: "Database not configured.", meta: makeMeta(traceId) }, { status: 503 });
+    const response = NextResponse.json(
+      { error: "Database not configured.", meta: makeMeta(traceId) },
+      { status: 503 },
+    );
     response.headers.set("x-request-id", traceId);
     return response;
   }
@@ -221,7 +242,7 @@ async function handlePostApiAuthMfaVerify(request: Request) {
 
     principalId: session.principalId,
     subject: session.subject,
-    mfaVerified: true
+    mfaVerified: true,
   });
 
   return response;

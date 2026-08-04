@@ -188,8 +188,7 @@ h3 {
   display: grid;
   place-items: center;
   padding: clamp(22px, 5vw, 56px);
-  background:
-    linear-gradient(135deg, oklch(0.982 0.007 236), oklch(0.952 0.015 214));
+  background: linear-gradient(135deg, oklch(0.982 0.007 236), oklch(0.952 0.015 214));
 }
 
 .loginAccessShell {

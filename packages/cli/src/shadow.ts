@@ -39,7 +39,11 @@ export function setShadowMode(active: boolean): void {
   if (active) {
     fs.writeFileSync(target, JSON.stringify({ active: true, startedAt: new Date().toISOString() }));
   } else {
-    try { fs.unlinkSync(target); } catch { /* already gone */ }
+    try {
+      fs.unlinkSync(target);
+    } catch {
+      /* already gone */
+    }
   }
 }
 
@@ -51,7 +55,8 @@ export function appendShadowLog(entry: ShadowEntry): void {
 
 export function readShadowLog(): ShadowEntry[] {
   try {
-    return fs.readFileSync(shadowLogPath(), "utf8")
+    return fs
+      .readFileSync(shadowLogPath(), "utf8")
       .trim()
       .split("\n")
       .filter(Boolean)
@@ -104,9 +109,8 @@ export function readShadowLogFrom(offset: number): { entries: ShadowEntry[]; nex
 }
 
 export function formatShadowEntry(entry: ShadowEntry): string {
-  const ruleSuffix = entry.matchedRules.length > 0
-    ? ` (${entry.reason ?? entry.matchedRules.join(", ")})`
-    : "";
+  const ruleSuffix =
+    entry.matchedRules.length > 0 ? ` (${entry.reason ?? entry.matchedRules.join(", ")})` : "";
   return `[shadow] ${entry.connector}.${entry.action} → ${entry.outcome}${ruleSuffix}`;
 }
 

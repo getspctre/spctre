@@ -3,7 +3,12 @@
 import { Search, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
-import { comparePackVersions, getPackCatalogTier, getPackVersion, type PolicyPack } from "@spctre/policy-schema/packs";
+import {
+  comparePackVersions,
+  getPackCatalogTier,
+  getPackVersion,
+  type PolicyPack,
+} from "@spctre/policy-schema/packs";
 import { PackSlideOut } from "./pack-slideout";
 import type { AppViewMode } from "@/lib/app-view-mode";
 
@@ -39,14 +44,13 @@ const QUICK_FILTER_ROWS = 2;
 const QUICK_FILTERS_PER_ROW = 8;
 const MAX_QUICK_FILTER_CHIPS = QUICK_FILTER_ROWS * QUICK_FILTERS_PER_ROW;
 
-
 // Search + tag filtering state and the derived quick-filter chip ranking.
 function usePackFiltering(packs: PolicyPack[]) {
   const [query, setQuery] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const availableTags = useMemo(
     () => Array.from(new Set(packs.flatMap((pack) => pack.tags))),
-    [packs]
+    [packs],
   );
   const normalizedQuery = query.trim().toLowerCase();
 
@@ -84,14 +88,18 @@ function usePackFiltering(packs: PolicyPack[]) {
   }, [packSearchableTextMap]);
 
   const filteredPacks = useMemo(() => {
-    return packs.filter((pack) => {
-      const matchesTags =
-        selectedTags.length === 0 || selectedTags.every((tag) => pack.tags.includes(tag));
-      return matchesTags && packMatchesQuery(pack.id, normalizedQuery);
-    }).sort((left, right) => {
-      const tierOrder = Number(getPackCatalogTier(right) === "canonical") - Number(getPackCatalogTier(left) === "canonical");
-      return tierOrder !== 0 ? tierOrder : left.name.localeCompare(right.name);
-    });
+    return packs
+      .filter((pack) => {
+        const matchesTags =
+          selectedTags.length === 0 || selectedTags.every((tag) => pack.tags.includes(tag));
+        return matchesTags && packMatchesQuery(pack.id, normalizedQuery);
+      })
+      .sort((left, right) => {
+        const tierOrder =
+          Number(getPackCatalogTier(right) === "canonical") -
+          Number(getPackCatalogTier(left) === "canonical");
+        return tierOrder !== 0 ? tierOrder : left.name.localeCompare(right.name);
+      });
   }, [packs, normalizedQuery, selectedTags, packMatchesQuery]);
 
   const quickTagMatchCounts = useMemo(() => {
@@ -109,7 +117,7 @@ function usePackFiltering(packs: PolicyPack[]) {
         }).length;
 
         return [tag, nextMatchCount] as const;
-      })
+      }),
     );
   }, [availableTags, packs, normalizedQuery, selectedTags, packMatchesQuery]);
 
@@ -117,10 +125,10 @@ function usePackFiltering(packs: PolicyPack[]) {
     return new Map(
       availableTags.map((tag) => {
         const count = packs.filter(
-          (pack) => pack.tags.includes(tag) && packMatchesQuery(pack.id, normalizedQuery)
+          (pack) => pack.tags.includes(tag) && packMatchesQuery(pack.id, normalizedQuery),
         ).length;
         return [tag, count] as const;
-      })
+      }),
     );
   }, [availableTags, packs, normalizedQuery, packMatchesQuery]);
 
@@ -150,13 +158,23 @@ function usePackFiltering(packs: PolicyPack[]) {
 
   const toggleTag = (tag: string) => {
     setSelectedTags((current) =>
-      current.includes(tag) ? current.filter((activeTag) => activeTag !== tag) : [...current, tag]
+      current.includes(tag) ? current.filter((activeTag) => activeTag !== tag) : [...current, tag],
     );
   };
 
   const hasFilters = Boolean(normalizedQuery) || selectedTags.length > 0;
 
-  return { query, setQuery, selectedTags, filteredPacks, quickTags, quickTagMatchCounts, clearFilters, toggleTag, hasFilters };
+  return {
+    query,
+    setQuery,
+    selectedTags,
+    filteredPacks,
+    quickTags,
+    quickTagMatchCounts,
+    clearFilters,
+    toggleTag,
+    hasFilters,
+  };
 }
 
 export function PackCatalogFilter({
@@ -170,8 +188,17 @@ export function PackCatalogFilter({
   catalogStatusLoaded,
 }: PackCatalogFilterProps) {
   const t = useTranslations("packs");
-  const { query, setQuery, selectedTags, filteredPacks, quickTags, quickTagMatchCounts, clearFilters, toggleTag, hasFilters } =
-    usePackFiltering(packs);
+  const {
+    query,
+    setQuery,
+    selectedTags,
+    filteredPacks,
+    quickTags,
+    quickTagMatchCounts,
+    clearFilters,
+    toggleTag,
+    hasFilters,
+  } = usePackFiltering(packs);
 
   return (
     <>
@@ -263,7 +290,11 @@ export function PackCatalogFilter({
 
             if (tier === "compatible") {
               return (
-                <details className="packCatalogSection packCatalogSectionCompatible" key={tier} open={hasFilters || undefined}>
+                <details
+                  className="packCatalogSection packCatalogSectionCompatible"
+                  key={tier}
+                  open={hasFilters || undefined}
+                >
                   <summary aria-labelledby={`pack-tier-${tier}`}>
                     {header}
                     <span className="packCompatibleCount">{tierPacks.length}</span>
@@ -274,7 +305,11 @@ export function PackCatalogFilter({
             }
 
             return (
-              <section className="packCatalogSection" key={tier} aria-labelledby={`pack-tier-${tier}`}>
+              <section
+                className="packCatalogSection"
+                key={tier}
+                aria-labelledby={`pack-tier-${tier}`}
+              >
                 <div className="rowHeader">{header}</div>
                 {packGrid}
               </section>

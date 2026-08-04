@@ -4,7 +4,11 @@
  */
 
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
-import { buildEvidenceRequest, findDedupTelemetry, makeEvidenceSqlMock } from "./evidence-route-test-helper";
+import {
+  buildEvidenceRequest,
+  findDedupTelemetry,
+  makeEvidenceSqlMock,
+} from "./evidence-route-test-helper";
 
 // ── top-level imports (must be outside describe blocks) ───────────────────────
 
@@ -15,15 +19,13 @@ const { shouldBlockDecision } = await import("../../../packages/cli/src/pretoolu
 // Tracks whether the simulated row already exists (conflict) for the current test.
 let simulateConflict = false;
 
-const sqlMock = makeEvidenceSqlMock(() => simulateConflict ? [] : [{ decision_id: "dec-1" }]);
+const sqlMock = makeEvidenceSqlMock(() => (simulateConflict ? [] : [{ decision_id: "dec-1" }]));
 
-vi.mock("@/lib/db", () => ({
-  sql: sqlMock,
-}));
+vi.mock("@/lib/db", () => ({ sql: sqlMock }));
 
 vi.mock("@/lib/demo", () => ({
   DEMO_TENANT_ID: "00000000-0000-0000-0000-000000000001",
-  DEMO_WORKSPACE_ID: "demo-workspace"
+  DEMO_WORKSPACE_ID: "demo-workspace",
 }));
 
 vi.mock("@/lib/repositories/seed/local-dev", () => ({
@@ -31,10 +33,17 @@ vi.mock("@/lib/repositories/seed/local-dev", () => ({
 }));
 
 vi.mock("@/lib/service-tokens", () => ({
-  authenticateServiceToken: vi.fn().mockResolvedValue({
-    ok: true,
-    auth: { tenantId: "00000000-0000-0000-0000-000000000001", workspaceId: "demo-workspace", principalId: "svc-1", scopes: ["evidence:write"] },
-  }),
+  authenticateServiceToken: vi
+    .fn()
+    .mockResolvedValue({
+      ok: true,
+      auth: {
+        tenantId: "00000000-0000-0000-0000-000000000001",
+        workspaceId: "demo-workspace",
+        principalId: "svc-1",
+        scopes: ["evidence:write"],
+      },
+    }),
   hasBearerToken: () => true,
 }));
 
@@ -95,7 +104,7 @@ describe("Mixed hook+MCP ingestion (R4)", () => {
     const mcpRes = await POST(buildRequest("dec-shared-1", "mcp"));
     expect(mcpRes.status).toBe(200);
 
-    const mcpBody = await mcpRes.json() as { deduplicated: boolean };
+    const mcpBody = (await mcpRes.json()) as { deduplicated: boolean };
     expect(mcpBody.deduplicated).toBe(true);
 
     // Suppressed event records MCP as the incoming source.
@@ -117,7 +126,7 @@ describe("Mixed hook+MCP ingestion (R4)", () => {
     const hookRes = await POST(buildRequest("dec-shared-2", "hook"));
     expect(hookRes.status).toBe(200);
 
-    const hookBody = await hookRes.json() as { deduplicated: boolean };
+    const hookBody = (await hookRes.json()) as { deduplicated: boolean };
     expect(hookBody.deduplicated).toBe(true);
 
     const telemetry = findDedupTelemetry(consoleSpy);
@@ -156,7 +165,7 @@ describe("Source classification via x-spctre-source header (R4)", () => {
         reason: "ok",
       },
       "mcp",
-      { includeSourceHeader: false }
+      { includeSourceHeader: false },
     );
 
     await POST(req);
@@ -171,13 +180,8 @@ describe("Source classification via x-spctre-source header (R4)", () => {
     const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
     const req = buildEvidenceRequest(
-      {
-        decisionId: "dec-header-wins",
-        sourceType: "mcp",
-        action: "execute",
-        reason: "ok",
-      },
-      "hook"
+      { decisionId: "dec-header-wins", sourceType: "mcp", action: "execute", reason: "ok" },
+      "hook",
     );
 
     await POST(req);

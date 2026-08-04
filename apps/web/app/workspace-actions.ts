@@ -16,9 +16,7 @@ import { isFeatureEnabled } from "@/lib/feature-flags-server";
 import { swallow } from "@/lib/platform/swallow";
 
 export type WorkspaceSwitchState =
-  | { workspaceId: string; error?: never }
-  | { error: string; workspaceId?: never }
-  | null;
+  { workspaceId: string; error?: never } | { error: string; workspaceId?: never } | null;
 
 export type WorkspaceCreateState =
   | { workspaceId: string; slug: string; error?: never }
@@ -26,9 +24,7 @@ export type WorkspaceCreateState =
   | null;
 
 export type ActorSwitchState =
-  | { actorId: string; error?: never }
-  | { error: string; actorId?: never }
-  | null;
+  { actorId: string; error?: never } | { error: string; actorId?: never } | null;
 
 export type TenantSwitchState =
   | { tenantId: string; workspaceSlug: string | null; requiresMfa: boolean; error?: never }
@@ -37,7 +33,7 @@ export type TenantSwitchState =
 
 export async function setActiveWorkspace(
   _prev: WorkspaceSwitchState,
-  formData: FormData
+  formData: FormData,
 ): Promise<WorkspaceSwitchState> {
   const workspaceId = String(formData.get("workspaceId") ?? "").trim();
   if (!workspaceId) return { error: "Workspace is required." };
@@ -56,7 +52,7 @@ export async function setActiveWorkspace(
     path: "/",
     sameSite: "lax",
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production"
+    secure: process.env.NODE_ENV === "production",
   });
 
   revalidatePath("/");
@@ -71,7 +67,7 @@ export async function setActiveWorkspace(
 
 export async function createWorkspace(
   _prev: WorkspaceCreateState,
-  formData: FormData
+  formData: FormData,
 ): Promise<WorkspaceCreateState> {
   const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (!session) return { error: "Authentication required." };
@@ -81,11 +77,7 @@ export async function createWorkspace(
   const workspaceName = String(formData.get("workspaceName") ?? "").trim();
   if (!workspaceName) return { error: "Workspace name is required." };
 
-  const result = await createWorkspaceService({
-    tenantId,
-    principalId,
-    workspaceName,
-  });
+  const result = await createWorkspaceService({ tenantId, principalId, workspaceName });
 
   if ("error" in result) {
     return { error: result.error };
@@ -96,7 +88,7 @@ export async function createWorkspace(
     path: "/",
     sameSite: "lax",
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production"
+    secure: process.env.NODE_ENV === "production",
   });
 
   revalidatePath("/");
@@ -111,7 +103,7 @@ export async function createWorkspace(
 
 export async function setActiveTenant(
   _prev: TenantSwitchState,
-  formData: FormData
+  formData: FormData,
 ): Promise<TenantSwitchState> {
   if (!isFeatureEnabled("multiTenantWorkspaceIsolation")) {
     return { error: "Switching tenants requires the Enterprise plan." };
@@ -143,7 +135,7 @@ export async function setActiveTenant(
     path: "/",
     sameSite: "lax",
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production"
+    secure: process.env.NODE_ENV === "production",
   });
 
   if (result.firstWorkspaceId) {
@@ -151,11 +143,16 @@ export async function setActiveTenant(
       path: "/",
       sameSite: "lax",
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production"
+      secure: process.env.NODE_ENV === "production",
     });
   }
 
-  if (sessionId && result.requiresMfa !== undefined && result.targetPrincipalId && result.targetPrincipalSubject) {
+  if (
+    sessionId &&
+    result.requiresMfa !== undefined &&
+    result.targetPrincipalId &&
+    result.targetPrincipalSubject
+  ) {
     const ttlSeconds = sessionTtlHours() * 60 * 60;
     const guardToken = await createSessionGuardToken({
       sid: sessionId,
@@ -163,14 +160,14 @@ export async function setActiveTenant(
       pid: result.targetPrincipalId,
       sub: result.targetPrincipalSubject,
       mfaVerified: !result.requiresMfa,
-      ttlSeconds
+      ttlSeconds,
     });
     cookieStore.set(SESSION_GUARD_COOKIE, guardToken, {
       path: "/",
       sameSite: "lax",
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      maxAge: ttlSeconds
+      maxAge: ttlSeconds,
     });
   }
 
@@ -181,7 +178,11 @@ export async function setActiveTenant(
   revalidatePath("/compliance");
   revalidatePath("/packs");
 
-  return { tenantId, workspaceSlug: result.firstWorkspaceSlug, requiresMfa: result.requiresMfa === true };
+  return {
+    tenantId,
+    workspaceSlug: result.firstWorkspaceSlug,
+    requiresMfa: result.requiresMfa === true,
+  };
 }
 
 // Resolve the acting session/workspace identifiers from context, session, and
@@ -194,7 +195,11 @@ async function resolveActorSwitchScope() {
     cookieStore,
     session,
     workspaceId: workspaceContext?.workspaceId ?? cookieStore.get(ACTIVE_WORKSPACE_COOKIE)?.value,
-    tenantId: workspaceContext?.tenantId ?? session?.tenantId ?? cookieStore.get(ACTIVE_TENANT_COOKIE)?.value ?? "",
+    tenantId:
+      workspaceContext?.tenantId ??
+      session?.tenantId ??
+      cookieStore.get(ACTIVE_TENANT_COOKIE)?.value ??
+      "",
     principalId: session?.principalId ?? "",
     sessionId: cookieStore.get(SESSION_COOKIE)?.value ?? session?.sessionId,
   };
@@ -202,12 +207,13 @@ async function resolveActorSwitchScope() {
 
 export async function setActiveActor(
   _prev: ActorSwitchState,
-  formData: FormData
+  formData: FormData,
 ): Promise<ActorSwitchState> {
   const actorId = String(formData.get("actorId") ?? "").trim();
   if (!actorId) return { error: "Actor is required." };
 
-  const { cookieStore, session, workspaceId, tenantId, principalId, sessionId } = await resolveActorSwitchScope();
+  const { cookieStore, session, workspaceId, tenantId, principalId, sessionId } =
+    await resolveActorSwitchScope();
 
   const result = await switchActorService({
     actorId,
@@ -228,14 +234,14 @@ export async function setActiveActor(
     pid: actorId,
     sub: result.actorSubject,
     mfaVerified: session?.mfaVerified ?? true,
-    ttlSeconds
+    ttlSeconds,
   });
   cookieStore.set(SESSION_GUARD_COOKIE, guardToken, {
     path: "/",
     sameSite: "lax",
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    maxAge: ttlSeconds
+    maxAge: ttlSeconds,
   });
 
   revalidatePath("/");

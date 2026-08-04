@@ -25,7 +25,7 @@ function generateScimToken(): string {
 
 /** Look up a registration by the raw token value. Returns null on miss or revoked. */
 export async function resolveScimTokenBySecret(
-  token: string
+  token: string,
 ): Promise<ResolvedScimTokenAuth | null> {
   const db = rawSql ?? sql;
   if (!db || !token) return null;

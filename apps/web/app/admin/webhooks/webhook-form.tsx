@@ -14,7 +14,7 @@ export function WebhookForm({ providers }: { providers: WebhookProviderOption[] 
   const t = useTranslations("admin.webhooks.form");
   const [state, formAction, isPending] = useActionState<WebhookActionState, FormData>(
     createGatewayWebhook,
-    null
+    null,
   );
   const [copied, setCopied] = useState(false);
 
@@ -32,32 +32,31 @@ export function WebhookForm({ providers }: { providers: WebhookProviderOption[] 
         <div className="adminAuthPanelHeader">
           <div>
             <p className="eyebrow">{t("created_eyebrow")}</p>
-            <h2>{meta?.label ?? state.provider}{state.label ? ` — ${state.label}` : ""}</h2>
+            <h2>
+              {meta?.label ?? state.provider}
+              {state.label ? ` — ${state.label}` : ""}
+            </h2>
           </div>
         </div>
         <div className="serviceKeyTokenReveal">
-          <p className="serviceKeyTokenRevealWarn">
-            {t("copy_warning")}
-          </p>
+          <p className="serviceKeyTokenRevealWarn">{t("copy_warning")}</p>
           <div className="serviceKeyTokenDisplay">
             <code className="serviceKeyTokenCode">{state.secret}</code>
-            <button
-              type="button"
-              className="button"
-              onClick={() => copySecret(state.secret)}
-            >
+            <button type="button" className="button" onClick={() => copySecret(state.secret)}>
               {copied ? t("copied") : t("copy")}
             </button>
           </div>
           <p className="meta">
             {t("configure_prefix", { provider: meta?.label ?? state.provider })}{" "}
-            <code>{meta?.header ?? "x-spctre-gateway-secret"}</code> {t("configure_header_suffix")}
-            {" "}{t("configure_generic_prefix")} <code>x-spctre-gateway-secret</code>{" "}
+            <code>{meta?.header ?? "x-spctre-gateway-secret"}</code> {t("configure_header_suffix")}{" "}
+            {t("configure_generic_prefix")} <code>x-spctre-gateway-secret</code>{" "}
             {t("configure_generic_suffix")}
           </p>
         </div>
         <div className="adminAuthPanelActions">
-          <a href="/admin/webhooks" className="button">{t("done")}</a>
+          <a href="/admin/webhooks" className="button">
+            {t("done")}
+          </a>
         </div>
       </div>
     );
@@ -66,14 +65,26 @@ export function WebhookForm({ providers }: { providers: WebhookProviderOption[] 
   return (
     <form action={formAction} className="adminAuthForm">
       {state?.error && (
-        <p className="meta serviceKeyTokenRevealWarn">{state.errorCode ? t(`status.${state.errorCode}`) : state.error}</p>
+        <p className="meta serviceKeyTokenRevealWarn">
+          {state.errorCode ? t(`status.${state.errorCode}`) : state.error}
+        </p>
       )}
 
       <div className="formField">
-        <label htmlFor="webhook-provider" className="eyebrow">{t("provider")}</label>
-        <select id="webhook-provider" name="provider" className="input" required defaultValue={providers[0]?.id}>
+        <label htmlFor="webhook-provider" className="eyebrow">
+          {t("provider")}
+        </label>
+        <select
+          id="webhook-provider"
+          name="provider"
+          className="input"
+          required
+          defaultValue={providers[0]?.id}
+        >
           {providers.map((provider) => (
-            <option key={provider.id} value={provider.id}>{provider.label}</option>
+            <option key={provider.id} value={provider.id}>
+              {provider.label}
+            </option>
           ))}
         </select>
       </div>

@@ -8,7 +8,8 @@ import { addIntegrationAction, removeIntegrationAction } from "./alerting-action
 import type { AlertingIntegration } from "@/lib/domains/alerting/service";
 import { getBadgeClass, type SharedHandlerContext } from "./alerting-shared";
 
-type IntegrationType = "SLACK" | "PAGERDUTY" | "TEAMS" | "EMAIL" | "WEBHOOK" | "SPLUNK_HEC" | "SENTINEL";
+type IntegrationType =
+  "SLACK" | "PAGERDUTY" | "TEAMS" | "EMAIL" | "WEBHOOK" | "SPLUNK_HEC" | "SENTINEL";
 type AlertingT = ReturnType<typeof useTranslations>;
 
 interface IntegrationFormState {
@@ -39,9 +40,15 @@ function validateIntegrationForm(form: IntegrationFormState, t: AlertingT): stri
   return null;
 }
 
-function buildIntegrationPayload(form: IntegrationFormState): { url: string; config: Record<string, unknown> } {
+function buildIntegrationPayload(form: IntegrationFormState): {
+  url: string;
+  config: Record<string, unknown>;
+} {
   if (form.type === "PAGERDUTY") {
-    return { url: "https://events.pagerduty.com/v2/enqueue", config: { routingKey: form.routingKey } };
+    return {
+      url: "https://events.pagerduty.com/v2/enqueue",
+      config: { routingKey: form.routingKey },
+    };
   }
   if (form.type === "SPLUNK_HEC") {
     return { url: form.url, config: { token: form.splunkToken } };
@@ -196,7 +203,9 @@ export function IntegrationModal({
             <X size={16} />
           </button>
         </div>
-        {error && <div style={{ color: "var(--block)", fontSize: 12, marginBottom: 12 }}>{error}</div>}
+        {error && (
+          <div style={{ color: "var(--block)", fontSize: 12, marginBottom: 12 }}>{error}</div>
+        )}
         <form onSubmit={onSubmit}>
           <div className="formGroup">
             <label htmlFor="int-name">{t("int.channel_name")}</label>
@@ -264,7 +273,9 @@ export function IntegrationsPane({
       {integrations.length === 0 ? (
         <div className="emptyState">
           <p>{t("int.empty_title")}</p>
-          <p className="meta" style={{ marginTop: 4 }}>{t("int.empty_body")}</p>
+          <p className="meta" style={{ marginTop: 4 }}>
+            {t("int.empty_body")}
+          </p>
         </div>
       ) : (
         <div className="denseList">
@@ -330,7 +341,14 @@ export function useIntegrationHandlers(ctx: SharedHandlerContext) {
     setStatus(null);
     try {
       const { url, config } = buildIntegrationPayload(form);
-      await addIntegrationAction(ctx.workspaceId, ctx.workspaceSlug, form.name, form.type, url, config);
+      await addIntegrationAction(
+        ctx.workspaceId,
+        ctx.workspaceSlug,
+        form.name,
+        form.type,
+        url,
+        config,
+      );
       setForm((prev) => ({ ...EMPTY_INTEGRATION_FORM, type: prev.type }));
       setModalOpen(false);
       setStatus(t("int.saved"));

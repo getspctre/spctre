@@ -17,15 +17,23 @@ async function createTenant(): Promise<string> {
 
 afterEach(async () => {
   if (!rawSql) return;
-  await Promise.all(tenantIds.splice(0).map((tenantId) => rawSql`DELETE FROM tenant WHERE id = ${tenantId}`));
+  await Promise.all(
+    tenantIds.splice(0).map((tenantId) => rawSql`DELETE FROM tenant WHERE id = ${tenantId}`),
+  );
 });
 
 describe.skipIf(!databaseAvailable)("conversion telemetry repository contract", () => {
   it("records a first-occurrence event once and preserves structured metadata", async () => {
     const tenantId = await createTenant();
     await runWithTenantContext(tenantId, async () => {
-      await recordConversionTelemetry(tenantId, "TRIAL_CONVERTED", { billingProvider: "PADDLE", planCode: "TEAM" });
-      await recordConversionTelemetry(tenantId, "TRIAL_CONVERTED", { billingProvider: "PADDLE", planCode: "TEAM" });
+      await recordConversionTelemetry(tenantId, "TRIAL_CONVERTED", {
+        billingProvider: "PADDLE",
+        planCode: "TEAM",
+      });
+      await recordConversionTelemetry(tenantId, "TRIAL_CONVERTED", {
+        billingProvider: "PADDLE",
+        planCode: "TEAM",
+      });
     });
 
     await expect(rawSql<{ count: string; provider: string; plan_code: string }[]>`

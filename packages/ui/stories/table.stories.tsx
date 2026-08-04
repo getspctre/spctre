@@ -2,10 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { StatusPill } from "../src/status-pill";
 import { DataTable, TableCell, TableHeaderCell, TableShell } from "../src/table";
 
-const meta = {
-  title: "Primitives/Table",
-  component: DataTable
-} satisfies Meta<typeof DataTable>;
+const meta = { title: "Primitives/Table", component: DataTable } satisfies Meta<typeof DataTable>;
 
 export default meta;
 
@@ -46,5 +43,5 @@ export const WorkflowInspectorRows: Story = {
         </tbody>
       </DataTable>
     </TableShell>
-  )
+  ),
 };

@@ -14,7 +14,7 @@ export async function addIntegrationAction(
   name: string,
   type: "SLACK" | "PAGERDUTY" | "TEAMS" | "EMAIL" | "WEBHOOK" | "SPLUNK_HEC" | "SENTINEL",
   url: string,
-  config: Record<string, unknown> = {}
+  config: Record<string, unknown> = {},
 ) {
   const integration = await addAlertingIntegrationDecision({
     workspaceId,
@@ -28,7 +28,11 @@ export async function addIntegrationAction(
   return integration;
 }
 
-export async function removeIntegrationAction(workspaceId: string, workspaceSlug: string, id: string) {
+export async function removeIntegrationAction(
+  workspaceId: string,
+  workspaceSlug: string,
+  id: string,
+) {
   const success = await removeAlertingIntegrationDecision({ workspaceId, id });
   revalidatePath(`/${workspaceSlug}/escalation-routing`);
   return success;
@@ -43,7 +47,7 @@ export async function addRuleAction(
   minRiskLevel: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL" | null,
   minFrequency: number,
   frequencyWindowMinutes: number | null,
-  integrationId: string
+  integrationId: string,
 ) {
   const rule = await addAlertingRuleDecision({
     workspaceId,

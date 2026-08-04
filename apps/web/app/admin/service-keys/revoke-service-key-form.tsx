@@ -7,13 +7,7 @@ import { ConfirmSubmitButton } from "../confirm-submit-button";
 import { AdminMutationStatus } from "../mutation-status";
 import { revokeServiceKey } from "./actions";
 
-function RevokeButton({
-  confirmMessage,
-  revoked,
-}: {
-  confirmMessage: string;
-  revoked: boolean;
-}) {
+function RevokeButton({ confirmMessage, revoked }: { confirmMessage: string; revoked: boolean }) {
   const t = useTranslations("admin.service_keys.revoke");
   const { pending } = useFormStatus();
   return (
@@ -27,13 +21,7 @@ function RevokeButton({
   );
 }
 
-export function RevokeServiceKeyForm({
-  keyId,
-  label,
-}: {
-  keyId: string;
-  label: string;
-}) {
+export function RevokeServiceKeyForm({ keyId, label }: { keyId: string; label: string }) {
   const t = useTranslations("admin.service_keys.revoke");
   const [state, action] = useActionState(revokeServiceKey, null);
   const revoked = Boolean(state?.ok);
@@ -41,10 +29,7 @@ export function RevokeServiceKeyForm({
   return (
     <form action={action} className="adminMutationForm">
       <input type="hidden" name="keyId" value={keyId} />
-      <RevokeButton
-        confirmMessage={t("confirm", { label })}
-        revoked={revoked}
-      />
+      <RevokeButton confirmMessage={t("confirm", { label })} revoked={revoked} />
       <AdminMutationStatus
         error={state?.errorCode ? t(`status.${state.errorCode}`) : state?.error}
         message={state?.messageCode ? t(`status.${state.messageCode}`) : state?.message}

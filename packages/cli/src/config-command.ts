@@ -8,7 +8,9 @@ export async function configSet(key: string, value: string): Promise<void> {
   }
 
   if (!isSupportedLocaleInput(value)) {
-    console.error(`Error: unsupported locale "${value}". Supported locales: ${supportedLocales.join(", ")}.`);
+    console.error(
+      `Error: unsupported locale "${value}". Supported locales: ${supportedLocales.join(", ")}.`,
+    );
     process.exit(1);
   }
 

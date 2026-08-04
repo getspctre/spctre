@@ -6,9 +6,7 @@ const getSpctrePlanSpy = vi.fn();
 const getCommercialProfileWithContextSpy = vi.fn();
 const resolveScimTokenBySecretSpy = vi.fn();
 
-vi.mock("@/lib/feature-flags-server", () => ({
-  getSpctrePlan: getSpctrePlanSpy,
-}));
+vi.mock("@/lib/feature-flags-server", () => ({ getSpctrePlan: getSpctrePlanSpy }));
 
 vi.mock("@/lib/repositories/workspace/commercial", () => ({
   getCommercialProfileWithContext: getCommercialProfileWithContextSpy,
@@ -25,9 +23,8 @@ vi.mock("@/lib/repositories/operations-log/log", () => ({
   appendOperationsLog: vi.fn().mockResolvedValue(undefined),
 }));
 
-const { isScimProvisioningEntitled, resolveScimTokenBinding } = await import(
-  "../lib/domains/scim-token/service"
-);
+const { isScimProvisioningEntitled, resolveScimTokenBinding } =
+  await import("../lib/domains/scim-token/service");
 
 describe("SCIM token entitlement and binding", () => {
   beforeEach(() => {

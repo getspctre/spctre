@@ -12,13 +12,9 @@ const resolveWorkspaceIdOrDemoSpy = vi.fn();
 const resolveRevisionAtTimeSpy = vi.fn();
 const insertGatewayEvidenceEventSpy = vi.fn();
 
-vi.mock("@/lib/workspace/scope", () => ({
-  getActiveScope: getWorkspaceContextSpy,
-}));
+vi.mock("@/lib/workspace/scope", () => ({ getActiveScope: getWorkspaceContextSpy }));
 
-vi.mock("@/lib/actors", () => ({
-  getActiveActor: getActiveActorSpy,
-}));
+vi.mock("@/lib/actors", () => ({ getActiveActor: getActiveActorSpy }));
 
 vi.mock("@/lib/repositories/gateway", () => ({
   resolveEscalationQueueItem: vi.fn(async () => true),
@@ -46,7 +42,10 @@ const gatewayService = await import("../lib/domains/gateway/service");
 describe("gateway domain service", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    getWorkspaceContextSpy.mockResolvedValue({ workspaceId: "w1", tenantId: "11111111-1111-4111-8111-111111111111" });
+    getWorkspaceContextSpy.mockResolvedValue({
+      workspaceId: "w1",
+      tenantId: "11111111-1111-4111-8111-111111111111",
+    });
     getActiveActorSpy.mockResolvedValue({
       actor: { id: "maya-security", name: "Maya Security", reviewerRoles: ["Security"] },
       actors: [
@@ -75,10 +74,10 @@ describe("gateway domain service", () => {
   });
 
   it("validates escalation outcome input", async () => {
-    const result = await gatewayService.resolveEscalationDecision({
-      queueId: "q1",
-      resolutionOutcome: "INVALID",
-    }, { tenantId: "11111111-1111-4111-8111-111111111111", workspaceId: "w1" });
+    const result = await gatewayService.resolveEscalationDecision(
+      { queueId: "q1", resolutionOutcome: "INVALID" },
+      { tenantId: "11111111-1111-4111-8111-111111111111", workspaceId: "w1" },
+    );
 
     expect(result).toEqual({ error: "Resolution outcome must be PROCEED, ESCALATE, or ABORT." });
   });
@@ -95,12 +94,15 @@ describe("gateway domain service", () => {
 
     expect(gatewayService.getTenantIdOrDemo("header-val")).toBe("resolved-tenant");
     expect(gatewayService.getWorkspaceIdOrDemo("header-val")).toBe("resolved-workspace");
-
   });
 
   it("returns the evidence repository ingestion result", async () => {
     resolveRevisionAtTimeSpy.mockResolvedValue(null);
-    insertGatewayEvidenceEventSpy.mockResolvedValue({ deduplicated: false, decisionId: "gw-dec-1", provenanceGap: true });
+    insertGatewayEvidenceEventSpy.mockResolvedValue({
+      deduplicated: false,
+      decisionId: "gw-dec-1",
+      provenanceGap: true,
+    });
 
     const event = {
       provider: "helicone" as const,

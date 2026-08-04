@@ -28,7 +28,11 @@ const baseConfig: SpctreConfig = {
 const handles: Server[] = [];
 
 afterEach(async () => {
-  await Promise.all(handles.splice(0).map((handle) => new Promise<void>((resolve) => handle.close(() => resolve()))));
+  await Promise.all(
+    handles
+      .splice(0)
+      .map((handle) => new Promise<void>((resolve) => handle.close(() => resolve()))),
+  );
   serveStdio.mockReset();
   vi.useRealTimers();
   vi.restoreAllMocks();
@@ -97,24 +101,44 @@ describe("stateless HTTP transport", () => {
     const response = await fetch(`${baseUrl}/.well-known/oauth-protected-resource`);
 
     expect(response.status).toBe(200);
-    expect(await response.json()).toEqual(expect.objectContaining({
-      resource: "https://mcp.spctre.example/mcp",
-      authorization_servers: ["https://auth.spctre.example"],
-      scopes_supported: ["mcp:read", "mcp:write"],
-      bearer_methods_supported: ["header"],
-    }));
+    expect(await response.json()).toEqual(
+      expect.objectContaining({
+        resource: "https://mcp.spctre.example/mcp",
+        authorization_servers: ["https://auth.spctre.example"],
+        scopes_supported: ["mcp:read", "mcp:write"],
+        bearer_methods_supported: ["header"],
+      }),
+    );
   });
 
   it("creates an isolated protocol server for each stateless request", async () => {
     const { app, createdServers } = makeApp();
     const baseUrl = await listen(app);
 
-    const first = await fetch(`${baseUrl}/mcp`, { ...discoverRequest(), headers: { ...discoverRequest().headers, authorization: "Bearer token-a", "x-spctre-workspace-id": "ws-a", "x-spctre-agent-id": "agent-a" } });
-    const second = await fetch(`${baseUrl}/mcp`, { ...discoverRequest(), headers: { ...discoverRequest().headers, authorization: "Bearer token-b", "x-spctre-workspace-id": "ws-b", "x-spctre-agent-id": "agent-b" } });
+    const first = await fetch(`${baseUrl}/mcp`, {
+      ...discoverRequest(),
+      headers: {
+        ...discoverRequest().headers,
+        authorization: "Bearer token-a",
+        "x-spctre-workspace-id": "ws-a",
+        "x-spctre-agent-id": "agent-a",
+      },
+    });
+    const second = await fetch(`${baseUrl}/mcp`, {
+      ...discoverRequest(),
+      headers: {
+        ...discoverRequest().headers,
+        authorization: "Bearer token-b",
+        "x-spctre-workspace-id": "ws-b",
+        "x-spctre-agent-id": "agent-b",
+      },
+    });
 
     expect(first.status, await first.text()).toBe(200);
     expect(second.status, await second.text()).toBe(200);
-    expect(createdServers.map((config) => [config.apiToken, config.workspaceId, config.agentId])).toEqual([
+    expect(
+      createdServers.map((config) => [config.apiToken, config.workspaceId, config.agentId]),
+    ).toEqual([
       ["token-a", "ws-a", "agent-a"],
       ["token-b", "ws-b", "agent-b"],
     ]);
@@ -125,7 +149,9 @@ describe("stateless HTTP transport", () => {
     const baseUrl = await listen(app);
 
     expect((await fetch(`${baseUrl}/sse`)).status).toBe(404);
-    expect((await fetch(`${baseUrl}/message?sessionId=legacy`, { method: "POST" })).status).toBe(404);
+    expect((await fetch(`${baseUrl}/message?sessionId=legacy`, { method: "POST" })).status).toBe(
+      404,
+    );
   });
 
   it("throttles a caller past its burst and advertises Retry-After", async () => {
@@ -140,10 +166,11 @@ describe("stateless HTTP transport", () => {
       rateLimiter: new TokenBucketRateLimiter({ perSecond: 1, burst: 2, now: () => now }),
     });
     const baseUrl = await listen(app);
-    const send = () => fetch(`${baseUrl}/mcp`, {
-      ...discoverRequest(),
-      headers: { ...discoverRequest().headers, authorization: "Bearer flooder" },
-    });
+    const send = () =>
+      fetch(`${baseUrl}/mcp`, {
+        ...discoverRequest(),
+        headers: { ...discoverRequest().headers, authorization: "Bearer flooder" },
+      });
 
     const first = await send();
     const second = await send();
@@ -153,7 +180,9 @@ describe("stateless HTTP transport", () => {
     expect(second.status).toBe(200);
     expect(third.status).toBe(429);
     expect(Number(third.headers.get("retry-after"))).toBeGreaterThanOrEqual(1);
-    expect(await third.json()).toEqual(expect.objectContaining({ error: expect.stringContaining("Rate limit") }));
+    expect(await third.json()).toEqual(
+      expect.objectContaining({ error: expect.stringContaining("Rate limit") }),
+    );
     // The throttled request is rejected before the expensive server construction.
     expect(createdServers).toHaveLength(2);
   });
@@ -166,10 +195,11 @@ describe("stateless HTTP transport", () => {
       rateLimiter: new TokenBucketRateLimiter({ perSecond: 1, burst: 1, now: () => now }),
     });
     const baseUrl = await listen(app);
-    const call = (token: string) => fetch(`${baseUrl}/mcp`, {
-      ...discoverRequest(),
-      headers: { ...discoverRequest().headers, authorization: `Bearer ${token}` },
-    });
+    const call = (token: string) =>
+      fetch(`${baseUrl}/mcp`, {
+        ...discoverRequest(),
+        headers: { ...discoverRequest().headers, authorization: `Bearer ${token}` },
+      });
 
     expect((await call("alice")).status).toBe(200);
     expect((await call("alice")).status).toBe(429);
@@ -185,7 +215,10 @@ describe("modern STDIO transport", () => {
 
     await startStdio({ ...baseConfig, transport: "stdio" });
 
-    expect(serveStdio).toHaveBeenCalledWith(expect.any(Function), expect.objectContaining({ legacy: "serve" }));
+    expect(serveStdio).toHaveBeenCalledWith(
+      expect.any(Function),
+      expect.objectContaining({ legacy: "serve" }),
+    );
     const factory = serveStdio.mock.calls[0]?.[0];
     const protocolServer = factory({ era: "modern" });
     expect(protocolServer.constructor.name).toBe("Server");
@@ -199,6 +232,9 @@ describe("modern STDIO transport", () => {
 
     await startStdio({ ...baseConfig, transport: "stdio" });
 
-    expect(serveStdio).toHaveBeenCalledWith(expect.any(Function), expect.objectContaining({ legacy: "reject" }));
+    expect(serveStdio).toHaveBeenCalledWith(
+      expect.any(Function),
+      expect.objectContaining({ legacy: "reject" }),
+    );
   });
 });

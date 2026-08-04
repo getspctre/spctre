@@ -3,7 +3,11 @@ import { getWorkspaceContext } from "@/lib/workspace";
 import { formatWorkspaceEyebrow } from "@/lib/workspace";
 import { getWebOnboardingStatus } from "@/lib/repositories/onboarding/shared";
 
-export default async function WorkspaceOnboardingPage({ params }: { params: Promise<{ workspace: string }> }) {
+export default async function WorkspaceOnboardingPage({
+  params,
+}: {
+  params: Promise<{ workspace: string }>;
+}) {
   const { workspace } = await params;
   const workspaceContext = await getWorkspaceContext({ workspaceSlug: workspace });
   const status = await getWebOnboardingStatus({
@@ -20,7 +24,11 @@ export default async function WorkspaceOnboardingPage({ params }: { params: Prom
           <h1>Try governance</h1>
         </div>
       </section>
-      <QuickStartBanner controlPlaneUrl={controlPlaneUrl} status={status} workspaceSlug={workspaceContext.workspaceSlug} />
+      <QuickStartBanner
+        controlPlaneUrl={controlPlaneUrl}
+        status={status}
+        workspaceSlug={workspaceContext.workspaceSlug}
+      />
     </>
   );
 }

@@ -13,9 +13,7 @@ vi.mock("@/lib/repositories/gateway-webhook", () => ({
   listWebhookRegistrations: listSpy,
 }));
 
-vi.mock("@/lib/repositories/operations-log/log", () => ({
-  appendOperationsLog: appendLogSpy,
-}));
+vi.mock("@/lib/repositories/operations-log/log", () => ({ appendOperationsLog: appendLogSpy }));
 
 // Tenancy binding is exercised elsewhere; here we just run the callback inline.
 vi.mock("@/lib/tenant-context", () => ({
@@ -83,7 +81,7 @@ describe("gateway webhook management service", () => {
         sourceId: "reg-1",
         sourceTable: "gateway_webhook_registration",
         actorId: "user-1",
-      })
+      }),
     );
   });
 
@@ -97,23 +95,33 @@ describe("gateway webhook management service", () => {
         workspaceId: "w",
         provider: "notion",
         createdBy: "u",
-      })
+      }),
     ).resolves.toMatchObject({ secret: "gwh_x" });
   });
 
   it("writes TOKEN_REVOKED only when a row was actually revoked", async () => {
     revokeSpy.mockResolvedValueOnce(true);
     await expect(
-      revokeGatewayWebhookRegistration({ id: "reg-1", tenantId: "t", workspaceId: "w", actorId: "u" })
+      revokeGatewayWebhookRegistration({
+        id: "reg-1",
+        tenantId: "t",
+        workspaceId: "w",
+        actorId: "u",
+      }),
     ).resolves.toBe(true);
     expect(appendLogSpy).toHaveBeenCalledWith(
-      expect.objectContaining({ eventType: "TOKEN_REVOKED", sourceId: "reg-1" })
+      expect.objectContaining({ eventType: "TOKEN_REVOKED", sourceId: "reg-1" }),
     );
 
     appendLogSpy.mockClear();
     revokeSpy.mockResolvedValueOnce(false);
     await expect(
-      revokeGatewayWebhookRegistration({ id: "missing", tenantId: "t", workspaceId: "w", actorId: "u" })
+      revokeGatewayWebhookRegistration({
+        id: "missing",
+        tenantId: "t",
+        workspaceId: "w",
+        actorId: "u",
+      }),
     ).resolves.toBe(false);
     expect(appendLogSpy).not.toHaveBeenCalled();
   });

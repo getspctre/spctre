@@ -5,7 +5,11 @@ import { resolveEscalation, type ResolveEscalationState } from "./actions";
 
 const OUTCOMES = [
   { value: "PROCEED", label: "Proceed", description: "Allow the action — mark risk as accepted." },
-  { value: "ESCALATE", label: "Re-escalate", description: "Return to queue for additional review." },
+  {
+    value: "ESCALATE",
+    label: "Re-escalate",
+    description: "Return to queue for additional review.",
+  },
   { value: "ABORT", label: "Abort", description: "Reject the action — policy enforcement stands." },
 ] as const;
 
@@ -22,7 +26,7 @@ export function ResolveForm({ queueId, onResolved }: { queueId: string; onResolv
   const [outcome, setOutcome] = useState<string>("");
   const [state, action, pending] = useActionState<ResolveEscalationState, FormData>(
     resolveEscalation,
-    null
+    null,
   );
 
   React.useEffect(() => {
@@ -32,14 +36,20 @@ export function ResolveForm({ queueId, onResolved }: { queueId: string; onResolv
   }, [state, onResolved]);
 
   if (state && "ok" in state) {
-    return <p className="meta" style={{ color: "var(--allow)" }}>Resolved successfully.</p>;
+    return (
+      <p className="meta" style={{ color: "var(--allow)" }}>
+        Resolved successfully.
+      </p>
+    );
   }
 
   return (
     <form action={action} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       <input type="hidden" name="queueId" value={queueId} />
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        <label className="metadata" htmlFor={`outcome-${queueId}`}>Resolution outcome</label>
+        <label className="metadata" htmlFor={`outcome-${queueId}`}>
+          Resolution outcome
+        </label>
         <select
           id={`outcome-${queueId}`}
           name="resolutionOutcome"
@@ -62,7 +72,9 @@ export function ResolveForm({ queueId, onResolved }: { queueId: string; onResolv
         ) : null}
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        <label className="metadata" htmlFor={`note-${queueId}`}>Resolution note (optional)</label>
+        <label className="metadata" htmlFor={`note-${queueId}`}>
+          Resolution note (optional)
+        </label>
         <textarea
           id={`note-${queueId}`}
           name="resolutionNote"
@@ -77,7 +89,8 @@ export function ResolveForm({ queueId, onResolved }: { queueId: string; onResolv
             Agent guidance (optional)
           </label>
           <p className="meta" style={{ marginBottom: 2 }}>
-            This string is returned to the agent in the ABORT response so it can explain the rejection to the end user.
+            This string is returned to the agent in the ABORT response so it can explain the
+            rejection to the end user.
           </p>
           <textarea
             id={`guidance-${queueId}`}
@@ -89,7 +102,9 @@ export function ResolveForm({ queueId, onResolved }: { queueId: string; onResolv
         </div>
       ) : null}
       {state && "error" in state && (
-        <p className="meta" style={{ color: "var(--block)" }}>{state.error}</p>
+        <p className="meta" style={{ color: "var(--block)" }}>
+          {state.error}
+        </p>
       )}
       <button
         type="submit"

@@ -22,7 +22,7 @@ function requireCredentialKey(): string {
   const key = process.env.SPCTRE_CREDENTIAL_ENCRYPTION_KEY;
   if (!key) {
     throw new Error(
-      "SPCTRE_CREDENTIAL_ENCRYPTION_KEY is not set. Configure this environment variable before creating SIEM streams."
+      "SPCTRE_CREDENTIAL_ENCRYPTION_KEY is not set. Configure this environment variable before creating SIEM streams.",
     );
   }
   return key;
@@ -65,7 +65,7 @@ export async function addSiemStreamDecision(params: {
     params.url,
     params.config ?? {},
     JSON.stringify(params.credentials),
-    credentialKey
+    credentialKey,
   );
 }
 

@@ -23,7 +23,11 @@ import {
   updateGatewayDecisionOutcome,
 } from "@/lib/repositories/gateway";
 import { isDatabaseConfigured } from "@/lib/repositories/shared/database";
-import { ensureAuthDemoTenant, resolveTenantIdOrDemo, resolveWorkspaceIdOrDemo } from "@/lib/repositories/auth/session";
+import {
+  ensureAuthDemoTenant,
+  resolveTenantIdOrDemo,
+  resolveWorkspaceIdOrDemo,
+} from "@/lib/repositories/auth/session";
 import { ingestNormalizedGatewayEvent, type GatewayEventV1 } from "@/lib/domains/gateway/ingest";
 import { swallow } from "@/lib/platform/swallow";
 
@@ -53,8 +57,8 @@ export async function ingestGatewayEvent(params: {
       params.tenantId,
       params.workspaceId,
       params.principalId,
-      params.environment
-    )
+      params.environment,
+    ),
   );
 }
 
@@ -66,7 +70,7 @@ export async function listGatewayEscalationQueue(params: {
   limit: number;
 }): Promise<OpenEscalationQueue> {
   return runWithTenantContext(params.tenantId, () =>
-    listOpenEscalationQueue(params.workspaceId, params.tenantId, params.limit)
+    listOpenEscalationQueue(params.workspaceId, params.tenantId, params.limit),
   );
 }
 
@@ -82,7 +86,9 @@ export async function resolveGatewayEscalation(params: {
   return runWithTenantContext(params.tenantId, async () => {
     const resolved = await resolveEscalationQueueItem(params);
     if (!resolved || params.resolutionOutcome === "ESCALATE") return resolved;
-    const context = await getResolvedEscalationReceiptContext(params).catch(swallow("getResolvedEscalationReceiptContext", null));
+    const context = await getResolvedEscalationReceiptContext(params).catch(
+      swallow("getResolvedEscalationReceiptContext", null),
+    );
     if (!context || !["HIGH", "CRITICAL"].includes(context.riskLevel)) return resolved;
     const receipt = issueGatewayActionReceipt({
       decisionId: context.decisionId,
@@ -111,7 +117,15 @@ export async function resolveGatewayEscalation(params: {
         sourceId: persisted.payload.receiptId,
         sourceTable: "action_receipt",
         actorId: params.reviewedBy,
-        payload: { decisionId: context.decisionId, revisionId: context.revisionId, artifactHash: context.artifactHash, outcome: params.resolutionOutcome, reviewerId: params.reviewedBy, keyId: persisted.signature.keyId, payloadHash: persisted.signature.payloadHash },
+        payload: {
+          decisionId: context.decisionId,
+          revisionId: context.revisionId,
+          artifactHash: context.artifactHash,
+          outcome: params.resolutionOutcome,
+          reviewerId: params.reviewedBy,
+          keyId: persisted.signature.keyId,
+          payloadHash: persisted.signature.payloadHash,
+        },
       }).catch(swallow("appendOperationsLog", undefined));
     }
     return resolved;
@@ -134,7 +148,7 @@ async function getGatewayEscalationStatusInTenant(params: {
   const status = await getEscalationStatusByDecisionId(
     params.decisionId,
     params.tenantId,
-    params.workspaceId
+    params.workspaceId,
   );
   if (
     status &&
@@ -143,7 +157,10 @@ async function getGatewayEscalationStatusInTenant(params: {
     status.connector &&
     status.action
   ) {
-    const alreadyIssued = await hasCredentialGrantBeenIssued(status.gatewayDecisionId, params.tenantId);
+    const alreadyIssued = await hasCredentialGrantBeenIssued(
+      status.gatewayDecisionId,
+      params.tenantId,
+    );
     if (alreadyIssued) {
       status.resolutionOutcome = "ABORT";
       status.resolutionNote = "Credential already issued by a concurrent request.";
@@ -177,7 +194,8 @@ async function getGatewayEscalationStatusInTenant(params: {
           });
           if (!persisted) {
             return {
-              error: "Credential brokering failed and the decision record could not be updated. Retry later.",
+              error:
+                "Credential brokering failed and the decision record could not be updated. Retry later.",
             };
           }
           status.resolutionOutcome = "ABORT";
@@ -209,7 +227,7 @@ export async function hasGatewayCredentialGrantForDecision(params: {
   tenantId: string;
 }): Promise<boolean> {
   return runWithTenantContext(params.tenantId, () =>
-    hasCredentialGrantBeenIssuedByDecisionId(params.decisionId, params.tenantId)
+    hasCredentialGrantBeenIssuedByDecisionId(params.decisionId, params.tenantId),
   );
 }
 
@@ -226,18 +244,30 @@ export async function persistGatewayDecisionAndBrokerCredentials(params: {
   workspaceId: string;
   actorId: string;
 }): Promise<
-  | { ok: true; credentialGrant?: unknown; outcome?: "ABORT"; reason?: string; receipt?: SignedActionReceipt }
+  | {
+      ok: true;
+      credentialGrant?: unknown;
+      outcome?: "ABORT";
+      reason?: string;
+      receipt?: SignedActionReceipt;
+    }
   | { ok: false; error: string; persisted: boolean }
 > {
   return runWithTenantContext(params.tenantId, () =>
-    persistGatewayDecisionAndBrokerCredentialsInTenant(params)
+    persistGatewayDecisionAndBrokerCredentialsInTenant(params),
   );
 }
 
 async function persistGatewayDecisionAndBrokerCredentialsInTenant(
-  params: Parameters<typeof persistGatewayDecisionAndBrokerCredentials>[0]
+  params: Parameters<typeof persistGatewayDecisionAndBrokerCredentials>[0],
 ): Promise<
-  | { ok: true; credentialGrant?: unknown; outcome?: "ABORT"; reason?: string; receipt?: SignedActionReceipt }
+  | {
+      ok: true;
+      credentialGrant?: unknown;
+      outcome?: "ABORT";
+      reason?: string;
+      receipt?: SignedActionReceipt;
+    }
   | { ok: false; error: string; persisted: boolean }
 > {
   const firstContext = params.input.policyContext[0];
@@ -268,7 +298,12 @@ async function persistGatewayDecisionAndBrokerCredentialsInTenant(
   });
 
   const issueReceipt = async (outcome: "PROCEED" | "ESCALATE" | "ABORT") => {
-    if (!gatewayDecisionId || outcome === "ESCALATE" || !["HIGH", "CRITICAL"].includes(params.decisionResult.riskLevel)) return undefined;
+    if (
+      !gatewayDecisionId ||
+      outcome === "ESCALATE" ||
+      !["HIGH", "CRITICAL"].includes(params.decisionResult.riskLevel)
+    )
+      return undefined;
     const signed = issueGatewayActionReceipt({
       decisionId: params.input.decisionId,
       branchId: firstContext?.branchId,
@@ -331,26 +366,41 @@ async function persistGatewayDecisionAndBrokerCredentialsInTenant(
     gatewayDecisionId,
   });
   if (brokerResult.status === "granted") {
-    return { ok: true, credentialGrant: brokerResult.grant, receipt: await issueReceipt("PROCEED") };
+    return {
+      ok: true,
+      credentialGrant: brokerResult.grant,
+      receipt: await issueReceipt("PROCEED"),
+    };
   }
   if (brokerResult.status === "already_issued") {
-    return { ok: true, outcome: "ABORT", reason: "Credential already issued by a concurrent request.", receipt: await issueReceipt("ABORT") };
+    return {
+      ok: true,
+      outcome: "ABORT",
+      reason: "Credential already issued by a concurrent request.",
+      receipt: await issueReceipt("ABORT"),
+    };
   }
   if (brokerResult.status === "error") {
     const persisted = await updateGatewayDecisionOutcome(
       gatewayDecisionId,
       params.tenantId,
       "ABORT",
-      "Credential brokering failed."
+      "Credential brokering failed.",
     );
     if (!persisted) {
       return {
         ok: false,
         persisted: true,
-        error: "Credential brokering failed and the decision record could not be updated. Retry later.",
+        error:
+          "Credential brokering failed and the decision record could not be updated. Retry later.",
       };
     }
-    return { ok: true, outcome: "ABORT", reason: "Credential brokering failed.", receipt: await issueReceipt("ABORT") };
+    return {
+      ok: true,
+      outcome: "ABORT",
+      reason: "Credential brokering failed.",
+      receipt: await issueReceipt("ABORT"),
+    };
   }
 
   return { ok: true, receipt: await issueReceipt(params.decisionResult.outcome) };
@@ -371,7 +421,10 @@ async function delegateGatewayMutationToWorker(params: {
   const secret = workerInternalSecret();
   if (!baseUrl || !secret) return undefined;
 
-  const target = new URL(`/api/gateway/${params.mutation}`, baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`);
+  const target = new URL(
+    `/api/gateway/${params.mutation}`,
+    baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`,
+  );
   const response = await fetchWithTimeout(target, {
     method: "POST",
     headers: {
@@ -384,129 +437,136 @@ async function delegateGatewayMutationToWorker(params: {
     body: JSON.stringify(params.body),
     cache: "no-store",
     timeoutMs: 15_000,
-  }).catch((error) => ({ ok: false, status: 503, json: async () => ({ error: String(error) }) } as Response));
+  }).catch(
+    (error) =>
+      ({ ok: false, status: 503, json: async () => ({ error: String(error) }) }) as Response,
+  );
 
   if (response.ok) return { ok: true };
 
-  const payload = await response.json().catch(() => null) as { error?: string } | null;
-  return { error: payload?.error ?? `Gateway worker mutation failed with status ${response.status}.` };
+  const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+  return {
+    error: payload?.error ?? `Gateway worker mutation failed with status ${response.status}.`,
+  };
 }
 
-export async function resolveEscalationDecision(input: {
-  queueId: string;
-  resolutionOutcome: string;
-  resolutionNote?: string;
-  agentGuidance?: string;
-}, scope: ActiveScope | null): Promise<ResolveEscalationResult> {
+export async function resolveEscalationDecision(
+  input: {
+    queueId: string;
+    resolutionOutcome: string;
+    resolutionNote?: string;
+    agentGuidance?: string;
+  },
+  scope: ActiveScope | null,
+): Promise<ResolveEscalationResult> {
   const workspaceContext = scope;
   if (!workspaceContext) return { error: "Workspace context unavailable." };
   return runWithTenantContext(workspaceContext.tenantId, async () => {
+    const { actor } = await getActiveActor({
+      workspaceId: workspaceContext.workspaceId,
+      tenantId: workspaceContext.tenantId,
+    }).catch(swallow("getActiveActor", { actor: null }));
+    if (!actor) return { error: "Authentication required." };
 
-  const { actor } = await getActiveActor({
-    workspaceId: workspaceContext.workspaceId,
-    tenantId: workspaceContext.tenantId,
-  }).catch(swallow("getActiveActor", { actor: null }));
-  if (!actor) return { error: "Authentication required." };
+    if (!input.queueId) return { error: "Queue item ID is required." };
+    if (
+      input.resolutionOutcome !== "PROCEED" &&
+      input.resolutionOutcome !== "ESCALATE" &&
+      input.resolutionOutcome !== "ABORT"
+    ) {
+      return { error: "Resolution outcome must be PROCEED, ESCALATE, or ABORT." };
+    }
 
-  if (!input.queueId) return { error: "Queue item ID is required." };
-  if (
-    input.resolutionOutcome !== "PROCEED" &&
-    input.resolutionOutcome !== "ESCALATE" &&
-    input.resolutionOutcome !== "ABORT"
-  ) {
-    return { error: "Resolution outcome must be PROCEED, ESCALATE, or ABORT." };
-  }
+    const delegated = await delegateGatewayMutationToWorker({
+      mutation: "resolve",
+      tenantId: workspaceContext.tenantId,
+      workspaceId: workspaceContext.workspaceId,
+      actorId: actor.id,
+      body: {
+        queueId: input.queueId,
+        resolutionOutcome: input.resolutionOutcome,
+        resolutionNote: input.resolutionNote,
+        agentGuidance: input.agentGuidance,
+      },
+    });
+    if (delegated) return delegated;
 
-  const delegated = await delegateGatewayMutationToWorker({
-    mutation: "resolve",
-    tenantId: workspaceContext.tenantId,
-    workspaceId: workspaceContext.workspaceId,
-    actorId: actor.id,
-    body: {
+    const ok = await resolveEscalationQueueItem({
       queueId: input.queueId,
+      tenantId: workspaceContext.tenantId,
+      workspaceId: workspaceContext.workspaceId,
+      reviewedBy: actor.id,
       resolutionOutcome: input.resolutionOutcome,
       resolutionNote: input.resolutionNote,
       agentGuidance: input.agentGuidance,
-    },
-  });
-  if (delegated) return delegated;
+    });
 
-  const ok = await resolveEscalationQueueItem({
-    queueId: input.queueId,
-    tenantId: workspaceContext.tenantId,
-    workspaceId: workspaceContext.workspaceId,
-    reviewedBy: actor.id,
-    resolutionOutcome: input.resolutionOutcome,
-    resolutionNote: input.resolutionNote,
-    agentGuidance: input.agentGuidance,
-  });
+    if (!ok) return { error: "Escalation item not found or already resolved." };
 
-  if (!ok) return { error: "Escalation item not found or already resolved." };
+    appendOperationsLog({
+      tenantId: workspaceContext.tenantId,
+      workspaceId: workspaceContext.workspaceId,
+      eventType: "ESCALATION_RESOLVED",
+      sourceId: input.queueId,
+      sourceTable: "gateway_escalation_queue",
+      actorId: actor.id,
+      payload: {
+        queueId: input.queueId,
+        resolutionOutcome: input.resolutionOutcome,
+        resolutionNote: input.resolutionNote,
+        agentGuidance: input.agentGuidance,
+      },
+    }).catch(swallow("appendOperationsLog", undefined));
 
-  appendOperationsLog({
-    tenantId: workspaceContext.tenantId,
-    workspaceId: workspaceContext.workspaceId,
-    eventType: "ESCALATION_RESOLVED",
-    sourceId: input.queueId,
-    sourceTable: "gateway_escalation_queue",
-    actorId: actor.id,
-    payload: {
-      queueId: input.queueId,
-      resolutionOutcome: input.resolutionOutcome,
-      resolutionNote: input.resolutionNote,
-      agentGuidance: input.agentGuidance,
-    },
-  }).catch(swallow("appendOperationsLog", undefined));
-
-  return { ok: true };
+    return { ok: true };
   });
 }
 
 export type ClaimEscalationResult = { error: string } | { ok: true };
 
-export async function claimEscalationDecision(input: {
-  queueId: string;
-}, scope: ActiveScope | null): Promise<ClaimEscalationResult> {
+export async function claimEscalationDecision(
+  input: { queueId: string },
+  scope: ActiveScope | null,
+): Promise<ClaimEscalationResult> {
   const workspaceContext = scope;
   if (!workspaceContext) return { error: "Workspace context unavailable." };
   return runWithTenantContext(workspaceContext.tenantId, async () => {
+    const { actor } = await getActiveActor({
+      workspaceId: workspaceContext.workspaceId,
+      tenantId: workspaceContext.tenantId,
+    }).catch(swallow("getActiveActor", { actor: null }));
+    if (!actor) return { error: "Authentication required." };
 
-  const { actor } = await getActiveActor({
-    workspaceId: workspaceContext.workspaceId,
-    tenantId: workspaceContext.tenantId,
-  }).catch(swallow("getActiveActor", { actor: null }));
-  if (!actor) return { error: "Authentication required." };
+    if (!input.queueId) return { error: "Queue item ID is required." };
 
-  if (!input.queueId) return { error: "Queue item ID is required." };
+    const delegated = await delegateGatewayMutationToWorker({
+      mutation: "claim",
+      tenantId: workspaceContext.tenantId,
+      workspaceId: workspaceContext.workspaceId,
+      actorId: actor.id,
+      body: { queueId: input.queueId },
+    });
+    if (delegated) return delegated;
 
-  const delegated = await delegateGatewayMutationToWorker({
-    mutation: "claim",
-    tenantId: workspaceContext.tenantId,
-    workspaceId: workspaceContext.workspaceId,
-    actorId: actor.id,
-    body: { queueId: input.queueId },
-  });
-  if (delegated) return delegated;
+    const ok = await assignEscalationQueueItem({
+      queueId: input.queueId,
+      tenantId: workspaceContext.tenantId,
+      workspaceId: workspaceContext.workspaceId,
+      assignedTo: actor.id,
+    });
 
-  const ok = await assignEscalationQueueItem({
-    queueId: input.queueId,
-    tenantId: workspaceContext.tenantId,
-    workspaceId: workspaceContext.workspaceId,
-    assignedTo: actor.id,
-  });
+    if (!ok) return { error: "Escalation item not found, already assigned, or already resolved." };
 
-  if (!ok) return { error: "Escalation item not found, already assigned, or already resolved." };
+    appendOperationsLog({
+      tenantId: workspaceContext.tenantId,
+      workspaceId: workspaceContext.workspaceId,
+      eventType: "ESCALATION_CLAIMED",
+      sourceId: input.queueId,
+      sourceTable: "gateway_escalation_queue",
+      actorId: actor.id,
+      payload: { queueId: input.queueId, action: "CLAIMED", assignedTo: actor.id },
+    }).catch(swallow("appendOperationsLog", undefined));
 
-  appendOperationsLog({
-    tenantId: workspaceContext.tenantId,
-    workspaceId: workspaceContext.workspaceId,
-    eventType: "ESCALATION_CLAIMED",
-    sourceId: input.queueId,
-    sourceTable: "gateway_escalation_queue",
-    actorId: actor.id,
-    payload: { queueId: input.queueId, action: "CLAIMED", assignedTo: actor.id },
-  }).catch(swallow("appendOperationsLog", undefined));
-
-  return { ok: true };
+    return { ok: true };
   });
 }

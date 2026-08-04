@@ -32,10 +32,13 @@ export function ReviewComposeSection({
           </p>
           <h2>
             Built bundle{" "}
-            <code>{formatArtifactHash(composition.composedArtifactHash, viewMode, hashToFingerprint)}</code>
+            <code>
+              {formatArtifactHash(composition.composedArtifactHash, viewMode, hashToFingerprint)}
+            </code>
           </h2>
           <p className="meta">
-            {composition.layers.length} layers merged. This prepares the bundle for approvals; it does not publish policy.
+            {composition.layers.length} layers merged. This prepares the bundle for approvals; it
+            does not publish policy.
           </p>
         </div>
         <ComposeReviewButton
@@ -47,22 +50,26 @@ export function ReviewComposeSection({
 
       <div className="policyStack">
         <span className="metadata">Policy stack</span>
-        {(["ORGANIZATION", "WORKSPACE", "ENVIRONMENT", "CONNECTOR"] as const).map((scope, i, arr) => {
-          const hasScope = composition.layers.some((l) => l.scope === scope);
-          return (
-            <span className="policyStackStep" key={scope}>
-              <span
-                className={`${hasScope ? (scope === "ORGANIZATION" ? "pill pillBlock" : "pill pillNeutral") : "pill"}${
-                  hasScope ? "" : " policyStackMissing"
-                }`}
-              >
-                {scope}
+        {(["ORGANIZATION", "WORKSPACE", "ENVIRONMENT", "CONNECTOR"] as const).map(
+          (scope, i, arr) => {
+            const hasScope = composition.layers.some((l) => l.scope === scope);
+            return (
+              <span className="policyStackStep" key={scope}>
+                <span
+                  className={`${hasScope ? (scope === "ORGANIZATION" ? "pill pillBlock" : "pill pillNeutral") : "pill"}${
+                    hasScope ? "" : " policyStackMissing"
+                  }`}
+                >
+                  {scope}
+                </span>
+                {i < arr.length - 1 ? <span className="meta">/</span> : null}
               </span>
-              {i < arr.length - 1 ? <span className="meta">/</span> : null}
-            </span>
-          );
-        })}
-        <span className="meta">Org overrides workspace, workspace overrides environment, environment overrides connector.</span>
+            );
+          },
+        )}
+        <span className="meta">
+          Org overrides workspace, workspace overrides environment, environment overrides connector.
+        </span>
       </div>
 
       <div className="compositionLayout">

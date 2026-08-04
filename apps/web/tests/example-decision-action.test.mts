@@ -26,12 +26,15 @@ function form(fields: Record<string, string>): FormData {
 
 describe("evaluateExampleDecision", () => {
   it("escalates when a parameter constraint matches", async () => {
-    const state = await evaluateExampleDecision(null, form({
-      rulesPayload: REFUND_RULE,
-      connector: "stripe",
-      action: "refund.create",
-      toolParameters: '{ "amount_cents": 60000 }',
-    }));
+    const state = await evaluateExampleDecision(
+      null,
+      form({
+        rulesPayload: REFUND_RULE,
+        connector: "stripe",
+        action: "refund.create",
+        toolParameters: '{ "amount_cents": 60000 }',
+      }),
+    );
     expect(state && "result" in state).toBe(true);
     if (!state || !("result" in state)) return;
     expect(state.result.status).toBe("ESCALATE");
@@ -39,12 +42,15 @@ describe("evaluateExampleDecision", () => {
   });
 
   it("allows when the parameter constraint does not match", async () => {
-    const state = await evaluateExampleDecision(null, form({
-      rulesPayload: REFUND_RULE,
-      connector: "stripe",
-      action: "refund.create",
-      toolParameters: '{ "amount_cents": 4000 }',
-    }));
+    const state = await evaluateExampleDecision(
+      null,
+      form({
+        rulesPayload: REFUND_RULE,
+        connector: "stripe",
+        action: "refund.create",
+        toolParameters: '{ "amount_cents": 4000 }',
+      }),
+    );
     expect(state && "result" in state).toBe(true);
     if (!state || !("result" in state)) return;
     expect(state.result.status).toBe("ALLOW");
@@ -52,17 +58,23 @@ describe("evaluateExampleDecision", () => {
   });
 
   it("requires a connector and action", async () => {
-    const state = await evaluateExampleDecision(null, form({ rulesPayload: REFUND_RULE, connector: "stripe" }));
+    const state = await evaluateExampleDecision(
+      null,
+      form({ rulesPayload: REFUND_RULE, connector: "stripe" }),
+    );
     expect(state).toEqual({ error: expect.stringContaining("connector and an action") });
   });
 
   it("rejects malformed tool parameters", async () => {
-    const state = await evaluateExampleDecision(null, form({
-      rulesPayload: REFUND_RULE,
-      connector: "stripe",
-      action: "refund.create",
-      toolParameters: "{ not json",
-    }));
+    const state = await evaluateExampleDecision(
+      null,
+      form({
+        rulesPayload: REFUND_RULE,
+        connector: "stripe",
+        action: "refund.create",
+        toolParameters: "{ not json",
+      }),
+    );
     expect(state).toEqual({ error: expect.stringContaining("valid JSON") });
   });
 });

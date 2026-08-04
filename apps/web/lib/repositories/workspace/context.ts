@@ -33,7 +33,7 @@ export async function listTenantsForWorkspaceContext(params: {
  */
 export async function listWorkspacesForWorkspaceContext(
   tenantId: string,
-  principalId?: string
+  principalId?: string,
 ): Promise<WorkspaceSummary[]> {
   if (!sql) return [];
 

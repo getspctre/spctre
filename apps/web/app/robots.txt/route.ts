@@ -9,8 +9,8 @@ export function GET(request: Request): Response {
   return new Response(body, {
     headers: {
       "content-type": "text/plain; charset=utf-8",
-      "cache-control": "public, max-age=3600"
-    }
+      "cache-control": "public, max-age=3600",
+    },
   });
 }
 
@@ -38,7 +38,7 @@ function appRobots(): string {
     "Disallow: /",
     "",
     "# Spctre control-plane routes are tenant and workspace scoped.",
-    "# Public API docs and schema routes are available for agents."
+    "# Public API docs and schema routes are available for agents.",
   ]);
 }
 
@@ -55,7 +55,7 @@ function siteRobots(): string {
     "Disallow: /login/",
     "Disallow: /signup/",
     "",
-    `Sitemap: ${siteUrl}/sitemap.xml`
+    `Sitemap: ${siteUrl}/sitemap.xml`,
   ]);
 }
 

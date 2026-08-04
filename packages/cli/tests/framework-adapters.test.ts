@@ -45,42 +45,77 @@ const adapters = [
   {
     framework: "crewai",
     writer: writeCrewAiAdapter,
-    expected: ["runtimeTarget\": {\"stack\": \"CREWAI\"", "_framework\": \"crewai\"", "crewai.tools", "BaseTool._arun", "argumentHash", "hashlib.sha256"],
+    expected: [
+      'runtimeTarget": {"stack": "CREWAI"',
+      '_framework": "crewai"',
+      "crewai.tools",
+      "BaseTool._arun",
+      "argumentHash",
+      "hashlib.sha256",
+    ],
   },
   {
     framework: "langchain",
     writer: writeLangChainAdapter,
-    expected: ["spctre-langchain-hook", "_framework\": \"langchain\"", "BaseTool.invoke", "BaseTool.ainvoke"],
+    expected: [
+      "spctre-langchain-hook",
+      '_framework": "langchain"',
+      "BaseTool.invoke",
+      "BaseTool.ainvoke",
+    ],
   },
   {
     framework: "openai-agents",
     writer: writeOpenAiAgentsAdapter,
-    expected: ["OPENAI_AGENTS", "_framework\": \"openai-agents\"", "FunctionTool"],
+    expected: ["OPENAI_AGENTS", '_framework": "openai-agents"', "FunctionTool"],
   },
   {
     framework: "autogen",
     writer: writeAutoGenAdapter,
-    expected: ["AUTOGEN", "_framework\": \"autogen\"", "FunctionTool", "ConversableAgent"],
+    expected: ["AUTOGEN", '_framework": "autogen"', "FunctionTool", "ConversableAgent"],
   },
   {
     framework: "google-adk",
     writer: writeGoogleAdkAdapter,
-    expected: ["GOOGLE_ADK", "_framework\": \"google-adk\"", "BaseTool", "run_async"],
+    expected: ["GOOGLE_ADK", '_framework": "google-adk"', "BaseTool", "run_async"],
   },
   {
     framework: "strands",
     writer: writeStrandsAdapter,
-    expected: ["spctre-strands-hook", "_framework\": \"strands\"", "ToolHandler", "FunctionTool"],
+    expected: ["spctre-strands-hook", '_framework": "strands"', "ToolHandler", "FunctionTool"],
   },
   {
     framework: "antigravity-sdk",
     writer: writeAntigravitySdkAdapter,
-    expected: ["CUSTOM", "spctre-antigravity-sdk-hook", "_framework\": \"antigravity-sdk\"", "google.antigravity.tools.tool_runner", "ToolRunner.execute", "process_tool_calls", "Conversation.receive_steps", "self.total_usage", "llm_turn", "SPCTRE_ANTIGRAVITY_SDK_MODE", "pre_tool_call_decide", "/api/gateway/decide"],
+    expected: [
+      "CUSTOM",
+      "spctre-antigravity-sdk-hook",
+      '_framework": "antigravity-sdk"',
+      "google.antigravity.tools.tool_runner",
+      "ToolRunner.execute",
+      "process_tool_calls",
+      "Conversation.receive_steps",
+      "self.total_usage",
+      "llm_turn",
+      "SPCTRE_ANTIGRAVITY_SDK_MODE",
+      "pre_tool_call_decide",
+      "/api/gateway/decide",
+    ],
   },
   {
     framework: "claude-agent-sdk",
     writer: writeClaudeAgentSdkAdapter,
-    expected: ["spctre-claude-agent-sdk-hook", "_framework\": \"claude-agent-sdk\"", "claude_agent_sdk", "ClaudeAgentOptions", "PreToolUse", "PostToolUseFailure", "SPCTRE_CLAUDE_AGENT_SDK_MODE", "/api/gateway/decide", "permissionDecision"],
+    expected: [
+      "spctre-claude-agent-sdk-hook",
+      '_framework": "claude-agent-sdk"',
+      "claude_agent_sdk",
+      "ClaudeAgentOptions",
+      "PreToolUse",
+      "PostToolUseFailure",
+      "SPCTRE_CLAUDE_AGENT_SDK_MODE",
+      "/api/gateway/decide",
+      "permissionDecision",
+    ],
   },
 ] as const;
 
@@ -115,7 +150,9 @@ describe("framework adapter writers", () => {
       };
       const auditNote = fs.readFileSync(path.join(tempDir, ".spctre", "GOVERNANCE.md"), "utf8");
 
-      expect(fs.realpathSync(adapterPath)).toBe(fs.realpathSync(path.join(tempDir, ".spctre", "sitecustomize.py")));
+      expect(fs.realpathSync(adapterPath)).toBe(
+        fs.realpathSync(path.join(tempDir, ".spctre", "sitecustomize.py")),
+      );
       const expectedLaunch = ".spctre/spctre-python python your_agent.py";
       expect(launchHint).toBe(expectedLaunch);
       expect(fs.statSync(wrapperPath).mode & 0o111).not.toBe(0);
@@ -134,20 +171,31 @@ describe("framework adapter writers", () => {
       expect(source).toContain("importlib.import_module");
       expect(source).toContain("daemon=False");
       expect(source).not.toContain("daemon=True");
-      expect(source).not.toMatch(/from (crewai|langchain|langchain_core|agents|autogen|autogen_core|google|strands)\b/);
+      expect(source).not.toMatch(
+        /from (crewai|langchain|langchain_core|agents|autogen|autogen_core|google|strands)\b/,
+      );
       expect(manifest.framework).toBe(adapter.framework);
       expect(manifest.runtimePatching).toBe(true);
       expect(manifest.launchCommand).toBe(expectedLaunch);
-      expect(manifest.verificationCommand).toBe(`spctre verify-env --framework ${adapter.framework}`);
+      expect(manifest.verificationCommand).toBe(
+        `spctre verify-env --framework ${adapter.framework}`,
+      );
       expect(manifest.patchTargets.length).toBeGreaterThan(0);
-      expect(manifest.evidenceSignals).toEqual(expect.arrayContaining([
-        expect.objectContaining({ action: "governance_active", policyRef: "system.governance_active" }),
-      ]));
-      expect(manifest.auditNotes).toEqual(expect.arrayContaining([
-        expect.stringContaining("non-daemon worker threads"),
-        expect.stringContaining("refuses Python startup flags"),
-        expect.stringContaining("not a complete enforcement boundary"),
-      ]));
+      expect(manifest.evidenceSignals).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            action: "governance_active",
+            policyRef: "system.governance_active",
+          }),
+        ]),
+      );
+      expect(manifest.auditNotes).toEqual(
+        expect.arrayContaining([
+          expect.stringContaining("non-daemon worker threads"),
+          expect.stringContaining("refuses Python startup flags"),
+          expect.stringContaining("not a complete enforcement boundary"),
+        ]),
+      );
       expect(manifest.files.adapterSha256).toMatch(/^sha256:/);
       expect(manifest.files.wrapperSha256).toMatch(/^sha256:/);
       expect(auditNote).toContain("Spctre Governance Runtime");
@@ -175,7 +223,9 @@ describe("framework adapter writers", () => {
         "import os; print(os.environ['SPCTRE_ADAPTER_DIR']); print(os.environ['PYTHONPATH'].split(':')[0])",
       ],
       { encoding: "utf8" },
-    ).trim().split("\n");
+    )
+      .trim()
+      .split("\n");
 
     const expectedAdapterDir = path.join(tempDir, ".spctre");
     expect(output).toEqual([expectedAdapterDir, expectedAdapterDir]);
@@ -193,13 +243,19 @@ describe("framework adapter writers", () => {
     writeLangChainAdapter(config);
     fs.mkdirSync(path.join(tempDir, ".spctre", "langchain_core"), { recursive: true });
     fs.writeFileSync(path.join(tempDir, ".spctre", "langchain_core", "__init__.py"), "", "utf8");
-    fs.writeFileSync(path.join(tempDir, ".spctre", "langchain_core", "tools.py"), "class BaseTool:\n    pass\n", "utf8");
+    fs.writeFileSync(
+      path.join(tempDir, ".spctre", "langchain_core", "tools.py"),
+      "class BaseTool:\n    pass\n",
+      "utf8",
+    );
 
-    expect(() => execFileSync(
-      path.join(tempDir, ".spctre", "spctre-python"),
-      ["python3", "-c", "print('should not run')"],
-      { encoding: "utf8", stdio: "pipe" },
-    )).toThrow(/Spctre governance preflight failed/);
+    expect(() =>
+      execFileSync(
+        path.join(tempDir, ".spctre", "spctre-python"),
+        ["python3", "-c", "print('should not run')"],
+        { encoding: "utf8", stdio: "pipe" },
+      ),
+    ).toThrow(/Spctre governance preflight failed/);
   });
 
   it("Antigravity SDK enforcement refuses startup when its native API cannot be installed", () => {
@@ -208,25 +264,37 @@ describe("framework adapter writers", () => {
     process.chdir(tempDir);
 
     writeAntigravitySdkAdapter(config);
-    fs.mkdirSync(path.join(tempDir, ".spctre", "google", "antigravity", "tools"), { recursive: true });
+    fs.mkdirSync(path.join(tempDir, ".spctre", "google", "antigravity", "tools"), {
+      recursive: true,
+    });
     fs.writeFileSync(path.join(tempDir, ".spctre", "google", "__init__.py"), "", "utf8");
-    fs.writeFileSync(path.join(tempDir, ".spctre", "google", "antigravity", "__init__.py"), "", "utf8");
-    fs.writeFileSync(path.join(tempDir, ".spctre", "google", "antigravity", "tools", "__init__.py"), "", "utf8");
+    fs.writeFileSync(
+      path.join(tempDir, ".spctre", "google", "antigravity", "__init__.py"),
+      "",
+      "utf8",
+    );
+    fs.writeFileSync(
+      path.join(tempDir, ".spctre", "google", "antigravity", "tools", "__init__.py"),
+      "",
+      "utf8",
+    );
     fs.writeFileSync(
       path.join(tempDir, ".spctre", "google", "antigravity", "tools", "tool_runner.py"),
       "class ToolRunner:\n    async def execute(self, *args, **kwargs): pass\n    async def process_tool_calls(self, *args, **kwargs): pass\n",
       "utf8",
     );
 
-    expect(() => execFileSync(
-      path.join(tempDir, ".spctre", "spctre-python"),
-      ["python3", "-c", "print('should not run')"],
-      {
-        encoding: "utf8",
-        stdio: "pipe",
-        env: { ...process.env, SPCTRE_ANTIGRAVITY_SDK_MODE: "enforce" },
-      },
-    )).toThrow(/Unable to install Google Antigravity SDK enforcement/);
+    expect(() =>
+      execFileSync(
+        path.join(tempDir, ".spctre", "spctre-python"),
+        ["python3", "-c", "print('should not run')"],
+        {
+          encoding: "utf8",
+          stdio: "pipe",
+          env: { ...process.env, SPCTRE_ANTIGRAVITY_SDK_MODE: "enforce" },
+        },
+      ),
+    ).toThrow(/Unable to install Google Antigravity SDK enforcement/);
   });
 
   it("launcher refuses Python flags that bypass sitecustomize or PYTHONPATH", () => {
@@ -237,11 +305,13 @@ describe("framework adapter writers", () => {
     writeFakeLangChainPackage(tempDir);
     writeLangChainAdapter(config);
 
-    expect(() => execFileSync(
-      path.join(tempDir, ".spctre", "spctre-python"),
-      ["python3", "-S", "-c", "print('should not run')"],
-      { encoding: "utf8", stdio: "pipe" },
-    )).toThrow(/bypass sitecustomize/);
+    expect(() =>
+      execFileSync(
+        path.join(tempDir, ".spctre", "spctre-python"),
+        ["python3", "-S", "-c", "print('should not run')"],
+        { encoding: "utf8", stdio: "pipe" },
+      ),
+    ).toThrow(/bypass sitecustomize/);
   });
 
   it("launcher refuses to run when sitecustomize.py no longer matches the manifest", () => {
@@ -252,11 +322,13 @@ describe("framework adapter writers", () => {
     writeLangChainAdapter(config);
     fs.appendFileSync(path.join(tempDir, ".spctre", "sitecustomize.py"), "\n# tampered\n", "utf8");
 
-    expect(() => execFileSync(
-      path.join(tempDir, ".spctre", "spctre-python"),
-      ["python3", "-c", "print('should not run')"],
-      { encoding: "utf8", stdio: "pipe" },
-    )).toThrow(/Spctre governance integrity check failed/);
+    expect(() =>
+      execFileSync(
+        path.join(tempDir, ".spctre", "spctre-python"),
+        ["python3", "-c", "print('should not run')"],
+        { encoding: "utf8", stdio: "pipe" },
+      ),
+    ).toThrow(/Spctre governance integrity check failed/);
   });
 
   it("CrewAI async wrapper tolerates synchronous _arun fallbacks", () => {
@@ -279,11 +351,7 @@ describe("framework adapter writers", () => {
       ],
       {
         encoding: "utf8",
-        env: {
-          ...process.env,
-          PYTHONPATH: path.join(tempDir, ".spctre"),
-          SPCTRE_KEY: "",
-        },
+        env: { ...process.env, PYTHONPATH: path.join(tempDir, ".spctre"), SPCTRE_KEY: "" },
       },
     ).trim();
 
@@ -313,7 +381,9 @@ describe("framework adapter writers", () => {
         ].join("; "),
       ],
       { encoding: "utf8", env: { ...process.env, SPCTRE_KEY: "" } },
-    ).trim().split("\n");
+    )
+      .trim()
+      .split("\n");
 
     expect(output).toEqual(["PostToolUse,PostToolUseFailure,PreToolUse", "2", "True"]);
   });
@@ -347,7 +417,9 @@ describe("framework adapter writers", () => {
         encoding: "utf8",
         env: { ...process.env, SPCTRE_CLAUDE_AGENT_SDK_MODE: "enforce", SPCTRE_API_TOKEN: "" },
       },
-    ).trim().split("\n");
+    )
+      .trim()
+      .split("\n");
 
     expect(output).toEqual(["allow", "ask", "deny"]);
   });
@@ -371,8 +443,12 @@ describe("omnigent adapter", () => {
     };
     const auditNote = fs.readFileSync(path.join(tempDir, ".spctre", "GOVERNANCE.md"), "utf8");
 
-    expect(fs.realpathSync(adapterPath)).toBe(fs.realpathSync(path.join(tempDir, ".spctre", "spctre_policy.py")));
-    expect(launchHint).toBe("PYTHONPATH=./.spctre:$PYTHONPATH omnigent server --config server_config.yaml");
+    expect(fs.realpathSync(adapterPath)).toBe(
+      fs.realpathSync(path.join(tempDir, ".spctre", "spctre_policy.py")),
+    );
+    expect(launchHint).toBe(
+      "PYTHONPATH=./.spctre:$PYTHONPATH omnigent server --config server_config.yaml",
+    );
     expect(fs.existsSync(path.join(tempDir, ".spctre", "sitecustomize.py"))).toBe(false);
     expect(fs.existsSync(path.join(tempDir, ".spctre", "spctre-python"))).toBe(false);
     expect(source).toContain("Auto-generated by spctre watch --framework");
@@ -390,19 +466,23 @@ describe("omnigent adapter", () => {
     expect(source).toContain("asyncio.to_thread");
     expect(source).toContain("_spctre_emit_background(\n                connector,");
     expect(source).not.toContain("policy module imported");
-    expect(source).toContain('"runtimeTarget": {"stack": "OMNIGENT", "adapter": "spctre-omnigent-policy"}');
+    expect(source).toContain(
+      '"runtimeTarget": {"stack": "OMNIGENT", "adapter": "spctre-omnigent-policy"}',
+    );
     expect(source).toContain("spctre-omnigent-policy");
     expect(source).not.toContain("rule_connectors");
-    expect(source).not.toContain('with open(policy_path');
+    expect(source).not.toContain("with open(policy_path");
     expect(manifest.framework).toBe("omnigent");
     expect(manifest.runtimePatching).toBe(false);
     expect(manifest.patchTargets).toEqual([]);
     expect(manifest.files.policySha256).toMatch(/^sha256:/);
-    expect(manifest.auditNotes).toEqual(expect.arrayContaining([
-      expect.stringContaining("delegates governed tool-call decisions"),
-      expect.stringContaining("return None"),
-      expect.stringContaining("ESCALATE decisions map to Omnigent ASK"),
-    ]));
+    expect(manifest.auditNotes).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining("delegates governed tool-call decisions"),
+        expect.stringContaining("return None"),
+        expect.stringContaining("ESCALATE decisions map to Omnigent ASK"),
+      ]),
+    );
     expect(auditNote).toContain("Spctre Governance Runtime");
     expect(auditNote).toContain("spctre verify-env");
     expect(auditNote).toContain("server_config.yaml");
@@ -453,7 +533,9 @@ describe("omnigent adapter", () => {
           SPCTRE_API_TOKEN: "",
         },
       },
-    ).trim().split(/\n/);
+    )
+      .trim()
+      .split(/\n/);
 
     expect(output).toEqual([
       "True",

@@ -11,7 +11,10 @@ import { writePythonAdapterFromTemplate } from "./template";
  * Users run their agent with:
  *   .spctre/spctre-python python my_agent.py
  */
-export function writeLangChainAdapter(config: SpctreCliConfig): { adapterPath: string; launchHint: string } {
+export function writeLangChainAdapter(config: SpctreCliConfig): {
+  adapterPath: string;
+  launchHint: string;
+} {
   return writePythonAdapterFromTemplate(config, {
     framework: "langchain",
     templateName: "langchain.py",

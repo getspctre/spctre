@@ -17,7 +17,11 @@ function isFrag(v: unknown): v is Frag {
   return typeof v === "object" && v !== null && (v as Frag).__frag === true;
 }
 
-function flatten(strings: readonly string[], values: unknown[], acc: { text: string; params: unknown[] }): void {
+function flatten(
+  strings: readonly string[],
+  values: unknown[],
+  acc: { text: string; params: unknown[] },
+): void {
   for (let i = 0; i < strings.length; i++) {
     acc.text += strings[i];
     if (i < values.length) {

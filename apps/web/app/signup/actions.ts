@@ -12,7 +12,9 @@ export async function localDevSignup(formData: FormData): Promise<void> {
     redirect("/login?error=local_signup_disabled");
   }
   const displayName = String(formData.get("displayName") ?? "").trim();
-  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const email = String(formData.get("email") ?? "")
+    .trim()
+    .toLowerCase();
 
   const next = String(formData.get("next") ?? "").trim();
   const nextQuery = next ? `&next=${encodeURIComponent(next)}` : "";
@@ -21,10 +23,7 @@ export async function localDevSignup(formData: FormData): Promise<void> {
     redirect(`/signup?error=invalid_input${nextQuery}`);
   }
 
-  const result = await createLocalDevSignup({
-    email,
-    displayName,
-  });
+  const result = await createLocalDevSignup({ email, displayName });
   if ("error" in result) {
     redirect(`/signup?error=${result.error}${nextQuery}`);
   }

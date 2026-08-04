@@ -286,7 +286,9 @@
   color: var(--muted);
   padding: 6px;
   border-radius: 6px;
-  transition: color 0.12s, background 0.12s;
+  transition:
+    color 0.12s,
+    background 0.12s;
 }
 
 .iconLink:hover {

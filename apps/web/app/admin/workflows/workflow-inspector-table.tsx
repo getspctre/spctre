@@ -24,11 +24,14 @@ function formatScope(workflow: ApprovalWorkflowConfigSummary, tenantDefault: str
 
 function summarizeRules(
   workflow: ApprovalWorkflowConfigSummary,
-  t: (key: string, values?: Record<string, string | number | Date>) => string
+  t: (key: string, values?: Record<string, string | number | Date>) => string,
 ): string {
   if (!workflow.rules.length) return t("no_rules");
   if (workflow.rules.length === 1) return t("one_rule", { role: workflow.rules[0].role });
-  const firstTwo = workflow.rules.slice(0, 2).map((rule) => rule.role).join(", ");
+  const firstTwo = workflow.rules
+    .slice(0, 2)
+    .map((rule) => rule.role)
+    .join(", ");
   const remaining = workflow.rules.length - 2;
   return remaining > 0 ? `${firstTwo} +${remaining}` : firstTwo;
 }
@@ -97,14 +100,24 @@ function RuleRemoveForm({
     <form
       action={action}
       onSubmit={(event) => {
-        if (!window.confirm(t("confirm_remove_rule", { sequence: rule.sequence, role: rule.role, name: workflow.name }))) {
+        if (
+          !window.confirm(
+            t("confirm_remove_rule", {
+              sequence: rule.sequence,
+              role: rule.role,
+              name: workflow.name,
+            }),
+          )
+        ) {
           event.preventDefault();
         }
       }}
     >
       <input type="hidden" name="workflowId" value={workflow.id} />
       <input type="hidden" name="ruleId" value={rule.id} />
-      <button className="button buttonSmall" type="submit">{t("remove")}</button>
+      <button className="button buttonSmall" type="submit">
+        {t("remove")}
+      </button>
       {state?.error ? <p className="meta workspaceError">{state.error}</p> : null}
     </form>
   );
@@ -150,7 +163,10 @@ function WorkflowInspectorRow({
           <SlideOutPanel
             title={workflow.name}
             eyebrow={t("panel_eyebrow")}
-            description={t("panel_description", { scope: formatScope(workflow, tenantDefault), mode: workflow.reviewMode.toLowerCase() })}
+            description={t("panel_description", {
+              scope: formatScope(workflow, tenantDefault),
+              mode: workflow.reviewMode.toLowerCase(),
+            })}
             width="wide"
             trigger={({ open, triggerId }) => (
               <button className="button buttonSmall" id={triggerId} onClick={open} type="button">
@@ -164,7 +180,10 @@ function WorkflowInspectorRow({
               </div>
             ) : null}
 
-            <section className="adminMembersInspectorSection" aria-label={t("rule_builder_aria_label")}>
+            <section
+              className="adminMembersInspectorSection"
+              aria-label={t("rule_builder_aria_label")}
+            >
               <div className="adminMembersInspectorHeader">
                 <div>
                   <p className="eyebrow">{t("policy_editor_eyebrow")}</p>
@@ -225,7 +244,10 @@ function WorkflowInspectorRow({
                           {rule.sequence}. {rule.role}
                         </strong>
                         <p className="meta">
-                          {t("rule_required_from", { count: rule.requiredCount, roles: rule.eligibleRoles.join(", ") })}
+                          {t("rule_required_from", {
+                            count: rule.requiredCount,
+                            roles: rule.eligibleRoles.join(", "),
+                          })}
                         </p>
                       </div>
                       <RuleRemoveForm workflow={workflow} rule={rule} onSuccess={setToastMessage} />
@@ -240,7 +262,10 @@ function WorkflowInspectorRow({
               </div>
             </section>
 
-            <section className="adminMembersInspectorSection" aria-label={t("lifecycle_aria_label")}>
+            <section
+              className="adminMembersInspectorSection"
+              aria-label={t("lifecycle_aria_label")}
+            >
               <div className="adminMembersInspectorHeader">
                 <div>
                   <p className="eyebrow">{t("lifecycle_eyebrow")}</p>
@@ -248,10 +273,12 @@ function WorkflowInspectorRow({
                 </div>
                 <span className="pill pillWarn">{t("rereview_required")}</span>
               </div>
-              <p className="meta">
-                {t("lifecycle_description")}
-              </p>
-              <DisableWorkflowForm workflow={workflow} enabledCount={enabledCount} onSuccess={setToastMessage} />
+              <p className="meta">{t("lifecycle_description")}</p>
+              <DisableWorkflowForm
+                workflow={workflow}
+                enabledCount={enabledCount}
+                onSuccess={setToastMessage}
+              />
             </section>
           </SlideOutPanel>
         </div>
@@ -260,7 +287,11 @@ function WorkflowInspectorRow({
   );
 }
 
-function CreateWorkflowPanel({ workspaces }: { workspaces: { id: string; name: string; slug: string }[] }) {
+function CreateWorkflowPanel({
+  workspaces,
+}: {
+  workspaces: { id: string; name: string; slug: string }[];
+}) {
   const t = useTranslations("admin.workflows.table");
   return (
     <SlideOutPanel
@@ -279,7 +310,11 @@ function CreateWorkflowPanel({ workspaces }: { workspaces: { id: string; name: s
   );
 }
 
-export function WorkflowInspectorTable({ workflows, enabledCount, workspaces }: WorkflowInspectorTableProps) {
+export function WorkflowInspectorTable({
+  workflows,
+  enabledCount,
+  workspaces,
+}: WorkflowInspectorTableProps) {
   const t = useTranslations("admin.workflows.table");
   return (
     <div className="workflowRulesTableFrame">

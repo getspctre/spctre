@@ -30,7 +30,10 @@ export default async function AdminServiceKeysPage() {
   }
 
   const keys = isWorkspaceDatabaseConfigured()
-    ? await listWorkspaceApiKeys({ tenantId: session.tenantId, workspaceId: workspaceContext.workspaceId })
+    ? await listWorkspaceApiKeys({
+        tenantId: session.tenantId,
+        workspaceId: workspaceContext.workspaceId,
+      })
     : [];
 
   return (
@@ -81,17 +84,31 @@ export default async function AdminServiceKeysPage() {
                         <td>
                           <div className="adminMembersInlinePills">
                             {key.scopes.map((scope) => (
-                              <span key={scope} className="pill pillNeutral">{scope}</span>
+                              <span key={scope} className="pill pillNeutral">
+                                {scope}
+                              </span>
                             ))}
                           </div>
                         </td>
                         <td>
-                          {key.expires_at
-                            ? <span className={new Date(key.expires_at) < new Date() ? "pill pillWarn" : ""}>{formatAdminDate(key.expires_at)}</span>
-                            : <span className="auditHash">{t("never")}</span>}
+                          {key.expires_at ? (
+                            <span
+                              className={
+                                new Date(key.expires_at) < new Date() ? "pill pillWarn" : ""
+                              }
+                            >
+                              {formatAdminDate(key.expires_at)}
+                            </span>
+                          ) : (
+                            <span className="auditHash">{t("never")}</span>
+                          )}
                         </td>
-                        <td><span className="auditHash">{formatAdminDate(key.last_used_at)}</span></td>
-                        <td><span className="auditHash">{formatAdminDate(key.created_at)}</span></td>
+                        <td>
+                          <span className="auditHash">{formatAdminDate(key.last_used_at)}</span>
+                        </td>
+                        <td>
+                          <span className="auditHash">{formatAdminDate(key.created_at)}</span>
+                        </td>
                         <td>
                           <RevokeServiceKeyForm keyId={key.id} label={key.label} />
                         </td>

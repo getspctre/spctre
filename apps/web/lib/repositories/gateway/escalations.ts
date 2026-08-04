@@ -21,17 +21,12 @@ export interface ResolvedEscalation {
 
 export async function getOpenEscalationSummaryForRevision(
   revisionId: string,
-  tenantId: string
+  tenantId: string,
 ): Promise<OpenEscalationSummary> {
   if (!sql || !revisionId) return { count: 0 };
 
   try {
-    const rows = await sql<
-      {
-        count: string;
-        nearest_sla_due_at: Date | null;
-      }[]
-    >`
+    const rows = await sql<{ count: string; nearest_sla_due_at: Date | null }[]>`
       SELECT
         COUNT(*)::text AS count,
         MIN(sla_due_at) AS nearest_sla_due_at
@@ -44,7 +39,7 @@ export async function getOpenEscalationSummaryForRevision(
     const row = rows[0];
     return {
       count: Number.parseInt(row?.count ?? "0", 10),
-      nearestSlaDueAt: row?.nearest_sla_due_at?.toISOString()
+      nearestSlaDueAt: row?.nearest_sla_due_at?.toISOString(),
     };
   } catch {
     // Migration may not be applied yet.
@@ -54,7 +49,7 @@ export async function getOpenEscalationSummaryForRevision(
 
 export async function countOpenEscalations(
   workspaceId: string | null,
-  tenantId: string
+  tenantId: string,
 ): Promise<number> {
   if (!sql) return 0;
   try {
@@ -74,7 +69,7 @@ export async function countOpenEscalations(
 export async function listOpenEscalationQueue(
   workspaceId: string | null,
   tenantId: string,
-  limit = 50
+  limit = 50,
 ): Promise<GatewayEscalationQueueItem[]> {
   if (!sql) return [];
 
@@ -169,8 +164,18 @@ function mapEscalationDecisionFields(row: EscalationQueueRow) {
     agentId: row.agent_id ?? undefined,
     toolIntent: row.tool_intent ?? undefined,
     planSummary: row.plan_summary ?? undefined,
-    toolParameters: row.tool_parameters && typeof row.tool_parameters === "object" && !Array.isArray(row.tool_parameters) ? (row.tool_parameters as Record<string, unknown>) : undefined,
-    safeguardTelemetry: row.safeguard_telemetry && typeof row.safeguard_telemetry === "object" && !Array.isArray(row.safeguard_telemetry) ? (row.safeguard_telemetry as Record<string, unknown>) : undefined,
+    toolParameters:
+      row.tool_parameters &&
+      typeof row.tool_parameters === "object" &&
+      !Array.isArray(row.tool_parameters)
+        ? (row.tool_parameters as Record<string, unknown>)
+        : undefined,
+    safeguardTelemetry:
+      row.safeguard_telemetry &&
+      typeof row.safeguard_telemetry === "object" &&
+      !Array.isArray(row.safeguard_telemetry)
+        ? (row.safeguard_telemetry as Record<string, unknown>)
+        : undefined,
   };
 }
 
@@ -229,20 +234,22 @@ export async function getOpenEscalationAssigneeCounts(params: {
 
 export async function listResolvedEscalationsForRevision(
   revisionId: string,
-  tenantId: string
+  tenantId: string,
 ): Promise<ResolvedEscalation[]> {
   if (!sql || !revisionId) return [];
   try {
-    const rows = await sql<{
-      id: string;
-      decision_id: string;
-      revision_id: string | null;
-      artifact_hash: string;
-      resolution_outcome: "PROCEED" | "ESCALATE" | "ABORT";
-      resolution_note: string | null;
-      resolved_at: Date;
-      sla_due_at: Date | null;
-    }[]>`
+    const rows = await sql<
+      {
+        id: string;
+        decision_id: string;
+        revision_id: string | null;
+        artifact_hash: string;
+        resolution_outcome: "PROCEED" | "ESCALATE" | "ABORT";
+        resolution_note: string | null;
+        resolved_at: Date;
+        sla_due_at: Date | null;
+      }[]
+    >`
       SELECT id, decision_id, revision_id, artifact_hash,
              resolution_outcome, resolution_note, resolved_at, sla_due_at
       FROM gateway_escalation_queue
@@ -280,12 +287,14 @@ export async function resolveEscalationQueueItem(params: {
   if (!sql) return false;
 
   try {
-    const existingRows = await sql<{
-      status: string;
-      resolution_outcome: string | null;
-      resolution_note: string | null;
-      agent_guidance: string | null;
-    }[]>`
+    const existingRows = await sql<
+      {
+        status: string;
+        resolution_outcome: string | null;
+        resolution_note: string | null;
+        agent_guidance: string | null;
+      }[]
+    >`
       SELECT status, resolution_outcome, resolution_note, agent_guidance
       FROM gateway_escalation_queue
       WHERE id = ${params.queueId}
@@ -327,7 +336,7 @@ export async function resolveEscalationQueueItem(params: {
       SET reviewed_by = ${params.reviewedBy},
           reviewed_at = now(),
           outcome = ${params.resolutionOutcome},
-          reason = ${params.resolutionNote ?? 'Escalation resolved.'}
+          reason = ${params.resolutionNote ?? "Escalation resolved."}
       FROM gateway_escalation_queue geq
       WHERE geq.id = ${params.queueId}
         AND geq.tenant_id = ${params.tenantId}
@@ -356,10 +365,19 @@ export async function getResolvedEscalationReceiptContext(params: {
   riskLevel: string;
 } | null> {
   if (!sql) return null;
-  const rows = await sql<{
-    gateway_decision_id: string; decision_id: string; branch_id: string | null; revision_id: string | null;
-    artifact_hash: string; evaluated_by: string; connector: string | null; action: string | null; risk_level: string;
-  }[]>`
+  const rows = await sql<
+    {
+      gateway_decision_id: string;
+      decision_id: string;
+      branch_id: string | null;
+      revision_id: string | null;
+      artifact_hash: string;
+      evaluated_by: string;
+      connector: string | null;
+      action: string | null;
+      risk_level: string;
+    }[]
+  >`
     SELECT geq.gateway_decision_id, geq.decision_id, gd.branch_id, gd.revision_id,
       gd.artifact_hash, gd.evaluated_by, gd.connector, gd.action, gd.risk_level
     FROM gateway_escalation_queue geq
@@ -371,11 +389,19 @@ export async function getResolvedEscalationReceiptContext(params: {
     LIMIT 1
   `;
   const row = rows[0];
-  return row ? {
-    gatewayDecisionId: row.gateway_decision_id, decisionId: row.decision_id,
-    branchId: row.branch_id, revisionId: row.revision_id, artifactHash: row.artifact_hash,
-    actorId: row.evaluated_by, connector: row.connector, action: row.action, riskLevel: row.risk_level,
-  } : null;
+  return row
+    ? {
+        gatewayDecisionId: row.gateway_decision_id,
+        decisionId: row.decision_id,
+        branchId: row.branch_id,
+        revisionId: row.revision_id,
+        artifactHash: row.artifact_hash,
+        actorId: row.evaluated_by,
+        connector: row.connector,
+        action: row.action,
+        riskLevel: row.risk_level,
+      }
+    : null;
 }
 
 export async function assignEscalationQueueItem(params: {
@@ -458,24 +484,26 @@ export interface EscalationStatus {
 export async function getEscalationStatusByDecisionId(
   decisionId: string,
   tenantId: string,
-  workspaceId: string
+  workspaceId: string,
 ): Promise<EscalationStatus | null> {
   if (!sql || !decisionId) return null;
 
   try {
-    const rows = await sql<{
-      decision_id: string;
-      gateway_decision_id: string;
-      status: EscalationStatus["status"];
-      resolution_outcome: EscalationStatus["resolutionOutcome"] | null;
-      resolution_note: string | null;
-      agent_guidance: string | null;
-      sla_due_at: Date | null;
-      resolved_at: Date | null;
-      connector: string | null;
-      action: string | null;
-      tool_parameters: unknown;
-    }[]>`
+    const rows = await sql<
+      {
+        decision_id: string;
+        gateway_decision_id: string;
+        status: EscalationStatus["status"];
+        resolution_outcome: EscalationStatus["resolutionOutcome"] | null;
+        resolution_note: string | null;
+        agent_guidance: string | null;
+        sla_due_at: Date | null;
+        resolved_at: Date | null;
+        connector: string | null;
+        action: string | null;
+        tool_parameters: unknown;
+      }[]
+    >`
       SELECT
         geq.decision_id,
         geq.gateway_decision_id,
@@ -512,7 +540,9 @@ export async function getEscalationStatusByDecisionId(
       connector: row.connector ?? undefined,
       action: row.action ?? undefined,
       toolParameters:
-        row.tool_parameters && typeof row.tool_parameters === "object" && !Array.isArray(row.tool_parameters)
+        row.tool_parameters &&
+        typeof row.tool_parameters === "object" &&
+        !Array.isArray(row.tool_parameters)
           ? (row.tool_parameters as Record<string, unknown>)
           : undefined,
     };
@@ -535,7 +565,7 @@ export async function updateEscalationOutcome(params: {
     await sql`
       UPDATE gateway_decision
       SET outcome = ${params.resolutionOutcome},
-          reason = ${params.resolutionNote ?? 'Resolution outcome updated.'}
+          reason = ${params.resolutionNote ?? "Resolution outcome updated."}
       WHERE id = ${params.gatewayDecisionId}
         AND tenant_id = ${params.tenantId}
         AND workspace_id = ${params.workspaceId}
@@ -555,7 +585,9 @@ export async function updateEscalationOutcome(params: {
     `;
     return true;
   } catch (err) {
-    logger.error("[gateway/escalations] failed to update escalation outcome:", { error: err instanceof Error ? err.message : String(err) });
+    logger.error("[gateway/escalations] failed to update escalation outcome:", {
+      error: err instanceof Error ? err.message : String(err),
+    });
     return false;
   }
 }

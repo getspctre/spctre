@@ -38,7 +38,7 @@ export function getTerminologyOption(id: string) {
 
 export function sourceTermForLocale(
   option: (typeof terminologyOptions)[number],
-  locale: SupportedLocale
+  locale: SupportedLocale,
 ): string {
   return option.sourceTerms[locale];
 }

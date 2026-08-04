@@ -5,12 +5,10 @@ vi.mock("next/navigation", () => ({
   redirect: (url: string) => {
     redirectSpy(url);
     throw new Error(`Redirected to: ${url}`); // Next.js redirect throws an error to halt execution
-  }
+  },
 }));
 
-vi.mock("@/lib/repositories/shared/database", () => ({
-  isDatabaseConfigured: () => true,
-}));
+vi.mock("@/lib/repositories/shared/database", () => ({ isDatabaseConfigured: () => true }));
 
 const ensureAuthDemoTenantSpy = vi.fn();
 const upsertLocalDevPrincipalSpy = vi.fn();
@@ -43,9 +41,7 @@ vi.mock("@/lib/repositories/default-policy", () => ({
 vi.mock("@/lib/demo", () => ({
   DEMO_TENANT_ID: "demo-tenant",
   DEMO_WORKSPACE_ID: "demo-workspace",
-  DEMO_PRINCIPAL_IDS: {
-    owner: "00000000-0000-0000-0000-000000000013",
-  },
+  DEMO_PRINCIPAL_IDS: { owner: "00000000-0000-0000-0000-000000000013" },
 }));
 
 vi.mock("@/lib/domains/auth/service", () => ({
@@ -77,16 +73,8 @@ vi.mock("@/lib/domains/auth/service", () => ({
       email: params.email,
       displayName: params.displayName,
     });
-    await upsertLocalDevWorkspaceGrantSpy({
-      tenantId,
-      principalId,
-      workspaceId,
-    });
-    await ensureDefaultPublishedPolicyPackSpy({
-      tenantId,
-      workspaceId,
-      actorId: principalId,
-    });
+    await upsertLocalDevWorkspaceGrantSpy({ tenantId, principalId, workspaceId });
+    await ensureDefaultPublishedPolicyPackSpy({ tenantId, workspaceId, actorId: principalId });
     return { ok: true };
   }),
 }));
@@ -111,12 +99,8 @@ vi.mock("@/lib/session-guard", () => ({
 }));
 
 vi.mock("next/headers", () => ({
-  cookies: async () => ({
-    set: cookieSetSpy,
-  }),
-  headers: async () => ({
-    get: () => "mock-user-agent",
-  }),
+  cookies: async () => ({ set: cookieSetSpy }),
+  headers: async () => ({ get: () => "mock-user-agent" }),
 }));
 
 const { localDevSignup } = await import("../app/signup/actions");
@@ -152,10 +136,10 @@ describe("Auth and signup redirection targets", () => {
       formData.set("next", "/onboarding/cli/approve?code=abc123");
 
       await expect(localDevSignup(formData)).rejects.toThrow(
-        "/login?ok=local_signup_created&next=%2Fonboarding%2Fcli%2Fapprove%3Fcode%3Dabc123"
+        "/login?ok=local_signup_created&next=%2Fonboarding%2Fcli%2Fapprove%3Fcode%3Dabc123",
       );
       expect(redirectSpy).toHaveBeenCalledWith(
-        "/login?ok=local_signup_created&next=%2Fonboarding%2Fcli%2Fapprove%3Fcode%3Dabc123"
+        "/login?ok=local_signup_created&next=%2Fonboarding%2Fcli%2Fapprove%3Fcode%3Dabc123",
       );
     });
 
@@ -166,10 +150,10 @@ describe("Auth and signup redirection targets", () => {
       formData.set("next", "/onboarding/cli/approve?code=abc123");
 
       await expect(localDevSignup(formData)).rejects.toThrow(
-        "/signup?error=invalid_input&next=%2Fonboarding%2Fcli%2Fapprove%3Fcode%3Dabc123"
+        "/signup?error=invalid_input&next=%2Fonboarding%2Fcli%2Fapprove%3Fcode%3Dabc123",
       );
       expect(redirectSpy).toHaveBeenCalledWith(
-        "/signup?error=invalid_input&next=%2Fonboarding%2Fcli%2Fapprove%3Fcode%3Dabc123"
+        "/signup?error=invalid_input&next=%2Fonboarding%2Fcli%2Fapprove%3Fcode%3Dabc123",
       );
     });
   });
@@ -189,7 +173,7 @@ describe("Auth and signup redirection targets", () => {
       formData.set("next", "/onboarding/cli/approve?code=abc123");
 
       await expect(loginWithPrincipal(null, formData)).rejects.toThrow(
-        "/onboarding/cli/approve?code=abc123"
+        "/onboarding/cli/approve?code=abc123",
       );
       expect(redirectSpy).toHaveBeenCalledWith("/onboarding/cli/approve?code=abc123");
       expect(ensureDefaultPublishedPolicyPackSpy).not.toHaveBeenCalled();
@@ -258,10 +242,10 @@ describe("Auth and signup redirection targets", () => {
       formData.set("next", "/onboarding/cli/approve?code=abc123");
 
       await expect(loginWithPrincipal(null, formData)).rejects.toThrow(
-        "/login?mfa=required&next=%2Fonboarding%2Fcli%2Fapprove%3Fcode%3Dabc123"
+        "/login?mfa=required&next=%2Fonboarding%2Fcli%2Fapprove%3Fcode%3Dabc123",
       );
       expect(redirectSpy).toHaveBeenCalledWith(
-        "/login?mfa=required&next=%2Fonboarding%2Fcli%2Fapprove%3Fcode%3Dabc123"
+        "/login?mfa=required&next=%2Fonboarding%2Fcli%2Fapprove%3Fcode%3Dabc123",
       );
     });
   });
@@ -278,13 +262,23 @@ describe("Auth and signup redirection targets", () => {
 
       await expect(launchDemoCloud()).rejects.toThrow("/");
 
-      expect(createAuthSessionSpy).toHaveBeenCalledWith(expect.objectContaining({
-        principalId: "00000000-0000-0000-0000-000000000013",
-        tenantId: "demo-tenant",
-        authMethod: "SESSION",
-      }));
-      expect(cookieSetSpy).toHaveBeenCalledWith("spctre_tenant_id", "demo-tenant", expect.any(Object));
-      expect(cookieSetSpy).toHaveBeenCalledWith("spctre_workspace_id", "demo-workspace", expect.any(Object));
+      expect(createAuthSessionSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          principalId: "00000000-0000-0000-0000-000000000013",
+          tenantId: "demo-tenant",
+          authMethod: "SESSION",
+        }),
+      );
+      expect(cookieSetSpy).toHaveBeenCalledWith(
+        "spctre_tenant_id",
+        "demo-tenant",
+        expect.any(Object),
+      );
+      expect(cookieSetSpy).toHaveBeenCalledWith(
+        "spctre_workspace_id",
+        "demo-workspace",
+        expect.any(Object),
+      );
       expect(redirectSpy).toHaveBeenCalledWith("/");
     });
   });

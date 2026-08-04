@@ -5,11 +5,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import {
-  CircuitOpenError,
-  fetchWithRetry,
-  resetFetchBreakers,
-} from "../lib/platform/fetch-retry";
+import { CircuitOpenError, fetchWithRetry, resetFetchBreakers } from "../lib/platform/fetch-retry";
 
 const fetchMock = vi.fn();
 
@@ -65,7 +61,10 @@ describe("fetchWithRetry", () => {
   it("returns the last retryable response after exhausting attempts", async () => {
     fetchMock.mockResolvedValue(new Response("down", { status: 502 }));
 
-    const res = await fetchWithRetry("https://worker.internal/api/evidence", { ...fast, attempts: 3 });
+    const res = await fetchWithRetry("https://worker.internal/api/evidence", {
+      ...fast,
+      attempts: 3,
+    });
     expect(res.status).toBe(502);
     expect(fetchMock).toHaveBeenCalledTimes(3);
   });
@@ -74,7 +73,7 @@ describe("fetchWithRetry", () => {
     fetchMock.mockRejectedValue(new TypeError("fetch failed"));
 
     await expect(
-      fetchWithRetry("https://worker.internal/api/evidence", { ...fast, attempts: 2 })
+      fetchWithRetry("https://worker.internal/api/evidence", { ...fast, attempts: 2 }),
     ).rejects.toThrow("fetch failed");
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
@@ -85,13 +84,13 @@ describe("fetchWithRetry", () => {
     // Three delivery failures (each with internal retries) open the breaker.
     for (let i = 0; i < 3; i++) {
       await expect(
-        fetchWithRetry("https://down.example.test/hook", { ...fast, attempts: 1 })
+        fetchWithRetry("https://down.example.test/hook", { ...fast, attempts: 1 }),
       ).rejects.toThrow("fetch failed");
     }
 
     fetchMock.mockClear();
     await expect(
-      fetchWithRetry("https://down.example.test/hook", { ...fast, attempts: 1 })
+      fetchWithRetry("https://down.example.test/hook", { ...fast, attempts: 1 }),
     ).rejects.toBeInstanceOf(CircuitOpenError);
     expect(fetchMock).not.toHaveBeenCalled();
 
@@ -108,7 +107,7 @@ describe("fetchWithRetry", () => {
       fetchMock.mockRejectedValue(new TypeError("fetch failed"));
       for (let i = 0; i < 3; i++) {
         await expect(
-          fetchWithRetry("https://down.example.test/hook", { ...fast, attempts: 1 })
+          fetchWithRetry("https://down.example.test/hook", { ...fast, attempts: 1 }),
         ).rejects.toThrow("fetch failed");
       }
 
@@ -121,7 +120,11 @@ describe("fetchWithRetry", () => {
         return Promise.reject(new DOMException("The operation was aborted.", "AbortError"));
       });
       await expect(
-        fetchWithRetry("https://down.example.test/hook", { ...fast, attempts: 1, signal: controller.signal })
+        fetchWithRetry("https://down.example.test/hook", {
+          ...fast,
+          attempts: 1,
+          signal: controller.signal,
+        }),
       ).rejects.toThrow();
 
       // The abandoned probe must not leave the breaker half-open forever: the
@@ -140,7 +143,12 @@ describe("fetchWithRetry", () => {
       // Call A is admitted while the breaker is closed and stays in flight.
       const controllerA = new AbortController();
       let rejectA!: (err: unknown) => void;
-      fetchMock.mockImplementationOnce(() => new Promise((_, reject) => { rejectA = reject; }));
+      fetchMock.mockImplementationOnce(
+        () =>
+          new Promise((_, reject) => {
+            rejectA = reject;
+          }),
+      );
       const callA = fetchWithRetry("https://down.example.test/hook", {
         ...fast,
         attempts: 1,
@@ -152,7 +160,7 @@ describe("fetchWithRetry", () => {
       fetchMock.mockRejectedValue(new TypeError("fetch failed"));
       for (let i = 0; i < 3; i++) {
         await expect(
-          fetchWithRetry("https://down.example.test/hook", { ...fast, attempts: 1 })
+          fetchWithRetry("https://down.example.test/hook", { ...fast, attempts: 1 }),
         ).rejects.toThrow("fetch failed");
       }
 
@@ -160,7 +168,12 @@ describe("fetchWithRetry", () => {
       // in flight.
       vi.setSystemTime(Date.now() + 61_000);
       let resolveB!: (res: Response) => void;
-      fetchMock.mockImplementationOnce(() => new Promise((resolve) => { resolveB = resolve; }));
+      fetchMock.mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveB = resolve;
+          }),
+      );
       const callB = fetchWithRetry("https://down.example.test/hook", { ...fast, attempts: 1 });
 
       // A's caller aborts. A was not the probe, so B's probe must stay held:
@@ -170,7 +183,7 @@ describe("fetchWithRetry", () => {
       rejectA(new DOMException("The operation was aborted.", "AbortError"));
       await callARejects;
       await expect(
-        fetchWithRetry("https://down.example.test/hook", { ...fast, attempts: 1 })
+        fetchWithRetry("https://down.example.test/hook", { ...fast, attempts: 1 }),
       ).rejects.toBeInstanceOf(CircuitOpenError);
 
       // B's probe succeeds and closes the breaker.
@@ -192,7 +205,10 @@ describe("fetchWithRetry", () => {
     });
 
     await expect(
-      fetchWithRetry("https://worker.internal/api/evidence", { ...fast, signal: controller.signal })
+      fetchWithRetry("https://worker.internal/api/evidence", {
+        ...fast,
+        signal: controller.signal,
+      }),
     ).rejects.toThrow();
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });

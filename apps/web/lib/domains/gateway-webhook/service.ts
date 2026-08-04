@@ -38,7 +38,7 @@ export async function listGatewayWebhookRegistrations(params: {
   workspaceId: string;
 }): Promise<WebhookRegistration[]> {
   return runWithTenantContext(params.tenantId, () =>
-    listWebhookRegistrations({ tenantId: params.tenantId, workspaceId: params.workspaceId })
+    listWebhookRegistrations({ tenantId: params.tenantId, workspaceId: params.workspaceId }),
   );
 }
 

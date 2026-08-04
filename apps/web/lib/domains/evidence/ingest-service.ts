@@ -59,10 +59,15 @@ function apiError(status: number, error: string): EvidenceIngestServiceResult {
 }
 
 function isGovernanceActiveSignal(input: AgtRuntimeDecisionInput): boolean {
-  return input.action === "governance_active" && input.policyRefs.includes("system.governance_active");
+  return (
+    input.action === "governance_active" && input.policyRefs.includes("system.governance_active")
+  );
 }
 
-function resolveIngestionSource(request: Request, rawPayload: Record<string, unknown>): IngestionSource {
+function resolveIngestionSource(
+  request: Request,
+  rawPayload: Record<string, unknown>,
+): IngestionSource {
   const header = (request.headers.get("x-spctre-source") ?? "").toLowerCase().trim();
   if (header === "mcp") return "mcp";
   if (header === "hook") return "hook";
@@ -75,7 +80,11 @@ function resolveIngestionSource(request: Request, rawPayload: Record<string, unk
   return "hook";
 }
 
-function emitDedupTelemetry(decisionId: string, tenantId: string, incomingSource: IngestionSource): void {
+function emitDedupTelemetry(
+  decisionId: string,
+  tenantId: string,
+  incomingSource: IngestionSource,
+): void {
   logger.warn("evidence.dedup_suppressed", {
     decision_id: decisionId,
     tenant_id: tenantId,
@@ -86,7 +95,7 @@ function emitDedupTelemetry(decisionId: string, tenantId: string, incomingSource
 
 async function authenticateRuntimeRequest(
   request: Request,
-  input: AgtRuntimeDecisionInput
+  input: AgtRuntimeDecisionInput,
 ): Promise<
   | { ok: true; tenantId: string; workspaceId: string; principalId: string }
   | { ok: false; error: string }
@@ -119,7 +128,7 @@ async function authenticateRuntimeRequest(
     ok: true,
     tenantId: tokenAuth.auth.tenantId,
     workspaceId: tokenAuth.auth.workspaceId,
-    principalId: tokenAuth.auth.principalId
+    principalId: tokenAuth.auth.principalId,
   };
 }
 
@@ -177,21 +186,31 @@ function buildAgtInput(parsed: EvidenceIngestInput, rawPayload: unknown): AgtRun
   };
 }
 
-function validateRequiredEvidenceFields(parsed: EvidenceIngestInput): EvidenceIngestServiceResult | null {
+function validateRequiredEvidenceFields(
+  parsed: EvidenceIngestInput,
+): EvidenceIngestServiceResult | null {
   if (parsed.ingestMode === "gateway") return null;
   if (!parsed.policyRefs?.length) {
-    return { status: 400, body: { error: "policyRefs must include at least one policy reference." } };
+    return {
+      status: 400,
+      body: { error: "policyRefs must include at least one policy reference." },
+    };
   }
   if (!parsed.artifactHash) {
     return { status: 400, body: { error: "artifactHash is required." } };
   }
   if (!parsed.policyContext?.length) {
-    return { status: 400, body: { error: "policyContext must include at least one valid context node." } };
+    return {
+      status: 400,
+      body: { error: "policyContext must include at least one valid context node." },
+    };
   }
   return null;
 }
 
-function executionTraceFrom(rawPayload: Record<string, unknown>): Record<string, unknown> | unknown[] | null {
+function executionTraceFrom(
+  rawPayload: Record<string, unknown>,
+): Record<string, unknown> | unknown[] | null {
   if (
     rawPayload.executionTrace &&
     typeof rawPayload.executionTrace === "object" &&
@@ -250,7 +269,9 @@ async function persistEvidence(input: {
     if (!insertResult.inserted) {
       emitDedupTelemetry(evidence.decisionId, tenantId, sourceType);
       incrementCounter("spctre.evidence.deduplicated", 1, { source: sourceType });
-      recordDuration("spctre.evidence.ingest.duration", Date.now() - startedAt, { outcome: "deduplicated" });
+      recordDuration("spctre.evidence.ingest.duration", Date.now() - startedAt, {
+        outcome: "deduplicated",
+      });
       return { status: 200, body: { evidence, deduplicated: true } };
     }
   } catch (err) {
@@ -258,7 +279,9 @@ async function persistEvidence(input: {
       "http.route": EVIDENCE_ROUTE,
       "http.response.status_code": 500,
     });
-    logger.error("Evidence ingest database error", { error: err instanceof Error ? err.message : String(err) });
+    logger.error("Evidence ingest database error", {
+      error: err instanceof Error ? err.message : String(err),
+    });
     return { status: 500, body: { error: "Service temporarily unavailable." } };
   }
 
@@ -273,7 +296,8 @@ function emitPostInsertSideEffects(input: {
   rawPayload: Record<string, unknown>;
   governanceActiveSignal: boolean;
 }): void {
-  const { tenantId, workspaceId, principalId, evidence, rawPayload, governanceActiveSignal } = input;
+  const { tenantId, workspaceId, principalId, evidence, rawPayload, governanceActiveSignal } =
+    input;
 
   appendOperationsLog({
     tenantId,
@@ -334,9 +358,10 @@ async function evaluateAndPersistGatewayDecision(input: {
       amountUsd: numberValue(rawPayload.amountUsd),
       dataSensitivity: stringValue(rawPayload.dataSensitivity),
       trustScore: numberValue(rawPayload.trustScore),
-      contextBudget: typeof rawPayload.contextBudget === "number"
-        ? Math.trunc(rawPayload.contextBudget)
-        : undefined,
+      contextBudget:
+        typeof rawPayload.contextBudget === "number"
+          ? Math.trunc(rawPayload.contextBudget)
+          : undefined,
     };
 
     const gateway = evaluateGatewayDecision(gatewayInput);
@@ -369,7 +394,9 @@ async function evaluateAndPersistGatewayDecision(input: {
 
     return gateway;
   } catch (err) {
-    logger.warn("Evidence gateway evaluation failed", { error: err instanceof Error ? err.message : String(err) });
+    logger.warn("Evidence gateway evaluation failed", {
+      error: err instanceof Error ? err.message : String(err),
+    });
     return undefined;
   }
 }
@@ -383,7 +410,15 @@ function recordSuccessfulIngestMetrics(input: {
   governanceActiveSignal: boolean;
   startedAt: number;
 }): Record<string, string> {
-  const { tenantId, workspaceId, evidence, gateway, sourceType, governanceActiveSignal, startedAt } = input;
+  const {
+    tenantId,
+    workspaceId,
+    evidence,
+    gateway,
+    sourceType,
+    governanceActiveSignal,
+    startedAt,
+  } = input;
 
   incrementCounter("spctre.evidence.ingested", 1, { source: sourceType, status: evidence.status });
   if (governanceActiveSignal) {
@@ -393,7 +428,10 @@ function recordSuccessfulIngestMetrics(input: {
       runtime_adapter: evidence.runtimeTarget.adapter ?? "unknown",
     });
   }
-  recordDuration("spctre.evidence.ingest.duration", Date.now() - startedAt, { outcome: "created", source: sourceType });
+  recordDuration("spctre.evidence.ingest.duration", Date.now() - startedAt, {
+    outcome: "created",
+    source: sourceType,
+  });
 
   const ingestLagMs = Date.now() - new Date(evidence.createdAt).getTime();
   recordDuration("spctre.evidence.ingest.lag", ingestLagMs, { source: sourceType });
@@ -440,7 +478,11 @@ export async function ingestRuntimeEvidence(input: {
     // Every framework adapter may report its local surface identity. Resolve it
     // once at ingress so evidence, Blueprint context, trust, and review all use
     // the same canonical agent across runtimes.
-    agtInput.agentId = await resolveCanonicalAgentId({ tenantId, workspaceId, agentId: agtInput.agentId });
+    agtInput.agentId = await resolveCanonicalAgentId({
+      tenantId,
+      workspaceId,
+      agentId: agtInput.agentId,
+    });
 
     const publishedBlueprint = await getPublishedBlueprintContext({
       tenantId,
@@ -469,7 +511,10 @@ export async function ingestRuntimeEvidence(input: {
     if (profile?.planCode === "HOSTED_TRIAL") {
       const totalCount = await countTotalEvidenceEvents(tenantId);
       if (totalCount >= 1000) {
-        return apiError(429, "Evidence ingestion limit exceeded. Free trial is limited to 1,000 total retained governed events. Upgrade to a paid plan.");
+        return apiError(
+          429,
+          "Evidence ingestion limit exceeded. Free trial is limited to 1,000 total retained governed events. Upgrade to a paid plan.",
+        );
       }
     }
 
@@ -497,7 +542,9 @@ export async function ingestRuntimeEvidence(input: {
     if (persistResult) return persistResult;
 
     // Trigger FIRST_EVIDENCE_INGEST conversion telemetry asynchronously
-    recordConversionTelemetry(tenantId, "FIRST_EVIDENCE_INGEST").catch(swallow("recordConversionTelemetry", undefined));
+    recordConversionTelemetry(tenantId, "FIRST_EVIDENCE_INGEST").catch(
+      swallow("recordConversionTelemetry", undefined),
+    );
 
     emitPostInsertSideEffects({
       tenantId,

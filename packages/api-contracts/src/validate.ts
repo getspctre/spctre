@@ -32,11 +32,7 @@ export function parseBody<T>(schema: ZodSchema<T>, value: unknown): ParseResult<
       : first.message
     : "Validation failed.";
 
-  return {
-    ok: false,
-    error,
-    issues,
-  };
+  return { ok: false, error, issues };
 }
 
 /** Re-export z so consumers don't need a direct zod dependency. */
