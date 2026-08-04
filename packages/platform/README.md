@@ -8,14 +8,14 @@ Internal workspace package.
 
 ## Entry points
 
-| Import | Purpose |
-|---|---|
-| `@spctre/platform` | Aggregated exports |
-| `@spctre/platform/logging` | Structured logging |
-| `@spctre/platform/tracing` | Request/span tracing |
-| `@spctre/platform/metrics` | Metrics collection |
-| `@spctre/platform/telemetry` | Telemetry wiring |
-| `@spctre/platform/slos` | SLO definitions and helpers |
+| Import                       | Purpose                     |
+| ---------------------------- | --------------------------- |
+| `@spctre/platform`           | Aggregated exports          |
+| `@spctre/platform/logging`   | Structured logging          |
+| `@spctre/platform/tracing`   | Request/span tracing        |
+| `@spctre/platform/metrics`   | Metrics collection          |
+| `@spctre/platform/telemetry` | Telemetry wiring            |
+| `@spctre/platform/slos`      | SLO definitions and helpers |
 
 ## License
 

@@ -38,12 +38,12 @@ and emits a `RuntimeDecisionEvidenceRecord` to `/evidence` with:
 
 Enforcement is fail-closed for blocking Spctre outcomes:
 
-| Spctre status | OpenClaw outcome |
-|---|---|
-| `ALLOW` | allow |
-| `WARN` | allow and emit evidence |
-| `DENY` | block |
-| `ESCALATE` | block with the escalation reason |
+| Spctre status | OpenClaw outcome                 |
+| ------------- | -------------------------------- |
+| `ALLOW`       | allow                            |
+| `WARN`        | allow and emit evidence          |
+| `DENY`        | block                            |
+| `ESCALATE`    | block with the escalation reason |
 
 `ESCALATE` currently uses Spctre's escalation queue as the approval authority
 and blocks the OpenClaw tool call until the agent retries after review. It does

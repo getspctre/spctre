@@ -8,7 +8,7 @@ Internal workspace package.
 ## Usage
 
 ```ts
-import { /* components */ } from "@spctre/ui";
+import {} from /* components */ "@spctre/ui";
 import "@spctre/ui/styles.css";
 ```
 

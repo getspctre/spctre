@@ -38,16 +38,16 @@ The client uses a 5-second HTTP timeout and does not retry on failure — caller
 
 ## SandboxEvent → Spctre evidence mapping
 
-| `SandboxEvent` field | Spctre evidence field |
-|---|---|
-| `AgentID` | `agentId` |
-| `TenantID` | `tenantId` |
-| `WorkspaceID` | `workspaceId` |
-| `ActionKind` | `action` |
-| `Outcome` (`"allowed"` → `ALLOW`, `"blocked"` → `DENY`) | `status` |
-| `PolicyRef` | `policyRefs[0]` |
-| `SandboxName` | `runtimeTarget.sandboxName` |
-| (constant) `"NEMOCLAW"` | `runtimeTarget.stack` |
-| (constant) `"INFRASTRUCTURE"` | `layer` |
-| `EventType`, `ActionKind`, `ResourcePath`, `RawPayload` | `rawEvidence` |
-| `EmittedAt` | `createdAt` |
+| `SandboxEvent` field                                    | Spctre evidence field       |
+| ------------------------------------------------------- | --------------------------- |
+| `AgentID`                                               | `agentId`                   |
+| `TenantID`                                              | `tenantId`                  |
+| `WorkspaceID`                                           | `workspaceId`               |
+| `ActionKind`                                            | `action`                    |
+| `Outcome` (`"allowed"` → `ALLOW`, `"blocked"` → `DENY`) | `status`                    |
+| `PolicyRef`                                             | `policyRefs[0]`             |
+| `SandboxName`                                           | `runtimeTarget.sandboxName` |
+| (constant) `"NEMOCLAW"`                                 | `runtimeTarget.stack`       |
+| (constant) `"INFRASTRUCTURE"`                           | `layer`                     |
+| `EventType`, `ActionKind`, `ResourcePath`, `RawPayload` | `rawEvidence`               |
+| `EmittedAt`                                             | `createdAt`                 |

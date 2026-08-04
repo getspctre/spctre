@@ -1,7 +1,7 @@
 # Architecture
 
 This document orients contributors to how the Spctre codebase is organized and
-where a given change belongs. For what each component *is*, see the
+where a given change belongs. For what each component _is_, see the
 "Current Repository State" section of [README.md](README.md); this document
 covers the internal patterns and boundaries.
 
@@ -17,11 +17,11 @@ decisions → durable evidence → assurance & replay → better policy changes
 
 Three runtime processes back that loop, over a single Postgres 18 database:
 
-| Process | Language | Role |
-|---|---|---|
-| `apps/web` | TypeScript (Next.js 16, App Router) | Control-plane UI + API (BFF). Authoring, review, evidence, compliance, admin. |
-| `apps/worker` | Go | High-volume ingest and background jobs. Evidence writes, gateway/ingest side-effects, notifications, periodic sweeps. |
-| `packages/policy-schema/native` | Rust (napi-rs) | Gateway/policy evaluation and tamper-evident operations-log hash chaining. |
+| Process                         | Language                            | Role                                                                                                                  |
+| ------------------------------- | ----------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `apps/web`                      | TypeScript (Next.js 16, App Router) | Control-plane UI + API (BFF). Authoring, review, evidence, compliance, admin.                                         |
+| `apps/worker`                   | Go                                  | High-volume ingest and background jobs. Evidence writes, gateway/ingest side-effects, notifications, periodic sweeps. |
+| `packages/policy-schema/native` | Rust (napi-rs)                      | Gateway/policy evaluation and tamper-evident operations-log hash chaining.                                            |
 
 The web app is a **backend-for-frontend**: high-volume ingest routes delegate to
 the Go worker over HTTP (see `apps/web/lib/platform/config.ts`,
@@ -77,7 +77,7 @@ Auth is session-backed with edge-level session-guard JWTs
 ## Open-core boundary
 
 Everything in this repository is Apache 2.0. Commercial-only capabilities are
-implemented as **slots**: the slot *contracts* live in the open-source tree and
+implemented as **slots**: the slot _contracts_ live in the open-source tree and
 are injected at runtime according to `SPCTRE_PLAN`
 (`lib/feature-flags.ts`, `lib/feature-flags-server.ts`). Open-source code must
 never import a commercial-only implementation directly.
@@ -122,14 +122,14 @@ Two layers share one package:
 
 ## Where does my change go?
 
-| Change | Where |
-|---|---|
-| New API endpoint | Add the route (thin, `withApiRoute`) → a domain service → a repository. Update the OpenAPI spec + `pnpm generate`. |
-| New business rule | The relevant `lib/domains/<domain>/service.ts`. |
-| New/changed SQL | A `lib/repositories/*` file, plus a new `db/migrations/*.sql`. |
-| High-volume ingest / background job | `apps/worker/internal/worker/`. |
-| Policy evaluation / integrity logic | `packages/policy-schema` (TS helpers, or `native/` for the hot path). |
-| Shared type used across surfaces | `packages/policy-schema/src/types/`. |
+| Change                              | Where                                                                                                              |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| New API endpoint                    | Add the route (thin, `withApiRoute`) → a domain service → a repository. Update the OpenAPI spec + `pnpm generate`. |
+| New business rule                   | The relevant `lib/domains/<domain>/service.ts`.                                                                    |
+| New/changed SQL                     | A `lib/repositories/*` file, plus a new `db/migrations/*.sql`.                                                     |
+| High-volume ingest / background job | `apps/worker/internal/worker/`.                                                                                    |
+| Policy evaluation / integrity logic | `packages/policy-schema` (TS helpers, or `native/` for the hot path).                                              |
+| Shared type used across surfaces    | `packages/policy-schema/src/types/`.                                                                               |
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, the full local check suite,
 and how to run each language's tests.

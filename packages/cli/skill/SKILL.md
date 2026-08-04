@@ -82,7 +82,9 @@ Read `.spctre/config.json` at startup. It gives you everything you need:
   "environment": "production",
   "token": "spctre_dev_...",
   "bundlePath": "spctre-policy.json",
-  "policyContext": [{ "scope": "WORKSPACE", "branchId": "...", "revisionId": "...", "artifactHash": "..." }]
+  "policyContext": [
+    { "scope": "WORKSPACE", "branchId": "...", "revisionId": "...", "artifactHash": "..." }
+  ]
 }
 ```
 
@@ -126,9 +128,9 @@ import { evaluateDecision } from "@spctre/policy-schema";
 
 const result = evaluateDecision({
   connector: "stripe",
-  action:    "refund.bulk",
-  domains:   ["billing"],
-  rules:     getBundle().rules,
+  action: "refund.bulk",
+  domains: ["billing"],
+  rules: getBundle().rules,
 });
 
 // result.status:      "ALLOW" | "DENY" | "WARN"
@@ -142,10 +144,10 @@ return its `effect`. If no rule matches, the default is `ALLOW`.
 
 ### Decision contract
 
-| Status | What to do |
-|--------|-----------|
-| `ALLOW` | Proceed. Report the decision. |
-| `WARN`  | Proceed with caution. Flag it in evidence. Tell the human. |
+| Status  | What to do                                                                               |
+| ------- | ---------------------------------------------------------------------------------------- |
+| `ALLOW` | Proceed. Report the decision.                                                            |
+| `WARN`  | Proceed with caution. Flag it in evidence. Tell the human.                               |
 | `DENY`  | In observe mode, warn and report evidence. In enforce mode, stop and tell the human why. |
 
 ---
@@ -210,23 +212,23 @@ run `npx @spctre/cli init` once; workspace and agent config are preserved.
 
 Surface these commands when prompting the human to set up or debug Spctre.
 
-| Command | What it does |
-|---------|-------------|
-| `npx @spctre/cli init` | One-time connect: opens browser, approves token, downloads bundle |
-| `npx @spctre/cli watch --heartbeat` | Background loop: keep bundle current + send heartbeats |
-| `npx @spctre/cli sync` | Pull the latest bundle once |
-| `npx @spctre/cli status --check` | Check connection, token expiry, and policy freshness |
-| `npx @spctre/cli revoke` | Revoke tokens and remove local config |
-| `npx @spctre/cli install-skill --claude` | Drop this SKILL.md into `.claude/skills/spctre/` |
-| `npx @spctre/cli install-skill --codex` | Drop this SKILL.md into `.codex/skills/spctre/` |
-| `npx @spctre/cli install-skill --gemini` | Drop this SKILL.md into `.gemini/skills/spctre/` |
-| `npx @spctre/cli install-skill --antigravity` | Install the Antigravity skill at `.agents/skills/spctre/` (auto-read by the IDE and agy CLI) |
-| `npx @spctre/cli install-hook --claude --mode observe` | Install the Claude Code local evidence adapter |
-| `npx @spctre/cli install-hook --codex --mode observe` | Install the Codex local evidence adapter |
-| `npx @spctre/cli install-hook --gemini --mode observe` | Install the Gemini CLI local evidence adapter |
-| `npx @spctre/cli install-hook --antigravity --mode observe` | Install the Antigravity CLI (agy) local evidence adapter |
-| `npx @spctre/cli install-hook --claude --enforce` | Opt into local blocking on DENY for Claude Code |
-| `npx @spctre/cli install-hook --antigravity --enforce` | Opt into local blocking on DENY for Antigravity CLI (agy) |
+| Command                                                     | What it does                                                                                 |
+| ----------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `npx @spctre/cli init`                                      | One-time connect: opens browser, approves token, downloads bundle                            |
+| `npx @spctre/cli watch --heartbeat`                         | Background loop: keep bundle current + send heartbeats                                       |
+| `npx @spctre/cli sync`                                      | Pull the latest bundle once                                                                  |
+| `npx @spctre/cli status --check`                            | Check connection, token expiry, and policy freshness                                         |
+| `npx @spctre/cli revoke`                                    | Revoke tokens and remove local config                                                        |
+| `npx @spctre/cli install-skill --claude`                    | Drop this SKILL.md into `.claude/skills/spctre/`                                             |
+| `npx @spctre/cli install-skill --codex`                     | Drop this SKILL.md into `.codex/skills/spctre/`                                              |
+| `npx @spctre/cli install-skill --gemini`                    | Drop this SKILL.md into `.gemini/skills/spctre/`                                             |
+| `npx @spctre/cli install-skill --antigravity`               | Install the Antigravity skill at `.agents/skills/spctre/` (auto-read by the IDE and agy CLI) |
+| `npx @spctre/cli install-hook --claude --mode observe`      | Install the Claude Code local evidence adapter                                               |
+| `npx @spctre/cli install-hook --codex --mode observe`       | Install the Codex local evidence adapter                                                     |
+| `npx @spctre/cli install-hook --gemini --mode observe`      | Install the Gemini CLI local evidence adapter                                                |
+| `npx @spctre/cli install-hook --antigravity --mode observe` | Install the Antigravity CLI (agy) local evidence adapter                                     |
+| `npx @spctre/cli install-hook --claude --enforce`           | Opt into local blocking on DENY for Claude Code                                              |
+| `npx @spctre/cli install-hook --antigravity --enforce`      | Opt into local blocking on DENY for Antigravity CLI (agy)                                    |
 
 ---
 

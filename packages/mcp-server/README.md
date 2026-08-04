@@ -59,6 +59,7 @@ node dist/index.js
 ```
 
 HTTP endpoints:
+
 - `POST /mcp` - stateless Streamable HTTP MCP requests
 - `GET /healthz` - health and stateless transport info
 - `GET /readyz` - upstream readiness checks
@@ -66,6 +67,7 @@ HTTP endpoints:
 - `GET /.well-known/oauth-protected-resource` - OAuth 2.1 protected-resource metadata
 
 Optional request headers:
+
 - `Authorization: Bearer <token>`
 - `x-spctre-workspace-id: <workspace-id>`
 - `x-spctre-agent-id: <agent-id>`
@@ -84,22 +86,21 @@ legacy openings are rejected. In STDIO mode, operational logs go to stderr,
 keeping stdout reserved for MCP frames. Example clients:
 
 **Published package:**
+
 ```json
 {
   "mcpServers": {
     "spctre": {
       "command": "npx",
       "args": ["@spctre/mcp-server"],
-      "env": {
-        "SPCTRE_API_URL": "https://app.spctre.dev",
-        "SPCTRE_API_TOKEN": "your-token"
-      }
+      "env": { "SPCTRE_API_URL": "https://app.spctre.dev", "SPCTRE_API_TOKEN": "your-token" }
     }
   }
 }
 ```
 
 **Claude Code Extension:**
+
 ```json
 // ~/.claude/mcp-config.json
 {
@@ -119,6 +120,7 @@ keeping stdout reserved for MCP frames. Example clients:
 ```
 
 **LangChain Agent:**
+
 ```python
 from langchain.agents import MCP
 
@@ -156,6 +158,7 @@ Spctre MCP Server (this package)
 Evaluate whether a tool execution is allowed based on current policies.
 
 **Input:**
+
 ```typescript
 {
   connector: string;           // stripe, github, aws, slack, etc.
@@ -176,6 +179,7 @@ Evaluate whether a tool execution is allowed based on current policies.
 ```
 
 **Output:**
+
 ```json
 {
   "decision": "ALLOW" | "DENY" | "WARN",
@@ -198,6 +202,7 @@ Evaluate whether a tool execution is allowed based on current policies.
 Ingest a runtime decision for audit and compliance.
 
 **Input:**
+
 ```typescript
 {
   decision_id: string;         // From evaluate_policy response
@@ -215,12 +220,9 @@ Ingest a runtime decision for audit and compliance.
 ```
 
 **Output:**
+
 ```json
-{
-  "evidence_id": "ev-...",
-  "persisted_at": "2024-05-07T...",
-  "audit_ready": true
-}
+{ "evidence_id": "ev-...", "persisted_at": "2024-05-07T...", "audit_ready": true }
 ```
 
 ### 3. `escalate_to_review`
@@ -228,6 +230,7 @@ Ingest a runtime decision for audit and compliance.
 Manually escalate a decision to human review.
 
 **Input:**
+
 ```typescript
 {
   decision_id: string;
@@ -238,6 +241,7 @@ Manually escalate a decision to human review.
 ```
 
 **Output:**
+
 ```json
 {
   "escalation_id": "esc-...",
@@ -252,6 +256,7 @@ Manually escalate a decision to human review.
 Query current policy state and metadata.
 
 **Input:**
+
 ```typescript
 {
   workspace_id: string;
@@ -261,6 +266,7 @@ Query current policy state and metadata.
 ```
 
 **Output:**
+
 ```json
 {
   "version": "rev-2024-05-07-v3",
@@ -292,6 +298,7 @@ Active policy set for a branch.
 **URI:** `spctre://policies/main/current`
 
 **Response:**
+
 ```json
 {
   "branch_id": "main",
@@ -309,6 +316,7 @@ Audit trail for a specific decision.
 **URI:** `spctre://evidence/hb-20240507-stripe-charge-12345`
 
 **Response:**
+
 ```json
 {
   "decision_id": "hb-...",
@@ -326,12 +334,9 @@ Approval workflow state.
 **URI:** `spctre://approvals/apr-12345`
 
 **Response:**
+
 ```json
-{
-  "approval_id": "apr-12345",
-  "status": "PENDING",
-  "sla_deadline": "2024-05-07T..."
-}
+{ "approval_id": "apr-12345", "status": "PENDING", "sla_deadline": "2024-05-07T..." }
 ```
 
 ### 4. `/agents/{agent_id}/audit`
@@ -341,6 +346,7 @@ Full audit history for an agent.
 **URI:** `spctre://agents/agent-123/audit`
 
 **Response:**
+
 ```json
 {
   "agent_id": "agent-123",
@@ -360,6 +366,7 @@ Full audit history for an agent.
 Introduction to policy governance for AI agents. Provides context on when to call tools, how to interpret decisions, and best practices.
 
 **Arguments:**
+
 - `agent_id` (optional)
 - `workspace_id` (optional)
 
@@ -368,21 +375,23 @@ Introduction to policy governance for AI agents. Provides context on when to cal
 Guide for investigating evidence and audit trails. Helps auditors understand how to query and interpret policy decisions.
 
 **Arguments:**
+
 - `workspace_id` (optional)
 
 ## Error Handling
 
 All errors follow the MCP specification with standard JSON-RPC error codes:
 
-| Code | Error | Description |
-|------|-------|-------------|
-| -32700 | ParseError | Invalid JSON received |
-| -32600 | InvalidRequest | Invalid request format |
-| -32601 | MethodNotFound | Unknown tool/resource |
-| -32602 | InvalidParams | Missing required parameters |
-| -32603 | InternalError | Server error (network, policy engine, etc.) |
+| Code   | Error          | Description                                 |
+| ------ | -------------- | ------------------------------------------- |
+| -32700 | ParseError     | Invalid JSON received                       |
+| -32600 | InvalidRequest | Invalid request format                      |
+| -32601 | MethodNotFound | Unknown tool/resource                       |
+| -32602 | InvalidParams  | Missing required parameters                 |
+| -32603 | InternalError  | Server error (network, policy engine, etc.) |
 
 **Example error response:**
+
 ```json
 {
   "code": -32603,
@@ -399,12 +408,12 @@ All errors follow the MCP specification with standard JSON-RPC error codes:
 
 ### Environment Variables
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `SPCTRE_API_URL` | No | Base URL for Spctre backend (default: http://localhost:3000) |
-| `SPCTRE_API_TOKEN` | Yes | Bearer token for authentication |
-| `SPCTRE_WORKSPACE_ID` | No | Default workspace ID (default: ws-dev) |
-| `SPCTRE_AGENT_ID` | No | Default agent ID (default: mcp-client-default) |
+| Variable              | Required | Description                                                  |
+| --------------------- | -------- | ------------------------------------------------------------ |
+| `SPCTRE_API_URL`      | No       | Base URL for Spctre backend (default: http://localhost:3000) |
+| `SPCTRE_API_TOKEN`    | Yes      | Bearer token for authentication                              |
+| `SPCTRE_WORKSPACE_ID` | No       | Default workspace ID (default: ws-dev)                       |
+| `SPCTRE_AGENT_ID`     | No       | Default agent ID (default: mcp-client-default)               |
 
 ### Token Configuration
 
@@ -430,16 +439,9 @@ const result = await client.callTool({
   arguments: {
     connector: "stripe",
     action: "charge",
-    agent_context: {
-      agent_id: "claude-code-alice",
-      workspace_id: "ws-acme",
-      environment: "prod"
-    },
-    tool_context: {
-      amount: 5000,
-      target: "customer-789"
-    }
-  }
+    agent_context: { agent_id: "claude-code-alice", workspace_id: "ws-acme", environment: "prod" },
+    tool_context: { amount: 5000, target: "customer-789" },
+  },
 });
 
 // Result:
@@ -456,9 +458,7 @@ const result = await client.callTool({
 ### Example 2: Query Agent Audit Trail
 
 ```javascript
-const audit = await client.readResource({
-  uri: "spctre://agents/claude-code-alice/audit"
-});
+const audit = await client.readResource({ uri: "spctre://agents/claude-code-alice/audit" });
 
 // Returns all decisions made by this agent
 ```
@@ -471,8 +471,8 @@ const result = await client.callTool({
   arguments: {
     decision_id: "hb-20240507-stripe-charge-12345",
     reason: "High-confidence model uncertainty on new transaction type",
-    priority: "HIGH"
-  }
+    priority: "HIGH",
+  },
 });
 
 // Queues for human review with 4-hour SLA
@@ -481,6 +481,7 @@ const result = await client.callTool({
 ## Testing
 
 The test suite covers:
+
 - Unit tests for each tool
 - Resource fetch tests
 - Multi-client composition tests
@@ -488,6 +489,7 @@ The test suite covers:
 - Error handling validation
 
 Quick test:
+
 ```bash
 # Build
 pnpm run build
