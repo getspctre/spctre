@@ -259,7 +259,7 @@ export async function BlueprintReviewContent({
           reviewBlockedReason={reviewableRoles.length ? undefined : `${actorName} has no reviewer roles in this workspace.`}
           actorName={actorName}
           actorId={actor?.id}
-          isPublished={isPublished}
+          actionsDisabled={headRevision.status !== "IN_REVIEW"}
         />
       </section>
 

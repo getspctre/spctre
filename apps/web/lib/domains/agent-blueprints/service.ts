@@ -288,7 +288,7 @@ export async function importBlueprintForToken(input: {
 }
 
 export async function submitBlueprintApproval(input: {
-  tenantId: string; workspaceId: string; blueprintId: string; revisionId: string; reviewerId: string; reviewerRole: string; status: "APPROVED" | "CHANGES_REQUESTED" | "PENDING"; note?: string | null;
+  tenantId: string; workspaceId: string; blueprintId: string; revisionId: string; reviewerId: string; reviewerRole: string; status: "APPROVED" | "CHANGES_REQUESTED"; note?: string | null;
 }) {
   return upsertAgentBlueprintApproval(input);
 }

@@ -226,7 +226,7 @@ export function BlueprintApprovalGrid({
   reviewBlockedReason,
   actorName,
   actorId,
-  isPublished,
+  actionsDisabled,
 }: {
   blueprintId: string;
   revisionId: string;
@@ -235,7 +235,7 @@ export function BlueprintApprovalGrid({
   reviewBlockedReason?: string;
   actorName: string;
   actorId?: string;
-  isPublished: boolean;
+  actionsDisabled: boolean;
 }) {
   const required = roles.filter((role) => role.isRequired);
   const optional = roles.filter((role) => !role.isRequired);
@@ -254,7 +254,7 @@ export function BlueprintApprovalGrid({
         actorId={actorId}
         canReview={canReview}
         reviewReason={canReview ? undefined : reviewBlockedReason ?? `${actorName} cannot review as ${role.role}.`}
-        disabled={isPublished}
+        disabled={actionsDisabled}
       />
     );
   };
