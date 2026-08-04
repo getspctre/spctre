@@ -4,6 +4,10 @@
 #   git config blame.ignoreRevsFile .git-blame-ignore-revs
 #
 # (GitHub applies this file automatically in its blame view.)
+#
+# NOTE: these must be commits that exist on `main`. PRs here are squash-merged,
+# so a reformat PR's own commit SHA is discarded at merge time — record the
+# resulting squash commit instead, in a follow-up.
 
-# style: apply Prettier to the repository
-0d92be8f777fdb51c5fc9226164a6d71713f66da
+# chore: adopt Prettier (#69)
+15674818066a63d463db7f6c32475a8cd74b54ff
