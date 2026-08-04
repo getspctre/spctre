@@ -1,0 +1,26 @@
+# Editor defaults applied as you type, before Prettier/gofmt/rustfmt run.
+# Values here match .prettierrc.json; where both apply, .prettierrc.json wins.
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 2
+max_line_length = 100
+
+# Go and Rust are formatted by gofmt/rustfmt, which use tabs and their own width.
+[*.go]
+indent_style = tab
+
+[*.rs]
+max_line_length = 120
+
+# Two trailing spaces are a hard line break in Markdown, so preserve them.
+[*.md]
+trim_trailing_whitespace = false
+
+[Makefile]
+indent_style = tab

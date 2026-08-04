@@ -11,6 +11,8 @@
     "typecheck": "pnpm -r run typecheck",
     "typecheck:python": "(cd packages/adapters/hermes && uv run pyrefly check) && (cd packages/adapters/odysseus && uv run pyrefly check)",
     "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "migrate": "tsx db/migrate.ts",
     "oss:boundary": "node scripts/check-oss-boundary.mjs",
     "security:raw-sql": "node scripts/check-raw-sql-imports.mjs",
@@ -45,6 +47,7 @@
     "jscpd": "^4.0.5",
     "knip": "^6.29.0",
     "postgres": "^3.4.9",
+    "prettier": "^3.9.6",
     "tsx": "^4.22.4",
     "typescript-eslint": "^8.62.0"
   }
