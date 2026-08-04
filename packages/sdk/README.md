@@ -31,11 +31,11 @@ paths, params, bodies, and responses are all inferred.
 
 ### Options
 
-| Option | Description |
-|---|---|
-| `token` | Service account API key (required). |
+| Option    | Description                                                                  |
+| --------- | ---------------------------------------------------------------------------- |
+| `token`   | Service account API key (required).                                          |
 | `baseUrl` | Base URL of the Spctre instance. Defaults to the current origin's `/api/v1`. |
-| `fetch` | Custom `fetch` implementation (optional). |
+| `fetch`   | Custom `fetch` implementation (optional).                                    |
 
 ### Types
 

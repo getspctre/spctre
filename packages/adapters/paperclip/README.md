@@ -98,16 +98,16 @@ const plugin = new SpctrePaperclipPlugin({
 
 Each tool call emits a `RuntimeDecisionEvidenceRecord` with:
 
-| Field | Value |
-|---|---|
-| `runtimeTarget.stack` | `"PAPERCLIP"` |
-| `orchestratorRef.platform` | `"paperclip"` |
-| `orchestratorRef.companyId` | from `dispatchContext.companyId` |
-| `orchestratorRef.issueId` | from `dispatchContext.issueId` |
-| `orchestratorRef.goalId` | from `dispatchContext.goalId` |
-| `trustLevel` | from `dispatchContext.trustPreset` (default: `"standard"`) |
-| `triggerKind` | `"routine"` if `dispatchContext.isRoutine`, else `"interactive"` |
-| `parentAgentId` | from `dispatchContext.parentAgentId` if present |
+| Field                       | Value                                                            |
+| --------------------------- | ---------------------------------------------------------------- |
+| `runtimeTarget.stack`       | `"PAPERCLIP"`                                                    |
+| `orchestratorRef.platform`  | `"paperclip"`                                                    |
+| `orchestratorRef.companyId` | from `dispatchContext.companyId`                                 |
+| `orchestratorRef.issueId`   | from `dispatchContext.issueId`                                   |
+| `orchestratorRef.goalId`    | from `dispatchContext.goalId`                                    |
+| `trustLevel`                | from `dispatchContext.trustPreset` (default: `"standard"`)       |
+| `triggerKind`               | `"routine"` if `dispatchContext.isRoutine`, else `"interactive"` |
+| `parentAgentId`             | from `dispatchContext.parentAgentId` if present                  |
 
 ---
 

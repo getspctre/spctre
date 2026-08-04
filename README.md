@@ -126,14 +126,14 @@ operations-log integrity run in the Rust native addon.
 
 ## Developer Resources
 
-| Resource | Where | Notes |
-|---|---|---|
-| API reference UI | `GET /api-docs` | Interactive Scalar docs, try-it-now playground |
-| OpenAPI 3.1 spec | `GET /api/v1/openapi.json` | Machine-readable; source lives in `packages/api-contracts/src/openapi.ts` |
-| TypeScript SDK | `packages/sdk` (`@spctre/sdk`) | Typed `openapi-fetch` client generated from the spec |
-| Python SDK | `pnpm generate:python-sdk` | Generates `target/sdk-python/` via `openapi-generator-cli` |
-| CLI | `packages/cli` (`@spctre/cli`) | `spctre init`, `watch`, `status`, `install-skill`, `install-hook` |
-| MCP server | `packages/mcp-server` | Modern STDIO + stateless Streamable HTTP governance server for AI agent runtimes |
+| Resource         | Where                          | Notes                                                                            |
+| ---------------- | ------------------------------ | -------------------------------------------------------------------------------- |
+| API reference UI | `GET /api-docs`                | Interactive Scalar docs, try-it-now playground                                   |
+| OpenAPI 3.1 spec | `GET /api/v1/openapi.json`     | Machine-readable; source lives in `packages/api-contracts/src/openapi.ts`        |
+| TypeScript SDK   | `packages/sdk` (`@spctre/sdk`) | Typed `openapi-fetch` client generated from the spec                             |
+| Python SDK       | `pnpm generate:python-sdk`     | Generates `target/sdk-python/` via `openapi-generator-cli`                       |
+| CLI              | `packages/cli` (`@spctre/cli`) | `spctre init`, `watch`, `status`, `install-skill`, `install-hook`                |
+| MCP server       | `packages/mcp-server`          | Modern STDIO + stateless Streamable HTTP governance server for AI agent runtimes |
 
 See the CLI, SDK, and MCP package documentation for integration guidance.
 
@@ -188,57 +188,57 @@ For a quick local setup, copying `.env.example` to `.env` and filling in the req
 
 ### Database
 
-| Variable | Required | Description |
-|---|---|---|
-| `DATABASE_URL` | Yes | Postgres connection string |
-| `DATABASE_POOL_SIZE` | No | Connection pool size (default: 10) |
+| Variable             | Required | Description                        |
+| -------------------- | -------- | ---------------------------------- |
+| `DATABASE_URL`       | Yes      | Postgres connection string         |
+| `DATABASE_POOL_SIZE` | No       | Connection pool size (default: 10) |
 
 ### Session and auth
 
-| Variable | Required | Description |
-|---|---|---|
-| `SPCTRE_SESSION_GUARD_SECRET` | Yes | Secret for signing edge-level session guard JWTs. Must be a long random string. |
-| `SPCTRE_SESSION_TTL_HOURS` | No | Session lifetime in hours (default: 24) |
+| Variable                      | Required | Description                                                                     |
+| ----------------------------- | -------- | ------------------------------------------------------------------------------- |
+| `SPCTRE_SESSION_GUARD_SECRET` | Yes      | Secret for signing edge-level session guard JWTs. Must be a long random string. |
+| `SPCTRE_SESSION_TTL_HOURS`    | No       | Session lifetime in hours (default: 24)                                         |
 
 ### Service identity
 
-| Variable | Required | Description |
-|---|---|---|
-| `SPCTRE_SERVICE_TOKEN` | Yes (for evidence ingest) | Bearer token that AGT runtimes must include when calling `POST /api/evidence` |
-| `SPCTRE_EVIDENCE_INGEST_URL` | No | Internal base URL for delegating runtime API calls from web to the Go worker, e.g. `http://worker:18080` in Docker Compose. Currently covers `POST /api/evidence`, service-token `POST /api/gateway/decide`, gateway webhook ingest, token refresh/revoke, trust/context-budget runtime APIs, economic governance APIs, and internal gateway queue mutations. |
-| `SPCTRE_WORKER_INTERNAL_SECRET` | No | Shared secret used by the web BFF when delegating browser-authenticated and runtime governance mutations to the Go worker. Required on both web and worker to delegate escalation claim/resolve writes and economic governance requests. |
+| Variable                        | Required                  | Description                                                                                                                                                                                                                                                                                                                                                   |
+| ------------------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `SPCTRE_SERVICE_TOKEN`          | Yes (for evidence ingest) | Bearer token that AGT runtimes must include when calling `POST /api/evidence`                                                                                                                                                                                                                                                                                 |
+| `SPCTRE_EVIDENCE_INGEST_URL`    | No                        | Internal base URL for delegating runtime API calls from web to the Go worker, e.g. `http://worker:18080` in Docker Compose. Currently covers `POST /api/evidence`, service-token `POST /api/gateway/decide`, gateway webhook ingest, token refresh/revoke, trust/context-budget runtime APIs, economic governance APIs, and internal gateway queue mutations. |
+| `SPCTRE_WORKER_INTERNAL_SECRET` | No                        | Shared secret used by the web BFF when delegating browser-authenticated and runtime governance mutations to the Go worker. Required on both web and worker to delegate escalation claim/resolve writes and economic governance requests.                                                                                                                      |
 
 ### Feature flags
 
-| Variable | Default | Description |
-|---|---|---|
-| `SPCTRE_PLAN` | `oss` | Plan gate for OSS, Cloud, and Enterprise UI capabilities. Allowed values: `oss`, `cloud`, `enterprise`. |
-| `LOCAL_SIGNUP_ENABLED` | `false` | Set to `true` to expose `/signup` for local development user creation. Do not enable in hosted production. |
-| `GATEWAY_ENABLED` | `false` | Enable the decision gateway and HITL flow. |
-| `GATEWAY_MODE` | `HYBRID` | Gateway evaluation mode: `HYBRID`, `ENFORCE`, or `OBSERVE`. |
-| `OIDC_ENABLED` | `false` | Set to `true` to enable OIDC login. |
-| `SAML_ENABLED` | `false` | Set to `true` to enable SAML 2.0 login. |
+| Variable               | Default  | Description                                                                                                |
+| ---------------------- | -------- | ---------------------------------------------------------------------------------------------------------- |
+| `SPCTRE_PLAN`          | `oss`    | Plan gate for OSS, Cloud, and Enterprise UI capabilities. Allowed values: `oss`, `cloud`, `enterprise`.    |
+| `LOCAL_SIGNUP_ENABLED` | `false`  | Set to `true` to expose `/signup` for local development user creation. Do not enable in hosted production. |
+| `GATEWAY_ENABLED`      | `false`  | Enable the decision gateway and HITL flow.                                                                 |
+| `GATEWAY_MODE`         | `HYBRID` | Gateway evaluation mode: `HYBRID`, `ENFORCE`, or `OBSERVE`.                                                |
+| `OIDC_ENABLED`         | `false`  | Set to `true` to enable OIDC login.                                                                        |
+| `SAML_ENABLED`         | `false`  | Set to `true` to enable SAML 2.0 login.                                                                    |
 
 ### Demo tenant overrides
 
-| Variable | Required | Description |
-|---|---|---|
-| `SPCTRE_DEMO_TENANT_ID` | No | Override the seeded demo tenant UUID |
-| `SPCTRE_DEMO_WORKSPACE_ID` | No | Override the seeded demo workspace UUID |
+| Variable                   | Required | Description                             |
+| -------------------------- | -------- | --------------------------------------- |
+| `SPCTRE_DEMO_TENANT_ID`    | No       | Override the seeded demo tenant UUID    |
+| `SPCTRE_DEMO_WORKSPACE_ID` | No       | Override the seeded demo workspace UUID |
 
 ### OIDC / SSO
 
 Set `OIDC_ENABLED=true` to show the SSO button on the login page and activate
 `/api/auth/oidc/authorize` and `/api/auth/oidc/callback`.
 
-| Variable | Required | Description |
-|---|---|---|
-| `OIDC_PROVIDER_ISSUER` | If enabled | IdP issuer URL (e.g. `https://accounts.google.com`) |
-| `OIDC_CLIENT_ID` | If enabled | OAuth client ID |
-| `OIDC_CLIENT_SECRET` | If enabled | OAuth client secret |
-| `OIDC_REDIRECT_URI` | If enabled | Must match the redirect URI registered with the IdP (e.g. `https://app.spctre.dev/api/auth/oidc/callback`) |
-| `OIDC_SCOPES` | No | Space-separated scopes (default: `openid profile email`) |
-| `OIDC_DEFAULT_TENANT_ID` | No | Tenant to associate with the default OIDC provider |
+| Variable                 | Required   | Description                                                                                                |
+| ------------------------ | ---------- | ---------------------------------------------------------------------------------------------------------- |
+| `OIDC_PROVIDER_ISSUER`   | If enabled | IdP issuer URL (e.g. `https://accounts.google.com`)                                                        |
+| `OIDC_CLIENT_ID`         | If enabled | OAuth client ID                                                                                            |
+| `OIDC_CLIENT_SECRET`     | If enabled | OAuth client secret                                                                                        |
+| `OIDC_REDIRECT_URI`      | If enabled | Must match the redirect URI registered with the IdP (e.g. `https://app.spctre.dev/api/auth/oidc/callback`) |
+| `OIDC_SCOPES`            | No         | Space-separated scopes (default: `openid profile email`)                                                   |
+| `OIDC_DEFAULT_TENANT_ID` | No         | Tenant to associate with the default OIDC provider                                                         |
 
 ### SAML 2.0 SSO
 
@@ -248,50 +248,50 @@ configured per-tenant in **Admin → Authentication settings** and stored in the
 database. Download SP metadata from `GET /api/auth/saml/metadata` and paste it
 into your IdP (Okta, Azure AD, PingOne, etc.) to complete the trust setup.
 
-| Variable | Required | Description |
-|---|---|---|
-| `SAML_SP_ENTITY_ID` | If enabled | Service provider entity ID, typically the app's base URL (e.g. `https://app.spctre.dev`) |
-| `SAML_ACS_URL` | If enabled | Assertion consumer service URL where the IdP will POST the `SAMLResponse` (e.g. `https://app.spctre.dev/api/auth/saml/callback`) |
+| Variable            | Required   | Description                                                                                                                      |
+| ------------------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `SAML_SP_ENTITY_ID` | If enabled | Service provider entity ID, typically the app's base URL (e.g. `https://app.spctre.dev`)                                         |
+| `SAML_ACS_URL`      | If enabled | Assertion consumer service URL where the IdP will POST the `SAMLResponse` (e.g. `https://app.spctre.dev/api/auth/saml/callback`) |
 
 ### Passkeys (WebAuthn)
 
-| Variable | Required | Description |
-|---|---|---|
-| `PASSKEY_RP_ID` | No | Relying party ID, must match the hostname (default: `localhost`) |
-| `PASSKEY_RP_NAME` | No | Relying party display name shown during registration (default: `Spctre`) |
+| Variable          | Required | Description                                                              |
+| ----------------- | -------- | ------------------------------------------------------------------------ |
+| `PASSKEY_RP_ID`   | No       | Relying party ID, must match the hostname (default: `localhost`)         |
+| `PASSKEY_RP_NAME` | No       | Relying party display name shown during registration (default: `Spctre`) |
 
 ### Worker
 
-| Variable | Required | Description |
-|---|---|---|
-| `WORKER_HTTP_PORT` | No | HTTP port for the Go worker API, health, readiness, and metrics endpoints (default: `18080`) |
-| `GATEWAY_ENABLED` | No | Must match the web setting when service-token gateway decisions are delegated to the Go worker. |
-| `GATEWAY_MODE` | No | Gateway evaluation mode returned by the Go worker for delegated gateway decisions (default: `HYBRID`). |
-| `SPCTRE_WORKER_INTERNAL_SECRET` | No | Shared secret accepted by internal worker-only mutation endpoints. |
-| `WORKER_RETENTION_INTERVAL_MINUTES` | No | Evidence retention sweep interval in minutes (default: `1440`) |
-| `WORKER_VERIFICATION_INTERVAL_MINUTES` | No | Verification sweep interval in minutes (default: `360`) |
-| `WORKER_METRICS_INTERVAL_SECONDS` | No | Metrics sweep interval in seconds (default: `300`) |
-| `WORKER_ESCALATION_SLA_INTERVAL_MINUTES` | No | Escalation SLA monitor interval in minutes (default: `5`) |
-| `WORKER_NOTIFICATION_WEBHOOK_URL` | No | Optional outbound notification webhook. When set, the Go worker sends production `DENY` alerts and escalation SLA reminders, then audits each attempt in the operations log. |
-| `WORKER_NOTIFICATION_INTERVAL_MINUTES` | No | Outbound notification sender interval in minutes (default: `5`) |
-| `WORKER_NOTIFICATION_TIMEOUT_SECONDS` | No | Outbound notification webhook timeout in seconds (default: `10`) |
-| `WORKER_ECONOMIC_BUDGET_SWEEP_INTERVAL_MINUTES` | No | Economic budget sweep interval in minutes (default: `60`) |
+| Variable                                        | Required | Description                                                                                                                                                                  |
+| ----------------------------------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `WORKER_HTTP_PORT`                              | No       | HTTP port for the Go worker API, health, readiness, and metrics endpoints (default: `18080`)                                                                                 |
+| `GATEWAY_ENABLED`                               | No       | Must match the web setting when service-token gateway decisions are delegated to the Go worker.                                                                              |
+| `GATEWAY_MODE`                                  | No       | Gateway evaluation mode returned by the Go worker for delegated gateway decisions (default: `HYBRID`).                                                                       |
+| `SPCTRE_WORKER_INTERNAL_SECRET`                 | No       | Shared secret accepted by internal worker-only mutation endpoints.                                                                                                           |
+| `WORKER_RETENTION_INTERVAL_MINUTES`             | No       | Evidence retention sweep interval in minutes (default: `1440`)                                                                                                               |
+| `WORKER_VERIFICATION_INTERVAL_MINUTES`          | No       | Verification sweep interval in minutes (default: `360`)                                                                                                                      |
+| `WORKER_METRICS_INTERVAL_SECONDS`               | No       | Metrics sweep interval in seconds (default: `300`)                                                                                                                           |
+| `WORKER_ESCALATION_SLA_INTERVAL_MINUTES`        | No       | Escalation SLA monitor interval in minutes (default: `5`)                                                                                                                    |
+| `WORKER_NOTIFICATION_WEBHOOK_URL`               | No       | Optional outbound notification webhook. When set, the Go worker sends production `DENY` alerts and escalation SLA reminders, then audits each attempt in the operations log. |
+| `WORKER_NOTIFICATION_INTERVAL_MINUTES`          | No       | Outbound notification sender interval in minutes (default: `5`)                                                                                                              |
+| `WORKER_NOTIFICATION_TIMEOUT_SECONDS`           | No       | Outbound notification webhook timeout in seconds (default: `10`)                                                                                                             |
+| `WORKER_ECONOMIC_BUDGET_SWEEP_INTERVAL_MINUTES` | No       | Economic budget sweep interval in minutes (default: `60`)                                                                                                                    |
 
 ### MCP server
 
-| Variable | Required | Description |
-|---|---|---|
-| `SPCTRE_MCP_TRANSPORT` | No | Transport mode: `stdio` (default) or `http` |
-| `SPCTRE_MCP_HTTP_PORT` | If `http` | HTTP port for the MCP server (default: `3100`) |
-| `SPCTRE_MCP_HTTP_PATH` | No | Stateless Streamable HTTP endpoint path (default: `/mcp`) |
-| `SPCTRE_MCP_REQUIRE_BEARER_AUTH` | No | Require bearer token auth for HTTP transport (default: `true`) |
-| `SPCTRE_API_URL` | Yes | Control plane URL the MCP server calls (e.g. `http://localhost:3000`) |
-| `SPCTRE_WORKSPACE_ID` | Yes | Workspace to scope all MCP tool calls |
-| `SPCTRE_AGENT_ID` | No | Agent identity reported to the control plane (default: `mcp-server`) |
-| `SPCTRE_API_TOKEN` | One required | Short-lived access token for MCP server auth |
-| `SPCTRE_API_REFRESH_TOKEN` | One required | Long-lived refresh token; auto-rotates the access token |
-| `SPCTRE_ALLOWED_TOOLS` | No | Comma-separated allowlist of MCP tool names. Empty = allow all. |
-| `SPCTRE_ALLOWED_CONNECTORS` | No | Comma-separated allowlist of connector names. Empty = allow all. |
+| Variable                         | Required     | Description                                                           |
+| -------------------------------- | ------------ | --------------------------------------------------------------------- |
+| `SPCTRE_MCP_TRANSPORT`           | No           | Transport mode: `stdio` (default) or `http`                           |
+| `SPCTRE_MCP_HTTP_PORT`           | If `http`    | HTTP port for the MCP server (default: `3100`)                        |
+| `SPCTRE_MCP_HTTP_PATH`           | No           | Stateless Streamable HTTP endpoint path (default: `/mcp`)             |
+| `SPCTRE_MCP_REQUIRE_BEARER_AUTH` | No           | Require bearer token auth for HTTP transport (default: `true`)        |
+| `SPCTRE_API_URL`                 | Yes          | Control plane URL the MCP server calls (e.g. `http://localhost:3000`) |
+| `SPCTRE_WORKSPACE_ID`            | Yes          | Workspace to scope all MCP tool calls                                 |
+| `SPCTRE_AGENT_ID`                | No           | Agent identity reported to the control plane (default: `mcp-server`)  |
+| `SPCTRE_API_TOKEN`               | One required | Short-lived access token for MCP server auth                          |
+| `SPCTRE_API_REFRESH_TOKEN`       | One required | Long-lived refresh token; auto-rotates the access token               |
+| `SPCTRE_ALLOWED_TOOLS`           | No           | Comma-separated allowlist of MCP tool names. Empty = allow all.       |
+| `SPCTRE_ALLOWED_CONNECTORS`      | No           | Comma-separated allowlist of connector names. Empty = allow all.      |
 
 ### CLI agent overrides
 
@@ -299,12 +299,12 @@ These variables override the corresponding fields in `.spctre/config.json` at
 runtime and are never written back to disk. Set them in shell, CI, or a
 secrets manager — they are not web app env vars and do not belong in `.env.local`.
 
-| Variable | Overrides | Notes |
-|---|---|---|
-| `SPCTRE_API_TOKEN` | `token` | Bypasses automatic token rotation — the caller manages the lifecycle |
-| `SPCTRE_URL` | `controlPlaneUrl` | Override the control plane URL without re-running init |
-| `SPCTRE_WORKSPACE` | `workspaceId` | Override workspace identity |
-| `SPCTRE_AGENT` | `agentId` | Override agent identity |
+| Variable           | Overrides         | Notes                                                                |
+| ------------------ | ----------------- | -------------------------------------------------------------------- |
+| `SPCTRE_API_TOKEN` | `token`           | Bypasses automatic token rotation — the caller manages the lifecycle |
+| `SPCTRE_URL`       | `controlPlaneUrl` | Override the control plane URL without re-running init               |
+| `SPCTRE_WORKSPACE` | `workspaceId`     | Override workspace identity                                          |
+| `SPCTRE_AGENT`     | `agentId`         | Override agent identity                                              |
 
 ## Local Development
 
@@ -328,7 +328,6 @@ Local compose also starts:
 
 - Go worker inside the Compose network as `http://worker:18080`
 - MCP server at `http://localhost:3100`
-
 
 The compose file sets `PGDATA=/var/lib/postgresql/data/18`, which is required by
 the Postgres 18 Docker image layout. If you upgraded this project from an older
@@ -410,7 +409,7 @@ optional harness-specific helpers that sit alongside that connection:
   to `.claude/settings.json`; `spctre install-hook --codex` writes the Codex
   PreToolUse hook to `.codex/hooks.json`; `spctre install-hook --gemini` writes
   the Gemini CLI BeforeTool hook to `.gemini/settings.json`; `spctre install-hook
-  --antigravity` writes the Antigravity (IDE + `agy` CLI) PreToolUse hook to
+--antigravity` writes the Antigravity (IDE + `agy` CLI) PreToolUse hook to
   `.agents/hooks.json`.
   Hooks are local developer harness adapters: by default they evaluate governed tool calls,
   send heartbeats, register evidence, and warn without blocking. Use
