@@ -2,6 +2,7 @@ import { authenticateServiceToken } from "@/lib/service-tokens";
 import { getBooleanEnv } from "@/lib/platform/config";
 import { upsertApprovalForRevision, getRevisionWorkspaceScope } from "@/lib/repositories/policy";
 import { findActorById, canActorReviewRole } from "@/lib/actors";
+import { runWithTenantContext } from "@/lib/tenant-context";
 import { extractTraceId, makeMeta, withTraceId } from "@spctre/api-contracts";
 import { swallow } from "@/lib/platform/swallow";
 
@@ -66,18 +67,22 @@ async function handlePostApiE2ePolicyApprove(request: Request) {
   }
   const { revisionId, role, actorId, approvalStatus, note } = parsed;
 
-  const revisionRow = await getRevisionWorkspaceScope({
-    tenantId: tokenAuth.auth.tenantId,
-    revisionId,
-  }).catch(swallow("getRevisionWorkspaceScope", null));
+  const revisionRow = await runWithTenantContext(tokenAuth.auth.tenantId, () =>
+    getRevisionWorkspaceScope({
+      tenantId: tokenAuth.auth.tenantId,
+      revisionId,
+    }).catch(swallow("getRevisionWorkspaceScope", null))
+  );
   if (!revisionRow) {
     return withTraceId(Response.json({ error: "Revision not found.", meta: makeMeta(traceId) }, { status: 404 }), traceId);
   }
 
-  const actor = await findActorById(actorId, {
-    workspaceId: revisionRow.workspace_id ?? tokenAuth.auth.workspaceId,
-    tenantId: tokenAuth.auth.tenantId,
-  });
+  const actor = await runWithTenantContext(tokenAuth.auth.tenantId, () =>
+    findActorById(actorId, {
+      workspaceId: revisionRow.workspace_id ?? tokenAuth.auth.workspaceId,
+      tenantId: tokenAuth.auth.tenantId,
+    })
+  );
   if (!actor) {
     return withTraceId(Response.json({ error: "Actor not found.", meta: makeMeta(traceId) }, { status: 404 }), traceId);
   }
@@ -88,14 +93,16 @@ async function handlePostApiE2ePolicyApprove(request: Request) {
     return withTraceId(Response.json({ error: reviewCheck.reason ?? "Actor does not have the required reviewer role.", meta: makeMeta(traceId) }, { status: 403 }), traceId);
   }
 
-  await upsertApprovalForRevision({
-    tenantId: tokenAuth.auth.tenantId,
-    revisionId,
-    actorId: actor.id,
-    role,
-    approvalStatus: approvalStatus as "APPROVED" | "CHANGES_REQUESTED",
-    note,
-  });
+  await runWithTenantContext(tokenAuth.auth.tenantId, () =>
+    upsertApprovalForRevision({
+      tenantId: tokenAuth.auth.tenantId,
+      revisionId,
+      actorId: actor.id,
+      role,
+      approvalStatus: approvalStatus as "APPROVED" | "CHANGES_REQUESTED",
+      note,
+    })
+  );
 
   return withTraceId(Response.json({ ok: true, meta: makeMeta(traceId) }), traceId);
 }

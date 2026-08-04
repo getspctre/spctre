@@ -3,6 +3,7 @@ import { authenticateServiceToken } from "@/lib/service-tokens";
 import { getBooleanEnv } from "@/lib/platform/config";
 import { persistImportedBranch } from "@/lib/repositories/policy";
 import { reservedStableRuleIdError } from "@/lib/policy/reserved-rule-ids";
+import { runWithTenantContext } from "@/lib/tenant-context";
 import { extractTraceId, makeMeta, withTraceId } from "@spctre/api-contracts";
 
 export const dynamic = "force-dynamic";
@@ -59,21 +60,23 @@ async function handlePostApiE2ePolicyDraft(request: Request) {
   }
 
   try {
-    const imported = await persistImportedBranch({
-      tenantId: tokenAuth.auth.tenantId,
-      workspaceId: tokenAuth.auth.workspaceId,
-      authorId: tokenAuth.auth.principalId,
-      branchName,
-      scope: "WORKSPACE",
-      sourcePath,
-      source,
-      rules: parsed.rules,
-      metadata: parsed.metadata,
-      sourceDocument: parsed.sourceDocument,
-      compatibility: parsed.compatibility,
-      message: "E2E draft import",
-      targetStacks,
-    });
+    const imported = await runWithTenantContext(tokenAuth.auth.tenantId, () =>
+      persistImportedBranch({
+        tenantId: tokenAuth.auth.tenantId,
+        workspaceId: tokenAuth.auth.workspaceId,
+        authorId: tokenAuth.auth.principalId,
+        branchName,
+        scope: "WORKSPACE",
+        sourcePath,
+        source,
+        rules: parsed.rules,
+        metadata: parsed.metadata,
+        sourceDocument: parsed.sourceDocument,
+        compatibility: parsed.compatibility,
+        message: "E2E draft import",
+        targetStacks,
+      })
+    );
 
     return withTraceId(Response.json({
       branchId: imported.branchId,

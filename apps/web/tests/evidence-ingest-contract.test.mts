@@ -66,7 +66,7 @@ const { ingestRuntimeEvidence } = await import("../lib/domains/evidence/ingest-s
 
 const baseParsed: EvidenceIngestInput = {
   decisionId: "dec-contract-1",
-  tenantId: "tenant-real",
+  tenantId: "00000000-0000-0000-0000-000000000010",
   workspaceId: "workspace-real",
   environment: "production",
   runtimeTarget: { stack: "LOCAL", adapter: "codex-hook" },
@@ -112,7 +112,7 @@ describe("evidence ingest contract", () => {
     authenticateServiceTokenSpy.mockResolvedValue({
       ok: true,
       auth: {
-        tenantId: "tenant-real",
+        tenantId: "00000000-0000-0000-0000-000000000010",
         workspaceId: "workspace-real",
         principalId: "svc-contract",
         scopes: ["evidence:write"],
@@ -128,7 +128,7 @@ describe("evidence ingest contract", () => {
     expect(result.body).toMatchObject({
       evidence: {
         decisionId: "dec-contract-1",
-        tenantId: "tenant-real",
+        tenantId: "00000000-0000-0000-0000-000000000010",
         workspaceId: "workspace-real",
         environment: "production",
         agentId: "agent-contract",
@@ -141,14 +141,14 @@ describe("evidence ingest contract", () => {
     });
     expect(result.revalidatePaths).toEqual(["/evidence", "/compliance", "/agents", "/escalations"]);
     expect(result.spanAttributes).toMatchObject({
-      "spctre.tenant_id": "tenant-real",
+      "spctre.tenant_id": "00000000-0000-0000-0000-000000000010",
       "spctre.workspace_id": "workspace-real",
       "spctre.evidence.status": "ALLOW",
       "spctre.gateway.outcome": "not_evaluated",
     });
 
     expect(insertRuntimeEvidenceWithDedupSpy).toHaveBeenCalledWith(expect.objectContaining({
-      tenantId: "tenant-real",
+      tenantId: "00000000-0000-0000-0000-000000000010",
       workspaceId: "workspace-real",
       rawEvidenceWithSource: expect.objectContaining({
         requestId: "req-contract",
@@ -157,7 +157,7 @@ describe("evidence ingest contract", () => {
     }));
     expect(appendOperationsLogSpy).toHaveBeenCalledTimes(1);
     expect(appendOperationsLogSpy).toHaveBeenCalledWith({
-      tenantId: "tenant-real",
+      tenantId: "00000000-0000-0000-0000-000000000010",
       workspaceId: "workspace-real",
       eventType: "EVIDENCE_INGEST",
       sourceId: "dec-contract-1",
@@ -174,7 +174,7 @@ describe("evidence ingest contract", () => {
         runtimeAdapter: "codex-hook",
       },
     });
-    expect(recordConversionTelemetrySpy).toHaveBeenCalledWith("tenant-real", "FIRST_EVIDENCE_INGEST");
+    expect(recordConversionTelemetrySpy).toHaveBeenCalledWith("00000000-0000-0000-0000-000000000010", "FIRST_EVIDENCE_INGEST");
   });
 
   it("suppresses side effects on duplicate decision ingest", async () => {

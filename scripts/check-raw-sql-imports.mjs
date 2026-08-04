@@ -4,6 +4,7 @@ import { join } from "node:path";
 const allowed = new Set([
   "apps/web/app/api/auth/magic/route.ts",
   "apps/web/app/api/auth/recovery/verify/route.ts",
+  "apps/web/app/api/ready/route.ts",
   "apps/web/lib/auth-rate-limit.ts",
   "apps/web/lib/db.ts",
   "apps/web/lib/repositories/auth/principal.ts",
