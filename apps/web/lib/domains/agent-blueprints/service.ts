@@ -2,20 +2,20 @@ import type { AgentBlueprintDefinition, AgentBlueprintStatus, RuntimeTarget } fr
 import { evaluatePublishReadiness } from "@spctre/policy-schema";
 import { approvalRulesFromWorkflow, getApprovalWorkflowForContext } from "@/lib/repositories/approval-workflow";
 import { logger } from "@spctre/platform/logging";
-import { getAgentBlueprintApprovals, upsertAgentBlueprintApproval } from "@/lib/repositories/agent-blueprints";
+import { getAgentBlueprintApprovals as getAgentBlueprintApprovalsInTenant, upsertAgentBlueprintApproval } from "@/lib/repositories/agent-blueprints";
 import {
-  createAgentBlueprint,
-  createAgentBlueprintRevision,
-  getAgentBlueprint,
+  createAgentBlueprint as createAgentBlueprintInTenant,
+  createAgentBlueprintRevision as createAgentBlueprintRevisionInTenant,
+  getAgentBlueprint as getAgentBlueprintInTenant,
   getAgentBlueprintByAgent,
-  getAgentBlueprintWorkspaceScope,
-  getPublishedAgentBlueprintRuntime,
+  getAgentBlueprintWorkspaceScope as getAgentBlueprintWorkspaceScopeInTenant,
+  getPublishedAgentBlueprintRuntime as getPublishedAgentBlueprintRuntimeInTenant,
   getPublishedAgentBlueprintRuntimeByAgent as getPublishedAgentBlueprintRuntimeByAgentInTenant,
   hashBlueprintDefinition,
-  listAgentBlueprints,
-  rollbackAgentBlueprint,
-  simulateAgentBlueprintRevision,
-  setAgentBlueprintRevisionStatus,
+  listAgentBlueprints as listAgentBlueprintsInTenant,
+  rollbackAgentBlueprint as rollbackAgentBlueprintInTenant,
+  simulateAgentBlueprintRevision as simulateAgentBlueprintRevisionInTenant,
+  setAgentBlueprintRevisionStatus as setAgentBlueprintRevisionStatusInTenant,
 } from "@/lib/repositories/agent-blueprints";
 import { getPublishedPolicyBranchByName } from "@/lib/repositories/policy";
 import { runWithTenantContext } from "@/lib/tenant-context";
@@ -174,7 +174,7 @@ export async function importBlueprintForToken(input: {
       });
 
       if (!existing) {
-        const created = await createAgentBlueprint({
+        const created = await createAgentBlueprintInTenant({
           tenantId: input.tenantId,
           workspaceId: input.workspaceId,
           name: input.name,
@@ -234,7 +234,7 @@ export async function importBlueprintForToken(input: {
         };
       }
 
-      const revision = await createAgentBlueprintRevision({
+      const revision = await createAgentBlueprintRevisionInTenant({
         tenantId: input.tenantId,
         workspaceId: input.workspaceId,
         blueprintId: existing.id,
@@ -290,30 +290,63 @@ export async function importBlueprintForToken(input: {
 export async function submitBlueprintApproval(input: {
   tenantId: string; workspaceId: string; blueprintId: string; revisionId: string; reviewerId: string; reviewerRole: string; status: "APPROVED" | "CHANGES_REQUESTED"; note?: string | null;
 }) {
-  return upsertAgentBlueprintApproval(input);
+  return runWithTenantContext(input.tenantId, () => upsertAgentBlueprintApproval(input));
 }
 
 export async function publishBlueprintRevision(input: {
   tenantId: string; workspaceId: string; blueprintId: string; revisionId: string;
 }) {
-  const [workflow, approvals] = await Promise.all([
-    getApprovalWorkflowForContext({ tenantId: input.tenantId, workspaceId: input.workspaceId }),
-    getAgentBlueprintApprovals({ tenantId: input.tenantId, revisionId: input.revisionId }),
-  ]);
-  const readiness = evaluatePublishReadiness({
-    branchId: input.blueprintId,
-    revisionId: input.revisionId,
-    approvalRules: approvalRulesFromWorkflow(workflow),
-    approvals,
-    approvalWorkflow: workflow,
+  return runWithTenantContext(input.tenantId, async () => {
+    const [workflow, approvals] = await Promise.all([
+      getApprovalWorkflowForContext({ tenantId: input.tenantId, workspaceId: input.workspaceId }),
+      getAgentBlueprintApprovalsInTenant({ tenantId: input.tenantId, revisionId: input.revisionId }),
+    ]);
+    const readiness = evaluatePublishReadiness({
+      branchId: input.blueprintId,
+      revisionId: input.revisionId,
+      approvalRules: approvalRulesFromWorkflow(workflow),
+      approvals,
+      approvalWorkflow: workflow,
+    });
+    if (readiness.status !== "READY") return { error: readiness.blockingReasons.map((reason) => reason.message).join(" ") };
+    const revision = await setAgentBlueprintRevisionStatusInTenant({ ...input, status: "PUBLISHED" });
+    return revision ? { revision } : { error: "Blueprint is not ready to publish; verify its linked policy is published." };
   });
-  if (readiness.status !== "READY") return { error: readiness.blockingReasons.map((reason) => reason.message).join(" ") };
-  const revision = await setAgentBlueprintRevisionStatus({ ...input, status: "PUBLISHED" });
-  return revision ? { revision } : { error: "Blueprint is not ready to publish; verify its linked policy is published." };
 }
 
-export { rollbackAgentBlueprint };
-export { simulateAgentBlueprintRevision };
-
-export { createAgentBlueprint, createAgentBlueprintRevision, getAgentBlueprint, getAgentBlueprintWorkspaceScope, getPublishedAgentBlueprintRuntime, listAgentBlueprints, setAgentBlueprintRevisionStatus, getAgentBlueprintApprovals };
+// Public, tenant-bound entry points. The repository functions assume an active
+// tenant context (the RLS binding set by runWithTenantContext); these bind it so
+// a caller outside a request session — a job, a script, a bearer-token route —
+// cannot reach the DB client unbound. Mirrors importBlueprintForToken and
+// getPublishedAgentBlueprintRuntimeByAgent above.
+export function getAgentBlueprint(params: Parameters<typeof getAgentBlueprintInTenant>[0]) {
+  return runWithTenantContext(params.tenantId, () => getAgentBlueprintInTenant(params));
+}
+export function listAgentBlueprints(params: Parameters<typeof listAgentBlueprintsInTenant>[0]) {
+  return runWithTenantContext(params.tenantId, () => listAgentBlueprintsInTenant(params));
+}
+export function getAgentBlueprintWorkspaceScope(params: Parameters<typeof getAgentBlueprintWorkspaceScopeInTenant>[0]) {
+  return runWithTenantContext(params.tenantId, () => getAgentBlueprintWorkspaceScopeInTenant(params));
+}
+export function getPublishedAgentBlueprintRuntime(params: Parameters<typeof getPublishedAgentBlueprintRuntimeInTenant>[0]) {
+  return runWithTenantContext(params.tenantId, () => getPublishedAgentBlueprintRuntimeInTenant(params));
+}
+export function createAgentBlueprint(params: Parameters<typeof createAgentBlueprintInTenant>[0]) {
+  return runWithTenantContext(params.tenantId, () => createAgentBlueprintInTenant(params));
+}
+export function createAgentBlueprintRevision(params: Parameters<typeof createAgentBlueprintRevisionInTenant>[0]) {
+  return runWithTenantContext(params.tenantId, () => createAgentBlueprintRevisionInTenant(params));
+}
+export function setAgentBlueprintRevisionStatus(params: Parameters<typeof setAgentBlueprintRevisionStatusInTenant>[0]) {
+  return runWithTenantContext(params.tenantId, () => setAgentBlueprintRevisionStatusInTenant(params));
+}
+export function getAgentBlueprintApprovals(params: Parameters<typeof getAgentBlueprintApprovalsInTenant>[0]) {
+  return runWithTenantContext(params.tenantId, () => getAgentBlueprintApprovalsInTenant(params));
+}
+export function rollbackAgentBlueprint(params: Parameters<typeof rollbackAgentBlueprintInTenant>[0]) {
+  return runWithTenantContext(params.tenantId, () => rollbackAgentBlueprintInTenant(params));
+}
+export function simulateAgentBlueprintRevision(params: Parameters<typeof simulateAgentBlueprintRevisionInTenant>[0]) {
+  return runWithTenantContext(params.tenantId, () => simulateAgentBlueprintRevisionInTenant(params));
+}
 export type { AgentBlueprintStatus };

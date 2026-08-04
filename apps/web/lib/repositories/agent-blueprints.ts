@@ -210,7 +210,7 @@ export async function getPublishedAgentBlueprintRuntime(params: {
     JOIN agent_blueprint_revision r ON r.blueprint_id = b.id AND r.tenant_id = b.tenant_id
     LEFT JOIN policy_publish pp
       ON pp.tenant_id = b.tenant_id
-      AND pp.revision_id = r.definition->>'policyRevisionId'
+      AND pp.revision_id::text = r.definition->>'policyRevisionId'
     WHERE b.tenant_id = ${params.tenantId}
       AND b.workspace_id = ${params.workspaceId}
       AND b.id = ${params.blueprintId}
@@ -230,7 +230,7 @@ export async function getPublishedAgentBlueprintRuntimeByAgent(params: {
     SELECT r.id, r.blueprint_id, r.parent_revision_id, r.definition, r.definition_hash, r.message, r.author_id, r.status, r.created_at, r.published_at, b.name,
       pp.artifact_hash AS policy_artifact_hash
     FROM agent_blueprint b JOIN agent_blueprint_revision r ON r.blueprint_id = b.id AND r.tenant_id = b.tenant_id
-    LEFT JOIN policy_publish pp ON pp.tenant_id = b.tenant_id AND pp.revision_id = r.definition->>'policyRevisionId'
+    LEFT JOIN policy_publish pp ON pp.tenant_id = b.tenant_id AND pp.revision_id::text = r.definition->>'policyRevisionId'
     WHERE b.tenant_id = ${params.tenantId} AND b.workspace_id = ${params.workspaceId} AND b.agent_id = ${params.agentId} AND r.status = 'PUBLISHED'
     ORDER BY r.published_at DESC, r.created_at DESC LIMIT 1
   `;
@@ -390,7 +390,7 @@ export async function setAgentBlueprintRevisionStatus(params: {
         OR EXISTS (
           SELECT 1 FROM policy_publish pp
           WHERE pp.tenant_id = b.tenant_id
-            AND pp.revision_id = r.definition->>'policyRevisionId'
+            AND pp.revision_id::text = r.definition->>'policyRevisionId'
         )
       )
     RETURNING r.id, r.blueprint_id, r.parent_revision_id, r.definition, r.definition_hash, r.message, r.author_id, r.status, r.created_at, r.published_at
