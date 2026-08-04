@@ -81,6 +81,14 @@ const { state, sqlMock } = vi.hoisted(() => {
 
 vi.mock("@/lib/db", () => ({ sql: sqlMock }));
 
+// These cases exercise credential brokering, not policy enforcement. The sql
+// mock above is a generic stub, so let the decide route see "nothing published"
+// rather than a malformed bundle row.
+vi.mock("@/lib/repositories/policy", async (importOriginal) => {
+  const real = await importOriginal<typeof import("@/lib/repositories/policy")>();
+  return { ...real, getLatestPublishedBundle: vi.fn().mockResolvedValue(null) };
+});
+
 vi.mock("@/lib/service-tokens", () => ({
   authenticateServiceToken: vi
     .fn()

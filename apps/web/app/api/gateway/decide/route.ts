@@ -1,4 +1,4 @@
-import { evaluateDecision, evaluateGatewayDecision } from "@spctre/policy-schema";
+import { evaluateGatewayDecision } from "@spctre/policy-schema";
 import { GatewayDecisionSchema, parseBody, withTraceId } from "@spctre/api-contracts";
 import { getAuthSession } from "@/lib/auth-session";
 import {
@@ -18,7 +18,10 @@ import { countGatewaySessionDecisions } from "@/lib/repositories/gateway/decisio
 import { resolveCanonicalAgentId } from "@/lib/repositories/identity";
 import { swallow } from "@/lib/platform/swallow";
 import { runWithTenantContext } from "@/lib/tenant-context";
-import { getLatestPublishedPolicyBundle } from "@/lib/domains/policy/service";
+import {
+  mergePublishedPolicyDecision,
+  resolvePublishedPolicyDecision,
+} from "@/lib/policy/published-enforcement";
 
 export const dynamic = "force-dynamic";
 
@@ -112,14 +115,19 @@ async function resolveGatewayDecision(input: GatewayDecisionInput, auth: Gateway
         shouldQueue: false,
         slaHours: undefined,
       };
-  const policyDecision = gatewayEnabled && !isDemoTenant(auth.tenantId)
-    ? await resolvePublishedPolicyDecision(input, auth)
-    : null;
-  if (policyDecision?.outcome === "ABORT") {
-    decisionResult = policyDecision;
-  } else if (policyDecision?.outcome === "ESCALATE" && decisionResult.outcome === "PROCEED") {
-    decisionResult = policyDecision;
-  }
+  const policyDecision =
+    gatewayEnabled && !isDemoTenant(auth.tenantId)
+      ? await resolvePublishedPolicyDecision({
+          tenantId: auth.tenantId,
+          workspaceId: auth.workspaceId,
+          connector: input.connector,
+          action: input.action,
+          toolIntent: input.toolIntent,
+          planSummary: input.planSummary,
+          toolParameters: input.toolParameters,
+        })
+      : null;
+  decisionResult = mergePublishedPolicyDecision(decisionResult, policyDecision);
   if (violatesBlueprint)
     decisionResult = {
       outcome: "ABORT",
@@ -164,39 +172,6 @@ async function resolveGatewayDecision(input: GatewayDecisionInput, auth: Gateway
   }
 
   return { gatewayEnabled, decisionResult };
-}
-
-async function resolvePublishedPolicyDecision(input: GatewayDecisionInput, auth: GatewayAuth) {
-  const published = await runWithTenantContext(auth.tenantId, () =>
-    getLatestPublishedPolicyBundle({ tenantId: auth.tenantId, workspaceId: auth.workspaceId }),
-  );
-  if (!published || !input.connector || !input.action) return null;
-
-  const evaluated = evaluateDecision({
-    connector: input.connector,
-    action: input.action,
-    rules: published.bundle.rules,
-    toolIntent: input.toolIntent,
-    planSummary: input.planSummary,
-    toolParameters: input.toolParameters,
-  });
-  if (evaluated.status === "DENY")
-    return {
-      outcome: "ABORT" as const,
-      reason: evaluated.reason,
-      riskLevel: "HIGH" as const,
-      shouldQueue: false,
-      slaHours: undefined,
-    };
-  if (evaluated.status === "ESCALATE")
-    return {
-      outcome: "ESCALATE" as const,
-      reason: evaluated.reason,
-      riskLevel: "HIGH" as const,
-      shouldQueue: true,
-      slaHours: 4,
-    };
-  return null;
 }
 
 async function resolveBlueprintForDecision(input: GatewayDecisionInput, auth: GatewayAuth) {

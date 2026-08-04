@@ -13,6 +13,10 @@ import {
 } from "@spctre/policy-schema";
 import { persistGatewayDecision } from "@/lib/repositories/gateway";
 import { isGatewayEnabled } from "@/lib/platform/config";
+import {
+  mergePublishedPolicyDecision,
+  resolvePublishedPolicyDecision,
+} from "@/lib/policy/published-enforcement";
 import { appendOperationsLog } from "@/lib/repositories/operations-log";
 import {
   countMonthlyEvidenceEvents,
@@ -364,7 +368,24 @@ async function evaluateAndPersistGatewayDecision(input: {
           : undefined,
     };
 
-    const gateway = evaluateGatewayDecision(gatewayInput);
+    // The threshold evaluator alone would record an authored ESCALATE/DENY
+    // rule as PROCEED. Published rules decide first; see
+    // @/lib/policy/published-enforcement.
+    const policyDecision = isDemoTenant(tenantId)
+      ? null
+      : await resolvePublishedPolicyDecision({
+          tenantId,
+          workspaceId,
+          connector: evidence.connector,
+          action: evidence.action,
+          toolIntent: evidence.toolIntent,
+          planSummary: evidence.planSummary,
+          toolParameters: evidence.toolParameters,
+        });
+    const gateway = mergePublishedPolicyDecision(
+      evaluateGatewayDecision(gatewayInput),
+      policyDecision,
+    );
 
     if (!isDemoTenant(tenantId)) {
       await persistGatewayDecision({
