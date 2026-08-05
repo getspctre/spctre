@@ -139,6 +139,17 @@ func (s *Server) handleGatewayDecide(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		payloadSafeguardTelemetry = mergeGatewaySafeguardTelemetry(safeguardTelemetry, payloadTelemetry)
+
+		// Applied last and unconditionally: a Blueprint violation overrides every
+		// preceding outcome, matching the Node gateway. Fails closed — an
+		// unreadable Blueprint must not silently widen the envelope.
+		var envelopeErr error
+		decision, envelopeErr = s.applyGatewayBlueprintEnvelope(r.Context(), payload, auth, decision)
+		if envelopeErr != nil {
+			s.logger.Error("gateway blueprint envelope evaluation failed", "error", envelopeErr, "decision_id", payload.DecisionID)
+			writeError(w, http.StatusServiceUnavailable, "Gateway safeguard evaluation unavailable.", traceID, nil)
+			return
+		}
 	}
 
 	isDemo := isDemoTenant(auth.TenantID)
