@@ -140,6 +140,19 @@ func (s *Server) handleGatewayDecide(w http.ResponseWriter, r *http.Request) {
 		}
 		payloadSafeguardTelemetry = mergeGatewaySafeguardTelemetry(safeguardTelemetry, payloadTelemetry)
 
+		// Published policy rules. Without this the delegated path runs only the
+		// threshold evaluator, and an authored ESCALATE or DENY is recorded as
+		// PROCEED. Fails closed: if the rules cannot be read — including when
+		// they are not yet materialised, which this service cannot parse around
+		// — the decision is refused rather than made on incomplete policy.
+		var policyErr error
+		decision, policyErr = s.applyPublishedPolicyDecision(r.Context(), payload, auth, decision)
+		if policyErr != nil {
+			s.logger.Error("gateway published policy evaluation failed", "error", policyErr, "decision_id", payload.DecisionID)
+			writeError(w, http.StatusServiceUnavailable, "Gateway policy evaluation unavailable.", traceID, nil)
+			return
+		}
+
 		// Applied last and unconditionally: a Blueprint violation overrides every
 		// preceding outcome, matching the Node gateway. Fails closed — an
 		// unreadable Blueprint must not silently widen the envelope.

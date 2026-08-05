@@ -1,15 +1,131 @@
 import { logger } from "@spctre/platform/logging";
+import { incrementCounter } from "@spctre/platform/metrics";
 import { sql } from "@/lib/db";
 import { parseAgtPolicyDocument } from "@spctre/policy-schema";
 import type { CompositionLayer, PolicyBranch, PolicyRuleSummary } from "@spctre/policy-schema";
 import { stableHash } from "@/lib/repositories/shared/revisions";
 
+/**
+ * Loads the effective rules for each revision.
+ *
+ * Rules are read from `policy_rule`, which since migration 007 carries the
+ * semanticChecks and parameterConstraints the runtime evaluator matches on.
+ * That makes the table a complete, parser-free description of a rule — which
+ * is what lets the Go worker evaluate the same rules without reimplementing
+ * the AGT parser.
+ *
+ * Rows written before that migration have NULL matchers until
+ * scripts/backfill-policy-rule-matchers.mjs has run. Those revisions fall back
+ * to parsing source_document, so this is safe to deploy before the backfill.
+ * The fallback is instrumented; once `spctre.policy.rule_source` reports no
+ * `source_document` reads in any environment, the backfill is complete and
+ * both the fallback and the parser import here can be deleted.
+ *
+ * A rule that genuinely declares no matchers stores `[]`, never NULL — that
+ * distinction is what makes "unmaterialised" detectable at all.
+ */
 async function loadRulesForRevisions(
   revisionIds: string[],
   tenantId: string,
 ): Promise<Map<string, PolicyRuleSummary[]>> {
   const rulesByRevision = new Map<string, PolicyRuleSummary[]>();
   if (!revisionIds.length || !sql) return rulesByRevision;
+
+  const materialized = await loadMaterializedRules(revisionIds, tenantId);
+  for (const [revisionId, rules] of materialized) rulesByRevision.set(revisionId, rules);
+
+  const unmaterialized = revisionIds.filter((id) => !materialized.has(id));
+  if (unmaterialized.length === 0) return rulesByRevision;
+
+  incrementCounter("spctre.policy.rule_source", unmaterialized.length, {
+    source: "source_document",
+  });
+  logger.warn("policy rules not materialised; parsing source_document", {
+    op: "loadRulesForRevisions",
+    revisionCount: unmaterialized.length,
+    hint: "run scripts/backfill-policy-rule-matchers.mjs",
+  });
+
+  return loadRulesByParsing(unmaterialized, tenantId, rulesByRevision);
+}
+
+/**
+ * Reads fully materialised rules straight from `policy_rule`.
+ *
+ * A revision counts as materialised only when *every* one of its rows has
+ * non-NULL matchers — a partially backfilled revision would otherwise silently
+ * contribute rules with their thresholds and semantic checks stripped.
+ */
+async function loadMaterializedRules(
+  revisionIds: string[],
+  tenantId: string,
+): Promise<Map<string, PolicyRuleSummary[]>> {
+  const byRevision = new Map<string, PolicyRuleSummary[]>();
+  if (!sql) return byRevision;
+
+  const rows = await sql<
+    {
+      revision_id: string;
+      stable_rule_id: string;
+      title: string;
+      effect: string;
+      source_path: string | null;
+      domains: string[];
+      connectors: string[];
+      actions: string[];
+      immutable: boolean;
+      semantic_checks: unknown;
+      parameter_constraints: unknown;
+    }[]
+  >`
+    SELECT revision_id, stable_rule_id, title, effect, source_path,
+           domains, connectors, actions, immutable,
+           semantic_checks, parameter_constraints
+    FROM policy_rule
+    WHERE tenant_id = ${tenantId}
+      AND revision_id = ANY(${revisionIds})
+      AND revision_id NOT IN (
+        SELECT revision_id FROM policy_rule
+        WHERE tenant_id = ${tenantId}
+          AND revision_id = ANY(${revisionIds})
+          AND (semantic_checks IS NULL OR parameter_constraints IS NULL)
+      )
+    ORDER BY stable_rule_id
+  `;
+
+  for (const row of rows) {
+    const rule: PolicyRuleSummary = {
+      stableRuleId: row.stable_rule_id,
+      title: row.title,
+      effect: row.effect as PolicyRuleSummary["effect"],
+      sourceFormat: "AGT_YAML" as const,
+      sourcePath: row.source_path ?? undefined,
+      domains: row.domains ?? [],
+      connectors: row.connectors ?? [],
+      actions: row.actions ?? [],
+      immutable: row.immutable ?? false,
+      semanticChecks: (row.semantic_checks ?? []) as PolicyRuleSummary["semanticChecks"],
+      parameterConstraints: (row.parameter_constraints ??
+        []) as PolicyRuleSummary["parameterConstraints"],
+    };
+    const existing = byRevision.get(row.revision_id) ?? [];
+    existing.push(rule);
+    byRevision.set(row.revision_id, existing);
+  }
+
+  if (byRevision.size > 0) {
+    incrementCounter("spctre.policy.rule_source", byRevision.size, { source: "policy_rule" });
+  }
+  return byRevision;
+}
+
+/** Pre-migration-007 path: recover rules by parsing source_document. */
+async function loadRulesByParsing(
+  revisionIds: string[],
+  tenantId: string,
+  rulesByRevision: Map<string, PolicyRuleSummary[]>,
+): Promise<Map<string, PolicyRuleSummary[]>> {
+  if (!sql) return rulesByRevision;
 
   // 1. Fetch revisions with source_document
   const revisionRows = await sql<
