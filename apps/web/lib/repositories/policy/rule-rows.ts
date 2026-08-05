@@ -1,3 +1,4 @@
+import type { JSONValue } from "postgres";
 import type { PolicyParameterConstraint, SemanticCheck } from "@spctre/policy-schema";
 
 /**
@@ -27,13 +28,23 @@ export interface PolicyRuleRow {
   actions: string[];
   immutable: boolean;
   /**
-   * Serialized SemanticCheck[]. Null when the rule declares none. Held as
+   * SemanticCheck[] — `[]` when the rule declares none, never null. Held as
    * jsonb because these are what the runtime evaluator matches on, and the
    * relational columns above cannot express them.
+   *
+   * Kept as a value, never a pre-stringified JSON string: postgres serialises
+   * a JS string bound to a jsonb column as a JSON *string*, so `"[]"` would be
+   * stored instead of `[]`, breaking every structural jsonb read of it.
+   *
+   * NULL is reserved to mean "not yet materialised" (a row written before
+   * migration 007 and not yet backfilled). Writing `[]` for the empty case is
+   * what makes that distinction possible: readers use NULL to decide whether
+   * they must fall back to parsing source_document, and if "no matchers" also
+   * stored NULL the fallback could never be retired.
    */
-  semantic_checks: string | null;
-  /** Serialized PolicyParameterConstraint[]. Null when the rule declares none. */
-  parameter_constraints: string | null;
+  semantic_checks: JSONValue;
+  /** PolicyParameterConstraint[] — `[]` when none, never null. */
+  parameter_constraints: JSONValue;
 }
 
 /** Column list for `INSERT INTO policy_rule`, in row order. */
@@ -54,10 +65,15 @@ export const POLICY_RULE_COLUMNS = [
   "parameter_constraints",
 ] as const;
 
-/** Empty arrays are stored as NULL so "no constraints" has one representation. */
-function serializeOrNull(value: readonly unknown[] | undefined): string | null {
-  if (!value || value.length === 0) return null;
-  return JSON.stringify(value);
+/**
+ * Normalises to an array, including the empty case. See
+ * PolicyRuleRow.semantic_checks for why "no matchers" must be `[]` and not NULL,
+ * and why this must not stringify.
+ */
+function matchersOrEmpty(
+  value: readonly (SemanticCheck | PolicyParameterConstraint)[] | undefined,
+): JSONValue {
+  return (value ? [...value] : []) as unknown as JSONValue;
 }
 
 /**
@@ -106,7 +122,7 @@ export function toPolicyRuleRows(params: {
     connectors: [...(rule.connectors ?? [])],
     actions: [...(rule.actions ?? [])],
     immutable: rule.immutable ?? false,
-    semantic_checks: serializeOrNull(rule.semanticChecks),
-    parameter_constraints: serializeOrNull(rule.parameterConstraints),
+    semantic_checks: matchersOrEmpty(rule.semanticChecks),
+    parameter_constraints: matchersOrEmpty(rule.parameterConstraints),
   }));
 }

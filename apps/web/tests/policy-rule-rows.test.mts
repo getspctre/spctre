@@ -29,17 +29,17 @@ describe("toPolicyRuleRows", () => {
 
     // The regression this guards: these two were dropped on write, so the
     // gateway evaluated the rule as a bare connector/action match.
-    expect(row.semantic_checks).toBe(
-      JSON.stringify([{ id: "s1", prompt: "credential exposure", effect: "DENY" }]),
-    );
-    expect(row.parameter_constraints).toBe(
-      JSON.stringify([{ field: "amount", operator: "gt", value: 1000 }]),
-    );
+    // Values, not JSON strings: postgres stores a JS string bound to jsonb as a
+    // JSON string, so "[]" would land instead of [].
+    expect(row.semantic_checks).toEqual([
+      { id: "s1", prompt: "credential exposure", effect: "DENY" },
+    ]);
+    expect(row.parameter_constraints).toEqual([{ field: "amount", operator: "gt", value: 1000 }]);
     expect(row.immutable).toBe(true);
     expect(row.domains).toEqual(["refunds"]);
   });
 
-  it("stores absent and empty matcher lists identically as NULL", () => {
+  it("stores absent and empty matcher lists as [], reserving NULL for unmaterialised rows", () => {
     const [absent] = toPolicyRuleRows({
       ...base,
       rules: [{ stableRuleId: "r", title: "t", effect: "ALLOW" }],
@@ -56,10 +56,13 @@ describe("toPolicyRuleRows", () => {
         },
       ],
     });
-    expect(absent.semantic_checks).toBeNull();
-    expect(absent.parameter_constraints).toBeNull();
-    expect(empty.semantic_checks).toBeNull();
-    expect(empty.parameter_constraints).toBeNull();
+    // NULL means "written before migration 007 and not yet backfilled". If the
+    // empty case also stored NULL, readers could never tell the two apart and
+    // the source_document parsing fallback could never be retired.
+    expect(absent.semantic_checks).toEqual([]);
+    expect(absent.parameter_constraints).toEqual([]);
+    expect(empty.semantic_checks).toEqual([]);
+    expect(empty.parameter_constraints).toEqual([]);
   });
 
   it("falls back to the revision source path only when the rule lacks one", () => {
