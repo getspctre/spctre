@@ -96,6 +96,9 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm generate
+      # Fails if the TypeScript policy tables changed without regenerating the
+      # copy the Go decision engine consumes — the two engines must match.
+      - run: pnpm check:worker-policy-data
       - run: pnpm typecheck
       - run: pnpm lint
       - run: pnpm format:check
