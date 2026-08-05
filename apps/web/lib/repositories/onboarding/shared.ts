@@ -1,3 +1,4 @@
+import { POLICY_RULE_COLUMNS, toPolicyRuleRows } from "@/lib/repositories/policy/rule-rows";
 import { logger } from "@spctre/platform/logging";
 import { randomUUID } from "crypto";
 import type { JSONValue } from "postgres";
@@ -141,32 +142,14 @@ export async function ensureStarterPublishedBundle(params: {
 
     await tx`
       INSERT INTO policy_rule ${tx(
-        rules.map((rule) => ({
-          tenant_id: params.tenantId,
-          workspace_id: params.workspaceId,
-          branch_id: branchId,
-          revision_id: revisionId,
-          stable_rule_id: rule.stableRuleId,
-          title: rule.title,
-          effect: rule.effect,
-          source_path: rule.sourcePath,
-          domains: rule.domains,
-          connectors: rule.connectors,
-          actions: rule.actions,
-          immutable: rule.immutable,
-        })),
-        "tenant_id",
-        "workspace_id",
-        "branch_id",
-        "revision_id",
-        "stable_rule_id",
-        "title",
-        "effect",
-        "source_path",
-        "domains",
-        "connectors",
-        "actions",
-        "immutable",
+        toPolicyRuleRows({
+          tenantId: params.tenantId,
+          workspaceId: params.workspaceId,
+          branchId,
+          revisionId,
+          rules,
+        }),
+        ...POLICY_RULE_COLUMNS,
       )}
     `;
 

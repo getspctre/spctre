@@ -1,3 +1,8 @@
+import {
+  POLICY_RULE_COLUMNS,
+  toPolicyRuleRows,
+  type PolicyRuleRow,
+} from "@/lib/repositories/policy/rule-rows";
 import { createHash } from "crypto";
 import type { JSONValue } from "postgres";
 import { assertCustomerRulesDoNotUseReservedIds } from "@/lib/policy/reserved-rule-ids";
@@ -25,20 +30,11 @@ export interface BranchRevision {
   createdAt: string;
 }
 
-export interface CommittedRuleRow {
-  tenant_id: string;
-  workspace_id: string | null;
-  branch_id: string;
-  revision_id: string;
-  stable_rule_id: string;
-  title: string;
-  effect: string;
-  source_path: string;
-  domains: string[];
-  connectors: string[];
-  actions: string[];
-  immutable: boolean;
-}
+/**
+ * Row shape accepted by createCommittedRevision. Aliased to the shared
+ * PolicyRuleRow so a column added there cannot be forgotten here.
+ */
+export type CommittedRuleRow = PolicyRuleRow;
 
 export interface BranchStatusSummary {
   workspaceId: string;
@@ -511,21 +507,15 @@ export async function persistImportedBranch(params: {
       )
     `;
     if (params.rules.length > 0) {
-      const ruleRows = params.rules.map((rule) => ({
-        tenant_id: params.tenantId,
-        workspace_id: workspaceId,
-        branch_id: branchId,
-        revision_id: revisionId,
-        stable_rule_id: rule.stableRuleId,
-        title: rule.title,
-        effect: rule.effect,
-        source_path: rule.sourcePath ?? params.sourcePath,
-        domains: rule.domains ?? [],
-        connectors: rule.connectors ?? [],
-        actions: rule.actions ?? [],
-        immutable: rule.immutable ?? false,
-      }));
-      await tx`INSERT INTO policy_rule ${tx(ruleRows, "tenant_id", "workspace_id", "branch_id", "revision_id", "stable_rule_id", "title", "effect", "source_path", "domains", "connectors", "actions", "immutable")}`;
+      const ruleRows = toPolicyRuleRows({
+        tenantId: params.tenantId,
+        workspaceId,
+        branchId,
+        revisionId,
+        sourcePath: params.sourcePath,
+        rules: params.rules,
+      });
+      await tx`INSERT INTO policy_rule ${tx(ruleRows, ...POLICY_RULE_COLUMNS)}`;
     }
     await tx`
       UPDATE policy_branch
@@ -665,21 +655,15 @@ export async function importPolicyBranchIdempotent(params: {
           )
         `;
         if (params.rules.length > 0) {
-          const ruleRows = params.rules.map((rule) => ({
-            tenant_id: params.tenantId,
-            workspace_id: workspaceId,
-            branch_id: branchId,
-            revision_id: revisionId,
-            stable_rule_id: rule.stableRuleId,
-            title: rule.title,
-            effect: rule.effect,
-            source_path: rule.sourcePath ?? params.sourcePath,
-            domains: rule.domains ?? [],
-            connectors: rule.connectors ?? [],
-            actions: rule.actions ?? [],
-            immutable: rule.immutable ?? false,
-          }));
-          await tx`INSERT INTO policy_rule ${tx(ruleRows, "tenant_id", "workspace_id", "branch_id", "revision_id", "stable_rule_id", "title", "effect", "source_path", "domains", "connectors", "actions", "immutable")}`;
+          const ruleRows = toPolicyRuleRows({
+            tenantId: params.tenantId,
+            workspaceId,
+            branchId,
+            revisionId,
+            sourcePath: params.sourcePath,
+            rules: params.rules,
+          });
+          await tx`INSERT INTO policy_rule ${tx(ruleRows, ...POLICY_RULE_COLUMNS)}`;
         }
         await tx`
           UPDATE policy_branch SET active_revision_id = ${revisionId}
@@ -793,12 +777,14 @@ export async function createDraftRevision(params: {
       INSERT INTO policy_rule (
         tenant_id, workspace_id, branch_id, revision_id,
         stable_rule_id, title, effect, source_path,
-        domains, connectors, actions, immutable
+        domains, connectors, actions, immutable,
+        semantic_checks, parameter_constraints
       )
       SELECT
         tenant_id, workspace_id, branch_id, ${params.draftRevisionId},
         stable_rule_id, title, effect, source_path,
-        domains, connectors, actions, immutable
+        domains, connectors, actions, immutable,
+        semantic_checks, parameter_constraints
       FROM policy_rule
       WHERE tenant_id = ${params.tenantId} AND revision_id = ${params.baseRevisionId}
     `;
@@ -839,7 +825,7 @@ export async function createCommittedRevision(params: {
         ${params.actorId}, ${params.message}
       )
     `;
-    await tx`INSERT INTO policy_rule ${tx(params.rules, "tenant_id", "workspace_id", "branch_id", "revision_id", "stable_rule_id", "title", "effect", "source_path", "domains", "connectors", "actions", "immutable")}`;
+    await tx`INSERT INTO policy_rule ${tx(params.rules, ...POLICY_RULE_COLUMNS)}`;
     await tx`
       UPDATE policy_branch
       SET active_revision_id = ${params.revisionId}
