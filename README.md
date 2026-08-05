@@ -277,6 +277,31 @@ into your IdP (Okta, Azure AD, PingOne, etc.) to complete the trust setup.
 | `WORKER_NOTIFICATION_TIMEOUT_SECONDS`           | No       | Outbound notification webhook timeout in seconds (default: `10`)                                                                                                             |
 | `WORKER_ECONOMIC_BUDGET_SWEEP_INTERVAL_MINUTES` | No       | Economic budget sweep interval in minutes (default: `60`)                                                                                                                    |
 
+#### Delegated gateway decisions require materialised policy rules
+
+When `SPCTRE_EVIDENCE_INGEST_URL` is set, service-token `POST /api/gateway/decide`
+is served by the Go worker. The worker enforces the tenant's published policy
+rules by reading them from `policy_rule`, which carries the semantic checks and
+parameter constraints the evaluator matches on.
+
+Rules written before the migration that added those columns hold `NULL` there
+until backfilled. The web app falls back to re-parsing the policy source in that
+case; the worker has no equivalent parser, so it **fails closed** and returns
+`503` rather than evaluating a rule whose thresholds and semantic checks would be
+silently dropped.
+
+Run the backfill once per environment after migrating, and before enabling
+delegation:
+
+```sh
+DATABASE_URL=... node --import tsx scripts/backfill-policy-rule-matchers.mjs --dry-run
+DATABASE_URL=... node --import tsx scripts/backfill-policy-rule-matchers.mjs
+```
+
+It is idempotent and reports `Nothing to backfill` once complete. The
+`spctre.policy.rule_source` counter shows which source each read used, so you can
+confirm the fallback has stopped firing and remove it.
+
 ### MCP server
 
 | Variable                         | Required     | Description                                                           |
