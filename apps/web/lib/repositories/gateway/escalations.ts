@@ -1,5 +1,6 @@
 import { logger } from "@spctre/platform/logging";
 import { sql } from "@/lib/db";
+import { reportSwallowedError } from "@/lib/platform/swallow";
 import type { GatewayEscalationQueueItem } from "@spctre/policy-schema";
 
 export interface OpenEscalationSummary {
@@ -95,7 +96,12 @@ export async function listOpenEscalationQueue(
     `;
 
     return rows.map(mapEscalationQueueRow);
-  } catch {
+  } catch (error) {
+    // A bare catch here renders the escalation queue as legitimately empty
+    // whether the tenant has no open escalations or the query is broken — the
+    // failure mode that hid a missing-column error behind a healthy-looking
+    // empty triage view.
+    reportSwallowedError("listOpenEscalationQueue", error);
     return [];
   }
 }
@@ -536,7 +542,11 @@ export async function getEscalationStatusByDecisionId(
           ? (row.tool_parameters as Record<string, unknown>)
           : undefined,
     };
-  } catch {
+  } catch (error) {
+    // Returning null here is indistinguishable from "this decision was never
+    // escalated", which is what a runtime client polling for a human decision
+    // sees. Make the difference observable.
+    reportSwallowedError("getEscalationStatusByDecisionId", error);
     return null;
   }
 }
