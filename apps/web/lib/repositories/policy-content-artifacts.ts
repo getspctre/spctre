@@ -56,3 +56,41 @@ export async function bindEvidenceToPolicyContentArtifact(params: {
     ON CONFLICT DO NOTHING
   `;
 }
+
+export async function readPolicyContentArtifactForEvidenceToken(params: {
+  tenantId: string;
+  workspaceId: string;
+  tokenId: string;
+  connector: string;
+  revisionIds: string[];
+  contentHash: string;
+}): Promise<{ bytes: Uint8Array; mediaType: string } | null> {
+  if (!sql) return null;
+  const key = encryptionKey();
+  const rows = await sql<{ media_type: string; bytes: Buffer }[]>`
+    SELECT artifact.media_type,
+           pgp_sym_decrypt_bytea(artifact.content_encrypted, ${key}) AS bytes
+    FROM policy_content_artifact artifact
+    WHERE artifact.content_hash = ${params.contentHash}
+      AND EXISTS (
+        SELECT 1
+        FROM runtime_evidence_policy_content_ref ref
+        JOIN runtime_evidence_event evidence
+          ON evidence.tenant_id = ref.tenant_id
+          AND evidence.workspace_id = ref.workspace_id
+          AND evidence.decision_id = ref.decision_id
+        WHERE ref.tenant_id = ${params.tenantId}
+          AND ref.workspace_id = ${params.workspaceId}
+          AND ref.content_hash = artifact.content_hash
+          AND ref.revision_id = ANY(${params.revisionIds}::uuid[])
+          AND evidence.connector = ${params.connector}
+      )
+    LIMIT 1
+  `;
+  const row = rows[0];
+  await sql`
+    INSERT INTO policy_content_artifact_access_audit (tenant_id, workspace_id, content_hash, token_id, action)
+    VALUES (${params.tenantId}, ${params.workspaceId}, ${params.contentHash}, ${params.tokenId}, ${row ? "READ" : "DENIED"})
+  `;
+  return row ? { bytes: new Uint8Array(row.bytes), mediaType: row.media_type } : null;
+}
