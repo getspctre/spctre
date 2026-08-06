@@ -104,9 +104,15 @@ describe("escalation queue review projection", () => {
     expect(item.toolParameters).toBeUndefined();
   });
 
-  // The counterpart to the projection: the runtime handoff must stay canonical,
-  // because the agent replays these to execute what the human approved. The
-  // release rule (RESOLVED + PROCEED only) lives in the domain service.
+  // The counterpart to the projection: the status path applies no redaction of
+  // its own, so what the agent receives is exactly the stored record the human
+  // reviewed. "Verbatim" here means unchanged relative to storage — not
+  // replayable. The stored copy is already redacted and bounded by
+  // GatewayDecisionSchema at ingest, and approvedToolParameters is a
+  // confirmation of the reviewed arguments rather than an execution source; a
+  // second redaction pass here would widen the gap between what the reviewer
+  // approved and what the agent can check against. The release rule
+  // (RESOLVED + PROCEED only) lives in the domain service.
   it("keeps the runtime status payload verbatim", async () => {
     const toolParameters = { apiKey: "sk-live-not-really-a-secret", amount: 4200 };
     sqlMock.mockResolvedValue([
