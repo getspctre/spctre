@@ -101,7 +101,15 @@ async function authenticateRuntimeRequest(
   request: Request,
   input: AgtRuntimeDecisionInput,
 ): Promise<
-  | { ok: true; tenantId: string; workspaceId: string; principalId: string }
+  | {
+      ok: true;
+      tenantId: string;
+      workspaceId: string;
+      principalId: string;
+      connector?: string;
+      scopes: string[];
+      evidenceExportGrants: Array<{ revisionId: string; notBefore: string; notAfter?: string }>;
+    }
   | { ok: false; error: string }
 > {
   const requestedTenantId =
@@ -133,6 +141,9 @@ async function authenticateRuntimeRequest(
     tenantId: tokenAuth.auth.tenantId,
     workspaceId: tokenAuth.auth.workspaceId,
     principalId: tokenAuth.auth.principalId,
+    connector: tokenAuth.auth.connector,
+    scopes: tokenAuth.auth.scopes,
+    evidenceExportGrants: tokenAuth.auth.evidenceExportGrants,
   };
 }
 
@@ -257,6 +268,36 @@ export function policyContentReferenceFromEvidence(
       typeof revisionId === "string" && contextByRevisionId.has(revisionId),
   );
   return matchingRevisionId ? { contentHash, revisionId: matchingRevisionId } : undefined;
+}
+
+/**
+ * A policy-content reference is an authorization-bearing custody claim, not
+ * merely evidence metadata. The runtime token must be bound to the same
+ * connector and an active revision grant covering the evidence timestamp.
+ */
+export function validatePolicyContentReferenceAuthorization(
+  evidence: RuntimeDecisionEvidenceRecord,
+  auth: {
+    connector?: string;
+    scopes: string[];
+    evidenceExportGrants: Array<{ revisionId: string; notBefore: string; notAfter?: string }>;
+  },
+): string | undefined {
+  const reference = policyContentReferenceFromEvidence(evidence);
+  if (!reference) return undefined;
+  if (!auth.scopes.includes("evidence:export") || !auth.connector) {
+    return "Policy content references require an evidence:export token bound to a connector.";
+  }
+  if (auth.connector !== evidence.connector) {
+    return "Policy content reference connector is outside this token scope.";
+  }
+  const createdAt = new Date(evidence.createdAt).getTime();
+  const granted = auth.evidenceExportGrants.some((grant) =>
+    grant.revisionId === reference.revisionId &&
+    createdAt >= new Date(grant.notBefore).getTime() &&
+    (!grant.notAfter || createdAt < new Date(grant.notAfter).getTime()),
+  );
+  return granted ? undefined : "Policy content reference revision is outside this token grant.";
 }
 
 async function persistEvidence(input: {
@@ -581,6 +622,8 @@ export async function ingestRuntimeEvidence(input: {
     }
 
     const evidence = ingestAgtRuntimeDecision(scopedInput);
+    const referenceAuthorizationError = validatePolicyContentReferenceAuthorization(evidence, auth);
+    if (referenceAuthorizationError) return apiError(403, referenceAuthorizationError);
     const governanceActiveSignal = isGovernanceActiveSignal(evidence);
     const rawPayloadRecord = parsed as Record<string, unknown>;
     const sourceType = resolveIngestionSource(request, rawPayloadRecord);

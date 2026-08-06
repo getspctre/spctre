@@ -207,6 +207,17 @@ describe("evidence ingest contract", () => {
         },
       },
     };
+    authenticateServiceTokenSpy.mockResolvedValue({
+      ok: true,
+      auth: {
+        tenantId: "00000000-0000-0000-0000-000000000010",
+        workspaceId: "workspace-real",
+        principalId: "svc-contract",
+        connector: "stripe",
+        scopes: ["evidence:write", "evidence:export"],
+        evidenceExportGrants: [{ revisionId: "revision-contract", notBefore: "2020-01-01T00:00:00.000Z" }],
+      },
+    });
     const result = await ingest(evidence);
 
     expect(result.status).toBe(201);
@@ -218,6 +229,32 @@ describe("evidence ingest contract", () => {
         },
       }),
     );
+  });
+
+  it("rejects a custody reference outside the token-bound revision grant", async () => {
+    authenticateServiceTokenSpy.mockResolvedValue({
+      ok: true,
+      auth: {
+        tenantId: "00000000-0000-0000-0000-000000000010",
+        workspaceId: "workspace-real",
+        principalId: "svc-contract",
+        connector: "stripe",
+        scopes: ["evidence:write", "evidence:export"],
+        evidenceExportGrants: [{ revisionId: "another-revision", notBefore: "2020-01-01T00:00:00.000Z" }],
+      },
+    });
+    const result = await ingest({
+      ...baseParsed,
+      rawEvidence: {
+        spctre_runtime: {
+          schema: "spctre-runtime-facts/v1",
+          policy: { content_hash: `sha256:${"a".repeat(64)}`, revision_ids: ["revision-contract"] },
+        },
+      },
+    });
+
+    expect(result).toMatchObject({ status: 403, body: { error: "Policy content reference revision is outside this token grant." } });
+    expect(insertRuntimeEvidenceWithDedupSpy).not.toHaveBeenCalled();
   });
 
   it("does not bind unscoped or malformed runtime content facts", () => {
