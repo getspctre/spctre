@@ -41,6 +41,8 @@ function validateVerificationFields(fields: {
   escrowVerifiedAt?: string;
   compatibilityCheckOutcome?: "PASS" | "FAIL" | "WARN";
   escrowVerificationOutcome?: "PASS" | "FAIL" | "WARN";
+  verifierLockDigest?: string;
+  policyContentHash?: string;
 }): string | null {
   if (!fields.artifactHash) {
     return "artifactHash is required.";
@@ -64,6 +66,12 @@ function validateVerificationFields(fields: {
   }
   if (fields.escrowVerificationOutcome && !VALID_OUTCOMES.has(fields.escrowVerificationOutcome)) {
     return "escrowVerificationOutcome must be PASS, FAIL, or WARN.";
+  }
+  if (
+    (fields.verifierLockDigest && !/^sha256:[0-9a-f]{64}$/.test(fields.verifierLockDigest)) ||
+    (fields.policyContentHash && !/^sha256:[0-9a-f]{64}$/.test(fields.policyContentHash))
+  ) {
+    return "verifierLockDigest and policyContentHash must be lowercase SHA-256 digests.";
   }
   return null;
 }
@@ -111,6 +119,8 @@ async function handlePostApiVerification(request: Request) {
       const outcome = asString(rec.outcome) as AgtVerificationOutcome | undefined;
       const revisionId = asString(rec.revisionId);
       const runtimeVersion = asString(rec.runtimeVersion);
+      const verifierLockDigest = asString(rec.verifierLockDigest);
+      const policyContentHash = asString(rec.policyContentHash);
       const summary =
         rec.summary && typeof rec.summary === "object" && !Array.isArray(rec.summary)
           ? (rec.summary as Record<string, unknown>)
@@ -146,6 +156,8 @@ async function handlePostApiVerification(request: Request) {
         escrowVerifiedAt,
         compatibilityCheckOutcome,
         escrowVerificationOutcome,
+        verifierLockDigest,
+        policyContentHash,
       });
       if (validationError) {
         incrementCounter("spctre.api.errors", 1, {
@@ -168,6 +180,8 @@ async function handlePostApiVerification(request: Request) {
         summary,
         runBy: auth.actorId,
         runtimeVersion,
+        verifierLockDigest,
+        policyContentHash,
         argumentsHash,
         approverDid,
         policyVersion,
@@ -207,7 +221,7 @@ async function handlePostApiVerification(request: Request) {
         sourceId: id,
         sourceTable: "agt_verification_result",
         actorId: auth.actorId,
-        payload: { artifactHash, verificationType, outcome, revisionId },
+        payload: { artifactHash, policyContentHash, verifierLockDigest, verificationType, outcome, revisionId },
       }).catch(swallow("recordVerificationOperation", undefined));
 
       span.setAttributes({
