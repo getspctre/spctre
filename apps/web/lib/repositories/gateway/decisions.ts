@@ -197,6 +197,11 @@ export async function persistGatewayDecision(
         sla_due_at = EXCLUDED.sla_due_at,
         handoff_notes = EXCLUDED.handoff_notes,
         updated_at = now()
+      -- A retry may refresh an open escalation, but must never resurrect a
+      -- terminal human or SLA decision. That would create a second approval
+      -- opportunity for the same decisionId and violates F3 terminal
+      -- immutability.
+      WHERE gateway_escalation_queue.status NOT IN ('RESOLVED', 'EXPIRED')
     `;
 
     // Trigger FIRST_HITL_ESCALATION conversion telemetry asynchronously
