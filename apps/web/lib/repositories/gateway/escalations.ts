@@ -1,5 +1,7 @@
 import { logger } from "@spctre/platform/logging";
+import { redactAndBoundParameters } from "@spctre/api-contracts";
 import { sql } from "@/lib/db";
+import { reportSwallowedError } from "@/lib/platform/swallow";
 import type { GatewayEscalationQueueItem } from "@spctre/policy-schema";
 
 export interface OpenEscalationSummary {
@@ -41,8 +43,9 @@ export async function getOpenEscalationSummaryForRevision(
       count: Number.parseInt(row?.count ?? "0", 10),
       nearestSlaDueAt: row?.nearest_sla_due_at?.toISOString(),
     };
-  } catch {
+  } catch (error) {
     // Migration may not be applied yet.
+    reportSwallowedError("getOpenEscalationSummaryForRevision", error);
     return { count: 0 };
   }
 }
@@ -61,7 +64,8 @@ export async function countOpenEscalations(
         AND status IN ('PENDING', 'IN_REVIEW')
     `;
     return Number.parseInt(rows[0]?.count ?? "0", 10);
-  } catch {
+  } catch (error) {
+    reportSwallowedError("countOpenEscalations", error);
     return 0;
   }
 }
@@ -71,43 +75,36 @@ export async function listOpenEscalationQueue(
   tenantId: string,
   limit = 50,
 ): Promise<GatewayEscalationQueueItem[]> {
+  // An unconfigured database is a real, non-error state (demo/dev). A query
+  // failure is not: it propagates so the caller decides. GET
+  // /api/gateway/escalations answers 503, and callers that genuinely prefer to
+  // degrade — the workspace dashboard card — opt in with swallow() at their own
+  // call site. Returning [] here would make a broken query indistinguishable
+  // from a clear queue, which is how a missing column reached production
+  // looking like "Queue is clear".
   if (!sql) return [];
 
-  try {
-    const rows = await sql<EscalationQueueRow[]>`
-      SELECT
-        geq.id, geq.tenant_id, geq.workspace_id, geq.gateway_decision_id, geq.decision_id,
-        geq.revision_id, geq.artifact_hash, geq.status, geq.assigned_to, geq.sla_due_at,
-        geq.handoff_notes, geq.resolved_at, geq.resolution_outcome, geq.resolution_note,
-        ev.connector, ev.action,
-        gd.consequence, gd.customer_tier, gd.confidence::text, gd.amount_usd::text,
-        gd.data_sensitivity, gd.trust_score::text, gd.context_budget, gd.risk_level,
-        gd.reason AS gateway_reason, gd.agent_id,
-        gd.tool_intent, gd.plan_summary, gd.tool_parameters, gd.safeguard_telemetry,
-        geq.created_at, geq.updated_at
-      FROM gateway_escalation_queue geq
-      JOIN gateway_decision gd ON gd.id = geq.gateway_decision_id
-      LEFT JOIN LATERAL (
-        SELECT connector, action
-        FROM runtime_evidence_event ree
-        WHERE ree.tenant_id = geq.tenant_id
-          AND ree.workspace_id = geq.workspace_id
-          AND ree.decision_id = geq.decision_id
-          AND ree.artifact_hash = geq.artifact_hash
-        ORDER BY ree.created_at DESC
-        LIMIT 1
-      ) ev ON true
-      WHERE geq.tenant_id = ${tenantId}
-        AND geq.workspace_id = ${workspaceId}
-        AND geq.status IN ('PENDING', 'IN_REVIEW')
-      ORDER BY geq.sla_due_at ASC
-      LIMIT ${limit}
-    `;
+  const rows = await sql<EscalationQueueRow[]>`
+    SELECT
+      geq.id, geq.tenant_id, geq.workspace_id, geq.gateway_decision_id, geq.decision_id,
+      geq.revision_id, geq.artifact_hash, geq.status, geq.assigned_to, geq.sla_due_at,
+      geq.handoff_notes, geq.resolved_at, geq.resolution_outcome, geq.resolution_note,
+      gd.connector, gd.action,
+      gd.consequence, gd.customer_tier, gd.confidence::text, gd.amount_usd::text,
+      gd.data_sensitivity, gd.trust_score::text, gd.context_budget, gd.risk_level,
+      gd.reason AS gateway_reason, gd.agent_id,
+      gd.tool_intent, gd.plan_summary, gd.tool_parameters, gd.safeguard_telemetry,
+      geq.created_at, geq.updated_at
+    FROM gateway_escalation_queue geq
+    JOIN gateway_decision gd ON gd.id = geq.gateway_decision_id
+    WHERE geq.tenant_id = ${tenantId}
+      AND geq.workspace_id = ${workspaceId}
+      AND geq.status IN ('PENDING', 'IN_REVIEW')
+    ORDER BY geq.sla_due_at ASC
+    LIMIT ${limit}
+  `;
 
-    return rows.map(mapEscalationQueueRow);
-  } catch {
-    return [];
-  }
+  return rows.map(mapEscalationQueueRow);
 }
 
 // Row shape for the joined escalation-queue query above; drives both mappers.
@@ -148,6 +145,15 @@ interface EscalationQueueRow {
 
 // Decision metadata joined from gateway_decision / runtime evidence; all
 // fields are optional on the queue item.
+//
+// This is the *review* projection. Its consumers — the triage queue API, the
+// server-rendered escalations page, and the workspace dashboard — all deliver
+// it to a browser, so the canonical tool parameters must not survive this
+// mapping: they would reach the client in the JSON response and the RSC props
+// no matter what the rendering component chooses to display. Reviewers get a
+// redacted, bounded view; the verbatim payload is reserved for the approved
+// runtime handoff, which reads it through getEscalationStatusByDecisionId and
+// releases it only once a human has resolved the escalation to PROCEED.
 function mapEscalationDecisionFields(row: EscalationQueueRow) {
   return {
     connector: row.connector ?? undefined,
@@ -164,12 +170,7 @@ function mapEscalationDecisionFields(row: EscalationQueueRow) {
     agentId: row.agent_id ?? undefined,
     toolIntent: row.tool_intent ?? undefined,
     planSummary: row.plan_summary ?? undefined,
-    toolParameters:
-      row.tool_parameters &&
-      typeof row.tool_parameters === "object" &&
-      !Array.isArray(row.tool_parameters)
-        ? (row.tool_parameters as Record<string, unknown>)
-        : undefined,
+    toolParameters: redactAndBoundParameters(row.tool_parameters),
     safeguardTelemetry:
       row.safeguard_telemetry &&
       typeof row.safeguard_telemetry === "object" &&
@@ -227,7 +228,8 @@ export async function getOpenEscalationAssigneeCounts(params: {
       GROUP BY assigned_to
     `;
     return Object.fromEntries(rows.map((row) => [row.assigned_to, Number.parseInt(row.count, 10)]));
-  } catch {
+  } catch (error) {
+    reportSwallowedError("getOpenEscalationAssigneeCounts", error);
     return {};
   }
 }
@@ -270,7 +272,8 @@ export async function listResolvedEscalationsForRevision(
       slaDueAt: row.sla_due_at?.toISOString(),
       slaMet: row.sla_due_at ? row.resolved_at <= row.sla_due_at : undefined,
     }));
-  } catch {
+  } catch (error) {
+    reportSwallowedError("listResolvedEscalationsForRevision", error);
     return [];
   }
 }
@@ -344,7 +347,10 @@ export async function resolveEscalationQueueItem(params: {
     `;
 
     return true;
-  } catch {
+  } catch (error) {
+    // A failed write is not "already claimed" or "not found", which is how the
+    // caller reads false. Keep the fallback, but record which one happened.
+    reportSwallowedError("resolveEscalationQueueItem", error);
     return false;
   }
 }
@@ -426,7 +432,10 @@ export async function assignEscalationQueueItem(params: {
       RETURNING id
     `;
     return rows.length > 0;
-  } catch {
+  } catch (error) {
+    // A failed write is not "already claimed" or "not found", which is how the
+    // caller reads false. Keep the fallback, but record which one happened.
+    reportSwallowedError("assignEscalationQueueItem", error);
     return false;
   }
 }
@@ -453,7 +462,10 @@ export async function assignEscalationQueueItemFromTriage(params: {
       RETURNING id
     `;
     return rows.length > 0;
-  } catch {
+  } catch (error) {
+    // A failed write is not "already claimed" or "not found", which is how the
+    // caller reads false. Keep the fallback, but record which one happened.
+    reportSwallowedError("assignEscalationQueueItemFromTriage", error);
     return false;
   }
 }
@@ -470,7 +482,9 @@ export interface EscalationStatus {
   connector?: string;
   action?: string;
   /** Internal persisted decision arguments; only exposed as approvedToolParameters
-   * after the escalation is resolved to PROCEED. */
+   * after the escalation is resolved to PROCEED. Already redacted and bounded by
+   * GatewayDecisionSchema at ingest, so it confirms what was reviewed rather than
+   * carrying a replayable payload. */
   toolParameters?: Record<string, unknown>;
   approvedToolParameters?: Record<string, unknown>;
   credentialGrant?: {
@@ -486,69 +500,68 @@ export async function getEscalationStatusByDecisionId(
   tenantId: string,
   workspaceId: string,
 ): Promise<EscalationStatus | null> {
+  // null means "no escalation for this decision" — a 404 the runtime client
+  // acts on. A query failure must not borrow that meaning: it propagates so the
+  // status route can answer 503, which its handler is already written for.
   if (!sql || !decisionId) return null;
 
-  try {
-    const rows = await sql<
-      {
-        decision_id: string;
-        gateway_decision_id: string;
-        status: EscalationStatus["status"];
-        resolution_outcome: EscalationStatus["resolutionOutcome"] | null;
-        resolution_note: string | null;
-        agent_guidance: string | null;
-        sla_due_at: Date | null;
-        resolved_at: Date | null;
-        connector: string | null;
-        action: string | null;
-        tool_parameters: unknown;
-      }[]
-    >`
-      SELECT
-        geq.decision_id,
-        geq.gateway_decision_id,
-        geq.status,
-        geq.resolution_outcome,
-        geq.resolution_note,
-        geq.agent_guidance,
-        geq.sla_due_at,
-        geq.resolved_at,
-        gd.connector,
-        gd.action,
-        gd.tool_parameters
-      FROM gateway_escalation_queue geq
-      JOIN gateway_decision gd ON gd.id = geq.gateway_decision_id
-      WHERE geq.tenant_id = ${tenantId}
-        AND geq.workspace_id = ${workspaceId}
-        AND geq.decision_id = ${decisionId}
-      ORDER BY geq.created_at DESC
-      LIMIT 1
-    `;
+  const rows = await sql<
+    {
+      decision_id: string;
+      gateway_decision_id: string;
+      status: EscalationStatus["status"];
+      resolution_outcome: EscalationStatus["resolutionOutcome"] | null;
+      resolution_note: string | null;
+      agent_guidance: string | null;
+      sla_due_at: Date | null;
+      resolved_at: Date | null;
+      connector: string | null;
+      action: string | null;
+      tool_parameters: unknown;
+    }[]
+  >`
+    SELECT
+      geq.decision_id,
+      geq.gateway_decision_id,
+      geq.status,
+      geq.resolution_outcome,
+      geq.resolution_note,
+      geq.agent_guidance,
+      geq.sla_due_at,
+      geq.resolved_at,
+      gd.connector,
+      gd.action,
+      gd.tool_parameters
+    FROM gateway_escalation_queue geq
+    JOIN gateway_decision gd ON gd.id = geq.gateway_decision_id
+    WHERE geq.tenant_id = ${tenantId}
+      AND geq.workspace_id = ${workspaceId}
+      AND geq.decision_id = ${decisionId}
+    ORDER BY geq.created_at DESC
+    LIMIT 1
+  `;
 
-    const row = rows[0];
-    if (!row) return null;
+  const row = rows[0];
+  if (!row) return null;
 
-    return {
-      decisionId: row.decision_id,
-      gatewayDecisionId: row.gateway_decision_id,
-      status: row.status,
-      resolutionOutcome: row.resolution_outcome ?? undefined,
-      resolutionNote: row.resolution_note ?? undefined,
-      agentGuidance: row.agent_guidance ?? undefined,
-      slaDueAt: row.sla_due_at?.toISOString(),
-      resolvedAt: row.resolved_at?.toISOString(),
-      connector: row.connector ?? undefined,
-      action: row.action ?? undefined,
-      toolParameters:
-        row.tool_parameters &&
-        typeof row.tool_parameters === "object" &&
-        !Array.isArray(row.tool_parameters)
-          ? (row.tool_parameters as Record<string, unknown>)
-          : undefined,
-    };
-  } catch {
-    return null;
-  }
+  return {
+    decisionId: row.decision_id,
+    gatewayDecisionId: row.gateway_decision_id,
+    status: row.status,
+    resolutionOutcome: row.resolution_outcome ?? undefined,
+    resolutionNote: row.resolution_note ?? undefined,
+    agentGuidance: row.agent_guidance ?? undefined,
+    slaDueAt: row.sla_due_at?.toISOString(),
+    resolvedAt: row.resolved_at?.toISOString(),
+    connector: row.connector ?? undefined,
+    action: row.action ?? undefined,
+    toolParameters:
+      row.tool_parameters &&
+      typeof row.tool_parameters === "object" &&
+      !Array.isArray(row.tool_parameters)
+        ? (row.tool_parameters as Record<string, unknown>)
+        : undefined,
+  };
 }
 
 export async function updateEscalationOutcome(params: {

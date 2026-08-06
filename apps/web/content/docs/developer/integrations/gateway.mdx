@@ -74,6 +74,15 @@ include `approvedToolParameters`: the immutable, redacted decision arguments
 that were reviewed. It is absent for pending, expired, and non-proceeding
 decisions. Consumers must still require `status: RESOLVED` and
 `resolutionOutcome: PROCEED`; the payload alone grants no authority.
+
+`approvedToolParameters` is a confirmation, not an execution source. Parameters
+are redacted (sensitive keys) and bounded (depth and size) when the decision is
+recorded, so the stored copy is deliberately lossy — a value may come back as
+`[REDACTED]` or `[Truncated: Max depth reached]`. Execute from the parameters
+your agent already holds, and use this field to confirm they match what the
+reviewer approved. Do not treat it as a resume payload for another process; if
+your agent cannot hold its own parameters across the escalation, persist them
+on your side rather than expecting them back from the control plane.
 - `ABORT` — action must be halted
 
 ## GET /api/v1/gateway/escalations

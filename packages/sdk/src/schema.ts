@@ -903,7 +903,7 @@ export interface components {
             slaDueAt?: string | null;
             /** Format: date-time */
             resolvedAt?: string | null;
-            /** @description Immutable, redacted decision arguments. Present only when the escalation is RESOLVED with a PROCEED outcome. */
+            /** @description Confirmation of the decision arguments a human reviewed — not an execution source. Sensitive keys are redacted and depth/size are bounded when the decision is recorded, so this is a lossy snapshot: execute from your own parameters and use this to confirm they match what was approved. Present only when the escalation is RESOLVED with a PROCEED outcome. */
             approvedToolParameters?: {
                 [key: string]: unknown;
             };

@@ -302,6 +302,24 @@ It is idempotent and reports `Nothing to backfill` once complete. The
 `spctre.policy.rule_source` counter shows which source each read used, so you can
 confirm the fallback has stopped firing and remove it.
 
+#### Recovering connector/action on historical gateway decisions
+
+Migration `008` added `gateway_decision.connector` / `action`, which the
+escalation queue and the runtime status endpoint read. Decisions recorded before
+it carry `NULL` and are recoverable only from the runtime evidence event that
+followed them. That recovery is deliberately not part of the migration: each
+migration file runs in one transaction, so a scan of `runtime_evidence_event`
+there would hold the `ADD COLUMN` lock and stall gateway writes.
+
+```sh
+DATABASE_URL=... node scripts/backfill-gateway-decision-connector-action.mjs --dry-run
+DATABASE_URL=... node scripts/backfill-gateway-decision-connector-action.mjs
+```
+
+Run it as the migration/owner role — under the RLS-constrained `spctre_app` role
+it matches no rows and exits reporting a clean no-op. Decisions with no evidence
+event stay `NULL`; both columns are optional for readers.
+
 ### MCP server
 
 | Variable                         | Required     | Description                                                           |

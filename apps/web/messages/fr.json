@@ -1277,6 +1277,11 @@
       "title": "La file est vide",
       "description": "Aucune escalade ouverte. Les agents soumettent ici des décisions lorsqu'une règle de politique requiert une validation humaine avant qu'un appel d'outil ne se poursuive — utilisez <post>POST /api/escalations</post> avec un <decision>decisionId</decision> et des <notes>handoffNotes</notes> pour en acheminer une vers la revue."
     },
+    "load_error": {
+      "title": "Impossible de charger la file",
+      "description": "Le chargement de la file d'escalades a échoué : ce n'est donc pas une confirmation qu'il n'y a rien à examiner. Relancez l'actualisation ; si l'échec persiste, vérifiez l'état du control plane et de la base de données avant de conclure que la file est vide.",
+      "stale": "Échec de l'actualisation — liste peut-être obsolète"
+    },
     "queue": {
       "eyebrow": "File",
       "title": "Escalades ouvertes",
@@ -1301,11 +1306,14 @@
       "handoff_notes": "Notes de transfert",
       "no_handoff_notes": "Aucune note de transfert fournie.",
       "tool_intent": "Intention de l'outil",
-      "plan_summary": "Résumé du plan"
+      "plan_summary": "Résumé du plan",
+      "review_context": "Contexte de révision"
     },
     "triage": {
       "title": "Gestion de la file et triage",
-      "upgrade_description": "Passez à une offre supérieure pour gérer le suivi des SLA de service, le routage automatique et les remplacements manuels d'agents."
+      "upgrade_description": "Passez à une offre supérieure pour gérer le suivi des SLA de service, le routage automatique et les remplacements manuels d'agents.",
+      "claimed_by": "Revendiquée par <code>{email}</code>.",
+      "claim_prompt": "Revendiquez cette escalade pour prendre la responsabilité de sa revue. La priorité et le SLA sont affichés dans la file."
     }
   },
   "compliance": {

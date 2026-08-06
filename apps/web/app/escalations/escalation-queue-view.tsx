@@ -1,17 +1,19 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { CheckCircle2, RefreshCw } from "lucide-react";
+import { AlertTriangle, CheckCircle2, RefreshCw } from "lucide-react";
 import type { GatewayEscalationQueueItem } from "@spctre/policy-schema";
 import { ClaimButton } from "./claim-button";
 import { ResolveForm } from "./resolve-form";
 import { formatProvenanceId, type AppViewMode } from "@/lib/app-view-mode";
 import { hashToFingerprint } from "@/lib/fingerprint";
+import { redactAndBoundParameters } from "@spctre/api-contracts";
 import { UpgradePrompt } from "../plan-gate";
 import { useTranslations } from "next-intl";
 
 interface EscalationQueueViewProps {
   initialQueue: GatewayEscalationQueueItem[];
+  initialLoadFailed?: boolean;
   actors: Array<{ id: string; name: string; email: string | null; reviewerRoles: string[] }>;
   hasManagedHitl: boolean;
   crossSurfaceIdentity: boolean;
@@ -44,6 +46,71 @@ function refreshedAgoLabel(currentTime: number, lastRefreshedAt: number) {
 function riskLevelPillClass(riskLevel: string) {
   if (riskLevel === "HIGH" || riskLevel === "CRITICAL") return "pill pillBlock pillTiny";
   return riskLevel === "MEDIUM" ? "pill pillWarn pillTiny" : "pill pillAllow pillTiny";
+}
+
+function reviewParameterLabel(key: string) {
+  return key.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/^./, (letter) => letter.toUpperCase());
+}
+
+function reviewParameterValue(value: unknown) {
+  if (typeof value === "string") return value;
+  if (typeof value === "number" || typeof value === "boolean") return String(value);
+  if (value == null) return "—";
+  return JSON.stringify(value, null, 2);
+}
+
+function ReviewContext({
+  parameters,
+  title,
+}: {
+  parameters: Record<string, unknown>;
+  title: string;
+}) {
+  // Defence in depth only. The queue projection is already redacted and
+  // bounded server-side, in the repository, because anything left on the item
+  // reaches the browser through the API response and the RSC props regardless
+  // of what this component renders. Redacting again here is idempotent and
+  // keeps the guarantee if the component is ever handed an unredacted source.
+  const entries = Object.entries(redactAndBoundParameters(parameters) ?? {});
+  if (entries.length === 0) return null;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      <span className="metadata" style={{ fontSize: 10 }}>
+        {title}
+      </span>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "120px minmax(0, 1fr)",
+          gap: "8px 16px",
+          background: "var(--bg)",
+          border: "1px solid var(--line)",
+          borderRadius: 6,
+          padding: "12px 14px",
+        }}
+      >
+        {entries.map(([key, value]) => (
+          <React.Fragment key={key}>
+            <span className="meta" style={{ fontSize: 12 }}>
+              {reviewParameterLabel(key)}
+            </span>
+            <code
+              style={{
+                color: "var(--ink)",
+                fontSize: 12,
+                whiteSpace: "pre-wrap",
+                wordBreak: "break-word",
+                lineHeight: 1.45,
+              }}
+            >
+              {reviewParameterValue(value)}
+            </code>
+          </React.Fragment>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 function QueueListItem({
@@ -351,6 +418,10 @@ function EscalationContextDetails({
         </div>
       )}
 
+      {selectedItem.toolParameters && (
+        <ReviewContext parameters={selectedItem.toolParameters} title={t("review_context")} />
+      )}
+
       {selectedItem.safeguardTelemetry &&
         Object.keys(selectedItem.safeguardTelemetry).length > 0 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -377,9 +448,13 @@ function EscalationContextDetails({
 function EscalationAssignmentSection({
   selectedItem,
   hasManagedHitl,
+  formatActorId,
+  onClaimed,
 }: {
   selectedItem: GatewayEscalationQueueItem;
   hasManagedHitl: boolean;
+  formatActorId: (id: string) => string;
+  onClaimed: () => void;
 }) {
   const t = useTranslations("escalations.triage");
 
@@ -390,12 +465,16 @@ function EscalationAssignmentSection({
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {!selectedItem.assignedTo && (
             <div style={{ alignSelf: "flex-start" }}>
-              <ClaimButton queueId={selectedItem.id} />
+              <ClaimButton queueId={selectedItem.id} onClaimed={onClaimed} />
             </div>
           )}
           <p className="meta" style={{ fontSize: 12 }}>
-            Claim this escalation to take responsibility for its review. Priority and SLA are shown
-            in the queue.
+            {selectedItem.assignedTo
+              ? t.rich("claimed_by", {
+                  email: formatActorId(selectedItem.assignedTo),
+                  code: (chunks) => <code>{chunks}</code>,
+                })
+              : t("claim_prompt")}
           </p>
         </div>
       ) : (
@@ -417,6 +496,7 @@ function EscalationDetailPanel({
   crossSurfaceIdentity,
   currentTime,
   formatActorId,
+  onClaimed,
   onResolved,
 }: {
   selectedItem: GatewayEscalationQueueItem;
@@ -425,6 +505,7 @@ function EscalationDetailPanel({
   crossSurfaceIdentity: boolean;
   currentTime: number;
   formatActorId: (id: string) => string;
+  onClaimed: () => void;
   onResolved: () => void;
 }) {
   const t = useTranslations("escalations.detail");
@@ -449,7 +530,12 @@ function EscalationDetailPanel({
 
       <hr style={{ border: 0, borderTop: "1px solid var(--line)", margin: 0 }} />
 
-      <EscalationAssignmentSection selectedItem={selectedItem} hasManagedHitl={hasManagedHitl} />
+      <EscalationAssignmentSection
+        selectedItem={selectedItem}
+        hasManagedHitl={hasManagedHitl}
+        formatActorId={formatActorId}
+        onClaimed={onClaimed}
+      />
 
       <hr style={{ border: 0, borderTop: "1px solid var(--line)", margin: 0 }} />
 
@@ -463,6 +549,7 @@ function EscalationDetailPanel({
 
 export function EscalationQueueView({
   initialQueue,
+  initialLoadFailed = false,
   actors,
   hasManagedHitl,
   crossSurfaceIdentity,
@@ -476,19 +563,27 @@ export function EscalationQueueView({
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [currentTime, setCurrentTime] = useState(Date.now());
   const [selectedId, setSelectedId] = useState<string | null>(initialQueue[0]?.id || null);
+  const [loadFailed, setLoadFailed] = useState(initialLoadFailed);
 
+  // A failed refresh must not read as "nothing to action". The route answers
+  // 503 when the queue read fails, so a non-ok response is tracked and shown
+  // rather than leaving the last good queue on screen as if it were current.
   const fetchQueue = useCallback(async () => {
     setIsRefreshing(true);
     try {
-      const response = await fetch("/api/gateway/escalations");
+      const response = await fetch("/api/gateway/escalations", { cache: "no-store" });
       if (response.ok) {
         const data = await response.json();
         if (data && Array.isArray(data.queue)) {
           setQueue(data.queue);
+          setLoadFailed(false);
         }
+      } else {
+        setLoadFailed(true);
       }
     } catch (err) {
       console.error("Failed to fetch escalations queue:", err);
+      setLoadFailed(true);
     } finally {
       setIsRefreshing(false);
       setLastRefreshedAt(Date.now());
@@ -541,6 +636,13 @@ export function EscalationQueueView({
           </h1>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          {/* With a queue on screen, a failed refresh means the list is stale
+              rather than empty — say so instead of silently keeping it. */}
+          {loadFailed && queue.length > 0 && (
+            <span className="pill pillBlock" style={{ fontSize: 12 }}>
+              {t("load_error.stale")}
+            </span>
+          )}
           <span className="meta" style={{ fontSize: 12 }}>
             {refreshedAgoLabel(currentTime, lastRefreshedAt)}
           </span>
@@ -558,7 +660,15 @@ export function EscalationQueueView({
 
       {onboardingBanner}
 
-      {queue.length === 0 ? (
+      {queue.length === 0 && loadFailed ? (
+        <section className="panel">
+          <div className="emptyState">
+            <AlertTriangle size={20} className="sectionIcon" />
+            <h3>{t("load_error.title")}</h3>
+            <p className="meta">{t("load_error.description")}</p>
+          </div>
+        </section>
+      ) : queue.length === 0 ? (
         <section className="panel">
           <div className="emptyState">
             <CheckCircle2 size={20} className="sectionIcon" />
@@ -607,6 +717,7 @@ export function EscalationQueueView({
               crossSurfaceIdentity={crossSurfaceIdentity}
               currentTime={currentTime}
               formatActorId={formatActorId}
+              onClaimed={fetchQueue}
               onResolved={() => {
                 setQueue((prev) => prev.filter((q) => q.id !== selectedItem.id));
                 setLastRefreshedAt(Date.now());

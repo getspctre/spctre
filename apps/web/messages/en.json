@@ -1262,6 +1262,11 @@
       "title": "Queue is clear",
       "description": "No open escalations. Agents submit decisions here when a policy rule requires human sign-off before a tool call proceeds — use <post>POST /api/escalations</post> with a <decision>decisionId</decision> and <notes>handoffNotes</notes> to route one for review."
     },
+    "load_error": {
+      "title": "Queue could not be loaded",
+      "description": "The escalation queue failed to load, so this is not a confirmation that there is nothing to review. Retry the refresh; if it keeps failing, check the control plane and database health before assuming the queue is clear.",
+      "stale": "Refresh failed — list may be stale"
+    },
     "queue": {
       "eyebrow": "Queue",
       "title": "Open Escalations",
@@ -1286,11 +1291,14 @@
       "handoff_notes": "Handoff Notes",
       "no_handoff_notes": "No handoff notes provided.",
       "tool_intent": "Tool Intent",
-      "plan_summary": "Plan Summary"
+      "plan_summary": "Plan Summary",
+      "review_context": "Review context"
     },
     "triage": {
       "title": "Queue Management & Triage",
-      "upgrade_description": "Upgrade to manage service SLA tracking, automated routing, and manual agent overrides."
+      "upgrade_description": "Upgrade to manage service SLA tracking, automated routing, and manual agent overrides.",
+      "claimed_by": "Claimed by <code>{email}</code>.",
+      "claim_prompt": "Claim this escalation to take responsibility for its review. Priority and SLA are shown in the queue."
     }
   },
   "compliance": {
