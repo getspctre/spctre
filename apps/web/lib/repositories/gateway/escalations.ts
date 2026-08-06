@@ -468,7 +468,9 @@ export interface EscalationStatus {
   connector?: string;
   action?: string;
   /** Internal persisted decision arguments; only exposed as approvedToolParameters
-   * after the escalation is resolved to PROCEED. */
+   * after the escalation is resolved to PROCEED. Already redacted and bounded by
+   * GatewayDecisionSchema at ingest, so it confirms what was reviewed rather than
+   * carrying a replayable payload. */
   toolParameters?: Record<string, unknown>;
   approvedToolParameters?: Record<string, unknown>;
   credentialGrant?: {

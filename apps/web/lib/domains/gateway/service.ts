@@ -207,16 +207,17 @@ async function getGatewayEscalationStatusInTenant(params: {
 
   if (!status) return { status: null };
 
-  // The persisted parameters are the agent's replay source for the approved
-  // action, so nothing below the API boundary redacts them further; reviewer
-  // surfaces redact in their own projection instead. Note the snapshot is only
-  // as faithful as what GatewayDecisionSchema admitted: its toolParameters
-  // transform already redacts sensitive keys and bounds depth/size, so a
-  // payload that exceeded those limits cannot be replayed in full.
+  // approvedToolParameters is a *confirmation of what was reviewed*, not an
+  // execution source. GatewayDecisionSchema redacts sensitive keys and bounds
+  // depth/size before persistence, so this snapshot is lossy by design and an
+  // agent cannot replay from it: it executes from its own local parameters and
+  // uses this only to confirm the reviewed arguments match. Nothing below the
+  // API boundary redacts further — reviewer surfaces redact in their own
+  // projection — because a second pass would only widen the gap between what
+  // the human saw and what this reports.
   //
-  // They become a cross-machine handoff only after a human has resolved this
-  // exact escalation to PROCEED. Never expose them for pending, expired, or
-  // denied escalation states.
+  // Released only after a human has resolved this exact escalation to PROCEED.
+  // Never expose it for pending, expired, or denied escalation states.
   const { toolParameters, ...publicStatus } = status;
   if (
     publicStatus.status === "RESOLVED" &&

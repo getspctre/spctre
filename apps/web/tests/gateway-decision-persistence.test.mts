@@ -73,13 +73,15 @@ describe("gateway decision persistence", () => {
   });
 
   // Scope: this pins the *service* layer only — it must not add a redaction
-  // pass of its own, because gateway_decision.tool_parameters is the source for
-  // approvedToolParameters and every pass costs the agent more of what it needs
-  // to replay. It does NOT establish end-to-end fidelity: the input reaching
-  // this function has already been through GatewayDecisionSchema, whose
-  // toolParameters transform redacts and bounds at the API boundary (mirrored
-  // in the Go worker's sanitizeGatewayDecisionRequest). Whatever the contract
-  // boundary discards is gone before persistence and cannot be recovered here.
+  // pass of its own, because gateway_decision.tool_parameters is what
+  // approvedToolParameters reports back, and each extra pass widens the gap
+  // between what the reviewer saw and what the agent can confirm against.
+  // It does NOT establish end-to-end fidelity, and is not meant to: the input
+  // reaching this function has already been through GatewayDecisionSchema,
+  // whose toolParameters transform redacts and bounds at the API boundary
+  // (mirrored in the Go worker's sanitizeGatewayDecisionRequest). That loss is
+  // by design — approvedToolParameters is a confirmation of the reviewed
+  // arguments, not a replay payload.
   it("does not redact tool parameters again on the write path", async () => {
     const toolParameters = {
       apiKey: "sk-live-not-really-a-secret",
