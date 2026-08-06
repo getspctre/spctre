@@ -62,31 +62,39 @@ export async function readPolicyContentArtifactForEvidenceToken(params: {
   workspaceId: string;
   tokenId: string;
   connector: string;
-  revisionIds: string[];
+  grants: Array<{ revisionId: string; notBefore: string; notAfter?: string }>;
   contentHash: string;
 }): Promise<{ bytes: Uint8Array; mediaType: string } | null> {
   if (!sql) return null;
-  const key = encryptionKey();
-  const rows = await sql<{ media_type: string; bytes: Buffer }[]>`
-    SELECT artifact.media_type,
-           pgp_sym_decrypt_bytea(artifact.content_encrypted, ${key}) AS bytes
-    FROM policy_content_artifact artifact
-    WHERE artifact.content_hash = ${params.contentHash}
-      AND EXISTS (
-        SELECT 1
-        FROM runtime_evidence_policy_content_ref ref
-        JOIN runtime_evidence_event evidence
-          ON evidence.tenant_id = ref.tenant_id
-          AND evidence.workspace_id = ref.workspace_id
-          AND evidence.decision_id = ref.decision_id
-        WHERE ref.tenant_id = ${params.tenantId}
-          AND ref.workspace_id = ${params.workspaceId}
-          AND ref.content_hash = artifact.content_hash
-          AND ref.revision_id = ANY(${params.revisionIds}::uuid[])
-          AND evidence.connector = ${params.connector}
-      )
-    LIMIT 1
+  const references = await sql<{ revision_id: string; created_at: Date }[]>`
+    SELECT ref.revision_id, evidence.created_at
+    FROM runtime_evidence_policy_content_ref ref
+    JOIN runtime_evidence_event evidence
+      ON evidence.tenant_id = ref.tenant_id
+      AND evidence.workspace_id = ref.workspace_id
+      AND evidence.decision_id = ref.decision_id
+    WHERE ref.tenant_id = ${params.tenantId}
+      AND ref.workspace_id = ${params.workspaceId}
+      AND ref.content_hash = ${params.contentHash}
+      AND evidence.connector = ${params.connector}
   `;
+  const authorized = references.some((reference) =>
+    params.grants.some((grant) => {
+      const at = reference.created_at.getTime();
+      return (
+        grant.revisionId === reference.revision_id &&
+        at >= new Date(grant.notBefore).getTime() &&
+        (!grant.notAfter || at < new Date(grant.notAfter).getTime())
+      );
+    }),
+  );
+  const key = encryptionKey();
+  const rows = authorized
+    ? await sql<{ media_type: string; bytes: Buffer }[]>`
+        SELECT media_type, pgp_sym_decrypt_bytea(content_encrypted, ${key}) AS bytes
+        FROM policy_content_artifact WHERE content_hash = ${params.contentHash} LIMIT 1
+      `
+    : [];
   const row = rows[0];
   await sql`
     INSERT INTO policy_content_artifact_access_audit (tenant_id, workspace_id, content_hash, token_id, action)
