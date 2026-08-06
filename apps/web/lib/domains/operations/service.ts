@@ -38,6 +38,7 @@ export async function listOperationsLedgerKeyset(params: {
   tenantId: string;
   workspaceId: string | null;
   eventType?: OperationsLogEventType;
+  entryId?: string;
   limit: number;
   cursor?: string;
 }): Promise<KeysetPage<OperationsLogEntry>> {
@@ -45,6 +46,7 @@ export async function listOperationsLedgerKeyset(params: {
   const rows = await runWithTenantContext(params.tenantId, () =>
     listOperationsLogKeyset(params.tenantId, params.workspaceId ?? undefined, {
       eventType: params.eventType,
+      entryId: params.entryId,
       limit: params.limit,
       cursor: decoded,
     }),

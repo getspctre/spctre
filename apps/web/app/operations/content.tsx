@@ -161,6 +161,13 @@ function chainHealthDetail(
   return "Chain verification failed";
 }
 
+function isUuid(value: string | undefined): value is string {
+  return Boolean(
+    value &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value),
+  );
+}
+
 function OperationsEventRow({
   entry,
   appViewMode,
@@ -331,6 +338,7 @@ function BundleExportHistorySection({
 function OperationsHero({
   eventType,
   cursorUrl,
+  inspectFailedEntryHref,
   loadedCount,
   eventTypeCount,
   actorCount,
@@ -339,7 +347,8 @@ function OperationsHero({
   t,
 }: {
   eventType: string | undefined;
-  cursorUrl: (cursor: string | null, et?: string) => string;
+  cursorUrl: (cursor: string | null, et?: string, entryId?: string | null) => string;
+  inspectFailedEntryHref: string | null;
   loadedCount: number;
   eventTypeCount: number;
   actorCount: number;
@@ -383,6 +392,12 @@ function OperationsHero({
             </span>
           </strong>
           <span className="meta">{chainHealthDetail(chainVerification, appViewMode)}</span>
+          <span className="meta">Tenant-wide check, including entries outside this workspace.</span>
+          {inspectFailedEntryHref ? (
+            <a className="button buttonSmall" href={inspectFailedEntryHref}>
+              Inspect failed entry
+            </a>
+          ) : null}
         </div>
       </div>
     </section>
@@ -395,7 +410,7 @@ function OperationsFilters({
   t,
 }: {
   eventType: string | undefined;
-  cursorUrl: (cursor: string | null, et?: string) => string;
+  cursorUrl: (cursor: string | null, et?: string, entryId?: string | null) => string;
   t: OperationsTranslations;
 }) {
   return (
@@ -437,6 +452,7 @@ function OperationsFilters({
 
 function OperationsEventsSection({
   eventType,
+  entryId,
   cursorUrl,
   entries,
   appViewMode,
@@ -448,7 +464,8 @@ function OperationsEventsSection({
   t,
 }: {
   eventType: string | undefined;
-  cursorUrl: (cursor: string | null, et?: string) => string;
+  entryId: string | undefined;
+  cursorUrl: (cursor: string | null, et?: string, entryId?: string | null) => string;
   entries: OperationsLogEntries;
   appViewMode: Awaited<ReturnType<typeof getAppViewMode>>;
   formatActorId: (id: string) => string;
@@ -465,6 +482,12 @@ function OperationsEventsSection({
           <p className="eyebrow">{t("events.eyebrow")}</p>
           <h2>{t("events.title")}</h2>
           <p className="meta">{t("events.description")}</p>
+          {entryId ? (
+            <p className="meta">
+              Viewing ledger entry <code>{entryId}</code>.{" "}
+              <a href={cursorUrl(null, eventType, null)}>Clear entry filter</a>
+            </p>
+          ) : null}
         </div>
       </div>
 
@@ -474,9 +497,13 @@ function OperationsEventsSection({
         <div className="emptyState">
           <ScrollText size={32} />
           <div>
-            <h3>{t("events.empty.title")}</h3>
-            <p>{t("events.empty.description")}</p>
-            <p className="meta operationsEmptyHint">{t("events.empty.hint")}</p>
+            <h3>{entryId ? "Entry is not visible in this workspace" : t("events.empty.title")}</h3>
+            <p>
+              {entryId
+                ? "Chain health checks the tenant ledger. This failed entry belongs to another workspace or is not available in your current workspace scope."
+                : t("events.empty.description")}
+            </p>
+            {!entryId ? <p className="meta operationsEmptyHint">{t("events.empty.hint")}</p> : null}
           </div>
         </div>
       ) : (
@@ -536,6 +563,7 @@ export async function OperationsPageContent({
   });
 
   const eventType = (searchParams?.eventType as OperationsLogEventType | undefined) || undefined;
+  const entryId = isUuid(searchParams?.entryId) ? searchParams?.entryId : undefined;
   const cursor = searchParams?.cursor || undefined;
   const limit = 50;
 
@@ -553,6 +581,7 @@ export async function OperationsPageContent({
         tenantId: workspaceContext.tenantId,
         workspaceId: workspaceContext.workspaceId,
         eventType,
+        entryId,
         limit,
         cursor,
       }),
@@ -588,10 +617,11 @@ export async function OperationsPageContent({
 
   // Keyset pagination URL: preserves the event-type filter and swaps the opaque
   // cursor (null = first page). See database-optimizations-audit finding 7.
-  function cursorUrl(targetCursor: string | null, et?: string) {
+  function cursorUrl(targetCursor: string | null, et?: string, targetEntryId = entryId ?? null) {
     const params = new URLSearchParams();
     if (targetCursor) params.set("cursor", targetCursor);
     if (et) params.set("eventType", et);
+    if (targetEntryId) params.set("entryId", targetEntryId);
     const qs = params.toString();
     return `${operationsPath}${qs ? `?${qs}` : ""}`;
   }
@@ -615,6 +645,11 @@ export async function OperationsPageContent({
         eventTypeCount={eventTypeCount}
         actorCount={actorCount}
         chainVerification={chainVerification}
+        inspectFailedEntryHref={
+          chainVerification?.verified || !chainVerification?.brokenEntryId
+            ? null
+            : cursorUrl(null, undefined, chainVerification.brokenEntryId)
+        }
         appViewMode={appViewMode}
         t={t}
       />
@@ -630,6 +665,7 @@ export async function OperationsPageContent({
 
       <OperationsEventsSection
         eventType={eventType}
+        entryId={entryId}
         cursorUrl={cursorUrl}
         entries={entries}
         appViewMode={appViewMode}

@@ -116,4 +116,12 @@ describe("listOperationsLogKeyset applies the cursor predicate", () => {
     expect(params).toContain("POLICY_PUBLISHED");
     expect(params).toContain(CURSOR_TS);
   });
+
+  it("filters to one requested ledger entry within the active workspace scope", async () => {
+    await listOperationsLogKeyset(TENANT, WORKSPACE, { limit: 50, entryId: CURSOR_ID });
+    const { text, params } = composed();
+    expect(text).toContain("id =");
+    expect(params).toContain(CURSOR_ID);
+    expect(params).toContain(WORKSPACE);
+  });
 });
