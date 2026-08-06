@@ -3192,6 +3192,64 @@
         }
       }
     },
+    "/bundle/latest/custody": {
+      "post": {
+        "operationId": "retainLatestPublishedBundle",
+        "summary": "Retain exact bytes of the latest published policy bundle",
+        "description": "Materializes the exact raw bundle bytes under their SHA-256 content hash and links them atomically to the immutable policy publication event. This is distinct from the semantic artifact hash and is safe to call repeatedly.",
+        "x-spctre-plan": "oss",
+        "tags": [
+          "Bundle"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Published bundle bytes retained and linked to their publication.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "contentHash",
+                    "publishId",
+                    "retained",
+                    "meta"
+                  ],
+                  "properties": {
+                    "contentHash": {
+                      "type": "string",
+                      "pattern": "^sha256:[0-9a-f]{64}$"
+                    },
+                    "publishId": {
+                      "type": "string"
+                    },
+                    "retained": {
+                      "type": "boolean"
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/ApiMeta"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceUnavailable"
+          }
+        }
+      }
+    },
     "/compliance/export": {
       "get": {
         "operationId": "exportCompliance",
