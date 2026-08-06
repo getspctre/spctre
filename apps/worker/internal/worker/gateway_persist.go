@@ -43,12 +43,14 @@ func (s *Server) persistGatewayDecision(ctx context.Context, record GatewayDecis
 			tenant_id, workspace_id, decision_id, revision_id, branch_id,
 			artifact_hash, outcome, reason, consequence, customer_tier,
 			confidence, amount_usd, data_sensitivity, trust_score, context_budget,
-			risk_level, evaluated_by, agent_id, session_id, tool_intent, plan_summary, tool_parameters, safeguard_telemetry
+			risk_level, evaluated_by, agent_id, session_id, tool_intent, plan_summary, tool_parameters, safeguard_telemetry,
+			connector, action
 		) VALUES (
 			$1, $2, $3, $4, $5,
 			$6, $7, $8, $9, $10,
 			$11, $12, $13, $14, $15,
-			$16, $17, $18, $19, $20, $21, $22::jsonb, $23::jsonb
+			$16, $17, $18, $19, $20, $21, $22::jsonb, $23::jsonb,
+			$24, $25
 		)
 		ON CONFLICT (tenant_id, decision_id, artifact_hash)
 		DO UPDATE SET
@@ -69,13 +71,16 @@ func (s *Server) persistGatewayDecision(ctx context.Context, record GatewayDecis
 			plan_summary = EXCLUDED.plan_summary,
 			tool_parameters = EXCLUDED.tool_parameters,
 			safeguard_telemetry = EXCLUDED.safeguard_telemetry,
+			connector = EXCLUDED.connector,
+			action = EXCLUDED.action,
 			evaluated_at = now()
 		RETURNING id
 	`, auth.TenantID, auth.WorkspaceID, record.DecisionID,
 		nullableString(hasContext, firstContext.RevisionID), nullableString(hasContext, firstContext.BranchID),
 		record.ArtifactHash, string(decision.Outcome), decision.Reason, record.Consequence, record.CustomerTier,
 		record.Confidence, record.AmountUsd, record.DataSensitivity, record.TrustScore, record.ContextBudget,
-		string(decision.RiskLevel), auth.PrincipalID, record.AgentID, record.SessionID, record.ToolIntent, record.PlanSummary, toolParamsJSON, telemetryJSON).Scan(&gatewayDecisionID)
+		string(decision.RiskLevel), auth.PrincipalID, record.AgentID, record.SessionID, record.ToolIntent, record.PlanSummary, toolParamsJSON, telemetryJSON,
+		record.Connector, record.Action).Scan(&gatewayDecisionID)
 	if err != nil {
 		return "", err
 	}
