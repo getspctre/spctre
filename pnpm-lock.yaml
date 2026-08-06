@@ -14,8 +14,9 @@ overrides:
   '@opentelemetry/sdk-node': 0.220.0
   '@opentelemetry/auto-instrumentations-node': 0.78.0
   '@opentelemetry/propagator-jaeger': 2.9.0
-  hono: 4.12.27
+  hono: 4.12.34
   '@hono/node-server': 2.0.12
+  ip-address: 10.3.1
   js-yaml@^4.0.0: 4.3.0
   js-yaml@<3.15.0: 3.15.0
   postcss: 8.5.23
@@ -130,8 +131,8 @@ importers:
         specifier: ^19.2.7
         version: 19.2.7(react@19.2.7)
       undici:
-        specifier: ^6.21.0
-        version: 6.27.0
+        specifier: ^6.28.0
+        version: 6.28.0
       zod:
         specifier: ^4.4.3
         version: 4.4.3
@@ -252,7 +253,7 @@ importers:
         version: 2.0.0
       '@modelcontextprotocol/node':
         specifier: ^2.0.0
-        version: 2.0.0(@modelcontextprotocol/server@2.0.0)(hono@4.12.27)
+        version: 2.0.0(@modelcontextprotocol/server@2.0.0)(hono@4.12.34)
       '@modelcontextprotocol/server':
         specifier: ^2.0.0
         version: 2.0.0
@@ -1329,7 +1330,7 @@ packages:
     resolution: {integrity: sha512-eWpQYr67tqJLeaSUl0Q+TquuYfUdTibpOJlUMV2FfUP7+KqCC5TufnwnlXL6mobZBJbGAYRd7ZvEBDCbLInjhg==}
     engines: {node: '>=20'}
     peerDependencies:
-      hono: 4.12.27
+      hono: 4.12.34
 
   '@humanfs/core@0.19.2':
     resolution: {integrity: sha512-UhXNm+CFMWcbChXywFwkmhqjs3PRCmcSa/hfBgLIb7oQ5HNb1wS0icWsGtSAUNgefHeI+eBrA8I1fxmbHsGdvA==}
@@ -1710,7 +1711,7 @@ packages:
     engines: {node: '>=20'}
     peerDependencies:
       '@modelcontextprotocol/server': ^2.0.0
-      hono: 4.12.27
+      hono: 4.12.34
     peerDependenciesMeta:
       hono:
         optional: true
@@ -5987,8 +5988,8 @@ packages:
     resolution: {integrity: sha512-eSmmWE5bZTK2Nou4g0AI3zZ9rswp7GRKoKXS1BLUkvPviOqs4YTN1djQIqrXy9k5gEtdLPy86JjRwsNM9tnDcA==}
     engines: {node: '>=0.10.0'}
 
-  hono@4.12.27:
-    resolution: {integrity: sha512-1yrb/+w6HWQJrUCLkJ2IF5jNIPvvFkblV5RNOYl6bV+OA6p9GLcMpHFFGTosSvHvcAUibuUukRqhlYI4z32C7Q==}
+  hono@4.12.34:
+    resolution: {integrity: sha512-GqXJqY/xJkJmuloTrnV1ZEXG3fqte+VjkUqoRNZXcrUidiUOP4fMSIHHY4tsqZBK++kVyWmt/AAfSUuy57/eSA==}
     engines: {node: '>=16.9.0'}
 
   html-entities@2.6.0:
@@ -6111,8 +6112,8 @@ packages:
   intl-messageformat@11.2.9:
     resolution: {integrity: sha512-cGzymZerpDhVXRKjKLgXKda9gI29TU2o88L7gwNMHp3WZVxA/0c5tX52udXbW9JklDApolvMXZG6Dhhdz5eirA==}
 
-  ip-address@10.2.0:
-    resolution: {integrity: sha512-/+S6j4E9AHvW9SWMSEY9Xfy66O5PWvVEJ08O0y5JGyEKQpojb0K0GKpz/v5HJ/G0vi3D2sjGK78119oXZeE0qA==}
+  ip-address@10.3.1:
+    resolution: {integrity: sha512-1e9d3kb97NHJTIJDZW9rKqW2h6+dFa50Dy0fpPSMQp2ADje5gvKsXmdiK6dwY5t76TaTt5+P5N1Y/LoToIxP6g==}
     engines: {node: '>= 12'}
 
   ipaddr.js@1.9.1:
@@ -8318,8 +8319,8 @@ packages:
   undici-types@8.3.0:
     resolution: {integrity: sha512-j375ScV60dom+YkPFIfTLcOiPxkN/buHz5GobjLhixFuANaNs3C9l4GmrWqejgXWJ7BbJcFYpTEUkS1Ge8bpZQ==}
 
-  undici@6.27.0:
-    resolution: {integrity: sha512-YmfV3YnEDzXRC5lZ2jWtWWHKGUm1zIt8AhesR1tens+HTNv+YZlN/dp6G727LOvMJ8xjP9Be7Y2Sdr96LDm+pg==}
+  undici@6.28.0:
+    resolution: {integrity: sha512-LIY910g9TI13YS95lrMFrs8Rm/u/irgHeTWoKCoteeJ04CUJ92eEfj0rVn+7VKMPBpUPiUoBKfhNyLI23EE/KA==}
     engines: {node: '>=18.17'}
 
   unified@11.0.5:
@@ -10032,9 +10033,9 @@ snapshots:
 
   '@hexagon/base64@1.1.28': {}
 
-  '@hono/node-server@2.0.12(hono@4.12.27)':
+  '@hono/node-server@2.0.12(hono@4.12.34)':
     dependencies:
-      hono: 4.12.27
+      hono: 4.12.34
 
   '@humanfs/core@0.19.2':
     dependencies:
@@ -10529,12 +10530,12 @@ snapshots:
     dependencies:
       zod: 4.4.3
 
-  '@modelcontextprotocol/node@2.0.0(@modelcontextprotocol/server@2.0.0)(hono@4.12.27)':
+  '@modelcontextprotocol/node@2.0.0(@modelcontextprotocol/server@2.0.0)(hono@4.12.34)':
     dependencies:
-      '@hono/node-server': 2.0.12(hono@4.12.27)
+      '@hono/node-server': 2.0.12(hono@4.12.34)
       '@modelcontextprotocol/server': 2.0.0
     optionalDependencies:
-      hono: 4.12.27
+      hono: 4.12.34
 
   '@modelcontextprotocol/server@2.0.0':
     dependencies:
@@ -15231,7 +15232,7 @@ snapshots:
     dependencies:
       parse-passwd: 1.0.0
 
-  hono@4.12.27: {}
+  hono@4.12.34: {}
 
   html-entities@2.6.0:
     optional: true
@@ -15375,7 +15376,7 @@ snapshots:
       '@formatjs/fast-memoize': 3.1.6
       '@formatjs/icu-messageformat-parser': 3.5.12
 
-  ip-address@10.2.0: {}
+  ip-address@10.3.1: {}
 
   ipaddr.js@1.9.1: {}
 
@@ -17929,7 +17930,7 @@ snapshots:
 
   socks@2.8.9:
     dependencies:
-      ip-address: 10.2.0
+      ip-address: 10.3.1
       smart-buffer: 4.2.0
 
   source-map-js@1.2.1: {}
@@ -18297,7 +18298,7 @@ snapshots:
 
   undici-types@8.3.0: {}
 
-  undici@6.27.0: {}
+  undici@6.28.0: {}
 
   unified@11.0.5:
     dependencies:
