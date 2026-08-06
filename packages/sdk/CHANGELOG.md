@@ -1,5 +1,14 @@
 # @spctre/sdk
 
+## 0.4.1
+
+### Patch Changes
+
+- 16e9776: Document `approvedToolParameters` as a confirmation of the reviewed decision
+  arguments rather than an execution source. The value is redacted and bounded
+  when the decision is recorded, so consumers should execute from the parameters
+  they already hold and use this field to confirm they match what was approved.
+
 ## 0.4.0
 
 ### Minor Changes
