@@ -1109,6 +1109,10 @@ export interface components {
             outcome: "PASS" | "FAIL" | "WARN";
             revisionId?: string;
             runtimeVersion?: string;
+            /** @description Verifier implementation identity. */
+            verifierId?: string;
+            /** @description Immutable verifier build or configuration digest. */
+            verifierDigest?: string;
             argumentsHash?: string;
             approverDid?: string;
             policyVersion?: string;
