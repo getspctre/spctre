@@ -340,6 +340,12 @@ export interface ServiceAccountKeyResult {
   connector?: string;
 }
 
+export interface EvidenceExportGrantInput {
+  revisionId: string;
+  notBefore?: string;
+  notAfter?: string;
+}
+
 /**
  * Issues a long-lived named API key (key_type = 'API_KEY') for CI/CD and
  * service account use. No refresh token is issued — these keys are revoked
@@ -356,11 +362,18 @@ export async function issueServiceAccountKey(params: {
   label: string;
   scopes: ServiceTokenScope[];
   connector?: string;
+  evidenceExportGrants?: EvidenceExportGrantInput[];
   expiresInDays?: number;
 }): Promise<ServiceAccountKeyResult> {
   if (!sql) throw new Error("Database not configured.");
   if (params.scopes.includes("evidence:export") && !params.connector?.trim()) {
     throw new Error("evidence:export keys require a connector binding.");
+  }
+  if (params.scopes.includes("evidence:export") && !params.evidenceExportGrants?.length) {
+    throw new Error("evidence:export keys require at least one revision grant.");
+  }
+  if (!params.scopes.includes("evidence:export") && params.evidenceExportGrants?.length) {
+    throw new Error("evidence export grants require the evidence:export scope.");
   }
 
   const rawToken = `${SERVICE_ACCOUNT_TOKEN_PREFIX}_${randomBytes(32).toString("base64url")}`;
@@ -371,18 +384,40 @@ export async function issueServiceAccountKey(params: {
     ? new Date(Date.now() + params.expiresInDays * 24 * 60 * 60 * 1000).toISOString()
     : null;
 
-  const rows = await sql<{ id: string }[]>`
-    INSERT INTO service_token (
-      tenant_id, workspace_id, principal_id, label,
-      token_hash, token_prefix, scopes, connector, expires_at, key_type, created_by
-    ) VALUES (
-      ${params.tenantId}, ${params.workspaceId}, ${params.principalId},
-      ${params.label}, ${tokenHash}, ${tokenPrefix},
-      ${params.scopes}::text[], ${params.connector ?? null}, ${expiresAt ?? null},
-      'API_KEY', ${params.createdBy}
-    )
-    RETURNING id
-  `;
+  const rows = await sql.begin(async (tx) => {
+    const validGrants = params.evidenceExportGrants ?? [];
+    if (validGrants.length) {
+      const revisionIds = validGrants.map((grant) => grant.revisionId);
+      const revisions = await tx<{ id: string }[]>`
+        SELECT id FROM policy_revision
+        WHERE tenant_id = ${params.tenantId}
+          AND workspace_id = ${params.workspaceId}
+          AND id = ANY(${revisionIds}::uuid[])
+      `;
+      if (revisions.length !== new Set(revisionIds).size) {
+        throw new Error("evidence export grants must reference revisions in this workspace.");
+      }
+    }
+    const inserted = await tx<{ id: string }[]>`
+      INSERT INTO service_token (
+        tenant_id, workspace_id, principal_id, label,
+        token_hash, token_prefix, scopes, connector, expires_at, key_type, created_by
+      ) VALUES (
+        ${params.tenantId}, ${params.workspaceId}, ${params.principalId},
+        ${params.label}, ${tokenHash}, ${tokenPrefix},
+        ${params.scopes}::text[], ${params.connector ?? null}, ${expiresAt ?? null},
+        'API_KEY', ${params.createdBy}
+      )
+      RETURNING id
+    `;
+    for (const grant of validGrants) {
+      await tx`
+        INSERT INTO service_token_evidence_export_grant (token_id, revision_id, not_before, not_after)
+        VALUES (${inserted[0].id}, ${grant.revisionId}, ${grant.notBefore ?? "-infinity"}, ${grant.notAfter ?? null})
+      `;
+    }
+    return inserted;
+  });
 
   return { rawToken, tokenId: rows[0].id, tokenPrefix, expiresAt, scopes: params.scopes };
 }
