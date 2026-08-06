@@ -6,6 +6,12 @@ vi.mock("@/lib/repositories/gateway", () => ({
   getGatewayOutcomesForDecisions: vi.fn().mockResolvedValue(new Map()),
 }));
 
+vi.mock("@/lib/domains/evidence/service", () => ({
+  getGatewayOutcomeMapForEvidence: vi.fn().mockResolvedValue(new Map()),
+  listEvidenceForExport: vi.fn().mockResolvedValue([]),
+  listEvidenceForTokenExport: vi.fn().mockResolvedValue([]),
+}));
+
 vi.mock("@/lib/service-tokens", () => ({
   authenticateServiceToken: authenticateServiceTokenSpy,
   hasBearerToken: (request: Request) =>
@@ -59,6 +65,43 @@ describe("evidence export route", () => {
       }),
     );
     expect(response.status).toBe(403);
+  });
+
+  it("exports only server-derived connector and revision grants for a bearer", async () => {
+    authenticateServiceTokenSpy.mockResolvedValue({
+      ok: true,
+      auth: {
+        ...evidenceExportAuth.auth,
+        evidenceExportGrants: [
+          ...evidenceExportAuth.auth.evidenceExportGrants,
+          {
+            revisionId: "revision-2",
+            notBefore: "2026-02-01T00:00:00.000Z",
+            notAfter: "2026-03-01T00:00:00.000Z",
+          },
+        ],
+      },
+    });
+    const response = await route.GET(
+      new Request("http://localhost:3000/api/evidence/export?format=json", {
+        headers: { authorization: "Bearer token" },
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      authorization: {
+        connector: "acquisition-scout",
+        revisionGrants: [
+          { revisionId: "revision-1", notBefore: "2026-01-01T00:00:00.000Z" },
+          {
+            revisionId: "revision-2",
+            notBefore: "2026-02-01T00:00:00.000Z",
+            notAfter: "2026-03-01T00:00:00.000Z",
+          },
+        ],
+      },
+    });
   });
 
   it("does not mint an AGT verification packet for a session either", async () => {
