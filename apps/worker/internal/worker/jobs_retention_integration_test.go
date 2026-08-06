@@ -53,14 +53,39 @@ func TestPruneOrphanedPolicyContentArtifactsRetainsEvidenceAndVerificationRefere
 	expiredHash := "sha256:" + fmt.Sprintf("%064x", 1)
 	retainedHash := "sha256:" + fmt.Sprintf("%064x", 2)
 	verifiedHash := "sha256:" + fmt.Sprintf("%064x", 3)
-	for _, hash := range []string{expiredHash, retainedHash, verifiedHash} {
+	// Uploaded just now and not yet bound to evidence: inside the grace window,
+	// so it must survive even though nothing references it yet.
+	freshHash := "sha256:" + fmt.Sprintf("%064x", 4)
+
+	// The collectable artifacts are aged past the grace window; a blob younger
+	// than that is never collected regardless of its references.
+	beyondGrace := time.Now().Add(-48 * time.Hour).UTC()
+	for _, artifact := range []struct {
+		hash      string
+		createdAt time.Time
+	}{
+		{expiredHash, beyondGrace},
+		{retainedHash, beyondGrace},
+		{verifiedHash, beyondGrace},
+		{freshHash, time.Now().UTC()},
+	} {
 		if _, err := pool.Exec(ctx, `
-			INSERT INTO policy_content_artifact (content_hash, media_type, size_bytes, content_encrypted)
-			VALUES ($1, 'application/yaml', 1, '\\x01'::bytea)
-		`, hash); err != nil {
+			INSERT INTO policy_content_artifact (content_hash, media_type, size_bytes, content_encrypted, created_at)
+			VALUES ($1, 'application/yaml', 1, '\\x01'::bytea, $2)
+		`, artifact.hash, artifact.createdAt); err != nil {
 			t.Fatalf("insert policy artifact: %v", err)
 		}
 	}
+	// policy_content_artifact is keyed by content digest alone, so these rows are
+	// not covered by the fixture's tenant cleanup and would collide with the next
+	// run. Drop references first: the artifact FK is ON DELETE RESTRICT.
+	hashes := []string{expiredHash, retainedHash, verifiedHash, freshHash}
+	t.Cleanup(func() {
+		cleanup := context.Background()
+		_, _ = pool.Exec(cleanup, `DELETE FROM runtime_evidence_policy_content_ref WHERE content_hash = ANY($1)`, hashes)
+		_, _ = pool.Exec(cleanup, `DELETE FROM agt_verification_result WHERE policy_content_hash = ANY($1)`, hashes)
+		_, _ = pool.Exec(cleanup, `DELETE FROM policy_content_artifact WHERE content_hash = ANY($1)`, hashes)
+	})
 	for _, item := range []struct{ decisionID, hash string }{
 		{expired.decisionID, expiredHash},
 		{retained.decisionID, retainedHash},
@@ -96,6 +121,7 @@ func TestPruneOrphanedPolicyContentArtifactsRetainsEvidenceAndVerificationRefere
 		{expiredHash, false},
 		{retainedHash, true},
 		{verifiedHash, true},
+		{freshHash, true},
 	} {
 		var exists bool
 		if err := pool.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM policy_content_artifact WHERE content_hash = $1)`, assertion.hash).Scan(&exists); err != nil {

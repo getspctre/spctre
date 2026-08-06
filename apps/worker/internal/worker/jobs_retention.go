@@ -326,6 +326,15 @@ func pruneEvidenceKeysBatched(ctx context.Context, db *pgxpool.Pool, tenantID st
 	return nil
 }
 
+// policyContentArtifactGraceInterval keeps a freshly uploaded blob collectable
+// only after the window in which its reference is expected to arrive. Retaining
+// an artifact and binding it to evidence are separate requests, so an artifact
+// is legitimately unreferenced between the two; collecting inside that window
+// deletes a blob that is about to be referenced. ON DELETE RESTRICT protects an
+// artifact only once its reference exists, so the grace period is what protects
+// it before then.
+const policyContentArtifactGraceInterval = "24 hours"
+
 // pruneOrphanedPolicyContentArtifacts clears content references only after
 // their runtime evidence has been deleted, then removes a content blob only
 // when neither retained evidence nor a retained AGT verification result can
@@ -333,10 +342,20 @@ func pruneEvidenceKeysBatched(ctx context.Context, db *pgxpool.Pool, tenantID st
 // skips this optional cleanup during a rolling migration instead of failing the
 // entire retention job.
 func pruneOrphanedPolicyContentArtifacts(ctx context.Context, db *pgxpool.Pool, logger *slog.Logger) error {
+	// The artifact sweep also reads agt_verification_result.policy_content_hash,
+	// which lands in a later migration than the two tables above. Checking only
+	// the tables lets a database between those migrations pass this guard and
+	// then fail the whole retention job on the missing column.
 	var installed bool
 	if err := db.QueryRow(ctx, `
 		SELECT to_regclass('runtime_evidence_policy_content_ref') IS NOT NULL
 		   AND to_regclass('policy_content_artifact') IS NOT NULL
+		   AND EXISTS (
+			SELECT 1 FROM information_schema.columns
+			WHERE table_schema = 'public'
+			  AND table_name = 'agt_verification_result'
+			  AND column_name = 'policy_content_hash'
+		   )
 	`).Scan(&installed); err != nil {
 		return fmt.Errorf("checking policy content artifact tables: %w", err)
 	}
@@ -361,7 +380,8 @@ func pruneOrphanedPolicyContentArtifacts(ctx context.Context, db *pgxpool.Pool, 
 
 	artifactTag, err := db.Exec(ctx, `
 		DELETE FROM policy_content_artifact artifact
-		WHERE NOT EXISTS (
+		WHERE artifact.created_at < now() - $1::interval
+		AND NOT EXISTS (
 			SELECT 1 FROM runtime_evidence_policy_content_ref ref
 			WHERE ref.content_hash = artifact.content_hash
 		)
@@ -369,7 +389,7 @@ func pruneOrphanedPolicyContentArtifacts(ctx context.Context, db *pgxpool.Pool, 
 			SELECT 1 FROM agt_verification_result verification
 			WHERE verification.policy_content_hash = artifact.content_hash
 		)
-	`)
+	`, policyContentArtifactGraceInterval)
 	if err != nil {
 		return fmt.Errorf("collecting unreferenced policy content artifacts: %w", err)
 	}
