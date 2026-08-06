@@ -3,6 +3,7 @@ package worker
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"testing"
 	"time"
 )
@@ -40,6 +41,70 @@ func TestBatchedPruneEvidenceDeletesMatchingRowsAndKeys(t *testing.T) {
 	target.assertEvidenceKeyPresent(t, targetRecent.decisionID)
 	other.assertEvidencePresent(t, otherExpired.decisionID)
 	other.assertEvidenceKeyPresent(t, otherExpired.decisionID)
+}
+
+func TestPruneOrphanedPolicyContentArtifactsRetainsEvidenceAndVerificationReferences(t *testing.T) {
+	pool := testGatewayDB(t)
+	ctx := context.Background()
+	fixture := newGatewayFixture(t, pool)
+
+	expired := fixture.insertRuntimeEvidence(t, "staging", time.Now().Add(-72*time.Hour).UTC())
+	retained := fixture.insertRuntimeEvidence(t, "staging", time.Now().Add(-time.Hour).UTC())
+	expiredHash := "sha256:" + fmt.Sprintf("%064x", 1)
+	retainedHash := "sha256:" + fmt.Sprintf("%064x", 2)
+	verifiedHash := "sha256:" + fmt.Sprintf("%064x", 3)
+	for _, hash := range []string{expiredHash, retainedHash, verifiedHash} {
+		if _, err := pool.Exec(ctx, `
+			INSERT INTO policy_content_artifact (content_hash, media_type, size_bytes, content_encrypted)
+			VALUES ($1, 'application/yaml', 1, '\\x01'::bytea)
+		`, hash); err != nil {
+			t.Fatalf("insert policy artifact: %v", err)
+		}
+	}
+	for _, item := range []struct{ decisionID, hash string }{
+		{expired.decisionID, expiredHash},
+		{retained.decisionID, retainedHash},
+	} {
+		if _, err := pool.Exec(ctx, `
+			INSERT INTO runtime_evidence_policy_content_ref
+				(tenant_id, workspace_id, decision_id, content_hash)
+			VALUES ($1, $2, $3, $4)
+		`, fixture.tenantID, fixture.workspaceID, item.decisionID, item.hash); err != nil {
+			t.Fatalf("bind policy artifact: %v", err)
+		}
+	}
+	if _, err := pool.Exec(ctx, `
+		INSERT INTO agt_verification_result
+			(tenant_id, workspace_id, artifact_hash, policy_content_hash, verification_type, outcome, summary, run_by)
+		VALUES ($1, $2, 'sha256:semantic', $3, 'AGT_VERIFY_EVIDENCE', 'PASS', '{}'::jsonb, 'retention-test')
+	`, fixture.tenantID, fixture.workspaceID, verifiedHash); err != nil {
+		t.Fatalf("insert verification reference: %v", err)
+	}
+
+	if _, err := batchedPruneEvidence(ctx, pool,
+		`tenant_id = $1 AND environment = 'staging' AND created_at < now() - interval '2 days'`, fixture.tenantID); err != nil {
+		t.Fatal(err)
+	}
+	if err := pruneOrphanedPolicyContentArtifacts(ctx, pool, slog.Default()); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, assertion := range []struct {
+		hash string
+		want bool
+	}{
+		{expiredHash, false},
+		{retainedHash, true},
+		{verifiedHash, true},
+	} {
+		var exists bool
+		if err := pool.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM policy_content_artifact WHERE content_hash = $1)`, assertion.hash).Scan(&exists); err != nil {
+			t.Fatalf("check artifact %s: %v", assertion.hash, err)
+		}
+		if exists != assertion.want {
+			t.Errorf("artifact %s exists = %t, want %t", assertion.hash, exists, assertion.want)
+		}
+	}
 }
 
 type runtimeEvidenceSeed struct {
