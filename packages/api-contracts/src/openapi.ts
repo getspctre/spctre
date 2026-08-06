@@ -1235,6 +1235,17 @@ export const SPCTRE_OPENAPI_SPEC = {
       },
     },
 
+    "/gateway/escalations/agt": {
+      post: {
+        operationId: "registerAgtEscalationRequest",
+        summary: "Register an ephemeral AGT request with an open escalation",
+        "x-spctre-plan": "oss",
+        tags: ["Gateway"], security: [{ bearerAuth: [] }],
+        requestBody: { required: true, content: { "application/json": { schema: { type: "object", required: ["decisionId", "agtRequestId"], properties: { decisionId: { type: "string" }, agtRequestId: { type: "string" } } } } } },
+        responses: { "200": { description: "Request correlation registered." }, "400": { $ref: "#/components/responses/BadRequest" }, "401": { $ref: "#/components/responses/Unauthorized" }, "409": { description: "No open escalation or conflicting handle." } },
+      },
+    },
+
     "/evidence/git-checkpoints": {
       post: {
         operationId: "ingestGitCheckpoint",

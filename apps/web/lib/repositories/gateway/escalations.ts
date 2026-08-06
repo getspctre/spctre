@@ -564,6 +564,27 @@ export async function getEscalationStatusByDecisionId(
   };
 }
 
+/** Bind AGT's ephemeral handle to the pre-existing authoritative escalation.
+ * It never creates or reopens a queue row. */
+export async function registerAgtEscalationRequest(params: {
+  tenantId: string;
+  workspaceId: string;
+  decisionId: string;
+  agtRequestId: string;
+}): Promise<boolean> {
+  if (!sql) return false;
+  const rows = await sql`
+    UPDATE gateway_escalation_queue
+    SET agt_request_id = COALESCE(agt_request_id, ${params.agtRequestId}), updated_at = now()
+    WHERE tenant_id = ${params.tenantId} AND workspace_id = ${params.workspaceId}
+      AND decision_id = ${params.decisionId}
+      AND status IN ('PENDING', 'IN_REVIEW')
+      AND (agt_request_id IS NULL OR agt_request_id = ${params.agtRequestId})
+    RETURNING id
+  `;
+  return rows.length > 0;
+}
+
 export async function updateEscalationOutcome(params: {
   gatewayDecisionId: string;
   tenantId: string;
