@@ -219,7 +219,14 @@ function mapVerificationRow(row: VerificationRow): AgtVerificationResult {
 export async function getLatestVerificationStatus(
   workspaceId: string | null,
   tenantId: string,
-  options: { revisionId?: string; artifactHash?: string } = {},
+  options: {
+    revisionId?: string;
+    artifactHash?: string;
+    /** The verifier closure expected for this check; a result from another lock is stale. */
+    verifierLockDigest?: string;
+    /** Exact policy bytes expected for this check; semantic artifactHash is not enough. */
+    policyContentHash?: string;
+  } = {},
 ): Promise<AgtVerificationSummary> {
   const results = await listVerificationResults(workspaceId, tenantId, {
     revisionId: options.revisionId,
@@ -232,6 +239,7 @@ export async function getLatestVerificationStatus(
       hasResults: false,
       overallOutcome: "UNKNOWN",
       isStale: false,
+      staleReasons: [],
       staleThresholdDays: VERIFICATION_STALE_DAYS,
       latestRunAt: null,
       latestAgtVersion: undefined,
@@ -253,7 +261,15 @@ export async function getLatestVerificationStatus(
 
   const latest = results[0];
   const ageMs = Date.now() - new Date(latest.createdAt).getTime();
-  const isStale = ageMs > VERIFICATION_STALE_DAYS * 24 * 60 * 60 * 1000;
+  const staleReasons: Array<"AGE" | "VERIFIER_LOCK" | "POLICY_CONTENT"> = [];
+  if (ageMs > VERIFICATION_STALE_DAYS * 24 * 60 * 60 * 1000) staleReasons.push("AGE");
+  if (options.verifierLockDigest && latest.verifierLockDigest !== options.verifierLockDigest) {
+    staleReasons.push("VERIFIER_LOCK");
+  }
+  if (options.policyContentHash && latest.policyContentHash !== options.policyContentHash) {
+    staleReasons.push("POLICY_CONTENT");
+  }
+  const isStale = staleReasons.length > 0;
 
   const outcomes = Object.values(resultsByType).map((v) => v!.outcome);
   const overallOutcome: AgtVerificationOutcome = outcomes.includes("FAIL")
@@ -266,6 +282,7 @@ export async function getLatestVerificationStatus(
     hasResults: true,
     overallOutcome,
     isStale,
+    staleReasons,
     staleThresholdDays: VERIFICATION_STALE_DAYS,
     latestRunAt: latest.createdAt,
     latestAgtVersion: latest.agtVersion,

@@ -52,6 +52,8 @@ export interface AgtVerificationSummary {
   hasResults: boolean;
   overallOutcome: "PASS" | "FAIL" | "WARN" | "UNKNOWN";
   isStale: boolean;
+  /** Why the most recent result cannot be used for the requested provenance. */
+  staleReasons?: Array<"AGE" | "VERIFIER_LOCK" | "POLICY_CONTENT">;
   staleThresholdDays: number;
   latestRunAt: string | null;
   latestAgtVersion?: string;

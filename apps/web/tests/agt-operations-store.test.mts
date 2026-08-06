@@ -824,6 +824,33 @@ describe("getLatestVerificationStatus", () => {
       compatibilityCheckOutcome: "PASS",
     });
   });
+
+  it("marks an otherwise fresh result stale when verifier or byte-exact policy provenance drifts", async () => {
+    store.verificationResults.push({
+      id: "vr-provenance-1",
+      revision_id: "rev-provenance",
+      artifact_hash: "sha256:semantic-policy",
+      verifier_lock_digest: "sha256:old-lock",
+      policy_content_hash: "sha256:" + "a".repeat(64),
+      verification_type: "AGT_VERIFY_EVIDENCE",
+      outcome: "PASS",
+      summary: {},
+      run_by: "svc-ci",
+      runtime_version: "4.1.0",
+      tenant_id: "demo-tenant",
+      workspace_id: "demo-ws",
+      created_at: new Date(),
+    });
+
+    const status = await getLatestVerificationStatus("demo-ws", "demo-tenant", {
+      revisionId: "rev-provenance",
+      artifactHash: "sha256:semantic-policy",
+      verifierLockDigest: "sha256:new-lock",
+      policyContentHash: "sha256:" + "b".repeat(64),
+    });
+    expect(status).toMatchObject({ isStale: true });
+    expect(status.staleReasons).toEqual(expect.arrayContaining(["VERIFIER_LOCK", "POLICY_CONTENT"]));
+  });
 });
 
 // ── API route: GET /api/operations ────────────────────────────────────────────
