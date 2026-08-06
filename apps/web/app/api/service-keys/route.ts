@@ -103,7 +103,7 @@ async function handlePostApiServiceKeys(request: Request) {
     );
   }
 
-  let body: { label?: unknown; scopes?: unknown; expiresInDays?: unknown };
+  let body: { label?: unknown; scopes?: unknown; connector?: unknown; expiresInDays?: unknown };
   try {
     body = (await request.json()) as typeof body;
   } catch {
@@ -142,6 +142,16 @@ async function handlePostApiServiceKeys(request: Request) {
     typeof body.expiresInDays === "number" && body.expiresInDays >= 1 && body.expiresInDays <= 365
       ? body.expiresInDays
       : undefined;
+  const connector = typeof body.connector === "string" ? body.connector.trim().slice(0, 128) : undefined;
+  if (scopes.includes("evidence:export") && !connector) {
+    return withTraceId(
+      Response.json(
+        { error: "connector is required for evidence:export.", meta: makeMeta(traceId) },
+        { status: 400 },
+      ),
+      traceId,
+    );
+  }
 
   let result;
   try {
@@ -152,6 +162,7 @@ async function handlePostApiServiceKeys(request: Request) {
       createdBy: session.principalId,
       label,
       scopes,
+      connector,
       expiresInDays,
     });
   } catch (err) {
@@ -172,7 +183,7 @@ async function handlePostApiServiceKeys(request: Request) {
     sourceId: result.tokenId,
     sourceTable: "service_token",
     actorId: session.principalId,
-    payload: { label, scopes, keyType: "API_KEY", expiresInDays: expiresInDays ?? null },
+    payload: { label, scopes, connector: connector ?? null, keyType: "API_KEY", expiresInDays: expiresInDays ?? null },
   }).catch(swallow("recordAuthOperation", undefined));
 
   return withTraceId(

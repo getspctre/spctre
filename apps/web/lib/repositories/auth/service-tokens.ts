@@ -15,7 +15,8 @@ export type ServiceTokenScope =
   | "workflow:read"
   | "members:read"
   | "workspaces:read"
-  | "e2e:write";
+  | "e2e:write"
+  | "evidence:export";
 
 // Runtime agent tokens (issued by `spctre init`) get only these scopes. They
 // deliberately exclude policy:import and blueprint:import so a runtime agent can
@@ -39,6 +40,7 @@ export const ALL_API_KEY_SCOPES: ServiceTokenScope[] = [
   "members:read",
   "workspaces:read",
   "e2e:write",
+  "evidence:export",
 ];
 export const ADMIN_ISSUABLE_API_KEY_SCOPES: ServiceTokenScope[] = ALL_API_KEY_SCOPES.filter(
   (scope) => scope !== "e2e:write",
@@ -49,6 +51,7 @@ export interface ServiceTokenAuth {
   tenantId: string;
   workspaceId: string;
   principalId: string;
+  connector?: string;
   scopes: ServiceTokenScope[];
 }
 
@@ -103,6 +106,7 @@ export async function authenticateServiceToken(
         tenant_id: string;
         workspace_id: string;
         principal_id: string;
+        connector: string | null;
         scopes: string[];
       }[]
     >`
@@ -136,6 +140,7 @@ export async function authenticateServiceToken(
       tenantId: row.tenant_id,
       workspaceId: row.workspace_id,
       principalId: row.principal_id,
+      connector: row.connector ?? undefined,
       scopes,
     },
   };
@@ -157,6 +162,7 @@ export async function issueAccessRefreshPair(
     principalId: string;
     label: string;
     scopes: ServiceTokenScope[];
+    connector?: string;
     environment: string;
   },
 ): Promise<TokenPair> {
@@ -175,11 +181,11 @@ export async function issueAccessRefreshPair(
   const tokenRows = await tx<{ id: string }[]>`
     INSERT INTO service_token (
       tenant_id, workspace_id, principal_id, label,
-      token_hash, token_prefix, scopes, expires_at
+      token_hash, token_prefix, scopes, connector, expires_at
     ) VALUES (
       ${params.tenantId}, ${params.workspaceId}, ${params.principalId},
       ${params.label}, ${accessHash}, ${rawAccess.slice(0, 16)},
-      ${params.scopes}::text[], ${accessExpiresAt}
+      ${params.scopes}::text[], ${params.connector ?? null}, ${accessExpiresAt}
     )
     RETURNING id
   `;
@@ -331,6 +337,7 @@ export interface ServiceAccountKeyResult {
   tokenPrefix: string;
   expiresAt: string | null;
   scopes: ServiceTokenScope[];
+  connector?: string;
 }
 
 /**
@@ -348,9 +355,13 @@ export async function issueServiceAccountKey(params: {
   createdBy: string;
   label: string;
   scopes: ServiceTokenScope[];
+  connector?: string;
   expiresInDays?: number;
 }): Promise<ServiceAccountKeyResult> {
   if (!sql) throw new Error("Database not configured.");
+  if (params.scopes.includes("evidence:export") && !params.connector?.trim()) {
+    throw new Error("evidence:export keys require a connector binding.");
+  }
 
   const rawToken = `${SERVICE_ACCOUNT_TOKEN_PREFIX}_${randomBytes(32).toString("base64url")}`;
   const tokenHash = hashServiceToken(rawToken);
@@ -363,11 +374,11 @@ export async function issueServiceAccountKey(params: {
   const rows = await sql<{ id: string }[]>`
     INSERT INTO service_token (
       tenant_id, workspace_id, principal_id, label,
-      token_hash, token_prefix, scopes, expires_at, key_type, created_by
+      token_hash, token_prefix, scopes, connector, expires_at, key_type, created_by
     ) VALUES (
       ${params.tenantId}, ${params.workspaceId}, ${params.principalId},
       ${params.label}, ${tokenHash}, ${tokenPrefix},
-      ${params.scopes}::text[], ${expiresAt ?? null},
+      ${params.scopes}::text[], ${params.connector ?? null}, ${expiresAt ?? null},
       'API_KEY', ${params.createdBy}
     )
     RETURNING id
