@@ -41,6 +41,7 @@ describe("bundle latest export route", () => {
     expect(response.status).toBe(200);
     expect(response.headers.get("content-type")).toContain("application/json");
     expect(response.headers.get("x-spctre-artifact-hash")).toBe("sha256:artifact");
+    expect(response.headers.get("x-spctre-policy-content-hash")).toBe(`sha256:${"a".repeat(64)}`);
     const body = await response.json();
     expect(body).toMatchObject({
       branchId: "branch-1",
@@ -207,6 +208,7 @@ function publishedBundle(overrides: Record<string, unknown> = {}) {
     branchId: "branch-1",
     revisionId: "revision-1",
     artifactHash: "sha256:artifact",
+    contentHash: `sha256:${"a".repeat(64)}`,
     bundle,
   };
 }
