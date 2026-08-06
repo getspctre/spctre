@@ -232,10 +232,12 @@
     border-bottom: 0;
   }
 
-  .policiesAttention,
-  .effectivePolicyRow {
+  .policiesAttention {
     align-items: start;
-    grid-template-columns: 1fr;
+  }
+
+  .effectivePolicyList {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .policiesAttention {
@@ -407,6 +409,7 @@
 
   .split,
   .policyOverviewSummary,
+  .effectivePolicyList,
   .diffSummary,
   .complianceSummary,
   .commercialHero {

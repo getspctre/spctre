@@ -127,20 +127,32 @@
   line-height: 1.45;
 }
 
-.effectivePolicyList,
+.effectivePolicyList {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
 .policyBaselineLinks {
   display: grid;
   gap: 0;
   border-top: 1px solid var(--line);
 }
 
-.effectivePolicyRow {
-  align-items: center;
-  border-bottom: 1px solid var(--line);
+.effectivePolicyCard {
+  background: oklch(0.992 0.005 236);
+  border: 1px solid var(--line);
+  border-radius: 8px;
   display: grid;
-  gap: 16px;
-  grid-template-columns: minmax(150px, 0.65fr) minmax(260px, 1.35fr) auto;
-  padding: 14px 0;
+  gap: 12px;
+  grid-template-rows: auto 1fr auto;
+  min-width: 0;
+  padding: 14px;
+}
+
+.effectivePolicyEnvironment {
+  display: grid;
+  gap: 4px;
 }
 
 .effectivePolicyStatus {
@@ -149,7 +161,7 @@
 }
 
 .effectivePolicyAction {
-  justify-self: end;
+  justify-self: start;
 }
 
 .policyBaselineLinks a {
