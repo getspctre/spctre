@@ -99,6 +99,7 @@
   .complianceHero,
   .complianceHeroStats,
   .packetReadinessGates,
+  .postureDimensions,
   .blastRadiusDetail,
   .commercialHero,
   .usageBillingHero,
@@ -145,6 +146,9 @@
   }
 
   .rowHeader,
+  .postureDimensionHeading,
+  .postureFindingHeading,
+  .postureFindingFooter,
   .packCatalogSectionCompatible summary,
   .requirement,
   .approval,
@@ -159,6 +163,11 @@
 
   .layer {
     flex-wrap: wrap;
+  }
+
+  .postureDimension + .postureDimension {
+    border-top: 1px solid var(--line);
+    border-left: 0;
   }
 
   .packCatalogSectionCompatible summary {
