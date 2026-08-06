@@ -646,12 +646,7 @@ export function EscalationQueueView({
           <span className="meta" style={{ fontSize: 12 }}>
             {refreshedAgoLabel(currentTime, lastRefreshedAt)}
           </span>
-          <button
-            onClick={fetchQueue}
-            disabled={isRefreshing}
-            className="btn btnSecondary btnSmall"
-            style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
-          >
+          <button onClick={fetchQueue} disabled={isRefreshing} className="button buttonSmall">
             <RefreshCw size={14} className={isRefreshing ? "animate-spin" : ""} />
             {isRefreshing ? t("refreshing") : t("refresh")}
           </button>
