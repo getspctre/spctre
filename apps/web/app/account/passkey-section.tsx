@@ -47,15 +47,10 @@ function PasskeyRow({ passkey }: { passkey: PrincipalPasskey }) {
               autoFocus
               style={{ fontSize: "13px", height: "30px" }}
             />
-            <button className="button" type="submit" style={{ height: "30px" }}>
+            <button className="button buttonSmall" type="submit">
               {t("save")}
             </button>
-            <button
-              className="button"
-              type="button"
-              onClick={() => setEditing(false)}
-              style={{ height: "30px" }}
-            >
+            <button className="button buttonSmall" type="button" onClick={() => setEditing(false)}>
               {t("cancel")}
             </button>
           </form>
@@ -64,12 +59,7 @@ function PasskeyRow({ passkey }: { passkey: PrincipalPasskey }) {
             <h3 style={{ fontSize: "13px" }}>{displayName}</h3>
             <div style={{ display: "flex", gap: "6px" }}>
               <span className="pill">{t("badge")}</span>
-              <button
-                className="button"
-                type="button"
-                onClick={() => setEditing(true)}
-                style={{ padding: "2px 8px", fontSize: "12px" }}
-              >
+              <button className="button buttonSmall" type="button" onClick={() => setEditing(true)}>
                 {t("rename")}
               </button>
             </div>

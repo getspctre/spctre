@@ -25,12 +25,7 @@ export function ClaimButton({ queueId, onClaimed }: { queueId: string; onClaimed
           {state.error}
         </p>
       )}
-      <button
-        type="submit"
-        className="button"
-        disabled={pending}
-        style={{ fontSize: 12, padding: "4px 10px" }}
-      >
+      <button type="submit" className="button buttonSmall" disabled={pending}>
         {pending ? "Claiming…" : "Claim"}
       </button>
     </form>
