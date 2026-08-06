@@ -154,6 +154,22 @@ async function handleGetApiEvidenceExport(request: Request) {
             workspaceId: workspaceContext.workspaceId,
             count: evidence.length,
             decisions: evidence,
+            // This is a server-derived statement of the caller's authorization,
+            // not a caller-selected connector filter. Agent runtimes can use it
+            // to cross-check their loaded policy references without claiming a
+            // live AGT deployment.
+            ...(evidenceToken
+              ? {
+                  authorization: {
+                    connector: evidenceToken.connector,
+                    revisionGrants: evidenceToken.evidenceExportGrants.map((grant) => ({
+                      revisionId: grant.revisionId,
+                      notBefore: grant.notBefore,
+                      ...(grant.notAfter ? { notAfter: grant.notAfter } : {}),
+                    })),
+                  },
+                }
+              : {}),
           },
           null,
           2,
