@@ -5,7 +5,9 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"slices"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -105,3 +107,63 @@ func (s *Server) applyGatewayBlueprintSafeguards(ctx context.Context, input Gate
 }
 
 func intPtr(value int) *int { return &value }
+
+// applyGatewayBlueprintEnvelope aborts actions outside the published Blueprint's
+// operating envelope: the connector must be declared, and the action must
+// appear in the Blueprint's tool list either bare or as "<connector>.<action>".
+//
+// The Node gateway has enforced this since the Blueprint work landed; this path
+// never did, so a delegated decide would permit connectors and tools the
+// Blueprint does not declare. It is applied unconditionally — matching Node,
+// where a Blueprint violation overrides even an ESCALATE — so it deliberately
+// does not sit inside applyGatewayBlueprintSafeguards, which only runs while the
+// decision is still PROCEED.
+func (s *Server) applyGatewayBlueprintEnvelope(
+	ctx context.Context,
+	input GatewayDecisionRequest,
+	auth authResult,
+	decision GatewayDecision,
+) (GatewayDecision, error) {
+	// No agent, connector or action means no envelope to test against, which
+	// mirrors blueprintAllowsAction() returning true for those inputs.
+	if input.AgentID == nil || input.Connector == nil || input.Action == nil {
+		return decision, nil
+	}
+
+	var connectors, tools []string
+	err := s.db.QueryRow(ctx, `
+		SELECT
+			COALESCE(ARRAY(SELECT jsonb_array_elements_text(r.definition->'connectors')), '{}'),
+			COALESCE(ARRAY(SELECT jsonb_array_elements_text(r.definition->'tools')), '{}')
+		FROM agent_blueprint b
+		JOIN agent_blueprint_revision r ON r.id = b.active_revision_id AND r.tenant_id = b.tenant_id
+		WHERE b.tenant_id = $1 AND b.workspace_id = $2 AND b.agent_id = $3 AND r.status = 'PUBLISHED'
+	`, auth.TenantID, auth.WorkspaceID, *input.AgentID).Scan(&connectors, &tools)
+	if errors.Is(err, pgx.ErrNoRows) {
+		// No published Blueprint: nothing constrains the action.
+		return decision, nil
+	}
+	if err != nil {
+		return decision, err
+	}
+
+	if blueprintAllowsAction(connectors, tools, *input.Connector, *input.Action) {
+		return decision, nil
+	}
+	toolRef := *input.Connector + "." + *input.Action
+	return GatewayDecision{
+		Outcome:     "ABORT",
+		Reason:      fmt.Sprintf("Action %s is outside the published Blueprint operating envelope.", toolRef),
+		RiskLevel:   "HIGH",
+		ShouldQueue: false,
+	}, nil
+}
+
+// blueprintAllowsAction mirrors the TypeScript predicate of the same name.
+func blueprintAllowsAction(connectors, tools []string, connector, action string) bool {
+	if !slices.Contains(connectors, connector) {
+		return false
+	}
+	toolRef := connector + "." + action
+	return slices.Contains(tools, action) || slices.Contains(tools, toolRef)
+}

@@ -2,6 +2,12 @@ import yaml from "js-yaml";
 import { createHash } from "node:crypto";
 import { jsEvaluateGatewayDecision, jsEvaluatePolicyDecision } from "./native";
 import {
+  SEMANTIC_GENERIC_WORDS,
+  SEMANTIC_MATCH_RATIO,
+  SEMANTIC_STOP_WORDS,
+  SEMANTIC_TOPICS,
+} from "./semantic-topics";
+import {
   PolicyArtifactExport,
   PolicyBranchTimeline,
   PolicyTimelineEvent,
@@ -2320,6 +2326,11 @@ export function classifySemanticIntent(
   // This is deliberately a deterministic heuristic, not an LLM classifier.
   // It favors exact quoted matches and narrow safety-topic keyword sets so
   // semantic checks are cheap, explainable, and regression-testable.
+  //
+  // The vocabulary lives in ./semantic-topics so the Go engine can be
+  // generated from the same tables; only the matching logic below is
+  // duplicated across languages. Keep the two in step via the shared
+  // conformance fixtures.
   const cleanPrompt = prompt.trim().toLowerCase();
   const searchSpace = [toolIntent, planSummary, JSON.stringify(toolParameters)]
     .join(" ")
@@ -2338,182 +2349,15 @@ export function classifySemanticIntent(
   }
   if (hasQuotes) return false;
 
-  // 2. Predefined Safety Topic Classification
-  // Topic: credentials / secrets
-  if (
-    cleanPrompt.includes("credential") ||
-    cleanPrompt.includes("secret") ||
-    cleanPrompt.includes("password") ||
-    cleanPrompt.includes("api key") ||
-    cleanPrompt.includes("api_key") ||
-    cleanPrompt.includes("private key") ||
-    cleanPrompt.includes("private_key") ||
-    cleanPrompt.includes("token") ||
-    cleanPrompt.includes("auth")
-  ) {
-    const credentialKeywords = [
-      "password",
-      "token",
-      "secret",
-      "credentials",
-      "api_key",
-      "api key",
-      "private_key",
-      "private key",
-      ".env",
-      "passwd",
-      "shadow",
-      "auth_token",
-      "auth_headers",
-      "authorization",
-    ];
-    if (credentialKeywords.some((kw) => searchSpace.includes(kw))) return true;
+  // 2. Predefined safety-topic classification, in declaration order.
+  for (const topic of SEMANTIC_TOPICS) {
+    if (!topic.promptTriggers.some((trigger) => cleanPrompt.includes(trigger))) continue;
+    if (topic.keywords.some((keyword) => searchSpace.includes(keyword))) return true;
   }
 
-  // Topic: unprofessional / behavior
-  if (
-    cleanPrompt.includes("unprofessional") ||
-    cleanPrompt.includes("behavior") ||
-    cleanPrompt.includes("harassment") ||
-    cleanPrompt.includes("rude") ||
-    cleanPrompt.includes("swear") ||
-    cleanPrompt.includes("insult")
-  ) {
-    const unprofessionalKeywords = [
-      "stupid",
-      "dumb",
-      "idiot",
-      "annoy",
-      "swear",
-      "insult",
-      "lazy",
-      "ignore policy",
-      "bypass safety",
-      "shut up",
-    ];
-    if (unprofessionalKeywords.some((kw) => searchSpace.includes(kw))) return true;
-  }
-
-  // Topic: destructive / dangerous
-  if (
-    cleanPrompt.includes("destructive") ||
-    cleanPrompt.includes("danger") ||
-    cleanPrompt.includes("delete") ||
-    cleanPrompt.includes("drop") ||
-    cleanPrompt.includes("destroy") ||
-    cleanPrompt.includes("remove")
-  ) {
-    const destructiveKeywords = [
-      "delete",
-      "drop",
-      "truncate",
-      "destroy",
-      "rm -rf",
-      "wipe",
-      "format",
-      "shutdown",
-      "terminate",
-      "uninstall",
-      "purge",
-      "remove",
-    ];
-    if (destructiveKeywords.some((kw) => searchSpace.includes(kw))) return true;
-  }
-
-  // Topic: fraud / financial safety
-  if (
-    cleanPrompt.includes("fraud") ||
-    cleanPrompt.includes("scam") ||
-    cleanPrompt.includes("steal") ||
-    cleanPrompt.includes("exfiltrate") ||
-    cleanPrompt.includes("leak")
-  ) {
-    const fraudKeywords = [
-      "fraud",
-      "scam",
-      "transfer",
-      "bypass",
-      "hack",
-      "exploit",
-      "steal",
-      "drain",
-      "exfiltrate",
-      "leak",
-      "compromise",
-    ];
-    if (fraudKeywords.some((kw) => searchSpace.includes(kw))) return true;
-  }
-
-  // Topic: PII / regulated data exposure
-  if (
-    cleanPrompt.includes("pii") ||
-    cleanPrompt.includes("personal data") ||
-    cleanPrompt.includes("regulated data") ||
-    cleanPrompt.includes("sensitive data") ||
-    cleanPrompt.includes("phi") ||
-    cleanPrompt.includes("ssn")
-  ) {
-    const piiKeywords = [
-      "ssn",
-      "social security",
-      "date of birth",
-      "date_of_birth",
-      "passport",
-      "driver's license",
-      "drivers license",
-      "credit card",
-      "card number",
-      "cvv",
-      "phi",
-      "medical record",
-      "diagnosis",
-      "bank account",
-      "routing number",
-      "national id",
-      "tax id",
-    ];
-    if (piiKeywords.some((kw) => searchSpace.includes(kw))) return true;
-  }
-
-  // 3. Fallback: Word token set inclusion (requires at least 50% of prompt keywords to match)
-  const stopWords = new Set([
-    "a",
-    "an",
-    "the",
-    "of",
-    "in",
-    "to",
-    "for",
-    "on",
-    "with",
-    "at",
-    "by",
-    "from",
-    "and",
-    "or",
-    "but",
-    "is",
-    "are",
-    "was",
-    "were",
-    "be",
-    "been",
-    "have",
-    "has",
-    "had",
-    "do",
-    "does",
-    "did",
-    "should",
-    "would",
-    "could",
-    "will",
-    "shall",
-    "can",
-    "may",
-    "might",
-    "must",
-  ]);
+  // 3. Fallback: word token set inclusion (requires at least SEMANTIC_MATCH_RATIO
+  // of prompt keywords to match).
+  const stopWords = new Set(SEMANTIC_STOP_WORDS);
   const words = cleanPrompt
     .split(/[^a-zA-Z0-9]/)
     .map((w) => w.trim())
@@ -2522,27 +2366,8 @@ export function classifySemanticIntent(
   if (words.length > 0) {
     const matchedWords = words.filter((word) => searchSpace.includes(word));
     const ratio = matchedWords.length / words.length;
-    if (ratio >= 0.5) {
-      const genericWords = new Set([
-        "read",
-        "write",
-        "file",
-        "call",
-        "run",
-        "execute",
-        "command",
-        "tool",
-        "show",
-        "get",
-        "list",
-        "view",
-        "open",
-        "close",
-        "input",
-        "output",
-        "data",
-        "value",
-      ]);
+    if (ratio >= SEMANTIC_MATCH_RATIO) {
+      const genericWords = new Set(SEMANTIC_GENERIC_WORDS);
       const nonGenericPromptWords = words.filter((w) => !genericWords.has(w));
       const matchedNonGeneric = matchedWords.filter((w) => !genericWords.has(w));
       if (nonGenericPromptWords.length > 0 && matchedNonGeneric.length === 0) {

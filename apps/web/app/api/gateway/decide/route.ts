@@ -18,6 +18,10 @@ import { countGatewaySessionDecisions } from "@/lib/repositories/gateway/decisio
 import { resolveCanonicalAgentId } from "@/lib/repositories/identity";
 import { swallow } from "@/lib/platform/swallow";
 import { runWithTenantContext } from "@/lib/tenant-context";
+import {
+  mergePublishedPolicyDecision,
+  resolvePublishedPolicyDecision,
+} from "@/lib/policy/published-enforcement";
 
 export const dynamic = "force-dynamic";
 
@@ -111,6 +115,19 @@ async function resolveGatewayDecision(input: GatewayDecisionInput, auth: Gateway
         shouldQueue: false,
         slaHours: undefined,
       };
+  const policyDecision =
+    gatewayEnabled && !isDemoTenant(auth.tenantId)
+      ? await resolvePublishedPolicyDecision({
+          tenantId: auth.tenantId,
+          workspaceId: auth.workspaceId,
+          connector: input.connector,
+          action: input.action,
+          toolIntent: input.toolIntent,
+          planSummary: input.planSummary,
+          toolParameters: input.toolParameters,
+        })
+      : null;
+  decisionResult = mergePublishedPolicyDecision(decisionResult, policyDecision);
   if (violatesBlueprint)
     decisionResult = {
       outcome: "ABORT",

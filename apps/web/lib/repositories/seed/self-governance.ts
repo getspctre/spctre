@@ -1,3 +1,4 @@
+import { POLICY_RULE_COLUMNS, toPolicyRuleRows } from "@/lib/repositories/policy/rule-rows";
 // Self-governance policy pack seeding (local-dev + production rollout).
 // Extracted from local-dev.ts (Phase 2 large-file split).
 import { randomUUID } from "crypto";
@@ -120,32 +121,15 @@ async function ensureSelfGovernancePackRevision(): Promise<SelfGovernancePackIns
     `;
 
     await tx`INSERT INTO policy_rule ${tx(
-      pack.rules.map((rule) => ({
-        tenant_id: DEMO_TENANT_ID,
-        workspace_id: DEMO_WORKSPACE_ID,
-        branch_id: branchId,
-        revision_id: revisionId,
-        stable_rule_id: rule.stableRuleId,
-        title: rule.title,
-        effect: rule.effect,
-        source_path: `packs/${pack.id}.json`,
-        domains: rule.domains,
-        connectors: rule.connectors,
-        actions: rule.actions,
-        immutable: rule.immutable,
-      })),
-      "tenant_id",
-      "workspace_id",
-      "branch_id",
-      "revision_id",
-      "stable_rule_id",
-      "title",
-      "effect",
-      "source_path",
-      "domains",
-      "connectors",
-      "actions",
-      "immutable",
+      toPolicyRuleRows({
+        tenantId: DEMO_TENANT_ID,
+        workspaceId: DEMO_WORKSPACE_ID,
+        branchId,
+        revisionId,
+        sourcePath: `packs/${pack.id}.json`,
+        rules: pack.rules,
+      }),
+      ...POLICY_RULE_COLUMNS,
     )}`;
 
     await tx`

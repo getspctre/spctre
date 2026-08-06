@@ -1,3 +1,4 @@
+import { toPolicyRuleRows } from "@/lib/repositories/policy/rule-rows";
 import { createHash } from "crypto";
 import { logger } from "@spctre/platform/logging";
 import { getActiveActor, requireActorAdminWorkspace } from "@/lib/actors";
@@ -494,20 +495,14 @@ export async function commitRuleRevisionDecision(input: {
   const sourceText = JSON.stringify(sourceDocument);
   const sourceHash = `sha256:${createHash("sha256").update(sourceText).digest("hex").slice(0, 16)}`;
 
-  const ruleRows = rules.map((rule) => ({
-    tenant_id: tenantId,
-    workspace_id: branch.workspace_id,
-    branch_id: input.branchId,
-    revision_id: revisionId,
-    stable_rule_id: rule.stableRuleId,
-    title: rule.title,
-    effect: rule.effect,
-    source_path: input.sourcePath || "ui/review-rule-editor",
-    domains: rule.domains,
-    connectors: rule.connectors,
-    actions: rule.actions,
-    immutable: rule.immutable,
-  }));
+  const ruleRows = toPolicyRuleRows({
+    tenantId,
+    workspaceId: branch.workspace_id,
+    branchId: input.branchId,
+    revisionId,
+    sourcePath: input.sourcePath || "ui/review-rule-editor",
+    rules,
+  });
 
   try {
     await createCommittedRevision({

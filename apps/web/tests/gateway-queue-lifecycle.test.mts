@@ -20,6 +20,7 @@ let resolvedQueueIds = new Map<string, { outcome: string; note: string | null }>
 let queueResolveUpdates = 0;
 let lastGatewayDecisionArgs: unknown[] = [];
 let lastEvidenceArgs: unknown[] = [];
+const getLatestPublishedBundleSpy = vi.fn();
 
 function makeSqlMock() {
   const fn = (...args: unknown[]): Promise<unknown[]> => {
@@ -104,6 +105,14 @@ function makeSqlMock() {
 const sqlMock = makeSqlMock();
 
 vi.mock("@/lib/db", () => ({ sql: sqlMock }));
+
+// Mock the repository read, not the enforcement layer, so the real
+// published-rule evaluation and merge in @/lib/policy/published-enforcement
+// are exercised.
+vi.mock("@/lib/repositories/policy", async (importOriginal) => {
+  const real = await importOriginal<typeof import("@/lib/repositories/policy")>();
+  return { ...real, getLatestPublishedBundle: getLatestPublishedBundleSpy };
+});
 
 vi.mock("@/lib/demo", () => ({
   DEMO_TENANT_ID: "demo-tenant",
@@ -368,6 +377,10 @@ describe("Evidence ingest with GATEWAY_ENABLED", () => {
     resolvedQueueIds = new Map();
     queueResolveUpdates = 0;
     process.env.GATEWAY_ENABLED = "true";
+    // vi.clearAllMocks() clears calls but not implementations; reset so a
+    // published-bundle stub from one case cannot leak into the next.
+    getLatestPublishedBundleSpy.mockReset();
+    getLatestPublishedBundleSpy.mockResolvedValue(null);
   });
 
   afterEach(() => {
@@ -395,6 +408,54 @@ describe("Evidence ingest with GATEWAY_ENABLED", () => {
     expect(body.gateway?.outcome).toBe("ESCALATE");
     expect(body.gateway?.shouldQueue).toBe(true);
     expect(insertedRows).toContain("escalation_queue");
+  });
+
+  it("records ESCALATE when the published policy escalates a low-risk action", async () => {
+    // Regression: ingest ran only the threshold evaluator, so an authored
+    // ESCALATE rule was persisted as PROCEED and never queued.
+    getLatestPublishedBundleSpy.mockResolvedValue({
+      bundle: {
+        rules: [
+          {
+            stableRuleId: "stripe.escalate_charge",
+            title: "Every charge escalates for human review",
+            effect: "ESCALATE",
+            domains: [],
+            connectors: ["stripe"],
+            actions: ["charge"],
+          },
+        ],
+      },
+    });
+    const res = await evidencePost(buildEvidenceRequest("dec-gw-policy-escalate"));
+    expect(res.status).toBe(201);
+    const body = (await res.json()) as { gateway?: { outcome: string; shouldQueue: boolean } };
+    expect(body.gateway?.outcome).toBe("ESCALATE");
+    expect(body.gateway?.shouldQueue).toBe(true);
+    expect(insertedRows).toContain("escalation_queue");
+  });
+
+  it("keeps a threshold ABORT when the published policy only escalates", async () => {
+    getLatestPublishedBundleSpy.mockResolvedValue({
+      bundle: {
+        rules: [
+          {
+            stableRuleId: "stripe.escalate_charge",
+            title: "Every charge escalates for human review",
+            effect: "ESCALATE",
+            domains: [],
+            connectors: ["stripe"],
+            actions: ["charge"],
+          },
+        ],
+      },
+    });
+    const res = await evidencePost(
+      buildEvidenceRequest("dec-gw-policy-no-downgrade", { consequence: "PROHIBITED" }),
+    );
+    expect(res.status).toBe(201);
+    const body = (await res.json()) as { gateway?: { outcome: string } };
+    expect(body.gateway?.outcome).toBe("ABORT");
   });
 
   it("ABORT outcome does not create an escalation queue entry", async () => {
@@ -600,6 +661,8 @@ describe("Gateway decide API — outcome and queue routing", () => {
     process.env.GATEWAY_ENABLED = "true";
     insertedRows = [];
     lastGatewayDecisionArgs = [];
+    getLatestPublishedBundleSpy.mockReset();
+    getLatestPublishedBundleSpy.mockResolvedValue(null);
   });
 
   afterEach(() => {
@@ -656,6 +719,96 @@ describe("Gateway decide API — outcome and queue routing", () => {
     const body = (await res.json()) as { decision: { outcome: string }; queued: boolean };
     expect(body.decision.outcome).toBe("ESCALATE");
     expect(body.queued).toBe(true);
+  });
+
+  it("escalates a low-risk request when the published policy requires HITL", async () => {
+    getLatestPublishedBundleSpy.mockResolvedValue({
+      bundle: {
+        rules: [
+          {
+            stableRuleId: "scout.escalate_brief_file",
+            title: "Every filed brief escalates for human review",
+            effect: "ESCALATE",
+            domains: [],
+            connectors: ["acquisition-scout"],
+            actions: ["brief.file"],
+          },
+        ],
+      },
+    });
+    const req = new Request("http://localhost:3000/api/gateway/decide", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        decisionId: "dec-scout-brief",
+        artifactHash: "sha256:decide-test",
+        policyContext: [
+          {
+            scope: "WORKSPACE",
+            branchId: "b-1",
+            revisionId: "r-1",
+            artifactHash: "sha256:decide-test",
+          },
+        ],
+        connector: "acquisition-scout",
+        action: "brief.file",
+      }),
+    });
+    const body = (await (await decidePost(req)).json()) as {
+      decision: { outcome: string };
+      queued: boolean;
+    };
+    expect(body.decision.outcome).toBe("ESCALATE");
+    expect(body.queued).toBe(true);
+  });
+
+  it("fails closed when the published policy bundle cannot be read", async () => {
+    getLatestPublishedBundleSpy.mockRejectedValue(new Error("connection terminated"));
+    const req = new Request("http://localhost:3000/api/gateway/decide", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        decisionId: "dec-bundle-read-fails",
+        artifactHash: "sha256:decide-test",
+        policyContext: [
+          {
+            scope: "WORKSPACE",
+            branchId: "b-1",
+            revisionId: "r-1",
+            artifactHash: "sha256:decide-test",
+          },
+        ],
+        connector: "acquisition-scout",
+        action: "brief.file",
+      }),
+    });
+    const res = await decidePost(req);
+    // Must not degrade to "no rules matched" -> PROCEED.
+    expect(res.status).toBe(500);
+    const body = (await res.json()) as { decision?: { outcome: string } };
+    expect(body.decision).toBeUndefined();
+  });
+
+  it("skips the policy bundle read when connector/action are absent", async () => {
+    const req = new Request("http://localhost:3000/api/gateway/decide", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        decisionId: "dec-no-connector",
+        artifactHash: "sha256:decide-test",
+        policyContext: [
+          {
+            scope: "WORKSPACE",
+            branchId: "b-1",
+            revisionId: "r-1",
+            artifactHash: "sha256:decide-test",
+          },
+        ],
+      }),
+    });
+    const body = (await (await decidePost(req)).json()) as { decision: { outcome: string } };
+    expect(body.decision.outcome).toBe("PROCEED");
+    expect(getLatestPublishedBundleSpy).not.toHaveBeenCalled();
   });
 
   it("gateway disabled — high-risk input still returns PROCEED and queued=false", async () => {

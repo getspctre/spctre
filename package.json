@@ -25,6 +25,8 @@
     "test:coverage": "vitest run --config vitest.coverage.config.ts --coverage",
     "test:coverage:web": "pnpm --filter @spctre/web exec vitest run --coverage",
     "generate": "pnpm --filter @spctre/api-contracts emit && pnpm --filter @spctre/sdk generate",
+    "generate:worker-policy-data": "node --import tsx scripts/generate-worker-policy-data.mjs",
+    "check:worker-policy-data": "node --import tsx scripts/generate-worker-policy-data.mjs --check",
     "generate:python-sdk": "bash scripts/generate-python-sdk.sh",
     "changeset": "changeset",
     "version-packages": "changeset version",

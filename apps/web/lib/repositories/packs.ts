@@ -1,3 +1,4 @@
+import { POLICY_RULE_COLUMNS, toPolicyRuleRows } from "@/lib/repositories/policy/rule-rows";
 import type { JSONValue } from "postgres";
 import { sql, rawSql } from "@/lib/db";
 import { ensureDemoTenant } from "@/lib/repositories/seed/local-dev";
@@ -264,21 +265,15 @@ export async function persistPackInstallBranch(params: {
       )
     `;
     if (params.rules.length > 0) {
-      const ruleRows = params.rules.map((rule) => ({
-        tenant_id: params.tenantId,
-        workspace_id: params.workspaceId,
-        branch_id: branchId,
-        revision_id: revisionId,
-        stable_rule_id: rule.stableRuleId,
-        title: rule.title,
-        effect: rule.effect,
-        source_path: rule.sourcePath ?? params.sourcePath,
-        domains: rule.domains ?? [],
-        connectors: rule.connectors ?? [],
-        actions: rule.actions ?? [],
-        immutable: rule.immutable ?? false,
-      }));
-      await tx`INSERT INTO policy_rule ${tx(ruleRows, "tenant_id", "workspace_id", "branch_id", "revision_id", "stable_rule_id", "title", "effect", "source_path", "domains", "connectors", "actions", "immutable")}`;
+      const ruleRows = toPolicyRuleRows({
+        tenantId: params.tenantId,
+        workspaceId: params.workspaceId,
+        branchId: branchId,
+        revisionId,
+        sourcePath: params.sourcePath,
+        rules: params.rules,
+      });
+      await tx`INSERT INTO policy_rule ${tx(ruleRows, ...POLICY_RULE_COLUMNS)}`;
     }
     await tx`UPDATE policy_branch SET active_revision_id = ${revisionId} WHERE id = ${branchId}`;
   });
@@ -326,21 +321,15 @@ export async function persistPackUpgradeRevision(params: {
       )
     `;
     if (params.rules.length > 0) {
-      const ruleRows = params.rules.map((rule) => ({
-        tenant_id: params.tenantId,
-        workspace_id: params.workspaceId,
-        branch_id: params.branchId,
-        revision_id: revisionId,
-        stable_rule_id: rule.stableRuleId,
-        title: rule.title,
-        effect: rule.effect,
-        source_path: rule.sourcePath ?? params.sourcePath,
-        domains: rule.domains ?? [],
-        connectors: rule.connectors ?? [],
-        actions: rule.actions ?? [],
-        immutable: rule.immutable ?? false,
-      }));
-      await tx`INSERT INTO policy_rule ${tx(ruleRows, "tenant_id", "workspace_id", "branch_id", "revision_id", "stable_rule_id", "title", "effect", "source_path", "domains", "connectors", "actions", "immutable")}`;
+      const ruleRows = toPolicyRuleRows({
+        tenantId: params.tenantId,
+        workspaceId: params.workspaceId,
+        branchId: params.branchId,
+        revisionId,
+        sourcePath: params.sourcePath,
+        rules: params.rules,
+      });
+      await tx`INSERT INTO policy_rule ${tx(ruleRows, ...POLICY_RULE_COLUMNS)}`;
     }
     await tx`
       UPDATE policy_branch
