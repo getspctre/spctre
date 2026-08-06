@@ -44,6 +44,49 @@ export async function retainPolicyContentArtifact(params: {
   });
 }
 
+/**
+ * Retain exact bytes and bind them to the immutable publication that produced
+ * them. This is intentionally one transaction: neither a publication→hash
+ * claim without durable bytes nor a newly retained orphan is observable.
+ */
+export async function retainPublishedPolicyContentArtifact(params: {
+  contentHash: string;
+  bytes: Uint8Array;
+  mediaType: string;
+  tenantId: string;
+  workspaceId: string;
+  publishId: string;
+  revisionId: string;
+}) {
+  if (!sql) throw new Error("Database not configured.");
+  if (params.bytes.byteLength > MAX_POLICY_CONTENT_ARTIFACT_BYTES) {
+    throw new Error(`Policy artifact exceeds ${MAX_POLICY_CONTENT_ARTIFACT_BYTES} byte limit.`);
+  }
+  if (!ALLOWED_MEDIA_TYPES.has(params.mediaType)) throw new Error("Unsupported policy artifact media type.");
+  if (policyContentHash(params.bytes) !== params.contentHash) throw new Error("Policy artifact content hash mismatch.");
+  const key = encryptionKey();
+  await sql.begin(async (tx) => {
+    await tx`
+      INSERT INTO policy_content_artifact (content_hash, media_type, size_bytes, content_encrypted)
+      VALUES (${params.contentHash}, ${params.mediaType}, ${params.bytes.byteLength}, pgp_sym_encrypt_bytea(${Buffer.from(params.bytes)}, ${key}))
+      ON CONFLICT (content_hash) DO NOTHING
+    `;
+    await tx`
+      INSERT INTO policy_publish_content_artifact
+        (tenant_id, workspace_id, publish_id, revision_id, content_hash)
+      VALUES (
+        ${params.tenantId}, ${params.workspaceId}, ${params.publishId},
+        ${params.revisionId}, ${params.contentHash}
+      )
+      ON CONFLICT DO NOTHING
+    `;
+    await tx`
+      INSERT INTO policy_content_artifact_access_audit (tenant_id, workspace_id, content_hash, token_id, action)
+      VALUES (${params.tenantId}, ${params.workspaceId}, ${params.contentHash}, NULL, 'WRITE')
+    `;
+  });
+}
+
 export async function bindEvidenceToPolicyContentArtifact(params: {
   tenantId: string;
   workspaceId: string;
