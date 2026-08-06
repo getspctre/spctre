@@ -1828,7 +1828,7 @@ export const SPCTRE_OPENAPI_SPEC = {
         operationId: "getBundleLatest",
         summary: "Download the latest published policy bundle",
         description:
-          "Returns the latest published policy bundle for the authenticated workspace. Without `format`, the response is the raw AGT-compatible JSON bundle. With `format`, the response is an export envelope containing a target artifact and manifest. Use `preview=true` with no format to inspect all target manifests without downloading artifacts.",
+          "Returns the latest published policy bundle for the authenticated workspace. Without `format`, the response is the raw AGT-compatible JSON bundle. `x-spctre-policy-content-hash` is SHA-256 over those exact JSON bytes, distinct from the semantic artifact hash. With `format`, the response is an export envelope containing a target artifact and manifest. Use `preview=true` with no format to inspect all target manifests without downloading artifacts.",
         "x-spctre-plan": "oss",
         tags: ["Bundle"],
         security: [{ bearerAuth: [] }],
@@ -1856,6 +1856,7 @@ export const SPCTRE_OPENAPI_SPEC = {
               "x-spctre-branch-id": { schema: { type: "string" } },
               "x-spctre-revision-id": { schema: { type: "string" } },
               "x-spctre-artifact-hash": { schema: { type: "string" } },
+              "x-spctre-policy-content-hash": { schema: { type: "string", pattern: "^sha256:[0-9a-f]{64}$" } },
               "x-spctre-published-at": { schema: { type: "string", format: "date-time" } },
               "x-spctre-export-format": { schema: { type: "string" } },
               "x-spctre-export-ok": { schema: { type: "string", enum: ["true", "false"] } },

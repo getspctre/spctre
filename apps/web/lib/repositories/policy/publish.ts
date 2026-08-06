@@ -1,3 +1,4 @@
+import { createHash } from "crypto";
 import { sql } from "@/lib/db";
 import { composePolicyLayers, toAgtCompatiblePolicyBundle } from "@spctre/policy-schema";
 import type { AgtCompatiblePolicyBundle } from "@spctre/policy-schema";
@@ -12,6 +13,8 @@ export interface PublishedBundle {
   branchId: string;
   revisionId: string;
   artifactHash: string;
+  /** SHA-256 over the exact JSON bytes served by /api/bundle/latest. */
+  contentHash: string;
   bundle: AgtCompatiblePolicyBundle;
 }
 
@@ -123,7 +126,9 @@ export async function getLatestPublishedBundle(
 
   if (!revision || !layers.length) return null;
 
-  const generatedAt = new Date().toISOString();
+  // This value is part of the serialized bundle. It must be immutable for a
+  // published revision so a runtime can retain and later prove exact bytes.
+  const generatedAt = latest.published_at.toISOString();
   const composition = composePolicyLayers({
     id: `pub-${latest.revision_id.slice(0, 8)}`,
     branchId: latest.branch_id,
@@ -149,6 +154,31 @@ export async function getLatestPublishedBundle(
     ? revision.targetStacks
     : [{ stack: "CUSTOM" as const, adapter: "agt-compatible", environment: "production" }];
 
+  const bundle = toAgtCompatiblePolicyBundle({
+    tenantId,
+    workspaceId,
+    branchId: latest.branch_id,
+    revisionId: latest.revision_id,
+    sourceFormat: revision.sourceFormat,
+    sourcePath: revision.sourcePath,
+    sourceHash: revision.sourceHash,
+    artifactHash: latest.artifact_hash,
+    targetStacks,
+    approvals,
+    rules: composition.effectiveRules,
+    generatedAt,
+    sourceDocument: revision.sourceDocument,
+    compatibility: revision.compatibility,
+    metadata: {
+      composed_artifact_hash: composition.composedArtifactHash,
+      published_layer_count: layers.length,
+      conflict_notes: composition.conflictNotes,
+      publish_id: latest.publish_id,
+      published_at: latest.published_at.toISOString(),
+      published_by: latest.published_by,
+    },
+  });
+  const contentHash = `sha256:${createHash("sha256").update(JSON.stringify(bundle, null, 2)).digest("hex")}`;
   return {
     publishId: latest.publish_id,
     publishedAt: latest.published_at.toISOString(),
@@ -156,30 +186,8 @@ export async function getLatestPublishedBundle(
     branchId: latest.branch_id,
     revisionId: latest.revision_id,
     artifactHash: latest.artifact_hash,
-    bundle: toAgtCompatiblePolicyBundle({
-      tenantId,
-      workspaceId,
-      branchId: latest.branch_id,
-      revisionId: latest.revision_id,
-      sourceFormat: revision.sourceFormat,
-      sourcePath: revision.sourcePath,
-      sourceHash: revision.sourceHash,
-      artifactHash: latest.artifact_hash,
-      targetStacks,
-      approvals,
-      rules: composition.effectiveRules,
-      generatedAt,
-      sourceDocument: revision.sourceDocument,
-      compatibility: revision.compatibility,
-      metadata: {
-        composed_artifact_hash: composition.composedArtifactHash,
-        published_layer_count: layers.length,
-        conflict_notes: composition.conflictNotes,
-        publish_id: latest.publish_id,
-        published_at: latest.published_at.toISOString(),
-        published_by: latest.published_by,
-      },
-    }),
+    contentHash,
+    bundle,
   };
 }
 

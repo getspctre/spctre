@@ -370,7 +370,7 @@ export interface paths {
         };
         /**
          * Download the latest published policy bundle
-         * @description Returns the latest published policy bundle for the authenticated workspace. Without `format`, the response is the raw AGT-compatible JSON bundle. With `format`, the response is an export envelope containing a target artifact and manifest. Use `preview=true` with no format to inspect all target manifests without downloading artifacts.
+         * @description Returns the latest published policy bundle for the authenticated workspace. Without `format`, the response is the raw AGT-compatible JSON bundle. `x-spctre-policy-content-hash` is SHA-256 over those exact JSON bytes, distinct from the semantic artifact hash. With `format`, the response is an export envelope containing a target artifact and manifest. Use `preview=true` with no format to inspect all target manifests without downloading artifacts.
          */
         get: operations["getBundleLatest"];
         put?: never;
@@ -1859,6 +1859,7 @@ export interface operations {
                     "x-spctre-branch-id"?: string;
                     "x-spctre-revision-id"?: string;
                     "x-spctre-artifact-hash"?: string;
+                    "x-spctre-policy-content-hash"?: string;
                     "x-spctre-published-at"?: string;
                     "x-spctre-export-format"?: string;
                     "x-spctre-export-ok"?: "true" | "false";
