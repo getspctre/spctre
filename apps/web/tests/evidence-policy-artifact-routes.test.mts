@@ -95,12 +95,10 @@ describe("policy artifact routes", () => {
   });
 
   it("uses only token-bound connector and grants for an artifact read", async () => {
-    const hash = `sha256:${"b".repeat(64)}`;
+    const bytes = new TextEncoder().encode("rules: []\n");
+    const hash = contentHash(bytes);
     authenticateServiceTokenSpy.mockResolvedValue(evidenceExportAuth);
-    readPolicyContentArtifactSpy.mockResolvedValue({
-      bytes: new TextEncoder().encode("rules: []\n"),
-      mediaType: "application/yaml",
-    });
+    readPolicyContentArtifactSpy.mockResolvedValue({ bytes, mediaType: "application/yaml" });
     const response = await getRoute.GET(
       new Request(`http://localhost:3000/api/evidence/policy-artifacts/${hash}`, {
         headers: { authorization: "Bearer token" },
@@ -118,5 +116,22 @@ describe("policy artifact routes", () => {
       contentHash: hash,
     });
     await expect(response.text()).resolves.toBe("rules: []\n");
+  });
+
+  it("does not serve bytes that fail the content-address integrity check", async () => {
+    const hash = contentHash(new TextEncoder().encode("rules: []\n"));
+    authenticateServiceTokenSpy.mockResolvedValue(evidenceExportAuth);
+    readPolicyContentArtifactSpy.mockResolvedValue({
+      bytes: new TextEncoder().encode("rules: [tampered]\n"),
+      mediaType: "application/yaml",
+    });
+
+    const response = await getRoute.GET(
+      new Request(`http://localhost:3000/api/evidence/policy-artifacts/${hash}`, { headers: { authorization: "Bearer token" } }),
+      { params: Promise.resolve({ contentHash: hash }) },
+    );
+
+    expect(response.status).toBe(500);
+    await expect(response.json()).resolves.toMatchObject({ error: "Artifact integrity check failed." });
   });
 });

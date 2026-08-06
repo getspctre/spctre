@@ -1,5 +1,8 @@
 import { extractTraceId, makeMeta, withTraceId } from "@spctre/api-contracts";
-import { readPolicyContentArtifactForEvidenceToken } from "@/lib/repositories/policy-content-artifacts";
+import {
+  policyContentHash,
+  readPolicyContentArtifactForEvidenceToken,
+} from "@/lib/repositories/policy-content-artifacts";
 import { authenticateServiceToken } from "@/lib/service-tokens";
 import { runWithTenantContext } from "@/lib/tenant-context";
 
@@ -45,6 +48,12 @@ async function handleGetPolicyArtifact(
       Response.json({ error: "Artifact not found.", meta: makeMeta(traceId) }, { status: 404 }),
       traceId,
     );
+  }
+  // Content-addressing is a read-time invariant too. Do not hand a verifier
+  // bytes merely because they are stored under a claimed digest: it must be
+  // able to reconstruct and independently verify the exact reference.
+  if (policyContentHash(artifact.bytes) !== contentHash) {
+    return withTraceId(Response.json({ error: "Artifact integrity check failed.", meta: makeMeta(traceId) }, { status: 500 }), traceId);
   }
   return withTraceId(
     new Response(Buffer.from(artifact.bytes), {
