@@ -1,5 +1,4 @@
 import { getActiveActor } from "@/lib/actors";
-import { redactAndBoundParameters } from "@spctre/api-contracts";
 import { evidenceIngestUrl, workerInternalSecret } from "@/lib/platform/config";
 import { runWithTenantContext } from "@/lib/tenant-context";
 import { fetchWithTimeout } from "@/lib/platform/fetch-timeout";
@@ -208,10 +207,12 @@ async function getGatewayEscalationStatusInTenant(params: {
 
   if (!status) return { status: null };
 
-  // The persisted parameters are an immutable, redacted/bounded snapshot of
-  // the decision. They become a cross-machine handoff only after a human has
-  // resolved this exact escalation to PROCEED. Never expose them for pending,
-  // expired, or denied escalation states.
+  // The persisted parameters are an immutable, verbatim snapshot of the
+  // decision: the agent replays them to execute the approved action, so they
+  // must not be redacted or bounded at rest. Reviewer-facing surfaces redact
+  // on display instead. They become a cross-machine handoff only after a human
+  // has resolved this exact escalation to PROCEED. Never expose them for
+  // pending, expired, or denied escalation states.
   const { toolParameters, ...publicStatus } = status;
   if (
     publicStatus.status === "RESOLVED" &&
@@ -295,7 +296,7 @@ async function persistGatewayDecisionAndBrokerCredentialsInTenant(
     slaHours: params.decisionResult.slaHours,
     toolIntent: params.input.toolIntent,
     planSummary: params.input.planSummary,
-    toolParameters: redactAndBoundParameters(params.input.toolParameters),
+    toolParameters: params.input.toolParameters,
     connector: params.input.connector,
     action: params.input.action,
   });
