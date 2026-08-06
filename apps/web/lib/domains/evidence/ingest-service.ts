@@ -227,6 +227,38 @@ function executionTraceFrom(
     : null;
 }
 
+/**
+ * Extract the narrowly-scoped runtime fact emitted by compatible agents. This
+ * is deliberately not a generic raw-evidence hash: only the documented
+ * `spctre-runtime-facts/v1` envelope is eligible for byte-exact custody, and
+ * its revision must be one of the authoritative policy-context revisions.
+ */
+export function policyContentReferenceFromEvidence(
+  evidence: RuntimeDecisionEvidenceRecord,
+): { contentHash: string; revisionId: string } | undefined {
+  const facts = evidence.rawEvidence.spctre_runtime;
+  if (!facts || typeof facts !== "object" || Array.isArray(facts)) return undefined;
+  const factsRecord = facts as Record<string, unknown>;
+  if (factsRecord.schema !== "spctre-runtime-facts/v1") return undefined;
+  const policy = factsRecord.policy;
+  if (!policy || typeof policy !== "object" || Array.isArray(policy)) return undefined;
+  const contentHash = (policy as Record<string, unknown>).content_hash;
+  if (typeof contentHash !== "string" || !/^sha256:[0-9a-f]{64}$/.test(contentHash)) {
+    return undefined;
+  }
+
+  const revisionIds = (policy as Record<string, unknown>).revision_ids;
+  if (!Array.isArray(revisionIds)) return undefined;
+  const contextByRevisionId = new Map(
+    evidence.policyContext.map((context) => [context.revisionId, context]),
+  );
+  const matchingRevisionId = revisionIds.find(
+    (revisionId): revisionId is string =>
+      typeof revisionId === "string" && contextByRevisionId.has(revisionId),
+  );
+  return matchingRevisionId ? { contentHash, revisionId: matchingRevisionId } : undefined;
+}
+
 async function persistEvidence(input: {
   tenantId: string;
   workspaceId: string;
@@ -268,6 +300,7 @@ async function persistEvidence(input: {
       },
       executionTrace: executionTraceFrom(rawPayload),
       engineVersion,
+      policyContentReference: policyContentReferenceFromEvidence(evidence),
     });
 
     if (!insertResult.inserted) {

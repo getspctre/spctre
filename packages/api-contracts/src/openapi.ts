@@ -375,6 +375,23 @@ export const SPCTRE_OPENAPI_SPEC = {
         },
       },
 
+      PolicyContentArtifactRetainResponse: {
+        type: "object",
+        required: ["contentHash", "retained", "meta"],
+        properties: {
+          contentHash: {
+            type: "string",
+            pattern: "^sha256:[0-9a-f]{64}$",
+            description: "SHA-256 identity of the exact retained bytes.",
+          },
+          retained: {
+            type: "boolean",
+            description: "True when the byte-exact artifact is durably retained (including idempotent repeats).",
+          },
+          meta: { $ref: "#/components/schemas/ApiMeta" },
+        },
+      },
+
       GitCheckpointIngestRequest: {
         type: "object",
         required: ["idempotencyKey", "environment", "status", "reason", "checkpoint"],
@@ -1254,6 +1271,84 @@ export const SPCTRE_OPENAPI_SPEC = {
           "400": { $ref: "#/components/responses/BadRequest" },
           "401": { $ref: "#/components/responses/Unauthorized" },
           "403": { $ref: "#/components/responses/Forbidden" },
+          "503": { $ref: "#/components/responses/ServiceUnavailable" },
+        },
+      },
+    },
+
+    "/evidence/policy-artifacts": {
+      post: {
+        operationId: "retainPolicyContentArtifact",
+        summary: "Retain a byte-exact policy content artifact",
+        description:
+          "Stores the exact policy bytes addressed by `X-Spctre-Content-Hash`. Requires an `evidence:export` service token bound to a connector with at least one active revision grant. The server enforces the media type, 10 MiB limit, and claimed SHA-256 hash before encrypted retention.",
+        "x-spctre-plan": "oss",
+        tags: ["Evidence"],
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          {
+            name: "X-Spctre-Content-Hash",
+            in: "header",
+            required: true,
+            schema: { type: "string", pattern: "^sha256:[0-9a-f]{64}$" },
+            description: "SHA-256 identity (`sha256:<hex>`) of the request body bytes.",
+          },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            "application/yaml": { schema: { type: "string", format: "binary" } },
+            "application/json": { schema: { type: "string", format: "binary" } },
+            "text/plain": { schema: { type: "string", format: "binary" } },
+          },
+        },
+        responses: {
+          "201": {
+            description: "Artifact retained.",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/PolicyContentArtifactRetainResponse" },
+              },
+            },
+          },
+          "400": { $ref: "#/components/responses/BadRequest" },
+          "401": { $ref: "#/components/responses/Unauthorized" },
+          "413": { description: "Artifact body exceeds the 10 MiB maximum." },
+          "503": { $ref: "#/components/responses/ServiceUnavailable" },
+        },
+      },
+    },
+
+    "/evidence/policy-artifacts/{contentHash}": {
+      get: {
+        operationId: "getPolicyContentArtifact",
+        summary: "Read a policy artifact referenced by authorized evidence",
+        description:
+          "Returns the original retained bytes only when the caller's connector and active revision grant can reference the artifact through retained runtime evidence. Unauthorized and absent artifacts intentionally produce the same 404 response.",
+        "x-spctre-plan": "oss",
+        tags: ["Evidence"],
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          {
+            name: "contentHash",
+            in: "path",
+            required: true,
+            schema: { type: "string", pattern: "^sha256:[0-9a-f]{64}$" },
+            description: "SHA-256 identity (`sha256:<hex>`) of the retained policy bytes.",
+          },
+        ],
+        responses: {
+          "200": {
+            description: "Original retained artifact bytes. Content-Type reflects the retained media type.",
+            content: {
+              "application/yaml": { schema: { type: "string", format: "binary" } },
+              "application/json": { schema: { type: "string", format: "binary" } },
+              "text/plain": { schema: { type: "string", format: "binary" } },
+            },
+          },
+          "400": { $ref: "#/components/responses/BadRequest" },
+          "401": { $ref: "#/components/responses/Unauthorized" },
+          "404": { $ref: "#/components/responses/NotFound" },
           "503": { $ref: "#/components/responses/ServiceUnavailable" },
         },
       },
