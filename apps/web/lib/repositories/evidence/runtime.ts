@@ -104,6 +104,38 @@ export async function listRuntimeEvidence(
   return rows.map((row) => mapRuntimeEvidenceRow(row, packByRevisionId));
 }
 
+/**
+ * Connector-scoped evidence retrieval for a service-token principal. Revision
+ * and time grants are applied by the evidence domain after the persisted token
+ * identity has been resolved; callers never provide a connector selector.
+ */
+export async function listRuntimeEvidenceForConnector(
+  workspaceId: string,
+  tenantId: string,
+  connector: string,
+  limit = 5000,
+): Promise<RuntimeDecisionEvidenceRecord[]> {
+  if (!sql) return [];
+  const rows = await sql<RuntimeEvidenceRow[]>`
+    SELECT
+      decision_id, tenant_id, workspace_id, environment,
+      runtime_stack, runtime_adapter, agent_id, connector, action,
+      status, reason, policy_refs, artifact_hash, policy_context,
+      raw_evidence, latency_ms, created_at
+    FROM runtime_evidence_event
+    WHERE tenant_id = ${tenantId}
+      AND workspace_id = ${workspaceId}
+      AND connector = ${connector}
+    ORDER BY created_at DESC
+    LIMIT ${Math.min(Math.max(limit, 1), 5000)}
+  `;
+  const packByRevisionId = await loadRevisionPackMetadata(
+    tenantId,
+    revisionIdsFromEvidenceRows(rows),
+  );
+  return rows.map((row) => mapRuntimeEvidenceRow(row, packByRevisionId));
+}
+
 // Distinct connector/action pairs seen in retained evidence, for the rule
 // builder's "connector/action from observed evidence" vocabulary. Capped and
 // ordered so the newest-active surfaces first.

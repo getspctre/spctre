@@ -52,6 +52,7 @@ export interface ServiceTokenAuth {
   workspaceId: string;
   principalId: string;
   connector?: string;
+  evidenceExportGrants: Array<{ revisionId: string; notBefore: string; notAfter?: string }>;
   scopes: ServiceTokenScope[];
 }
 
@@ -133,6 +134,16 @@ export async function authenticateServiceToken(
     WHERE id = ${row.id}
   `;
 
+  const grantRows = scopes.includes("evidence:export")
+    ? await db<{ revision_id: string; not_before: Date; not_after: Date | null }[]>`
+        SELECT revision_id, not_before, not_after
+        FROM service_token_evidence_export_grant
+        WHERE token_id = ${row.id}
+          AND not_before <= now()
+          AND (not_after IS NULL OR not_after > now())
+      `
+    : [];
+
   return {
     ok: true,
     auth: {
@@ -141,6 +152,11 @@ export async function authenticateServiceToken(
       workspaceId: row.workspace_id,
       principalId: row.principal_id,
       connector: row.connector ?? undefined,
+      evidenceExportGrants: grantRows.map((grant) => ({
+        revisionId: grant.revision_id,
+        notBefore: grant.not_before.toISOString(),
+        notAfter: grant.not_after?.toISOString(),
+      })),
       scopes,
     },
   };

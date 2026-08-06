@@ -3,7 +3,9 @@ import {
   getAgtVerificationExportInputs,
   getGatewayOutcomeMapForEvidence,
   listEvidenceForExport,
+  listEvidenceForTokenExport,
 } from "@/lib/domains/evidence/service";
+import { authenticateServiceToken, hasBearerToken } from "@/lib/service-tokens";
 import { getActiveScope } from "@/lib/workspace";
 import { buildAgtVerificationEvidencePacket } from "@spctre/policy-schema";
 import { extractTraceId, makeMeta, withTraceId } from "@spctre/api-contracts";
@@ -20,21 +22,6 @@ async function handleGetApiEvidenceExport(request: Request) {
     "api.evidence.export",
     { "spctre.request_id": traceId, "http.route": "/api/evidence/export" },
     async (span) => {
-      const session = await getAuthSession().catch(swallow("getAuthSession", null));
-      if (!session) {
-        incrementCounter("spctre.api.errors", 1, {
-          "http.route": "/api/evidence/export",
-          "http.response.status_code": 401,
-        });
-        return withTraceId(
-          Response.json(
-            { error: "Authentication required.", meta: makeMeta(traceId) },
-            { status: 401 },
-          ),
-          traceId,
-        );
-      }
-
       const url = new URL(request.url);
       const requestedFormat = url.searchParams.get("format");
       const format =
@@ -43,10 +30,41 @@ async function handleGetApiEvidenceExport(request: Request) {
           : "csv";
       span.setAttribute("spctre.export.format", format);
 
-      let workspaceContext;
-      try {
-        workspaceContext = await getActiveScope();
-      } catch (err) {
+      const bearer = hasBearerToken(request);
+      const tokenAuth = bearer
+        ? await authenticateServiceToken(request, "evidence:export")
+        : null;
+      const evidenceToken = tokenAuth?.ok ? tokenAuth.auth : null;
+      if (bearer && (!evidenceToken?.connector || !evidenceToken.evidenceExportGrants.length)) {
+        return withTraceId(
+          Response.json({ error: "Invalid or insufficient evidence export token.", meta: makeMeta(traceId) }, { status: 401 }),
+          traceId,
+        );
+      }
+      if (bearer && requestedFormat === "agt-verification") {
+        return withTraceId(
+          Response.json({ error: "AGT verification packets require a live harness attestation.", meta: makeMeta(traceId) }, { status: 403 }),
+          traceId,
+        );
+      }
+      if (bearer && url.searchParams.has("connector") && url.searchParams.get("connector") !== evidenceToken!.connector) {
+        return withTraceId(
+          Response.json({ error: "Connector does not match token identity.", meta: makeMeta(traceId) }, { status: 403 }),
+          traceId,
+        );
+      }
+
+      let workspaceContext: { workspaceId: string; tenantId: string };
+      if (bearer) {
+        workspaceContext = { workspaceId: evidenceToken!.workspaceId, tenantId: evidenceToken!.tenantId };
+      } else {
+        const session = await getAuthSession().catch(swallow("getAuthSession", null));
+        if (!session) {
+          return withTraceId(Response.json({ error: "Authentication required.", meta: makeMeta(traceId) }, { status: 401 }), traceId);
+        }
+        try {
+          workspaceContext = await getActiveScope();
+        } catch (err) {
         incrementCounter("spctre.api.errors", 1, {
           "http.route": "/api/evidence/export",
           "http.response.status_code": 503,
@@ -59,6 +77,7 @@ async function handleGetApiEvidenceExport(request: Request) {
           ),
           traceId,
         );
+        }
       }
 
       if (!workspaceContext.workspaceId || !workspaceContext.tenantId) {
@@ -77,12 +96,19 @@ async function handleGetApiEvidenceExport(request: Request) {
 
       let evidence;
       try {
-        evidence = await listEvidenceForExport({
-          workspaceId: workspaceContext.workspaceId,
-          tenantId: workspaceContext.tenantId,
-          limit: 5000,
-          offset: 0,
-        });
+        evidence = bearer
+          ? await listEvidenceForTokenExport({
+              workspaceId: workspaceContext.workspaceId,
+              tenantId: workspaceContext.tenantId,
+              connector: evidenceToken!.connector!,
+              grants: evidenceToken!.evidenceExportGrants,
+            })
+          : await listEvidenceForExport({
+              workspaceId: workspaceContext.workspaceId,
+              tenantId: workspaceContext.tenantId,
+              limit: 5000,
+              offset: 0,
+            });
       } catch (err) {
         incrementCounter("spctre.api.errors", 1, {
           "http.route": "/api/evidence/export",

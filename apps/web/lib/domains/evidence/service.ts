@@ -7,6 +7,7 @@ import {
   getEvidenceSimulationRun,
   getSimulationRunReview,
   listRuntimeEvidence,
+  listRuntimeEvidenceForConnector,
   listRuntimeEvidenceKeyset,
   listSimulationRuns,
   persistSimulationRun,
@@ -294,6 +295,29 @@ export async function listEvidenceForExport(params: {
   offset: number;
 }) {
   return listRuntimeEvidence(params.workspaceId, params.tenantId, params.limit, params.offset);
+}
+
+export async function listEvidenceForTokenExport(params: {
+  workspaceId: string;
+  tenantId: string;
+  connector: string;
+  grants: Array<{ revisionId: string; notBefore: string; notAfter?: string }>;
+}) {
+  const evidence = await listRuntimeEvidenceForConnector(
+    params.workspaceId,
+    params.tenantId,
+    params.connector,
+    5000,
+  );
+  return evidence.filter((record) =>
+    params.grants.some((grant) => {
+      const createdAt = new Date(record.createdAt).getTime();
+      const withinWindow =
+        createdAt >= new Date(grant.notBefore).getTime() &&
+        (!grant.notAfter || createdAt < new Date(grant.notAfter).getTime());
+      return withinWindow && record.policyContext.some((context) => context.revisionId === grant.revisionId);
+    }),
+  );
 }
 
 export async function getAgtVerificationExportInputs(params: {
