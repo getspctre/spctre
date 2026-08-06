@@ -15,6 +15,8 @@ function verificationInsertValues(params: IngestVerificationParams) {
     revisionId: params.revisionId ?? null,
     runtimeVersion: params.runtimeVersion ?? null,
     verifierLockDigest: params.verifierLockDigest ?? null,
+    verifierId: params.verifierId ?? null,
+    verifierDigest: params.verifierDigest ?? null,
     policyContentHash: params.policyContentHash ?? null,
     argumentsHash: params.argumentsHash ?? null,
     approverDid: params.approverDid ?? null,
@@ -47,6 +49,8 @@ interface IngestVerificationParams {
   runBy: string;
   runtimeVersion?: string;
   verifierLockDigest?: string;
+  verifierId?: string;
+  verifierDigest?: string;
   policyContentHash?: string;
   // AGT v4.0.0 additive tamper-evidence fields (spec §4.3.1)
   argumentsHash?: string;
@@ -77,7 +81,7 @@ export async function ingestVerificationResult(
   try {
     const rows = await sql<{ id: string }[]>`
       INSERT INTO agt_verification_result (
-        tenant_id, workspace_id, revision_id, artifact_hash, verifier_lock_digest, policy_content_hash,
+        tenant_id, workspace_id, revision_id, artifact_hash, verifier_lock_digest, verifier_id, verifier_digest, policy_content_hash,
         verification_type, outcome, summary, run_by, runtime_version,
         arguments_hash, approver_did, policy_version, issued_at, completed_at,
         agt_version, agt_policies_version, cedar_policy_version, policy_engine_version,
@@ -86,7 +90,7 @@ export async function ingestVerificationResult(
         escrow_verification_outcome, escrow_verified_at
       ) VALUES (
         ${params.tenantId}, ${params.workspaceId}, ${v.revisionId},
-        ${params.artifactHash}, ${v.verifierLockDigest}, ${v.policyContentHash}, ${params.verificationType}, ${params.outcome},
+        ${params.artifactHash}, ${v.verifierLockDigest}, ${v.verifierId}, ${v.verifierDigest}, ${v.policyContentHash}, ${params.verificationType}, ${params.outcome},
         ${sql.json(params.summary as JSONValue)}::jsonb, ${params.runBy}, ${v.runtimeVersion},
         ${v.argumentsHash}, ${v.approverDid}, ${v.policyVersion},
         ${v.issuedAt}, ${v.completedAt},

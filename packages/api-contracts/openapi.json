@@ -1719,6 +1719,16 @@
           "runtimeVersion": {
             "type": "string"
           },
+          "verifierId": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Verifier implementation identity."
+          },
+          "verifierDigest": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$",
+            "description": "Immutable verifier build or configuration digest."
+          },
           "argumentsHash": {
             "type": "string"
           },

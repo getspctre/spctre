@@ -964,6 +964,8 @@ export const SPCTRE_OPENAPI_SPEC = {
           outcome: { type: "string", enum: ["PASS", "FAIL", "WARN"] },
           revisionId: { type: "string" },
           runtimeVersion: { type: "string" },
+          verifierId: { type: "string", minLength: 1, description: "Verifier implementation identity." },
+          verifierDigest: { type: "string", pattern: "^sha256:[0-9a-f]{64}$", description: "Immutable verifier build or configuration digest." },
           argumentsHash: { type: "string" },
           approverDid: { type: "string" },
           policyVersion: { type: "string" },

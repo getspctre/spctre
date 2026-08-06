@@ -42,6 +42,7 @@ function validateVerificationFields(fields: {
   compatibilityCheckOutcome?: "PASS" | "FAIL" | "WARN";
   escrowVerificationOutcome?: "PASS" | "FAIL" | "WARN";
   verifierLockDigest?: string;
+  verifierDigest?: string;
   policyContentHash?: string;
 }): string | null {
   if (!fields.artifactHash) {
@@ -69,9 +70,10 @@ function validateVerificationFields(fields: {
   }
   if (
     (fields.verifierLockDigest && !/^sha256:[0-9a-f]{64}$/.test(fields.verifierLockDigest)) ||
+    (fields.verifierDigest && !/^sha256:[0-9a-f]{64}$/.test(fields.verifierDigest)) ||
     (fields.policyContentHash && !/^sha256:[0-9a-f]{64}$/.test(fields.policyContentHash))
   ) {
-    return "verifierLockDigest and policyContentHash must be lowercase SHA-256 digests.";
+    return "verifierLockDigest, verifierDigest, and policyContentHash must be lowercase SHA-256 digests.";
   }
   return null;
 }
@@ -120,6 +122,8 @@ async function handlePostApiVerification(request: Request) {
       const revisionId = asString(rec.revisionId);
       const runtimeVersion = asString(rec.runtimeVersion);
       const verifierLockDigest = asString(rec.verifierLockDigest);
+      const verifierId = asString(rec.verifierId);
+      const verifierDigest = asString(rec.verifierDigest);
       const policyContentHash = asString(rec.policyContentHash);
       const summary =
         rec.summary && typeof rec.summary === "object" && !Array.isArray(rec.summary)
@@ -157,6 +161,7 @@ async function handlePostApiVerification(request: Request) {
         compatibilityCheckOutcome,
         escrowVerificationOutcome,
         verifierLockDigest,
+        verifierDigest,
         policyContentHash,
       });
       if (validationError) {
@@ -181,6 +186,8 @@ async function handlePostApiVerification(request: Request) {
         runBy: auth.actorId,
         runtimeVersion,
         verifierLockDigest,
+        verifierId,
+        verifierDigest,
         policyContentHash,
         argumentsHash,
         approverDid,
@@ -225,6 +232,8 @@ async function handlePostApiVerification(request: Request) {
           artifactHash,
           policyContentHash,
           verifierLockDigest,
+          verifierId,
+          verifierDigest,
           verificationType,
           outcome,
           revisionId,
