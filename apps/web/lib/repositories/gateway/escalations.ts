@@ -1,7 +1,6 @@
 import { logger } from "@spctre/platform/logging";
 import { redactAndBoundParameters } from "@spctre/api-contracts";
 import { sql } from "@/lib/db";
-import { reportSwallowedError } from "@/lib/platform/swallow";
 import type { GatewayEscalationQueueItem } from "@spctre/policy-schema";
 
 export interface OpenEscalationSummary {
@@ -73,38 +72,36 @@ export async function listOpenEscalationQueue(
   tenantId: string,
   limit = 50,
 ): Promise<GatewayEscalationQueueItem[]> {
+  // An unconfigured database is a real, non-error state (demo/dev). A query
+  // failure is not: it propagates so the caller decides. GET
+  // /api/gateway/escalations answers 503, and callers that genuinely prefer to
+  // degrade — the workspace dashboard card — opt in with swallow() at their own
+  // call site. Returning [] here would make a broken query indistinguishable
+  // from a clear queue, which is how a missing column reached production
+  // looking like "Queue is clear".
   if (!sql) return [];
 
-  try {
-    const rows = await sql<EscalationQueueRow[]>`
-      SELECT
-        geq.id, geq.tenant_id, geq.workspace_id, geq.gateway_decision_id, geq.decision_id,
-        geq.revision_id, geq.artifact_hash, geq.status, geq.assigned_to, geq.sla_due_at,
-        geq.handoff_notes, geq.resolved_at, geq.resolution_outcome, geq.resolution_note,
-        gd.connector, gd.action,
-        gd.consequence, gd.customer_tier, gd.confidence::text, gd.amount_usd::text,
-        gd.data_sensitivity, gd.trust_score::text, gd.context_budget, gd.risk_level,
-        gd.reason AS gateway_reason, gd.agent_id,
-        gd.tool_intent, gd.plan_summary, gd.tool_parameters, gd.safeguard_telemetry,
-        geq.created_at, geq.updated_at
-      FROM gateway_escalation_queue geq
-      JOIN gateway_decision gd ON gd.id = geq.gateway_decision_id
-      WHERE geq.tenant_id = ${tenantId}
-        AND geq.workspace_id = ${workspaceId}
-        AND geq.status IN ('PENDING', 'IN_REVIEW')
-      ORDER BY geq.sla_due_at ASC
-      LIMIT ${limit}
-    `;
+  const rows = await sql<EscalationQueueRow[]>`
+    SELECT
+      geq.id, geq.tenant_id, geq.workspace_id, geq.gateway_decision_id, geq.decision_id,
+      geq.revision_id, geq.artifact_hash, geq.status, geq.assigned_to, geq.sla_due_at,
+      geq.handoff_notes, geq.resolved_at, geq.resolution_outcome, geq.resolution_note,
+      gd.connector, gd.action,
+      gd.consequence, gd.customer_tier, gd.confidence::text, gd.amount_usd::text,
+      gd.data_sensitivity, gd.trust_score::text, gd.context_budget, gd.risk_level,
+      gd.reason AS gateway_reason, gd.agent_id,
+      gd.tool_intent, gd.plan_summary, gd.tool_parameters, gd.safeguard_telemetry,
+      geq.created_at, geq.updated_at
+    FROM gateway_escalation_queue geq
+    JOIN gateway_decision gd ON gd.id = geq.gateway_decision_id
+    WHERE geq.tenant_id = ${tenantId}
+      AND geq.workspace_id = ${workspaceId}
+      AND geq.status IN ('PENDING', 'IN_REVIEW')
+    ORDER BY geq.sla_due_at ASC
+    LIMIT ${limit}
+  `;
 
-    return rows.map(mapEscalationQueueRow);
-  } catch (error) {
-    // A bare catch here renders the escalation queue as legitimately empty
-    // whether the tenant has no open escalations or the query is broken — the
-    // failure mode that hid a missing-column error behind a healthy-looking
-    // empty triage view.
-    reportSwallowedError("listOpenEscalationQueue", error);
-    return [];
-  }
+  return rows.map(mapEscalationQueueRow);
 }
 
 // Row shape for the joined escalation-queue query above; drives both mappers.
@@ -487,73 +484,68 @@ export async function getEscalationStatusByDecisionId(
   tenantId: string,
   workspaceId: string,
 ): Promise<EscalationStatus | null> {
+  // null means "no escalation for this decision" — a 404 the runtime client
+  // acts on. A query failure must not borrow that meaning: it propagates so the
+  // status route can answer 503, which its handler is already written for.
   if (!sql || !decisionId) return null;
 
-  try {
-    const rows = await sql<
-      {
-        decision_id: string;
-        gateway_decision_id: string;
-        status: EscalationStatus["status"];
-        resolution_outcome: EscalationStatus["resolutionOutcome"] | null;
-        resolution_note: string | null;
-        agent_guidance: string | null;
-        sla_due_at: Date | null;
-        resolved_at: Date | null;
-        connector: string | null;
-        action: string | null;
-        tool_parameters: unknown;
-      }[]
-    >`
-      SELECT
-        geq.decision_id,
-        geq.gateway_decision_id,
-        geq.status,
-        geq.resolution_outcome,
-        geq.resolution_note,
-        geq.agent_guidance,
-        geq.sla_due_at,
-        geq.resolved_at,
-        gd.connector,
-        gd.action,
-        gd.tool_parameters
-      FROM gateway_escalation_queue geq
-      JOIN gateway_decision gd ON gd.id = geq.gateway_decision_id
-      WHERE geq.tenant_id = ${tenantId}
-        AND geq.workspace_id = ${workspaceId}
-        AND geq.decision_id = ${decisionId}
-      ORDER BY geq.created_at DESC
-      LIMIT 1
-    `;
+  const rows = await sql<
+    {
+      decision_id: string;
+      gateway_decision_id: string;
+      status: EscalationStatus["status"];
+      resolution_outcome: EscalationStatus["resolutionOutcome"] | null;
+      resolution_note: string | null;
+      agent_guidance: string | null;
+      sla_due_at: Date | null;
+      resolved_at: Date | null;
+      connector: string | null;
+      action: string | null;
+      tool_parameters: unknown;
+    }[]
+  >`
+    SELECT
+      geq.decision_id,
+      geq.gateway_decision_id,
+      geq.status,
+      geq.resolution_outcome,
+      geq.resolution_note,
+      geq.agent_guidance,
+      geq.sla_due_at,
+      geq.resolved_at,
+      gd.connector,
+      gd.action,
+      gd.tool_parameters
+    FROM gateway_escalation_queue geq
+    JOIN gateway_decision gd ON gd.id = geq.gateway_decision_id
+    WHERE geq.tenant_id = ${tenantId}
+      AND geq.workspace_id = ${workspaceId}
+      AND geq.decision_id = ${decisionId}
+    ORDER BY geq.created_at DESC
+    LIMIT 1
+  `;
 
-    const row = rows[0];
-    if (!row) return null;
+  const row = rows[0];
+  if (!row) return null;
 
-    return {
-      decisionId: row.decision_id,
-      gatewayDecisionId: row.gateway_decision_id,
-      status: row.status,
-      resolutionOutcome: row.resolution_outcome ?? undefined,
-      resolutionNote: row.resolution_note ?? undefined,
-      agentGuidance: row.agent_guidance ?? undefined,
-      slaDueAt: row.sla_due_at?.toISOString(),
-      resolvedAt: row.resolved_at?.toISOString(),
-      connector: row.connector ?? undefined,
-      action: row.action ?? undefined,
-      toolParameters:
-        row.tool_parameters &&
-        typeof row.tool_parameters === "object" &&
-        !Array.isArray(row.tool_parameters)
-          ? (row.tool_parameters as Record<string, unknown>)
-          : undefined,
-    };
-  } catch (error) {
-    // Returning null here is indistinguishable from "this decision was never
-    // escalated", which is what a runtime client polling for a human decision
-    // sees. Make the difference observable.
-    reportSwallowedError("getEscalationStatusByDecisionId", error);
-    return null;
-  }
+  return {
+    decisionId: row.decision_id,
+    gatewayDecisionId: row.gateway_decision_id,
+    status: row.status,
+    resolutionOutcome: row.resolution_outcome ?? undefined,
+    resolutionNote: row.resolution_note ?? undefined,
+    agentGuidance: row.agent_guidance ?? undefined,
+    slaDueAt: row.sla_due_at?.toISOString(),
+    resolvedAt: row.resolved_at?.toISOString(),
+    connector: row.connector ?? undefined,
+    action: row.action ?? undefined,
+    toolParameters:
+      row.tool_parameters &&
+      typeof row.tool_parameters === "object" &&
+      !Array.isArray(row.tool_parameters)
+        ? (row.tool_parameters as Record<string, unknown>)
+        : undefined,
+  };
 }
 
 export async function updateEscalationOutcome(params: {

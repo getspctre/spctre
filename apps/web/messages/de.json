@@ -1279,6 +1279,11 @@
       "title": "Warteschlange ist leer",
       "description": "Keine offenen Eskalationen. Agenten übermitteln hier Entscheidungen, wenn eine Richtlinienregel eine menschliche Freigabe erfordert, bevor ein Tool-Aufruf fortgesetzt wird — verwenden Sie <post>POST /api/escalations</post> mit einer <decision>decisionId</decision> und <notes>handoffNotes</notes>, um eine zur Prüfung weiterzuleiten."
     },
+    "load_error": {
+      "title": "Warteschlange konnte nicht geladen werden",
+      "description": "Die Eskalations-Warteschlange konnte nicht geladen werden — das ist keine Bestätigung, dass nichts zu prüfen ist. Aktualisieren Sie erneut; falls es weiterhin fehlschlägt, prüfen Sie die Control Plane und die Datenbank, bevor Sie von einer leeren Warteschlange ausgehen.",
+      "stale": "Aktualisierung fehlgeschlagen — Liste möglicherweise veraltet"
+    },
     "queue": {
       "eyebrow": "Warteschlange",
       "title": "Offene Eskalationen",

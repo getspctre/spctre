@@ -9,6 +9,7 @@ import { isFeatureEnabled } from "@/lib/feature-flags-server";
 import { formatWorkspaceEyebrow } from "@/lib/workspace";
 import { EscalationQueueView } from "./escalation-queue-view";
 import { getWebOnboardingStatus } from "@/lib/repositories/onboarding/shared";
+import { reportSwallowedError } from "@/lib/platform/swallow";
 import { QuickStartBanner } from "../quick-start-banner";
 
 export async function EscalationsPageContent({ workspaceSlug }: { workspaceSlug?: string } = {}) {
@@ -25,6 +26,7 @@ export async function EscalationsPageContent({ workspaceSlug }: { workspaceSlug?
   let queue: OpenEscalationQueue = [];
   let actors: Array<{ id: string; name: string; email: string | null; reviewerRoles: string[] }> =
     [];
+  let loadFailed = false;
   try {
     const [openQueue, activeActor] = await Promise.all([
       listGatewayEscalationQueue({
@@ -44,13 +46,19 @@ export async function EscalationsPageContent({ workspaceSlug }: { workspaceSlug?
       email: actor.email,
       reviewerRoles: actor.reviewerRoles,
     }));
-  } catch {
-    // DB not available
+  } catch (error) {
+    // The queue read no longer degrades in the repository, so this is a real
+    // failure: an unreachable database, or a broken query. Rendering the
+    // "Queue is clear" empty state here would tell a reviewer there is nothing
+    // to action, which is the opposite of what a failed read means.
+    reportSwallowedError("EscalationsPageContent", error);
+    loadFailed = true;
   }
 
   return (
     <EscalationQueueView
       initialQueue={queue}
+      initialLoadFailed={loadFailed}
       actors={actors}
       hasManagedHitl={hasManagedHitl}
       crossSurfaceIdentity={crossSurfaceIdentity}

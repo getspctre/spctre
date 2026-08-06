@@ -1262,6 +1262,11 @@
       "title": "Queue is clear",
       "description": "No open escalations. Agents submit decisions here when a policy rule requires human sign-off before a tool call proceeds — use <post>POST /api/escalations</post> with a <decision>decisionId</decision> and <notes>handoffNotes</notes> to route one for review."
     },
+    "load_error": {
+      "title": "Queue could not be loaded",
+      "description": "The escalation queue failed to load, so this is not a confirmation that there is nothing to review. Retry the refresh; if it keeps failing, check the control plane and database health before assuming the queue is clear.",
+      "stale": "Refresh failed — list may be stale"
+    },
     "queue": {
       "eyebrow": "Queue",
       "title": "Open Escalations",

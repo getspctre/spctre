@@ -58,6 +58,25 @@ describe("escalation queue review projection", () => {
     vi.clearAllMocks();
   });
 
+  // A query failure must not be spelled the same way as "nothing to review".
+  // Both routes already answer 503 for a rejection; swallowing here is what
+  // made a missing column render as "Queue is clear".
+  it("propagates query failures instead of returning an empty queue", async () => {
+    sqlMock.mockRejectedValue(new Error("column gd.connector does not exist"));
+
+    await expect(escalations.listOpenEscalationQueue("w1", TENANT_ID)).rejects.toThrow(
+      "column gd.connector does not exist",
+    );
+  });
+
+  it("propagates status query failures instead of reporting no escalation", async () => {
+    sqlMock.mockRejectedValue(new Error("connection terminated"));
+
+    await expect(
+      escalations.getEscalationStatusByDecisionId("dec-1", TENANT_ID, "w1"),
+    ).rejects.toThrow("connection terminated");
+  });
+
   it("redacts sensitive parameter keys before they leave the server", async () => {
     sqlMock.mockResolvedValue([queueRow({ apiKey: "sk-live-not-really-a-secret", amount: 4200 })]);
 

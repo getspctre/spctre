@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { CheckCircle2, RefreshCw } from "lucide-react";
+import { AlertTriangle, CheckCircle2, RefreshCw } from "lucide-react";
 import type { GatewayEscalationQueueItem } from "@spctre/policy-schema";
 import { ClaimButton } from "./claim-button";
 import { ResolveForm } from "./resolve-form";
@@ -13,6 +13,7 @@ import { useTranslations } from "next-intl";
 
 interface EscalationQueueViewProps {
   initialQueue: GatewayEscalationQueueItem[];
+  initialLoadFailed?: boolean;
   actors: Array<{ id: string; name: string; email: string | null; reviewerRoles: string[] }>;
   hasManagedHitl: boolean;
   crossSurfaceIdentity: boolean;
@@ -548,6 +549,7 @@ function EscalationDetailPanel({
 
 export function EscalationQueueView({
   initialQueue,
+  initialLoadFailed = false,
   actors,
   hasManagedHitl,
   crossSurfaceIdentity,
@@ -561,7 +563,11 @@ export function EscalationQueueView({
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [currentTime, setCurrentTime] = useState(Date.now());
   const [selectedId, setSelectedId] = useState<string | null>(initialQueue[0]?.id || null);
+  const [loadFailed, setLoadFailed] = useState(initialLoadFailed);
 
+  // A failed refresh must not read as "nothing to action". The route answers
+  // 503 when the queue read fails, so a non-ok response is tracked and shown
+  // rather than leaving the last good queue on screen as if it were current.
   const fetchQueue = useCallback(async () => {
     setIsRefreshing(true);
     try {
@@ -570,10 +576,14 @@ export function EscalationQueueView({
         const data = await response.json();
         if (data && Array.isArray(data.queue)) {
           setQueue(data.queue);
+          setLoadFailed(false);
         }
+      } else {
+        setLoadFailed(true);
       }
     } catch (err) {
       console.error("Failed to fetch escalations queue:", err);
+      setLoadFailed(true);
     } finally {
       setIsRefreshing(false);
       setLastRefreshedAt(Date.now());
@@ -626,6 +636,13 @@ export function EscalationQueueView({
           </h1>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          {/* With a queue on screen, a failed refresh means the list is stale
+              rather than empty — say so instead of silently keeping it. */}
+          {loadFailed && queue.length > 0 && (
+            <span className="pill pillBlock" style={{ fontSize: 12 }}>
+              {t("load_error.stale")}
+            </span>
+          )}
           <span className="meta" style={{ fontSize: 12 }}>
             {refreshedAgoLabel(currentTime, lastRefreshedAt)}
           </span>
@@ -643,7 +660,15 @@ export function EscalationQueueView({
 
       {onboardingBanner}
 
-      {queue.length === 0 ? (
+      {queue.length === 0 && loadFailed ? (
+        <section className="panel">
+          <div className="emptyState">
+            <AlertTriangle size={20} className="sectionIcon" />
+            <h3>{t("load_error.title")}</h3>
+            <p className="meta">{t("load_error.description")}</p>
+          </div>
+        </section>
+      ) : queue.length === 0 ? (
         <section className="panel">
           <div className="emptyState">
             <CheckCircle2 size={20} className="sectionIcon" />
