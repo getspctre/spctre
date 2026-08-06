@@ -14,6 +14,8 @@ function verificationInsertValues(params: IngestVerificationParams) {
   return {
     revisionId: params.revisionId ?? null,
     runtimeVersion: params.runtimeVersion ?? null,
+    verifierLockDigest: params.verifierLockDigest ?? null,
+    policyContentHash: params.policyContentHash ?? null,
     argumentsHash: params.argumentsHash ?? null,
     approverDid: params.approverDid ?? null,
     policyVersion: params.policyVersion ?? null,
@@ -44,6 +46,8 @@ interface IngestVerificationParams {
   summary: Record<string, unknown>;
   runBy: string;
   runtimeVersion?: string;
+  verifierLockDigest?: string;
+  policyContentHash?: string;
   // AGT v4.0.0 additive tamper-evidence fields (spec §4.3.1)
   argumentsHash?: string;
   approverDid?: string;
@@ -73,7 +77,7 @@ export async function ingestVerificationResult(
   try {
     const rows = await sql<{ id: string }[]>`
       INSERT INTO agt_verification_result (
-        tenant_id, workspace_id, revision_id, artifact_hash,
+        tenant_id, workspace_id, revision_id, artifact_hash, verifier_lock_digest, policy_content_hash,
         verification_type, outcome, summary, run_by, runtime_version,
         arguments_hash, approver_did, policy_version, issued_at, completed_at,
         agt_version, agt_policies_version, cedar_policy_version, policy_engine_version,
@@ -82,7 +86,7 @@ export async function ingestVerificationResult(
         escrow_verification_outcome, escrow_verified_at
       ) VALUES (
         ${params.tenantId}, ${params.workspaceId}, ${v.revisionId},
-        ${params.artifactHash}, ${params.verificationType}, ${params.outcome},
+        ${params.artifactHash}, ${v.verifierLockDigest}, ${v.policyContentHash}, ${params.verificationType}, ${params.outcome},
         ${sql.json(params.summary as JSONValue)}::jsonb, ${params.runBy}, ${v.runtimeVersion},
         ${v.argumentsHash}, ${v.approverDid}, ${v.policyVersion},
         ${v.issuedAt}, ${v.completedAt},
@@ -113,7 +117,7 @@ export async function listVerificationResults(
   const limit = options.limit ?? 50;
   try {
     const rows = await sql<VerificationRow[]>`
-      SELECT id, tenant_id, workspace_id, revision_id, artifact_hash,
+      SELECT id, tenant_id, workspace_id, revision_id, artifact_hash, verifier_lock_digest, policy_content_hash,
              verification_type, outcome, summary, run_by, runtime_version, created_at,
              arguments_hash, approver_did, policy_version, issued_at, completed_at,
              agt_version, agt_policies_version, cedar_policy_version, policy_engine_version,
@@ -141,6 +145,8 @@ interface VerificationRow {
   workspace_id: string;
   revision_id: string | null;
   artifact_hash: string;
+  verifier_lock_digest: string | null;
+  policy_content_hash: string | null;
   verification_type: string;
   outcome: string;
   summary: unknown;
@@ -198,6 +204,8 @@ function mapVerificationRow(row: VerificationRow): AgtVerificationResult {
     workspaceId: row.workspace_id,
     revisionId: row.revision_id ?? undefined,
     artifactHash: row.artifact_hash,
+    verifierLockDigest: row.verifier_lock_digest ?? undefined,
+    policyContentHash: row.policy_content_hash ?? undefined,
     verificationType: row.verification_type as AgtVerificationType,
     outcome: row.outcome as AgtVerificationOutcome,
     summary: (row.summary ?? {}) as Record<string, unknown>,

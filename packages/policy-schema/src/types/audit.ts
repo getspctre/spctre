@@ -99,6 +99,8 @@ export interface PolicyComplianceEvidenceExport {
   policyRefCount: number;
   timelineEventCount: number;
   artifactHash: string;
+  verifierLockDigest?: string;
+  policyContentHash?: string;
   simulationEventCount: number;
   packageSections: string[];
   deniedDecisionCount: number;
@@ -201,6 +203,8 @@ export interface AgtVerificationResult {
   workspaceId: string;
   revisionId?: string;
   artifactHash: string;
+  verifierLockDigest?: string;
+  policyContentHash?: string;
   verificationType: AgtVerificationType;
   outcome: AgtVerificationOutcome;
   summary: Record<string, unknown>;
