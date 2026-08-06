@@ -17,6 +17,7 @@ import { getCommercialProfile } from "@/lib/repositories/workspace";
 export async function countRuntimeEvidence(
   workspaceId: string | null,
   tenantId: string,
+  includeOnboardingSamples = false,
 ): Promise<number> {
   if (!sql) return 0;
   const rows = await sql<{ count: string }[]>`
@@ -28,6 +29,7 @@ export async function countRuntimeEvidence(
      AND event_key.evidence_event_id = event.id
     WHERE event.tenant_id = ${tenantId}
       AND event.workspace_id = ${workspaceId}
+      ${includeOnboardingSamples ? rawSql`` : rawSql`AND COALESCE(event.raw_evidence->>'_source', event.raw_evidence->>'source', '') <> 'quickstart'`}
   `;
   return parseInt(rows[0]?.count ?? "0", 10);
 }
@@ -176,6 +178,7 @@ export async function listRuntimeEvidenceKeyset(
   tenantId: string,
   limit: number,
   cursor: KeysetCursor | null,
+  includeOnboardingSamples = false,
 ): Promise<RuntimeEvidenceKeysetRow[]> {
   if (!sql) return [];
   const ascending = cursor?.dir === "prev";
@@ -201,6 +204,7 @@ export async function listRuntimeEvidenceKeyset(
      AND event_key.evidence_event_id = event.id
     WHERE event.tenant_id = ${tenantId}
       AND event.workspace_id = ${workspaceId}
+      ${includeOnboardingSamples ? rawSql`` : rawSql`AND COALESCE(event.raw_evidence->>'_source', event.raw_evidence->>'source', '') <> 'quickstart'`}
       ${keysetPredicate}
     ${ordering}
     LIMIT ${limit + 1}

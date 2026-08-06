@@ -41,6 +41,7 @@ export async function EvidencePageContent({
   const t = await getTranslations("evidence");
   const query = getEvidenceSearchQuery(params);
   const cursor = firstParam(params.cursor);
+  const includeOnboardingSamples = firstParam(params.samples) === "1";
   const highlightId = typeof params.highlight === "string" ? params.highlight : undefined;
   const appViewMode = await getAppViewMode();
   const forensicMode = isForensicViewMode(appViewMode);
@@ -65,7 +66,13 @@ export async function EvidencePageContent({
     allowCount,
     intentRiskPatterns,
     controlMappingIndex,
-  } = await getEvidencePageModel({ workspaceSlug, query, cursor, pageSize: EVIDENCE_PAGE_SIZE });
+  } = await getEvidencePageModel({
+    workspaceSlug,
+    query,
+    cursor,
+    pageSize: EVIDENCE_PAGE_SIZE,
+    includeOnboardingSamples,
+  });
   const evidencePath = workspaceSlug ? `/${workspaceSlug}/evidence` : "/evidence";
   const searchInspectorOpen = firstParam(params.inspector) === "search";
   const cursorHref = (targetCursor: string | null) =>
@@ -93,6 +100,14 @@ export async function EvidencePageContent({
               {t("header.policy_replay")}
             </a>
             <EvidenceExportDialog />
+            {onboardingStatus?.quickStartEvidenceCount > 0 ? (
+              <a
+                className="button"
+                href={includeOnboardingSamples ? evidencePath : `${evidencePath}?samples=1`}
+              >
+                {includeOnboardingSamples ? "Hide onboarding samples" : "Show onboarding samples"}
+              </a>
+            ) : null}
             <EvidenceSearchInspector
               actionPath={evidencePath}
               defaultOpen={searchInspectorOpen}

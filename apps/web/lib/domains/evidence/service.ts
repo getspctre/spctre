@@ -110,11 +110,13 @@ export async function getEvidencePageModel({
   query,
   cursor,
   pageSize,
+  includeOnboardingSamples = false,
 }: {
   workspaceSlug?: string;
   query: RuntimeEvidenceSearchQuery;
   cursor?: string;
   pageSize: number;
+  includeOnboardingSamples?: boolean;
 }): Promise<EvidencePageModel> {
   const workspaceContext = await getWorkspaceContext({ workspaceSlug });
   const { tenantId, workspaceId } = workspaceContext;
@@ -138,9 +140,15 @@ export async function getEvidencePageModel({
 
   const dbResult = await runWithTenantContext(tenantId, () =>
     Promise.all([
-      listRuntimeEvidenceKeyset(workspaceId, tenantId, pageSize, decodedCursor),
-      evidenceCountCache.get(`${tenantId}:${workspaceId}`, () =>
-        countRuntimeEvidence(workspaceId, tenantId),
+      listRuntimeEvidenceKeyset(
+        workspaceId,
+        tenantId,
+        pageSize,
+        decodedCursor,
+        includeOnboardingSamples,
+      ),
+      evidenceCountCache.get(`${tenantId}:${workspaceId}:${includeOnboardingSamples}`, () =>
+        countRuntimeEvidence(workspaceId, tenantId, includeOnboardingSamples),
       ),
     ]),
   ).catch(degrade("runWithTenantContext", null));

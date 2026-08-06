@@ -45,6 +45,7 @@ export async function listAgentSummaries(
       FROM runtime_evidence_event
       WHERE tenant_id = ${tenantId}
         AND workspace_id = ${workspaceId}
+        AND COALESCE(raw_evidence->>'_source', raw_evidence->>'source', '') <> 'quickstart'
       ORDER BY agent_id, environment, runtime_stack, created_at DESC
     ),
     latest_published AS (
@@ -77,6 +78,7 @@ export async function listAgentSummaries(
     LEFT JOIN latest_published lp ON TRUE
     WHERE e.tenant_id = ${tenantId}
       AND e.workspace_id = ${workspaceId}
+      AND COALESCE(e.raw_evidence->>'_source', e.raw_evidence->>'source', '') <> 'quickstart'
     GROUP BY e.agent_id, e.environment, e.runtime_stack, lh.artifact_hash, lp.artifact_hash
     ORDER BY last_seen DESC
   `;
