@@ -5,6 +5,7 @@ import {
   retainPolicyContentArtifact,
 } from "@/lib/repositories/policy-content-artifacts";
 import { authenticateServiceToken } from "@/lib/service-tokens";
+import { runWithTenantContext } from "@/lib/tenant-context";
 
 export const dynamic = "force-dynamic";
 
@@ -24,14 +25,16 @@ async function handlePostPolicyArtifact(request: Request) {
     return withTraceId(Response.json({ error: "Content hash mismatch.", meta: makeMeta(traceId) }, { status: 400 }), traceId);
   }
   try {
-    await retainPolicyContentArtifact({
-      contentHash: claimedHash,
-      bytes,
-      mediaType,
-      tenantId: auth.auth.tenantId,
-      workspaceId: auth.auth.workspaceId,
-      tokenId: auth.auth.tokenId,
-    });
+    await runWithTenantContext(auth.auth.tenantId, () =>
+      retainPolicyContentArtifact({
+        contentHash: claimedHash,
+        bytes,
+        mediaType,
+        tenantId: auth.auth.tenantId,
+        workspaceId: auth.auth.workspaceId,
+        tokenId: auth.auth.tokenId,
+      }),
+    );
   } catch (error) {
     return withTraceId(Response.json({ error: error instanceof Error ? error.message : "Artifact retention failed.", meta: makeMeta(traceId) }, { status: 400 }), traceId);
   }

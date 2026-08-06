@@ -39,3 +39,21 @@ CREATE TABLE IF NOT EXISTS public.policy_content_artifact_access_audit (
     created_at timestamp with time zone NOT NULL DEFAULT now(),
     CONSTRAINT policy_content_artifact_access_action_check CHECK (action IN ('READ', 'WRITE', 'DENIED'))
 );
+
+-- Tenant isolation matches the baseline convention for every tenant-scoped
+-- table. `policy_content_artifact` is deliberately excluded: it is keyed only by
+-- content digest and deduplicated across tenants, so it carries no tenant_id.
+-- Reads of it are gated by the tenant-scoped reference join in
+-- readPolicyContentArtifactForEvidenceToken, never by the artifact row itself.
+ALTER TABLE public.runtime_evidence_policy_content_ref ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.policy_content_artifact_access_audit ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS tenant_isolation ON public.runtime_evidence_policy_content_ref;
+CREATE POLICY tenant_isolation ON public.runtime_evidence_policy_content_ref TO spctre_app
+  USING ((tenant_id = (current_setting('app.current_tenant_id'::text, true))::uuid))
+  WITH CHECK ((tenant_id = (current_setting('app.current_tenant_id'::text, true))::uuid));
+
+DROP POLICY IF EXISTS tenant_isolation ON public.policy_content_artifact_access_audit;
+CREATE POLICY tenant_isolation ON public.policy_content_artifact_access_audit TO spctre_app
+  USING ((tenant_id = (current_setting('app.current_tenant_id'::text, true))::uuid))
+  WITH CHECK ((tenant_id = (current_setting('app.current_tenant_id'::text, true))::uuid));
