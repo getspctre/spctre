@@ -8,6 +8,21 @@ import (
 )
 
 func runVerificationSweep(ctx context.Context, db *pgxpool.Pool, logger *slog.Logger) error {
+	// Staleness is durable platform state, not merely a periodic log signal.
+	// Producers may additionally mark VERIFIER_DIGEST or POLICY_CONTENT drift;
+	// the sweep owns the time-based baseline for every verifier kind.
+	if _, err := db.Exec(ctx, `
+		UPDATE agt_verification_result
+		SET stale_at = COALESCE(stale_at, now()),
+			stale_reasons = CASE
+				WHEN 'AGE' = ANY(stale_reasons) THEN stale_reasons
+				ELSE array_append(stale_reasons, 'AGE')
+			END
+		WHERE created_at < now() - make_interval(days => $1)
+	`, VerificationStaleDays); err != nil {
+		return err
+	}
+
 	rows, err := db.Query(ctx, `
 		SELECT DISTINCT ON (run_by, verification_type)
 			run_by,
