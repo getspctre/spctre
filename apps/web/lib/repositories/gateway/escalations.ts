@@ -87,16 +87,6 @@ export async function listOpenEscalationQueue(
         geq.created_at, geq.updated_at
       FROM gateway_escalation_queue geq
       JOIN gateway_decision gd ON gd.id = geq.gateway_decision_id
-      LEFT JOIN LATERAL (
-        SELECT connector, action
-        FROM runtime_evidence_event ree
-        WHERE ree.tenant_id = geq.tenant_id
-          AND ree.workspace_id = geq.workspace_id
-          AND ree.decision_id = geq.decision_id
-          AND ree.artifact_hash = geq.artifact_hash
-        ORDER BY ree.created_at DESC
-        LIMIT 1
-      ) ev ON true
       WHERE geq.tenant_id = ${tenantId}
         AND geq.workspace_id = ${workspaceId}
         AND geq.status IN ('PENDING', 'IN_REVIEW')
