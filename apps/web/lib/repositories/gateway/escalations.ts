@@ -1,6 +1,7 @@
 import { logger } from "@spctre/platform/logging";
 import { redactAndBoundParameters } from "@spctre/api-contracts";
 import { sql } from "@/lib/db";
+import { reportSwallowedError } from "@/lib/platform/swallow";
 import type { GatewayEscalationQueueItem } from "@spctre/policy-schema";
 
 export interface OpenEscalationSummary {
@@ -42,8 +43,9 @@ export async function getOpenEscalationSummaryForRevision(
       count: Number.parseInt(row?.count ?? "0", 10),
       nearestSlaDueAt: row?.nearest_sla_due_at?.toISOString(),
     };
-  } catch {
+  } catch (error) {
     // Migration may not be applied yet.
+    reportSwallowedError("getOpenEscalationSummaryForRevision", error);
     return { count: 0 };
   }
 }
@@ -62,7 +64,8 @@ export async function countOpenEscalations(
         AND status IN ('PENDING', 'IN_REVIEW')
     `;
     return Number.parseInt(rows[0]?.count ?? "0", 10);
-  } catch {
+  } catch (error) {
+    reportSwallowedError("countOpenEscalations", error);
     return 0;
   }
 }
@@ -225,7 +228,8 @@ export async function getOpenEscalationAssigneeCounts(params: {
       GROUP BY assigned_to
     `;
     return Object.fromEntries(rows.map((row) => [row.assigned_to, Number.parseInt(row.count, 10)]));
-  } catch {
+  } catch (error) {
+    reportSwallowedError("getOpenEscalationAssigneeCounts", error);
     return {};
   }
 }
@@ -268,7 +272,8 @@ export async function listResolvedEscalationsForRevision(
       slaDueAt: row.sla_due_at?.toISOString(),
       slaMet: row.sla_due_at ? row.resolved_at <= row.sla_due_at : undefined,
     }));
-  } catch {
+  } catch (error) {
+    reportSwallowedError("listResolvedEscalationsForRevision", error);
     return [];
   }
 }
@@ -342,7 +347,10 @@ export async function resolveEscalationQueueItem(params: {
     `;
 
     return true;
-  } catch {
+  } catch (error) {
+    // A failed write is not "already claimed" or "not found", which is how the
+    // caller reads false. Keep the fallback, but record which one happened.
+    reportSwallowedError("resolveEscalationQueueItem", error);
     return false;
   }
 }
@@ -424,7 +432,10 @@ export async function assignEscalationQueueItem(params: {
       RETURNING id
     `;
     return rows.length > 0;
-  } catch {
+  } catch (error) {
+    // A failed write is not "already claimed" or "not found", which is how the
+    // caller reads false. Keep the fallback, but record which one happened.
+    reportSwallowedError("assignEscalationQueueItem", error);
     return false;
   }
 }
@@ -451,7 +462,10 @@ export async function assignEscalationQueueItemFromTriage(params: {
       RETURNING id
     `;
     return rows.length > 0;
-  } catch {
+  } catch (error) {
+    // A failed write is not "already claimed" or "not found", which is how the
+    // caller reads false. Keep the fallback, but record which one happened.
+    reportSwallowedError("assignEscalationQueueItemFromTriage", error);
     return false;
   }
 }
