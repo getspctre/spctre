@@ -31,7 +31,7 @@
     "postgres": "^3.4.9",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
-    "undici": "^6.21.0",
+    "undici": "^6.28.0",
     "zod": "^4.4.3"
   },
   "optionalDependencies": {
