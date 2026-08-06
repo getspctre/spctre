@@ -381,6 +381,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/bundle/latest/custody": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Retain exact bytes of the latest published policy bundle
+         * @description Materializes the exact raw bundle bytes under their SHA-256 content hash and links them atomically to the immutable policy publication event. This is distinct from the semantic artifact hash and is safe to call repeatedly.
+         */
+        post: operations["retainLatestPublishedBundle"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/compliance/export": {
         parameters: {
             query?: never;
@@ -1895,6 +1915,34 @@ export interface operations {
                     "application/json": components["schemas"]["BundleExportVerificationFailedResponse"];
                 };
             };
+            503: components["responses"]["ServiceUnavailable"];
+        };
+    };
+    retainLatestPublishedBundle: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Published bundle bytes retained and linked to their publication. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        contentHash: string;
+                        publishId: string;
+                        retained: boolean;
+                        meta: components["schemas"]["ApiMeta"];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
             503: components["responses"]["ServiceUnavailable"];
         };
     };
