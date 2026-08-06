@@ -6,7 +6,10 @@ export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
   const traceId = extractTraceId(request);
-  const scope = await resolveRouteScope(request, { serviceTokenScope: "decision:evaluate", traceId });
+  // This is a runtime handoff adjacent to gateway decision persistence, not a
+  // policy-evaluation API. Keep its authority aligned with the gateway's
+  // evidence-writing runtime token.
+  const scope = await resolveRouteScope(request, { serviceTokenScope: "evidence:write", traceId });
   if (scope instanceof Response) return scope;
   const body = await request.json().catch(() => null);
   const decisionId = body && typeof body.decisionId === "string" ? body.decisionId : "";
