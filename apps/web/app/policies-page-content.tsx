@@ -1,8 +1,6 @@
-import Link from "next/link";
 import { getPoliciesPageModel } from "@/lib/domains/policy/service";
 import { ImportPolicyPanel } from "./import-policy-panel";
 import { formatWorkspaceEyebrow } from "@/lib/workspace";
-import { buildWorkspacePath } from "@/lib/workspace/path";
 import { mapEnvironmentBranches } from "@/lib/policy-targets";
 import { BranchTable } from "./branch-inspector";
 import { formatProvenanceId } from "@/lib/app-view-mode";
@@ -10,7 +8,6 @@ import { hashToFingerprint } from "@/lib/fingerprint";
 import { DegradedDataNotice } from "./degraded-data-notice";
 
 type PoliciesSearchParams = Record<string, string | string[] | undefined>;
-const RULE_PREVIEW_LIMIT = 4;
 
 type PoliciesModel = Awaited<ReturnType<typeof getPoliciesPageModel>>;
 
@@ -202,86 +199,18 @@ function OrgBaselineSummary({
   );
 }
 
-function RulePreviewSection({
-  rules,
-  previewRules,
-  rulesHref,
-}: {
-  rules: PoliciesModel["rules"];
-  previewRules: PoliciesModel["rules"];
-  rulesHref: string;
-}) {
-  return (
-    <section className="panel policiesPanel" id="rules">
-      <div className="rowHeader">
-        <div>
-          <p className="eyebrow">Provenance · Rules</p>
-          <h2>
-            Active rules
-            <span className="headCount">{rules.length}</span>
-          </h2>
-        </div>
-        <Link className="button" href={rulesHref}>
-          View all
-        </Link>
-      </div>
-      {previewRules.length === 0 ? (
-        <div className="emptyState">
-          <h3>No managed rules yet</h3>
-          <p className="meta">Import a policy or pack to start building the active rule set.</p>
-        </div>
-      ) : (
-        <div className="auditTableWrapper">
-          <table className="auditTable previewRuleTable">
-            <thead>
-              <tr>
-                <th>Rule</th>
-                <th>Effect</th>
-                <th>Connectors / Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {previewRules.map((rule) => (
-                <tr key={rule.stableRuleId} className="auditRow policiesPreviewRow">
-                  <td>
-                    <strong>{rule.title}</strong>
-                    {rule.immutable ? <span className="pill ruleInlinePill">IMMUTABLE</span> : null}
-                  </td>
-                  <td>
-                    <span className={rule.effect === "DENY" ? "pill pillBlock" : "pill pillWarn"}>
-                      {rule.effect}
-                    </span>
-                  </td>
-                  <td>
-                    <span className="meta">
-                      {[rule.connectors?.join(", "), rule.actions?.join(", ")]
-                        .filter(Boolean)
-                        .join(" / ")}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </section>
-  );
-}
-
 export async function PoliciesPageContent({
   workspaceSlug,
   searchParams,
 }: { workspaceSlug?: string; searchParams?: Promise<PoliciesSearchParams> } = {}) {
-  const { workspaceContext, appViewMode, isAdmin, branches, rules, degraded } =
-    await getPoliciesPageModel({ workspaceSlug });
+  const { workspaceContext, appViewMode, isAdmin, branches, degraded } = await getPoliciesPageModel(
+    { workspaceSlug },
+  );
   if (searchParams) await searchParams;
 
   const environmentMappings = mapEnvironmentBranches(branches);
   const organizationBranches = branches.filter((branch) => branch.scope === "ORGANIZATION");
-  const previewRules = rules.slice(0, RULE_PREVIEW_LIMIT);
   const awaitingReviewCount = branches.filter((branch) => branch.status === "IN_REVIEW").length;
-  const rulesHref = buildWorkspacePath(workspaceContext.workspaceSlug, "/rules");
   const missingEnvironmentPolicies = environmentMappings.filter(({ branch }) => !branch).length;
 
   return (
@@ -335,8 +264,6 @@ export async function PoliciesPageContent({
       </section>
 
       <OrgBaselineSummary organizationBranches={organizationBranches} />
-
-      <RulePreviewSection rules={rules} previewRules={previewRules} rulesHref={rulesHref} />
     </>
   );
 }
