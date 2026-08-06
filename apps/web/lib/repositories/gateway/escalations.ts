@@ -79,7 +79,7 @@ export async function listOpenEscalationQueue(
         geq.id, geq.tenant_id, geq.workspace_id, geq.gateway_decision_id, geq.decision_id,
         geq.revision_id, geq.artifact_hash, geq.status, geq.assigned_to, geq.sla_due_at,
         geq.handoff_notes, geq.resolved_at, geq.resolution_outcome, geq.resolution_note,
-        ev.connector, ev.action,
+        gd.connector, gd.action,
         gd.consequence, gd.customer_tier, gd.confidence::text, gd.amount_usd::text,
         gd.data_sensitivity, gd.trust_score::text, gd.context_budget, gd.risk_level,
         gd.reason AS gateway_reason, gd.agent_id,

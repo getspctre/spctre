@@ -7,6 +7,7 @@ import { ClaimButton } from "./claim-button";
 import { ResolveForm } from "./resolve-form";
 import { formatProvenanceId, type AppViewMode } from "@/lib/app-view-mode";
 import { hashToFingerprint } from "@/lib/fingerprint";
+import { redactAndBoundParameters } from "@spctre/api-contracts";
 import { UpgradePrompt } from "../plan-gate";
 import { useTranslations } from "next-intl";
 
@@ -44,6 +45,66 @@ function refreshedAgoLabel(currentTime: number, lastRefreshedAt: number) {
 function riskLevelPillClass(riskLevel: string) {
   if (riskLevel === "HIGH" || riskLevel === "CRITICAL") return "pill pillBlock pillTiny";
   return riskLevel === "MEDIUM" ? "pill pillWarn pillTiny" : "pill pillAllow pillTiny";
+}
+
+function reviewParameterLabel(key: string) {
+  return key.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/^./, (letter) => letter.toUpperCase());
+}
+
+function reviewParameterValue(value: unknown) {
+  if (typeof value === "string") return value;
+  if (typeof value === "number" || typeof value === "boolean") return String(value);
+  if (value == null) return "—";
+  return JSON.stringify(value, null, 2);
+}
+
+function ReviewContext({
+  parameters,
+  title,
+}: {
+  parameters: Record<string, unknown>;
+  title: string;
+}) {
+  const entries = Object.entries(redactAndBoundParameters(parameters) ?? {});
+  if (entries.length === 0) return null;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      <span className="metadata" style={{ fontSize: 10 }}>
+        {title}
+      </span>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "120px minmax(0, 1fr)",
+          gap: "8px 16px",
+          background: "var(--bg)",
+          border: "1px solid var(--line)",
+          borderRadius: 6,
+          padding: "12px 14px",
+        }}
+      >
+        {entries.map(([key, value]) => (
+          <React.Fragment key={key}>
+            <span className="meta" style={{ fontSize: 12 }}>
+              {reviewParameterLabel(key)}
+            </span>
+            <code
+              style={{
+                color: "var(--ink)",
+                fontSize: 12,
+                whiteSpace: "pre-wrap",
+                wordBreak: "break-word",
+                lineHeight: 1.45,
+              }}
+            >
+              {reviewParameterValue(value)}
+            </code>
+          </React.Fragment>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 function QueueListItem({
@@ -351,6 +412,10 @@ function EscalationContextDetails({
         </div>
       )}
 
+      {selectedItem.toolParameters && (
+        <ReviewContext parameters={selectedItem.toolParameters} title={t("review_context")} />
+      )}
+
       {selectedItem.safeguardTelemetry &&
         Object.keys(selectedItem.safeguardTelemetry).length > 0 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -377,9 +442,13 @@ function EscalationContextDetails({
 function EscalationAssignmentSection({
   selectedItem,
   hasManagedHitl,
+  formatActorId,
+  onClaimed,
 }: {
   selectedItem: GatewayEscalationQueueItem;
   hasManagedHitl: boolean;
+  formatActorId: (id: string) => string;
+  onClaimed: () => void;
 }) {
   const t = useTranslations("escalations.triage");
 
@@ -390,12 +459,16 @@ function EscalationAssignmentSection({
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {!selectedItem.assignedTo && (
             <div style={{ alignSelf: "flex-start" }}>
-              <ClaimButton queueId={selectedItem.id} />
+              <ClaimButton queueId={selectedItem.id} onClaimed={onClaimed} />
             </div>
           )}
           <p className="meta" style={{ fontSize: 12 }}>
-            Claim this escalation to take responsibility for its review. Priority and SLA are shown
-            in the queue.
+            {selectedItem.assignedTo
+              ? t.rich("claimed_by", {
+                  email: formatActorId(selectedItem.assignedTo),
+                  code: (chunks) => <code>{chunks}</code>,
+                })
+              : t("claim_prompt")}
           </p>
         </div>
       ) : (
@@ -417,6 +490,7 @@ function EscalationDetailPanel({
   crossSurfaceIdentity,
   currentTime,
   formatActorId,
+  onClaimed,
   onResolved,
 }: {
   selectedItem: GatewayEscalationQueueItem;
@@ -425,6 +499,7 @@ function EscalationDetailPanel({
   crossSurfaceIdentity: boolean;
   currentTime: number;
   formatActorId: (id: string) => string;
+  onClaimed: () => void;
   onResolved: () => void;
 }) {
   const t = useTranslations("escalations.detail");
@@ -449,7 +524,12 @@ function EscalationDetailPanel({
 
       <hr style={{ border: 0, borderTop: "1px solid var(--line)", margin: 0 }} />
 
-      <EscalationAssignmentSection selectedItem={selectedItem} hasManagedHitl={hasManagedHitl} />
+      <EscalationAssignmentSection
+        selectedItem={selectedItem}
+        hasManagedHitl={hasManagedHitl}
+        formatActorId={formatActorId}
+        onClaimed={onClaimed}
+      />
 
       <hr style={{ border: 0, borderTop: "1px solid var(--line)", margin: 0 }} />
 
@@ -480,7 +560,7 @@ export function EscalationQueueView({
   const fetchQueue = useCallback(async () => {
     setIsRefreshing(true);
     try {
-      const response = await fetch("/api/gateway/escalations");
+      const response = await fetch("/api/gateway/escalations", { cache: "no-store" });
       if (response.ok) {
         const data = await response.json();
         if (data && Array.isArray(data.queue)) {
@@ -607,6 +687,7 @@ export function EscalationQueueView({
               crossSurfaceIdentity={crossSurfaceIdentity}
               currentTime={currentTime}
               formatActorId={formatActorId}
+              onClaimed={fetchQueue}
               onResolved={() => {
                 setQueue((prev) => prev.filter((q) => q.id !== selectedItem.id));
                 setLastRefreshedAt(Date.now());

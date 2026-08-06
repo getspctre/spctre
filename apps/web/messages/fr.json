@@ -1301,11 +1301,14 @@
       "handoff_notes": "Notes de transfert",
       "no_handoff_notes": "Aucune note de transfert fournie.",
       "tool_intent": "Intention de l'outil",
-      "plan_summary": "Résumé du plan"
+      "plan_summary": "Résumé du plan",
+      "review_context": "Contexte de révision"
     },
     "triage": {
       "title": "Gestion de la file et triage",
-      "upgrade_description": "Passez à une offre supérieure pour gérer le suivi des SLA de service, le routage automatique et les remplacements manuels d'agents."
+      "upgrade_description": "Passez à une offre supérieure pour gérer le suivi des SLA de service, le routage automatique et les remplacements manuels d'agents.",
+      "claimed_by": "Revendiquée par <code>{email}</code>.",
+      "claim_prompt": "Revendiquez cette escalade pour prendre la responsabilité de sa revue. La priorité et le SLA sont affichés dans la file."
     }
   },
   "compliance": {

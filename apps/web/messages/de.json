@@ -1303,11 +1303,14 @@
       "handoff_notes": "Übergabenotizen",
       "no_handoff_notes": "Keine Übergabenotizen vorhanden.",
       "tool_intent": "Tool-Intent",
-      "plan_summary": "Plan-Zusammenfassung"
+      "plan_summary": "Plan-Zusammenfassung",
+      "review_context": "Prüfkontext"
     },
     "triage": {
       "title": "Warteschlangenverwaltung & Triage",
-      "upgrade_description": "Führen Sie ein Upgrade durch, um SLA-Tracking, automatisches Routing und manuelle Agenten-Overrides zu verwalten."
+      "upgrade_description": "Führen Sie ein Upgrade durch, um SLA-Tracking, automatisches Routing und manuelle Agenten-Overrides zu verwalten.",
+      "claimed_by": "Beansprucht von <code>{email}</code>.",
+      "claim_prompt": "Beanspruchen Sie diese Eskalation, um die Verantwortung für ihre Prüfung zu übernehmen. Priorität und SLA werden in der Warteschlange angezeigt."
     }
   },
   "compliance": {

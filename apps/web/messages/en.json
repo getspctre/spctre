@@ -1286,11 +1286,14 @@
       "handoff_notes": "Handoff Notes",
       "no_handoff_notes": "No handoff notes provided.",
       "tool_intent": "Tool Intent",
-      "plan_summary": "Plan Summary"
+      "plan_summary": "Plan Summary",
+      "review_context": "Review context"
     },
     "triage": {
       "title": "Queue Management & Triage",
-      "upgrade_description": "Upgrade to manage service SLA tracking, automated routing, and manual agent overrides."
+      "upgrade_description": "Upgrade to manage service SLA tracking, automated routing, and manual agent overrides.",
+      "claimed_by": "Claimed by <code>{email}</code>.",
+      "claim_prompt": "Claim this escalation to take responsibility for its review. Priority and SLA are shown in the queue."
     }
   },
   "compliance": {

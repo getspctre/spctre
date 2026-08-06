@@ -1,13 +1,17 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
 import { claimEscalation, type ClaimEscalationState } from "./actions";
 
-export function ClaimButton({ queueId }: { queueId: string }) {
+export function ClaimButton({ queueId, onClaimed }: { queueId: string; onClaimed: () => void }) {
   const [state, action, pending] = useActionState<ClaimEscalationState, FormData>(
     claimEscalation,
     null,
   );
+
+  useEffect(() => {
+    if (state && "ok" in state) onClaimed();
+  }, [onClaimed, state]);
 
   if (state && "ok" in state) {
     return <span className="pill pillWarn">In review</span>;

@@ -98,6 +98,8 @@ export interface GatewayDecisionRecord {
   toolIntent?: string;
   planSummary?: string;
   toolParameters?: Record<string, unknown>;
+  connector?: string;
+  action?: string;
 }
 
 // SQL-safe nullable values for the gateway_decision upsert.
@@ -117,6 +119,8 @@ function decisionInsertValues(record: GatewayDecisionRecord) {
     toolIntent: record.toolIntent ?? null,
     planSummary: record.planSummary ?? null,
     toolParameters: record.toolParameters ? JSON.stringify(record.toolParameters) : null,
+    connector: record.connector ?? null,
+    action: record.action ?? null,
   };
 }
 
@@ -131,7 +135,8 @@ export async function persistGatewayDecision(
       tenant_id, workspace_id, decision_id, revision_id, branch_id,
       artifact_hash, outcome, reason, consequence, customer_tier,
       confidence, amount_usd, data_sensitivity, trust_score, context_budget,
-      risk_level, evaluated_by, agent_id, session_id, tool_intent, plan_summary, tool_parameters
+      risk_level, evaluated_by, agent_id, session_id, tool_intent, plan_summary, tool_parameters,
+      connector, action
     ) VALUES (
       ${record.tenantId}, ${record.workspaceId}, ${record.decisionId},
       ${v.revisionId}, ${v.branchId},
@@ -141,7 +146,7 @@ export async function persistGatewayDecision(
       ${v.dataSensitivity}, ${v.trustScore},
       ${v.contextBudget}, ${record.riskLevel}, ${record.evaluatedBy}, ${v.agentId}, ${v.sessionId},
       ${v.toolIntent}, ${v.planSummary},
-      ${v.toolParameters}::jsonb
+      ${v.toolParameters}::jsonb, ${v.connector}, ${v.action}
     )
     ON CONFLICT (tenant_id, decision_id, artifact_hash)
     DO UPDATE SET
@@ -161,6 +166,8 @@ export async function persistGatewayDecision(
       tool_intent = EXCLUDED.tool_intent,
       plan_summary = EXCLUDED.plan_summary,
       tool_parameters = EXCLUDED.tool_parameters,
+      connector = EXCLUDED.connector,
+      action = EXCLUDED.action,
       evaluated_at = now()
     RETURNING id
   `;
@@ -209,6 +216,8 @@ export async function persistGatewayDecision(
       dataSensitivity: record.dataSensitivity,
       toolIntent: record.toolIntent,
       planSummary: record.planSummary,
+      connector: record.connector,
+      action: record.action,
     }).catch(swallow("dispatchEscalationCreatedAlert", undefined));
   }
 

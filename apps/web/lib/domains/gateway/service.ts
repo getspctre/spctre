@@ -1,4 +1,5 @@
 import { getActiveActor } from "@/lib/actors";
+import { redactAndBoundParameters } from "@spctre/api-contracts";
 import { evidenceIngestUrl, workerInternalSecret } from "@/lib/platform/config";
 import { runWithTenantContext } from "@/lib/tenant-context";
 import { fetchWithTimeout } from "@/lib/platform/fetch-timeout";
@@ -294,7 +295,9 @@ async function persistGatewayDecisionAndBrokerCredentialsInTenant(
     slaHours: params.decisionResult.slaHours,
     toolIntent: params.input.toolIntent,
     planSummary: params.input.planSummary,
-    toolParameters: params.input.toolParameters,
+    toolParameters: redactAndBoundParameters(params.input.toolParameters),
+    connector: params.input.connector,
+    action: params.input.action,
   });
 
   const issueReceipt = async (outcome: "PROCEED" | "ESCALATE" | "ABORT") => {

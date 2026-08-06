@@ -32,13 +32,16 @@ async function handleGetApiGatewayEscalations(request: Request) {
   }
 
   return withTraceId(
-    Response.json({
-      queue,
-      count: queue.length,
-      generatedAt: new Date().toISOString(),
-      pagination: { total: queue.length, limit, offset: 0 },
-      meta: makeMeta(traceId),
-    }),
+    Response.json(
+      {
+        queue,
+        count: queue.length,
+        generatedAt: new Date().toISOString(),
+        pagination: { total: queue.length, limit, offset: 0 },
+        meta: makeMeta(traceId),
+      },
+      { headers: { "cache-control": "no-store" } },
+    ),
     traceId,
   );
 }

@@ -1279,11 +1279,14 @@
       "handoff_notes": "ハンドオフノート",
       "no_handoff_notes": "ハンドオフノートはありません。",
       "tool_intent": "ツールインテント",
-      "plan_summary": "プランサマリー"
+      "plan_summary": "プランサマリー",
+      "review_context": "レビューコンテキスト"
     },
     "triage": {
       "title": "キュー管理とトリアージ",
-      "upgrade_description": "アップグレードすると、サービス SLA トラッキング、自動ルーティング、手動のエージェントオーバーライドを管理できます。"
+      "upgrade_description": "アップグレードすると、サービス SLA トラッキング、自動ルーティング、手動のエージェントオーバーライドを管理できます。",
+      "claimed_by": "<code>{email}</code> が担当しています。",
+      "claim_prompt": "このエスカレーションを引き受け、レビューの責任を担います。優先度と SLA はキューに表示されます。"
     }
   },
   "compliance": {
