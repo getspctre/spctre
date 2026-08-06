@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const getLatestPublishedPolicyBundleSpy = vi.fn();
@@ -10,12 +11,13 @@ vi.mock("@/lib/domains/policy/service", () => ({
 vi.mock("@/lib/repositories/policy-content-artifacts", () => ({
   retainPublishedPolicyContentArtifact: retainPublishedPolicyContentArtifactSpy,
 }));
-vi.mock("@/lib/platform/api-route", () => ({}));
 vi.mock("../app/api/_route-scope", () => ({ resolveRouteScope: resolveRouteScopeSpy }));
 
 const route = await import("../app/api/bundle/latest/custody/route");
 
 const bundle = { revisionId: "revision-1", rules: [], generatedAt: "2026-08-06T00:00:00.000Z" };
+const serializedBundle = JSON.stringify(bundle, null, 2);
+const contentHash = `sha256:${createHash("sha256").update(serializedBundle).digest("hex")}`;
 
 describe("published bundle custody route", () => {
   beforeEach(() => {
@@ -24,7 +26,7 @@ describe("published bundle custody route", () => {
     getLatestPublishedPolicyBundleSpy.mockResolvedValue({
       publishId: "publish-1",
       revisionId: "revision-1",
-      contentHash: `sha256:${"a".repeat(64)}`,
+      contentHash,
       bundle,
     });
     retainPublishedPolicyContentArtifactSpy.mockResolvedValue(undefined);
@@ -35,8 +37,8 @@ describe("published bundle custody route", () => {
 
     expect(response.status).toBe(201);
     expect(retainPublishedPolicyContentArtifactSpy).toHaveBeenCalledWith({
-      contentHash: `sha256:${"a".repeat(64)}`,
-      bytes: new TextEncoder().encode(JSON.stringify(bundle, null, 2)),
+      contentHash,
+      bytes: new TextEncoder().encode(serializedBundle),
       mediaType: "application/json",
       tenantId: "tenant-1",
       workspaceId: "workspace-1",
