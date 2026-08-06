@@ -1,13 +1,11 @@
 import { getAuthSession } from "@/lib/auth-session";
 import {
-  getAgtVerificationExportInputs,
   getGatewayOutcomeMapForEvidence,
   listEvidenceForExport,
   listEvidenceForTokenExport,
 } from "@/lib/domains/evidence/service";
 import { authenticateServiceToken, hasBearerToken } from "@/lib/service-tokens";
 import { getActiveScope } from "@/lib/workspace";
-import { buildAgtVerificationEvidencePacket } from "@spctre/policy-schema";
 import { extractTraceId, makeMeta, withTraceId } from "@spctre/api-contracts";
 import { incrementCounter, recordDuration } from "@spctre/platform/metrics";
 import { withSpan } from "@spctre/platform/tracing";
@@ -24,10 +22,20 @@ async function handleGetApiEvidenceExport(request: Request) {
     async (span) => {
       const url = new URL(request.url);
       const requestedFormat = url.searchParams.get("format");
-      const format =
-        requestedFormat === "json" || requestedFormat === "agt-verification"
-          ? requestedFormat
-          : "csv";
+      if (requestedFormat === "agt-verification") {
+        return withTraceId(
+          Response.json(
+            {
+              error:
+                "AGT verification packets are emitted only by the live compatibility harness, not by evidence export.",
+              meta: makeMeta(traceId),
+            },
+            { status: 403 },
+          ),
+          traceId,
+        );
+      }
+      const format = requestedFormat === "json" ? "json" : "csv";
       span.setAttribute("spctre.export.format", format);
 
       const bearer = hasBearerToken(request);
@@ -38,12 +46,6 @@ async function handleGetApiEvidenceExport(request: Request) {
       if (bearer && (!evidenceToken?.connector || !evidenceToken.evidenceExportGrants.length)) {
         return withTraceId(
           Response.json({ error: "Invalid or insufficient evidence export token.", meta: makeMeta(traceId) }, { status: 401 }),
-          traceId,
-        );
-      }
-      if (bearer && requestedFormat === "agt-verification") {
-        return withTraceId(
-          Response.json({ error: "AGT verification packets require a live harness attestation.", meta: makeMeta(traceId) }, { status: 403 }),
           traceId,
         );
       }
@@ -126,79 +128,6 @@ async function handleGetApiEvidenceExport(request: Request) {
       span.setAttribute("spctre.evidence.count", evidence.length);
 
       const date = new Date().toISOString().slice(0, 10);
-
-      if (format === "agt-verification") {
-        let exportInputs;
-        try {
-          exportInputs = await getAgtVerificationExportInputs({
-            workspaceId: workspaceContext.workspaceId,
-            tenantId: workspaceContext.tenantId,
-          });
-        } catch (err) {
-          incrementCounter("spctre.api.errors", 1, {
-            "http.route": "/api/evidence/export",
-            "http.response.status_code": 503,
-          });
-          console.error("[evidence/export] getLatestPublishedBundle failed", err);
-          return withTraceId(
-            Response.json(
-              { error: "Service temporarily unavailable.", meta: makeMeta(traceId) },
-              { status: 503 },
-            ),
-            traceId,
-          );
-        }
-        if (!exportInputs) {
-          incrementCounter("spctre.api.errors", 1, {
-            "http.route": "/api/evidence/export",
-            "http.response.status_code": 404,
-          });
-          return withTraceId(
-            Response.json(
-              {
-                error: "No published policy bundle is available for AGT verification export.",
-                meta: makeMeta(traceId),
-              },
-              { status: 404 },
-            ),
-            traceId,
-          );
-        }
-
-        const { published, escalations, verificationResults } = exportInputs;
-        const scopedEvidence = evidence.filter(
-          (record) =>
-            record.artifactHash === published.artifactHash ||
-            record.policyContext.some(
-              (context) =>
-                context.artifactHash === published.artifactHash ||
-                context.revisionId === published.revisionId,
-            ),
-        );
-
-        const packet = buildAgtVerificationEvidencePacket({
-          bundle: published.bundle,
-          evidence: scopedEvidence,
-          generatedAt: new Date().toISOString(),
-          escalations,
-          verificationResults,
-        });
-        const body = JSON.stringify(packet, null, 2);
-        recordDuration("spctre.evidence.export.duration", Date.now() - started, { format });
-        return withTraceId(
-          new Response(body, {
-            headers: {
-              "content-type": "application/json; charset=utf-8",
-              "content-disposition": `attachment; filename="spctre-agt-evidence-${date}.json"`,
-              "cache-control": "no-store",
-              "x-spctre-artifact-hash": published.artifactHash,
-              "x-spctre-revision-id": published.revisionId,
-              "x-spctre-agt-verifier": "agt verify --evidence",
-            },
-          }),
-          traceId,
-        );
-      }
 
       if (format === "json") {
         const body = JSON.stringify(
