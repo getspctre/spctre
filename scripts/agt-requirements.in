@@ -1,0 +1,4 @@
+# Hash-locked AGT verifier closure for the runtime-evidence contract oracle.
+# Refresh deliberately with:
+# uv pip compile --generate-hashes --universal -o scripts/agt-requirements.lock scripts/agt-requirements.in
+agent-governance-toolkit[full]==4.1.0
