@@ -175,6 +175,15 @@ func runRetention(ctx context.Context, db *pgxpool.Pool, logger *slog.Logger) er
 		return fmt.Errorf("dropping empty expired evidence partitions: %w", err)
 	}
 
+	// 3c. A content artifact is reconstructable only while retained evidence or
+	// a retained verification result still names it. Remove references whose
+	// evidence was pruned above, then collect only blobs with no such durable
+	// reference. This keeps F2's custody chain bounded without breaking a later
+	// verification-worker reconstruction.
+	if err := pruneOrphanedPolicyContentArtifacts(ctx, db, logger); err != nil {
+		return fmt.Errorf("pruning orphaned policy content artifacts: %w", err)
+	}
+
 	// 4. Prune webhook replay-check records older than 2 hours.
 	tag, err := db.Exec(ctx, `
 		DELETE FROM gateway_webhook_replay_check
@@ -313,6 +322,59 @@ func pruneEvidenceKeysBatched(ctx context.Context, db *pgxpool.Pool, tenantID st
 		`, tenantID, decisionIDs[start:end]); err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+// pruneOrphanedPolicyContentArtifacts clears content references only after
+// their runtime evidence has been deleted, then removes a content blob only
+// when neither retained evidence nor a retained AGT verification result can
+// reconstruct it. The tables arrived after the worker, so an older database
+// skips this optional cleanup during a rolling migration instead of failing the
+// entire retention job.
+func pruneOrphanedPolicyContentArtifacts(ctx context.Context, db *pgxpool.Pool, logger *slog.Logger) error {
+	var installed bool
+	if err := db.QueryRow(ctx, `
+		SELECT to_regclass('runtime_evidence_policy_content_ref') IS NOT NULL
+		   AND to_regclass('policy_content_artifact') IS NOT NULL
+	`).Scan(&installed); err != nil {
+		return fmt.Errorf("checking policy content artifact tables: %w", err)
+	}
+	if !installed {
+		logger.Warn("skipping policy content artifact cleanup; tables are not migrated")
+		return nil
+	}
+
+	refTag, err := db.Exec(ctx, `
+		DELETE FROM runtime_evidence_policy_content_ref ref
+		WHERE NOT EXISTS (
+			SELECT 1
+			FROM runtime_evidence_event evidence
+			WHERE evidence.tenant_id = ref.tenant_id
+			  AND evidence.workspace_id = ref.workspace_id
+			  AND evidence.decision_id = ref.decision_id
+		)
+	`)
+	if err != nil {
+		return fmt.Errorf("pruning expired policy content references: %w", err)
+	}
+
+	artifactTag, err := db.Exec(ctx, `
+		DELETE FROM policy_content_artifact artifact
+		WHERE NOT EXISTS (
+			SELECT 1 FROM runtime_evidence_policy_content_ref ref
+			WHERE ref.content_hash = artifact.content_hash
+		)
+		AND NOT EXISTS (
+			SELECT 1 FROM agt_verification_result verification
+			WHERE verification.policy_content_hash = artifact.content_hash
+		)
+	`)
+	if err != nil {
+		return fmt.Errorf("collecting unreferenced policy content artifacts: %w", err)
+	}
+	if refTag.RowsAffected() > 0 || artifactTag.RowsAffected() > 0 {
+		logger.Info("pruned orphaned policy content artifacts", "references", refTag.RowsAffected(), "artifacts", artifactTag.RowsAffected())
 	}
 	return nil
 }
