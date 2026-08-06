@@ -1,4 +1,5 @@
 import { logger } from "@spctre/platform/logging";
+import { redactAndBoundParameters } from "@spctre/api-contracts";
 import { sql } from "@/lib/db";
 import { reportSwallowedError } from "@/lib/platform/swallow";
 import type { GatewayEscalationQueueItem } from "@spctre/policy-schema";
@@ -144,6 +145,15 @@ interface EscalationQueueRow {
 
 // Decision metadata joined from gateway_decision / runtime evidence; all
 // fields are optional on the queue item.
+//
+// This is the *review* projection. Its consumers — the triage queue API, the
+// server-rendered escalations page, and the workspace dashboard — all deliver
+// it to a browser, so the canonical tool parameters must not survive this
+// mapping: they would reach the client in the JSON response and the RSC props
+// no matter what the rendering component chooses to display. Reviewers get a
+// redacted, bounded view; the verbatim payload is reserved for the approved
+// runtime handoff, which reads it through getEscalationStatusByDecisionId and
+// releases it only once a human has resolved the escalation to PROCEED.
 function mapEscalationDecisionFields(row: EscalationQueueRow) {
   return {
     connector: row.connector ?? undefined,
@@ -160,12 +170,7 @@ function mapEscalationDecisionFields(row: EscalationQueueRow) {
     agentId: row.agent_id ?? undefined,
     toolIntent: row.tool_intent ?? undefined,
     planSummary: row.plan_summary ?? undefined,
-    toolParameters:
-      row.tool_parameters &&
-      typeof row.tool_parameters === "object" &&
-      !Array.isArray(row.tool_parameters)
-        ? (row.tool_parameters as Record<string, unknown>)
-        : undefined,
+    toolParameters: redactAndBoundParameters(row.tool_parameters),
     safeguardTelemetry:
       row.safeguard_telemetry &&
       typeof row.safeguard_telemetry === "object" &&

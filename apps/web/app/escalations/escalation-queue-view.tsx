@@ -65,6 +65,11 @@ function ReviewContext({
   parameters: Record<string, unknown>;
   title: string;
 }) {
+  // Defence in depth only. The queue projection is already redacted and
+  // bounded server-side, in the repository, because anything left on the item
+  // reaches the browser through the API response and the RSC props regardless
+  // of what this component renders. Redacting again here is idempotent and
+  // keeps the guarantee if the component is ever handed an unredacted source.
   const entries = Object.entries(redactAndBoundParameters(parameters) ?? {});
   if (entries.length === 0) return null;
 
