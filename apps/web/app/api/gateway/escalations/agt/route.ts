@@ -16,11 +16,35 @@ export async function POST(request: Request) {
   const decisionId = body && typeof body.decisionId === "string" ? body.decisionId : "";
   const agtRequestId = body && typeof body.agtRequestId === "string" ? body.agtRequestId : "";
   if (!decisionId || !agtRequestId) {
-    return withTraceId(Response.json({ error: "decisionId and agtRequestId are required.", meta: makeMeta(traceId) }, { status: 400 }), traceId);
+    return withTraceId(
+      Response.json(
+        { error: "decisionId and agtRequestId are required.", meta: makeMeta(traceId) },
+        { status: 400 },
+      ),
+      traceId,
+    );
   }
-  const registered = await registerAgtEscalationRequest({ ...scope, decisionId, agtRequestId }).catch(
-    swallow("registerAgtEscalationRequest", false, { decisionId, agtRequestId }),
+  const registered = await registerAgtEscalationRequest({
+    ...scope,
+    decisionId,
+    agtRequestId,
+  }).catch(swallow("registerAgtEscalationRequest", false, { decisionId, agtRequestId }));
+  if (!registered)
+    return withTraceId(
+      Response.json(
+        {
+          error: "Open escalation not found or request correlation conflicts.",
+          meta: makeMeta(traceId),
+        },
+        { status: 409 },
+      ),
+      traceId,
+    );
+  return withTraceId(
+    Response.json(
+      { decisionId, agtRequestId, registered: true, meta: makeMeta(traceId) },
+      { status: 200 },
+    ),
+    traceId,
   );
-  if (!registered) return withTraceId(Response.json({ error: "Open escalation not found or request correlation conflicts.", meta: makeMeta(traceId) }, { status: 409 }), traceId);
-  return withTraceId(Response.json({ decisionId, agtRequestId, registered: true, meta: makeMeta(traceId) }, { status: 200 }), traceId);
 }
