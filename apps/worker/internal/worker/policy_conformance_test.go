@@ -189,6 +189,12 @@ type ruleCase struct {
 	} `json:"expected"`
 }
 
+type evaluatorContract struct {
+	EvaluatorVersion     string `json:"evaluatorVersion"`
+	RequestSchemaVersion string `json:"requestSchemaVersion"`
+	ResultSchemaVersion  string `json:"resultSchemaVersion"`
+}
+
 type compositionCase struct {
 	Description           string             `json:"description"`
 	Layers                []CompositionLayer `json:"layers"`
@@ -208,6 +214,7 @@ func TestRuleEngineConformanceWithTypeScript(t *testing.T) {
 		t.Fatalf("read %s: %v (run: pnpm generate:worker-policy-data)", path, err)
 	}
 	var decoded struct {
+		Contract         evaluatorContract   `json:"contract"`
 		Cases            []ruleCase        `json:"cases"`
 		CompositionCases []compositionCase `json:"compositionCases"`
 	}
@@ -216,6 +223,11 @@ func TestRuleEngineConformanceWithTypeScript(t *testing.T) {
 	}
 	if len(decoded.Cases) == 0 || len(decoded.CompositionCases) == 0 {
 		t.Fatalf("%s is missing cases", path)
+	}
+	if decoded.Contract.EvaluatorVersion != "1.0" ||
+		decoded.Contract.RequestSchemaVersion != "1.0" ||
+		decoded.Contract.ResultSchemaVersion != "1.0" {
+		t.Fatalf("unsupported published evaluator contract: %+v", decoded.Contract)
 	}
 
 	for _, testCase := range decoded.Cases {
