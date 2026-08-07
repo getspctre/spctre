@@ -31,3 +31,7 @@ It currently limits requests and responses to 1 MiB, returns explicit status
 codes, and uses `spctre_policy_buffer_free` for every successful response.
 Callers must fail closed for every nonzero status code. The static library is
 linked into its host process; it is not a policy-evaluator network service.
+
+The portable build uses `wasm32-unknown-unknown` with the `wasm` feature and
+`--no-default-features`. N-API bindings are excluded from that artifact; it
+contains only the pure policy kernel and C-compatible JSON entry points.
