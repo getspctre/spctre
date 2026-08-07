@@ -113,6 +113,7 @@ describe.skipIf(!databaseAvailable)("service token authentication contract", () 
         tenantId: fixture.tenantId,
         workspaceId: fixture.workspaceId,
         principalId: fixture.principalId,
+        evidenceExportGrants: [],
         scopes: ["bundle:read", "evidence:write"],
       },
     });
@@ -134,6 +135,7 @@ describe.skipIf(!databaseAvailable)("service token authentication contract", () 
         tenantId: fixture.tenantId,
         workspaceId: fixture.workspaceId,
         principalId: fixture.principalId,
+        evidenceExportGrants: [],
         scopes: ["bundle:read"],
       },
     });
