@@ -215,7 +215,9 @@ describe("evidence ingest contract", () => {
         principalId: "svc-contract",
         connector: "stripe",
         scopes: ["evidence:write", "evidence:export"],
-        evidenceExportGrants: [{ revisionId: "revision-contract", notBefore: "2020-01-01T00:00:00.000Z" }],
+        evidenceExportGrants: [
+          { revisionId: "revision-contract", notBefore: "2020-01-01T00:00:00.000Z" },
+        ],
       },
     });
     const result = await ingest(evidence);
@@ -240,7 +242,9 @@ describe("evidence ingest contract", () => {
         principalId: "svc-contract",
         connector: "stripe",
         scopes: ["evidence:write", "evidence:export"],
-        evidenceExportGrants: [{ revisionId: "another-revision", notBefore: "2020-01-01T00:00:00.000Z" }],
+        evidenceExportGrants: [
+          { revisionId: "another-revision", notBefore: "2020-01-01T00:00:00.000Z" },
+        ],
       },
     });
     const result = await ingest({
@@ -253,7 +257,10 @@ describe("evidence ingest contract", () => {
       },
     });
 
-    expect(result).toMatchObject({ status: 403, body: { error: "Policy content reference revision is outside this token grant." } });
+    expect(result).toMatchObject({
+      status: 403,
+      body: { error: "Policy content reference revision is outside this token grant." },
+    });
     expect(insertRuntimeEvidenceWithDedupSpy).not.toHaveBeenCalled();
   });
 

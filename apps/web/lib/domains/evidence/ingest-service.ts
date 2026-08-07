@@ -292,10 +292,11 @@ export function validatePolicyContentReferenceAuthorization(
     return "Policy content reference connector is outside this token scope.";
   }
   const createdAt = new Date(evidence.createdAt).getTime();
-  const granted = auth.evidenceExportGrants.some((grant) =>
-    grant.revisionId === reference.revisionId &&
-    createdAt >= new Date(grant.notBefore).getTime() &&
-    (!grant.notAfter || createdAt < new Date(grant.notAfter).getTime()),
+  const granted = auth.evidenceExportGrants.some(
+    (grant) =>
+      grant.revisionId === reference.revisionId &&
+      createdAt >= new Date(grant.notBefore).getTime() &&
+      (!grant.notAfter || createdAt < new Date(grant.notAfter).getTime()),
   );
   return granted ? undefined : "Policy content reference revision is outside this token grant.";
 }
