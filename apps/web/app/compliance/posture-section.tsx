@@ -27,26 +27,28 @@ export function PostureSection({ posture }: { posture: PostureModel }) {
         )}
       </div>
 
-      <div className="packetReadinessGates" aria-label="Posture dimensions">
+      <div className="postureDimensions" aria-label="Posture dimensions">
         {posture.dimensions.map((dimension) => (
-          <div className="packetReadinessGate" key={dimension.id}>
-            <span>
-              <strong>{dimension.label}</strong>
-              <small>{dimension.detail}</small>
-            </span>
-            <span className={pillClass(dimension.status)}>
-              {dimension.status.replace("_", " ")}
-            </span>
-          </div>
+          <article className="postureDimension" key={dimension.id}>
+            <div className="postureDimensionHeading">
+              <div>
+                <strong>{dimension.label}</strong>
+                <small>{dimension.detail}</small>
+              </div>
+              <span className={pillClass(dimension.status)}>
+                {dimension.status.replace("_", " ")}
+              </span>
+            </div>
+          </article>
         ))}
       </div>
 
-      <p className="meta">{posture.summary}</p>
+      <p className="meta postureSummary">{posture.summary}</p>
       {posture.findings.length ? (
-        <div className="packDrawerRules" aria-label="Prioritized posture findings">
+        <div className="postureFindings" aria-label="Prioritized posture findings">
           {posture.findings.map((finding) => (
-            <article className="packRuleDetail" key={finding.id}>
-              <div className="rowHeader">
+            <article className="postureFinding" key={finding.id}>
+              <div className="postureFindingHeading">
                 <div>
                   <p className="eyebrow">{finding.dimension.replace("_", " ")}</p>
                   <h3>{finding.title}</h3>
@@ -64,7 +66,7 @@ export function PostureSection({ posture }: { posture: PostureModel }) {
                   {finding.severity}
                 </span>
               </div>
-              <div className="rowHeader">
+              <div className="postureFindingFooter">
                 <span className="meta">Affected: {finding.affectedScope}</span>
                 <a className="button buttonSmall" href={finding.action.href}>
                   {finding.action.label}
