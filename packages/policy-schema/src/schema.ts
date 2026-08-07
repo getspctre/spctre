@@ -988,6 +988,38 @@ export function buildAgtVerificationEvidencePacket(params: {
   };
 }
 
+export function buildAgtRuntimeEvidenceV1(params: {
+  generatedAt: string;
+  toolkitVersion: string;
+  /** Relative filename materialized by the verification worker, never a runtime path. */
+  materializedPolicyFilename: string;
+  policyContentHash: string;
+  registeredTools: string[];
+  auditSinkTarget: string;
+  agentId: string;
+  packages: Array<{ package: string; version: string }>;
+}): import("./types").AgtRuntimeEvidenceV1 {
+  if (!/^[A-Za-z0-9._-]+$/.test(params.materializedPolicyFilename)) {
+    throw new Error("AGT policy filename must be a single relative filename.");
+  }
+  if (!/^sha256:[0-9a-f]{64}$/.test(params.policyContentHash)) {
+    throw new Error("AGT policy content hash must be a lowercase SHA-256 digest.");
+  }
+  return {
+    schema: "agt-runtime-evidence/v1",
+    generated_at: params.generatedAt,
+    toolkit_version: params.toolkitVersion,
+    deployment: {
+      policy_files_loaded: [params.materializedPolicyFilename],
+      registered_tools: params.registeredTools,
+      audit_sink: { enabled: true, target: params.auditSinkTarget },
+      identity: { enabled: true, agent_id: params.agentId },
+      packages: params.packages,
+    },
+    spctre: { policy_content_hash: params.policyContentHash },
+  };
+}
+
 export function buildSimulationRun(params: {
   id: string;
   branchId: string;

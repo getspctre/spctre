@@ -44,6 +44,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/evidence/policy-artifacts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Retain a byte-exact policy content artifact
+         * @description Stores the exact policy bytes addressed by `X-Spctre-Content-Hash`. Requires an `evidence:export` service token bound to a connector with at least one active revision grant. The server enforces the media type, 10 MiB limit, and claimed SHA-256 hash before encrypted retention.
+         */
+        post: operations["retainPolicyContentArtifact"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/evidence/policy-artifacts/{contentHash}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read a policy artifact referenced by authorized evidence
+         * @description Returns the original retained bytes only when the caller's connector and active revision grant can reference the artifact through retained runtime evidence. Unauthorized and absent artifacts intentionally produce the same 404 response.
+         */
+        get: operations["getPolicyContentArtifact"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/gateway/decide": {
         parameters: {
             query?: never;
@@ -701,6 +741,13 @@ export interface components {
             deduplicated?: boolean;
             meta: components["schemas"]["ApiMeta"];
         };
+        PolicyContentArtifactRetainResponse: {
+            /** @description SHA-256 identity of the exact retained bytes. */
+            contentHash: string;
+            /** @description True when the byte-exact artifact is durably retained (including idempotent repeats). */
+            retained: boolean;
+            meta: components["schemas"]["ApiMeta"];
+        };
         /** @description Framework-agnostic Git checkpoint and diff evidence. Clients submit normalized Git facts; the server does not execute Git or access a caller repository. */
         GitCheckpointIngestRequest: {
             /** @description Stable checkpoint submission key. Reuse it to safely retry. */
@@ -1280,6 +1327,74 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+            503: components["responses"]["ServiceUnavailable"];
+        };
+    };
+    retainPolicyContentArtifact: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description SHA-256 identity (`sha256:<hex>`) of the request body bytes. */
+                "X-Spctre-Content-Hash": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/yaml": string;
+                "application/json": string;
+                "text/plain": string;
+            };
+        };
+        responses: {
+            /** @description Artifact retained. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PolicyContentArtifactRetainResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            /** @description Artifact body exceeds the 10 MiB maximum. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            503: components["responses"]["ServiceUnavailable"];
+        };
+    };
+    getPolicyContentArtifact: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description SHA-256 identity (`sha256:<hex>`) of the retained policy bytes. */
+                contentHash: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Original retained artifact bytes. Content-Type reflects the retained media type. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/yaml": string;
+                    "application/json": string;
+                    "text/plain": string;
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
             503: components["responses"]["ServiceUnavailable"];
         };
     };

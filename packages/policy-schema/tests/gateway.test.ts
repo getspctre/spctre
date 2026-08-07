@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { evaluateGatewayDecision, buildAgtVerificationEvidencePacket } from "../src/index";
+import {
+  evaluateGatewayDecision,
+  buildAgtRuntimeEvidenceV1,
+  buildAgtVerificationEvidencePacket,
+} from "../src/index";
 import type { GatewayDecisionInput } from "../src/index";
 
 const base: GatewayDecisionInput = {
@@ -205,5 +209,23 @@ describe("buildAgtVerificationEvidencePacket", () => {
     expect(packet.escalations).toHaveLength(2);
     expect(packet.escalations[1].resolutionOutcome).toBe("ABORT");
     expect(packet.escalations[1].resolutionNote).toBe("policy violated");
+  });
+});
+
+describe("buildAgtRuntimeEvidenceV1", () => {
+  it("keeps the policy path relative and carries the exact-byte content hash", () => {
+    const packet = buildAgtRuntimeEvidenceV1({
+      generatedAt: "2026-08-06T00:00:00Z",
+      toolkitVersion: "4.1.0",
+      materializedPolicyFilename: "policy.yaml",
+      policyContentHash: `sha256:${"a".repeat(64)}`,
+      registeredTools: ["brief.file"],
+      auditSinkTarget: "Spctre evidence ingest",
+      agentId: "scout",
+      packages: [{ package: "agent-governance-toolkit", version: "4.1.0" }],
+    });
+    expect(packet.schema).toBe("agt-runtime-evidence/v1");
+    expect(packet.deployment.policy_files_loaded).toEqual(["policy.yaml"]);
+    expect(packet.spctre.policy_content_hash).toBe(`sha256:${"a".repeat(64)}`);
   });
 });

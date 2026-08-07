@@ -104,6 +104,38 @@ export async function listRuntimeEvidence(
   return rows.map((row) => mapRuntimeEvidenceRow(row, packByRevisionId));
 }
 
+/**
+ * Connector-scoped evidence retrieval for a service-token principal. Revision
+ * and time grants are applied by the evidence domain after the persisted token
+ * identity has been resolved; callers never provide a connector selector.
+ */
+export async function listRuntimeEvidenceForConnector(
+  workspaceId: string,
+  tenantId: string,
+  connector: string,
+  limit = 5000,
+): Promise<RuntimeDecisionEvidenceRecord[]> {
+  if (!sql) return [];
+  const rows = await sql<RuntimeEvidenceRow[]>`
+    SELECT
+      decision_id, tenant_id, workspace_id, environment,
+      runtime_stack, runtime_adapter, agent_id, connector, action,
+      status, reason, policy_refs, artifact_hash, policy_context,
+      raw_evidence, latency_ms, created_at
+    FROM runtime_evidence_event
+    WHERE tenant_id = ${tenantId}
+      AND workspace_id = ${workspaceId}
+      AND connector = ${connector}
+    ORDER BY created_at DESC
+    LIMIT ${Math.min(Math.max(limit, 1), 5000)}
+  `;
+  const packByRevisionId = await loadRevisionPackMetadata(
+    tenantId,
+    revisionIdsFromEvidenceRows(rows),
+  );
+  return rows.map((row) => mapRuntimeEvidenceRow(row, packByRevisionId));
+}
+
 // Distinct connector/action pairs seen in retained evidence, for the rule
 // builder's "connector/action from observed evidence" vocabulary. Capped and
 // ordered so the newest-active surfaces first.
@@ -470,6 +502,12 @@ export async function insertRuntimeEvidenceWithDedup(params: {
   rawEvidenceWithSource: Record<string, unknown>;
   executionTrace: unknown;
   engineVersion: string | null;
+  /**
+   * An exact policy artifact already retained in the custody store. Keeping the
+   * reference in this transaction means an evidence event can never claim a
+   * retained artifact without a durable, grant-scoped linkage to it.
+   */
+  policyContentReference?: { contentHash: string; revisionId: string };
 }): Promise<{ inserted: boolean }> {
   if (!sql) return { inserted: false };
 
@@ -526,6 +564,17 @@ export async function insertRuntimeEvidenceWithDedup(params: {
     `;
 
     if (insertedRows[0]) {
+      if (params.policyContentReference) {
+        await tx`
+          INSERT INTO runtime_evidence_policy_content_ref
+            (tenant_id, workspace_id, decision_id, revision_id, content_hash)
+          VALUES (
+            ${params.tenantId}, ${params.workspaceId}, ${params.evidence.decisionId},
+            ${params.policyContentReference.revisionId}, ${params.policyContentReference.contentHash}
+          )
+          ON CONFLICT DO NOTHING
+        `;
+      }
       await tx`
         UPDATE runtime_evidence_event_key
         SET evidence_event_id = ${insertedRows[0].id},

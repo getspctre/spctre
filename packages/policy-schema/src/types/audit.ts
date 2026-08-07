@@ -52,6 +52,8 @@ export interface AgtVerificationSummary {
   hasResults: boolean;
   overallOutcome: "PASS" | "FAIL" | "WARN" | "UNKNOWN";
   isStale: boolean;
+  /** Why the most recent result cannot be used for the requested provenance. */
+  staleReasons?: Array<"AGE" | "VERIFIER_LOCK" | "POLICY_CONTENT">;
   staleThresholdDays: number;
   latestRunAt: string | null;
   latestAgtVersion?: string;
@@ -99,6 +101,8 @@ export interface PolicyComplianceEvidenceExport {
   policyRefCount: number;
   timelineEventCount: number;
   artifactHash: string;
+  verifierLockDigest?: string;
+  policyContentHash?: string;
   simulationEventCount: number;
   packageSections: string[];
   deniedDecisionCount: number;
@@ -201,6 +205,8 @@ export interface AgtVerificationResult {
   workspaceId: string;
   revisionId?: string;
   artifactHash: string;
+  verifierLockDigest?: string;
+  policyContentHash?: string;
   verificationType: AgtVerificationType;
   outcome: AgtVerificationOutcome;
   summary: Record<string, unknown>;
@@ -317,6 +323,26 @@ export interface AgtVerificationEvidencePacket {
     resolutionNote?: string;
     resolvedAt: string;
   }>;
+}
+
+/**
+ * The exact `agt-runtime-evidence/v1` wire shape accepted by AGT. This is a
+ * shape adapter only: callers must source its toolkit and deployment fields
+ * from a live AGT runtime, and the verification worker must materialize the
+ * referenced artifact after independently checking `policyContentHash`.
+ */
+export interface AgtRuntimeEvidenceV1 {
+  schema: "agt-runtime-evidence/v1";
+  generated_at: string;
+  toolkit_version: string;
+  deployment: {
+    policy_files_loaded: string[];
+    registered_tools: string[];
+    audit_sink: { enabled: boolean; target: string };
+    identity: { enabled: boolean; agent_id: string };
+    packages: Array<{ package: string; version: string }>;
+  };
+  spctre: { policy_content_hash: string };
 }
 
 import type { PolicyControlMapping } from "./policy";

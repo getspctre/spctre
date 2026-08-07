@@ -61,7 +61,8 @@ vi.mock("@/lib/repositories/identity", () => ({
   resolveCanonicalAgentId: vi.fn(async ({ agentId }: { agentId: string }) => agentId),
 }));
 
-const { ingestRuntimeEvidence } = await import("../lib/domains/evidence/ingest-service");
+const { ingestRuntimeEvidence, policyContentReferenceFromEvidence } =
+  await import("../lib/domains/evidence/ingest-service");
 
 const baseParsed: EvidenceIngestInput = {
   decisionId: "dec-contract-1",
@@ -191,6 +192,46 @@ describe("evidence ingest contract", () => {
     expect(appendOperationsLogSpy).not.toHaveBeenCalled();
     expect(recordConversionTelemetrySpy).not.toHaveBeenCalled();
     expect(persistGatewayDecisionSpy).not.toHaveBeenCalled();
+  });
+
+  it("binds a compatible runtime content hash only to an asserted policy-context revision", async () => {
+    const evidence = {
+      ...baseParsed,
+      rawEvidence: {
+        spctre_runtime: {
+          schema: "spctre-runtime-facts/v1",
+          policy: {
+            content_hash: `sha256:${"a".repeat(64)}`,
+            revision_ids: ["revision-contract", "unrelated-revision"],
+          },
+        },
+      },
+    };
+    const result = await ingest(evidence);
+
+    expect(result.status).toBe(201);
+    expect(insertRuntimeEvidenceWithDedupSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        policyContentReference: {
+          contentHash: `sha256:${"a".repeat(64)}`,
+          revisionId: "revision-contract",
+        },
+      }),
+    );
+  });
+
+  it("does not bind unscoped or malformed runtime content facts", () => {
+    expect(
+      policyContentReferenceFromEvidence({
+        ...baseParsed,
+        rawEvidence: {
+          spctre_runtime: {
+            schema: "spctre-runtime-facts/v1",
+            policy: { content_hash: "sha256:not-a-digest", revision_ids: ["revision-contract"] },
+          },
+        },
+      }),
+    ).toBeUndefined();
   });
 
   it("rejects missing bearer tokens before persistence or operations logging", async () => {

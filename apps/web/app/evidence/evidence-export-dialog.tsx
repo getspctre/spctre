@@ -16,12 +16,6 @@ const exportOptions = [
     label: "JSON",
     description: "Full evidence packet with structured records and metadata.",
   },
-  {
-    href: "/api/evidence/export?format=agt-verification",
-    title: "Download evidence for AGT verification",
-    label: "AGT Verify",
-    description: "Verification packet for AGT-compatible evidence checks.",
-  },
 ];
 
 export function EvidenceExportDialog() {
