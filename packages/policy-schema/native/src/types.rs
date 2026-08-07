@@ -288,7 +288,7 @@ pub struct PolicyEvaluationInput {
     pub evidence: PolicyEvidenceInput,
     #[serde(default)]
     pub rules: Vec<PolicyRule>,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "null_to_default")]
     pub layers: Vec<CompositionLayer>,
     #[serde(default)]
     pub tool_intent: String,

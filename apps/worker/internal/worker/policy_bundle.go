@@ -15,8 +15,8 @@ import (
 // this service has no equivalent of.
 //
 // The layer query and ordering mirror listPublishedCompositionLayers in
-// apps/web; composePolicyLayers then flattens them identically. Any change to
-// one belongs in both.
+// apps/web. The ordered layers are passed to the Rust kernel, which alone
+// composes them before enforcement.
 
 // errPolicyRulesUnmaterialized reports a revision whose rules still carry NULL
 // matchers — written before migration 007 and not yet processed by
@@ -36,23 +36,6 @@ func (e *errPolicyRulesUnmaterialized) Error() string {
 		"policy rules are not materialised for %d revision(s) (%v); run scripts/backfill-policy-rule-matchers.mjs",
 		len(e.RevisionIDs), e.RevisionIDs,
 	)
-}
-
-// loadPublishedPolicyRules returns the effective rules for a workspace, or nil
-// when the tenant has published no policy.
-func (s *Server) loadPublishedPolicyRules(
-	ctx context.Context,
-	tenantID, workspaceID string,
-) ([]PolicyRule, error) {
-	layers, err := s.loadPublishedCompositionLayers(ctx, tenantID, workspaceID)
-	if err != nil {
-		return nil, err
-	}
-	if len(layers) == 0 {
-		return nil, nil
-	}
-	effective, _ := composePolicyLayers(layers)
-	return effective, nil
 }
 
 // loadPublishedCompositionLayers mirrors the TypeScript query of the same name,
@@ -225,18 +208,18 @@ func (s *Server) applyPublishedPolicyDecision(
 		return decision, nil
 	}
 
-	rules, err := s.loadPublishedPolicyRules(ctx, auth.TenantID, auth.WorkspaceID)
+	layers, err := s.loadPublishedCompositionLayers(ctx, auth.TenantID, auth.WorkspaceID)
 	if err != nil {
 		return decision, err
 	}
-	if len(rules) == 0 {
+	if len(layers) == 0 {
 		return decision, nil
 	}
 
 	policyInput := PolicyEvaluationInput{
 		Connector:      *input.Connector,
 		Action:         *input.Action,
-		Rules:          rules,
+		Layers:         layers,
 		ToolIntent:     derefString(input.ToolIntent),
 		PlanSummary:    derefString(input.PlanSummary),
 		ToolParameters: derefToolParameters(input.ToolParameters),
