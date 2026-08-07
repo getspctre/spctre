@@ -4,6 +4,8 @@ packages:
   - "packages/adapters/*"
 
 overrides:
+  postcss>nanoid: 3.3.17
+  '@scalar/types>nanoid': 5.1.16
   '@grpc/grpc-js': '>=1.14.4'
   axios: 1.18.1
   axios>form-data: 4.0.6

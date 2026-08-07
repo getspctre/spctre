@@ -286,7 +286,7 @@ jobs:
         working-directory: packages/policy-schema/native
 
       - name: Run Go tests
-        run: go test -coverprofile=cover.out ./...
+        run: go test -tags spctre_policy_kernel -coverprofile=cover.out ./...
         working-directory: apps/worker
 
       - name: Run Go cgo policy-kernel adapter test
@@ -328,6 +328,11 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown
+
+      # Keep the target installation explicit: the toolchain action's target
+      # input is not reliably applied on every runner image.
+      - name: Install WASM target
+        run: rustup target add wasm32-unknown-unknown
       - uses: actions/cache@v6
         with:
           path: |
