@@ -233,14 +233,18 @@ func (s *Server) applyPublishedPolicyDecision(
 		return decision, nil
 	}
 
-	evaluated := evaluatePolicyRules(PolicyEvaluationInput{
+	policyInput := PolicyEvaluationInput{
 		Connector:      *input.Connector,
 		Action:         *input.Action,
 		Rules:          rules,
 		ToolIntent:     derefString(input.ToolIntent),
 		PlanSummary:    derefString(input.PlanSummary),
 		ToolParameters: derefToolParameters(input.ToolParameters),
-	})
+	}
+	evaluated := evaluatePolicyRules(policyInput)
+	// Shadow evaluation is compiled into the staged cgo worker image only. It
+	// cannot change this decision while the established Go path is authoritative.
+	s.observePolicyKernelShadow(policyInput, evaluated)
 
 	switch evaluated.Status {
 	case statusDeny:
