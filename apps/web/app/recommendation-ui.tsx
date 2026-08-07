@@ -36,15 +36,9 @@ export function RecommendationGenerateForm({
     <form action={action} style={{ display: "grid", gap: 8 }}>
       {children}
       <button
-        className="button"
+        className="button buttonSmall"
         disabled={disabled}
-        style={{
-          alignSelf: "start",
-          display: "inline-flex",
-          fontSize: 12,
-          gap: 6,
-          padding: "5px 10px",
-        }}
+        style={{ alignSelf: "start" }}
         title={title}
         type="submit"
       >
@@ -157,10 +151,9 @@ export function RecommendationDecisionForm({
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
         <button
-          className="button buttonPrimary"
+          className="button buttonPrimary buttonSmall"
           disabled={applying}
           name="decision"
-          style={{ display: "inline-flex", fontSize: 12, gap: 5, padding: "5px 9px" }}
           type="submit"
           value={hasEditedSummary ? "EDIT" : "ACCEPT"}
         >
@@ -168,10 +161,9 @@ export function RecommendationDecisionForm({
           {hasEditedSummary ? t("edit_record") : t("accept")}
         </button>
         <button
-          className="button"
+          className="button buttonSmall"
           disabled={applying}
           name="decision"
-          style={{ display: "inline-flex", fontSize: 12, gap: 5, padding: "5px 9px" }}
           type="submit"
           value="REJECT"
         >
