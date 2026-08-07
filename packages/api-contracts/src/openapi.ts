@@ -1856,7 +1856,9 @@ export const SPCTRE_OPENAPI_SPEC = {
               "x-spctre-branch-id": { schema: { type: "string" } },
               "x-spctre-revision-id": { schema: { type: "string" } },
               "x-spctre-artifact-hash": { schema: { type: "string" } },
-              "x-spctre-policy-content-hash": { schema: { type: "string", pattern: "^sha256:[0-9a-f]{64}$" } },
+              "x-spctre-policy-content-hash": {
+                schema: { type: "string", pattern: "^sha256:[0-9a-f]{64}$" },
+              },
               "x-spctre-published-at": { schema: { type: "string", format: "date-time" } },
               "x-spctre-export-format": { schema: { type: "string" } },
               "x-spctre-export-ok": { schema: { type: "string", enum: ["true", "false"] } },
