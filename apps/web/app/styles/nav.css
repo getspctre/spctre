@@ -123,11 +123,49 @@
   font-size: 13px;
 }
 
-.topNavWorkspaceSelect {
+.topNavWorkspaceList {
+  display: grid;
+  gap: 4px;
+  max-height: 248px;
+  overflow-y: auto;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: oklch(0.984 0.006 250);
+}
+
+.topNavWorkspaceOption {
+  display: grid;
   width: 100%;
-  height: auto;
-  min-height: 92px;
-  padding: 6px;
+  gap: 2px;
+  padding: 8px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  text-align: left;
+}
+
+.topNavWorkspaceOption strong {
+  font-size: 13px;
+  font-weight: var(--fw-semi-plus);
+}
+
+.topNavWorkspaceOption span {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.topNavWorkspaceOption:hover,
+.topNavWorkspaceOption:focus-visible {
+  border-color: oklch(0.78 0.04 184);
+  background: var(--panel);
+}
+
+.topNavWorkspaceOption.isActive {
+  border-color: oklch(0.78 0.04 184);
+  background: oklch(0.97 0.02 184);
 }
 
 .topNavGatePrompt {

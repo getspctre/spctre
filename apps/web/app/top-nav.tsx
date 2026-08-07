@@ -151,24 +151,24 @@ function WorkspaceSwitcherMenu({
         aria-label="Search workspaces"
         autoComplete="off"
       />
-      <form action={workspaceAction} className="topNavWorkspaceForm">
-        <select
-          className="input topNavWorkspaceSelect"
-          name="workspaceId"
-          defaultValue={activeWorkspaceId}
-          size={Math.min(8, Math.max(3, filteredWorkspaces.length || 3))}
-          disabled={!filteredWorkspaces.length}
-          onChange={(event) => {
-            event.currentTarget.form?.requestSubmit();
-          }}
-        >
-          {filteredWorkspaces.map((workspace) => (
-            <option key={workspace.id} value={workspace.id}>
-              {workspace.slug}
-            </option>
-          ))}
-        </select>
-      </form>
+      <div className="topNavWorkspaceList" aria-label="Available workspaces">
+        {filteredWorkspaces.map((workspace) => {
+          const active = workspace.id === activeWorkspaceId;
+          return (
+            <form action={workspaceAction} key={workspace.id}>
+              <input name="workspaceId" type="hidden" value={workspace.id} />
+              <button
+                aria-current={active ? "page" : undefined}
+                className={active ? "topNavWorkspaceOption isActive" : "topNavWorkspaceOption"}
+                type="submit"
+              >
+                <strong>{workspace.name}</strong>
+                <span>{workspace.slug}</span>
+              </button>
+            </form>
+          );
+        })}
+      </div>
       {workspaceQuery && !filteredWorkspaces.length ? (
         <p className="meta workspaceHint">No workspaces match that search.</p>
       ) : null}
