@@ -2037,6 +2037,10 @@ export function evaluateRuntimePolicyDecision(input: {
   trustLevel?: string;
   pluginSource?: RuntimeDecisionEvidenceRecord["pluginSource"];
   catalogProvider?: string;
+  toolIntent?: string;
+  planSummary?: string;
+  toolParameters?: Record<string, unknown>;
+  policyArtifactHash?: string;
   rules: PolicyRuleSummary[];
   evaluatedAt?: string;
 }): EvaluationResult {
@@ -2055,6 +2059,10 @@ export function evaluateRuntimePolicyDecision(input: {
         trustLevel: input.trustLevel ?? null,
         pluginSource: input.pluginSource ?? null,
         catalogProvider: input.catalogProvider ?? null,
+        toolIntent: input.toolIntent ?? "",
+        planSummary: input.planSummary ?? "",
+        toolParameters: input.toolParameters ?? {},
+        policyArtifactHash: input.policyArtifactHash ?? null,
         rules: input.rules.map((rule) => ({
           stableRuleId: rule.stableRuleId,
           title: rule.title,
@@ -2062,6 +2070,9 @@ export function evaluateRuntimePolicyDecision(input: {
           domains: rule.domains,
           connectors: rule.connectors,
           actions: rule.actions,
+          immutable: rule.immutable,
+          semanticChecks: rule.semanticChecks ?? [],
+          parameterConstraints: rule.parameterConstraints ?? [],
           runtimeStacks: rule.runtimeStacks ?? [],
           sandboxNames: rule.sandboxNames ?? [],
           inferenceProviders: rule.inferenceProviders ?? [],

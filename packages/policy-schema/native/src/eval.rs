@@ -1,4 +1,7 @@
-use serde::Serialize;
+use std::sync::OnceLock;
+
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 use crate::types::*;
 
@@ -71,9 +74,50 @@ pub fn evaluate_policy_decision(input: PolicyEvaluationInput) -> EvaluationResul
     let mut matched_rules = Vec::new();
 
     for rule in &input.rules {
-        let matched = rule_matches(rule, &input.evidence);
+        let mut matched = rule_matches(rule, &input.evidence);
+        let mut semantic_prompt = None;
+        let mut semantic_override = None;
+        let mut parameter_override = None;
+
+        if matched && !rule.semantic_checks.is_empty() {
+            if let Some(check) = rule.semantic_checks.iter().find(|check| {
+                classify_semantic_intent(
+                    &check.prompt,
+                    &input.tool_intent,
+                    &input.plan_summary,
+                    &input.tool_parameters,
+                )
+            }) {
+                semantic_prompt = Some(check.prompt.clone());
+                semantic_override = check.effect.clone();
+            } else {
+                matched = false;
+            }
+        }
+
+        if matched && !rule.parameter_constraints.is_empty() {
+            if let Some(effect) = evaluate_parameter_constraints(
+                &rule.parameter_constraints,
+                &input.tool_parameters,
+            ) {
+                parameter_override = effect;
+            } else {
+                matched = false;
+            }
+        }
         let match_reason = if matched {
-            build_match_reason(rule, &input.evidence)
+            let mut reason = build_match_reason(rule, &input.evidence);
+            if semantic_prompt.is_some() || !rule.parameter_constraints.is_empty() {
+                let mut parts = if reason == "wildcard match" { Vec::new() } else { vec![reason] };
+                if let Some(prompt) = &semantic_prompt {
+                    parts.push(format!("semantic_check=\"{prompt}\""));
+                }
+                if !rule.parameter_constraints.is_empty() {
+                    parts.push("parameter_constraints=matched".to_string());
+                }
+                reason = if parts.is_empty() { "wildcard match".to_string() } else { parts.join("; ") };
+            }
+            reason
         } else {
             "no match".to_string()
         };
@@ -88,7 +132,11 @@ pub fn evaluate_policy_decision(input: PolicyEvaluationInput) -> EvaluationResul
 
         if matched {
             matched_refs.push(rule.stable_rule_id.clone());
-            matched_rules.push(rule);
+            matched_rules.push(MatchedPolicyRule {
+                rule,
+                effect: parameter_override.or(semantic_override).unwrap_or_else(|| rule.effect.clone()),
+                semantic_prompt,
+            });
         }
     }
 
@@ -103,7 +151,17 @@ pub fn evaluate_policy_decision(input: PolicyEvaluationInput) -> EvaluationResul
         evaluated_at: input
             .evaluated_at
             .unwrap_or_else(|| "native-evaluator".to_string()),
+        evaluator_version: "1.0".to_string(),
+        request_schema_version: "1.0".to_string(),
+        result_schema_version: "1.0".to_string(),
+        policy_artifact_hash: input.policy_artifact_hash,
     }
+}
+
+struct MatchedPolicyRule<'a> {
+    rule: &'a PolicyRule,
+    effect: RuntimeDecisionStatus,
+    semantic_prompt: Option<String>,
 }
 
 fn rule_matches(rule: &PolicyRule, evidence: &PolicyEvidenceInput) -> bool {
@@ -112,9 +170,10 @@ fn rule_matches(rule: &PolicyRule, evidence: &PolicyEvidenceInput) -> bool {
     let action_match = rule.actions.is_empty()
         || rule.actions.iter().any(|rule_action| {
             rule_action == &evidence.action
-                || rule_action
-                    .strip_suffix(".*")
-                    .is_some_and(|prefix| evidence.action.starts_with(&format!("{prefix}.")))
+                || match rule_action.strip_suffix(".*") {
+                    Some(prefix) => evidence.action.starts_with(&format!("{prefix}.")),
+                    None => evidence.action.starts_with(rule_action),
+                }
         });
     let domain_match = rule.domains.is_empty()
         || evidence.domains.is_empty()
@@ -362,14 +421,14 @@ fn build_match_reason(rule: &PolicyRule, evidence: &PolicyEvidenceInput) -> Stri
     }
 }
 
-fn decision_outcome(matched_rules: &[&PolicyRule]) -> (RuntimeDecisionStatus, String) {
+fn decision_outcome(matched_rules: &[MatchedPolicyRule<'_>]) -> (RuntimeDecisionStatus, String) {
     if let Some(rule) = matched_rules
         .iter()
         .find(|rule| rule.effect == RuntimeDecisionStatus::Deny)
     {
         return (
             RuntimeDecisionStatus::Deny,
-            format!("Denied by rule \"{}\": {}", rule.stable_rule_id, rule.title),
+            decision_reason("Denied", rule),
         );
     }
 
@@ -379,10 +438,7 @@ fn decision_outcome(matched_rules: &[&PolicyRule]) -> (RuntimeDecisionStatus, St
     {
         return (
             RuntimeDecisionStatus::Escalate,
-            format!(
-                "Escalated by rule \"{}\": {}",
-                rule.stable_rule_id, rule.title
-            ),
+            decision_reason("Escalated", rule),
         );
     }
 
@@ -392,20 +448,14 @@ fn decision_outcome(matched_rules: &[&PolicyRule]) -> (RuntimeDecisionStatus, St
     {
         return (
             RuntimeDecisionStatus::Warn,
-            format!(
-                "Warning from rule \"{}\": {}",
-                rule.stable_rule_id, rule.title
-            ),
+            decision_reason("Warning from", rule),
         );
     }
 
     if let Some(rule) = matched_rules.first() {
         return (
             RuntimeDecisionStatus::Allow,
-            format!(
-                "Allowed by rule \"{}\": {}",
-                rule.stable_rule_id, rule.title
-            ),
+            decision_reason("Allowed by", rule),
         );
     }
 
@@ -413,6 +463,94 @@ fn decision_outcome(matched_rules: &[&PolicyRule]) -> (RuntimeDecisionStatus, St
         RuntimeDecisionStatus::Allow,
         "No rules matched — request is allowed by default.".to_string(),
     )
+}
+
+fn decision_reason(prefix: &str, matched: &MatchedPolicyRule<'_>) -> String {
+    let suffix = matched
+        .semantic_prompt
+        .as_ref()
+        .map(|prompt| format!(" (semantic check: \"{prompt}\")"))
+        .unwrap_or_default();
+    format!("{prefix} rule \"{}\": {}{suffix}", matched.rule.stable_rule_id, matched.rule.title)
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct SemanticTopicData {
+    topics: Vec<SemanticTopic>,
+    stop_words: Vec<String>,
+    generic_words: Vec<String>,
+    match_ratio: f64,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct SemanticTopic {
+    prompt_triggers: Vec<String>,
+    keywords: Vec<String>,
+}
+
+fn semantic_topics() -> &'static SemanticTopicData {
+    static TOPICS: OnceLock<SemanticTopicData> = OnceLock::new();
+    TOPICS.get_or_init(|| serde_json::from_str(include_str!("../../../../apps/worker/internal/worker/semantic_topics.json")).expect("generated semantic topics must be valid JSON"))
+}
+
+fn classify_semantic_intent(prompt: &str, tool_intent: &str, plan_summary: &str, parameters: &Value) -> bool {
+    let clean_prompt = prompt.trim().to_lowercase();
+    let search_space = format!("{} {} {}", tool_intent, plan_summary, serde_json::to_string(parameters).unwrap_or_default()).to_lowercase();
+    let mut quote_parts = clean_prompt.split('"').skip(1).step_by(2);
+    let mut has_quotes = false;
+    for quoted in &mut quote_parts {
+        has_quotes = true;
+        let exact = quoted.trim();
+        if !exact.is_empty() && search_space.contains(exact) { return true; }
+    }
+    if has_quotes { return false; }
+    let data = semantic_topics();
+    for topic in &data.topics {
+        if topic.prompt_triggers.iter().any(|trigger| clean_prompt.contains(trigger))
+            && topic.keywords.iter().any(|keyword| search_space.contains(keyword)) { return true; }
+    }
+    let words: Vec<&str> = clean_prompt
+        .split(|c: char| !c.is_ascii_alphanumeric())
+        .filter(|word| word.len() > 1 && !data.stop_words.iter().any(|stop| stop == word))
+        .collect();
+    if words.is_empty() { return false; }
+    let matched: Vec<&str> = words.iter().copied().filter(|word| search_space.contains(word)).collect();
+    if (matched.len() as f64 / words.len() as f64) < data.match_ratio { return false; }
+    let non_generic = words.iter().filter(|word| !data.generic_words.iter().any(|generic| generic == **word)).count();
+    non_generic == 0 || matched.iter().any(|word| !data.generic_words.iter().any(|generic| generic == *word))
+}
+
+fn evaluate_parameter_constraints(constraints: &[PolicyParameterConstraint], parameters: &Value) -> Option<Option<RuntimeDecisionStatus>> {
+    let mut effect = None;
+    for constraint in constraints {
+        let actual = read_dot_path(parameters, &constraint.field);
+        if !compare_constraint_value(&constraint.operator, actual, &constraint.value) { return None; }
+        if constraint.effect.is_some() { effect = constraint.effect.clone(); }
+    }
+    Some(effect)
+}
+
+fn read_dot_path<'a>(value: &'a Value, path: &str) -> Option<&'a Value> {
+    path.split('.').try_fold(value, |current, segment| current.as_object()?.get(segment))
+}
+
+fn compare_constraint_value(operator: &str, actual: Option<&Value>, expected: &Value) -> bool {
+    match operator {
+        "eq" => actual == Some(expected),
+        "neq" => actual != Some(expected),
+        "gt" | "gte" | "lt" | "lte" => match (actual.and_then(Value::as_f64), expected.as_f64()) {
+            (Some(actual), Some(expected)) => match operator { "gt" => actual > expected, "gte" => actual >= expected, "lt" => actual < expected, _ => actual <= expected },
+            _ => false,
+        },
+        "in" | "not_in" => match expected.as_array() {
+            Some(values) => { let found = actual.is_some_and(|actual| values.iter().any(|value| value == actual)); if operator == "in" { found } else { !found } }
+            None => false,
+        },
+        "contains" => match (actual.and_then(Value::as_str), expected.as_str()) { (Some(actual), Some(expected)) => actual.contains(expected), _ => false },
+        _ => false,
+    }
 }
 
 fn to_json_string<T: Serialize>(value: &T) -> String {
@@ -425,6 +563,55 @@ fn to_json_string<T: Serialize>(value: &T) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serde::Deserialize;
+
+    #[derive(Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    struct ConformanceExpected {
+        status: RuntimeDecisionStatus,
+        matched_refs: Vec<String>,
+    }
+
+    #[derive(Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    struct ConformanceCase {
+        description: String,
+        #[serde(flatten)]
+        input: PolicyEvaluationInput,
+        expected: ConformanceExpected,
+    }
+
+    #[derive(Deserialize)]
+    struct ConformanceCorpus {
+        contract: ConformanceContract,
+        cases: Vec<ConformanceCase>,
+    }
+
+    #[derive(Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    struct ConformanceContract {
+        evaluator_version: String,
+        request_schema_version: String,
+        result_schema_version: String,
+    }
+
+    #[test]
+    fn published_rule_corpus_matches_typescript_reference() {
+        let corpus: ConformanceCorpus = serde_json::from_str(include_str!(
+            "../../../../conformance/policy-rules.json"
+        ))
+        .expect("published evaluator corpus must be valid JSON");
+        assert_eq!(corpus.contract.evaluator_version, "1.0");
+        assert_eq!(corpus.contract.request_schema_version, "1.0");
+        assert_eq!(corpus.contract.result_schema_version, "1.0");
+        assert!(!corpus.cases.is_empty());
+
+        for case in corpus.cases {
+            let result = evaluate_policy_decision(case.input);
+            assert_eq!(result.status, case.expected.status, "{}", case.description);
+            assert_eq!(result.matched_refs, case.expected.matched_refs, "{}", case.description);
+        }
+    }
 
     fn baseline_rule() -> PolicyRule {
         PolicyRule {
@@ -434,6 +621,9 @@ mod tests {
             domains: vec![],
             connectors: vec!["runtime".to_string()],
             actions: vec!["tool.call".to_string()],
+            immutable: false,
+            semantic_checks: vec![],
+            parameter_constraints: vec![],
             runtime_stacks: vec![],
             sandbox_names: vec![],
             inference_providers: vec![],
