@@ -127,11 +127,15 @@ describe("policy artifact routes", () => {
     });
 
     const response = await getRoute.GET(
-      new Request(`http://localhost:3000/api/evidence/policy-artifacts/${hash}`, { headers: { authorization: "Bearer token" } }),
+      new Request(`http://localhost:3000/api/evidence/policy-artifacts/${hash}`, {
+        headers: { authorization: "Bearer token" },
+      }),
       { params: Promise.resolve({ contentHash: hash }) },
     );
 
     expect(response.status).toBe(500);
-    await expect(response.json()).resolves.toMatchObject({ error: "Artifact integrity check failed." });
+    await expect(response.json()).resolves.toMatchObject({
+      error: "Artifact integrity check failed.",
+    });
   });
 });
