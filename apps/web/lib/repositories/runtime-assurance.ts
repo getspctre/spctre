@@ -40,6 +40,7 @@ export async function listProductionHeartbeatObservations(params: {
       AND workspace_id = ${params.workspaceId}
       AND environment = 'production'
       AND action = 'heartbeat'
+      AND COALESCE(raw_evidence->>'_source', raw_evidence->>'source', '') <> 'quickstart'
     ORDER BY agent_id, environment, runtime_stack, COALESCE(runtime_adapter, ''), created_at DESC
   `;
   return rows.map((row) => ({
@@ -101,6 +102,7 @@ export async function listProductionConnectorActionObservations(params: {
       AND workspace_id = ${params.workspaceId}
       AND environment = 'production'
       AND action <> 'heartbeat'
+      AND COALESCE(raw_evidence->>'_source', raw_evidence->>'source', '') <> 'quickstart'
       AND created_at >= now() - interval '30 days'
     GROUP BY connector
     ORDER BY last_seen_at DESC, decisions DESC
@@ -144,6 +146,7 @@ export async function listPolicyScopedRuntimeObservations(params: {
         AND workspace_id = ${params.workspaceId}
         AND environment = 'production'
         AND action <> 'heartbeat'
+        AND COALESCE(raw_evidence->>'_source', raw_evidence->>'source', '') <> 'quickstart'
         AND cardinality(policy_refs) > 0
         AND created_at >= now() - interval '30 days'
       ORDER BY agent_id, environment, runtime_stack, COALESCE(runtime_adapter, ''), created_at DESC
@@ -164,6 +167,7 @@ export async function listPolicyScopedRuntimeObservations(params: {
       AND e.workspace_id = ${params.workspaceId}
       AND e.environment = 'production'
       AND e.action <> 'heartbeat'
+      AND COALESCE(e.raw_evidence->>'_source', e.raw_evidence->>'source', '') <> 'quickstart'
       AND cardinality(e.policy_refs) > 0
       AND e.created_at >= now() - interval '30 days'
     GROUP BY e.agent_id, e.environment, e.runtime_stack, e.runtime_adapter, la.artifact_hash
