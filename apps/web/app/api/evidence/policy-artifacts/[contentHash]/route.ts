@@ -53,7 +53,13 @@ async function handleGetPolicyArtifact(
   // bytes merely because they are stored under a claimed digest: it must be
   // able to reconstruct and independently verify the exact reference.
   if (policyContentHash(artifact.bytes) !== contentHash) {
-    return withTraceId(Response.json({ error: "Artifact integrity check failed.", meta: makeMeta(traceId) }, { status: 500 }), traceId);
+    return withTraceId(
+      Response.json(
+        { error: "Artifact integrity check failed.", meta: makeMeta(traceId) },
+        { status: 500 },
+      ),
+      traceId,
+    );
   }
   return withTraceId(
     new Response(Buffer.from(artifact.bytes), {
