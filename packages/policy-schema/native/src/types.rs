@@ -1,6 +1,14 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+fn null_to_default<'de, D, T>(deserializer: D) -> Result<T, D::Error>
+where
+    D: serde::Deserializer<'de>,
+    T: Deserialize<'de> + Default,
+{
+    Option::<T>::deserialize(deserializer).map(Option::unwrap_or_default)
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum GatewayOutcome {
@@ -112,7 +120,7 @@ pub struct ChainIssue {
 pub struct PolicyEvidenceInput {
     pub connector: String,
     pub action: String,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "null_to_default")]
     pub domains: Vec<String>,
     pub runtime_target: Option<RuntimeTargetEvidence>,
     pub execution_context: Option<ExecutionContextEvidence>,
@@ -173,11 +181,11 @@ pub struct PolicyRule {
     pub stable_rule_id: String,
     pub title: String,
     pub effect: RuntimeDecisionStatus,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "null_to_default")]
     pub domains: Vec<String>,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "null_to_default")]
     pub connectors: Vec<String>,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "null_to_default")]
     pub actions: Vec<String>,
     #[serde(default)]
     pub immutable: bool,
