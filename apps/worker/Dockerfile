@@ -5,7 +5,7 @@ WORKDIR /src/packages/policy-schema/native
 
 COPY packages/policy-schema/native/Cargo.toml packages/policy-schema/native/Cargo.lock packages/policy-schema/native/build.rs ./
 COPY packages/policy-schema/native/src ./src
-RUN cargo build --release
+RUN cargo build --release --no-default-features
 
 FROM golang:1.26.3-alpine AS builder
 WORKDIR /src/apps/worker

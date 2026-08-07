@@ -282,7 +282,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
 
       - name: Build Rust static policy kernel for cgo adapter tests
-        run: cargo build --release
+        run: cargo build --release --no-default-features
         working-directory: packages/policy-schema/native
 
       - name: Run Go tests
@@ -332,7 +332,7 @@ jobs:
       # Keep the target installation explicit: the toolchain action's target
       # input is not reliably applied on every runner image.
       - name: Install WASM target
-        run: rustup target add wasm32-unknown-unknown
+        run: rustup target add --toolchain stable wasm32-unknown-unknown
       - uses: actions/cache@v6
         with:
           path: |
