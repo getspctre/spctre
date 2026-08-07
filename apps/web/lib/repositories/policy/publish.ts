@@ -178,7 +178,9 @@ export async function getLatestPublishedBundle(
       published_by: latest.published_by,
     },
   });
-  const contentHash = `sha256:${createHash("sha256").update(JSON.stringify(bundle, null, 2)).digest("hex")}`;
+  const contentHash = `sha256:${createHash("sha256")
+    .update(JSON.stringify(bundle, null, 2))
+    .digest("hex")}`;
   return {
     publishId: latest.publish_id,
     publishedAt: latest.published_at.toISOString(),
