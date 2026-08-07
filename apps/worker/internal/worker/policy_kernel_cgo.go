@@ -17,13 +17,14 @@ import (
 )
 
 type policyKernelRequest struct {
-	Connector      string         `json:"connector"`
-	Action         string         `json:"action"`
-	Domains        []string       `json:"domains"`
-	Rules          []PolicyRule   `json:"rules"`
-	ToolIntent     string         `json:"toolIntent"`
-	PlanSummary    string         `json:"planSummary"`
-	ToolParameters map[string]any `json:"toolParameters"`
+	Connector      string             `json:"connector"`
+	Action         string             `json:"action"`
+	Domains        []string           `json:"domains"`
+	Rules          []PolicyRule       `json:"rules"`
+	Layers         []CompositionLayer `json:"layers"`
+	ToolIntent     string             `json:"toolIntent"`
+	PlanSummary    string             `json:"planSummary"`
+	ToolParameters map[string]any     `json:"toolParameters"`
 }
 
 func marshalPolicyKernelRequest(input PolicyEvaluationInput) ([]byte, error) {
@@ -33,7 +34,7 @@ func marshalPolicyKernelRequest(input PolicyEvaluationInput) ([]byte, error) {
 	}
 	return json.Marshal(policyKernelRequest{
 		Connector: input.Connector, Action: input.Action, Domains: input.Domains,
-		Rules: input.Rules, ToolIntent: input.ToolIntent, PlanSummary: input.PlanSummary,
+		Rules: input.Rules, Layers: input.Layers, ToolIntent: input.ToolIntent, PlanSummary: input.PlanSummary,
 		ToolParameters: parameters,
 	})
 }

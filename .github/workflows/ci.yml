@@ -290,7 +290,7 @@ jobs:
         working-directory: apps/worker
 
       - name: Run Go cgo policy-kernel adapter test
-        run: go test -tags spctre_policy_kernel ./internal/worker -run TestPolicyKernelCgoAdapter -count=1
+        run: go test -tags spctre_policy_kernel ./...
         working-directory: apps/worker
 
       # Report-only coverage for the Go worker.
