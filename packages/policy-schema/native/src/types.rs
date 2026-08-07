@@ -230,6 +230,24 @@ pub struct PolicyParameterConstraint {
     pub effect: Option<RuntimeDecisionStatus>,
 }
 
+/// One ordered published-policy layer. Layers proceed from least to most
+/// specific; composition preserves first-seen rule order while allowing a
+/// later layer to replace a non-immutable rule with the same stable id.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CompositionLayer {
+    pub scope: String,
+    #[serde(default)]
+    pub rules: Vec<PolicyRule>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PolicyCompositionResult {
+    pub effective_rules: Vec<PolicyRule>,
+    pub conflict_notes: Vec<String>,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct EvaluationTraceStep {
@@ -262,6 +280,8 @@ pub struct PolicyEvaluationInput {
     pub evidence: PolicyEvidenceInput,
     #[serde(default)]
     pub rules: Vec<PolicyRule>,
+    #[serde(default)]
+    pub layers: Vec<CompositionLayer>,
     #[serde(default)]
     pub tool_intent: String,
     #[serde(default)]

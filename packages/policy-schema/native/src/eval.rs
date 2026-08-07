@@ -69,11 +69,16 @@ pub fn evaluate_gateway_decision(input: GatewayDecisionInput) -> GatewayDecision
 }
 
 pub fn evaluate_policy_decision(input: PolicyEvaluationInput) -> EvaluationResult {
-    let mut trace = Vec::with_capacity(input.rules.len());
+    let composed = (!input.layers.is_empty()).then(|| compose_policy_layers(&input.layers));
+    let rules = composed
+        .as_ref()
+        .map(|result| &result.effective_rules)
+        .unwrap_or(&input.rules);
+    let mut trace = Vec::with_capacity(rules.len());
     let mut matched_refs = Vec::new();
     let mut matched_rules = Vec::new();
 
-    for rule in &input.rules {
+    for rule in rules {
         let mut matched = rule_matches(rule, &input.evidence);
         let mut semantic_prompt = None;
         let mut semantic_override = None;
@@ -96,10 +101,9 @@ pub fn evaluate_policy_decision(input: PolicyEvaluationInput) -> EvaluationResul
         }
 
         if matched && !rule.parameter_constraints.is_empty() {
-            if let Some(effect) = evaluate_parameter_constraints(
-                &rule.parameter_constraints,
-                &input.tool_parameters,
-            ) {
+            if let Some(effect) =
+                evaluate_parameter_constraints(&rule.parameter_constraints, &input.tool_parameters)
+            {
                 parameter_override = effect;
             } else {
                 matched = false;
@@ -108,14 +112,22 @@ pub fn evaluate_policy_decision(input: PolicyEvaluationInput) -> EvaluationResul
         let match_reason = if matched {
             let mut reason = build_match_reason(rule, &input.evidence);
             if semantic_prompt.is_some() || !rule.parameter_constraints.is_empty() {
-                let mut parts = if reason == "wildcard match" { Vec::new() } else { vec![reason] };
+                let mut parts = if reason == "wildcard match" {
+                    Vec::new()
+                } else {
+                    vec![reason]
+                };
                 if let Some(prompt) = &semantic_prompt {
                     parts.push(format!("semantic_check=\"{prompt}\""));
                 }
                 if !rule.parameter_constraints.is_empty() {
                     parts.push("parameter_constraints=matched".to_string());
                 }
-                reason = if parts.is_empty() { "wildcard match".to_string() } else { parts.join("; ") };
+                reason = if parts.is_empty() {
+                    "wildcard match".to_string()
+                } else {
+                    parts.join("; ")
+                };
             }
             reason
         } else {
@@ -134,7 +146,9 @@ pub fn evaluate_policy_decision(input: PolicyEvaluationInput) -> EvaluationResul
             matched_refs.push(rule.stable_rule_id.clone());
             matched_rules.push(MatchedPolicyRule {
                 rule,
-                effect: parameter_override.or(semantic_override).unwrap_or_else(|| rule.effect.clone()),
+                effect: parameter_override
+                    .or(semantic_override)
+                    .unwrap_or_else(|| rule.effect.clone()),
                 semantic_prompt,
             });
         }
@@ -147,7 +161,7 @@ pub fn evaluate_policy_decision(input: PolicyEvaluationInput) -> EvaluationResul
         matched_refs,
         reason,
         trace,
-        rule_count: input.rules.len(),
+        rule_count: rules.len(),
         evaluated_at: input
             .evaluated_at
             .unwrap_or_else(|| "native-evaluator".to_string()),
@@ -155,6 +169,47 @@ pub fn evaluate_policy_decision(input: PolicyEvaluationInput) -> EvaluationResul
         request_schema_version: "1.0".to_string(),
         result_schema_version: "1.0".to_string(),
         policy_artifact_hash: input.policy_artifact_hash,
+    }
+}
+
+/// Composes ordered policy layers with the same immutable-rule and ordering
+/// semantics as the published-policy contract.
+pub fn compose_policy_layers(layers: &[CompositionLayer]) -> PolicyCompositionResult {
+    let mut effective_rules: Vec<PolicyRule> = Vec::new();
+    let mut scopes: Vec<String> = Vec::new();
+    let mut conflict_notes = Vec::new();
+
+    for layer in layers {
+        for rule in &layer.rules {
+            if let Some(index) = effective_rules
+                .iter()
+                .position(|existing| existing.stable_rule_id == rule.stable_rule_id)
+            {
+                if effective_rules[index].immutable {
+                    conflict_notes.push(format!(
+                        "Conflict in {} layer: Rule \"{}\" is immutable in {} and cannot be overridden.",
+                        layer.scope, rule.stable_rule_id, scopes[index]
+                    ));
+                    continue;
+                }
+                if scopes[index] != layer.scope {
+                    conflict_notes.push(format!(
+                        "Override: {} layer has updated rule \"{}\" from {}.",
+                        layer.scope, rule.stable_rule_id, scopes[index]
+                    ));
+                }
+                effective_rules[index] = rule.clone();
+                scopes[index] = layer.scope.clone();
+            } else {
+                effective_rules.push(rule.clone());
+                scopes.push(layer.scope.clone());
+            }
+        }
+    }
+
+    PolicyCompositionResult {
+        effective_rules,
+        conflict_notes,
     }
 }
 
@@ -426,10 +481,7 @@ fn decision_outcome(matched_rules: &[MatchedPolicyRule<'_>]) -> (RuntimeDecision
         .iter()
         .find(|rule| rule.effect == RuntimeDecisionStatus::Deny)
     {
-        return (
-            RuntimeDecisionStatus::Deny,
-            decision_reason("Denied", rule),
-        );
+        return (RuntimeDecisionStatus::Deny, decision_reason("Denied", rule));
     }
 
     if let Some(rule) = matched_rules
@@ -471,7 +523,10 @@ fn decision_reason(prefix: &str, matched: &MatchedPolicyRule<'_>) -> String {
         .as_ref()
         .map(|prompt| format!(" (semantic check: \"{prompt}\")"))
         .unwrap_or_default();
-    format!("{prefix} rule \"{}\": {}{suffix}", matched.rule.stable_rule_id, matched.rule.title)
+    format!(
+        "{prefix} rule \"{}\": {}{suffix}",
+        matched.rule.stable_rule_id, matched.rule.title
+    )
 }
 
 #[derive(Deserialize)]
@@ -492,48 +547,99 @@ struct SemanticTopic {
 
 fn semantic_topics() -> &'static SemanticTopicData {
     static TOPICS: OnceLock<SemanticTopicData> = OnceLock::new();
-    TOPICS.get_or_init(|| serde_json::from_str(include_str!("../../../../apps/worker/internal/worker/semantic_topics.json")).expect("generated semantic topics must be valid JSON"))
+    TOPICS.get_or_init(|| {
+        serde_json::from_str(include_str!(
+            "../../../../apps/worker/internal/worker/semantic_topics.json"
+        ))
+        .expect("generated semantic topics must be valid JSON")
+    })
 }
 
-fn classify_semantic_intent(prompt: &str, tool_intent: &str, plan_summary: &str, parameters: &Value) -> bool {
+fn classify_semantic_intent(
+    prompt: &str,
+    tool_intent: &str,
+    plan_summary: &str,
+    parameters: &Value,
+) -> bool {
     let clean_prompt = prompt.trim().to_lowercase();
-    let search_space = format!("{} {} {}", tool_intent, plan_summary, serde_json::to_string(parameters).unwrap_or_default()).to_lowercase();
+    let search_space = format!(
+        "{} {} {}",
+        tool_intent,
+        plan_summary,
+        serde_json::to_string(parameters).unwrap_or_default()
+    )
+    .to_lowercase();
     let mut quote_parts = clean_prompt.split('"').skip(1).step_by(2);
     let mut has_quotes = false;
     for quoted in &mut quote_parts {
         has_quotes = true;
         let exact = quoted.trim();
-        if !exact.is_empty() && search_space.contains(exact) { return true; }
+        if !exact.is_empty() && search_space.contains(exact) {
+            return true;
+        }
     }
-    if has_quotes { return false; }
+    if has_quotes {
+        return false;
+    }
     let data = semantic_topics();
     for topic in &data.topics {
-        if topic.prompt_triggers.iter().any(|trigger| clean_prompt.contains(trigger))
-            && topic.keywords.iter().any(|keyword| search_space.contains(keyword)) { return true; }
+        if topic
+            .prompt_triggers
+            .iter()
+            .any(|trigger| clean_prompt.contains(trigger))
+            && topic
+                .keywords
+                .iter()
+                .any(|keyword| search_space.contains(keyword))
+        {
+            return true;
+        }
     }
     let words: Vec<&str> = clean_prompt
         .split(|c: char| !c.is_ascii_alphanumeric())
         .filter(|word| word.len() > 1 && !data.stop_words.iter().any(|stop| stop == word))
         .collect();
-    if words.is_empty() { return false; }
-    let matched: Vec<&str> = words.iter().copied().filter(|word| search_space.contains(word)).collect();
-    if (matched.len() as f64 / words.len() as f64) < data.match_ratio { return false; }
-    let non_generic = words.iter().filter(|word| !data.generic_words.iter().any(|generic| generic == **word)).count();
-    non_generic == 0 || matched.iter().any(|word| !data.generic_words.iter().any(|generic| generic == *word))
+    if words.is_empty() {
+        return false;
+    }
+    let matched: Vec<&str> = words
+        .iter()
+        .copied()
+        .filter(|word| search_space.contains(word))
+        .collect();
+    if (matched.len() as f64 / words.len() as f64) < data.match_ratio {
+        return false;
+    }
+    let non_generic = words
+        .iter()
+        .filter(|word| !data.generic_words.iter().any(|generic| generic == **word))
+        .count();
+    non_generic == 0
+        || matched
+            .iter()
+            .any(|word| !data.generic_words.iter().any(|generic| generic == *word))
 }
 
-fn evaluate_parameter_constraints(constraints: &[PolicyParameterConstraint], parameters: &Value) -> Option<Option<RuntimeDecisionStatus>> {
+fn evaluate_parameter_constraints(
+    constraints: &[PolicyParameterConstraint],
+    parameters: &Value,
+) -> Option<Option<RuntimeDecisionStatus>> {
     let mut effect = None;
     for constraint in constraints {
         let actual = read_dot_path(parameters, &constraint.field);
-        if !compare_constraint_value(&constraint.operator, actual, &constraint.value) { return None; }
-        if constraint.effect.is_some() { effect = constraint.effect.clone(); }
+        if !compare_constraint_value(&constraint.operator, actual, &constraint.value) {
+            return None;
+        }
+        if constraint.effect.is_some() {
+            effect = constraint.effect.clone();
+        }
     }
     Some(effect)
 }
 
 fn read_dot_path<'a>(value: &'a Value, path: &str) -> Option<&'a Value> {
-    path.split('.').try_fold(value, |current, segment| current.as_object()?.get(segment))
+    path.split('.')
+        .try_fold(value, |current, segment| current.as_object()?.get(segment))
 }
 
 fn compare_constraint_value(operator: &str, actual: Option<&Value>, expected: &Value) -> bool {
@@ -541,14 +647,29 @@ fn compare_constraint_value(operator: &str, actual: Option<&Value>, expected: &V
         "eq" => actual == Some(expected),
         "neq" => actual != Some(expected),
         "gt" | "gte" | "lt" | "lte" => match (actual.and_then(Value::as_f64), expected.as_f64()) {
-            (Some(actual), Some(expected)) => match operator { "gt" => actual > expected, "gte" => actual >= expected, "lt" => actual < expected, _ => actual <= expected },
+            (Some(actual), Some(expected)) => match operator {
+                "gt" => actual > expected,
+                "gte" => actual >= expected,
+                "lt" => actual < expected,
+                _ => actual <= expected,
+            },
             _ => false,
         },
         "in" | "not_in" => match expected.as_array() {
-            Some(values) => { let found = actual.is_some_and(|actual| values.iter().any(|value| value == actual)); if operator == "in" { found } else { !found } }
+            Some(values) => {
+                let found = actual.is_some_and(|actual| values.iter().any(|value| value == actual));
+                if operator == "in" {
+                    found
+                } else {
+                    !found
+                }
+            }
             None => false,
         },
-        "contains" => match (actual.and_then(Value::as_str), expected.as_str()) { (Some(actual), Some(expected)) => actual.contains(expected), _ => false },
+        "contains" => match (actual.and_then(Value::as_str), expected.as_str()) {
+            (Some(actual), Some(expected)) => actual.contains(expected),
+            _ => false,
+        },
         _ => false,
     }
 }
@@ -585,6 +706,8 @@ mod tests {
     struct ConformanceCorpus {
         contract: ConformanceContract,
         cases: Vec<ConformanceCase>,
+        #[serde(rename = "compositionCases")]
+        composition_cases: Vec<CompositionCase>,
     }
 
     #[derive(Deserialize)]
@@ -595,12 +718,21 @@ mod tests {
         result_schema_version: String,
     }
 
+    #[derive(Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    struct CompositionCase {
+        description: String,
+        layers: Vec<CompositionLayer>,
+        expected_rule_ids: Vec<String>,
+        expected_effects: Vec<RuntimeDecisionStatus>,
+        expected_conflict_notes: Vec<String>,
+    }
+
     #[test]
     fn published_rule_corpus_matches_typescript_reference() {
-        let corpus: ConformanceCorpus = serde_json::from_str(include_str!(
-            "../../../../conformance/policy-rules.json"
-        ))
-        .expect("published evaluator corpus must be valid JSON");
+        let corpus: ConformanceCorpus =
+            serde_json::from_str(include_str!("../../../../conformance/policy-rules.json"))
+                .expect("published evaluator corpus must be valid JSON");
         assert_eq!(corpus.contract.evaluator_version, "1.0");
         assert_eq!(corpus.contract.request_schema_version, "1.0");
         assert_eq!(corpus.contract.result_schema_version, "1.0");
@@ -609,7 +741,39 @@ mod tests {
         for case in corpus.cases {
             let result = evaluate_policy_decision(case.input);
             assert_eq!(result.status, case.expected.status, "{}", case.description);
-            assert_eq!(result.matched_refs, case.expected.matched_refs, "{}", case.description);
+            assert_eq!(
+                result.matched_refs, case.expected.matched_refs,
+                "{}",
+                case.description
+            );
+        }
+        for case in corpus.composition_cases {
+            let result = compose_policy_layers(&case.layers);
+            assert_eq!(
+                result
+                    .effective_rules
+                    .iter()
+                    .map(|rule| &rule.stable_rule_id)
+                    .collect::<Vec<_>>(),
+                case.expected_rule_ids.iter().collect::<Vec<_>>(),
+                "{}",
+                case.description
+            );
+            assert_eq!(
+                result
+                    .effective_rules
+                    .iter()
+                    .map(|rule| &rule.effect)
+                    .collect::<Vec<_>>(),
+                case.expected_effects.iter().collect::<Vec<_>>(),
+                "{}",
+                case.description
+            );
+            assert_eq!(
+                result.conflict_notes, case.expected_conflict_notes,
+                "{}",
+                case.description
+            );
         }
     }
 

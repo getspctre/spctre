@@ -27,7 +27,11 @@ pub unsafe extern "C" fn spctre_policy_evaluate(
     out_ptr: *mut *mut u8,
     out_len: *mut usize,
 ) -> i32 {
-    if out_ptr.is_null() || out_len.is_null() || request_ptr.is_null() || request_len > MAX_REQUEST_BYTES {
+    if out_ptr.is_null()
+        || out_len.is_null()
+        || request_ptr.is_null()
+        || request_len > MAX_REQUEST_BYTES
+    {
         return SPCTRE_POLICY_RESOURCE_LIMIT;
     }
     // SAFETY: the C caller promises `request_ptr` points to `request_len`
@@ -56,10 +60,14 @@ pub unsafe extern "C" fn spctre_policy_evaluate(
 /// Releases a buffer returned from `spctre_policy_evaluate`.
 #[no_mangle]
 pub unsafe extern "C" fn spctre_policy_buffer_free(ptr: *mut u8, len: usize) {
-    if ptr.is_null() { return; }
+    if ptr.is_null() {
+        return;
+    }
     // SAFETY: this exact pointer/length pair is returned only by
     // `spctre_policy_evaluate`, which allocated a boxed `[u8]` of this length.
-    unsafe { drop(Box::from_raw(std::slice::from_raw_parts_mut(ptr, len))); }
+    unsafe {
+        drop(Box::from_raw(std::slice::from_raw_parts_mut(ptr, len)));
+    }
 }
 
 #[cfg(test)]
@@ -72,7 +80,12 @@ mod tests {
         let mut response_ptr = ptr::null_mut();
         let mut response_len = 0;
         let result = unsafe {
-            spctre_policy_evaluate(request.as_ptr(), request.len(), &mut response_ptr, &mut response_len)
+            spctre_policy_evaluate(
+                request.as_ptr(),
+                request.len(),
+                &mut response_ptr,
+                &mut response_len,
+            )
         };
         assert_eq!(result, SPCTRE_POLICY_OK);
         let response = unsafe { std::slice::from_raw_parts(response_ptr, response_len) };
@@ -89,7 +102,14 @@ mod tests {
         let mut response_ptr = ptr::null_mut();
         let mut response_len = 0;
         assert_eq!(
-            unsafe { spctre_policy_evaluate(request.as_ptr(), request.len(), &mut response_ptr, &mut response_len) },
+            unsafe {
+                spctre_policy_evaluate(
+                    request.as_ptr(),
+                    request.len(),
+                    &mut response_ptr,
+                    &mut response_len,
+                )
+            },
             SPCTRE_POLICY_INVALID_REQUEST,
         );
     }
