@@ -4,7 +4,7 @@ package worker
 
 /*
 #cgo CFLAGS: -I${SRCDIR}/../../../../packages/policy-schema/native/include
-#cgo LDFLAGS: -L${SRCDIR}/../../../../packages/policy-schema/native/target/release -lspctre_policy_core
+#cgo LDFLAGS: ${SRCDIR}/../../../../packages/policy-schema/native/target/release/libspctre_policy_core.a
 #include <stdlib.h>
 #include "spctre_policy_core.h"
 */
