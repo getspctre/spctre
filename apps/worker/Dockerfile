@@ -1,14 +1,25 @@
 # syntax=docker/dockerfile:1
 
+FROM rust:1.95-alpine AS policy-kernel-builder
+WORKDIR /src/packages/policy-schema/native
+
+COPY packages/policy-schema/native/Cargo.toml packages/policy-schema/native/Cargo.lock packages/policy-schema/native/build.rs ./
+COPY packages/policy-schema/native/src ./src
+RUN cargo build --release
+
 FROM golang:1.26.3-alpine AS builder
 WORKDIR /src/apps/worker
+
+RUN apk add --no-cache build-base
 
 COPY apps/worker/go.mod apps/worker/go.sum* ./
 RUN go mod download
 
 COPY apps/worker/cmd ./cmd
 COPY apps/worker/internal ./internal
-RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/spctre-worker ./cmd/worker
+COPY packages/policy-schema/native/include /src/packages/policy-schema/native/include
+COPY --from=policy-kernel-builder /src/packages/policy-schema/native/target/release/libspctre_policy_core.a /src/packages/policy-schema/native/target/release/libspctre_policy_core.a
+RUN CGO_ENABLED=1 go build -tags spctre_policy_kernel -trimpath -ldflags="-s -w" -o /out/spctre-worker ./cmd/worker
 
 FROM alpine:3.21 AS runner
 WORKDIR /app
