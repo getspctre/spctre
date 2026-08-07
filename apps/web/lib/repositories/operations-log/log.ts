@@ -137,6 +137,7 @@ export async function listOperationsLogKeyset(
   workspaceId?: string,
   options: {
     eventType?: OperationsLogEventType;
+    entryId?: string;
     limit?: number;
     cursor?: KeysetCursor | null;
   } = {},
@@ -161,6 +162,7 @@ export async function listOperationsLogKeyset(
       WHERE tenant_id = ${tenantId}
         ${workspaceId ? rawSql`AND (workspace_id = ${workspaceId} OR workspace_id IS NULL)` : rawSql``}
         ${options.eventType ? rawSql`AND event_type = ${options.eventType}` : rawSql``}
+        ${options.entryId ? rawSql`AND id = ${options.entryId}::uuid` : rawSql``}
         ${keysetPredicate}
       ${ordering}
       LIMIT ${limit + 1}
