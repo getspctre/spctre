@@ -180,6 +180,12 @@ pub struct PolicyRule {
     #[serde(default)]
     pub actions: Vec<String>,
     #[serde(default)]
+    pub immutable: bool,
+    #[serde(default)]
+    pub semantic_checks: Vec<SemanticCheck>,
+    #[serde(default)]
+    pub parameter_constraints: Vec<PolicyParameterConstraint>,
+    #[serde(default)]
     pub runtime_stacks: Vec<String>,
     #[serde(default)]
     pub sandbox_names: Vec<String>,
@@ -207,6 +213,23 @@ pub struct PolicyRule {
     pub catalog_providers: Vec<String>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SemanticCheck {
+    pub id: String,
+    pub prompt: String,
+    pub effect: Option<RuntimeDecisionStatus>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PolicyParameterConstraint {
+    pub field: String,
+    pub operator: String,
+    pub value: Value,
+    pub effect: Option<RuntimeDecisionStatus>,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct EvaluationTraceStep {
@@ -226,6 +249,10 @@ pub struct EvaluationResult {
     pub trace: Vec<EvaluationTraceStep>,
     pub rule_count: usize,
     pub evaluated_at: String,
+    pub evaluator_version: String,
+    pub request_schema_version: String,
+    pub result_schema_version: String,
+    pub policy_artifact_hash: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -235,5 +262,12 @@ pub struct PolicyEvaluationInput {
     pub evidence: PolicyEvidenceInput,
     #[serde(default)]
     pub rules: Vec<PolicyRule>,
+    #[serde(default)]
+    pub tool_intent: String,
+    #[serde(default)]
+    pub plan_summary: String,
+    #[serde(default)]
+    pub tool_parameters: Value,
+    pub policy_artifact_hash: Option<String>,
     pub evaluated_at: Option<String>,
 }
