@@ -326,13 +326,6 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: wasm32-unknown-unknown
-
-      # Keep the target installation explicit: the toolchain action's target
-      # input is not reliably applied on every runner image.
-      - name: Install WASM target
-        run: rustup target add --toolchain stable wasm32-unknown-unknown
       - uses: actions/cache@v6
         with:
           path: |
@@ -347,7 +340,10 @@ jobs:
         working-directory: packages/policy-schema/native
 
       - name: Build portable WASM policy kernel
-        run: cargo build --release --target wasm32-unknown-unknown --no-default-features --features wasm
+        run: |
+          toolchain="$(rustup show active-toolchain | awk '{print $1}')"
+          rustup target add --toolchain "$toolchain" wasm32-unknown-unknown
+          rustup run "$toolchain" cargo build --release --target wasm32-unknown-unknown --no-default-features --features wasm
         working-directory: packages/policy-schema/native
 
   code-health:
