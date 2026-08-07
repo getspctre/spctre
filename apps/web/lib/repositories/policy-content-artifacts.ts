@@ -62,8 +62,10 @@ export async function retainPublishedPolicyContentArtifact(params: {
   if (params.bytes.byteLength > MAX_POLICY_CONTENT_ARTIFACT_BYTES) {
     throw new Error(`Policy artifact exceeds ${MAX_POLICY_CONTENT_ARTIFACT_BYTES} byte limit.`);
   }
-  if (!ALLOWED_MEDIA_TYPES.has(params.mediaType)) throw new Error("Unsupported policy artifact media type.");
-  if (policyContentHash(params.bytes) !== params.contentHash) throw new Error("Policy artifact content hash mismatch.");
+  if (!ALLOWED_MEDIA_TYPES.has(params.mediaType))
+    throw new Error("Unsupported policy artifact media type.");
+  if (policyContentHash(params.bytes) !== params.contentHash)
+    throw new Error("Policy artifact content hash mismatch.");
   const key = encryptionKey();
   await sql.begin(async (tx) => {
     await tx`

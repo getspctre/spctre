@@ -15,7 +15,16 @@ async function handlePostBundleLatestCustody(request: Request) {
     tenantId: scope.tenantId,
   });
   if (!published) {
-    return withTraceId(Response.json({ error: "No published policy bundle is available for this workspace.", meta: makeMeta(traceId) }, { status: 404 }), traceId);
+    return withTraceId(
+      Response.json(
+        {
+          error: "No published policy bundle is available for this workspace.",
+          meta: makeMeta(traceId),
+        },
+        { status: 404 },
+      ),
+      traceId,
+    );
   }
   const bytes = new TextEncoder().encode(JSON.stringify(published.bundle, null, 2));
   try {
@@ -29,9 +38,29 @@ async function handlePostBundleLatestCustody(request: Request) {
       revisionId: published.revisionId,
     });
   } catch (error) {
-    return withTraceId(Response.json({ error: error instanceof Error ? error.message : "Published bundle custody failed.", meta: makeMeta(traceId) }, { status: 503 }), traceId);
+    return withTraceId(
+      Response.json(
+        {
+          error: error instanceof Error ? error.message : "Published bundle custody failed.",
+          meta: makeMeta(traceId),
+        },
+        { status: 503 },
+      ),
+      traceId,
+    );
   }
-  return withTraceId(Response.json({ contentHash: published.contentHash, publishId: published.publishId, retained: true, meta: makeMeta(traceId) }, { status: 201 }), traceId);
+  return withTraceId(
+    Response.json(
+      {
+        contentHash: published.contentHash,
+        publishId: published.publishId,
+        retained: true,
+        meta: makeMeta(traceId),
+      },
+      { status: 201 },
+    ),
+    traceId,
+  );
 }
 
 export { handlePostBundleLatestCustody as POST };
