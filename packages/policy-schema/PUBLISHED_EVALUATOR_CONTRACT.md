@@ -25,3 +25,9 @@ conformance fixtures.
 This document intentionally specifies no FFI data layout. The N-API, C ABI,
 and WASM adapters are transport details over this contract, not separate
 policy languages.
+
+The C ABI accepts bounded UTF-8 JSON bytes through `spctre_policy_evaluate`.
+It currently limits requests and responses to 1 MiB, returns explicit status
+codes, and uses `spctre_policy_buffer_free` for every successful response.
+Callers must fail closed for every nonzero status code. The static library is
+linked into its host process; it is not a policy-evaluator network service.
