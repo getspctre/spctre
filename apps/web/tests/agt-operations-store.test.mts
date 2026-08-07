@@ -849,7 +849,9 @@ describe("getLatestVerificationStatus", () => {
       policyContentHash: "sha256:" + "b".repeat(64),
     });
     expect(status).toMatchObject({ isStale: true });
-    expect(status.staleReasons).toEqual(expect.arrayContaining(["VERIFIER_LOCK", "POLICY_CONTENT"]));
+    expect(status.staleReasons).toEqual(
+      expect.arrayContaining(["VERIFIER_LOCK", "POLICY_CONTENT"]),
+    );
   });
 });
 

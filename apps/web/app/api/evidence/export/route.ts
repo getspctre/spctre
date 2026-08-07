@@ -39,46 +39,63 @@ async function handleGetApiEvidenceExport(request: Request) {
       span.setAttribute("spctre.export.format", format);
 
       const bearer = hasBearerToken(request);
-      const tokenAuth = bearer
-        ? await authenticateServiceToken(request, "evidence:export")
-        : null;
+      const tokenAuth = bearer ? await authenticateServiceToken(request, "evidence:export") : null;
       const evidenceToken = tokenAuth?.ok ? tokenAuth.auth : null;
       if (bearer && (!evidenceToken?.connector || !evidenceToken.evidenceExportGrants.length)) {
         return withTraceId(
-          Response.json({ error: "Invalid or insufficient evidence export token.", meta: makeMeta(traceId) }, { status: 401 }),
+          Response.json(
+            { error: "Invalid or insufficient evidence export token.", meta: makeMeta(traceId) },
+            { status: 401 },
+          ),
           traceId,
         );
       }
-      if (bearer && url.searchParams.has("connector") && url.searchParams.get("connector") !== evidenceToken!.connector) {
+      if (
+        bearer &&
+        url.searchParams.has("connector") &&
+        url.searchParams.get("connector") !== evidenceToken!.connector
+      ) {
         return withTraceId(
-          Response.json({ error: "Connector does not match token identity.", meta: makeMeta(traceId) }, { status: 403 }),
+          Response.json(
+            { error: "Connector does not match token identity.", meta: makeMeta(traceId) },
+            { status: 403 },
+          ),
           traceId,
         );
       }
 
       let workspaceContext: { workspaceId: string; tenantId: string };
       if (bearer) {
-        workspaceContext = { workspaceId: evidenceToken!.workspaceId, tenantId: evidenceToken!.tenantId };
+        workspaceContext = {
+          workspaceId: evidenceToken!.workspaceId,
+          tenantId: evidenceToken!.tenantId,
+        };
       } else {
         const session = await getAuthSession().catch(swallow("getAuthSession", null));
         if (!session) {
-          return withTraceId(Response.json({ error: "Authentication required.", meta: makeMeta(traceId) }, { status: 401 }), traceId);
+          return withTraceId(
+            Response.json(
+              { error: "Authentication required.", meta: makeMeta(traceId) },
+              { status: 401 },
+            ),
+            traceId,
+          );
         }
         try {
           workspaceContext = await getActiveScope();
         } catch (err) {
-        incrementCounter("spctre.api.errors", 1, {
-          "http.route": "/api/evidence/export",
-          "http.response.status_code": 503,
-        });
-        console.error("[evidence/export] getActiveScope failed", err);
-        return withTraceId(
-          Response.json(
-            { error: "Workspace context unavailable.", meta: makeMeta(traceId) },
-            { status: 503 },
-          ),
-          traceId,
-        );
+          incrementCounter("spctre.api.errors", 1, {
+            "http.route": "/api/evidence/export",
+            "http.response.status_code": 503,
+          });
+          console.error("[evidence/export] getActiveScope failed", err);
+          return withTraceId(
+            Response.json(
+              { error: "Workspace context unavailable.", meta: makeMeta(traceId) },
+              { status: 503 },
+            ),
+            traceId,
+          );
         }
       }
 

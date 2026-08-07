@@ -315,7 +315,10 @@ export async function listEvidenceForTokenExport(params: {
       const withinWindow =
         createdAt >= new Date(grant.notBefore).getTime() &&
         (!grant.notAfter || createdAt < new Date(grant.notAfter).getTime());
-      return withinWindow && record.policyContext.some((context) => context.revisionId === grant.revisionId);
+      return (
+        withinWindow &&
+        record.policyContext.some((context) => context.revisionId === grant.revisionId)
+      );
     }),
   );
 }

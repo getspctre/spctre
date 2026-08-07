@@ -148,8 +148,10 @@ async function handlePostApiServiceKeys(request: Request) {
     typeof body.expiresInDays === "number" && body.expiresInDays >= 1 && body.expiresInDays <= 365
       ? body.expiresInDays
       : undefined;
-  const connector = typeof body.connector === "string" ? body.connector.trim().slice(0, 128) : undefined;
-  const evidenceExportGrants: Array<{ revisionId: string; notBefore?: string; notAfter?: string }> = [];
+  const connector =
+    typeof body.connector === "string" ? body.connector.trim().slice(0, 128) : undefined;
+  const evidenceExportGrants: Array<{ revisionId: string; notBefore?: string; notAfter?: string }> =
+    [];
   if (Array.isArray(body.evidenceExportGrants)) {
     for (const rawGrant of body.evidenceExportGrants) {
       if (!rawGrant || typeof rawGrant !== "object") continue;
@@ -180,12 +182,17 @@ async function handlePostApiServiceKeys(request: Request) {
           ) ||
           (grant.notBefore && Number.isNaN(Date.parse(grant.notBefore))) ||
           (grant.notAfter && Number.isNaN(Date.parse(grant.notAfter))) ||
-          (grant.notBefore && grant.notAfter && Date.parse(grant.notAfter) <= Date.parse(grant.notBefore)),
+          (grant.notBefore &&
+            grant.notAfter &&
+            Date.parse(grant.notAfter) <= Date.parse(grant.notBefore)),
       ))
   ) {
     return withTraceId(
       Response.json(
-        { error: "evidenceExportGrants must contain valid revision IDs and time windows.", meta: makeMeta(traceId) },
+        {
+          error: "evidenceExportGrants must contain valid revision IDs and time windows.",
+          meta: makeMeta(traceId),
+        },
         { status: 400 },
       ),
       traceId,

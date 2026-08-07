@@ -221,7 +221,14 @@ async function handlePostApiVerification(request: Request) {
         sourceId: id,
         sourceTable: "agt_verification_result",
         actorId: auth.actorId,
-        payload: { artifactHash, policyContentHash, verifierLockDigest, verificationType, outcome, revisionId },
+        payload: {
+          artifactHash,
+          policyContentHash,
+          verifierLockDigest,
+          verificationType,
+          outcome,
+          revisionId,
+        },
       }).catch(swallow("recordVerificationOperation", undefined));
 
       span.setAttributes({

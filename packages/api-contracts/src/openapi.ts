@@ -386,7 +386,8 @@ export const SPCTRE_OPENAPI_SPEC = {
           },
           retained: {
             type: "boolean",
-            description: "True when the byte-exact artifact is durably retained (including idempotent repeats).",
+            description:
+              "True when the byte-exact artifact is durably retained (including idempotent repeats).",
           },
           meta: { $ref: "#/components/schemas/ApiMeta" },
         },
@@ -1339,7 +1340,8 @@ export const SPCTRE_OPENAPI_SPEC = {
         ],
         responses: {
           "200": {
-            description: "Original retained artifact bytes. Content-Type reflects the retained media type.",
+            description:
+              "Original retained artifact bytes. Content-Type reflects the retained media type.",
             content: {
               "application/yaml": { schema: { type: "string", format: "binary" } },
               "application/json": { schema: { type: "string", format: "binary" } },

@@ -61,7 +61,8 @@ vi.mock("@/lib/repositories/identity", () => ({
   resolveCanonicalAgentId: vi.fn(async ({ agentId }: { agentId: string }) => agentId),
 }));
 
-const { ingestRuntimeEvidence, policyContentReferenceFromEvidence } = await import("../lib/domains/evidence/ingest-service");
+const { ingestRuntimeEvidence, policyContentReferenceFromEvidence } =
+  await import("../lib/domains/evidence/ingest-service");
 
 const baseParsed: EvidenceIngestInput = {
   decisionId: "dec-contract-1",

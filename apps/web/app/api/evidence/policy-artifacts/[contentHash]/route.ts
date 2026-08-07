@@ -12,11 +12,20 @@ async function handleGetPolicyArtifact(
   const traceId = extractTraceId(request);
   const { contentHash } = await params;
   if (!/^sha256:[0-9a-f]{64}$/.test(contentHash)) {
-    return withTraceId(Response.json({ error: "Invalid content hash.", meta: makeMeta(traceId) }, { status: 400 }), traceId);
+    return withTraceId(
+      Response.json({ error: "Invalid content hash.", meta: makeMeta(traceId) }, { status: 400 }),
+      traceId,
+    );
   }
   const auth = await authenticateServiceToken(request, "evidence:export");
   if (!auth.ok || !auth.auth.connector || !auth.auth.evidenceExportGrants.length) {
-    return withTraceId(Response.json({ error: "Invalid or insufficient service token.", meta: makeMeta(traceId) }, { status: 401 }), traceId);
+    return withTraceId(
+      Response.json(
+        { error: "Invalid or insufficient service token.", meta: makeMeta(traceId) },
+        { status: 401 },
+      ),
+      traceId,
+    );
   }
   // Destructured before the closure: narrowing on `auth.auth.connector` above
   // does not survive into a callback body.
@@ -32,7 +41,10 @@ async function handleGetPolicyArtifact(
     }),
   );
   if (!artifact) {
-    return withTraceId(Response.json({ error: "Artifact not found.", meta: makeMeta(traceId) }, { status: 404 }), traceId);
+    return withTraceId(
+      Response.json({ error: "Artifact not found.", meta: makeMeta(traceId) }, { status: 404 }),
+      traceId,
+    );
   }
   return withTraceId(
     new Response(Buffer.from(artifact.bytes), {

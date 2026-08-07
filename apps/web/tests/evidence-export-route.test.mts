@@ -8,7 +8,8 @@ vi.mock("@/lib/repositories/gateway", () => ({
 
 vi.mock("@/lib/service-tokens", () => ({
   authenticateServiceToken: authenticateServiceTokenSpy,
-  hasBearerToken: (request: Request) => (request.headers.get("authorization") ?? "").startsWith("Bearer "),
+  hasBearerToken: (request: Request) =>
+    (request.headers.get("authorization") ?? "").startsWith("Bearer "),
 }));
 
 const route = await import("../app/api/evidence/export/route");
@@ -23,9 +24,7 @@ describe("evidence export route", () => {
       principalId: "agent-1",
       connector: "acquisition-scout",
       scopes: ["evidence:export"],
-      evidenceExportGrants: [
-        { revisionId: "revision-1", notBefore: "2026-01-01T00:00:00.000Z" },
-      ],
+      evidenceExportGrants: [{ revisionId: "revision-1", notBefore: "2026-01-01T00:00:00.000Z" }],
     },
   };
 
@@ -45,7 +44,9 @@ describe("evidence export route", () => {
       auth: { ...evidenceExportAuth.auth, connector: undefined, evidenceExportGrants: [] },
     });
     const response = await route.GET(
-      new Request("http://localhost:3000/api/evidence/export", { headers: { authorization: "Bearer token" } }),
+      new Request("http://localhost:3000/api/evidence/export", {
+        headers: { authorization: "Bearer token" },
+      }),
     );
     expect(response.status).toBe(401);
   });
