@@ -51,8 +51,8 @@ function EffectivePolicySection({
       </div>
       <div className="effectivePolicyList">
         {environmentMappings.map(({ environment, branch }) => (
-          <article className="effectivePolicyRow" key={environment.id}>
-            <div>
+          <article className="effectivePolicyCard" key={environment.id}>
+            <div className="effectivePolicyEnvironment">
               <p className="eyebrow">{environment.label}</p>
               <p className="meta">{environment.description}</p>
             </div>
