@@ -3,7 +3,7 @@ name: agt-runtime-evidence-contract
 description: "A conservative policy used only to validate the evidence adapter."
 rules:
   - name: block-brief-file
-    condition: {field: action, operator: eq, value: brief.file}
+    condition: { field: action, operator: eq, value: brief.file }
     action: block
     priority: 100
     message: "A human approval is required."
