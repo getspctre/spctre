@@ -22,7 +22,11 @@ const contentHash = `sha256:${createHash("sha256").update(serializedBundle).dige
 describe("published bundle custody route", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    resolveRouteScopeSpy.mockResolvedValue({ tenantId: "tenant-1", workspaceId: "workspace-1", actorId: "actor-1" });
+    resolveRouteScopeSpy.mockResolvedValue({
+      tenantId: "tenant-1",
+      workspaceId: "workspace-1",
+      actorId: "actor-1",
+    });
     getLatestPublishedPolicyBundleSpy.mockResolvedValue({
       publishId: "publish-1",
       revisionId: "revision-1",
@@ -33,7 +37,9 @@ describe("published bundle custody route", () => {
   });
 
   it("retains the exact serialized bundle under its immutable publication", async () => {
-    const response = await route.POST(new Request("http://localhost:3000/api/bundle/latest/custody", { method: "POST" }));
+    const response = await route.POST(
+      new Request("http://localhost:3000/api/bundle/latest/custody", { method: "POST" }),
+    );
 
     expect(response.status).toBe(201);
     expect(retainPublishedPolicyContentArtifactSpy).toHaveBeenCalledWith({
@@ -45,12 +51,17 @@ describe("published bundle custody route", () => {
       publishId: "publish-1",
       revisionId: "revision-1",
     });
-    await expect(response.json()).resolves.toMatchObject({ retained: true, publishId: "publish-1" });
+    await expect(response.json()).resolves.toMatchObject({
+      retained: true,
+      publishId: "publish-1",
+    });
   });
 
   it("does not retain when no publication exists", async () => {
     getLatestPublishedPolicyBundleSpy.mockResolvedValue(null);
-    const response = await route.POST(new Request("http://localhost:3000/api/bundle/latest/custody", { method: "POST" }));
+    const response = await route.POST(
+      new Request("http://localhost:3000/api/bundle/latest/custody", { method: "POST" }),
+    );
     expect(response.status).toBe(404);
     expect(retainPublishedPolicyContentArtifactSpy).not.toHaveBeenCalled();
   });
