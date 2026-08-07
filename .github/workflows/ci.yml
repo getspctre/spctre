@@ -279,8 +279,18 @@ jobs:
           go-version-file: apps/worker/go.mod
           cache-dependency-path: apps/worker/go.sum
 
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Build Rust static policy kernel for cgo adapter tests
+        run: cargo build --release
+        working-directory: packages/policy-schema/native
+
       - name: Run Go tests
         run: go test -coverprofile=cover.out ./...
+        working-directory: apps/worker
+
+      - name: Run Go cgo policy-kernel adapter test
+        run: go test -tags spctre_policy_kernel ./internal/worker -run TestPolicyKernelCgoAdapter -count=1
         working-directory: apps/worker
 
       # Report-only coverage for the Go worker.
@@ -316,6 +326,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
       - uses: actions/cache@v6
         with:
           path: |
@@ -327,6 +339,10 @@ jobs:
 
       - name: Run Rust tests
         run: cargo test
+        working-directory: packages/policy-schema/native
+
+      - name: Build portable WASM policy kernel
+        run: cargo build --release --target wasm32-unknown-unknown --no-default-features --features wasm
         working-directory: packages/policy-schema/native
 
   code-health:
