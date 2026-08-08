@@ -245,7 +245,7 @@ pub struct PolicyParameterConstraint {
 #[serde(rename_all = "camelCase")]
 pub struct CompositionLayer {
     pub scope: String,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "null_to_default")]
     pub rules: Vec<PolicyRule>,
 }
 
@@ -286,7 +286,7 @@ pub struct EvaluationResult {
 pub struct PolicyEvaluationInput {
     #[serde(flatten)]
     pub evidence: PolicyEvidenceInput,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "null_to_default")]
     pub rules: Vec<PolicyRule>,
     #[serde(default, deserialize_with = "null_to_default")]
     pub layers: Vec<CompositionLayer>,
