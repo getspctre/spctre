@@ -1,24 +1,20 @@
 # Spctre
 
-Spctre is a stack-neutral policy operations control plane for governed agent
-systems. It can import and export policies compatible with the
-[Microsoft Agent Governance Toolkit](https://github.com/microsoft/agent-governance-toolkit),
-but it is not an Azure-only product and should not assume a Microsoft-hosted
-runtime.
+Spctre is an open-source, stack-neutral policy operations control plane for
+governed agent systems. It gives teams one place to author, review, compose,
+publish, simulate, and prove the policies that govern production agent actions.
 
-AGT provides a useful governance specification and runtime enforcement substrate:
-deterministic policy enforcement, framework integrations, MCP controls, identity,
-sandboxing, compliance checks, and audit primitives. Spctre sits above that
-layer. It helps teams author, review, compose, publish, simulate, and prove the
-policies that governed agent runtimes enforce in production.
+Its Rust policy kernel applies the same validation, composition, constraint, and
+decision semantics across Node, Go, and WebAssembly delivery adapters. Spctre
+works with cloud, framework, MCP, local, and custom runtimes—including AWS
+Bedrock, Google ADK, Azure AI, LangChain, CrewAI, AutoGen, OpenAI Agents, and
+Antigravity CLI.
 
-Spctre is not trying to replace AGT. It is the workflow, evidence, and policy
-lifecycle system around AGT-compatible governance, whether the agents run on AWS
-Bedrock, Google ADK, Azure AI, LangChain, CrewAI, AutoGen, OpenAI Agents, Antigravity CLI, local
-infrastructure, or another stack.
-
-Compatibility contracts are published through the repository's OpenAPI
-definition and package documentation.
+Spctre can import and export policies compatible with the
+[Microsoft Agent Governance Toolkit](https://github.com/microsoft/agent-governance-toolkit).
+That compatibility is one integration path, not a platform boundary; contracts
+are published through the repository's OpenAPI definition and package
+documentation.
 
 ```text
 Spctre Control Plane
@@ -30,13 +26,11 @@ Spctre Control Plane
   - connector-specific business policy packs
         |
         v
-AGT-Compatible Enforcement Runtime
-  - deterministic runtime enforcement
-  - YAML / OPA / Rego / Cedar policy execution
-  - cloud, local, framework, and MCP integrations
-  - identity, sandboxing, audit, and compliance primitives
-  - AWS Bedrock / Google ADK / Azure AI / LangChain / CrewAI /
-    AutoGen / OpenAI Agents / local / custom adapters
+Runtime Delivery Adapters
+  - Node, Go/C ABI, and WebAssembly bindings
+  - cloud, local, framework, MCP, and custom integrations
+  - shared Rust policy-kernel semantics
+  - identity, sandboxing, audit, and compliance integrations
         |
         v
 Production Agent Actions
@@ -77,36 +71,40 @@ Policies are composed from multiple layers:
 - **Connector policy:** domain rules for concrete action surfaces such as refunds,
   deploys, CRM updates, support replies, file access, and external messages.
 
-Spctre should produce a composed, versioned policy bundle that AGT-compatible
-runtimes can enforce. Every published bundle should have durable provenance:
+Spctre produces a composed, versioned policy bundle that delivery adapters
+evaluate through one Rust policy kernel. The kernel owns schema validation,
+layer composition, parameter-constraint matching, and decision rules, so Node,
+Go, and WebAssembly integrations apply identical policy semantics. Every
+published bundle has durable provenance:
 branch, revision, author, reviewers, approval status, source policy documents,
 target runtime stacks, generated runtime artifact hashes, and effective
 timestamps.
 
-## Current Repository State
+## What's Included
 
-The repository is a working hybrid control plane backed by Postgres. Policy
-lifecycle, evidence, simulation, compliance, and operations data are persisted;
-high-volume ingest/background jobs run in Go; policy evaluation and
-operations-log integrity run in the Rust native addon.
+Spctre combines a Next.js control plane, a Go operations worker, and a Rust
+policy kernel, with Postgres for lifecycle, evidence, simulation, compliance,
+and operations data.
 
 - `apps/web`: Next.js 16 control plane with policy, review, evidence,
-  compliance, operations, escalations, usage/billing, admin/account,
+  compliance, operations, escalations, administration/account,
   onboarding, auth, alerting configuration, and agent surfaces, including workspace-scoped routes under
   `app/[workspace]/*`. APIs cover identity/auth, approvals, evidence,
   gateway+ingest, trust/context-budget, service keys/tokens, onboarding/device
   flow, workspace metadata, health/readiness, and OpenAPI docs at `/api-docs`.
-- `apps/worker`: Pure Go ingest and runtime operations service. It handles
+- `apps/worker`: Go ingest and runtime operations service. It handles
   evidence writes, delegated gateway/ingest, trust-side effects,
   token/runtime support endpoints, custom alerting rules matching and notification
   dispatchers (Slack, Teams, PagerDuty, Webhooks), and periodic retention/verification/
-  escalation/notification jobs, with health/readiness.
+  escalation/notification jobs, with health/readiness. Its policy adapter calls
+  the Rust kernel through its C ABI rather than maintaining a second evaluator.
 - `packages/policy-schema`: Shared TypeScript schema/types/helpers for policy
-  import/export, composition, review/publish readiness, evidence/simulation,
+  import/export, review/publish readiness, evidence/simulation,
   retention/compliance, and AGT-compatible bundles. Parser behavior preserves
-  AGT-native fields for round-trip compatibility. The Rust crate in
-  `packages/policy-schema/native` provides gateway evaluation and
-  tamper-evident operations-log hash-chain primitives via napi-rs.
+  AGT-native fields for round-trip compatibility. Its Rust crate in
+  `packages/policy-schema/native` is the authoritative policy evaluator and
+  operations-log hash-chain implementation. It ships a lazy-loaded Node addon,
+  a C ABI/static library for the Go worker, and a portable WASM build target.
 - `packages/cli`: TypeScript CLI for local and long-running agent workflows,
   including `init`, `watch`, `status`, `refresh`, `revoke`, `install-skill`,
   `install-hook`, `check`, and policy/evidence helpers. Maintains local
@@ -116,7 +114,7 @@ operations-log integrity run in the Rust native addon.
   workspace/agent identity with optional tool/connector allowlists.
 - `packages/api-contracts` and `packages/sdk`: OpenAPI 3.1 contract source plus
   generated TypeScript SDK bindings used by app and integration clients.
-- `db/migrations`: Postgres 18 public-launch schema baseline covering identity, OIDC/SAML auth,
+- `db/migrations`: Postgres 18 schema baseline covering identity, OIDC/SAML auth,
   service tokens and refresh tokens, policy branches/revisions/approvals,
   decision gateway + HITL operations, runtime evidence ledgering, simulation,
   operations-log integrity, trust/context-budget governance, custom alerting rules
@@ -142,40 +140,6 @@ Regenerate the spec JSON and SDK types after editing the spec:
 ```sh
 pnpm generate
 ```
-
-## Usage & Billing Model
-
-Spctre is open-source governance infrastructure with a hosted commercial
-control plane for teams operating production agents in environments where
-actions affect money, customer data, production systems, regulated workflows,
-or external communications.
-
-The self-hosted OSS surface should be useful without artificial evaluation
-limits:
-
-- Import/export for AGT-compatible policy artifacts.
-- Cloud, framework, and local runtime targeting.
-- Local branch/revision workflow.
-- Basic policy diffing and simulation.
-- Basic audit ingestion and provenance linking.
-
-The hosted paid surface should charge for operational trust:
-
-- Hosted control plane for tenants, workspaces, policy branches, reviews, and
-  publishing workflows.
-- Persistent audit history, searchable evidence trails, redaction, and retention
-  controls.
-- Simulation against historical production events.
-- Managed connector policy packs for high-risk systems.
-- Collaboration features for product, platform, security, legal, compliance, and
-  operations teams.
-- Enterprise SSO, RBAC, deployment support, compliance exports, private deployment,
-  and support SLAs.
-
-Hosted pricing should follow governed risk rather than seats alone. Useful
-dimensions include governed agents, workspaces, policy bundles, retained audit
-events, connector packs, production environments, and simulation volume. The
-free hosted entry point is a Hosted Trial; it is not a limit on self-hosted OSS.
 
 ## Environment Variables
 
@@ -204,20 +168,19 @@ For a quick local setup, copying `.env.example` to `.env` and filling in the req
 
 | Variable                        | Required                  | Description                                                                                                                                                                                                                                                                                                                                                   |
 | ------------------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `SPCTRE_SERVICE_TOKEN`          | Yes (for evidence ingest) | Bearer token that AGT runtimes must include when calling `POST /api/evidence`                                                                                                                                                                                                                                                                                 |
+| `SPCTRE_SERVICE_TOKEN`          | Yes (for evidence ingest) | Bearer token that runtimes must include when calling `POST /api/evidence`                                                                                                                                                                                                                                                                                     |
 | `SPCTRE_EVIDENCE_INGEST_URL`    | No                        | Internal base URL for delegating runtime API calls from web to the Go worker, e.g. `http://worker:18080` in Docker Compose. Currently covers `POST /api/evidence`, service-token `POST /api/gateway/decide`, gateway webhook ingest, token refresh/revoke, trust/context-budget runtime APIs, economic governance APIs, and internal gateway queue mutations. |
 | `SPCTRE_WORKER_INTERNAL_SECRET` | No                        | Shared secret used by the web BFF when delegating browser-authenticated and runtime governance mutations to the Go worker. Required on both web and worker to delegate escalation claim/resolve writes and economic governance requests.                                                                                                                      |
 
 ### Feature flags
 
-| Variable               | Default  | Description                                                                                                |
-| ---------------------- | -------- | ---------------------------------------------------------------------------------------------------------- |
-| `SPCTRE_PLAN`          | `oss`    | Plan gate for OSS, Cloud, and Enterprise UI capabilities. Allowed values: `oss`, `cloud`, `enterprise`.    |
-| `LOCAL_SIGNUP_ENABLED` | `false`  | Set to `true` to expose `/signup` for local development user creation. Do not enable in hosted production. |
-| `GATEWAY_ENABLED`      | `false`  | Enable the decision gateway and HITL flow.                                                                 |
-| `GATEWAY_MODE`         | `HYBRID` | Gateway evaluation mode: `HYBRID`, `ENFORCE`, or `OBSERVE`.                                                |
-| `OIDC_ENABLED`         | `false`  | Set to `true` to enable OIDC login.                                                                        |
-| `SAML_ENABLED`         | `false`  | Set to `true` to enable SAML 2.0 login.                                                                    |
+| Variable               | Default  | Description                                                                                         |
+| ---------------------- | -------- | --------------------------------------------------------------------------------------------------- |
+| `LOCAL_SIGNUP_ENABLED` | `false`  | Set to `true` to expose `/signup` for local development user creation. Do not enable in production. |
+| `GATEWAY_ENABLED`      | `false`  | Enable the decision gateway and HITL flow.                                                          |
+| `GATEWAY_MODE`         | `HYBRID` | Gateway evaluation mode: `HYBRID`, `ENFORCE`, or `OBSERVE`.                                         |
+| `OIDC_ENABLED`         | `false`  | Set to `true` to enable OIDC login.                                                                 |
+| `SAML_ENABLED`         | `false`  | Set to `true` to enable SAML 2.0 login.                                                             |
 
 ### Demo tenant overrides
 
@@ -277,49 +240,6 @@ into your IdP (Okta, Azure AD, PingOne, etc.) to complete the trust setup.
 | `WORKER_NOTIFICATION_TIMEOUT_SECONDS`           | No       | Outbound notification webhook timeout in seconds (default: `10`)                                                                                                             |
 | `WORKER_ECONOMIC_BUDGET_SWEEP_INTERVAL_MINUTES` | No       | Economic budget sweep interval in minutes (default: `60`)                                                                                                                    |
 
-#### Delegated gateway decisions require materialised policy rules
-
-When `SPCTRE_EVIDENCE_INGEST_URL` is set, service-token `POST /api/gateway/decide`
-is served by the Go worker. The worker enforces the tenant's published policy
-rules by reading them from `policy_rule`, which carries the semantic checks and
-parameter constraints the evaluator matches on.
-
-Rules written before the migration that added those columns hold `NULL` there
-until backfilled. The web app falls back to re-parsing the policy source in that
-case; the worker has no equivalent parser, so it **fails closed** and returns
-`503` rather than evaluating a rule whose thresholds and semantic checks would be
-silently dropped.
-
-Run the backfill once per environment after migrating, and before enabling
-delegation:
-
-```sh
-DATABASE_URL=... node --import tsx scripts/backfill-policy-rule-matchers.mjs --dry-run
-DATABASE_URL=... node --import tsx scripts/backfill-policy-rule-matchers.mjs
-```
-
-It is idempotent and reports `Nothing to backfill` once complete. The
-`spctre.policy.rule_source` counter shows which source each read used, so you can
-confirm the fallback has stopped firing and remove it.
-
-#### Recovering connector/action on historical gateway decisions
-
-Migration `008` added `gateway_decision.connector` / `action`, which the
-escalation queue and the runtime status endpoint read. Decisions recorded before
-it carry `NULL` and are recoverable only from the runtime evidence event that
-followed them. That recovery is deliberately not part of the migration: each
-migration file runs in one transaction, so a scan of `runtime_evidence_event`
-there would hold the `ADD COLUMN` lock and stall gateway writes.
-
-```sh
-DATABASE_URL=... node scripts/backfill-gateway-decision-connector-action.mjs --dry-run
-DATABASE_URL=... node scripts/backfill-gateway-decision-connector-action.mjs
-```
-
-Run it as the migration/owner role — under the RLS-constrained `spctre_app` role
-it matches no rows and exits reporting a clean no-op. Decisions with no evidence
-event stay `NULL`; both columns are optional for readers.
-
 ### MCP server
 
 | Variable                         | Required     | Description                                                           |
@@ -356,16 +276,15 @@ core are mandatory parts of the stack, not optional components).
 
 ```sh
 cp .env.example .env
-# pnpm install runs postinstall, which builds the Rust native addon and TypeScript packages.
+# pnpm install runs postinstall, which builds the Node adapter and TypeScript packages.
 pnpm install && docker compose up -d && pnpm dev
 ```
 
 `docker compose up -d` starts a Postgres 18 container on port **5433** (remapped
 from 5432 to avoid conflicts with a system Postgres installation) and runs
-the public-launch schema baseline and any later SQL migrations in `db/migrations`
-automatically on first start (fresh volume). The web app falls back to mock data
-if `DATABASE_URL` is not set or the database is unreachable, so `docker compose`
-is optional for UI-only work.
+the schema baseline and any later SQL migrations in `db/migrations`
+automatically on first start (fresh volume). `docker compose` is optional for
+UI-only work.
 
 Local compose also starts:
 
@@ -385,10 +304,7 @@ docker compose up -d
 If you need to preserve an existing local database, use `pg_dump`/`pg_restore` or
 `pg_upgrade` instead of deleting the volume.
 
-The launch baseline is intentionally a clean-install boundary. A database with
-the pre-launch migration history must be rebuilt or restored from a backup; it
-cannot be upgraded by this repository. Once the launch baseline is applied,
-run the following when a later migration is added:
+Run the following after adding a migration:
 
 ```sh
 pnpm migrate
@@ -435,7 +351,6 @@ pnpm exec spctre revoke
 The CLI issues a short-lived access token (1 hour) and a long-lived refresh token
 (90 days) at init. Access tokens rotate automatically before expiry — no manual
 intervention needed for long-running agents.
-for the full agent-facing integration guide.
 
 ### Agent Harness Setup
 
@@ -457,7 +372,7 @@ optional harness-specific helpers that sit alongside that connection:
   Hooks are local developer harness adapters: by default they evaluate governed tool calls,
   send heartbeats, register evidence, and warn without blocking. Use
   `spctre install-hook --enforce` to opt into local blocking on `DENY`. Production
-  enforcement belongs to AGT or the configured runtime adapter.
+  enforcement belongs to the configured runtime adapter.
 
 Use `--global` with either install command to write to the user's global harness
 configuration instead of the current project.
@@ -473,7 +388,7 @@ curl -X POST http://localhost:3000/api/v1/evidence \
     "tenantId": "tenant-demo",
     "workspaceId": "default",
     "environment": "production",
-    "runtimeTarget": { "stack": "LOCAL", "adapter": "agt-compatible-local" },
+    "runtimeTarget": { "stack": "LOCAL", "adapter": "spctre-local" },
     "agentId": "support-agent-7",
     "connector": "stripe",
     "action": "refund.create",
@@ -498,19 +413,38 @@ With Docker Compose, the public web route accepts the request at
 `http://localhost:3000/api/evidence` and delegates ingestion to the Go worker via
 `SPCTRE_EVIDENCE_INGEST_URL=http://worker:18080`.
 
-Native development checks:
+## Policy Kernel Development
+
+The Rust kernel is the single source of evaluation semantics. Delivery
+adapters bind to it: Node through the lazy-loaded N-API addon, the Go worker
+through the C ABI/static library, and browser or edge consumers through the
+`wasm32-unknown-unknown` artifact. Do not add policy decisions or composition
+rules to an adapter; add them to `packages/policy-schema/native` and cover them
+with kernel tests.
+
+Run the relevant checks after changing the kernel or an adapter:
 
 ```sh
 # Go worker
-cd apps/worker
-go test ./...
+(cd apps/worker && go test ./...)
 
 # Rust policy/integrity core (unit tests only, no .node required)
-cd packages/policy-schema/native
-cargo test
+(cd packages/policy-schema/native && cargo test)
 
-# Rebuild the native addon after Rust changes (also runs automatically via pnpm install)
+# Node adapter (also runs automatically via pnpm install)
 pnpm --filter @spctre/policy-schema build:native
+
+# C ABI/static library used by the Go adapter
+(cd packages/policy-schema/native && cargo build --release --no-default-features)
+
+# Portable WASM kernel (install the target for the active toolchain once)
+(
+  cd packages/policy-schema/native
+  toolchain="$(rustup show active-toolchain | awk '{print $1}')"
+  rustup target add --toolchain "$toolchain" wasm32-unknown-unknown
+  rustup run "$toolchain" cargo build --release --target wasm32-unknown-unknown \
+    --no-default-features --features wasm
+)
 ```
 
 ### Manual Code-Quality & Security Scans
