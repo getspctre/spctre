@@ -1,5 +1,13 @@
 # @spctre/sdk
 
+## 0.4.2
+
+### Patch Changes
+
+- 9f9aca8: Publish typed bindings for the scoped evidence-export and policy-content
+  artifact endpoints so SDK consumers can retain and read byte-exact policy
+  artifacts.
+
 ## 0.4.1
 
 ### Patch Changes
