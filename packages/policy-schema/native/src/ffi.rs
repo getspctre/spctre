@@ -113,4 +113,23 @@ mod tests {
             SPCTRE_POLICY_INVALID_REQUEST,
         );
     }
+
+    #[test]
+    fn c_abi_accepts_null_rule_vectors_from_delivery_adapters() {
+        let request = br#"{"connector":"test","action":"run","rules":null,"layers":[{"scope":"WORKSPACE","rules":null}]}"#;
+        let mut response_ptr = ptr::null_mut();
+        let mut response_len = 0;
+        assert_eq!(
+            unsafe {
+                spctre_policy_evaluate(
+                    request.as_ptr(),
+                    request.len(),
+                    &mut response_ptr,
+                    &mut response_len,
+                )
+            },
+            SPCTRE_POLICY_OK,
+        );
+        unsafe { spctre_policy_buffer_free(response_ptr, response_len) };
+    }
 }
