@@ -1,5 +1,18 @@
 # @spctre/policy-schema
 
+## 0.4.0
+
+### Minor Changes
+
+- 7745bb8: Publish the Rust policy evaluator as the authoritative runtime kernel, including portable WASM and C ABI build targets for delivery adapters.
+
+### Patch Changes
+
+- 9f9aca8: Add a hash-aware adapter for AGT runtime evidence v1 packets.
+- 9f9aca8: Expose verifier-lock and byte-exact policy-content provenance on AGT verification results.
+- 9f9aca8: Expose verification staleness reasons so consumers can invalidate results when
+  the verifier lock digest or byte-exact policy content hash changes.
+
 ## 0.3.0
 
 ### Minor Changes
