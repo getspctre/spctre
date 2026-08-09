@@ -87,24 +87,28 @@ export async function upsertLocalDevWorkspaceGrant(params: {
   workspaceId: string;
 }): Promise<void> {
   if (!sql) return;
-  await sql`
-    INSERT INTO principal_permission_grant (
-      tenant_id, principal_id, workspace_id,
-      grant_role, reviewer_roles, publish_scopes, allowed_environments
-    ) VALUES (
-      ${params.tenantId},
-      ${params.principalId},
-      ${params.workspaceId},
-      'OWNER',
-      ARRAY['Admin','Ops','Security','Platform']::text[],
-      ARRAY['ORGANIZATION','WORKSPACE','ENVIRONMENT','CONNECTOR']::text[],
-      ARRAY['development','staging','production','incident-mode']::text[]
-    )
-    ON CONFLICT (principal_id, workspace_id)
-    DO UPDATE SET
-      grant_role = EXCLUDED.grant_role,
-      reviewer_roles = EXCLUDED.reviewer_roles,
-      publish_scopes = EXCLUDED.publish_scopes,
-      allowed_environments = EXCLUDED.allowed_environments
-  `;
+  // principal_permission_grant is RLS-gated and local-dev signup has no session
+  // yet, so bind the tenant created by ensureLocalDevTenantWorkspace.
+  await runWithTenantContext(params.tenantId, async () => {
+    await sql`
+      INSERT INTO principal_permission_grant (
+        tenant_id, principal_id, workspace_id,
+        grant_role, reviewer_roles, publish_scopes, allowed_environments
+      ) VALUES (
+        ${params.tenantId},
+        ${params.principalId},
+        ${params.workspaceId},
+        'OWNER',
+        ARRAY['Admin','Ops','Security','Platform']::text[],
+        ARRAY['ORGANIZATION','WORKSPACE','ENVIRONMENT','CONNECTOR']::text[],
+        ARRAY['development','staging','production','incident-mode']::text[]
+      )
+      ON CONFLICT (principal_id, workspace_id)
+      DO UPDATE SET
+        grant_role = EXCLUDED.grant_role,
+        reviewer_roles = EXCLUDED.reviewer_roles,
+        publish_scopes = EXCLUDED.publish_scopes,
+        allowed_environments = EXCLUDED.allowed_environments
+    `;
+  });
 }

@@ -11,16 +11,16 @@ export async function findUserPrincipalIdByIdentifier(params: {
   // trusted tenant before a session/tenant context exists, so bind it here.
   return runWithTenantContext(params.tenantId, async () => {
     const rows = await sql<{ id: string }[]>`
-      SELECT id
-      FROM app_principal
-      WHERE tenant_id = ${params.tenantId}
-        AND principal_type = 'USER'
-        AND (
-          subject = ${params.identifier}
-          OR lower(email) = lower(${params.identifier})
-        )
-      LIMIT 1
-    `;
+        SELECT id
+        FROM app_principal
+        WHERE tenant_id = ${params.tenantId}
+          AND principal_type = 'USER'
+          AND (
+            subject = ${params.identifier}
+            OR lower(email) = lower(${params.identifier})
+          )
+        LIMIT 1
+      `;
 
     return rows[0]?.id ?? null;
   });
@@ -183,24 +183,28 @@ export async function upsertLocalDevPrincipal(params: {
   displayName: string;
 }): Promise<string | null> {
   if (!sql) return null;
-  const rows = await sql<{ id: string }[]>`
-    INSERT INTO app_principal (
-      tenant_id, subject, display_name, email, principal_type, auth_method,
-      org_role, invite_status, invite_accepted_at
-    ) VALUES (
-      ${params.tenantId}, ${params.email}, ${params.displayName}, ${params.email}, 'USER', 'LOCAL_DEV',
-      'OWNER', 'ACCEPTED', now()
-    )
-    ON CONFLICT (tenant_id, subject)
-    DO UPDATE SET
-      display_name = EXCLUDED.display_name,
-      email = EXCLUDED.email,
-      org_role = EXCLUDED.org_role,
-      invite_status = 'ACCEPTED',
-      disabled_at = null
-    RETURNING id
-  `;
-  return rows[0]?.id ?? null;
+  // app_principal is RLS-gated and local-dev signup has no session yet, so bind
+  // the tenant created by ensureLocalDevTenantWorkspace.
+  return runWithTenantContext(params.tenantId, async () => {
+    const rows = await sql<{ id: string }[]>`
+      INSERT INTO app_principal (
+        tenant_id, subject, display_name, email, principal_type, auth_method,
+        org_role, invite_status, invite_accepted_at
+      ) VALUES (
+        ${params.tenantId}, ${params.email}, ${params.displayName}, ${params.email}, 'USER', 'LOCAL_DEV',
+        'OWNER', 'ACCEPTED', now()
+      )
+      ON CONFLICT (tenant_id, subject)
+      DO UPDATE SET
+        display_name = EXCLUDED.display_name,
+        email = EXCLUDED.email,
+        org_role = EXCLUDED.org_role,
+        invite_status = 'ACCEPTED',
+        disabled_at = null
+      RETURNING id
+    `;
+    return rows[0]?.id ?? null;
+  });
 }
 
 export async function upsertSocialPrincipal(params: {
@@ -425,7 +429,11 @@ export async function ensureLocalDevTenantWorkspace(params: {
   const tenantSlug = `local-${baseSlug}-${emailHash}`;
   const workspaceSlug = "workspace-local";
 
-  const tenantRows = await sql<{ id: string }[]>`
+  // The tenant being signed up does not exist yet, so there is no tenant to
+  // bind for this statement. `tenant` is not RLS-gated; use the owner
+  // connection rather than the tenant-aware client, which would resolve no
+  // tenant and throw.
+  const tenantRows = await rawSql<{ id: string }[]>`
     INSERT INTO tenant (slug, name)
     VALUES (${tenantSlug}, ${`${params.displayName} Organization`})
     ON CONFLICT (slug) DO UPDATE SET name = EXCLUDED.name
@@ -434,13 +442,17 @@ export async function ensureLocalDevTenantWorkspace(params: {
   const tenantId = tenantRows[0]?.id;
   if (!tenantId) return null;
 
-  const workspaceRows = await sql<{ id: string }[]>`
-    INSERT INTO workspace (tenant_id, slug, name)
-    VALUES (${tenantId}, ${workspaceSlug}, ${`${params.displayName} Workspace`})
-    ON CONFLICT (tenant_id, slug) DO UPDATE SET name = EXCLUDED.name
-    RETURNING id
-  `;
-  const workspaceId = workspaceRows[0]?.id;
+  // workspace is RLS-gated (WITH CHECK tenant_id = app.current_tenant_id), so
+  // the tenant created above has to be bound before inserting into it.
+  const workspaceId = await runWithTenantContext(tenantId, async () => {
+    const workspaceRows = await sql<{ id: string }[]>`
+      INSERT INTO workspace (tenant_id, slug, name)
+      VALUES (${tenantId}, ${workspaceSlug}, ${`${params.displayName} Workspace`})
+      ON CONFLICT (tenant_id, slug) DO UPDATE SET name = EXCLUDED.name
+      RETURNING id
+    `;
+    return workspaceRows[0]?.id ?? null;
+  });
   if (!workspaceId) return null;
 
   return { tenantId, workspaceId };

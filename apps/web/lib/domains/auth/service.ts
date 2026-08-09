@@ -182,30 +182,35 @@ export async function createLocalDevSignup(params: {
   });
   if (!localWorkspace) return { error: "create_failed" };
 
-  const principalId = await upsertLocalDevPrincipal({
-    tenantId: localWorkspace.tenantId,
-    email: params.email,
-    displayName: params.displayName,
+  // Signup runs before any session exists, so nothing has bound a tenant for
+  // the RLS-gated writes below. The tenant is known now that it has been
+  // created, so bind it for the rest of the bootstrap.
+  return runWithTenantContext(localWorkspace.tenantId, async () => {
+    const principalId = await upsertLocalDevPrincipal({
+      tenantId: localWorkspace.tenantId,
+      email: params.email,
+      displayName: params.displayName,
+    });
+    if (!principalId) return { error: "create_failed" };
+
+    await upsertLocalDevWorkspaceGrant({
+      tenantId: localWorkspace.tenantId,
+      principalId,
+      workspaceId: localWorkspace.workspaceId,
+    });
+
+    await ensureDefaultPublishedPolicyPack({
+      tenantId: localWorkspace.tenantId,
+      workspaceId: localWorkspace.workspaceId,
+      actorId: principalId,
+    });
+
+    await recordConversionTelemetry(localWorkspace.tenantId, "SIGNUP_COMPLETED", {
+      signupMethod: "local",
+    }).catch(swallow("recordConversionTelemetry", undefined));
+
+    return { ok: true };
   });
-  if (!principalId) return { error: "create_failed" };
-
-  await upsertLocalDevWorkspaceGrant({
-    tenantId: localWorkspace.tenantId,
-    principalId,
-    workspaceId: localWorkspace.workspaceId,
-  });
-
-  await ensureDefaultPublishedPolicyPack({
-    tenantId: localWorkspace.tenantId,
-    workspaceId: localWorkspace.workspaceId,
-    actorId: principalId,
-  });
-
-  await recordConversionTelemetry(localWorkspace.tenantId, "SIGNUP_COMPLETED", {
-    signupMethod: "local",
-  }).catch(swallow("recordConversionTelemetry", undefined));
-
-  return { ok: true };
 }
 
 export async function deletePasskey(params: {
