@@ -13,7 +13,7 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "migrate": "tsx db/migrate.ts",
+    "migrate": "tsx --env-file-if-exists=.env db/migrate.ts",
     "oss:boundary": "node scripts/check-oss-boundary.mjs",
     "security:raw-sql": "node scripts/check-raw-sql-imports.mjs",
     "demo:fallbacks": "node scripts/check-demo-fallbacks.mjs",

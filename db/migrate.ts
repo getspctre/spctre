@@ -5,6 +5,11 @@
  *   DATABASE_URL=postgres://... node --loader ts-node/esm db/migrate.ts
  *   pnpm migrate
  *
+ * `pnpm migrate` loads a local .env when one exists, so a stock local setup
+ * (`cp .env.example .env`) needs no extra exports. Variables already present in
+ * the environment win over the file, so CI and the container entrypoint — which
+ * export DATABASE_URL and ship no .env — are unaffected.
+ *
  * Applies the public launch baseline and every subsequent migration in filename
  * order. Tracks applied files in schema_migrations so re-runs are safe.
  */
