@@ -9,6 +9,12 @@
 //   apps/worker/internal/worker/semantic_topics.json
 //       Vocabulary for classifySemanticIntent, embedded into the worker binary
 //       via go:embed. Generated from packages/policy-schema/src/semantic-topics.
+//   packages/policy-schema/native/src/generated/semantic_topics.json
+//       The same vocabulary, embedded into the Rust kernel via include_str!.
+//       Both hosts embed from their own tree because neither go:embed nor
+//       include_str! can reach outside its module/crate root, and a crate that
+//       reads across the workspace cannot be built from its own directory —
+//       which is exactly what every container image does.
 //   conformance/policy-packs.json
 //       Pack rules for the connectors that have conformance fixtures, so the Go
 //       conformance test evaluates the identical rules the TypeScript test does.
@@ -25,13 +31,17 @@
 // files differ, so editing the TypeScript tables without regenerating is caught
 // in review rather than becoming a silent divergence between the two engines.
 
-import { readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const FIXTURES_ROOT = join(ROOT, "packages/policy-schema/tests/fixtures/packs");
 const SEMANTIC_OUT = join(ROOT, "apps/worker/internal/worker/semantic_topics.json");
+const SEMANTIC_OUT_RUST = join(
+  ROOT,
+  "packages/policy-schema/native/src/generated/semantic_topics.json",
+);
 const PACKS_OUT = join(ROOT, "conformance/policy-packs.json");
 const SEMANTIC_CASES_OUT = join(ROOT, "conformance/semantic-intent.json");
 // `conformance/policy-rules.json` is intentionally not generated. It is a
@@ -442,8 +452,11 @@ function serialize(value) {
   return `${JSON.stringify(value, null, 2)}\n`;
 }
 
+const semanticTopics = serialize(buildSemanticTopics());
+
 const outputs = [
-  { path: SEMANTIC_OUT, content: serialize(buildSemanticTopics()) },
+  { path: SEMANTIC_OUT, content: semanticTopics },
+  { path: SEMANTIC_OUT_RUST, content: semanticTopics },
   { path: PACKS_OUT, content: serialize(buildPackRules()) },
   { path: SEMANTIC_CASES_OUT, content: serialize(buildSemanticCases()) },
 ];
@@ -470,6 +483,7 @@ if (process.argv.includes("--check")) {
   console.log("Worker policy data check passed.");
 } else {
   for (const { path, content } of outputs) {
+    mkdirSync(dirname(path), { recursive: true });
     writeFileSync(path, content);
     console.log(`wrote ${path.replace(`${ROOT}/`, "")}`);
   }
