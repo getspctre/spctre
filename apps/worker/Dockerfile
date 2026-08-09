@@ -19,7 +19,13 @@ COPY apps/worker/cmd ./cmd
 COPY apps/worker/internal ./internal
 COPY packages/policy-schema/native/include /src/packages/policy-schema/native/include
 COPY --from=policy-kernel-builder /src/packages/policy-schema/native/target/release/libspctre_policy_core.a /src/packages/policy-schema/native/target/release/libspctre_policy_core.a
-RUN CGO_ENABLED=1 go build -tags spctre_policy_kernel -trimpath -ldflags="-s -w" -o /out/spctre-worker ./cmd/worker
+# Linking the Rust policy kernel pulls in its unwinder, which makes the binary
+# depend on libgcc_s.so.1 at runtime. The runner below is bare Alpine and does
+# not ship it, so link libgcc statically and keep the runtime image dependency
+# free — a missing libgcc only surfaces as exit(127) when the container starts.
+RUN CGO_ENABLED=1 go build -tags spctre_policy_kernel -trimpath \
+      -ldflags="-s -w -extldflags '-static-libgcc'" \
+      -o /out/spctre-worker ./cmd/worker
 
 FROM alpine:3.21 AS runner
 WORKDIR /app
