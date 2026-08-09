@@ -20,6 +20,7 @@ openapitools.json
 # `pnpm generate:worker-policy-data` and byte-compared in CI, so Prettier must
 # not reformat it out from under the generator.
 apps/worker/internal/worker/semantic_topics.json
+packages/policy-schema/native/src/generated/
 conformance/
 
 # MDX is excluded deliberately. Prettier collapses a multi-line component

@@ -548,9 +548,11 @@ struct SemanticTopic {
 fn semantic_topics() -> &'static SemanticTopicData {
     static TOPICS: OnceLock<SemanticTopicData> = OnceLock::new();
     TOPICS.get_or_init(|| {
-        serde_json::from_str(include_str!(
-            "../../../../apps/worker/internal/worker/semantic_topics.json"
-        ))
+        // Embedded from inside the crate: include_str! cannot reach outside the
+        // crate root in any build that is not a full workspace checkout, and the
+        // container images build this crate from its own directory. The copy is
+        // generated alongside the worker's by scripts/generate-worker-policy-data.mjs.
+        serde_json::from_str(include_str!("generated/semantic_topics.json"))
         .expect("generated semantic topics must be valid JSON")
     })
 }
