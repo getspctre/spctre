@@ -29,8 +29,11 @@ const preSessionFiles = [
 //     session-guard cookie has already bound the tenant via resolveTenantContext.
 //   - browser-approval: runs inside an authenticated approval request (has a
 //     session), so the cookie binds the tenant.
-//   - local-dev-bootstrap: reachable only from local-dev signup; the tenant is
-//     being created in the same call, so there is no prior tenant to bind.
+//
+// There is deliberately no "the tenant is created in this call" category. Only
+// the very first statement of local-dev signup (the `tenant` insert) has no
+// tenant to bind, and it uses the owner connection; everything after it knows
+// the tenant it just created and must bind it.
 const exempt = new Map([
   // session.ts — authenticated session-context writes/reads.
   ["apps/web/lib/repositories/auth/session.ts::updateSessionForTenantSwitch", "session-context"],
@@ -43,13 +46,6 @@ const exempt = new Map([
     "session-context",
   ],
   ["apps/web/lib/repositories/auth/session.ts::revokeSessionRow", "session-context"],
-  // principal.ts / grants.ts — local-dev signup bootstrap (creates the tenant).
-  ["apps/web/lib/repositories/auth/principal.ts::upsertLocalDevPrincipal", "local-dev-bootstrap"],
-  [
-    "apps/web/lib/repositories/auth/principal.ts::ensureLocalDevTenantWorkspace",
-    "local-dev-bootstrap",
-  ],
-  ["apps/web/lib/repositories/auth/grants.ts::upsertLocalDevWorkspaceGrant", "local-dev-bootstrap"],
   // onboarding — browser approval runs with an authenticated session.
   ["apps/web/lib/repositories/onboarding/cli.ts::approveCliOnboardingRequest", "browser-approval"],
   ["apps/web/lib/repositories/onboarding/device.ts::approveDeviceOnboarding", "browser-approval"],
