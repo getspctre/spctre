@@ -299,3 +299,12 @@ pub struct PolicyEvaluationInput {
     pub policy_artifact_hash: Option<String>,
     pub evaluated_at: Option<String>,
 }
+
+/// The kernel's resource limits, reported to hosts so they can validate a
+/// policy against the real ABI bounds rather than a copy of them.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PolicyKernelLimits {
+    pub max_request_bytes: usize,
+    pub max_response_bytes: usize,
+}
