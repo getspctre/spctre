@@ -99,8 +99,8 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm generate
-      # Fails if the TypeScript policy tables changed without regenerating the
-      # copy the Go decision engine consumes — the two engines must match.
+      # Fails if the TypeScript topic tables changed without regenerating the
+      # copy the Rust kernel embeds.
       - run: pnpm check:worker-policy-data
       - run: pnpm typecheck
       - run: pnpm lint
@@ -329,6 +329,13 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
+      # Node and pnpm are here for the portable-kernel steps below: staging the
+      # WASM artifact and running its tests both go through the workspace.
+      - uses: pnpm/action-setup@v6.0.9
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 25
+          cache: pnpm
       - uses: actions/cache@v6
         with:
           path: |
@@ -342,12 +349,24 @@ jobs:
         run: cargo test
         working-directory: packages/policy-schema/native
 
+      - run: pnpm install --frozen-lockfile
+
+      # Builds and stages the portable artifact, then exercises it through the
+      # same corpus as the other transports. Compiling it was never enough: a
+      # target that builds but decides differently is the failure that matters.
       - name: Build portable WASM policy kernel
+        run: pnpm --filter @spctre/policy-schema build:wasm
+
+      - name: Verify the staged WASM artifact is current
         run: |
-          toolchain="$(rustup show active-toolchain | awk '{print $1}')"
-          rustup target add --toolchain "$toolchain" wasm32-unknown-unknown
-          rustup run "$toolchain" cargo build --release --target wasm32-unknown-unknown --no-default-features --features wasm
-        working-directory: packages/policy-schema/native
+          if ! git diff --quiet -- packages/policy-schema/native/spctre_policy_core.wasm; then
+            echo "The committed WASM artifact differs from a fresh build."
+            echo "Run: pnpm --filter @spctre/policy-schema build:wasm"
+            exit 1
+          fi
+
+      - name: Run portable kernel tests
+        run: pnpm --filter @spctre/policy-schema exec vitest run tests/wasm.test.ts
 
   code-health:
     name: Code health (advisory)

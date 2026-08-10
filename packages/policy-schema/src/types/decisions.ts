@@ -80,4 +80,12 @@ export interface EvaluationResult {
   trace: EvaluationTraceStep[];
   ruleCount: number;
   evaluatedAt: string;
+
+  // Deterministic provenance every implementation returns, per
+  // PUBLISHED_EVALUATOR_CONTRACT.md. Optional here only because a caller may
+  // hold a result recorded before these were surfaced to TypeScript.
+  evaluatorVersion?: string;
+  requestSchemaVersion?: string;
+  resultSchemaVersion?: string;
+  policyArtifactHash?: string | null;
 }

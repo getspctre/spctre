@@ -47,4 +47,11 @@ The supported C declarations are checked in at `native/include/spctre_policy_cor
 
 The portable build uses `wasm32-unknown-unknown` with the `wasm` feature and
 `--no-default-features`. N-API bindings are excluded from that artifact; it
-contains only the pure policy kernel and C-compatible JSON entry points.
+contains only the pure policy kernel and C-compatible JSON entry points. It is
+shipped with the package as `native/spctre_policy_core.wasm` and instantiates
+with no imports, so a portable host needs no generated glue and no build
+toolchain. Because a WASM module can only address its own linear memory, such a
+host reserves a request buffer with `spctre_policy_buffer_alloc`, writes the
+request into it, and releases it with `spctre_policy_buffer_free` — the same
+ownership rule that already applies to responses. In-process C hosts keep
+passing their own pointers and do not use the allocator.

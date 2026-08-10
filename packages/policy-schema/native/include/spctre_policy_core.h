@@ -25,6 +25,9 @@ int32_t spctre_policy_compose_layers(const uint8_t *request_ptr,
 int32_t spctre_policy_validate_bundle(const uint8_t *request_ptr,
                                       size_t request_len, uint8_t **out_ptr,
                                       size_t *out_len);
+/* Reserves a request buffer. Needed only by hosts that cannot pass their own
+   pointer (WASM); in-process C hosts pass their own memory directly. */
+uint8_t *spctre_policy_buffer_alloc(size_t len);
 void spctre_policy_buffer_free(uint8_t *ptr, size_t len);
 
 #endif

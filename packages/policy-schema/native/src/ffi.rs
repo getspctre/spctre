@@ -169,14 +169,32 @@ fn evaluate_request(request: &[u8]) -> Result<Vec<u8>, i32> {
     }
 }
 
-/// Releases a buffer returned from `spctre_policy_evaluate`.
+/// Reserves `len` bytes the caller can write a request into.
+///
+/// A WASM host cannot hand the kernel a pointer into its own memory: the module
+/// can only read the linear memory it owns. So a portable host allocates here,
+/// copies the request bytes in, calls an entry point, and frees with
+/// `spctre_policy_buffer_free` — the same ownership rule as a response buffer.
+/// In-process C hosts do not need this and keep passing their own pointers.
+#[no_mangle]
+pub unsafe extern "C" fn spctre_policy_buffer_alloc(len: usize) -> *mut u8 {
+    if len == 0 || len > MAX_REQUEST_BYTES {
+        return ptr::null_mut();
+    }
+    let buffer = vec![0u8; len].into_boxed_slice();
+    Box::into_raw(buffer) as *mut u8
+}
+
+/// Releases a buffer returned from `spctre_policy_evaluate`,
+/// `spctre_policy_compose_layers`, `spctre_policy_validate_bundle`, or
+/// `spctre_policy_buffer_alloc`.
 #[no_mangle]
 pub unsafe extern "C" fn spctre_policy_buffer_free(ptr: *mut u8, len: usize) {
     if ptr.is_null() {
         return;
     }
-    // SAFETY: this exact pointer/length pair is returned only by
-    // `spctre_policy_evaluate`, which allocated a boxed `[u8]` of this length.
+    // SAFETY: this exact pointer/length pair comes from one of the kernel's own
+    // entry points, each of which allocated a boxed `[u8]` of this length.
     unsafe {
         drop(Box::from_raw(std::slice::from_raw_parts_mut(ptr, len)));
     }
@@ -256,6 +274,31 @@ mod tests {
             },
             SPCTRE_POLICY_INVALID_REQUEST,
         );
+    }
+
+    // The portable host allocates through the kernel, writes its request into
+    // that buffer, and frees it afterwards.
+    #[test]
+    fn alloc_round_trips_a_request_buffer() {
+        let request = br#"{"connector":"test","action":"run","rules":[]}"#;
+        let buffer = unsafe { spctre_policy_buffer_alloc(request.len()) };
+        assert!(!buffer.is_null());
+        unsafe { std::ptr::copy_nonoverlapping(request.as_ptr(), buffer, request.len()) };
+
+        let mut response_ptr = ptr::null_mut();
+        let mut response_len = 0;
+        let status = unsafe {
+            spctre_policy_evaluate(buffer, request.len(), &mut response_ptr, &mut response_len)
+        };
+        assert_eq!(status, SPCTRE_POLICY_OK);
+        unsafe { spctre_policy_buffer_free(response_ptr, response_len) };
+        unsafe { spctre_policy_buffer_free(buffer, request.len()) };
+    }
+
+    #[test]
+    fn alloc_refuses_a_length_outside_the_request_bound() {
+        assert!(unsafe { spctre_policy_buffer_alloc(0) }.is_null());
+        assert!(unsafe { spctre_policy_buffer_alloc(MAX_REQUEST_BYTES + 1) }.is_null());
     }
 
     #[test]
