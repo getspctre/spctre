@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "spctre-odysseus"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Spctre ToolMiddleware adapter for Odysseus"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -19,6 +19,12 @@ dev = [
   "pytest-asyncio>=0.23",
   "pyrefly==1.1.0",
 ]
+
+# Single source of truth for the version: spctre_odysseus.__version__ is
+# exported on the package and is what the release workflow rewrites for
+# TestPyPI dev builds. Keeping it out of this file avoids bump drift.
+[tool.hatch.version]
+path = "spctre_odysseus/_version.py"
 
 [tool.hatch.build.targets.wheel]
 packages = ["spctre_odysseus"]
