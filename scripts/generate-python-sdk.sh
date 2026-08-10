@@ -21,12 +21,12 @@ npx @openapitools/openapi-generator-cli generate \
   -g python \
   -o "$OUT" \
   --package-name spctre \
+  --git-user-id getspctre \
+  --git-repo-id spctre \
   --additional-properties=\
 packageVersion="$VERSION",\
 projectName=spctre-sdk,\
 packageUrl=https://github.com/getspctre/spctre,\
-gitUserId=getspctre,\
-gitRepoId=spctre,\
 httpUserAgent=spctre-sdk-python/"$VERSION",\
 generateSourceCodeOnly=false
 
