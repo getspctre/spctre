@@ -169,7 +169,7 @@ export async function getPostureModel(params: {
             affectedScope: "Published artifact",
             action: {
               label: "Open compliance packet",
-              href: `/${params.workspaceSlug}/compliance#control-mappings`,
+              href: `/${params.workspaceSlug}/compliance/packet#control-mappings`,
             },
           },
         ]
@@ -184,7 +184,7 @@ export async function getPostureModel(params: {
               affectedScope: "Published artifact",
               action: {
                 label: "Open compliance packet",
-                href: `/${params.workspaceSlug}/compliance#control-mappings`,
+                href: `/${params.workspaceSlug}/compliance/packet#control-mappings`,
               },
             },
           ]

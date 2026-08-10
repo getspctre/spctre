@@ -32,7 +32,7 @@
 }
 
 .packetReadiness,
-.complianceTaskNav {
+.complianceViewNav {
   max-width: 1180px;
   width: 100%;
   margin: 0 auto;
@@ -104,29 +104,20 @@
   justify-self: start;
 }
 
-.complianceTaskNav {
+.complianceViewNav {
   display: flex;
   gap: 4px;
   overflow-x: auto;
   padding: 0 2px;
 }
 
-.complianceTaskNav a,
+.complianceViewNav a,
 .retentionTabs a {
   color: var(--muted);
   font-size: 13px;
   font-weight: 650;
   white-space: nowrap;
   text-decoration: none;
-}
-
-.complianceTaskNav a {
-  padding: 7px 10px;
-}
-.complianceTaskNav a:hover {
-  color: var(--ink);
-  text-decoration: underline;
-  text-underline-offset: 3px;
 }
 
 .complianceHeroActions {

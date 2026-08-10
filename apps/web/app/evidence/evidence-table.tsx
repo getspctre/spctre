@@ -440,8 +440,8 @@ function PolicyRefWithControls({
     ? buildWorkspacePath(workspaceSlug, `/rules?q=${encodeURIComponent(policyRef)}`)
     : `/rules?q=${encodeURIComponent(policyRef)}`;
   const complianceHref = workspaceSlug
-    ? buildWorkspacePath(workspaceSlug, "/compliance#control-mappings")
-    : "/compliance#control-mappings";
+    ? buildWorkspacePath(workspaceSlug, "/compliance/packet#control-mappings")
+    : "/compliance/packet#control-mappings";
   const controls = controlMappingIndex.filter((mapping) => mapping.stableRuleId === policyRef);
 
   return (
