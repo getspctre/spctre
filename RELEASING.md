@@ -25,12 +25,18 @@ These are outside Changesets. Each single-sources its version in a `_version.py`
 exported as `__version__`. Bump that file, merge, then dispatch
 **Release (Python)** with the distribution and target registry.
 
-`spctre-sdk` ships two top-level packages: the hand-written, supported
-`spctre_sdk` facade, which is checked in, and the `spctre` bindings generated
-from the OpenAPI spec by `scripts/generate-python-sdk.sh`, which are not.
+`spctre-sdk` is the supported `spctre` facade over a private
+`spctre._generated` client, produced by openapi-python-client at a version
+pinned in `scripts/generate-python-sdk.sh`. The generated tree is **checked
+in**, so building and publishing need no code generator; `pnpm check:python-sdk`
+runs in CI and fails if the committed client no longer matches the spec. After
+changing the OpenAPI spec, run `pnpm generate:python-sdk` and commit the result.
+
 Packaging metadata comes from `packages/sdk-python/pyproject.toml` rather than
 from the generator, so the distribution controls its own `requires-python`,
-license and authors. Regenerating requires a JRE.
+license and authors. It requires Python 3.11+: the generated client parses
+timestamps with `datetime.fromisoformat`, which did not accept a trailing `Z`
+until 3.11, and every response carries a required `meta.ts`.
 
 Authentication is PyPI Trusted Publishing (OIDC), with no API token at any
 point — PyPI supports _pending_ publishers, so each project was registered

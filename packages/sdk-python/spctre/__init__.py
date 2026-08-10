@@ -1,17 +1,20 @@
 """Supported Python client for the Spctre control plane.
 
-    from spctre_sdk import SpctreClient
+    from spctre import SpctreClient
 
     client = SpctreClient(base_url="https://app-staging.spctre.dev", token=token)
     decision = client.gateway.decide(request)
 
-The generated bindings for the full API surface remain available under the
-`spctre` package; this module is the narrow, supported subset.
+Request and response models live in `spctre.models`. The full generated
+surface, including operations the facade does not wrap, is under
+`spctre._generated` — regenerated wholesale from the OpenAPI spec and not
+covered by this package's stability promise.
 """
 
+from . import models
 from ._url import API_PREFIX, normalize_base_url
 from ._version import __version__
-from .client import SpctreClient, Transport
+from .client import UNSET, SpctreClient, Unset
 from .errors import (
     SpctreAuthError,
     SpctreError,
@@ -32,7 +35,9 @@ __all__ = [
     "SpctreResponseError",
     "SpctreServerError",
     "SpctreTransportError",
-    "Transport",
+    "UNSET",
+    "Unset",
     "__version__",
+    "models",
     "normalize_base_url",
 ]

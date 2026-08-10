@@ -1,10 +1,9 @@
-"""Errors raised by the supported facade.
+"""Errors raised by the facade.
 
-The generated client raises `spctre.exceptions.ApiException` and its
-status-specific subclasses, plus bare urllib3 errors for transport failures.
-Callers of this facade should never have to import from `spctre.exceptions` or
-branch on HTTP status codes, so every failure is normalized into the hierarchy
-below.
+The generated layer reports failures two different ways: an HTTP error status
+carried on a `Response` object, and httpx exceptions for requests that never
+completed. Callers of this facade should not have to know either, so both are
+normalized into the hierarchy below.
 """
 
 from __future__ import annotations
@@ -84,6 +83,14 @@ class SpctreResponseError(SpctreError):
     """
 
 
+def _decode(body: Any) -> Optional[str]:
+    if body is None:
+        return None
+    if isinstance(body, bytes):
+        return body.decode("utf-8", errors="replace")
+    return str(body)
+
+
 def _extract_trace_id(body: Optional[str]) -> Optional[str]:
     """Best-effort lift of `meta.traceId` from an error envelope.
 
@@ -127,51 +134,27 @@ def _message_for(status: Optional[int], body: Optional[str]) -> str:
     return f"Spctre request failed with HTTP {status}"
 
 
-def translate_api_exception(exc: Exception) -> SpctreError:
-    """Map a generated-client exception onto the facade's hierarchy.
+def error_for_status(status: int, body: Any) -> SpctreError:
+    """Build the facade error for a non-2xx response."""
+    decoded = _decode(body)
+    kwargs = {
+        "status": status,
+        "trace_id": _extract_trace_id(decoded),
+        "body": decoded,
+    }
+    message = _message_for(status, decoded)
 
-    Imported lazily so that this module stays importable even if the generated
-    package is absent — which is the case when working in the source tree
-    before `pnpm generate:python-sdk` has run.
-    """
-    try:
-        from spctre.exceptions import ApiException
-    except ImportError:  # pragma: no cover - generated package always present when installed
-        ApiException = ()  # type: ignore[assignment]
+    if status == 401:
+        return SpctreAuthError(message, **kwargs)
+    if status == 403:
+        return SpctrePermissionError(message, **kwargs)
+    if 400 <= status < 500:
+        return SpctreRequestError(message, **kwargs)
+    if status >= 500:
+        return SpctreServerError(message, **kwargs)
+    return SpctreError(message, **kwargs)
 
-    if ApiException and isinstance(exc, ApiException):  # type: ignore[arg-type]
-        status = getattr(exc, "status", None)
-        body = getattr(exc, "body", None)
-        if isinstance(body, bytes):
-            body = body.decode("utf-8", errors="replace")
-        trace_id = _extract_trace_id(body)
-        message = _message_for(status, body)
-        kwargs = {"status": status, "trace_id": trace_id, "body": body}
 
-        if status == 401:
-            return SpctreAuthError(message, **kwargs)
-        if status == 403:
-            return SpctrePermissionError(message, **kwargs)
-        if isinstance(status, int) and 400 <= status < 500:
-            return SpctreRequestError(message, **kwargs)
-        if isinstance(status, int) and status >= 500:
-            return SpctreServerError(message, **kwargs)
-        return SpctreError(message, **kwargs)
-
-    # A response arrived but did not match the schema the client was generated
-    # from. Reported separately so this does not masquerade as a network fault.
-    try:
-        from pydantic import ValidationError
-    except ImportError:  # pragma: no cover - pydantic is a hard dependency
-        ValidationError = ()  # type: ignore[assignment]
-
-    if ValidationError and isinstance(exc, ValidationError):  # type: ignore[arg-type]
-        return SpctreResponseError(
-            "The Spctre control plane returned a response this SDK could not parse. "
-            f"The client and the deployment may be on different API versions: {exc}"
-        )
-
-    # Anything that never reached an HTTP response: urllib3 connection and
-    # timeout errors, and the generated client's non-HTTP OpenApiException
-    # subclasses.
+def transport_error(exc: Exception) -> SpctreTransportError:
+    """Build the facade error for a request that never got a response."""
     return SpctreTransportError(f"Could not reach the Spctre control plane: {exc}")

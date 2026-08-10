@@ -1,7 +1,6 @@
 """Base-URL normalization.
 
-Kept separate from `client` so it can be exercised without the generated
-package present.
+Kept separate from `client` so it can be exercised on its own.
 """
 
 from __future__ import annotations

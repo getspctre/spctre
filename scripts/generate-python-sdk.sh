@@ -1,56 +1,46 @@
 #!/usr/bin/env bash
-# Generates the `spctre` client package from the published OpenAPI spec, into
-# the checked-in packages/sdk-python distribution.
+# Regenerates the private `spctre._generated` client from the OpenAPI spec.
 #
-# The distribution ships two top-level packages:
-#   spctre      — generated here, gitignored, regenerated from the spec
-#   spctre_sdk  — the hand-written supported facade, checked in
+# The generated tree IS checked in, unlike most generated output here. That is
+# what lets CI assert the checkout matches the spec (see `pnpm check:python-sdk`
+# and the "Python SDK is in sync" CI step), and it means building or installing
+# the package needs no code generator at all.
 #
-# Only the source tree is generated (generateSourceCodeOnly=true): packaging
-# metadata comes from packages/sdk-python/pyproject.toml, not from the
-# generator's own setup.py. That is what lets the distribution declare its own
-# requires-python, license and authors.
+# The generator is openapi-python-client (Python, httpx + attrs). It is pinned:
+# regenerating with a different version produces a diff, which the drift check
+# reports as a failure rather than letting it land silently.
 #
-# Prerequisites: JRE 11+ and @openapitools/openapi-generator-cli.
-#   brew install openjdk   # or any JDK on PATH
-# Usage: bash scripts/generate-python-sdk.sh [output-dir]
+# Requires uv. No JRE — that was the previous generator.
+# Usage: bash scripts/generate-python-sdk.sh
 set -euo pipefail
 
+GENERATOR_VERSION="0.29.0"
 SPEC="packages/api-contracts/openapi.json"
-OUT="${1:-packages/sdk-python}"
-# The release workflow overrides this to publish a version other than the
-# development default (for example a .devN suffix for TestPyPI dry runs).
-VERSION="${SPCTRE_SDK_VERSION:-0.1.0}"
+OUT="packages/sdk-python/spctre/_generated"
 
 if [[ ! -f "$SPEC" ]]; then
   echo "Spec not found. Run: pnpm --filter @spctre/api-contracts emit" >&2
   exit 1
 fi
 
-# Regenerate from scratch so an operation removed from the spec cannot survive
-# as a stale module in the published package.
-rm -rf "${OUT:?}/spctre"
+# Regenerate from scratch so an operation or schema removed from the spec
+# cannot survive as a stale module. The generator will not create the parent.
+rm -rf "${OUT:?}"
+mkdir -p "$(dirname "$OUT")"
 
-npx @openapitools/openapi-generator-cli generate \
-  -i "$SPEC" \
-  -g python \
-  -o "$OUT" \
-  --package-name spctre \
-  --git-user-id getspctre \
-  --git-repo-id spctre \
-  --global-property=apiTests=false,modelTests=false,apiDocs=false,modelDocs=false \
-  --additional-properties=\
-packageVersion="$VERSION",\
-projectName=spctre-sdk,\
-packageUrl=https://github.com/getspctre/spctre,\
-httpUserAgent=spctre-sdk-python/"$VERSION",\
-generateSourceCodeOnly=true
+# --meta none emits only the package tree: no pyproject, README or lockfile.
+# Packaging metadata belongs to packages/sdk-python/pyproject.toml, which is
+# what allows this distribution to declare its own requires-python and license.
+uv tool run --from "openapi-python-client==${GENERATOR_VERSION}" \
+  openapi-python-client generate \
+  --path "$SPEC" \
+  --meta none \
+  --output-path "$OUT" \
+  --overwrite
 
-# generateSourceCodeOnly=true suppresses the packaging files we do not want,
-# but it also suppresses py.typed, which we do: without it the generated
-# annotations are invisible to consumers' type checkers. Restore it, and drop
-# the loose README the generator leaves beside the package.
-touch "$OUT/spctre/py.typed"
-rm -f "$OUT/spctre_README.md"
+# The generator runs ruff over its output and leaves ruff's binary cache
+# behind inside the package. Its contents differ between otherwise identical
+# runs, which would both pollute the wheel and make the sync check flap.
+rm -rf "$OUT/.ruff_cache"
 
-echo "Generated spctre client $VERSION into $OUT"
+echo "Generated spctre._generated with openapi-python-client ${GENERATOR_VERSION}"

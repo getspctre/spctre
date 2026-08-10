@@ -1,6 +1,6 @@
 import pytest
 
-from spctre_sdk import normalize_base_url
+from spctre import normalize_base_url
 
 
 @pytest.mark.parametrize(

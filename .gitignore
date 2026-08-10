@@ -22,12 +22,6 @@ packages/mcp-server/dist/
 packages/policy-schema/dist/
 packages/policy-schema/native/target/
 packages/ui/storybook-static/
-# Generated from packages/api-contracts/openapi.json by
-# scripts/generate-python-sdk.sh. The hand-written facade beside it
-# (packages/sdk-python/spctre_sdk/) IS checked in.
-packages/sdk-python/spctre/
-packages/sdk-python/.openapi-generator/
-packages/sdk-python/.openapi-generator-ignore
 
 # Caches and test output
 .turbo/

@@ -29,6 +29,7 @@
     "generate:worker-policy-data": "node --import tsx scripts/generate-worker-policy-data.mjs",
     "check:worker-policy-data": "node --import tsx scripts/generate-worker-policy-data.mjs --check",
     "generate:python-sdk": "bash scripts/generate-python-sdk.sh",
+    "check:python-sdk": "bash scripts/check-python-sdk-sync.sh",
     "changeset": "changeset",
     "version-packages": "changeset version",
     "release": "changeset publish",

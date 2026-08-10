@@ -125,15 +125,15 @@ jobs:
         run: ./scripts/verify-agt-runtime-evidence-contract.sh
       - run: pnpm -r --if-present test --reporter=verbose
 
-      # The Python packages are outside the pnpm graph, so `pnpm -r test` does
-      # not reach them. spctre-sdk's tests exercise the generated client, which
-      # openapi-generator needs a JRE to produce.
-      - uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: 21
-      - name: Generate Python SDK
-        run: pnpm generate:python-sdk
+      # The Python packages are outside the pnpm graph, so `pnpm -r test`
+      # does not reach them.
+      #
+      # The generated client is checked in, so it can drift from the spec in
+      # two directions: a spec change landing without regeneration, or a
+      # hand-edit to generated code. Both are silent otherwise — the package
+      # keeps building and testing green while no longer matching the API.
+      - name: Python SDK is in sync with the spec
+        run: pnpm check:python-sdk
       - name: Python package tests
         run: pnpm test:python
 

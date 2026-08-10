@@ -6,21 +6,13 @@ Python client for the [Spctre](https://spctre.dev) policy operations control pla
 pip install spctre-sdk
 ```
 
-The distribution ships two packages:
-
-| Package      | Status                                                                         |
-| ------------ | ------------------------------------------------------------------------------ |
-| `spctre_sdk` | The supported facade. A narrow surface with stable ergonomics.                 |
-| `spctre`     | Bindings generated from the OpenAPI spec. Complete, but regenerated wholesale. |
-
-Prefer `spctre_sdk`. Reach for `spctre` when you need an operation the facade
-does not cover.
+Requires Python 3.11+.
 
 ## Usage
 
 ```python
-from spctre_sdk import SpctreClient
-from spctre.models.gateway_decision_request import GatewayDecisionRequest
+from spctre import SpctreClient
+from spctre.models import GatewayDecisionRequest
 
 client = SpctreClient(
     base_url="https://app-staging.spctre.dev",
@@ -29,13 +21,13 @@ client = SpctreClient(
 
 decision = client.gateway.decide(
     GatewayDecisionRequest(
-        decisionId="d-1",
-        artifactHash="sha256:...",
-        policyContext="acquisition",
+        decision_id="d-1",
+        artifact_hash="sha256:...",
+        policy_context=[...],
     )
 )
 
-if decision.decision.effect == "ALLOW":
+if decision.decision.outcome.value == "PROCEED":
     ...  # act
     client.evidence.ingest(record)
 ```
@@ -52,20 +44,36 @@ only in this value:
 
 A URL that already ends in `/api/v1` is accepted as-is rather than doubled.
 
-## Scope
+## Domains
 
-The facade covers the operations a governed agent needs on its hot path:
+The client is organized by product domain, following the control-plane loop:
+policy changes become published controls, controls produce enforced decisions,
+decisions produce evidence, evidence supports assurance.
 
-- `client.gateway.decide(...)` — ask before acting
-- `client.evidence.ingest(...)` — record what happened
+| Domain                | Operations                                                                              |
+| --------------------- | --------------------------------------------------------------------------------------- |
+| `client.gateway`      | `decide`, `resolve`, `escalation_status`, `list_escalations`, `register_agt_escalation` |
+| `client.evidence`     | `ingest`, `ingest_git_checkpoint`, `forensic_query`                                     |
+| `client.policy`       | `import_policy`                                                                         |
+| `client.trust`        | `ingest_score`, `evaluate`, `ingest_context_budget`                                     |
+| `client.verification` | `ingest`, `list`                                                                        |
+| `client.bundle`       | `latest`, `retain_latest`                                                               |
+| `client.compliance`   | `export`                                                                                |
+| `client.approvals`    | `get`                                                                                   |
 
-Everything else is deliberately out of scope. It is not an oversight that
-compliance export or SCIM are absent; use the generated package for those.
+Models come from `spctre.models`. Field names are snake_case in Python and are
+serialized to the API's camelCase automatically.
+
+Operations outside these domains — SCIM, auth token rotation, blueprint import,
+simulation — are reachable through `spctre._generated`, which is regenerated
+wholesale from the OpenAPI spec and carries no stability promise. Anything you
+find yourself needing there is a reasonable thing to request as a facade
+addition.
 
 ## Errors
 
-Every failure is raised as a `SpctreError` subclass — the generated
-`ApiException` never escapes:
+Every failure is raised as a `SpctreError` subclass. Generated exceptions never
+escape:
 
 | Raised                  | When                                        |
 | ----------------------- | ------------------------------------------- |
@@ -79,19 +87,38 @@ Every failure is raised as a `SpctreError` subclass — the generated
 Each carries `status`, `body`, and `trace_id` lifted from the response
 envelope's `meta.traceId` — quote it when reporting a problem.
 
+`SpctreResponseError` is deliberately distinct from `SpctreTransportError`: it
+means the client and the deployment disagree about the API contract, usually an
+SDK too old or too new for the server. Reporting that as an unreachable host
+would send debugging in the wrong direction.
+
 ## Testing
 
-`transport=` replaces the HTTP layer, so tests need no network. Supply any
-object with a `request(...)` method returning a response exposing `status`,
-`read()` and `getheaders()`:
+`transport=` accepts any `httpx.BaseTransport`, so tests need no network:
 
 ```python
+import httpx
+from spctre import SpctreClient
+
+def handler(request: httpx.Request) -> httpx.Response:
+    assert request.url.path == "/api/v1/gateway/decide"
+    return httpx.Response(200, json={...})
+
 client = SpctreClient(
     base_url="https://app.example.com",
     token="test-token",
-    transport=RecordingTransport(),
+    transport=httpx.MockTransport(handler),
 )
 ```
+
+## How this package is built
+
+`spctre._generated` is produced by
+[openapi-python-client](https://github.com/openapi-generators/openapi-python-client)
+from the control plane's OpenAPI spec, at a pinned generator version. Unlike
+most generated code in this repository it is **checked in**, so installing or
+building the package needs no code generator, and CI can assert the committed
+client still matches the spec.
 
 ## License
 
