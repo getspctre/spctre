@@ -13,15 +13,14 @@ vi.mock("@/lib/repositories/provisioning", () => ({
   findHostedOwnerByEmail: (...args: unknown[]) => findHostedOwnerByEmailSpy(...args),
   createHostedTenant: (...args: unknown[]) => createHostedTenantSpy(...args),
   HOSTED_PLAN_CODES: ["HOSTED_TRIAL", "TEAM", "BUSINESS", "ENTERPRISE"],
+  HOSTED_LIFECYCLE_STATUSES: ["EVALUATING", "ACTIVE", "EXPANDING", "PAUSED"],
 }));
 
 vi.mock("@/lib/repositories/default-policy", () => ({
   ensureDefaultPublishedPolicyPack: ensureDefaultPublishedPolicyPackSpy,
 }));
 
-vi.mock("@/lib/repositories/shared/database", () => ({
-  isDatabaseConfigured: () => true,
-}));
+vi.mock("@/lib/repositories/shared/database", () => ({ isDatabaseConfigured: () => true }));
 
 vi.mock("@/lib/tenant-context", () => ({
   runWithTenantContext: async (tenantId: string, fn: () => Promise<unknown>) => {
@@ -66,6 +65,8 @@ describe("provisionHostedTenant", () => {
       displayName: "Buyer",
       company: "Example Corp",
       planCode: "BUSINESS",
+      lifecycleStatus: "ACTIVE",
+      billingCustomerId: null,
     });
     expect(ensureDefaultPublishedPolicyPackSpy).toHaveBeenCalledWith({
       tenantId: TENANT_ID,
@@ -73,6 +74,30 @@ describe("provisionHostedTenant", () => {
       actorId: PRINCIPAL_ID,
     });
     expect(boundTenants).toEqual([TENANT_ID]);
+  });
+
+  it("passes billing details through so checkout never writes the profile itself", async () => {
+    await provisionHostedTenant({
+      email: "buyer@example.com",
+      displayName: "Buyer",
+      lifecycleStatus: "PAUSED",
+      billingCustomerId: "ctm_123",
+    });
+
+    expect(createHostedTenantSpy.mock.calls[0][0]).toMatchObject({
+      lifecycleStatus: "PAUSED",
+      billingCustomerId: "ctm_123",
+    });
+  });
+
+  it("falls back to an active lifecycle when the status is unrecognised", async () => {
+    await provisionHostedTenant({
+      email: "buyer@example.com",
+      displayName: "Buyer",
+      lifecycleStatus: "past_due",
+    });
+
+    expect(createHostedTenantSpy.mock.calls[0][0]).toMatchObject({ lifecycleStatus: "ACTIVE" });
   });
 
   it("returns the existing tenant instead of creating a second one", async () => {

@@ -2,7 +2,9 @@ import { ensureDefaultPublishedPolicyPack } from "@/lib/repositories/default-pol
 import {
   createHostedTenant,
   findHostedOwnerByEmail,
+  HOSTED_LIFECYCLE_STATUSES,
   HOSTED_PLAN_CODES,
+  type HostedLifecycleStatus,
   type HostedPlanCode,
   type ProvisionedTenant,
 } from "@/lib/repositories/provisioning";
@@ -18,6 +20,13 @@ function normalizePlan(plan: string | undefined): HostedPlanCode {
   return HOSTED_PLAN_CODES.includes(candidate as HostedPlanCode)
     ? (candidate as HostedPlanCode)
     : "TEAM";
+}
+
+function normalizeLifecycleStatus(status: string | undefined): HostedLifecycleStatus {
+  const candidate = status?.trim().toUpperCase();
+  return HOSTED_LIFECYCLE_STATUSES.includes(candidate as HostedLifecycleStatus)
+    ? (candidate as HostedLifecycleStatus)
+    : "ACTIVE";
 }
 
 /**
@@ -38,6 +47,8 @@ export async function provisionHostedTenant(params: {
   displayName: string;
   company?: string;
   plan?: string;
+  lifecycleStatus?: string;
+  billingCustomerId?: string;
 }): Promise<ProvisionHostedTenantResult> {
   if (!isDatabaseConfigured()) return { error: "database_required" };
 
@@ -54,6 +65,8 @@ export async function provisionHostedTenant(params: {
     displayName,
     company,
     planCode: normalizePlan(params.plan),
+    lifecycleStatus: normalizeLifecycleStatus(params.lifecycleStatus),
+    billingCustomerId: params.billingCustomerId?.trim() || null,
   });
   if (!provisioned) return { error: "create_failed" };
 

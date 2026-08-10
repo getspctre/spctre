@@ -10,6 +10,15 @@ export const HOSTED_PLAN_CODES: readonly HostedPlanCode[] = [
   "ENTERPRISE",
 ];
 
+export type HostedLifecycleStatus = "EVALUATING" | "ACTIVE" | "EXPANDING" | "PAUSED";
+
+export const HOSTED_LIFECYCLE_STATUSES: readonly HostedLifecycleStatus[] = [
+  "EVALUATING",
+  "ACTIVE",
+  "EXPANDING",
+  "PAUSED",
+];
+
 export interface ProvisionedTenant {
   tenantId: string;
   workspaceId: string;
@@ -108,6 +117,8 @@ export async function createHostedTenant(params: {
   displayName: string;
   company: string;
   planCode: HostedPlanCode;
+  lifecycleStatus: HostedLifecycleStatus;
+  billingCustomerId: string | null;
 }): Promise<ProvisionedTenant | null> {
   if (!rawSql || !sql) return null;
 
@@ -115,17 +126,26 @@ export async function createHostedTenant(params: {
   if (!tenantId) return null;
 
   return runWithTenantContext(tenantId, async () => {
+    // billing_provider defaults to 'PADDLE'; billing_customer_id is supplied
+    // when the caller already knows it (subscription webhooks) and left null
+    // when it does not (checkout before the subscription exists).
     await sql`
       INSERT INTO tenant_commercial_profile (
-        tenant_id, plan_code, lifecycle_status, sales_status, billing_contact_email
+        tenant_id, plan_code, lifecycle_status, sales_status,
+        billing_contact_email, billing_customer_id
       ) VALUES (
-        ${tenantId}, ${params.planCode}, 'ACTIVE', 'CUSTOMER', ${params.email}
+        ${tenantId}, ${params.planCode}, ${params.lifecycleStatus}, 'CUSTOMER',
+        ${params.email}, ${params.billingCustomerId}
       )
       ON CONFLICT (tenant_id) DO UPDATE SET
         plan_code = EXCLUDED.plan_code,
         lifecycle_status = EXCLUDED.lifecycle_status,
         sales_status = EXCLUDED.sales_status,
         billing_contact_email = EXCLUDED.billing_contact_email,
+        billing_customer_id = COALESCE(
+          EXCLUDED.billing_customer_id,
+          tenant_commercial_profile.billing_customer_id
+        ),
         updated_at = now()
     `;
 
