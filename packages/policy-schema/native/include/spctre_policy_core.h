@@ -16,6 +16,11 @@ enum spctre_policy_status {
 /* Evaluates bounded UTF-8 JSON. On success the caller must free `*out_ptr`. */
 int32_t spctre_policy_evaluate(const uint8_t *request_ptr, size_t request_len,
                                uint8_t **out_ptr, size_t *out_len);
+/* Composes ordered layers, returning winning positions rather than rules so a
+   host keeps rule fields this kernel does not model. Same ownership contract. */
+int32_t spctre_policy_compose_layers(const uint8_t *request_ptr,
+                                     size_t request_len, uint8_t **out_ptr,
+                                     size_t *out_len);
 void spctre_policy_buffer_free(uint8_t *ptr, size_t len);
 
 #endif

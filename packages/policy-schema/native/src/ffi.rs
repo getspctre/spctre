@@ -7,7 +7,9 @@
 use std::panic::{self, AssertUnwindSafe};
 use std::ptr;
 
-use crate::{evaluate_policy_decision, PolicyEvaluationInput};
+use crate::{
+    compose_layer_selection, evaluate_policy_decision, CompositionRequest, PolicyEvaluationInput,
+};
 
 pub const SPCTRE_POLICY_OK: i32 = 0;
 pub const SPCTRE_POLICY_INVALID_REQUEST: i32 = 1;
@@ -65,6 +67,51 @@ pub unsafe extern "C" fn spctre_policy_evaluate(
     SPCTRE_POLICY_OK
 }
 
+/// Composes ordered policy layers, returning the winning positions and conflict
+/// notes as bounded UTF-8 JSON. Same ownership and status contract as
+/// `spctre_policy_evaluate`.
+#[no_mangle]
+pub unsafe extern "C" fn spctre_policy_compose_layers(
+    request_ptr: *const u8,
+    request_len: usize,
+    out_ptr: *mut *mut u8,
+    out_len: *mut usize,
+) -> i32 {
+    if out_ptr.is_null()
+        || out_len.is_null()
+        || request_ptr.is_null()
+        || request_len > MAX_REQUEST_BYTES
+    {
+        return SPCTRE_POLICY_RESOURCE_LIMIT;
+    }
+    // SAFETY: as in `spctre_policy_evaluate`, the caller guarantees the request
+    // bytes are readable for the duration of this call.
+    let request = unsafe { std::slice::from_raw_parts(request_ptr, request_len) };
+    let response = match guard(|| compose_request(request)) {
+        Ok(Ok(response)) => response,
+        Ok(Err(status)) => return status,
+        Err(status) => return status,
+    };
+    let response_len = response.len();
+    let response_ptr = Box::into_raw(response.into_boxed_slice()) as *mut u8;
+    // SAFETY: both out parameters were checked non-null above.
+    unsafe {
+        ptr::write(out_ptr, response_ptr);
+        ptr::write(out_len, response_len);
+    }
+    SPCTRE_POLICY_OK
+}
+
+fn compose_request(request: &[u8]) -> Result<Vec<u8>, i32> {
+    let parsed: CompositionRequest =
+        serde_json::from_slice(request).map_err(|_| SPCTRE_POLICY_INVALID_REQUEST)?;
+    match serde_json::to_vec(&compose_layer_selection(&parsed.layers)) {
+        Ok(response) if response.len() <= MAX_RESPONSE_BYTES => Ok(response),
+        Ok(_) => Err(SPCTRE_POLICY_RESOURCE_LIMIT),
+        Err(_) => Err(SPCTRE_POLICY_SERIALIZATION_ERROR),
+    }
+}
+
 /// Deserializes, evaluates, and reserializes one request. Held separate from
 /// the ABI entry point so all of it runs under the panic guard, and so no raw
 /// pointer is live across the guarded call.
@@ -115,6 +162,56 @@ mod tests {
         assert_eq!(value["evaluatorVersion"], "1.0");
         assert_eq!(value["policyArtifactHash"], "sha256:fixture");
         unsafe { spctre_policy_buffer_free(response_ptr, response_len) };
+    }
+
+    // The composition ABI must agree with the composition the evaluator uses
+    // internally; two implementations of layer precedence is the failure this
+    // whole boundary exists to prevent.
+    #[test]
+    fn c_abi_composition_matches_the_internal_composition() {
+        let request = br#"{"layers":[
+            {"scope":"ORGANIZATION","rules":[{"stableRuleId":"locked","immutable":true},{"stableRuleId":"open"}]},
+            {"scope":"WORKSPACE","rules":[{"stableRuleId":"locked"},{"stableRuleId":"open"}]}
+        ]}"#;
+        let mut response_ptr = ptr::null_mut();
+        let mut response_len = 0;
+        let status = unsafe {
+            spctre_policy_compose_layers(
+                request.as_ptr(),
+                request.len(),
+                &mut response_ptr,
+                &mut response_len,
+            )
+        };
+        assert_eq!(status, SPCTRE_POLICY_OK);
+        let response = unsafe { std::slice::from_raw_parts(response_ptr, response_len) };
+        let value: serde_json::Value = serde_json::from_slice(response).unwrap();
+
+        // "locked" keeps the organization layer; "open" is taken by the workspace.
+        assert_eq!(value["effective"][0]["layerIndex"], 0);
+        assert_eq!(value["effective"][0]["stableRuleId"], "locked");
+        assert_eq!(value["effective"][1]["layerIndex"], 1);
+        assert_eq!(value["effective"][1]["stableRuleId"], "open");
+        assert_eq!(value["conflictNotes"].as_array().unwrap().len(), 2);
+        unsafe { spctre_policy_buffer_free(response_ptr, response_len) };
+    }
+
+    #[test]
+    fn c_abi_composition_rejects_malformed_input() {
+        let request = b"{\"layers\":\"not a list\"}";
+        let mut response_ptr = ptr::null_mut();
+        let mut response_len = 0;
+        assert_eq!(
+            unsafe {
+                spctre_policy_compose_layers(
+                    request.as_ptr(),
+                    request.len(),
+                    &mut response_ptr,
+                    &mut response_len,
+                )
+            },
+            SPCTRE_POLICY_INVALID_REQUEST,
+        );
     }
 
     #[test]

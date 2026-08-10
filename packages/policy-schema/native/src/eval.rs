@@ -174,42 +174,74 @@ pub fn evaluate_policy_decision(input: PolicyEvaluationInput) -> EvaluationResul
 
 /// Composes ordered policy layers with the same immutable-rule and ordering
 /// semantics as the published-policy contract.
-pub fn compose_policy_layers(layers: &[CompositionLayer]) -> PolicyCompositionResult {
-    let mut effective_rules: Vec<PolicyRule> = Vec::new();
-    let mut scopes: Vec<String> = Vec::new();
+///
+/// Returns which layer and rule position won each slot rather than the rules
+/// themselves. A host holds richer rule records than the kernel models — control
+/// mappings, authoring metadata, fields added since this crate was built — so
+/// returning rules would silently drop everything the kernel does not know
+/// about. The host maps these positions back onto its own objects instead.
+pub fn compose_layer_selection<L: ComposableLayer>(layers: &[L]) -> PolicyCompositionSelection {
+    let mut effective: Vec<PolicyCompositionSlot> = Vec::new();
     let mut conflict_notes = Vec::new();
 
-    for layer in layers {
-        for rule in &layer.rules {
-            if let Some(index) = effective_rules
+    for (layer_index, layer) in layers.iter().enumerate() {
+        for (rule_index, rule) in layer.rules().iter().enumerate() {
+            let existing = effective
                 .iter()
-                .position(|existing| existing.stable_rule_id == rule.stable_rule_id)
-            {
-                if effective_rules[index].immutable {
-                    conflict_notes.push(format!(
-                        "Conflict in {} layer: Rule \"{}\" is immutable in {} and cannot be overridden.",
-                        layer.scope, rule.stable_rule_id, scopes[index]
-                    ));
-                    continue;
+                .position(|slot| slot.stable_rule_id == rule.stable_rule_id());
+            match existing {
+                Some(index) => {
+                    if effective[index].immutable {
+                        conflict_notes.push(format!(
+                            "Conflict in {} layer: Rule \"{}\" is immutable in {} and cannot be overridden.",
+                            layer.scope(), rule.stable_rule_id(), effective[index].scope
+                        ));
+                        continue;
+                    }
+                    if effective[index].scope != layer.scope() {
+                        conflict_notes.push(format!(
+                            "Override: {} layer has updated rule \"{}\" from {}.",
+                            layer.scope(),
+                            rule.stable_rule_id(),
+                            effective[index].scope
+                        ));
+                    }
+                    effective[index] = PolicyCompositionSlot {
+                        layer_index,
+                        rule_index,
+                        stable_rule_id: rule.stable_rule_id().to_string(),
+                        scope: layer.scope().to_string(),
+                        immutable: rule.immutable(),
+                    };
                 }
-                if scopes[index] != layer.scope {
-                    conflict_notes.push(format!(
-                        "Override: {} layer has updated rule \"{}\" from {}.",
-                        layer.scope, rule.stable_rule_id, scopes[index]
-                    ));
-                }
-                effective_rules[index] = rule.clone();
-                scopes[index] = layer.scope.clone();
-            } else {
-                effective_rules.push(rule.clone());
-                scopes.push(layer.scope.clone());
+                None => effective.push(PolicyCompositionSlot {
+                    layer_index,
+                    rule_index,
+                    stable_rule_id: rule.stable_rule_id().to_string(),
+                    scope: layer.scope().to_string(),
+                    immutable: rule.immutable(),
+                }),
             }
         }
     }
 
-    PolicyCompositionResult {
-        effective_rules,
+    PolicyCompositionSelection {
+        effective,
         conflict_notes,
+    }
+}
+
+/// Materializes a composition for in-kernel use, where the kernel's own rule
+/// representation is all that is needed.
+pub fn compose_policy_layers(layers: &[CompositionLayer]) -> PolicyCompositionResult {
+    let selection = compose_layer_selection(layers);
+    PolicyCompositionResult {
+        effective_rules: selection
+            .effective
+            .iter()
+            .map(|slot| layers[slot.layer_index].rules[slot.rule_index].clone())
+            .collect(),
+        conflict_notes: selection.conflict_notes,
     }
 }
 
@@ -554,7 +586,7 @@ fn semantic_topics() -> &'static SemanticTopicData {
         // from the TypeScript topic tables by
         // scripts/generate-worker-policy-data.mjs.
         serde_json::from_str(include_str!("generated/semantic_topics.json"))
-        .expect("generated semantic topics must be valid JSON")
+            .expect("generated semantic topics must be valid JSON")
     })
 }
 
