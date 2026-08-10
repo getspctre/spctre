@@ -1,6 +1,10 @@
 import yaml from "js-yaml";
 import { createHash } from "node:crypto";
-import { jsEvaluateGatewayDecision, jsEvaluatePolicyDecision } from "./native";
+import {
+  jsComposePolicyLayers,
+  jsEvaluateGatewayDecision,
+  jsEvaluatePolicyDecision,
+} from "./native";
 import {
   SEMANTIC_GENERIC_WORDS,
   SEMANTIC_MATCH_RATIO,
@@ -1078,39 +1082,29 @@ export function composePolicyLayers(params: {
   composedArtifactHash: string;
   composedAt: string;
 }): PolicyCompositionPreview {
-  const ruleMap = new Map<string, { rule: PolicyRuleSummary; layerScope: string }>();
-  const conflictNotes: string[] = [];
+  // Composition semantics — layer precedence, immutable-rule protection and the
+  // conflict notes — belong to the kernel, which is the single implementation
+  // enforcement uses. The kernel returns winning positions rather than rules, so
+  // the effective rules below are this host's own objects: any field the kernel
+  // does not model (control mappings, authoring metadata) survives composition.
+  const selection = JSON.parse(
+    jsComposePolicyLayers(
+      JSON.stringify({
+        layers: params.layers.map((layer) => ({
+          scope: layer.scope,
+          rules: layer.rules.map((rule) => ({
+            stableRuleId: rule.stableRuleId,
+            immutable: rule.immutable,
+          })),
+        })),
+      }),
+    ),
+  ) as { effective: { layerIndex: number; ruleIndex: number }[]; conflictNotes: string[] };
 
-  // Layers are processed in order of increasing specificity (e.g., ORG -> WORKSPACE)
-  // so that workspace rules can override non-immutable org rules.
-  for (const layer of params.layers) {
-    for (const rule of layer.rules) {
-      const existing = ruleMap.get(rule.stableRuleId);
-
-      if (existing) {
-        // Enforce Immutability: If a higher-level layer marked a rule as immutable,
-        // lower layers cannot override or modify it.
-        if (existing.rule.immutable) {
-          conflictNotes.push(
-            `Conflict in ${layer.scope} layer: Rule "${rule.stableRuleId}" is immutable in ${existing.layerScope} and cannot be overridden.`,
-          );
-          continue;
-        }
-
-        // Note overrides for transparency
-        if (existing.layerScope !== layer.scope) {
-          conflictNotes.push(
-            `Override: ${layer.scope} layer has updated rule "${rule.stableRuleId}" from ${existing.layerScope}.`,
-          );
-        }
-      }
-
-      ruleMap.set(rule.stableRuleId, { rule, layerScope: layer.scope });
-    }
-  }
-
-  const effectiveRules = Array.from(ruleMap.values()).map((v) => v.rule);
-  return { ...params, effectiveRules, conflictNotes };
+  const effectiveRules = selection.effective.map(
+    (slot) => params.layers[slot.layerIndex].rules[slot.ruleIndex],
+  );
+  return { ...params, effectiveRules, conflictNotes: selection.conflictNotes };
 }
 
 export function diffPolicyRules(params: {

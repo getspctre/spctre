@@ -1,6 +1,6 @@
 use napi_derive::napi;
 
-use crate::eval::{evaluate_gateway_decision, evaluate_policy_decision};
+use crate::eval::{compose_layer_selection, evaluate_gateway_decision, evaluate_policy_decision};
 use crate::ffi::{MAX_REQUEST_BYTES, MAX_RESPONSE_BYTES};
 use crate::integrity::{build_operations_content_hash, validate_operations_log_chain};
 use crate::types::*;
@@ -38,6 +38,16 @@ pub fn js_validate_operations_log_chain(entries_json: String) -> napi::Result<St
         serde_json::from_str(&entries_json).map_err(|e| napi::Error::from_reason(e.to_string()))?;
     let issues = validate_operations_log_chain(&entries);
     serde_json::to_string(&issues).map_err(|e| napi::Error::from_reason(e.to_string()))
+}
+
+/// Composes ordered layers, returning winning positions rather than rules so the
+/// host keeps its own richer rule objects. See `compose_layer_selection`.
+#[napi]
+pub fn js_compose_policy_layers(input_json: String) -> napi::Result<String> {
+    let request: CompositionRequest =
+        serde_json::from_str(&input_json).map_err(|e| napi::Error::from_reason(e.to_string()))?;
+    let selection = compose_layer_selection(&request.layers);
+    serde_json::to_string(&selection).map_err(|e| napi::Error::from_reason(e.to_string()))
 }
 
 /// Reports the kernel's own resource limits so hosts can check a policy against

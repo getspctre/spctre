@@ -308,3 +308,98 @@ pub struct PolicyKernelLimits {
     pub max_request_bytes: usize,
     pub max_response_bytes: usize,
 }
+
+/// One winning position in a composition: which layer and which rule within it.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PolicyCompositionSlot {
+    pub layer_index: usize,
+    pub rule_index: usize,
+    pub stable_rule_id: String,
+    pub scope: String,
+    pub immutable: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PolicyCompositionSelection {
+    pub effective: Vec<PolicyCompositionSlot>,
+    pub conflict_notes: Vec<String>,
+}
+
+/// Composition needs only a rule's identity and immutability. Hosts send this
+/// reduced shape so a composition request stays small and independent of the
+/// rule fields the kernel happens to model.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CompositionRequestRule {
+    pub stable_rule_id: String,
+    #[serde(default)]
+    pub immutable: bool,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CompositionRequestLayer {
+    pub scope: String,
+    #[serde(default, deserialize_with = "null_to_default")]
+    pub rules: Vec<CompositionRequestRule>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CompositionRequest {
+    #[serde(default, deserialize_with = "null_to_default")]
+    pub layers: Vec<CompositionRequestLayer>,
+}
+
+/// Lets one composition implementation serve both the kernel's own rules and the
+/// reduced shape hosts send, so the semantics cannot fork between them.
+pub trait ComposableRule {
+    fn stable_rule_id(&self) -> &str;
+    fn immutable(&self) -> bool;
+}
+
+pub trait ComposableLayer {
+    type Rule: ComposableRule;
+    fn scope(&self) -> &str;
+    fn rules(&self) -> &[Self::Rule];
+}
+
+impl ComposableRule for PolicyRule {
+    fn stable_rule_id(&self) -> &str {
+        &self.stable_rule_id
+    }
+    fn immutable(&self) -> bool {
+        self.immutable
+    }
+}
+
+impl ComposableLayer for CompositionLayer {
+    type Rule = PolicyRule;
+    fn scope(&self) -> &str {
+        &self.scope
+    }
+    fn rules(&self) -> &[PolicyRule] {
+        &self.rules
+    }
+}
+
+impl ComposableRule for CompositionRequestRule {
+    fn stable_rule_id(&self) -> &str {
+        &self.stable_rule_id
+    }
+    fn immutable(&self) -> bool {
+        self.immutable
+    }
+}
+
+impl ComposableLayer for CompositionRequestLayer {
+    type Rule = CompositionRequestRule;
+    fn scope(&self) -> &str {
+        &self.scope
+    }
+    fn rules(&self) -> &[CompositionRequestRule] {
+        &self.rules
+    }
+}
