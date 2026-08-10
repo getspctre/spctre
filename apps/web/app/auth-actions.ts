@@ -8,7 +8,6 @@ import {
   bootstrapDemoTenant,
   authenticatePrincipalForLogin,
   getPrimaryWorkspaceId,
-  provisionDefaultPolicyPackIfNeeded,
   verifyMfaLoginCode,
 } from "@/lib/domains/auth/service";
 import { DEMO_TENANT_ID, DEMO_WORKSPACE_ID } from "@/lib/demo";
@@ -167,14 +166,9 @@ export async function loginWithPrincipal(
     secure: process.env.NODE_ENV === "production",
   });
 
-  if (workspaceId) {
-    await provisionDefaultPolicyPackIfNeeded({
-      tenantId: principal.tenant_id,
-      workspaceId,
-      actorId: principal.id,
-      requireMfa: principal.require_mfa,
-    });
-  }
+  // The workspace baseline is seeded by createAuthSession above (and, for
+  // tenants that still owe MFA, once they verify), so there is nothing to do
+  // here.
 
   if (principal.require_mfa) {
     const nextQuery = next ? `&next=${encodeURIComponent(next)}` : "";

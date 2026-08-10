@@ -9,7 +9,7 @@ import {
   setTenantMfaPolicy,
   getVerifiedMfaEnrollments,
   updateSmsEnrollmentSecret,
-  markSessionMfaVerified,
+  markSessionMfaVerified as markSessionMfaVerifiedRow,
   type PrincipalMfaEnrollment,
   type PrincipalPasskey,
 } from "@/lib/repositories/mfa";
@@ -39,6 +39,7 @@ import {
   type IdentityProviderSummary,
 } from "@/lib/repositories/identity-providers";
 import { ensureDefaultPublishedPolicyPack } from "@/lib/repositories/default-policy";
+import { getLatestPublishedBundle } from "@/lib/repositories/policy/publish";
 import { upsertLocalDevWorkspaceGrant } from "@/lib/repositories/auth/grants";
 import {
   listActiveApiKeys,
@@ -138,7 +139,6 @@ export {
   getPasskeyByCredentialId,
   isSmsCooldownActive,
   markSmsEnrollmentVerified,
-  markSessionMfaVerified,
   markTotpEnrollmentVerified,
   recordPasskeyAuthentication,
   updateSmsEnrollmentSecret,
@@ -395,21 +395,67 @@ export async function getPrimaryWorkspaceId(tenantId: string): Promise<string | 
   return getPrimaryWorkspaceIdForTenant(tenantId);
 }
 
-export async function provisionDefaultPolicyPackIfNeeded(params: {
+/**
+ * Record that a session has satisfied MFA, and seed the workspace baseline that
+ * session creation deferred while the session was only half-authenticated.
+ *
+ * Every MFA completion path — login challenge, standalone verify, and TOTP/SMS
+ * enrolment — goes through here, so the deferral is resolved in one place
+ * rather than in each route.
+ */
+export async function markSessionMfaVerified(params: {
+  sessionId: string;
   tenantId: string;
-  workspaceId: string;
-  actorId: string;
-  requireMfa: boolean;
+  principalId: string;
+}): Promise<"ok" | "db-unavailable"> {
+  const result = await markSessionMfaVerifiedRow({
+    sessionId: params.sessionId,
+    tenantId: params.tenantId,
+  });
+  if (result !== "ok") return result;
+
+  await ensureWorkspacePolicyBaseline({
+    tenantId: params.tenantId,
+    principalId: params.principalId,
+  }).catch(swallow("ensureWorkspacePolicyBaseline", undefined));
+
+  return result;
+}
+
+/**
+ * Seed the baseline policy pack for a tenant whose primary workspace has never
+ * published one.
+ *
+ * Every sign-in route funnels through session creation, so this runs there
+ * rather than in any single login handler: seeding used to hang off the
+ * configured-user login, which is disabled in production, leaving magic link,
+ * passkey, recovery, OIDC and SAML sign-ins with no baseline at all. It is
+ * deliberately not called before MFA is satisfied — a half-authenticated
+ * session should not write on the tenant's behalf.
+ */
+export async function ensureWorkspacePolicyBaseline(params: {
+  tenantId: string;
+  principalId: string;
 }): Promise<void> {
   if (!isDatabaseConfigured()) return;
   const { DEMO_TENANT_ID } = await import("@/lib/demo");
-  if (params.tenantId !== DEMO_TENANT_ID && params.workspaceId && !params.requireMfa) {
+  if (params.tenantId === DEMO_TENANT_ID) return;
+
+  const workspaceId = await getPrimaryWorkspaceIdForTenant(params.tenantId);
+  if (!workspaceId) return;
+
+  await runWithTenantContext(params.tenantId, async () => {
+    // Cheap indexed read first: the overwhelmingly common case is a workspace
+    // that already published, and that path should not open a transaction.
+    const published = await getLatestPublishedBundle(workspaceId, params.tenantId);
+    if (published) return;
+
     await ensureDefaultPublishedPolicyPack({
       tenantId: params.tenantId,
-      workspaceId: params.workspaceId,
-      actorId: params.actorId,
+      workspaceId,
+      actorId: params.principalId,
     });
-  }
+  });
 }
 
 // Verify the code against each SMS enrollment, tracking attempt counts in the
@@ -507,7 +553,11 @@ export async function verifyMfaLoginCode(params: {
     return { error: "Invalid MFA code." };
   }
 
-  await markSessionMfaVerified({ sessionId: params.sessionId, tenantId: params.tenantId });
+  await markSessionMfaVerified({
+    sessionId: params.sessionId,
+    tenantId: params.tenantId,
+    principalId: params.principalId,
+  });
 
   return { ok: true };
 }
