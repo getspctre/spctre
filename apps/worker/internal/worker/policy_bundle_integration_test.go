@@ -3,6 +3,7 @@ package worker
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 )
 
@@ -59,11 +60,20 @@ func TestPublishedPolicyDecisionIntegration(t *testing.T) {
 	}
 
 	t.Run("published ESCALATE upgrades a threshold PROCEED", func(t *testing.T) {
-		decision, err := s.applyPublishedPolicyDecision(
+		decision, provenance, err := s.applyPublishedPolicyDecision(
 			ctx, request("acquisition-scout", "brief.file"), auth,
 			GatewayDecision{Outcome: "PROCEED"})
 		if err != nil {
 			t.Fatalf("policy decision: %v", err)
+		}
+		if provenance == nil {
+			t.Fatal("a kernel-made decision must carry provenance")
+		}
+		if !strings.HasPrefix(provenance.ArtifactHash, "sha256:") {
+			t.Errorf("artifact hash = %q, want a sha256 digest", provenance.ArtifactHash)
+		}
+		if provenance.EvaluatorVersion == "" {
+			t.Error("provenance must record the evaluator version that decided")
 		}
 		if decision.Outcome != "ESCALATE" {
 			t.Errorf("outcome = %q, want ESCALATE (%s)", decision.Outcome, decision.Reason)
@@ -74,7 +84,7 @@ func TestPublishedPolicyDecisionIntegration(t *testing.T) {
 	})
 
 	t.Run("published ESCALATE never downgrades a threshold ABORT", func(t *testing.T) {
-		decision, err := s.applyPublishedPolicyDecision(
+		decision, _, err := s.applyPublishedPolicyDecision(
 			ctx, request("acquisition-scout", "brief.file"), auth,
 			GatewayDecision{Outcome: "ABORT", Reason: "threshold abort"})
 		if err != nil {
@@ -86,7 +96,7 @@ func TestPublishedPolicyDecisionIntegration(t *testing.T) {
 	})
 
 	t.Run("an action no rule matches is left alone", func(t *testing.T) {
-		decision, err := s.applyPublishedPolicyDecision(
+		decision, _, err := s.applyPublishedPolicyDecision(
 			ctx, request("stripe", "charge"), auth, GatewayDecision{Outcome: "PROCEED"})
 		if err != nil {
 			t.Fatalf("policy decision: %v", err)
@@ -113,7 +123,7 @@ func TestPublishedPolicyDecisionIntegration(t *testing.T) {
 			`, f.tenantID, revisionID)
 		})
 
-		_, err := s.applyPublishedPolicyDecision(
+		_, _, err := s.applyPublishedPolicyDecision(
 			ctx, request("acquisition-scout", "brief.file"), auth,
 			GatewayDecision{Outcome: "PROCEED"})
 		var unmaterialized *errPolicyRulesUnmaterialized

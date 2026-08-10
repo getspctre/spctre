@@ -126,6 +126,9 @@ func (s *Server) handleGatewayDecide(w http.ResponseWriter, r *http.Request) {
 		ShouldQueue: false,
 	}
 	var payloadSafeguardTelemetry *gatewaySafeguardTelemetry
+	// Which published artifact the kernel enforced, and which evaluator read it.
+	// Persisted with the decision so it can be replayed after a kernel upgrade.
+	var policyProvenance *policyKernelProvenance
 	if gatewayEnabled {
 		decision = evaluateGatewayDecision(payload)
 		var payloadTelemetry *gatewaySafeguardTelemetry
@@ -146,7 +149,7 @@ func (s *Server) handleGatewayDecide(w http.ResponseWriter, r *http.Request) {
 		// they are not yet materialised, which this service cannot parse around
 		// — the decision is refused rather than made on incomplete policy.
 		var policyErr error
-		decision, policyErr = s.applyPublishedPolicyDecision(r.Context(), payload, auth, decision)
+		decision, policyProvenance, policyErr = s.applyPublishedPolicyDecision(r.Context(), payload, auth, decision)
 		if policyErr != nil {
 			s.logger.Error("gateway published policy evaluation failed", "error", policyErr, "decision_id", payload.DecisionID)
 			writeError(w, http.StatusServiceUnavailable, "Gateway policy evaluation unavailable.", traceID, nil)
@@ -177,7 +180,7 @@ func (s *Server) handleGatewayDecide(w http.ResponseWriter, r *http.Request) {
 	var gatewayDecisionID string
 	if gatewayEnabled && !isDemo {
 		var err error
-		gatewayDecisionID, err = s.persistGatewayDecision(r.Context(), payload, auth, decision, payloadSafeguardTelemetry)
+		gatewayDecisionID, err = s.persistGatewayDecision(r.Context(), payload, auth, decision, payloadSafeguardTelemetry, policyProvenance)
 		if err != nil {
 			s.logger.Error("gateway decision database error", "error", err, "decision_id", payload.DecisionID)
 			writeJSON(w, http.StatusServiceUnavailable, map[string]any{

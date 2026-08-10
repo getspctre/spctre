@@ -8,7 +8,7 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-func (s *Server) persistGatewayDecision(ctx context.Context, record GatewayDecisionRequest, auth authResult, decision GatewayDecision, safeguardTelemetry *gatewaySafeguardTelemetry) (string, error) {
+func (s *Server) persistGatewayDecision(ctx context.Context, record GatewayDecisionRequest, auth authResult, decision GatewayDecision, safeguardTelemetry *gatewaySafeguardTelemetry, provenance *policyKernelProvenance) (string, error) {
 	firstContext := RuntimePolicyContext{}
 	hasContext := len(record.PolicyContext) > 0
 	if hasContext {
@@ -44,13 +44,13 @@ func (s *Server) persistGatewayDecision(ctx context.Context, record GatewayDecis
 			artifact_hash, outcome, reason, consequence, customer_tier,
 			confidence, amount_usd, data_sensitivity, trust_score, context_budget,
 			risk_level, evaluated_by, agent_id, session_id, tool_intent, plan_summary, tool_parameters, safeguard_telemetry,
-			connector, action
+			connector, action, policy_artifact_hash, policy_evaluator_version
 		) VALUES (
 			$1, $2, $3, $4, $5,
 			$6, $7, $8, $9, $10,
 			$11, $12, $13, $14, $15,
 			$16, $17, $18, $19, $20, $21, $22::jsonb, $23::jsonb,
-			$24, $25
+			$24, $25, $26, $27
 		)
 		ON CONFLICT (tenant_id, decision_id, artifact_hash)
 		DO UPDATE SET
@@ -73,6 +73,8 @@ func (s *Server) persistGatewayDecision(ctx context.Context, record GatewayDecis
 			safeguard_telemetry = EXCLUDED.safeguard_telemetry,
 			connector = EXCLUDED.connector,
 			action = EXCLUDED.action,
+			policy_artifact_hash = EXCLUDED.policy_artifact_hash,
+			policy_evaluator_version = EXCLUDED.policy_evaluator_version,
 			evaluated_at = now()
 		RETURNING id
 	`, auth.TenantID, auth.WorkspaceID, record.DecisionID,
@@ -80,7 +82,7 @@ func (s *Server) persistGatewayDecision(ctx context.Context, record GatewayDecis
 		record.ArtifactHash, string(decision.Outcome), decision.Reason, record.Consequence, record.CustomerTier,
 		record.Confidence, record.AmountUsd, record.DataSensitivity, record.TrustScore, record.ContextBudget,
 		string(decision.RiskLevel), auth.PrincipalID, record.AgentID, record.SessionID, record.ToolIntent, record.PlanSummary, toolParamsJSON, telemetryJSON,
-		record.Connector, record.Action).Scan(&gatewayDecisionID)
+		record.Connector, record.Action, policyProvenanceHash(provenance), policyProvenanceEvaluator(provenance)).Scan(&gatewayDecisionID)
 	if err != nil {
 		return "", err
 	}
