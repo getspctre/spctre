@@ -39,6 +39,24 @@ func marshalPolicyKernelRequest(input PolicyEvaluationInput) ([]byte, error) {
 	})
 }
 
+// policyKernelStatusName maps an ABI status to its contract name so an
+// enforcement failure is diagnosable from the log line alone. An unrecognised
+// value means the linked kernel is newer than this adapter.
+func policyKernelStatusName(status C.int32_t) string {
+	switch status {
+	case C.SPCTRE_POLICY_INVALID_REQUEST:
+		return "invalid request"
+	case C.SPCTRE_POLICY_RESOURCE_LIMIT:
+		return "resource limit exceeded"
+	case C.SPCTRE_POLICY_SERIALIZATION_ERROR:
+		return "serialization error"
+	case C.SPCTRE_POLICY_INTERNAL_ERROR:
+		return "contained kernel panic"
+	default:
+		return "unknown status"
+	}
+}
+
 // evaluatePolicyRulesWithKernel is the cgo delivery adapter. It performs no
 // policy logic: it serializes the stable request contract, invokes the Rust
 // kernel, and deserializes its deterministic result. Callers fail closed on a
@@ -58,7 +76,10 @@ func evaluatePolicyRulesWithKernel(input PolicyEvaluationInput) (PolicyEvaluatio
 		(*C.uint8_t)(unsafe.Pointer(&request[0])), C.size_t(len(request)), &responsePtr, &responseLen,
 	)
 	if status != C.SPCTRE_POLICY_OK {
-		return PolicyEvaluationResult{}, fmt.Errorf("policy kernel ABI failed with status %d", status)
+		return PolicyEvaluationResult{}, fmt.Errorf(
+			"policy kernel ABI failed: %s (status %d, request %d bytes)",
+			policyKernelStatusName(status), status, len(request),
+		)
 	}
 	defer C.spctre_policy_buffer_free(responsePtr, responseLen)
 	response := C.GoBytes(unsafe.Pointer(responsePtr), C.int(responseLen))

@@ -4,6 +4,7 @@
 //! allocation: they must release every successful response with
 //! `spctre_policy_buffer_free` using the pointer and length returned here.
 
+use std::panic::{self, AssertUnwindSafe};
 use std::ptr;
 
 use crate::{evaluate_policy_decision, PolicyEvaluationInput};
@@ -12,9 +13,20 @@ pub const SPCTRE_POLICY_OK: i32 = 0;
 pub const SPCTRE_POLICY_INVALID_REQUEST: i32 = 1;
 pub const SPCTRE_POLICY_RESOURCE_LIMIT: i32 = 2;
 pub const SPCTRE_POLICY_SERIALIZATION_ERROR: i32 = 3;
+pub const SPCTRE_POLICY_INTERNAL_ERROR: i32 = 4;
 
 pub const MAX_REQUEST_BYTES: usize = 1_048_576;
 pub const MAX_RESPONSE_BYTES: usize = 1_048_576;
+
+/// Runs kernel work that must never unwind into a foreign caller.
+///
+/// A panic crossing an `extern "C"` boundary aborts the process, which would
+/// turn a single pathological evaluation into the loss of the whole host — for
+/// the Go worker, every in-flight request on the instance. Converting it to an
+/// explicit status lets the host fail that one decision closed instead.
+fn guard<T>(work: impl FnOnce() -> T) -> Result<T, i32> {
+    panic::catch_unwind(AssertUnwindSafe(work)).map_err(|_| SPCTRE_POLICY_INTERNAL_ERROR)
+}
 
 /// Evaluates a versioned policy request encoded as UTF-8 JSON.
 ///
@@ -37,14 +49,10 @@ pub unsafe extern "C" fn spctre_policy_evaluate(
     // SAFETY: the C caller promises `request_ptr` points to `request_len`
     // readable bytes for the duration of this call.
     let request = unsafe { std::slice::from_raw_parts(request_ptr, request_len) };
-    let input: PolicyEvaluationInput = match serde_json::from_slice(request) {
-        Ok(input) => input,
-        Err(_) => return SPCTRE_POLICY_INVALID_REQUEST,
-    };
-    let response = match serde_json::to_vec(&evaluate_policy_decision(input)) {
-        Ok(response) if response.len() <= MAX_RESPONSE_BYTES => response,
-        Ok(_) => return SPCTRE_POLICY_RESOURCE_LIMIT,
-        Err(_) => return SPCTRE_POLICY_SERIALIZATION_ERROR,
+    let response = match guard(|| evaluate_request(request)) {
+        Ok(Ok(response)) => response,
+        Ok(Err(status)) => return status,
+        Err(status) => return status,
     };
     let response_len = response.len();
     let response_ptr = Box::into_raw(response.into_boxed_slice()) as *mut u8;
@@ -55,6 +63,19 @@ pub unsafe extern "C" fn spctre_policy_evaluate(
         ptr::write(out_len, response_len);
     }
     SPCTRE_POLICY_OK
+}
+
+/// Deserializes, evaluates, and reserializes one request. Held separate from
+/// the ABI entry point so all of it runs under the panic guard, and so no raw
+/// pointer is live across the guarded call.
+fn evaluate_request(request: &[u8]) -> Result<Vec<u8>, i32> {
+    let input: PolicyEvaluationInput =
+        serde_json::from_slice(request).map_err(|_| SPCTRE_POLICY_INVALID_REQUEST)?;
+    match serde_json::to_vec(&evaluate_policy_decision(input)) {
+        Ok(response) if response.len() <= MAX_RESPONSE_BYTES => Ok(response),
+        Ok(_) => Err(SPCTRE_POLICY_RESOURCE_LIMIT),
+        Err(_) => Err(SPCTRE_POLICY_SERIALIZATION_ERROR),
+    }
 }
 
 /// Releases a buffer returned from `spctre_policy_evaluate`.
@@ -94,6 +115,20 @@ mod tests {
         assert_eq!(value["evaluatorVersion"], "1.0");
         assert_eq!(value["policyArtifactHash"], "sha256:fixture");
         unsafe { spctre_policy_buffer_free(response_ptr, response_len) };
+    }
+
+    #[test]
+    fn guard_converts_a_panic_into_an_internal_error_status() {
+        let previous = panic::take_hook();
+        panic::set_hook(Box::new(|_| {}));
+        let result = guard(|| panic!("pathological evaluation"));
+        panic::set_hook(previous);
+        assert_eq!(result.unwrap_err(), SPCTRE_POLICY_INTERNAL_ERROR);
+    }
+
+    #[test]
+    fn guard_passes_through_a_normal_result() {
+        assert_eq!(guard(|| 7).unwrap(), 7);
     }
 
     #[test]
