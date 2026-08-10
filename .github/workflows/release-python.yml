@@ -3,7 +3,7 @@ name: Release (Python)
 # Publishes the public Python distributions to PyPI / TestPyPI:
 #   - spctre-hermes     (packages/adapters/hermes)
 #   - spctre-odysseus   (packages/adapters/odysseus)
-#   - spctre-sdk        (generated from the OpenAPI spec into target/sdk-python)
+#   - spctre-sdk        (packages/sdk-python: hand-written facade + generated client)
 #
 # Authentication is PyPI Trusted Publishing (OIDC). There is deliberately no
 # API-token bootstrap step here, and none is needed: unlike npm, PyPI supports
@@ -85,8 +85,8 @@ jobs:
               },
               {
                 project: "spctre-sdk",
-                path: "target/sdk-python",
-                version_file: "",
+                path: "packages/sdk-python",
+                version_file: "packages/sdk-python/spctre_sdk/_version.py",
                 pypi_env: "pypi",
                 testpypi_env: "testpypi",
               },
@@ -117,11 +117,7 @@ jobs:
       - name: Resolve version
         id: version
         run: |
-          if [ -n "${{ matrix.version_file }}" ]; then
-            base="$(sed -n 's/^__version__ = "\(.*\)"$/\1/p' "${{ matrix.version_file }}")"
-          else
-            base="$(sed -n 's/^VERSION="${SPCTRE_SDK_VERSION:-\(.*\)}"$/\1/p' scripts/generate-python-sdk.sh)"
-          fi
+          base="$(sed -n 's/^__version__ = "\(.*\)"$/\1/p' "${{ matrix.version_file }}")"
           if [ -z "$base" ]; then
             echo "could not resolve base version for ${{ matrix.project }}" >&2
             exit 1
@@ -158,7 +154,6 @@ jobs:
           pnpm generate:python-sdk
 
       - name: Stamp version
-        if: matrix.version_file != ''
         run: |
           printf '__version__ = "%s"\n' "${{ steps.version.outputs.version }}" \
             > "${{ matrix.version_file }}"

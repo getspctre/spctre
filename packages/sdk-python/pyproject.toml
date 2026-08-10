@@ -1,0 +1,52 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "spctre-sdk"
+dynamic = ["version"]
+description = "Python SDK for the Spctre policy operations control plane."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "Apache-2.0"
+authors = [{ name = "Spctre", email = "support@spctre.dev" }]
+keywords = ["spctre", "policy", "governance", "agents"]
+dependencies = [
+  # Runtime dependencies of the generated client. Kept in step with what the
+  # openapi-generator python template emits into its own setup.py.
+  "urllib3 >= 2.1.0, < 3.0.0",
+  "python-dateutil >= 2.8.2",
+  "pydantic >= 2",
+  "typing-extensions >= 4.7.1",
+]
+
+[project.urls]
+Homepage = "https://spctre.dev"
+Source = "https://github.com/getspctre/spctre"
+
+[project.optional-dependencies]
+test = [
+  "pytest>=9.0.3",
+  "pyrefly==1.1.0",
+]
+
+# Single source of truth for the version, matching the adapter packages. The
+# release workflow rewrites this file to stamp a .devN suffix for TestPyPI.
+[tool.hatch.version]
+path = "spctre_sdk/_version.py"
+
+# The distribution ships two top-level packages:
+#   spctre      — generated from the OpenAPI spec, not checked in (see
+#                 scripts/generate-python-sdk.sh); the unrestricted escape hatch.
+#   spctre_sdk  — the hand-written, supported facade over a subset of it.
+[tool.hatch.build.targets.wheel]
+packages = ["spctre_sdk", "spctre"]
+
+[tool.hatch.build.targets.sdist]
+include = ["spctre_sdk", "spctre", "README.md"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.pyrefly]
+project-includes = ["spctre_sdk", "tests"]

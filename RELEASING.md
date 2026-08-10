@@ -19,13 +19,18 @@ with the implementation change.
 
 - `spctre-hermes` (`packages/adapters/hermes`)
 - `spctre-odysseus` (`packages/adapters/odysseus`)
-- `spctre-sdk` (generated from the OpenAPI spec into `target/sdk-python`)
+- `spctre-sdk` (`packages/sdk-python`)
 
-These are outside Changesets. Each adapter's version is single-sourced in its
-`_version.py` and exported as `__version__`; the SDK's default is the
-`SPCTRE_SDK_VERSION` fallback in `scripts/generate-python-sdk.sh`. Bump the
-relevant file, merge, then dispatch **Release (Python)** with the distribution
-and target registry.
+These are outside Changesets. Each single-sources its version in a `_version.py`
+exported as `__version__`. Bump that file, merge, then dispatch
+**Release (Python)** with the distribution and target registry.
+
+`spctre-sdk` ships two top-level packages: the hand-written, supported
+`spctre_sdk` facade, which is checked in, and the `spctre` bindings generated
+from the OpenAPI spec by `scripts/generate-python-sdk.sh`, which are not.
+Packaging metadata comes from `packages/sdk-python/pyproject.toml` rather than
+from the generator, so the distribution controls its own `requires-python`,
+license and authors. Regenerating requires a JRE.
 
 Authentication is PyPI Trusted Publishing (OIDC), with no API token at any
 point — PyPI supports _pending_ publishers, so each project was registered
