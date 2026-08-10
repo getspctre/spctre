@@ -4,6 +4,7 @@ use crate::eval::{compose_layer_selection, evaluate_gateway_decision, evaluate_p
 use crate::ffi::{MAX_REQUEST_BYTES, MAX_RESPONSE_BYTES};
 use crate::integrity::{build_operations_content_hash, validate_operations_log_chain};
 use crate::types::*;
+use crate::validate::{validate_policy_bundle, PolicyBundleValidationRequest};
 
 // ── napi bindings ──────────────────────────────────────────────────────────────
 // Each function accepts and returns JSON strings so complex types (serde_json::Value
@@ -48,6 +49,16 @@ pub fn js_compose_policy_layers(input_json: String) -> napi::Result<String> {
         serde_json::from_str(&input_json).map_err(|e| napi::Error::from_reason(e.to_string()))?;
     let selection = compose_layer_selection(&request.layers);
     serde_json::to_string(&selection).map_err(|e| napi::Error::from_reason(e.to_string()))
+}
+
+/// Validates that a bundle can be enforced at all. See the `validate` module for
+/// why these checks belong to the kernel rather than the host.
+#[napi]
+pub fn js_validate_policy_bundle(input_json: String) -> napi::Result<String> {
+    let request: PolicyBundleValidationRequest =
+        serde_json::from_str(&input_json).map_err(|e| napi::Error::from_reason(e.to_string()))?;
+    let validation = validate_policy_bundle(&request);
+    serde_json::to_string(&validation).map_err(|e| napi::Error::from_reason(e.to_string()))
 }
 
 /// Reports the kernel's own resource limits so hosts can check a policy against

@@ -21,6 +21,7 @@ type NativeBinding = {
   jsBuildOperationsContentHash(inputJson: string): string;
   jsValidateOperationsLogChain(entriesJson: string): string;
   jsComposePolicyLayers(inputJson: string): string;
+  jsValidatePolicyBundle(inputJson: string): string;
   jsPolicyKernelLimits(): string;
 };
 
@@ -71,6 +72,10 @@ export function jsValidateOperationsLogChain(entriesJson: string): string {
 
 export function jsComposePolicyLayers(inputJson: string): string {
   return load().jsComposePolicyLayers(inputJson);
+}
+
+export function jsValidatePolicyBundle(inputJson: string): string {
+  return load().jsValidatePolicyBundle(inputJson);
 }
 
 export function jsPolicyKernelLimits(): string {
