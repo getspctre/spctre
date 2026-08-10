@@ -28,6 +28,12 @@ const appendOperationsLogMock = vi.fn().mockResolvedValue(undefined);
 const getLatestManagedSimulationRegressionMock = vi.fn();
 const countRuntimeEvidenceMock = vi.fn();
 
+// Real UUIDs: publish reads the workspace's published layers to size the
+// evaluation budget, so both IDs reach Postgres as uuid parameters.
+// runWithTenantContext rejects a non-UUID tenant for the same reason.
+const TEST_TENANT_ID = "00000000-0000-0000-0000-000000000001";
+const TEST_WORKSPACE_ID = "00000000-0000-0000-0000-0000000000a1";
+
 vi.mock("@/lib/repositories/policy", () => ({
   getPublishBranchScope: getPublishBranchScopeMock,
   revisionExistsOnPublishBranch: revisionExistsOnPublishBranchMock,
@@ -70,8 +76,8 @@ vi.mock("@/lib/workspace/scope", () => ({
   getActiveScope: vi
     .fn()
     .mockResolvedValue({
-      tenantId: "t-1",
-      workspaceId: "ws-1",
+      tenantId: TEST_TENANT_ID,
+      workspaceId: TEST_WORKSPACE_ID,
       workspaceSlug: "ws-one",
       tenantSlug: "t-one",
     }),
@@ -98,7 +104,7 @@ vi.mock("@spctre/policy-schema", async (importOriginal) => {
 const { publishRevisionDecision } = await import("../lib/domains/review/service");
 
 const BRANCH_ROW = {
-  workspace_id: "ws-1",
+  workspace_id: TEST_WORKSPACE_ID,
   scope: "WORKSPACE",
   environment: "production",
   workspace_slug: "ws-one",
@@ -141,7 +147,7 @@ describe("Publish gating — approval not satisfied", () => {
 
     const result = await publishRevisionDecision(
       { branchId: "branch-1", revisionId: "rev-1" },
-      { tenantId: "t-1", workspaceId: "ws-1" },
+      { tenantId: TEST_TENANT_ID, workspaceId: TEST_WORKSPACE_ID },
     );
     expect(result).toHaveProperty("error");
     if ("error" in result) {
@@ -170,7 +176,7 @@ describe("Publish gating — approval not satisfied", () => {
 
     const result = await publishRevisionDecision(
       { branchId: "branch-1", revisionId: "rev-1" },
-      { tenantId: "t-1", workspaceId: "ws-1" },
+      { tenantId: TEST_TENANT_ID, workspaceId: TEST_WORKSPACE_ID },
     );
     if ("error" in result) {
       expect(result.error).toContain("Security");
@@ -213,7 +219,7 @@ describe("Publish gating — open gateway escalations", () => {
 
     const result = await publishRevisionDecision(
       { branchId: "branch-1", revisionId: "rev-1" },
-      { tenantId: "t-1", workspaceId: "ws-1" },
+      { tenantId: TEST_TENANT_ID, workspaceId: TEST_WORKSPACE_ID },
     );
     expect(result).toHaveProperty("error");
     if ("error" in result) {
@@ -227,7 +233,7 @@ describe("Publish gating — open gateway escalations", () => {
 
     const result = await publishRevisionDecision(
       { branchId: "branch-1", revisionId: "rev-1" },
-      { tenantId: "t-1", workspaceId: "ws-1" },
+      { tenantId: TEST_TENANT_ID, workspaceId: TEST_WORKSPACE_ID },
     );
 
     expect(result).toEqual({
@@ -242,7 +248,7 @@ describe("Publish gating — open gateway escalations", () => {
 
     const result = await publishRevisionDecision(
       { branchId: "branch-1", revisionId: "rev-1" },
-      { tenantId: "t-1", workspaceId: "ws-1" },
+      { tenantId: TEST_TENANT_ID, workspaceId: TEST_WORKSPACE_ID },
     );
     expect(result).toHaveProperty("artifactHash");
   });
@@ -253,7 +259,7 @@ describe("Publish gating — open gateway escalations", () => {
 
     const result = await publishRevisionDecision(
       { branchId: "branch-1", revisionId: "rev-1" },
-      { tenantId: "t-1", workspaceId: "ws-1" },
+      { tenantId: TEST_TENANT_ID, workspaceId: TEST_WORKSPACE_ID },
     );
     expect(result).toHaveProperty("artifactHash");
   });
@@ -265,7 +271,7 @@ describe("Publish gating — open gateway escalations", () => {
 
     const result = await publishRevisionDecision(
       { branchId: "branch-1", revisionId: "rev-1" },
-      { tenantId: "t-1", workspaceId: "ws-1" },
+      { tenantId: TEST_TENANT_ID, workspaceId: TEST_WORKSPACE_ID },
     );
 
     expect(result).toEqual({ error: expect.stringMatching(/managed retained-log simulation/i) });
@@ -278,7 +284,7 @@ describe("Publish gating — open gateway escalations", () => {
 
     const result = await publishRevisionDecision(
       { branchId: "branch-1", revisionId: "rev-1" },
-      { tenantId: "t-1", workspaceId: "ws-1" },
+      { tenantId: TEST_TENANT_ID, workspaceId: TEST_WORKSPACE_ID },
     );
 
     expect(result).toHaveProperty("artifactHash");
@@ -296,7 +302,7 @@ describe("Publish gating — open gateway escalations", () => {
 
     const result = await publishRevisionDecision(
       { branchId: "branch-1", revisionId: "rev-1" },
-      { tenantId: "t-1", workspaceId: "ws-1" },
+      { tenantId: TEST_TENANT_ID, workspaceId: TEST_WORKSPACE_ID },
     );
 
     expect(result).toEqual({ error: expect.stringMatching(/6 regression/i) });
@@ -330,7 +336,7 @@ const VALID_EVIDENCE_PAYLOAD = {
 
 describe("Evidence pipeline — schema validation", () => {
   it("rejects a payload missing required decisionId", () => {
-    const result = parseBody(EvidenceIngestSchema, { tenantId: "t-1", status: "ALLOW" });
+    const result = parseBody(EvidenceIngestSchema, { tenantId: TEST_TENANT_ID, status: "ALLOW" });
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.issues?.length).toBeGreaterThan(0);
   });
