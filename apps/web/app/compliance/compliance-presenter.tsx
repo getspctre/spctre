@@ -28,6 +28,7 @@ import { SealAuditButton } from "./seal-audit-button";
 import { QuickStartBanner } from "../quick-start-banner";
 import type { WebOnboardingStatus } from "@/lib/repositories/onboarding/shared";
 import { useTranslations } from "next-intl";
+import type { ComplianceView } from "./content";
 
 const AGT_COMPATIBILITY_TARGET = "4.1.0";
 
@@ -53,10 +54,12 @@ function getPacketReadiness({
   activeExport,
   activeRetentionPlan,
   verificationSummary,
+  compliancePath,
 }: {
   activeExport: ActiveComplianceExport;
   activeRetentionPlan: ActiveEvidenceRetentionPlan;
   verificationSummary: VerificationSummary;
+  compliancePath: string;
 }) {
   const verificationCurrent = Boolean(
     verificationSummary?.hasResults &&
@@ -74,7 +77,7 @@ function getPacketReadiness({
         ? "Current revision is included in this packet."
         : "Publish a revision to create a packet.",
       status: activeExport ? "ready" : "unavailable",
-      href: "#packet",
+      href: `${compliancePath}/packet#packet`,
     },
     {
       label: "Runtime evidence",
@@ -82,7 +85,7 @@ function getPacketReadiness({
         ? `${activeExport?.evidenceCount} records are linked.`
         : "No runtime evidence is linked yet.",
       status: evidenceLinked ? "ready" : "attention",
-      href: "#lifecycle",
+      href: `${compliancePath}/evidence#lifecycle`,
     },
     {
       label: "Verification",
@@ -90,7 +93,7 @@ function getPacketReadiness({
         ? "Current verification passed for this artifact."
         : "Run or attach a current passing verification before handoff.",
       status: verificationCurrent ? "ready" : "attention",
-      href: "#verification",
+      href: `${compliancePath}/packet#verification`,
     },
     {
       label: "Retention",
@@ -98,7 +101,7 @@ function getPacketReadiness({
         ? "No linked evidence has expired."
         : `${activeRetentionPlan?.expiredCount} linked records have expired.`,
       status: retentionClear ? "ready" : "attention",
-      href: "#retention",
+      href: `${compliancePath}/evidence#retention`,
     },
     {
       label: "Control mappings",
@@ -106,7 +109,7 @@ function getPacketReadiness({
         ? `${controlMappingCount} mappings are included.`
         : "No control mappings are attached. Review before external handoff.",
       status: controlsMapped ? "ready" : "attention",
-      href: "#control-mappings",
+      href: `${compliancePath}/packet#control-mappings`,
     },
   ];
   const nextGate = gates.find((gate) => gate.status !== "ready");
@@ -121,16 +124,23 @@ function PacketReadiness({
   activeExport,
   activeRetentionPlan,
   verificationSummary,
+  compliancePath,
 }: {
   activeExport: ActiveComplianceExport;
   activeRetentionPlan: ActiveEvidenceRetentionPlan;
   verificationSummary: VerificationSummary;
+  compliancePath: string;
 }) {
-  const readiness = getPacketReadiness({ activeExport, activeRetentionPlan, verificationSummary });
+  const readiness = getPacketReadiness({
+    activeExport,
+    activeRetentionPlan,
+    verificationSummary,
+    compliancePath,
+  });
   const nextAction = readiness.ready
     ? { href: "/api/compliance/export", label: "Download ready JSON packet" }
     : {
-        href: readiness.nextGate?.href ?? "#packet",
+        href: readiness.nextGate?.href ?? `${compliancePath}/packet#packet`,
         label: `Review ${readiness.nextGate?.label.toLowerCase() ?? "packet"}`,
       };
 
@@ -171,15 +181,31 @@ function PacketReadiness({
   );
 }
 
-function ComplianceTaskNav() {
+function ComplianceViewNav({
+  compliancePath,
+  view,
+}: {
+  compliancePath: string;
+  view: ComplianceView;
+}) {
+  const tabs: { href: string; label: string; view: ComplianceView }[] = [
+    { href: compliancePath, label: "Overview", view: "overview" },
+    { href: `${compliancePath}/packet`, label: "Audit packet", view: "packet" },
+    { href: `${compliancePath}/evidence`, label: "Evidence & retention", view: "evidence" },
+    { href: `${compliancePath}/delivery`, label: "Delivery", view: "delivery" },
+  ];
   return (
-    <nav className="complianceTaskNav" aria-label="Compliance report sections">
-      <a href="#packet">Packet</a>
-      <a href="#posture">Posture</a>
-      <a href="#lifecycle">Evidence & lifecycle</a>
-      <a href="#retention">Retention</a>
-      <a href="#verification">Verification</a>
-      <a href="#delivery">Delivery</a>
+    <nav className="complianceViewNav" aria-label="Compliance views">
+      {tabs.map((tab) => (
+        <a
+          aria-current={tab.view === view ? "page" : undefined}
+          className={tab.view === view ? "uiTab uiTabActive" : "uiTab"}
+          href={tab.href}
+          key={tab.view}
+        >
+          {tab.label}
+        </a>
+      ))}
     </nav>
   );
 }
@@ -757,6 +783,8 @@ export function CompliancePresenter({
   model,
   onboardingStatus,
   controlPlaneUrl,
+  view,
+  compliancePath,
   retentionTab,
   retentionRulesHref,
   retentionDecisionsHref,
@@ -764,6 +792,8 @@ export function CompliancePresenter({
   model: CompliancePageModel<PostureModel>;
   onboardingStatus: WebOnboardingStatus;
   controlPlaneUrl: string;
+  view: ComplianceView;
+  compliancePath: string;
   retentionTab: "rules" | "decisions";
   retentionRulesHref: string;
   retentionDecisionsHref: string;
@@ -789,6 +819,7 @@ export function CompliancePresenter({
   );
   const verificationStatus = verificationStatusLabel(verificationSummary);
   const auditLedgerHref = `/${workspaceContext.workspaceSlug}/operations`;
+  const packetHref = `${compliancePath}/packet`;
 
   return (
     <>
@@ -797,7 +828,7 @@ export function CompliancePresenter({
         title="Compliance Report"
         actions={
           <>
-            {activeExport ? (
+            {activeExport && view === "packet" ? (
               <>
                 <SealAuditButton
                   packetId={activeExport.id}
@@ -819,65 +850,79 @@ export function CompliancePresenter({
                   </a>
                 </PlanGate>
               </>
+            ) : activeExport ? (
+              <a className="button buttonPrimary" href={packetHref}>
+                <PackageCheck size={16} />
+                Review audit packet
+              </a>
             ) : null}
           </>
         }
       />
 
-      <PacketHero
-        activeExport={activeExport}
-        activeTimeline={activeTimeline}
-        verificationStatus={verificationStatus}
-        appViewMode={appViewMode}
-      />
+      <ComplianceViewNav compliancePath={compliancePath} view={view} />
 
-      <PacketReadiness
-        activeExport={activeExport}
-        activeRetentionPlan={activeRetentionPlan}
-        verificationSummary={verificationSummary}
-      />
-
-      <ComplianceTaskNav />
-
-      <PostureSection posture={posture} />
-
-      {onboardingStatus.realEvidenceCount === 0 ? (
-        <QuickStartBanner
-          controlPlaneUrl={controlPlaneUrl}
-          status={onboardingStatus}
-          surface="compliance"
-          workspaceSlug={workspaceContext.workspaceSlug}
-        />
+      {view === "overview" ? (
+        <>
+          <PacketHero
+            activeExport={activeExport}
+            activeTimeline={activeTimeline}
+            verificationStatus={verificationStatus}
+            appViewMode={appViewMode}
+          />
+          <PacketReadiness
+            activeExport={activeExport}
+            activeRetentionPlan={activeRetentionPlan}
+            verificationSummary={verificationSummary}
+            compliancePath={compliancePath}
+          />
+          <PostureSection posture={posture} />
+          {onboardingStatus.realEvidenceCount === 0 ? (
+            <QuickStartBanner
+              controlPlaneUrl={controlPlaneUrl}
+              status={onboardingStatus}
+              surface="compliance"
+              workspaceSlug={workspaceContext.workspaceSlug}
+            />
+          ) : null}
+        </>
       ) : null}
 
-      <PacketContentsSection
-        activeExport={activeExport}
-        activeTimeline={activeTimeline}
-        appViewMode={appViewMode}
-      />
+      {view === "packet" ? (
+        <>
+          <PacketContentsSection
+            activeExport={activeExport}
+            activeTimeline={activeTimeline}
+            appViewMode={appViewMode}
+          />
+          <ControlMappingsSection
+            activeExport={activeExport}
+            controlEvidenceRollup={packet?.controlEvidenceRollup ?? []}
+          />
+          <VerificationSection verificationSummary={verificationSummary} />
+        </>
+      ) : null}
 
-      <ControlMappingsSection
-        activeExport={activeExport}
-        controlEvidenceRollup={packet?.controlEvidenceRollup ?? []}
-      />
+      {view === "evidence" ? (
+        <>
+          <LifecycleTimelineSection
+            activeTimeline={activeTimeline}
+            appViewMode={appViewMode}
+            formatActorId={formatActorId}
+          />
+          <RetentionSection
+            activeRetentionPlan={activeRetentionPlan}
+            appViewMode={appViewMode}
+            retentionTab={retentionTab}
+            retentionRulesHref={retentionRulesHref}
+            retentionDecisionsHref={retentionDecisionsHref}
+          />
+        </>
+      ) : null}
 
-      <LifecycleTimelineSection
-        activeTimeline={activeTimeline}
-        appViewMode={appViewMode}
-        formatActorId={formatActorId}
-      />
-
-      <RetentionSection
-        activeRetentionPlan={activeRetentionPlan}
-        appViewMode={appViewMode}
-        retentionTab={retentionTab}
-        retentionRulesHref={retentionRulesHref}
-        retentionDecisionsHref={retentionDecisionsHref}
-      />
-
-      <VerificationSection verificationSummary={verificationSummary} />
-
-      <DeliverySection destinations={grcDestinations} attempts={grcDeliveryAttempts} />
+      {view === "delivery" ? (
+        <DeliverySection destinations={grcDestinations} attempts={grcDeliveryAttempts} />
+      ) : null}
     </>
   );
 }

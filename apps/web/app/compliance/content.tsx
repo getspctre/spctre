@@ -6,6 +6,7 @@ import { DegradedDataNotice } from "../degraded-data-notice";
 
 type ComplianceSearchParams = Record<string, string | string[] | undefined>;
 type RetentionTab = "rules" | "decisions";
+export type ComplianceView = "overview" | "packet" | "evidence" | "delivery";
 
 function firstParam(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
@@ -37,14 +38,20 @@ function buildRetentionHref(
 export async function CompliancePageContent({
   workspaceSlug,
   searchParams = Promise.resolve({}),
-}: { workspaceSlug?: string; searchParams?: Promise<ComplianceSearchParams> } = {}) {
+  view = "overview",
+}: {
+  workspaceSlug?: string;
+  searchParams?: Promise<ComplianceSearchParams>;
+  view?: ComplianceView;
+} = {}) {
   const params = await searchParams;
   const model = await getCompliancePageModel({ workspaceSlug, loadPosture: getPostureModel });
   const onboardingStatus = await getWebOnboardingStatus({
     tenantId: model.workspaceContext.tenantId,
     workspaceId: model.workspaceContext.workspaceId,
   });
-  const path = `/${model.workspaceContext.workspaceSlug}/compliance`;
+  const compliancePath = `/${model.workspaceContext.workspaceSlug}/compliance`;
+  const path = view === "overview" ? compliancePath : `${compliancePath}/${view}`;
   return (
     <>
       {model.degraded ? <DegradedDataNotice /> : null}
@@ -52,6 +59,8 @@ export async function CompliancePageContent({
         model={model}
         onboardingStatus={onboardingStatus}
         controlPlaneUrl={process.env.NEXT_PUBLIC_APP_URL ?? "https://app.spctre.dev"}
+        view={view}
+        compliancePath={compliancePath}
         retentionTab={getRetentionTab(params)}
         retentionRulesHref={buildRetentionHref(path, params, "rules")}
         retentionDecisionsHref={buildRetentionHref(path, params, "decisions")}
