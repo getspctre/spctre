@@ -20,6 +20,8 @@ if (!Array.isArray(distributions) || distributions.length === 0) {
 }
 
 const seen = new Set();
+const pypiEnvs = new Set();
+const testpypiEnvs = new Set();
 
 for (const entry of distributions) {
   const label = entry?.project ?? JSON.stringify(entry);
@@ -54,14 +56,17 @@ for (const entry of distributions) {
     }
   }
 
-  // Each pending PyPI publisher is unique on (owner, repo, workflow,
-  // environment), so two distributions sharing an environment cannot both be
-  // registered.
-  for (const field of ["pypi_env", "testpypi_env"]) {
-    const key = `${field}:${entry[field]}`;
-    if (seen.has(key)) errors.push(`${label}: environment "${entry[field]}" is already used.`);
-    seen.add(key);
-  }
+  // Distributions may share an environment within a registry — that is only
+  // forbidden while a publisher is *pending*, and all three projects now
+  // exist. Sharing one across registries is a different matter: it would run a
+  // TestPyPI publish inside the production environment, handing it the
+  // production approval gate, branch rule and OIDC claim.
+  pypiEnvs.add(entry.pypi_env);
+  testpypiEnvs.add(entry.testpypi_env);
+}
+
+for (const shared of [...pypiEnvs].filter((env) => testpypiEnvs.has(env))) {
+  errors.push(`environment "${shared}" is used for both PyPI and TestPyPI.`);
 }
 
 if (errors.length > 0) {

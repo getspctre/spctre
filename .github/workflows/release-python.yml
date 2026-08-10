@@ -11,17 +11,18 @@ name: Release (Python)
 # in advance and is created by its first OIDC publish. Do not copy the
 # NODE_AUTH_TOKEN bootstrap dance from release.yml into this workflow.
 #
-# ENVIRONMENTS. PyPI requires each *pending* publisher to be unique on
-# (owner, repo, workflow, environment), so a monorepo publishing three projects
-# from one workflow needs a distinct environment per project. That constraint
-# applies only while a project is pending — once all three exist on a registry
-# they can share a single environment, at which point the per-package ones
-# below can be collapsed and deleted (both here and on PyPI).
+# ENVIRONMENTS. All three distributions publish from `pypi` or `testpypi`,
+# named per registry rather than per project.
 #
-#   project           pypi.org env     test.pypi.org env
-#   spctre-sdk        pypi             testpypi
-#   spctre-hermes     pypi-hermes      testpypi-hermes
-#   spctre-odysseus   pypi-odysseus    testpypi-odysseus
+# They needed a distinct environment each while their publishers were
+# *pending*: PyPI requires a pending publisher to be unique on
+# (owner, repo, workflow, environment). That constraint disappeared once the
+# projects existed, so the per-package environments were collapsed. Reintroduce
+# them only for a genuinely new distribution, and only until its first publish.
+#
+# The two names must never be crossed. Publishing to TestPyPI from the `pypi`
+# environment would borrow the production approval gate, branch restriction and
+# OIDC claim; check-python-distributions.mjs rejects that.
 #
 # Releases are manual for now. There is no version automation for these
 # packages (Changesets covers only the npm packages), so the operator bumps
