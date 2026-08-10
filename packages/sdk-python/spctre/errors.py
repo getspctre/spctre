@@ -9,7 +9,7 @@ normalized into the hierarchy below.
 from __future__ import annotations
 
 import json
-from typing import Any, Optional
+from typing import Any
 
 __all__ = [
     "SpctreError",
@@ -34,9 +34,9 @@ class SpctreError(Exception):
         self,
         message: str,
         *,
-        status: Optional[int] = None,
-        trace_id: Optional[str] = None,
-        body: Optional[str] = None,
+        status: int | None = None,
+        trace_id: str | None = None,
+        body: str | None = None,
     ) -> None:
         super().__init__(message)
         self.message = message
@@ -83,7 +83,7 @@ class SpctreResponseError(SpctreError):
     """
 
 
-def _decode(body: Any) -> Optional[str]:
+def _decode(body: Any) -> str | None:
     if body is None:
         return None
     if isinstance(body, bytes):
@@ -91,7 +91,7 @@ def _decode(body: Any) -> Optional[str]:
     return str(body)
 
 
-def _extract_trace_id(body: Optional[str]) -> Optional[str]:
+def _extract_trace_id(body: str | None) -> str | None:
     """Best-effort lift of `meta.traceId` from an error envelope.
 
     Error bodies are not guaranteed to be JSON — a proxy or load balancer can
@@ -113,7 +113,7 @@ def _extract_trace_id(body: Optional[str]) -> Optional[str]:
     return None
 
 
-def _message_for(status: Optional[int], body: Optional[str]) -> str:
+def _message_for(status: int | None, body: str | None) -> str:
     """Prefer the API's own error message over a generic status description."""
     if body:
         try:

@@ -65,7 +65,9 @@ async def test_allow_path_returns_none() -> None:
 
 @pytest.mark.asyncio
 async def test_deny_path_returns_blocked_dict() -> None:
-    client = FakeClient({"result": {"status": "DENY", "reason": "not permitted", "decisionId": "dec-2"}})
+    client = FakeClient(
+        {"result": {"status": "DENY", "reason": "not permitted", "decisionId": "dec-2"}}
+    )
     spctre = middleware(client)
 
     result = await spctre.before_call("mcp__stripe__refund", {"amount": 100}, {"action": "refund"})
@@ -94,7 +96,9 @@ async def test_ingest_errors_are_swallowed() -> None:
 
 @pytest.mark.asyncio
 async def test_dry_run_skips_network() -> None:
-    client = FakeClient({"result": {"status": "DENY", "reason": "would block", "decisionId": "dec-4"}})
+    client = FakeClient(
+        {"result": {"status": "DENY", "reason": "would block", "decisionId": "dec-4"}}
+    )
     spctre = middleware(client, dry_run=True)
 
     result = await spctre.before_call("shell.run", {"cmd": "ls"}, {})

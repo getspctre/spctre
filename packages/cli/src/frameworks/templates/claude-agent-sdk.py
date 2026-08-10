@@ -20,7 +20,9 @@ _SPCTRE_KEY = os.environ.get("SPCTRE_API_TOKEN", "__SPCTRE_TOKEN__")
 _SPCTRE_AGENT = os.environ.get("SPCTRE_AGENT", "__SPCTRE_AGENT_ID__")
 _SPCTRE_ENV = os.environ.get("SPCTRE_ENVIRONMENT", "__SPCTRE_ENVIRONMENT__")
 _SPCTRE_ARTIFACT_HASH = os.environ.get("SPCTRE_ARTIFACT_HASH", "__SPCTRE_ARTIFACT_HASH__")
-_SPCTRE_POLICY_CONTEXT = json.loads(os.environ.get("SPCTRE_POLICY_CONTEXT", "__SPCTRE_POLICY_CONTEXT_JSON__"))
+_SPCTRE_POLICY_CONTEXT = json.loads(
+    os.environ.get("SPCTRE_POLICY_CONTEXT", "__SPCTRE_POLICY_CONTEXT_JSON__")
+)
 _SPCTRE_TOOL_STARTS = {}
 _SPCTRE_MODE = os.environ.get("SPCTRE_CLAUDE_AGENT_SDK_MODE", "observe").lower()
 _SPCTRE_OUTAGE_POLICY = os.environ.get("SPCTRE_GATEWAY_OUTAGE_POLICY", "fail-closed").lower()
@@ -53,16 +55,31 @@ def _spctre_emit(action, status, reason, latency_ms=0):
         "action": action,
         "status": status,
         "reason": reason,
-        "policyRefs": ["system.governance_active"] if action == "governance_active" else ([f"claude-agent-sdk.tool.{action}"] if has_context else ["gateway.provenance-gap"]),
+        "policyRefs": ["system.governance_active"]
+        if action == "governance_active"
+        else ([f"claude-agent-sdk.tool.{action}"] if has_context else ["gateway.provenance-gap"]),
         "artifactHash": _SPCTRE_ARTIFACT_HASH or "claude-agent-sdk-unresolved",
         "policyContext": _SPCTRE_POLICY_CONTEXT,
         "latencyMs": latency_ms,
         "sourceType": "claude-agent-sdk-hook",
         "ingestMode": "gateway",
-        "rawEvidence": {"_source": "gateway", "_gateway_provider": "claude-agent-sdk-hook", "_framework": "claude-agent-sdk"},
+        "rawEvidence": {
+            "_source": "gateway",
+            "_gateway_provider": "claude-agent-sdk-hook",
+            "_framework": "claude-agent-sdk",
+        },
     }
     try:
-        request = urllib.request.Request(f"{_SPCTRE_URL}/api/evidence", data=json.dumps(payload).encode(), headers={"Content-Type": "application/json", "Authorization": f"Bearer {_SPCTRE_KEY}", "x-spctre-source": "gateway"}, method="POST")
+        request = urllib.request.Request(
+            f"{_SPCTRE_URL}/api/evidence",
+            data=json.dumps(payload).encode(),
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {_SPCTRE_KEY}",
+                "x-spctre-source": "gateway",
+            },
+            method="POST",
+        )
         urllib.request.urlopen(request, timeout=3)
     except Exception:
         pass
@@ -95,7 +112,9 @@ def _spctre_gateway_decide(tool_name, tool_input, tool_use_id, context=None):
     with urllib.request.urlopen(request, timeout=3) as response:
         body = json.loads(response.read().decode() or "{}")
     decision = body.get("decision") if isinstance(body, dict) else {}
-    return str(decision.get("outcome") or "ABORT").upper(), str(decision.get("reason") or "Spctre gateway did not provide a reason.")
+    return str(decision.get("outcome") or "ABORT").upper(), str(
+        decision.get("reason") or "Spctre gateway did not provide a reason."
+    )
 
 
 async def _spctre_pre_tool_use(input_data, tool_use_id, context):
@@ -105,20 +124,47 @@ async def _spctre_pre_tool_use(input_data, tool_use_id, context):
     tool_name = input_data.get("tool_name") if isinstance(input_data, dict) else None
     tool_input = input_data.get("tool_input") if isinstance(input_data, dict) else {}
     try:
-        outcome, reason = await asyncio.to_thread(_spctre_gateway_decide, tool_name, tool_input, tool_use_id, context)
+        outcome, reason = await asyncio.to_thread(
+            _spctre_gateway_decide, tool_name, tool_input, tool_use_id, context
+        )
     except Exception as exc:
         if _SPCTRE_OUTAGE_POLICY == "fail-open":
-            _spctre_emit_async(_spctre_action(tool_name), "WARN", f"Gateway unavailable; fail-open allowed execution ({type(exc).__name__}).")
+            _spctre_emit_async(
+                _spctre_action(tool_name),
+                "WARN",
+                f"Gateway unavailable; fail-open allowed execution ({type(exc).__name__}).",
+            )
             return {}
-        outcome, reason = "ABORT", f"Spctre gateway unavailable; fail-closed ({type(exc).__name__})."
+        outcome, reason = (
+            "ABORT",
+            f"Spctre gateway unavailable; fail-closed ({type(exc).__name__}).",
+        )
 
     if outcome == "PROCEED":
-        return {"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "allow", "permissionDecisionReason": reason}}
+        return {
+            "hookSpecificOutput": {
+                "hookEventName": "PreToolUse",
+                "permissionDecision": "allow",
+                "permissionDecisionReason": reason,
+            }
+        }
     if outcome == "ESCALATE":
         _spctre_emit_async(_spctre_action(tool_name), "ESCALATE", reason)
-        return {"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "ask", "permissionDecisionReason": reason}}
+        return {
+            "hookSpecificOutput": {
+                "hookEventName": "PreToolUse",
+                "permissionDecision": "ask",
+                "permissionDecisionReason": reason,
+            }
+        }
     _spctre_emit_async(_spctre_action(tool_name), "DENY", reason)
-    return {"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "deny", "permissionDecisionReason": reason}}
+    return {
+        "hookSpecificOutput": {
+            "hookEventName": "PreToolUse",
+            "permissionDecision": "deny",
+            "permissionDecisionReason": reason,
+        }
+    }
     return {}
 
 
@@ -126,7 +172,12 @@ async def _spctre_post_tool_use(input_data, tool_use_id, context):
     key = tool_use_id or ""
     start = _SPCTRE_TOOL_STARTS.pop(key, time.monotonic())
     tool_name = input_data.get("tool_name") if isinstance(input_data, dict) else None
-    _spctre_emit_async(_spctre_action(tool_name), "ALLOW", f"Tool {tool_name} completed.", int((time.monotonic() - start) * 1000))
+    _spctre_emit_async(
+        _spctre_action(tool_name),
+        "ALLOW",
+        f"Tool {tool_name} completed.",
+        int((time.monotonic() - start) * 1000),
+    )
     return {}
 
 
@@ -134,7 +185,12 @@ async def _spctre_post_tool_use_failure(input_data, tool_use_id, context):
     key = tool_use_id or ""
     start = _SPCTRE_TOOL_STARTS.pop(key, time.monotonic())
     tool_name = input_data.get("tool_name") if isinstance(input_data, dict) else None
-    _spctre_emit_async(_spctre_action(tool_name), "DENY", f"Tool {tool_name} failed.", int((time.monotonic() - start) * 1000))
+    _spctre_emit_async(
+        _spctre_action(tool_name),
+        "DENY",
+        f"Tool {tool_name} failed.",
+        int((time.monotonic() - start) * 1000),
+    )
     return {}
 
 
@@ -153,15 +209,23 @@ def _spctre_install_claude_agent_sdk_hooks():
         def _patched_init(self, *args, **kwargs):
             bound = signature.bind_partial(self, *args, **kwargs)
             hooks = dict(bound.arguments.get("hooks") or {})
-            hooks["PreToolUse"] = list(hooks.get("PreToolUse") or []) + [HookMatcher(matcher=None, hooks=[_spctre_pre_tool_use])]
-            hooks["PostToolUse"] = list(hooks.get("PostToolUse") or []) + [HookMatcher(matcher=None, hooks=[_spctre_post_tool_use])]
-            hooks["PostToolUseFailure"] = list(hooks.get("PostToolUseFailure") or []) + [HookMatcher(matcher=None, hooks=[_spctre_post_tool_use_failure])]
+            hooks["PreToolUse"] = list(hooks.get("PreToolUse") or []) + [
+                HookMatcher(matcher=None, hooks=[_spctre_pre_tool_use])
+            ]
+            hooks["PostToolUse"] = list(hooks.get("PostToolUse") or []) + [
+                HookMatcher(matcher=None, hooks=[_spctre_post_tool_use])
+            ]
+            hooks["PostToolUseFailure"] = list(hooks.get("PostToolUseFailure") or []) + [
+                HookMatcher(matcher=None, hooks=[_spctre_post_tool_use_failure])
+            ]
             bound.arguments["hooks"] = hooks
             return original_init(*bound.args, **bound.kwargs)
 
         Options.__init__ = _patched_init
         Options._spctre_patched = True
-        _spctre_emit_async("governance_active", "ALLOW", "Claude Agent SDK native governance hooks installed.")
+        _spctre_emit_async(
+            "governance_active", "ALLOW", "Claude Agent SDK native governance hooks installed."
+        )
     except Exception:
         pass
 

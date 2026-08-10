@@ -1,0 +1,49 @@
+# Lint and format configuration for the repository's Python packages:
+# packages/adapters/hermes, packages/adapters/odysseus, packages/sdk-python.
+#
+# Ruff covers linting and formatting; pyrefly covers types. They are
+# complementary, not alternatives.
+#
+# 100 columns matches the Prettier printWidth used for everything else here, so
+# a file's wrap width does not depend on its language.
+line-length = 100
+target-version = "py311"
+
+# packages/sdk-python/spctre/_generated is generated code and is excluded from
+# both linting and formatting here — it is the generator's to style, and it is
+# never hand-edited.
+#
+# This exclusion is only safe because generation happens under a temporary
+# directory outside the repository (see scripts/generate-python-sdk.sh).
+# openapi-python-client finishes by running ruff over its own output, and ruff
+# discovers config by walking up from the files it is given. Generating in
+# place would let this file drive that pass: excluding the directory would
+# suppress the generator's own fixups, and not excluding it would impose our
+# line width on generated code. Either way the generator's output would depend
+# on our lint config, which it must not.
+extend-exclude = ["packages/sdk-python/spctre/_generated"]
+
+[lint]
+select = [
+  "E",   # pycodestyle errors
+  "F",   # pyflakes
+  "I",   # import sorting
+  "UP",  # pyupgrade — keep syntax current with the 3.11 floor
+  "B",   # bugbear
+  "SIM", # simplify
+]
+# The formatter owns line width. E501 only fires where the formatter cannot
+# comply anyway — long string literals, URLs in comments — so leaving it on
+# would mean permanent unfixable warnings rather than useful signal.
+ignore = ["E501"]
+
+[lint.per-file-ignores]
+# Test modules import fixtures and helpers for their side effects and shadow
+# names freely; that is idiomatic pytest, not a defect.
+"**/tests/**" = ["F401", "F811"]
+
+[lint.isort]
+known-first-party = ["spctre", "spctre_hermes", "spctre_odysseus"]
+
+[format]
+docstring-code-format = true

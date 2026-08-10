@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import uuid
 from typing import Any
 
@@ -96,10 +97,8 @@ class SpctreOdysseus:
 
     def _schedule_evidence_ingest(self, record: dict[str, Any]) -> None:
         async def ingest() -> None:
-            try:
+            with contextlib.suppress(Exception):
                 await self.client.ingest_evidence(record)
-            except Exception:
-                pass
 
         task = asyncio.create_task(ingest())
         self._background_tasks.add(task)

@@ -100,9 +100,11 @@ would send debugging in the wrong direction.
 import httpx
 from spctre import SpctreClient
 
+
 def handler(request: httpx.Request) -> httpx.Response:
     assert request.url.path == "/api/v1/gateway/decide"
     return httpx.Response(200, json={...})
+
 
 client = SpctreClient(
     base_url="https://app.example.com",

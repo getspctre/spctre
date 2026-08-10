@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import datetime
 from types import TracebackType
-from typing import Any, Callable, Optional, Type, TypeVar
+from typing import Any, TypeVar
 
 import httpx
 
@@ -55,7 +55,7 @@ T = TypeVar("T")
 
 
 class _Domain:
-    def __init__(self, client: "SpctreClient") -> None:
+    def __init__(self, client: SpctreClient) -> None:
         self._c = client
 
 
@@ -213,9 +213,9 @@ class SpctreClient:
         base_url: str,
         token: str,
         *,
-        transport: Optional[httpx.BaseTransport] = None,
-        timeout: Optional[float] = DEFAULT_TIMEOUT_SECONDS,
-        user_agent: Optional[str] = None,
+        transport: httpx.BaseTransport | None = None,
+        timeout: float | None = DEFAULT_TIMEOUT_SECONDS,
+        user_agent: str | None = None,
         verify_ssl: bool = True,
     ) -> None:
         if not isinstance(token, str) or not token.strip():
@@ -297,14 +297,14 @@ class SpctreClient:
         """Release the underlying connection pool."""
         self._client.get_httpx_client().close()
 
-    def __enter__(self) -> "SpctreClient":
+    def __enter__(self) -> SpctreClient:
         return self
 
     def __exit__(
         self,
-        exc_type: Optional[Type[BaseException]],
-        exc: Optional[BaseException],
-        tb: Optional[TracebackType],
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        tb: TracebackType | None,
     ) -> None:
         self.close()
 

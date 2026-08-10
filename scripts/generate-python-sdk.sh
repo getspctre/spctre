@@ -28,19 +28,42 @@ fi
 rm -rf "${OUT:?}"
 mkdir -p "$(dirname "$OUT")"
 
+# Generate outside the repository, then move the result into place.
+#
+# The generator finishes by running ruff over its own output, and ruff finds
+# its config by walking up from the files it is given. Generating in place
+# would let the repository's ruff.toml drive that pass — our line width and
+# lint selection would silently change what the generator produces, and
+# excluding the directory would suppress the generator's fixups instead of
+# leaving them alone. Generating under a temporary directory keeps the output
+# a pure function of the spec and the pinned generator version.
+WORKDIR="$(mktemp -d)"
+trap 'rm -rf "$WORKDIR"' EXIT
+
+# Pin the target version for the generator's ruff pass. Without a config ruff
+# falls back to its default target, which emits `from typing_extensions import
+# Self` — a runtime import of a package this distribution does not depend on.
+# Stating 3.11 explicitly gets `typing.Self` and keeps the output a function of
+# inputs we control rather than of ruff's defaults.
+cat > "$WORKDIR/ruff.toml" <<'RUFF'
+target-version = "py311"
+RUFF
+
 # --meta none emits only the package tree: no pyproject, README or lockfile.
 # Packaging metadata belongs to packages/sdk-python/pyproject.toml, which is
 # what allows this distribution to declare its own requires-python and license.
 uv tool run --from "openapi-python-client==${GENERATOR_VERSION}" \
   openapi-python-client generate \
-  --path "$SPEC" \
+  --path "$(cd "$(dirname "$SPEC")" && pwd)/$(basename "$SPEC")" \
   --meta none \
-  --output-path "$OUT" \
+  --output-path "$WORKDIR/_generated" \
   --overwrite
 
 # The generator runs ruff over its output and leaves ruff's binary cache
 # behind inside the package. Its contents differ between otherwise identical
 # runs, which would both pollute the wheel and make the sync check flap.
-rm -rf "$OUT/.ruff_cache"
+rm -rf "$WORKDIR/_generated/.ruff_cache"
+
+mv "$WORKDIR/_generated" "$OUT"
 
 echo "Generated spctre._generated with openapi-python-client ${GENERATOR_VERSION}"

@@ -13,7 +13,9 @@ _SPCTRE_KEY = os.environ.get("SPCTRE_API_TOKEN", "__SPCTRE_TOKEN__")
 _SPCTRE_AGENT = os.environ.get("SPCTRE_AGENT", "__SPCTRE_AGENT_ID__")
 _SPCTRE_ENV = os.environ.get("SPCTRE_ENVIRONMENT", "__SPCTRE_ENVIRONMENT__")
 _SPCTRE_ARTIFACT_HASH = os.environ.get("SPCTRE_ARTIFACT_HASH", "__SPCTRE_ARTIFACT_HASH__")
-_SPCTRE_POLICY_CONTEXT = json.loads(os.environ.get("SPCTRE_POLICY_CONTEXT", "__SPCTRE_POLICY_CONTEXT_JSON__"))
+_SPCTRE_POLICY_CONTEXT = json.loads(
+    os.environ.get("SPCTRE_POLICY_CONTEXT", "__SPCTRE_POLICY_CONTEXT_JSON__")
+)
 
 
 def _spctre_emit(action, status, reason, latency_ms=0):
@@ -28,19 +30,29 @@ def _spctre_emit(action, status, reason, latency_ms=0):
         "action": action,
         "status": status,
         "reason": reason,
-        "policyRefs": [f"bedrock.{action}"] if _SPCTRE_POLICY_CONTEXT else ["gateway.provenance-gap"],
+        "policyRefs": [f"bedrock.{action}"]
+        if _SPCTRE_POLICY_CONTEXT
+        else ["gateway.provenance-gap"],
         "artifactHash": _SPCTRE_ARTIFACT_HASH or "bedrock-unresolved",
         "policyContext": _SPCTRE_POLICY_CONTEXT,
         "latencyMs": latency_ms,
         "sourceType": "bedrock-hook",
         "ingestMode": "gateway",
-        "rawEvidence": {"_source": "gateway", "_gateway_provider": "bedrock-hook", "_framework": "bedrock"},
+        "rawEvidence": {
+            "_source": "gateway",
+            "_gateway_provider": "bedrock-hook",
+            "_framework": "bedrock",
+        },
     }
     try:
         req = urllib.request.Request(
             f"{_SPCTRE_URL}/api/evidence",
             data=json.dumps(payload).encode(),
-            headers={"Content-Type": "application/json", "Authorization": f"Bearer {_SPCTRE_KEY}", "x-spctre-source": "gateway"},
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {_SPCTRE_KEY}",
+                "x-spctre-source": "gateway",
+            },
             method="POST",
         )
         urllib.request.urlopen(req, timeout=3)
@@ -65,11 +77,29 @@ def _spctre_patch_boto3():
         try:
             result = original(self, operation_name, api_params)
             if is_bedrock and operation_name in ("InvokeModel", "Converse", "ConverseStream"):
-                threading.Thread(target=_spctre_emit, args=(operation_name.lower(), "ALLOW", f"Bedrock {operation_name} completed.", int((time.monotonic() - start) * 1000)), daemon=False).start()
+                threading.Thread(
+                    target=_spctre_emit,
+                    args=(
+                        operation_name.lower(),
+                        "ALLOW",
+                        f"Bedrock {operation_name} completed.",
+                        int((time.monotonic() - start) * 1000),
+                    ),
+                    daemon=False,
+                ).start()
             return result
         except Exception as exc:
             if is_bedrock:
-                threading.Thread(target=_spctre_emit, args=(operation_name.lower(), "DENY", f"Bedrock {operation_name} raised {type(exc).__name__}: {exc}", int((time.monotonic() - start) * 1000)), daemon=False).start()
+                threading.Thread(
+                    target=_spctre_emit,
+                    args=(
+                        operation_name.lower(),
+                        "DENY",
+                        f"Bedrock {operation_name} raised {type(exc).__name__}: {exc}",
+                        int((time.monotonic() - start) * 1000),
+                    ),
+                    daemon=False,
+                ).start()
             raise
 
     botocore.client.BaseClient._make_api_call = patched

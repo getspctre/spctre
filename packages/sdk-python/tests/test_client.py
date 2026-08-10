@@ -19,7 +19,9 @@ from spctre import (
 )
 
 
-def make_client(recorder: Recorder, base_url: str = "https://app-staging.spctre.dev") -> SpctreClient:
+def make_client(
+    recorder: Recorder, base_url: str = "https://app-staging.spctre.dev"
+) -> SpctreClient:
     return SpctreClient(base_url=base_url, token="tok-123", transport=recorder.transport)
 
 

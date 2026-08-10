@@ -13,7 +13,9 @@ _SPCTRE_KEY = os.environ.get("SPCTRE_API_TOKEN", "__SPCTRE_TOKEN__")
 _SPCTRE_AGENT = os.environ.get("SPCTRE_AGENT", "__SPCTRE_AGENT_ID__")
 _SPCTRE_ENV = os.environ.get("SPCTRE_ENVIRONMENT", "__SPCTRE_ENVIRONMENT__")
 _SPCTRE_ARTIFACT_HASH = os.environ.get("SPCTRE_ARTIFACT_HASH", "__SPCTRE_ARTIFACT_HASH__")
-_SPCTRE_POLICY_CONTEXT = json.loads(os.environ.get("SPCTRE_POLICY_CONTEXT", "__SPCTRE_POLICY_CONTEXT_JSON__"))
+_SPCTRE_POLICY_CONTEXT = json.loads(
+    os.environ.get("SPCTRE_POLICY_CONTEXT", "__SPCTRE_POLICY_CONTEXT_JSON__")
+)
 
 
 def _spctre_emit(action, status, reason, latency_ms=0):
@@ -28,19 +30,29 @@ def _spctre_emit(action, status, reason, latency_ms=0):
         "action": action,
         "status": status,
         "reason": reason,
-        "policyRefs": [f"azure-ai.{action}"] if _SPCTRE_POLICY_CONTEXT else ["gateway.provenance-gap"],
+        "policyRefs": [f"azure-ai.{action}"]
+        if _SPCTRE_POLICY_CONTEXT
+        else ["gateway.provenance-gap"],
         "artifactHash": _SPCTRE_ARTIFACT_HASH or "azure-ai-unresolved",
         "policyContext": _SPCTRE_POLICY_CONTEXT,
         "latencyMs": latency_ms,
         "sourceType": "azure-ai-hook",
         "ingestMode": "gateway",
-        "rawEvidence": {"_source": "gateway", "_gateway_provider": "azure-ai-hook", "_framework": "azure-ai"},
+        "rawEvidence": {
+            "_source": "gateway",
+            "_gateway_provider": "azure-ai-hook",
+            "_framework": "azure-ai",
+        },
     }
     try:
         req = urllib.request.Request(
             f"{_SPCTRE_URL}/api/evidence",
             data=json.dumps(payload).encode(),
-            headers={"Content-Type": "application/json", "Authorization": f"Bearer {_SPCTRE_KEY}", "x-spctre-source": "gateway"},
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {_SPCTRE_KEY}",
+                "x-spctre-source": "gateway",
+            },
             method="POST",
         )
         urllib.request.urlopen(req, timeout=3)
@@ -57,10 +69,28 @@ def _patch_method(cls, method_name, action):
         start = time.monotonic()
         try:
             result = original(self, *args, **kwargs)
-            threading.Thread(target=_spctre_emit, args=(action, "ALLOW", f"Azure AI {action} completed.", int((time.monotonic() - start) * 1000)), daemon=False).start()
+            threading.Thread(
+                target=_spctre_emit,
+                args=(
+                    action,
+                    "ALLOW",
+                    f"Azure AI {action} completed.",
+                    int((time.monotonic() - start) * 1000),
+                ),
+                daemon=False,
+            ).start()
             return result
         except Exception as exc:
-            threading.Thread(target=_spctre_emit, args=(action, "DENY", f"Azure AI {action} raised {type(exc).__name__}: {exc}", int((time.monotonic() - start) * 1000)), daemon=False).start()
+            threading.Thread(
+                target=_spctre_emit,
+                args=(
+                    action,
+                    "DENY",
+                    f"Azure AI {action} raised {type(exc).__name__}: {exc}",
+                    int((time.monotonic() - start) * 1000),
+                ),
+                daemon=False,
+            ).start()
             raise
 
     patched._spctre_patched = True
@@ -70,6 +100,7 @@ def _patch_method(cls, method_name, action):
 def _spctre_patch_azure_openai():
     try:
         from openai.resources.chat.completions import Completions
+
         _patch_method(Completions, "create", "chat.completions.create")
     except Exception:
         pass
