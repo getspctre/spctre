@@ -1,0 +1,23 @@
+[
+  {
+    "project": "spctre-hermes",
+    "path": "packages/adapters/hermes",
+    "version_file": "packages/adapters/hermes/spctre_hermes/_version.py",
+    "pypi_env": "pypi-hermes",
+    "testpypi_env": "testpypi-hermes"
+  },
+  {
+    "project": "spctre-odysseus",
+    "path": "packages/adapters/odysseus",
+    "version_file": "packages/adapters/odysseus/spctre_odysseus/_version.py",
+    "pypi_env": "pypi-odysseus",
+    "testpypi_env": "testpypi-odysseus"
+  },
+  {
+    "project": "spctre-sdk",
+    "path": "packages/sdk-python",
+    "version_file": "packages/sdk-python/spctre/_version.py",
+    "pypi_env": "pypi",
+    "testpypi_env": "testpypi"
+  }
+]

@@ -62,35 +62,17 @@ jobs:
       matrix: ${{ steps.select.outputs.matrix }}
     steps:
       - uses: actions/checkout@v7
+      # The distribution list lives in scripts/python-distributions.json so it
+      # is data rather than a copy embedded here. `pnpm check:python-distributions`
+      # validates it in ordinary CI, which this workflow never runs in.
       - name: Select
         id: select
         env:
           PACKAGE: ${{ inputs.package }}
         run: |
           matrix="$(node --input-type=module -e '
-            const all = [
-              {
-                project: "spctre-hermes",
-                path: "packages/adapters/hermes",
-                version_file: "packages/adapters/hermes/spctre_hermes/_version.py",
-                pypi_env: "pypi-hermes",
-                testpypi_env: "testpypi-hermes",
-              },
-              {
-                project: "spctre-odysseus",
-                path: "packages/adapters/odysseus",
-                version_file: "packages/adapters/odysseus/spctre_odysseus/_version.py",
-                pypi_env: "pypi-odysseus",
-                testpypi_env: "testpypi-odysseus",
-              },
-              {
-                project: "spctre-sdk",
-                path: "packages/sdk-python",
-                version_file: "packages/sdk-python/spctre_sdk/_version.py",
-                pypi_env: "pypi",
-                testpypi_env: "testpypi",
-              },
-            ];
+            import { readFileSync } from "node:fs";
+            const all = JSON.parse(readFileSync("scripts/python-distributions.json", "utf8"));
             const want = process.env.PACKAGE;
             const include = want === "all" ? all : all.filter((p) => p.project === want);
             if (include.length === 0) throw new Error(`unknown package: ${want}`);
