@@ -22,15 +22,21 @@
     "slide_out": { "close": "パネルを閉じる" }
   },
   "navigation": {
+    "agent_blueprints": "エージェントブループリント",
+    "agent_fleet": "エージェントフリート",
+    "agent_governance": "エージェントガバナンス",
     "agents": "エージェント",
     "alerting": "アラート",
     "account": "アカウント",
     "admin": "管理",
     "api_docs": "API ドキュメント",
     "audit": "監査",
-    "audit_ledger": "監査台帳",
-    "audit_log": "監査ログ",
-    "compliance_report": "コンプライアンスレポート",
+    "audit_package": "監査パッケージ",
+    "audit_ledger": "変更台帳",
+    "audit_log": "意思決定の証跡",
+    "change_ledger": "変更台帳",
+    "compliance_report": "監査パッケージ",
+    "decision_evidence": "意思決定の証跡",
     "cost": "コスト",
     "cost_usage": "コストと使用量",
     "escalations": "エスカレーション",
@@ -38,9 +44,13 @@
     "evidence": "証跡",
     "help_docs": "ヘルプドキュメント",
     "operations": "オペレーション",
-    "packs": "パック",
-    "policies": "ポリシー",
-    "review": "レビュー",
+    "packs": "ポリシーパック",
+    "policies": "ポリシーブランチ",
+    "policy_branches": "ポリシーブランチ",
+    "policy_lifecycle": "ポリシーライフサイクル",
+    "policy_packs": "ポリシーパック",
+    "review": "レビューと公開",
+    "review_publish": "レビューと公開",
     "rules": "ルール",
     "siem_export": "SIEM エクスポート",
     "usage_billing": "使用量と請求"
@@ -61,19 +71,22 @@
     "footer": { "close": "閉じる", "navigate": "移動", "open": "開く", "toggle": "切り替え" },
     "items": {
       "advisors": { "description": "Advisor のパフォーマンスと推奨", "label": "アドバイザー" },
-      "agents": { "description": "エージェントフリートの健全性と状態", "label": "エージェント" },
+      "agents": {
+        "description": "エージェントフリートの健全性と状態",
+        "label": "エージェントフリート"
+      },
       "audit_ledger": {
         "description": "ハッシュチェーン化された改ざん耐性イベントログ",
-        "label": "監査台帳"
+        "label": "変更台帳"
       },
       "audit_log": {
-        "description": "ランタイムエージェントの意思決定記録とシミュレーション",
-        "label": "監査ログ"
+        "description": "記録されたエージェントの意思決定とシミュレーション",
+        "label": "意思決定の証跡"
       },
       "billing": { "description": "サブスクリプションプランと請求", "label": "使用量と請求" },
       "compliance": {
         "description": "コンプライアンスパケット、保持、エクスポート",
-        "label": "コンプライアンスレポート"
+        "label": "監査パッケージ"
       },
       "cost_usage": { "description": "支出、使用量、予算、違反制御", "label": "コストと使用量" },
       "escalations": {
@@ -84,8 +97,8 @@
         "description": "ポリシー違反とレビュアー通知をルーティング",
         "label": "エスカレーションルーティング"
       },
-      "packs": { "description": "ポリシーパックを参照してインストール", "label": "パック" },
-      "policies": { "description": "ポリシーブランチを管理", "label": "ポリシー" },
+      "packs": { "description": "ポリシーパックを参照してインストール", "label": "ポリシーパック" },
+      "policies": { "description": "ポリシーブランチを管理", "label": "ポリシーブランチ" },
       "review": { "description": "差分をレビューして公開", "label": "レビューと公開" },
       "siem_export": {
         "description": "ガバナンス対象ランタイムの証跡を Splunk または Sentinel にエクスポート",

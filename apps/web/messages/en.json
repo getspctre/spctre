@@ -22,15 +22,21 @@
     "slide_out": { "close": "Close panel" }
   },
   "navigation": {
+    "agent_blueprints": "Agent blueprints",
+    "agent_fleet": "Agent fleet",
+    "agent_governance": "Agent governance",
     "agents": "Agents",
     "alerting": "Alerting",
     "account": "Account",
     "admin": "Admin",
     "api_docs": "API Docs",
     "audit": "Audit",
-    "audit_ledger": "Audit Ledger",
-    "audit_log": "Audit Log",
-    "compliance_report": "Compliance Report",
+    "audit_package": "Audit package",
+    "audit_ledger": "Change ledger",
+    "audit_log": "Decision evidence",
+    "change_ledger": "Change ledger",
+    "compliance_report": "Audit package",
+    "decision_evidence": "Decision evidence",
     "cost": "Cost",
     "cost_usage": "Cost & Usage",
     "escalations": "Escalations",
@@ -38,9 +44,13 @@
     "evidence": "Evidence",
     "help_docs": "Help Docs",
     "operations": "Operations",
-    "packs": "Packs",
-    "policies": "Policies",
-    "review": "Review",
+    "packs": "Policy packs",
+    "policies": "Policy branches",
+    "policy_branches": "Policy branches",
+    "policy_lifecycle": "Policy lifecycle",
+    "policy_packs": "Policy packs",
+    "review": "Review & publish",
+    "review_publish": "Review & publish",
     "rules": "Rules",
     "siem_export": "SIEM export",
     "usage_billing": "Usage & Billing"
@@ -61,19 +71,19 @@
     "footer": { "close": "close", "navigate": "navigate", "open": "open", "toggle": "toggle" },
     "items": {
       "advisors": { "description": "Advisor performance and recommendations", "label": "Advisors" },
-      "agents": { "description": "Agent fleet health and status", "label": "Agents" },
+      "agents": { "description": "Agent fleet health and status", "label": "Agent fleet" },
       "audit_ledger": {
         "description": "Hash-chained tamper-evident event log",
-        "label": "Audit Ledger"
+        "label": "Change ledger"
       },
       "audit_log": {
-        "description": "Runtime agent decision records and simulations",
-        "label": "Audit Log"
+        "description": "Recorded agent decisions and simulations",
+        "label": "Decision evidence"
       },
       "billing": { "description": "Subscription plan and billing", "label": "Usage & Billing" },
       "compliance": {
         "description": "Curated compliance packet, retention, and export",
-        "label": "Compliance Report"
+        "label": "Audit package"
       },
       "cost_usage": {
         "description": "Spend, usage, budgets, and breach enforcement",
@@ -84,9 +94,9 @@
         "description": "Route policy violations and reviewer notifications",
         "label": "Escalation routing"
       },
-      "packs": { "description": "Browse and install policy packs", "label": "Packs" },
-      "policies": { "description": "Manage policy branches", "label": "Policies" },
-      "review": { "description": "Review diffs and publish", "label": "Review & Publish" },
+      "packs": { "description": "Browse and install policy packs", "label": "Policy packs" },
+      "policies": { "description": "Manage policy branches", "label": "Policy branches" },
+      "review": { "description": "Review diffs and publish", "label": "Review & publish" },
       "siem_export": {
         "description": "Export governed runtime evidence to Splunk or Sentinel",
         "label": "SIEM export"
@@ -1305,10 +1315,10 @@
     "hero": {
       "aria_label": "Compliance overview",
       "eyebrow": "Audit · Packet",
-      "packet_title": "Audit packet",
+      "packet_title": "Audit package",
       "packet_meta": "Retained until {date} · {events} lifecycle events · {records} evidence records.",
-      "empty_title": "No audit packet yet",
-      "empty_description": "Publish a policy revision and ingest runtime evidence to generate the first compliance packet.",
+      "empty_title": "No audit package yet",
+      "empty_description": "Publish a policy revision and record agent decisions to generate the first audit package.",
       "sections": "{count, plural, one {# section} other {# sections}}",
       "stats": {
         "evidence_records": "Evidence records",

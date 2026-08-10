@@ -127,21 +127,26 @@ export function Sidebar({
         {(
           [
             {
-              label: t("policies"),
+              label: t("policy_lifecycle"),
               items: [
                 {
                   key: "policies",
                   path: "/",
-                  label: t("policies"),
+                  label: t("policy_branches"),
                   icon: <GitBranch size={17} />,
                   badge: branchCount,
                 },
                 { key: "rules", path: "/rules", label: t("rules"), icon: <Search size={17} /> },
-                { key: "packs", path: "/packs", label: t("packs"), icon: <Boxes size={17} /> },
+                {
+                  key: "packs",
+                  path: "/packs",
+                  label: t("policy_packs"),
+                  icon: <Boxes size={17} />,
+                },
                 {
                   key: "review",
                   path: "/review",
-                  label: t("review"),
+                  label: t("review_publish"),
                   icon: <SquareCheck size={17} />,
                 },
               ],
@@ -152,31 +157,36 @@ export function Sidebar({
                 {
                   key: "evidence",
                   path: "/evidence",
-                  label: t("audit_log"),
+                  label: t("decision_evidence"),
                   icon: <Activity size={17} />,
                 },
                 {
                   key: "operations",
                   path: "/operations",
-                  label: t("audit_ledger"),
+                  label: t("change_ledger"),
                   icon: <ScrollText size={17} />,
                 },
                 {
                   key: "compliance",
                   path: "/compliance",
-                  label: t("compliance_report"),
+                  label: t("audit_package"),
                   icon: <PackageCheck size={17} />,
                 },
               ],
             },
             {
-              label: t("agents"),
+              label: t("agent_governance"),
               items: [
-                { key: "agents", path: "/agents", label: t("agents"), icon: <Bot size={17} /> },
+                {
+                  key: "agents",
+                  path: "/agents",
+                  label: t("agent_fleet"),
+                  icon: <Bot size={17} />,
+                },
                 {
                   key: "blueprints",
                   path: "/blueprints",
-                  label: "Blueprints",
+                  label: t("agent_blueprints"),
                   icon: <FileCode2 size={17} />,
                 },
                 {

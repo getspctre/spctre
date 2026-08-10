@@ -17,14 +17,9 @@ Provenance gaps lower the compliance score and represent risk: if an agent acts 
 | **Agent calling the connector outside the governed path** | Direct API calls that bypass the SDK's decision wrapper |
 | **Bundle generation failure** | A bundle publish succeeded in UI but the generated file is malformed |
 
-## Finding gaps in the report
+## Finding gaps in decision evidence
 
-In **Compliance → Reports**, gaps appear in two places:
-
-1. **Summary metric** — the compliance rate. A rate below 100% means gaps exist.
-2. **By-connector breakdown** — connectors with a compliance rate below 100% are highlighted. These connectors have decisions not covered by any rule.
-
-Click a highlighted connector to see the specific decision IDs with no policy match.
+Open **Audit → Decision evidence** and inspect the policy match on a decision record. A value of `none` identifies a provenance gap. Use **Audit → Audit package** to assess whether the missing coverage affects an external handoff.
 
 ## Investigating a specific gap
 
