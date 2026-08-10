@@ -1,8 +1,19 @@
 # Published policy evaluator contract
 
 The published-policy evaluator is a deterministic, portable contract. Its
-reference corpus is generated at `conformance/policy-rules.json` from the
-TypeScript implementation in `src/schema.ts`.
+reference corpus is a reviewed artifact at `conformance/policy-rules.json`,
+alongside the semantic-classification corpus at
+`conformance/semantic-intent.json`. Neither is generated: expected outcomes are
+the contract, changed deliberately in review, not a snapshot of whatever an
+implementation last did.
+
+Every delivery path is held to that corpus rather than to the others — N-API
+(`packages/policy-schema/tests/adapter-conformance.test.ts`), C ABI over cgo
+(`apps/worker`), and the portable WASM build
+(`packages/policy-schema/tests/wasm.test.ts`). Each must reproduce the corpus
+verdicts _and_ preserve the deterministic metadata below; an adapter that
+returns the right status while dropping the evaluator version or artifact hash
+produces decisions that cannot be replayed.
 
 Version `1.0` defines the request fields used by `evaluateDecision`, the
 `ALLOW`, `WARN`, `ESCALATE`, and `DENY` result statuses, exact and trailing

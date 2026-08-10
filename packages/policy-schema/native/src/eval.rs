@@ -763,8 +763,12 @@ mod tests {
         expected_conflict_notes: Vec<String>,
     }
 
+    /// The corpus is the contract this kernel implements, not a snapshot of what
+    /// some other implementation used to do. Each case also has to come back with
+    /// the deterministic metadata the contract requires of every decision, since
+    /// a delivery path that drops it produces decisions that cannot be replayed.
     #[test]
-    fn published_rule_corpus_matches_typescript_reference() {
+    fn kernel_satisfies_the_published_evaluator_contract() {
         let corpus: ConformanceCorpus =
             serde_json::from_str(include_str!("../../../../conformance/policy-rules.json"))
                 .expect("published evaluator corpus must be valid JSON");
@@ -774,13 +778,29 @@ mod tests {
         assert!(!corpus.cases.is_empty());
 
         for case in corpus.cases {
-            let result = evaluate_policy_decision(case.input);
-            assert_eq!(result.status, case.expected.status, "{}", case.description);
+            let description = case.description.clone();
+            let rule_count = case.input.rules.len();
+            let mut input = case.input;
+            input.policy_artifact_hash = Some("sha256:corpus".to_string());
+            let result = evaluate_policy_decision(input);
+
+            assert_eq!(result.status, case.expected.status, "{description}");
             assert_eq!(
                 result.matched_refs, case.expected.matched_refs,
-                "{}",
-                case.description
+                "{description}"
             );
+            assert_eq!(result.evaluator_version, "1.0", "{description}");
+            assert_eq!(result.request_schema_version, "1.0", "{description}");
+            assert_eq!(result.result_schema_version, "1.0", "{description}");
+            assert_eq!(
+                result.policy_artifact_hash.as_deref(),
+                Some("sha256:corpus"),
+                "{description}"
+            );
+            // One trace step per evaluated rule: the trace is what makes a
+            // decision explainable after the fact.
+            assert_eq!(result.trace.len(), rule_count, "{description}");
+            assert_eq!(result.rule_count, rule_count, "{description}");
         }
         for case in corpus.composition_cases {
             let result = compose_policy_layers(&case.layers);
@@ -808,6 +828,55 @@ mod tests {
                 result.conflict_notes, case.expected_conflict_notes,
                 "{}",
                 case.description
+            );
+        }
+    }
+
+    #[derive(Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    struct SemanticIntentCase {
+        prompt: String,
+        #[serde(default)]
+        tool_intent: String,
+        #[serde(default)]
+        plan_summary: String,
+        #[serde(default)]
+        tool_parameters: Value,
+        expected: bool,
+    }
+
+    #[derive(Deserialize)]
+    struct SemanticIntentCorpus {
+        cases: Vec<SemanticIntentCase>,
+    }
+
+    /// Semantic classification decides whether a rule with a semantic check
+    /// matches at all, so it is enforcement behaviour and belongs under the same
+    /// reviewed-corpus discipline as the rule corpus. These 1375 cases were
+    /// previously generated and read by nothing.
+    #[test]
+    fn kernel_satisfies_the_semantic_intent_contract() {
+        let corpus: SemanticIntentCorpus =
+            serde_json::from_str(include_str!("../../../../conformance/semantic-intent.json"))
+                .expect("semantic intent corpus must be valid JSON");
+        assert!(corpus.cases.len() > 1000);
+
+        for case in corpus.cases {
+            let parameters = if case.tool_parameters.is_null() {
+                serde_json::json!({})
+            } else {
+                case.tool_parameters
+            };
+            let matched = classify_semantic_intent(
+                &case.prompt,
+                &case.tool_intent,
+                &case.plan_summary,
+                &parameters,
+            );
+            assert_eq!(
+                matched, case.expected,
+                "prompt={:?} toolIntent={:?} planSummary={:?}",
+                case.prompt, case.tool_intent, case.plan_summary
             );
         }
     }

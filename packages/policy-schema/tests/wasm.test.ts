@@ -83,6 +83,69 @@ describe("portable policy kernel", () => {
     ).toThrow(PolicyKernelAbiError);
   });
 
+  // The portable path is a delivery target, not a second evaluator: it must
+  // reproduce the reviewed contract corpus exactly, with the same deterministic
+  // metadata the other transports return.
+  it("satisfies the published evaluator contract over the whole corpus", () => {
+    const corpus = JSON.parse(
+      readFileSync(new URL("../../../conformance/policy-rules.json", import.meta.url), "utf8"),
+    ) as {
+      contract: { evaluatorVersion: string };
+      cases: {
+        description: string;
+        rules: PolicyRuleSummary[];
+        connector: string;
+        action: string;
+        domains: string[];
+        toolIntent: string;
+        planSummary: string;
+        toolParameters: Record<string, unknown>;
+        expected: { status: string; matchedRefs: string[] };
+      }[];
+    };
+    expect(corpus.cases.length).toBeGreaterThan(0);
+
+    for (const testCase of corpus.cases) {
+      const result = kernel.evaluatePolicyDecision({
+        connector: testCase.connector,
+        action: testCase.action,
+        domains: testCase.domains,
+        rules: testCase.rules,
+        toolIntent: testCase.toolIntent,
+        planSummary: testCase.planSummary,
+        toolParameters: testCase.toolParameters,
+        policyArtifactHash: "sha256:corpus",
+      });
+      expect(result.status, testCase.description).toBe(testCase.expected.status);
+      expect(result.matchedRefs, testCase.description).toEqual(testCase.expected.matchedRefs);
+      expect(result.evaluatorVersion, testCase.description).toBe(corpus.contract.evaluatorVersion);
+      expect(result.policyArtifactHash, testCase.description).toBe("sha256:corpus");
+      expect(result.trace, testCase.description).toHaveLength(testCase.rules.length);
+    }
+  });
+
+  it("composes the corpus composition cases identically", () => {
+    const corpus = JSON.parse(
+      readFileSync(new URL("../../../conformance/policy-rules.json", import.meta.url), "utf8"),
+    ) as {
+      compositionCases: {
+        description: string;
+        layers: { scope: string; rules: PolicyRuleSummary[] }[];
+        expectedRuleIds: string[];
+        expectedConflictNotes: string[];
+      }[];
+    };
+
+    for (const testCase of corpus.compositionCases) {
+      const selection = kernel.composePolicyLayers(testCase.layers);
+      expect(
+        selection.effective.map((slot) => slot.stableRuleId),
+        testCase.description,
+      ).toEqual(testCase.expectedRuleIds);
+      expect(selection.conflictNotes, testCase.description).toEqual(testCase.expectedConflictNotes);
+    }
+  });
+
   it("survives repeated calls without corrupting linear memory", () => {
     for (let index = 0; index < 200; index += 1) {
       const result = kernel.evaluatePolicyDecision({
