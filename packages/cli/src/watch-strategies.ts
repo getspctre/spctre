@@ -91,27 +91,67 @@ export function createWatchStrategies(
 }
 
 function createSyncStrategy(options: WatchOptions, intervalSeconds: number) {
+  // A workspace with nothing published is a normal starting state, so the
+  // watcher keeps polling. Report it only when it changes, or every poll would
+  // repeat the same line.
+  let reportedUnpublished = false;
+
   return new RecurringTaskStrategy(intervalSeconds * 1000, async () => {
-    await sync({
+    const result = await sync({
       workspace: options.workspace,
       key: options.key,
       output: options.output,
       url: options.url,
       quiet: options.quiet,
     });
+    if (!result) return;
+
+    if (!result.published) {
+      if (!reportedUnpublished && !options.quiet) {
+        console.log(
+          "No policy bundle has been published for this workspace yet. Watching — the bundle will sync automatically once one is published.",
+        );
+      }
+      reportedUnpublished = true;
+      return;
+    }
+
+    if (reportedUnpublished && !options.quiet) {
+      console.log("Policy bundle published — now syncing.");
+    }
+    reportedUnpublished = false;
   });
 }
 
 function createHeartbeatStrategy(options: WatchOptions, intervalSeconds: number) {
+  let reportedMissingHash = false;
+
   return new RecurringTaskStrategy(intervalSeconds * 1000, async () => {
     try {
       let config = readConfig();
       if (config) config = await refreshIfNeeded(config);
+
+      // A heartbeat anchors itself to the artifact hash of the bundle the agent
+      // is running. Until something is published there is no hash to report,
+      // and ingest exits the process rather than throwing — so skip the beat
+      // instead of letting it take the watcher down.
+      const hash = config?.artifactHash;
+      if (!hash) {
+        if (!reportedMissingHash && !options.quiet) {
+          console.log(
+            "Skipping heartbeat until a policy bundle is published — a heartbeat records the bundle the agent is running.",
+          );
+        }
+        reportedMissingHash = true;
+        return;
+      }
+      reportedMissingHash = false;
+
       await ingest({
         agent: options.workspace ? undefined : config?.agentId,
         workspace: options.workspace ?? config?.workspaceId,
         key: options.key ?? config?.token,
-        hash: config?.artifactHash,
+        hash,
         heartbeat: true,
         url: options.url ?? config?.controlPlaneUrl,
         environment: config?.environment,

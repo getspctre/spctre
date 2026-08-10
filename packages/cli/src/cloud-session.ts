@@ -121,7 +121,10 @@ export async function persistAndSyncCloudSession(
     writeConfig(config);
   }
 
-  if (options.heartbeat ?? true) {
+  // Without a published bundle there is no artifact hash to anchor the beat to,
+  // and ingest exits the process rather than throwing. Onboarding a workspace
+  // that has not published yet is normal, so skip the beat instead of failing.
+  if ((options.heartbeat ?? true) && config.artifactHash) {
     await ingest({
       agent: config.agentId,
       workspace: config.workspaceId,
