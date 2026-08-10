@@ -1,5 +1,53 @@
 # @spctre/policy-schema
 
+## 0.5.0
+
+### Minor Changes
+
+- 7f4c51e: Harden and widen the policy kernel boundary.
+
+  - A panic inside the kernel is contained and reported as
+    `SPCTRE_POLICY_INTERNAL_ERROR` rather than unwinding into the host, where it
+    would abort the host process. Callers already fail closed on any nonzero
+    status.
+  - Layer composition is exposed on the N-API and C ABI transports, and
+    `composePolicyLayers` delegates to it. Composition returns the winning layer
+    and rule positions rather than composed rules, so rule fields the kernel does
+    not model survive composition unchanged.
+  - New `validatePolicyRules` and `validatePolicyBundleLayers` report whether a
+    bundle can be enforced at all: unsupported or mistyped constraint operators,
+    unsupported action wildcards, missing or unknown effects, empty semantic
+    prompts, duplicate rule IDs within a layer, unknown layer scopes, and layers
+    ordered so that precedence would invert. Each of those otherwise produces a
+    rule that silently never matches.
+  - New `policyKernelLimits` and `measurePolicyRequestBudget` report the kernel's
+    own request bounds and how much of them a composed policy consumes, so hosts
+    can check a policy against the real limits instead of restating them.
+
+- d0f2189: Ship the portable policy kernel. `@spctre/policy-schema/wasm` instantiates the
+  same bounded-JSON kernel the native addon and the Go worker use, with no
+  generated glue and no build toolchain, for hosts that cannot load a native
+  binary. `EvaluationResult` now exposes the evaluator and schema versions and the
+  policy artifact hash the kernel already returned, and the kernel's own resource
+  limits are readable rather than restated by callers.
+- ebb2278: Retire the TypeScript policy evaluator. `evaluateDecision` is now a transport
+  onto the Rust kernel rather than a second implementation of matching, semantic
+  checks, parameter constraints and effect precedence. The CLI's local hook and
+  `spctre test` evaluate through the portable kernel, so a locally blocked action
+  and a runtime-blocked action are the same judgement, and neither needs a
+  per-platform native binary.
+
+  Removes the now-duplicate exports `classifySemanticIntent`,
+  `evaluateSemanticChecks` and `evaluateParameterConstraints`. Callers that
+  evaluated policy through them should call `evaluateDecision` (or the portable
+  kernel) instead, which returns the same verdicts plus the decision trace and
+  evaluator provenance.
+
+### Patch Changes
+
+- 1038508: Embed the semantic topic table from inside the Rust kernel crate so the crate
+  builds outside a full workspace checkout.
+
 ## 0.4.0
 
 ### Minor Changes

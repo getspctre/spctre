@@ -1,6 +1,6 @@
 {
   "name": "@spctre/cli",
-  "version": "0.3.2",
+  "version": "0.4.0",
   "description": "Control plane CLI for governed agent systems",
   "license": "Apache-2.0",
   "homepage": "https://github.com/getspctre/spctre/tree/main/packages/cli#readme",
