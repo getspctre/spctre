@@ -550,8 +550,9 @@ fn semantic_topics() -> &'static SemanticTopicData {
     TOPICS.get_or_init(|| {
         // Embedded from inside the crate: include_str! cannot reach outside the
         // crate root in any build that is not a full workspace checkout, and the
-        // container images build this crate from its own directory. The copy is
-        // generated alongside the worker's by scripts/generate-worker-policy-data.mjs.
+        // container images build this crate from its own directory. Generated
+        // from the TypeScript topic tables by
+        // scripts/generate-worker-policy-data.mjs.
         serde_json::from_str(include_str!("generated/semantic_topics.json"))
         .expect("generated semantic topics must be valid JSON")
     })
