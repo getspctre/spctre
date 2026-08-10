@@ -45,6 +45,6 @@
     "@types/react-dom": "^19.2.3",
     "fumadocs-mdx": "^15.2.0",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.8"
+    "vitest": "^4.1.10"
   }
 }
