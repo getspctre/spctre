@@ -4,6 +4,7 @@ pub mod eval;
 pub mod ffi;
 pub mod integrity;
 pub mod types;
+pub mod validate;
 
 #[cfg(feature = "napi")]
 pub use bindings::*;
@@ -14,3 +15,4 @@ pub use eval::{
 pub use ffi::*;
 pub use integrity::{build_operations_content_hash, canonical_json, validate_operations_log_chain};
 pub use types::*;
+pub use validate::{validate_policy_bundle, PolicyBundleValidation, PolicyBundleValidationRequest};

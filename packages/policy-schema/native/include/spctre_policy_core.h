@@ -21,6 +21,10 @@ int32_t spctre_policy_evaluate(const uint8_t *request_ptr, size_t request_len,
 int32_t spctre_policy_compose_layers(const uint8_t *request_ptr,
                                      size_t request_len, uint8_t **out_ptr,
                                      size_t *out_len);
+/* Validates that a bundle can be enforced at all. Same ownership contract. */
+int32_t spctre_policy_validate_bundle(const uint8_t *request_ptr,
+                                      size_t request_len, uint8_t **out_ptr,
+                                      size_t *out_len);
 void spctre_policy_buffer_free(uint8_t *ptr, size_t len);
 
 #endif

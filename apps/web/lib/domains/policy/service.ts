@@ -1,6 +1,11 @@
 import { createHash } from "crypto";
 import { logger } from "@spctre/platform/logging";
-import { buildPolicyImportResult, parseAgtPolicyDocument } from "@spctre/policy-schema";
+import {
+  buildPolicyImportResult,
+  describeBlockingIssues,
+  parseAgtPolicyDocument,
+  validatePolicyRules,
+} from "@spctre/policy-schema";
 import type { PolicyImportResult } from "@spctre/policy-schema";
 import { getActiveActor, requireActorAdminWorkspace } from "@/lib/actors";
 import { getWorkspaceContext } from "@/lib/workspace";
@@ -83,15 +88,20 @@ function validateAndParseImport(input: {
     };
   }
 
-  const seenRuleIds = new Set<string>();
-  for (const rule of parsed.rules) {
-    if (seenRuleIds.has(rule.stableRuleId)) {
-      return { error: `Duplicate stable rule ID in policy document: ${rule.stableRuleId}` };
-    }
-    seenRuleIds.add(rule.stableRuleId);
+  // Enforceability is the kernel's call, not a second opinion here: duplicate
+  // rule IDs, unsupported constraint operators, mistyped comparison values and
+  // unsupported wildcards all produce a rule that never matches, so importing
+  // them would create a policy that reads as healthy and enforces nothing.
+  const enforceability = validatePolicyRules(parsed.rules);
+  if (!enforceability.valid) {
+    return {
+      error: `Policy cannot be enforced as written: ${describeBlockingIssues(enforceability)}`,
+    };
   }
 
-  const reservedRuleIdError = reservedStableRuleIdError(seenRuleIds);
+  const reservedRuleIdError = reservedStableRuleIdError(
+    new Set(parsed.rules.map((rule) => rule.stableRuleId)),
+  );
   if (reservedRuleIdError) return { error: reservedRuleIdError };
 
   return { parsed };

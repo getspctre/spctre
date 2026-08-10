@@ -34,6 +34,18 @@ const countRuntimeEvidenceMock = vi.fn();
 const TEST_TENANT_ID = "00000000-0000-0000-0000-000000000001";
 const TEST_WORKSPACE_ID = "00000000-0000-0000-0000-0000000000a1";
 
+// Shaped like a real policy_rule row. Publish validates enforceability through
+// the kernel, so a stub missing an effect is blocked before the gate under test.
+const publishableRule = {
+  stableRuleId: "refund.review",
+  title: "Refund review",
+  effect: "ESCALATE",
+  domains: [],
+  connectors: ["stripe"],
+  actions: ["refund"],
+  immutable: false,
+};
+
 vi.mock("@/lib/repositories/policy", () => ({
   getPublishBranchScope: getPublishBranchScopeMock,
   revisionExistsOnPublishBranch: revisionExistsOnPublishBranchMock,
@@ -117,7 +129,7 @@ describe("Publish gating — approval not satisfied", () => {
     getPublishBranchScopeMock.mockResolvedValue(BRANCH_ROW);
     revisionExistsOnPublishBranchMock.mockResolvedValue(true);
     getApprovalsMock.mockResolvedValue([]);
-    getRulesForRevisionMock.mockResolvedValue([{ stableRuleId: "refund.review" }]);
+    getRulesForRevisionMock.mockResolvedValue([publishableRule]);
     getOpenEscalationSummaryMock.mockResolvedValue({ count: 0, nearestSlaDueAt: null });
     getExistingPublishArtifactHashMock.mockResolvedValue(null);
     insertPolicyPublishMock.mockResolvedValue(undefined);
@@ -192,7 +204,7 @@ describe("Publish gating — open gateway escalations", () => {
     getPublishBranchScopeMock.mockResolvedValue(BRANCH_ROW);
     revisionExistsOnPublishBranchMock.mockResolvedValue(true);
     getApprovalsMock.mockResolvedValue([]);
-    getRulesForRevisionMock.mockResolvedValue([{ stableRuleId: "refund.review" }]);
+    getRulesForRevisionMock.mockResolvedValue([publishableRule]);
     getExistingPublishArtifactHashMock.mockResolvedValue(null);
     insertPolicyPublishMock.mockResolvedValue(undefined);
     evaluatePublishReadinessMock.mockReturnValue({

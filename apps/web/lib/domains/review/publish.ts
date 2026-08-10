@@ -1,9 +1,11 @@
 import { createHash } from "crypto";
 import { logger } from "@spctre/platform/logging";
 import {
+  describeBlockingIssues,
   describePolicyRequestBudget,
   evaluatePublishReadiness,
   measurePolicyRequestBudget,
+  validatePolicyRules,
 } from "@spctre/policy-schema";
 import { getBranchPermissions, getActiveActor } from "@/lib/actors";
 import type { ActiveScope } from "@/lib/workspace";
@@ -161,6 +163,12 @@ async function checkPublishReadiness(
   ]);
   if (rules.length === 0) {
     return "Publish is blocked: a policy revision must contain at least one rule.";
+  }
+  // Enforceability first: a bundle the kernel cannot evaluate must not reach
+  // production, where a broken rule reads as a permitted action.
+  const validation = validatePolicyRules(rules);
+  if (!validation.valid) {
+    return `Publish is blocked: ${describeBlockingIssues(validation)}`;
   }
   const budgetError = await checkEvaluationBudget(input, scope, branchRow, rules);
   if (budgetError) return budgetError;
