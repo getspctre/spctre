@@ -4,8 +4,11 @@ on:
   push:
     branches: [main]
     tags: ["v*"]
+  # Deliberately unfiltered by base branch. A stacked pull request targets the
+  # layer below it rather than main, and a `branches: [main]` filter leaves
+  # every such PR with no checks at all — not failing checks, but no run to
+  # inspect or rerun.
   pull_request:
-    branches: [main]
 
 permissions:
   contents: read
