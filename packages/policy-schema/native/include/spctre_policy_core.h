@@ -9,6 +9,8 @@ enum spctre_policy_status {
   SPCTRE_POLICY_INVALID_REQUEST = 1,
   SPCTRE_POLICY_RESOURCE_LIMIT = 2,
   SPCTRE_POLICY_SERIALIZATION_ERROR = 3,
+  /* An evaluation panicked and was contained; the kernel state is unchanged. */
+  SPCTRE_POLICY_INTERNAL_ERROR = 4,
 };
 
 /* Evaluates bounded UTF-8 JSON. On success the caller must free `*out_ptr`. */
