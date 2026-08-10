@@ -1,6 +1,7 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { parseAgtPolicyDocument, evaluateDecision } from "@spctre/policy-schema";
+import { parseAgtPolicyDocument } from "@spctre/policy-schema";
+import { loadPortablePolicyKernel } from "@spctre/policy-schema/wasm-node";
 
 type ExpectedOutcome = "ALLOW" | "DENY" | "WARN";
 
@@ -66,8 +67,11 @@ export async function runTests(policyPath: string, fixturesPath: string): Promis
 
   const importResult = parseAgtPolicyDocument({ document, sourcePath: policyPath });
   const fixtures = loadFixtures(fixturesPath);
+  // Fixtures are checked against the kernel that will enforce them, so a passing
+  // `spctre test` means the runtime agrees rather than that a second matcher did.
+  const kernel = await loadPortablePolicyKernel();
   const results: TestResult[] = fixtures.map((fixture) => {
-    const evalResult = evaluateDecision({
+    const evalResult = kernel.evaluatePolicyDecision({
       connector: fixture.connector,
       action: fixture.action,
       domains: fixture.domains ?? [],
@@ -136,9 +140,10 @@ export async function testCmd(
   }
 
   const results: TestResult[] = [];
+  const kernel = await loadPortablePolicyKernel();
 
   for (const fixture of fixtures) {
-    const evalResult = evaluateDecision({
+    const evalResult = kernel.evaluatePolicyDecision({
       connector: fixture.connector,
       action: fixture.action,
       domains: fixture.domains ?? [],

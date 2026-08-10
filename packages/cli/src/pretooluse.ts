@@ -1,7 +1,11 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { evaluateDecision } from "@spctre/policy-schema";
-import type { AgtCompatiblePolicyBundle, AgtRuntimeDecisionInput } from "@spctre/policy-schema";
+import { loadPortablePolicyKernel } from "@spctre/policy-schema/wasm-node";
+import type {
+  AgtCompatiblePolicyBundle,
+  AgtRuntimeDecisionInput,
+  EvaluationResult,
+} from "@spctre/policy-schema";
 import { readConfig } from "./config";
 import type { SpctreCliConfig } from "./config";
 import { refreshIfNeeded } from "./refresh";
@@ -544,7 +548,13 @@ function loadPolicyBundle(refreshed: SpctreCliConfig): AgtCompatiblePolicyBundle
   }
 }
 
-function evaluateLocalDecision(
+// Local enforcement runs the portable build of the same kernel the control plane
+// and the worker use, rather than a TypeScript reimplementation of it. The hook
+// used to answer policy questions with its own matcher, which meant a locally
+// blocked action and a runtime-blocked action were two different judgements. The
+// portable kernel also needs no per-platform binary, so the hook keeps working on
+// hosts the native addon does not ship for.
+async function evaluateLocalDecision(
   bundle: AgtCompatiblePolicyBundle,
   governed: GovernedAction,
   refreshed: SpctreCliConfig,
@@ -553,14 +563,15 @@ function evaluateLocalDecision(
   mode: HookMode,
   shadowMode: boolean,
   toolParameters: Record<string, unknown> | undefined,
-): { result: ReturnType<typeof evaluateDecision>; evidencePayload: AgtRuntimeDecisionInput } {
+): Promise<{ result: EvaluationResult; evidencePayload: AgtRuntimeDecisionInput }> {
+  const kernel = await loadPortablePolicyKernel();
   const t0 = Date.now();
-  const result = evaluateDecision({
+  const result = kernel.evaluatePolicyDecision({
     connector: governed.connector,
     action: governed.action,
-    domains: governed.domains,
+    domains: governed.domains ?? [],
     rules: bundle.rules,
-    toolParameters,
+    toolParameters: toolParameters ?? {},
   });
   const latencyMs = Date.now() - t0;
 
@@ -653,7 +664,7 @@ export async function pretooluse(options: PreToolUseOptions = {}): Promise<void>
 
   const shadowMode = isShadowModeActive();
   const sanitizedToolParameters = filterGatewayToolParameters(toolInput);
-  const { result, evidencePayload } = evaluateLocalDecision(
+  const { result, evidencePayload } = await evaluateLocalDecision(
     bundle,
     governed,
     refreshed,

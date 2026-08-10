@@ -1,4 +1,4 @@
-import { evaluateDecision } from "@spctre/policy-schema";
+import { evaluateRuntimePolicyDecision } from "@spctre/policy-schema";
 import type { GatewayDecisionResult } from "@spctre/policy-schema";
 import { logger } from "@spctre/platform/logging";
 import { incrementCounter } from "@spctre/platform/metrics";
@@ -8,14 +8,17 @@ import { runWithTenantContext } from "@/lib/tenant-context";
 /**
  * The single published-rule enforcement layer.
  *
- * Two evaluators exist and they answer different questions:
+ * Two evaluations happen and they answer different questions:
  *
- *   - `evaluateGatewayDecision` is a generic *safety-threshold* evaluator. It
- *     scores request-shaped risk signals (amountUsd, consequence, confidence,
- *     dataSensitivity, trustScore) and knows nothing about authored policy.
- *   - `evaluateDecision` is the *published-rule* evaluator. It matches the
- *     tenant's published, composed rules against connector/action and returns
- *     their authored effect.
+ *   - the *safety-threshold* evaluation scores request-shaped risk signals
+ *     (amountUsd, consequence, confidence, dataSensitivity, trustScore) and
+ *     knows nothing about authored policy.
+ *   - the *published-rule* evaluation matches the tenant's published, composed
+ *     rules against connector/action and returns their authored effect.
+ *
+ * Both are implemented by the Rust kernel — the same one the worker links — so a
+ * verdict reached here and a verdict reached on the delegated path cannot
+ * disagree.
  *
  * Every action-enforcement path must consult both. Running only the threshold
  * evaluator means an authored `ESCALATE brief.file` rule is recorded as
@@ -54,13 +57,16 @@ export async function resolvePublishedPolicyDecision(
   const published = await readPublishedPolicyBundle(input);
   if (!published) return null;
 
-  const evaluated = evaluateDecision({
+  const evaluated = evaluateRuntimePolicyDecision({
     connector: input.connector,
     action: input.action,
     rules: published.bundle.rules,
     toolIntent: input.toolIntent,
     planSummary: input.planSummary,
     toolParameters: input.toolParameters,
+    // Exact published bytes, so a decision made here records the same kind of
+    // provenance the worker records for the delegated path.
+    policyArtifactHash: published.contentHash,
   });
 
   if (evaluated.status === "DENY")

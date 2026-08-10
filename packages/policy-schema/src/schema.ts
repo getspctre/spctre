@@ -2183,6 +2183,15 @@ export function summarizeRuntimePolicyCoverage(
   };
 }
 
+/**
+ * Evaluates published rules against a request.
+ *
+ * This is a transport onto the kernel, not an evaluator. It existed as a second
+ * full implementation of matching, semantic checks, parameter constraints and
+ * effect precedence, which meant authoring, simulation and the offline hook could
+ * each answer a policy question differently from the runtime that enforces it.
+ * There is now one answer.
+ */
 export function evaluateDecision(params: {
   connector: string;
   action: string;
@@ -2192,137 +2201,7 @@ export function evaluateDecision(params: {
   planSummary?: string;
   toolParameters?: Record<string, unknown>;
 }): EvaluationResult {
-  const {
-    connector,
-    action,
-    domains = [],
-    toolIntent = "",
-    planSummary = "",
-    toolParameters = {},
-  } = params;
-  const trace: EvaluationTraceStep[] = [];
-  const matchedRefs: string[] = [];
-  const matchedRulesInfo: {
-    rule: PolicyRuleSummary;
-    effect: RuntimeDecisionStatus;
-    matchedPrompt?: string;
-  }[] = [];
-
-  for (const rule of params.rules) {
-    const connectorMatch = rule.connectors.length === 0 || rule.connectors.includes(connector);
-    const actionMatch =
-      rule.actions.length === 0 ||
-      rule.actions.some((a) => a === action || action.startsWith(a.replace(/\.\*$/, ".")));
-    const domainMatch =
-      rule.domains.length === 0 ||
-      domains.length === 0 ||
-      rule.domains.some((d) => domains.includes(d));
-
-    let matched = connectorMatch && actionMatch && domainMatch;
-
-    let matchReason = "no match";
-    let semanticMatchResult: {
-      matched: boolean;
-      promptMatched?: string;
-      effectOverride?: RuntimeDecisionStatus;
-    } = { matched: false };
-    let parameterMatchResult: { matched: boolean; effectOverride?: RuntimeDecisionStatus } = {
-      matched: false,
-    };
-
-    if (matched) {
-      if (rule.semanticChecks && rule.semanticChecks.length > 0) {
-        const evaluation = evaluateSemanticChecks(
-          rule.semanticChecks,
-          toolIntent,
-          planSummary,
-          toolParameters,
-        );
-        if (evaluation.matched) {
-          semanticMatchResult = {
-            matched: true,
-            promptMatched: evaluation.prompt,
-            effectOverride: evaluation.effectOverride,
-          };
-        } else {
-          matched = false;
-        }
-      }
-    }
-
-    if (matched) {
-      if (rule.parameterConstraints && rule.parameterConstraints.length > 0) {
-        const evaluation = evaluateParameterConstraints(rule.parameterConstraints, toolParameters);
-        if (evaluation.matched) {
-          parameterMatchResult = evaluation;
-        } else {
-          matched = false;
-        }
-      }
-    }
-
-    if (matched) {
-      const parts: string[] = [];
-      if (connectorMatch && rule.connectors.length > 0) parts.push(`connector=${connector}`);
-      if (actionMatch && rule.actions.length > 0) parts.push(`action=${action}`);
-      if (domainMatch && rule.domains.length > 0 && domains.length > 0)
-        parts.push(`domain=${domains.join(",")}`);
-      if (semanticMatchResult.matched) {
-        parts.push(`semantic_check="${semanticMatchResult.promptMatched}"`);
-      }
-      if (parameterMatchResult.matched) {
-        parts.push(`parameter_constraints=matched`);
-      }
-      matchReason = parts.length ? parts.join("; ") : "wildcard match";
-    }
-
-    trace.push({
-      stableRuleId: rule.stableRuleId,
-      title: rule.title,
-      effect: rule.effect,
-      matched,
-      matchReason,
-    });
-
-    if (matched) {
-      matchedRefs.push(rule.stableRuleId);
-      matchedRulesInfo.push({
-        rule,
-        effect:
-          parameterMatchResult.effectOverride ?? semanticMatchResult.effectOverride ?? rule.effect,
-        matchedPrompt: semanticMatchResult.promptMatched,
-      });
-    }
-  }
-
-  let status: RuntimeDecisionStatus = "ALLOW";
-  let reason = "No rules matched — request is allowed by default.";
-
-  if (matchedRulesInfo.some((r) => r.effect === "DENY")) {
-    status = "DENY";
-    const denyInfo = matchedRulesInfo.find((r) => r.effect === "DENY")!;
-    reason = `Denied by rule "${denyInfo.rule.stableRuleId}": ${denyInfo.rule.title}${denyInfo.matchedPrompt ? ` (semantic check: "${denyInfo.matchedPrompt}")` : ""}`;
-  } else if (matchedRulesInfo.some((r) => r.effect === "ESCALATE")) {
-    status = "ESCALATE";
-    const escalateInfo = matchedRulesInfo.find((r) => r.effect === "ESCALATE")!;
-    reason = `Escalated by rule "${escalateInfo.rule.stableRuleId}": ${escalateInfo.rule.title}${escalateInfo.matchedPrompt ? ` (semantic check: "${escalateInfo.matchedPrompt}")` : ""}`;
-  } else if (matchedRulesInfo.some((r) => r.effect === "WARN")) {
-    status = "WARN";
-    const warnInfo = matchedRulesInfo.find((r) => r.effect === "WARN")!;
-    reason = `Warning from rule "${warnInfo.rule.stableRuleId}": ${warnInfo.rule.title}${warnInfo.matchedPrompt ? ` (semantic check: "${warnInfo.matchedPrompt}")` : ""}`;
-  } else if (matchedRulesInfo.length > 0) {
-    const allowInfo = matchedRulesInfo[0];
-    reason = `Allowed by rule "${allowInfo.rule.stableRuleId}": ${allowInfo.rule.title}${allowInfo.matchedPrompt ? ` (semantic check: "${allowInfo.matchedPrompt}")` : ""}`;
-  }
-
-  return {
-    status,
-    matchedRefs,
-    reason,
-    trace,
-    ruleCount: params.rules.length,
-    evaluatedAt: new Date().toISOString(),
-  };
+  return evaluateRuntimePolicyDecision(params);
 }
 
 /** Deterministic bounded inspection for connector tool payloads. */
@@ -2354,129 +2233,6 @@ export function evaluateConnectorPayloadGuardrail(params: {
   };
 }
 
-export function classifySemanticIntent(
-  prompt: string,
-  toolIntent = "",
-  planSummary = "",
-  toolParameters: Record<string, unknown> = {},
-): boolean {
-  // This is deliberately a deterministic heuristic, not an LLM classifier.
-  // It favors exact quoted matches and narrow safety-topic keyword sets so
-  // semantic checks are cheap, explainable, and regression-testable.
-  //
-  // The vocabulary lives in ./semantic-topics so the Go engine can be
-  // generated from the same tables; only the matching logic below is
-  // duplicated across languages. Keep the two in step via the shared
-  // conformance fixtures.
-  const cleanPrompt = prompt.trim().toLowerCase();
-  const searchSpace = [toolIntent, planSummary, JSON.stringify(toolParameters)]
-    .join(" ")
-    .toLowerCase();
-
-  // 1. Quoted patterns (exact matching)
-  const quotedRegex = /"([^"]+)"/g;
-  let match;
-  let hasQuotes = false;
-  while ((match = quotedRegex.exec(cleanPrompt)) !== null) {
-    hasQuotes = true;
-    const exactSub = match[1].trim();
-    if (exactSub && searchSpace.includes(exactSub)) {
-      return true;
-    }
-  }
-  if (hasQuotes) return false;
-
-  // 2. Predefined safety-topic classification, in declaration order.
-  for (const topic of SEMANTIC_TOPICS) {
-    if (!topic.promptTriggers.some((trigger) => cleanPrompt.includes(trigger))) continue;
-    if (topic.keywords.some((keyword) => searchSpace.includes(keyword))) return true;
-  }
-
-  // 3. Fallback: word token set inclusion (requires at least SEMANTIC_MATCH_RATIO
-  // of prompt keywords to match).
-  const stopWords = new Set(SEMANTIC_STOP_WORDS);
-  const words = cleanPrompt
-    .split(/[^a-zA-Z0-9]/)
-    .map((w) => w.trim())
-    .filter((w) => w.length > 1 && !stopWords.has(w));
-
-  if (words.length > 0) {
-    const matchedWords = words.filter((word) => searchSpace.includes(word));
-    const ratio = matchedWords.length / words.length;
-    if (ratio >= SEMANTIC_MATCH_RATIO) {
-      const genericWords = new Set(SEMANTIC_GENERIC_WORDS);
-      const nonGenericPromptWords = words.filter((w) => !genericWords.has(w));
-      const matchedNonGeneric = matchedWords.filter((w) => !genericWords.has(w));
-      if (nonGenericPromptWords.length > 0 && matchedNonGeneric.length === 0) {
-        return false;
-      }
-      return true;
-    }
-  }
-
-  return false;
-}
-
-function readDotPath(source: Record<string, unknown>, path: string): unknown {
-  return path.split(".").reduce<unknown>((value, segment) => {
-    if (value === null || typeof value !== "object") return undefined;
-    return (value as Record<string, unknown>)[segment];
-  }, source);
-}
-
-function compareConstraintValue(
-  operator: PolicyParameterConstraint["operator"],
-  actual: unknown,
-  expected: unknown,
-): boolean {
-  switch (operator) {
-    case "eq":
-      return actual === expected;
-    case "neq":
-      return actual !== expected;
-    case "gt":
-      return typeof actual === "number" && typeof expected === "number" && actual > expected;
-    case "gte":
-      return typeof actual === "number" && typeof expected === "number" && actual >= expected;
-    case "lt":
-      return typeof actual === "number" && typeof expected === "number" && actual < expected;
-    case "lte":
-      return typeof actual === "number" && typeof expected === "number" && actual <= expected;
-    case "in":
-      return Array.isArray(expected) && expected.includes(actual);
-    case "not_in":
-      return Array.isArray(expected) && !expected.includes(actual);
-    case "contains":
-      return (
-        typeof actual === "string" && typeof expected === "string" && actual.includes(expected)
-      );
-    default:
-      return false;
-  }
-}
-
-/**
- * Deterministic tool-parameter threshold evaluation. All entries in
- * `constraints` are AND'd — each represents an independent fact about the
- * same call (e.g. a GitHub force-push needs both a protected ref AND
- * force=true to match).
- */
-export function evaluateParameterConstraints(
-  constraints: PolicyParameterConstraint[],
-  toolParameters: Record<string, unknown> = {},
-): { matched: boolean; effectOverride?: RuntimeDecisionStatus } {
-  if (constraints.length === 0) return { matched: false };
-  let effectOverride: RuntimeDecisionStatus | undefined;
-  for (const constraint of constraints) {
-    const actual = readDotPath(toolParameters, constraint.field);
-    if (!compareConstraintValue(constraint.operator, actual, constraint.value)) {
-      return { matched: false };
-    }
-    if (constraint.effect) effectOverride = constraint.effect;
-  }
-  return { matched: true, effectOverride };
-}
-
 /**
  * Applies workspace-level parameter overrides (keyed by
  * PolicyParameterConstraint.parameterKey) to a set of rules without mutating
@@ -2497,20 +2253,6 @@ export function applyPackParameterOverrides(
     });
     return changed ? { ...rule, parameterConstraints } : rule;
   });
-}
-
-export function evaluateSemanticChecks(
-  checks: SemanticCheck[],
-  toolIntent = "",
-  planSummary = "",
-  toolParameters: Record<string, unknown> = {},
-): { matched: boolean; prompt?: string; effectOverride?: RuntimeDecisionStatus } {
-  for (const check of checks) {
-    if (classifySemanticIntent(check.prompt, toolIntent, planSummary, toolParameters)) {
-      return { matched: true, prompt: check.prompt, effectOverride: check.effect };
-    }
-  }
-  return { matched: false };
 }
 
 export function validateBundleCompatibility(params: {

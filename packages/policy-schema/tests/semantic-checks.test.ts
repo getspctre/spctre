@@ -1,7 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
   buildRuleControlMappingIndex,
-  classifySemanticIntent,
   evaluateConnectorPayloadGuardrail,
   evaluateDecision,
   evaluateRuntimePolicyDrift,
@@ -11,56 +10,9 @@ import {
 } from "../src/index";
 import type { PolicyRuleSummary } from "../src/index";
 
-describe("classifySemanticIntent", () => {
-  it("matches exact quoted patterns case-insensitively", () => {
-    expect(
-      classifySemanticIntent('contains "delete database"', "I need to delete database table"),
-    ).toBe(true);
-
-    expect(classifySemanticIntent('contains "delete database"', "Delete database tables now")).toBe(
-      true,
-    );
-
-    expect(classifySemanticIntent('contains "delete database"', "do query delete tables")).toBe(
-      false,
-    );
-  });
-
-  it("classifies credentials and secret topics", () => {
-    expect(classifySemanticIntent("check for credentials", "save token to environment")).toBe(true);
-
-    expect(classifySemanticIntent("detect API keys", "the private key is in auth headers")).toBe(
-      true,
-    );
-
-    expect(
-      classifySemanticIntent("credentials scanner", "ordinary non-sensitive execution path"),
-    ).toBe(false);
-  });
-
-  it("classifies unprofessional behavior", () => {
-    expect(
-      classifySemanticIntent("rude language filter", "this tool call is stupid and dumb"),
-    ).toBe(true);
-
-    expect(classifySemanticIntent("harassment filter", "ordinary polite message")).toBe(false);
-  });
-
-  it("classifies destructive commands", () => {
-    expect(classifySemanticIntent("detect destructive action", "rm -rf /usr/local/bin")).toBe(true);
-
-    expect(classifySemanticIntent("dangerous action detector", "drop table users;")).toBe(true);
-  });
-
-  it("matches fallback word token set inclusion", () => {
-    // Splits cleanPrompt into words: ["read", "passwd"]
-    // Matches if both are present in the search space.
-    expect(classifySemanticIntent("read passwd file", "reading etc passwd contents")).toBe(true);
-
-    expect(classifySemanticIntent("read passwd file", "just reading a config file")).toBe(false);
-  });
-});
-
+// Direct coverage of semantic classification lives with the kernel that
+// implements it (conformance/semantic-intent.json). What is tested here is the
+// behaviour reached through a policy decision.
 describe("evaluateConnectorPayloadGuardrail", () => {
   const rules: PolicyRuleSummary[] = [
     {
