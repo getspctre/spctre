@@ -79,7 +79,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6.0.9
+      - uses: pnpm/action-setup@v6.0.10
       - uses: actions/setup-node@v7
         with:
           node-version: 25
@@ -92,7 +92,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6.0.9
+      - uses: pnpm/action-setup@v6.0.10
       - uses: actions/setup-node@v7
         with:
           node-version: 25
@@ -112,8 +112,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - name: Set up uv
-        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b
-      - uses: pnpm/action-setup@v6.0.9
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9
+      - uses: pnpm/action-setup@v6.0.10
       - uses: actions/setup-node@v7
         with:
           node-version: 25
@@ -148,7 +148,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6.0.9
+      - uses: pnpm/action-setup@v6.0.10
       - uses: actions/setup-node@v7
         with:
           node-version: 25
@@ -192,7 +192,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6.0.9
+      - uses: pnpm/action-setup@v6.0.10
       - uses: actions/setup-node@v7
         with:
           node-version: 25
@@ -260,7 +260,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6.0.9
+      - uses: pnpm/action-setup@v6.0.10
       - uses: actions/setup-node@v7
         with:
           node-version: 25
@@ -331,7 +331,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       # Node and pnpm are here for the portable-kernel steps below: staging the
       # WASM artifact and running its tests both go through the workspace.
-      - uses: pnpm/action-setup@v6.0.9
+      - uses: pnpm/action-setup@v6.0.10
       - uses: actions/setup-node@v7
         with:
           node-version: 25
@@ -374,7 +374,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6.0.9
+      - uses: pnpm/action-setup@v6.0.10
       - uses: actions/setup-node@v7
         with:
           node-version: 25
@@ -397,7 +397,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6.0.9
+      - uses: pnpm/action-setup@v6.0.10
       - uses: actions/setup-node@v7
         with:
           node-version: 25

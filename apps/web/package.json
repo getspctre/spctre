@@ -21,7 +21,7 @@
     "@spctre/ui": "workspace:*",
     "@upstash/ratelimit": "^2.0.8",
     "@upstash/redis": "^1.38.0",
-    "firebase": "^12.16.0",
+    "firebase": "^12.17.1",
     "fumadocs-core": "^16.10.5",
     "fumadocs-ui": "^16.10.5",
     "jose": "^6.2.3",
@@ -31,7 +31,7 @@
     "postgres": "^3.4.9",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
-    "undici": "^6.28.0",
+    "undici": "^8.10.0",
     "zod": "^4.4.3"
   },
   "optionalDependencies": {
@@ -45,6 +45,6 @@
     "@types/react-dom": "^19.2.3",
     "fumadocs-mdx": "^15.2.0",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.8"
+    "vitest": "^4.1.10"
   }
 }
