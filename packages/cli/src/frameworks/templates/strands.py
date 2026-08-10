@@ -18,15 +18,21 @@ _SPCTRE_WORKSPACE = os.environ.get("SPCTRE_WORKSPACE", "__SPCTRE_WORKSPACE_ID__"
 _SPCTRE_AGENT = os.environ.get("SPCTRE_AGENT", "__SPCTRE_AGENT_ID__")
 _SPCTRE_ENV = os.environ.get("SPCTRE_ENVIRONMENT", "__SPCTRE_ENVIRONMENT__")
 _SPCTRE_ARTIFACT_HASH = os.environ.get("SPCTRE_ARTIFACT_HASH", "__SPCTRE_ARTIFACT_HASH__")
-_SPCTRE_POLICY_CONTEXT = json.loads(os.environ.get("SPCTRE_POLICY_CONTEXT", "__SPCTRE_POLICY_CONTEXT_JSON__"))
+_SPCTRE_POLICY_CONTEXT = json.loads(
+    os.environ.get("SPCTRE_POLICY_CONTEXT", "__SPCTRE_POLICY_CONTEXT_JSON__")
+)
 
 
-def _spctre_emit(connector, action, status, reason, latency_ms=0, prompt_tokens=None, completion_tokens=None):
+def _spctre_emit(
+    connector, action, status, reason, latency_ms=0, prompt_tokens=None, completion_tokens=None
+):
     if not _SPCTRE_KEY:
         return
     has_context = bool(_SPCTRE_POLICY_CONTEXT and _SPCTRE_POLICY_CONTEXT[0].get("artifactHash"))
-    policy_refs = ["system.governance_active"] if action == "governance_active" else (
-        [f"strands.tool.{action}"] if has_context else ["gateway.provenance-gap"]
+    policy_refs = (
+        ["system.governance_active"]
+        if action == "governance_active"
+        else ([f"strands.tool.{action}"] if has_context else ["gateway.provenance-gap"])
     )
     payload = {
         "decisionId": f"strands-{uuid.uuid4()}",
@@ -85,8 +91,16 @@ def _extract_strands_usage(result):
         else:
             metrics = getattr(result, "metrics", None) or getattr(result, "usage", None)
         if isinstance(metrics, dict):
-            input_tokens = metrics.get("inputTokens") or metrics.get("input_tokens") or metrics.get("prompt_tokens")
-            output_tokens = metrics.get("outputTokens") or metrics.get("output_tokens") or metrics.get("completion_tokens")
+            input_tokens = (
+                metrics.get("inputTokens")
+                or metrics.get("input_tokens")
+                or metrics.get("prompt_tokens")
+            )
+            output_tokens = (
+                metrics.get("outputTokens")
+                or metrics.get("output_tokens")
+                or metrics.get("completion_tokens")
+            )
             return input_tokens, output_tokens
     except Exception:
         pass
@@ -107,7 +121,11 @@ def _spctre_install_strands_hook():
                 raise AttributeError("ToolHandler.process is not callable")
 
             async def _patched_process(self, tool_use, **kwargs):
-                tool_name = tool_use.get("name", "unknown") if isinstance(tool_use, dict) else getattr(tool_use, "name", "unknown")
+                tool_name = (
+                    tool_use.get("name", "unknown")
+                    if isinstance(tool_use, dict)
+                    else getattr(tool_use, "name", "unknown")
+                )
                 action = str(tool_name).lower().replace(" ", "_").replace("-", "_")
                 start = time.monotonic()
                 try:
@@ -116,7 +134,15 @@ def _spctre_install_strands_hook():
                     prompt_tokens, completion_tokens = _extract_strands_usage(result)
                     threading.Thread(
                         target=_spctre_emit,
-                        args=("strands", action, "ALLOW", f"Tool {tool_name} processed successfully.", latency_ms, prompt_tokens, completion_tokens),
+                        args=(
+                            "strands",
+                            action,
+                            "ALLOW",
+                            f"Tool {tool_name} processed successfully.",
+                            latency_ms,
+                            prompt_tokens,
+                            completion_tokens,
+                        ),
                         daemon=False,
                     ).start()
                     return result
@@ -124,7 +150,13 @@ def _spctre_install_strands_hook():
                     latency_ms = int((time.monotonic() - start) * 1000)
                     threading.Thread(
                         target=_spctre_emit,
-                        args=("strands", action, "DENY", f"Tool {tool_name} raised {type(exc).__name__}: {exc}", latency_ms),
+                        args=(
+                            "strands",
+                            action,
+                            "DENY",
+                            f"Tool {tool_name} raised {type(exc).__name__}: {exc}",
+                            latency_ms,
+                        ),
                         daemon=False,
                     ).start()
                     raise
@@ -133,7 +165,13 @@ def _spctre_install_strands_hook():
             ToolHandler._spctre_patched = True
             threading.Thread(
                 target=_spctre_emit,
-                args=("strands", "governance_active", "ALLOW", "Strands governance adapter patched and active.", 0),
+                args=(
+                    "strands",
+                    "governance_active",
+                    "ALLOW",
+                    "Strands governance adapter patched and active.",
+                    0,
+                ),
                 daemon=False,
             ).start()
             return
@@ -148,12 +186,20 @@ def _spctre_install_strands_hook():
             return
 
         if not getattr(FunctionTool, "_spctre_patched", False):
-            _original_call = getattr(FunctionTool, "__call__", None)
+            # noqa B004: this retrieves __call__ to wrap it, not to test
+            # callability — the patched implementation invokes
+            # _original_call. Rewriting to callable() would drop the
+            # reference and break the hook.
+            _original_call = getattr(FunctionTool, "__call__", None)  # noqa: B004
             if not callable(_original_call):
                 return  # API shape not recognized; hook inactive.
 
             def _patched_call(self, tool_use, **kwargs):
-                tool_name = getattr(self, "tool_name", None) or getattr(self, "name", None) or type(self).__name__
+                tool_name = (
+                    getattr(self, "tool_name", None)
+                    or getattr(self, "name", None)
+                    or type(self).__name__
+                )
                 action = str(tool_name).lower().replace(" ", "_").replace("-", "_")
                 start = time.monotonic()
                 try:
@@ -162,7 +208,15 @@ def _spctre_install_strands_hook():
                     prompt_tokens, completion_tokens = _extract_strands_usage(result)
                     threading.Thread(
                         target=_spctre_emit,
-                        args=("strands", action, "ALLOW", f"Tool {tool_name} called successfully.", latency_ms, prompt_tokens, completion_tokens),
+                        args=(
+                            "strands",
+                            action,
+                            "ALLOW",
+                            f"Tool {tool_name} called successfully.",
+                            latency_ms,
+                            prompt_tokens,
+                            completion_tokens,
+                        ),
                         daemon=False,
                     ).start()
                     return result
@@ -170,7 +224,13 @@ def _spctre_install_strands_hook():
                     latency_ms = int((time.monotonic() - start) * 1000)
                     threading.Thread(
                         target=_spctre_emit,
-                        args=("strands", action, "DENY", f"Tool {tool_name} raised {type(exc).__name__}: {exc}", latency_ms),
+                        args=(
+                            "strands",
+                            action,
+                            "DENY",
+                            f"Tool {tool_name} raised {type(exc).__name__}: {exc}",
+                            latency_ms,
+                        ),
                         daemon=False,
                     ).start()
                     raise
@@ -179,7 +239,13 @@ def _spctre_install_strands_hook():
             FunctionTool._spctre_patched = True
             threading.Thread(
                 target=_spctre_emit,
-                args=("strands", "governance_active", "ALLOW", "Strands governance adapter patched and active.", 0),
+                args=(
+                    "strands",
+                    "governance_active",
+                    "ALLOW",
+                    "Strands governance adapter patched and active.",
+                    0,
+                ),
                 daemon=False,
             ).start()
     except Exception:

@@ -18,15 +18,21 @@ _SPCTRE_WORKSPACE = os.environ.get("SPCTRE_WORKSPACE", "__SPCTRE_WORKSPACE_ID__"
 _SPCTRE_AGENT = os.environ.get("SPCTRE_AGENT", "__SPCTRE_AGENT_ID__")
 _SPCTRE_ENV = os.environ.get("SPCTRE_ENVIRONMENT", "__SPCTRE_ENVIRONMENT__")
 _SPCTRE_ARTIFACT_HASH = os.environ.get("SPCTRE_ARTIFACT_HASH", "__SPCTRE_ARTIFACT_HASH__")
-_SPCTRE_POLICY_CONTEXT = json.loads(os.environ.get("SPCTRE_POLICY_CONTEXT", "__SPCTRE_POLICY_CONTEXT_JSON__"))
+_SPCTRE_POLICY_CONTEXT = json.loads(
+    os.environ.get("SPCTRE_POLICY_CONTEXT", "__SPCTRE_POLICY_CONTEXT_JSON__")
+)
 
 
-def _spctre_emit(connector, action, status, reason, latency_ms=0, prompt_tokens=None, completion_tokens=None):
+def _spctre_emit(
+    connector, action, status, reason, latency_ms=0, prompt_tokens=None, completion_tokens=None
+):
     if not _SPCTRE_KEY:
         return
     has_context = bool(_SPCTRE_POLICY_CONTEXT and _SPCTRE_POLICY_CONTEXT[0].get("artifactHash"))
-    policy_refs = ["system.governance_active"] if action == "governance_active" else (
-        [f"google-adk.tool.{action}"] if has_context else ["gateway.provenance-gap"]
+    policy_refs = (
+        ["system.governance_active"]
+        if action == "governance_active"
+        else ([f"google-adk.tool.{action}"] if has_context else ["gateway.provenance-gap"])
     )
     payload = {
         "decisionId": f"google-adk-{uuid.uuid4()}",
@@ -123,7 +129,13 @@ def _spctre_install_google_adk_hook():
             latency_ms = int((time.monotonic() - start) * 1000)
             threading.Thread(
                 target=_spctre_emit,
-                args=("google-adk", action, "ALLOW", f"Tool {tool_name} invoked successfully.", latency_ms),
+                args=(
+                    "google-adk",
+                    action,
+                    "ALLOW",
+                    f"Tool {tool_name} invoked successfully.",
+                    latency_ms,
+                ),
                 daemon=False,
             ).start()
             return result
@@ -131,7 +143,13 @@ def _spctre_install_google_adk_hook():
             latency_ms = int((time.monotonic() - start) * 1000)
             threading.Thread(
                 target=_spctre_emit,
-                args=("google-adk", action, "DENY", f"Tool {tool_name} raised {type(exc).__name__}: {exc}", latency_ms),
+                args=(
+                    "google-adk",
+                    action,
+                    "DENY",
+                    f"Tool {tool_name} raised {type(exc).__name__}: {exc}",
+                    latency_ms,
+                ),
                 daemon=False,
             ).start()
             raise
@@ -140,7 +158,13 @@ def _spctre_install_google_adk_hook():
     BaseTool._spctre_patched = True
     threading.Thread(
         target=_spctre_emit,
-        args=("google-adk", "governance_active", "ALLOW", "Google ADK governance adapter patched and active.", 0),
+        args=(
+            "google-adk",
+            "governance_active",
+            "ALLOW",
+            "Google ADK governance adapter patched and active.",
+            0,
+        ),
         daemon=False,
     ).start()
 
@@ -180,7 +204,15 @@ def _spctre_install_google_adk_llm_hook():
                 if prompt_tokens is not None or completion_tokens is not None:
                     threading.Thread(
                         target=_spctre_emit,
-                        args=("google-adk", "llm_call", "ALLOW", "Google ADK LLM call completed.", latency_ms, prompt_tokens, completion_tokens),
+                        args=(
+                            "google-adk",
+                            "llm_call",
+                            "ALLOW",
+                            "Google ADK LLM call completed.",
+                            latency_ms,
+                            prompt_tokens,
+                            completion_tokens,
+                        ),
                         daemon=False,
                     ).start()
 

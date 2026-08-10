@@ -18,15 +18,21 @@ _SPCTRE_WORKSPACE = os.environ.get("SPCTRE_WORKSPACE", "__SPCTRE_WORKSPACE_ID__"
 _SPCTRE_AGENT = os.environ.get("SPCTRE_AGENT", "__SPCTRE_AGENT_ID__")
 _SPCTRE_ENV = os.environ.get("SPCTRE_ENVIRONMENT", "__SPCTRE_ENVIRONMENT__")
 _SPCTRE_ARTIFACT_HASH = os.environ.get("SPCTRE_ARTIFACT_HASH", "__SPCTRE_ARTIFACT_HASH__")
-_SPCTRE_POLICY_CONTEXT = json.loads(os.environ.get("SPCTRE_POLICY_CONTEXT", "__SPCTRE_POLICY_CONTEXT_JSON__"))
+_SPCTRE_POLICY_CONTEXT = json.loads(
+    os.environ.get("SPCTRE_POLICY_CONTEXT", "__SPCTRE_POLICY_CONTEXT_JSON__")
+)
 
 
-def _spctre_emit(connector, action, status, reason, latency_ms=0, prompt_tokens=None, completion_tokens=None):
+def _spctre_emit(
+    connector, action, status, reason, latency_ms=0, prompt_tokens=None, completion_tokens=None
+):
     if not _SPCTRE_KEY:
         return
     has_context = bool(_SPCTRE_POLICY_CONTEXT and _SPCTRE_POLICY_CONTEXT[0].get("artifactHash"))
-    policy_refs = ["system.governance_active"] if action == "governance_active" else (
-        [f"openai-agents.tool.{action}"] if has_context else ["gateway.provenance-gap"]
+    policy_refs = (
+        ["system.governance_active"]
+        if action == "governance_active"
+        else ([f"openai-agents.tool.{action}"] if has_context else ["gateway.provenance-gap"])
     )
     payload = {
         "decisionId": f"openai-agents-{uuid.uuid4()}",
@@ -80,8 +86,12 @@ def _extract_openai_agents_usage(response):
         # ModelResponse.usage (OpenAI Agents SDK >= 0.0.4)
         usage = getattr(response, "usage", None)
         if usage is not None:
-            input_tokens = getattr(usage, "input_tokens", None) or getattr(usage, "prompt_tokens", None)
-            output_tokens = getattr(usage, "output_tokens", None) or getattr(usage, "completion_tokens", None)
+            input_tokens = getattr(usage, "input_tokens", None) or getattr(
+                usage, "prompt_tokens", None
+            )
+            output_tokens = getattr(usage, "output_tokens", None) or getattr(
+                usage, "completion_tokens", None
+            )
             return input_tokens, output_tokens
         # Raw OpenAI ChatCompletion.usage
         if isinstance(usage, dict):
@@ -117,7 +127,13 @@ def _spctre_install_openai_agents_hook():
             latency_ms = int((time.monotonic() - start) * 1000)
             threading.Thread(
                 target=_spctre_emit,
-                args=("openai-agents", action, "ALLOW", f"Tool {tool_name} invoked successfully.", latency_ms),
+                args=(
+                    "openai-agents",
+                    action,
+                    "ALLOW",
+                    f"Tool {tool_name} invoked successfully.",
+                    latency_ms,
+                ),
                 daemon=False,
             ).start()
             return result
@@ -125,7 +141,13 @@ def _spctre_install_openai_agents_hook():
             latency_ms = int((time.monotonic() - start) * 1000)
             threading.Thread(
                 target=_spctre_emit,
-                args=("openai-agents", action, "DENY", f"Tool {tool_name} raised {type(exc).__name__}: {exc}", latency_ms),
+                args=(
+                    "openai-agents",
+                    action,
+                    "DENY",
+                    f"Tool {tool_name} raised {type(exc).__name__}: {exc}",
+                    latency_ms,
+                ),
                 daemon=False,
             ).start()
             raise
@@ -134,7 +156,13 @@ def _spctre_install_openai_agents_hook():
     FunctionTool._spctre_patched = True
     threading.Thread(
         target=_spctre_emit,
-        args=("openai-agents", "governance_active", "ALLOW", "OpenAI Agents governance adapter patched and active.", 0),
+        args=(
+            "openai-agents",
+            "governance_active",
+            "ALLOW",
+            "OpenAI Agents governance adapter patched and active.",
+            0,
+        ),
         daemon=False,
     ).start()
 
@@ -165,7 +193,15 @@ def _spctre_install_openai_agents_model_hook():
             if prompt_tokens is not None or completion_tokens is not None:
                 threading.Thread(
                     target=_spctre_emit,
-                    args=("openai-agents", "llm_call", "ALLOW", "OpenAI Agents model call completed.", latency_ms, prompt_tokens, completion_tokens),
+                    args=(
+                        "openai-agents",
+                        "llm_call",
+                        "ALLOW",
+                        "OpenAI Agents model call completed.",
+                        latency_ms,
+                        prompt_tokens,
+                        completion_tokens,
+                    ),
                     daemon=False,
                 ).start()
             return result

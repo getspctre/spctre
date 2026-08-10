@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import time
-from typing import Any, Dict, Optional
+from typing import Any
 
 from .client import SpctreClient, SpctreClientProtocol
 from .models import EvaluationResult, EvidenceRecord, RuntimeTarget, TriggerKind
@@ -24,7 +24,7 @@ class SpctreHermesPlugin:
         environment: str = "production",
         timeout: float = 5.0,
         dry_run: bool = False,
-        client: Optional[SpctreClientProtocol] = None,
+        client: SpctreClientProtocol | None = None,
     ) -> None:
         self.agent_id = agent_id
         self.tenant_id = tenant_id
@@ -68,7 +68,11 @@ class SpctreHermesPlugin:
             latency_ms=self._elapsed_ms(started),
             trigger_kind=trigger_kind,
             context=context,
-            raw_event={"hook": "pre_tool_call", "toolName": tool_name, "evaluation": evaluation.raw_response},
+            raw_event={
+                "hook": "pre_tool_call",
+                "toolName": tool_name,
+                "evaluation": evaluation.raw_response,
+            },
             tool_parameters=tool_parameters,
         )
         await self._client.ingest_evidence(record)
@@ -86,7 +90,12 @@ class SpctreHermesPlugin:
             return {"allow": True}
 
         started = time.perf_counter()
-        connector = str(context.get("gateway") or context.get("connector") or message.get("gateway") or "hermes_gateway")
+        connector = str(
+            context.get("gateway")
+            or context.get("connector")
+            or message.get("gateway")
+            or "hermes_gateway"
+        )
         action = str(context.get("action") or message.get("action") or "gateway.dispatch")
 
         try:
@@ -111,7 +120,11 @@ class SpctreHermesPlugin:
             latency_ms=self._elapsed_ms(started),
             trigger_kind="gateway_message",
             context=context,
-            raw_event={"hook": "pre_gateway_dispatch", "message": message, "evaluation": evaluation.raw_response},
+            raw_event={
+                "hook": "pre_gateway_dispatch",
+                "message": message,
+                "evaluation": evaluation.raw_response,
+            },
             tool_parameters=message,
         )
         await self._client.ingest_evidence(record)
@@ -134,9 +147,9 @@ class SpctreHermesPlugin:
         artifact_hash: str,
         latency_ms: int,
         trigger_kind: TriggerKind,
-        context: Dict[str, Any],
-        raw_event: Dict[str, Any],
-        tool_parameters: Dict[str, Any],
+        context: dict[str, Any],
+        raw_event: dict[str, Any],
+        tool_parameters: dict[str, Any],
     ) -> EvidenceRecord:
         execution_context = self._execution_context(context)
         raw_evidence = dict(raw_event)
@@ -170,45 +183,60 @@ class SpctreHermesPlugin:
         )
 
     @staticmethod
-    def _connector_for_tool(tool_name: str, context: Dict[str, Any]) -> str:
+    def _connector_for_tool(tool_name: str, context: dict[str, Any]) -> str:
         return str(context.get("connector") or context.get("toolConnector") or tool_name)
 
     @staticmethod
-    def _action_for_tool(tool_name: str, context: Dict[str, Any]) -> str:
+    def _action_for_tool(tool_name: str, context: dict[str, Any]) -> str:
         return str(context.get("action") or context.get("toolAction") or tool_name)
 
     @staticmethod
-    def _derive_trigger_kind(context: Dict[str, Any]) -> TriggerKind:
-        raw = str(context.get("triggerKind") or context.get("trigger") or context.get("source") or "").lower()
+    def _derive_trigger_kind(context: dict[str, Any]) -> TriggerKind:
+        raw = str(
+            context.get("triggerKind") or context.get("trigger") or context.get("source") or ""
+        ).lower()
         if raw in {"scheduled", "schedule", "cron"}:
             return "scheduled"
         if raw in {"gateway_message", "gateway", "message"}:
             return "gateway_message"
-        if context.get("scheduled") is True or context.get("cron") is True or context.get("schedule") is not None:
+        if (
+            context.get("scheduled") is True
+            or context.get("cron") is True
+            or context.get("schedule") is not None
+        ):
             return "scheduled"
         if context.get("gateway") is not None or context.get("gatewayMessage") is not None:
             return "gateway_message"
         return "interactive"
 
     @staticmethod
-    def _execution_context(context: Dict[str, Any]) -> Dict[str, Any]:
+    def _execution_context(context: dict[str, Any]) -> dict[str, Any]:
         candidate = context.get("executionContext")
         if isinstance(candidate, dict):
             return dict(candidate)
-        result: Dict[str, Any] = {}
+        result: dict[str, Any] = {}
         for key in ("backend", "sessionId", "taskId", "sandboxName"):
             if key in context:
                 result[key] = context[key]
         return result
 
     @staticmethod
-    def _parent_agent_id(context: Dict[str, Any]) -> Optional[str]:
-        value = context.get("parentAgentId") or context.get("parent_agent_id") or context.get("parentAgent")
+    def _parent_agent_id(context: dict[str, Any]) -> str | None:
+        value = (
+            context.get("parentAgentId")
+            or context.get("parent_agent_id")
+            or context.get("parentAgent")
+        )
         return str(value) if value else None
 
     @staticmethod
-    def _trace_id(context: Dict[str, Any]) -> Optional[str]:
-        value = context.get("traceId") or context.get("trace_id") or context.get("taskId") or context.get("sessionId")
+    def _trace_id(context: dict[str, Any]) -> str | None:
+        value = (
+            context.get("traceId")
+            or context.get("trace_id")
+            or context.get("taskId")
+            or context.get("sessionId")
+        )
         return str(value) if value else None
 
     @staticmethod

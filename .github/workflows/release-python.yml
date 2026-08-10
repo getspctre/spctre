@@ -3,7 +3,7 @@ name: Release (Python)
 # Publishes the public Python distributions to PyPI / TestPyPI:
 #   - spctre-hermes     (packages/adapters/hermes)
 #   - spctre-odysseus   (packages/adapters/odysseus)
-#   - spctre-sdk        (generated from the OpenAPI spec into target/sdk-python)
+#   - spctre-sdk        (packages/sdk-python: facade + checked-in generated client)
 #
 # Authentication is PyPI Trusted Publishing (OIDC). There is deliberately no
 # API-token bootstrap step here, and none is needed: unlike npm, PyPI supports
@@ -85,8 +85,8 @@ jobs:
               },
               {
                 project: "spctre-sdk",
-                path: "target/sdk-python",
-                version_file: "",
+                path: "packages/sdk-python",
+                version_file: "packages/sdk-python/spctre_sdk/_version.py",
                 pypi_env: "pypi",
                 testpypi_env: "testpypi",
               },
@@ -117,11 +117,7 @@ jobs:
       - name: Resolve version
         id: version
         run: |
-          if [ -n "${{ matrix.version_file }}" ]; then
-            base="$(sed -n 's/^__version__ = "\(.*\)"$/\1/p' "${{ matrix.version_file }}")"
-          else
-            base="$(sed -n 's/^VERSION="${SPCTRE_SDK_VERSION:-\(.*\)}"$/\1/p' scripts/generate-python-sdk.sh)"
-          fi
+          base="$(sed -n 's/^__version__ = "\(.*\)"$/\1/p' "${{ matrix.version_file }}")"
           if [ -z "$base" ]; then
             echo "could not resolve base version for ${{ matrix.project }}" >&2
             exit 1
@@ -134,31 +130,11 @@ jobs:
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "Building ${{ matrix.project }} $version for ${{ inputs.target }}"
 
-      # The SDK is generated rather than checked in, so it needs the Node
-      # toolchain to emit the spec and a JRE for openapi-generator.
-      - uses: pnpm/action-setup@v6.0.10
-        if: matrix.project == 'spctre-sdk'
-      - uses: actions/setup-node@v7
-        if: matrix.project == 'spctre-sdk'
-        with:
-          node-version: 25
-          cache: pnpm
-      - uses: actions/setup-java@v5
-        if: matrix.project == 'spctre-sdk'
-        with:
-          distribution: temurin
-          java-version: 21
-      - name: Generate Python SDK
-        if: matrix.project == 'spctre-sdk'
-        env:
-          SPCTRE_SDK_VERSION: ${{ steps.version.outputs.version }}
-        run: |
-          pnpm install --frozen-lockfile
-          pnpm --filter @spctre/api-contracts emit
-          pnpm generate:python-sdk
+      # No code generation here. spctre-sdk's generated client is checked in,
+      # so every distribution builds from the checkout alone — no Node, no JRE.
+      # CI enforces that the checked-in client matches the spec.
 
       - name: Stamp version
-        if: matrix.version_file != ''
         run: |
           printf '__version__ = "%s"\n' "${{ steps.version.outputs.version }}" \
             > "${{ matrix.version_file }}"

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Dict, Optional, Protocol
+from typing import Any, Protocol
 
 from .models import EvaluationResult, EvidenceRecord
 
@@ -19,8 +19,8 @@ class SpctreClientProtocol(Protocol):
         action: str,
         agent_id: str,
         *,
-        tool_parameters: Optional[Dict[str, Any]] = None,
-        context: Optional[Dict[str, Any]] = None,
+        tool_parameters: dict[str, Any] | None = None,
+        context: dict[str, Any] | None = None,
         trigger_kind: str = "interactive",
     ) -> EvaluationResult: ...
 
@@ -51,11 +51,11 @@ class SpctreClient:
         action: str,
         agent_id: str,
         *,
-        tool_parameters: Optional[Dict[str, Any]] = None,
-        context: Optional[Dict[str, Any]] = None,
+        tool_parameters: dict[str, Any] | None = None,
+        context: dict[str, Any] | None = None,
         trigger_kind: str = "interactive",
     ) -> EvaluationResult:
-        payload: Dict[str, Any] = {
+        payload: dict[str, Any] = {
             "connector": connector,
             "action": action,
             "toolParameters": tool_parameters or {},

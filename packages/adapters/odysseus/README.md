@@ -4,8 +4,7 @@
 that support the `ToolMiddleware` protocol:
 
 ```python
-async def before_call(self, tool_name: str, args: dict, ctx: dict) -> dict | None:
-    ...
+async def before_call(self, tool_name: str, args: dict, ctx: dict) -> dict | None: ...
 ```
 
 ## Install

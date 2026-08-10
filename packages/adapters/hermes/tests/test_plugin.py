@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Any, Dict, Optional
+from typing import Any
 
 from spctre_hermes import SpctreHermesPlugin
 from spctre_hermes.models import EvaluationResult
@@ -19,8 +19,8 @@ class FakeClient:
         action: str,
         agent_id: str,
         *,
-        tool_parameters: Optional[Dict[str, Any]] = None,
-        context: Optional[Dict[str, Any]] = None,
+        tool_parameters: dict[str, Any] | None = None,
+        context: dict[str, Any] | None = None,
         trigger_kind: str = "interactive",
     ) -> EvaluationResult:
         self.evaluate_calls.append(
@@ -73,7 +73,9 @@ def test_pre_tool_call_scheduled_context_sets_trigger_kind():
     client = FakeClient()
     plugin = make_plugin(client)
 
-    asyncio.run(plugin.pre_tool_call("browser", {"url": "https://example.com"}, {"scheduled": True}))
+    asyncio.run(
+        plugin.pre_tool_call("browser", {"url": "https://example.com"}, {"scheduled": True})
+    )
 
     assert client.evidence_records[0].trigger_kind == "scheduled"
 
@@ -90,7 +92,9 @@ def test_pre_gateway_dispatch_emits_gateway_trigger_kind():
 
 
 def test_deny_response_blocks_pre_tool_call():
-    client = FakeClient(EvaluationResult(status="DENY", reason="blocked by policy", policyRefs=["rule.deny"]))
+    client = FakeClient(
+        EvaluationResult(status="DENY", reason="blocked by policy", policyRefs=["rule.deny"])
+    )
     plugin = make_plugin(client)
 
     result = asyncio.run(plugin.pre_tool_call("dangerous_tool", {}, {}))

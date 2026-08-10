@@ -4,8 +4,8 @@
 # Use the generated wrapper to enable zero-change CrewAI governance:
 #   .spctre/spctre-python python your_agent.py
 
-import importlib
 import hashlib
+import importlib
 import inspect
 import json
 import os
@@ -20,7 +20,9 @@ _SPCTRE_WORKSPACE = os.environ.get("SPCTRE_WORKSPACE", "__SPCTRE_WORKSPACE_ID__"
 _SPCTRE_AGENT = os.environ.get("SPCTRE_AGENT", "__SPCTRE_AGENT_ID__")
 _SPCTRE_ENV = os.environ.get("SPCTRE_ENVIRONMENT", "__SPCTRE_ENVIRONMENT__")
 _SPCTRE_ARTIFACT_HASH = os.environ.get("SPCTRE_ARTIFACT_HASH", "__SPCTRE_ARTIFACT_HASH__")
-_SPCTRE_POLICY_CONTEXT = json.loads(os.environ.get("SPCTRE_POLICY_CONTEXT", "__SPCTRE_POLICY_CONTEXT_JSON__"))
+_SPCTRE_POLICY_CONTEXT = json.loads(
+    os.environ.get("SPCTRE_POLICY_CONTEXT", "__SPCTRE_POLICY_CONTEXT_JSON__")
+)
 
 
 def _spctre_argument_hash(args, kwargs):
@@ -35,13 +37,27 @@ def _spctre_argument_hash(args, kwargs):
         return None
 
 
-def _spctre_emit(connector, action, status, reason, latency_ms=0, prompt_tokens=None, completion_tokens=None, argument_hash=None, error_type=None):
+def _spctre_emit(
+    connector,
+    action,
+    status,
+    reason,
+    latency_ms=0,
+    prompt_tokens=None,
+    completion_tokens=None,
+    argument_hash=None,
+    error_type=None,
+):
     if not _SPCTRE_KEY:
         return
     if action == "governance_active":
         policy_refs = ["system.governance_active"]
     else:
-        policy_refs = _SPCTRE_POLICY_CONTEXT[0]["artifactHash"] and [f"crewai.tool.{action}"] or ["gateway.provenance-gap"]
+        policy_refs = (
+            _SPCTRE_POLICY_CONTEXT[0]["artifactHash"]
+            and [f"crewai.tool.{action}"]
+            or ["gateway.provenance-gap"]
+        )
     payload = {
         "decisionId": f"crewai-{uuid.uuid4()}",
         "environment": _SPCTRE_ENV,
@@ -140,7 +156,16 @@ def _spctre_install_crewai_hook():
             latency_ms = int((time.monotonic() - start) * 1000)
             threading.Thread(
                 target=_spctre_emit,
-                args=("crewai", action, "ALLOW", f"Tool {tool_name} executed successfully.", latency_ms, None, None, argument_hash),
+                args=(
+                    "crewai",
+                    action,
+                    "ALLOW",
+                    f"Tool {tool_name} executed successfully.",
+                    latency_ms,
+                    None,
+                    None,
+                    argument_hash,
+                ),
                 daemon=False,
             ).start()
             return result
@@ -148,7 +173,17 @@ def _spctre_install_crewai_hook():
             latency_ms = int((time.monotonic() - start) * 1000)
             threading.Thread(
                 target=_spctre_emit,
-                args=("crewai", action, "DENY", f"Tool {tool_name} raised {type(exc).__name__}: {exc}", latency_ms, None, None, argument_hash, type(exc).__name__),
+                args=(
+                    "crewai",
+                    action,
+                    "DENY",
+                    f"Tool {tool_name} raised {type(exc).__name__}: {exc}",
+                    latency_ms,
+                    None,
+                    None,
+                    argument_hash,
+                    type(exc).__name__,
+                ),
                 daemon=False,
             ).start()
             raise
@@ -164,7 +199,16 @@ def _spctre_install_crewai_hook():
             latency_ms = int((time.monotonic() - start) * 1000)
             threading.Thread(
                 target=_spctre_emit,
-                args=("crewai", action, "ALLOW", f"Async tool {tool_name} executed successfully.", latency_ms, None, None, argument_hash),
+                args=(
+                    "crewai",
+                    action,
+                    "ALLOW",
+                    f"Async tool {tool_name} executed successfully.",
+                    latency_ms,
+                    None,
+                    None,
+                    argument_hash,
+                ),
                 daemon=False,
             ).start()
             return result
@@ -172,7 +216,17 @@ def _spctre_install_crewai_hook():
             latency_ms = int((time.monotonic() - start) * 1000)
             threading.Thread(
                 target=_spctre_emit,
-                args=("crewai", action, "DENY", f"Async tool {tool_name} raised {type(exc).__name__}: {exc}", latency_ms, None, None, argument_hash, type(exc).__name__),
+                args=(
+                    "crewai",
+                    action,
+                    "DENY",
+                    f"Async tool {tool_name} raised {type(exc).__name__}: {exc}",
+                    latency_ms,
+                    None,
+                    None,
+                    argument_hash,
+                    type(exc).__name__,
+                ),
                 daemon=False,
             ).start()
             raise
@@ -184,7 +238,13 @@ def _spctre_install_crewai_hook():
     BaseTool._spctre_patched = True
     threading.Thread(
         target=_spctre_emit,
-        args=("crewai", "governance_active", "ALLOW", "CrewAI governance adapter patched and active.", 0),
+        args=(
+            "crewai",
+            "governance_active",
+            "ALLOW",
+            "CrewAI governance adapter patched and active.",
+            0,
+        ),
         daemon=False,
     ).start()
 
@@ -212,7 +272,15 @@ def _spctre_install_crewai_llm_hook():
             if prompt_tokens is not None or completion_tokens is not None:
                 threading.Thread(
                     target=_spctre_emit,
-                    args=("crewai", "llm_call", "ALLOW", "CrewAI LLM call completed.", latency_ms, prompt_tokens, completion_tokens),
+                    args=(
+                        "crewai",
+                        "llm_call",
+                        "ALLOW",
+                        "CrewAI LLM call completed.",
+                        latency_ms,
+                        prompt_tokens,
+                        completion_tokens,
+                    ),
                     daemon=False,
                 ).start()
             return result

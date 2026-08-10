@@ -22,9 +22,9 @@ import json
 import os
 import threading
 import time
-from urllib.parse import quote
 import urllib.request
 import uuid
+from urllib.parse import quote
 
 _SPCTRE_URL = os.environ.get("SPCTRE_URL", "__SPCTRE_CONTROL_PLANE_URL__")
 _SPCTRE_GATEWAY_URL = os.environ.get("SPCTRE_GATEWAY_URL", _SPCTRE_URL).rstrip("/")
@@ -34,7 +34,9 @@ _SPCTRE_AGENT = os.environ.get("SPCTRE_AGENT", "__SPCTRE_AGENT_ID__")
 _SPCTRE_SESSION_ID = os.environ.get("SPCTRE_SESSION_ID") or f"antigravity-sdk-{os.getpid()}"
 _SPCTRE_ENV = os.environ.get("SPCTRE_ENVIRONMENT", "__SPCTRE_ENVIRONMENT__")
 _SPCTRE_ARTIFACT_HASH = os.environ.get("SPCTRE_ARTIFACT_HASH", "__SPCTRE_ARTIFACT_HASH__")
-_SPCTRE_POLICY_CONTEXT = json.loads(os.environ.get("SPCTRE_POLICY_CONTEXT", "__SPCTRE_POLICY_CONTEXT_JSON__"))
+_SPCTRE_POLICY_CONTEXT = json.loads(
+    os.environ.get("SPCTRE_POLICY_CONTEXT", "__SPCTRE_POLICY_CONTEXT_JSON__")
+)
 _SPCTRE_MODE = os.environ.get("SPCTRE_ANTIGRAVITY_SDK_MODE", "observe").lower()
 _SPCTRE_OUTAGE_POLICY = os.environ.get("SPCTRE_GATEWAY_OUTAGE_POLICY", "fail-closed").lower()
 _SPCTRE_GATEWAY_TIMEOUT = max(5, int(os.environ.get("SPCTRE_GATEWAY_TIMEOUT", "1800")))
@@ -43,12 +45,22 @@ _SPCTRE_EXPECTED_SDK_VERSION = os.environ.get("SPCTRE_ANTIGRAVITY_SDK_EXPECTED_V
 _SPCTRE_PENDING_GATEWAY_DECISIONS = {}
 
 
-def _spctre_emit(action, status, reason, latency_ms=0, prompt_tokens=None, completion_tokens=None, total_tokens=None):
+def _spctre_emit(
+    action,
+    status,
+    reason,
+    latency_ms=0,
+    prompt_tokens=None,
+    completion_tokens=None,
+    total_tokens=None,
+):
     if not _SPCTRE_KEY:
         return
     has_context = bool(_SPCTRE_POLICY_CONTEXT and _SPCTRE_POLICY_CONTEXT[0].get("artifactHash"))
-    policy_refs = ["system.governance_active"] if action == "governance_active" else (
-        [f"google-antigravity.tool.{action}"] if has_context else ["gateway.provenance-gap"]
+    policy_refs = (
+        ["system.governance_active"]
+        if action == "governance_active"
+        else ([f"google-antigravity.tool.{action}"] if has_context else ["gateway.provenance-gap"])
     )
     payload = {
         "decisionId": f"antigravity-sdk-{uuid.uuid4()}",
@@ -99,7 +111,15 @@ def _spctre_emit(action, status, reason, latency_ms=0, prompt_tokens=None, compl
         pass
 
 
-def _spctre_emit_async(action, status, reason, latency_ms=0, prompt_tokens=None, completion_tokens=None, total_tokens=None):
+def _spctre_emit_async(
+    action,
+    status,
+    reason,
+    latency_ms=0,
+    prompt_tokens=None,
+    completion_tokens=None,
+    total_tokens=None,
+):
     threading.Thread(
         target=_spctre_emit,
         args=(action, status, reason, latency_ms, prompt_tokens, completion_tokens, total_tokens),
@@ -128,10 +148,20 @@ def _spctre_install_antigravity_sdk_hooks():
             start = time.monotonic()
             try:
                 result = await original_execute(self, tool_name, **kwargs)
-                _spctre_emit_async(action, "ALLOW", f"Tool {tool_name} invoked successfully.", int((time.monotonic() - start) * 1000))
+                _spctre_emit_async(
+                    action,
+                    "ALLOW",
+                    f"Tool {tool_name} invoked successfully.",
+                    int((time.monotonic() - start) * 1000),
+                )
                 return result
             except Exception as exc:
-                _spctre_emit_async(action, "DENY", f"Tool {tool_name} raised {type(exc).__name__}: {exc}", int((time.monotonic() - start) * 1000))
+                _spctre_emit_async(
+                    action,
+                    "DENY",
+                    f"Tool {tool_name} raised {type(exc).__name__}: {exc}",
+                    int((time.monotonic() - start) * 1000),
+                )
                 raise
 
         async def _patched_process_tool_calls(self, tool_calls):
@@ -141,16 +171,30 @@ def _spctre_install_antigravity_sdk_hooks():
                 for result in results:
                     action = _spctre_action(getattr(result, "name", None))
                     status = "DENY" if getattr(result, "error", None) else "ALLOW"
-                    _spctre_emit_async(action, status, "Tool call batch completed.", int((time.monotonic() - start) * 1000))
+                    _spctre_emit_async(
+                        action,
+                        status,
+                        "Tool call batch completed.",
+                        int((time.monotonic() - start) * 1000),
+                    )
                 return results
             except Exception as exc:
-                _spctre_emit_async("tool_call_batch", "DENY", f"Tool call batch raised {type(exc).__name__}: {exc}", int((time.monotonic() - start) * 1000))
+                _spctre_emit_async(
+                    "tool_call_batch",
+                    "DENY",
+                    f"Tool call batch raised {type(exc).__name__}: {exc}",
+                    int((time.monotonic() - start) * 1000),
+                )
                 raise
 
         ToolRunner.execute = _patched_execute
         ToolRunner.process_tool_calls = _patched_process_tool_calls
         ToolRunner._spctre_patched = True
-        _spctre_emit_async("governance_active", "ALLOW", "Google Antigravity SDK ToolRunner governance adapter patched and active.")
+        _spctre_emit_async(
+            "governance_active",
+            "ALLOW",
+            "Google Antigravity SDK ToolRunner governance adapter patched and active.",
+        )
     except Exception:
         pass
 
@@ -207,15 +251,23 @@ def _spctre_gateway_decide(tool_call):
 
 def _spctre_wait_for_resolution(decision_id):
     deadline = time.monotonic() + _SPCTRE_GATEWAY_TIMEOUT
-    url = f"{_SPCTRE_GATEWAY_URL}/api/gateway/escalations/status?decisionId={quote(str(decision_id))}"
+    url = (
+        f"{_SPCTRE_GATEWAY_URL}/api/gateway/escalations/status?decisionId={quote(str(decision_id))}"
+    )
     while time.monotonic() < deadline:
-        request = urllib.request.Request(url, headers={"Authorization": f"Bearer {_SPCTRE_KEY}"}, method="GET")
+        request = urllib.request.Request(
+            url, headers={"Authorization": f"Bearer {_SPCTRE_KEY}"}, method="GET"
+        )
         try:
             with urllib.request.urlopen(request, timeout=3) as response:
                 body = json.loads(response.read().decode() or "{}")
             if body.get("status") == "RESOLVED":
                 outcome = str(body.get("resolutionOutcome") or "ABORT").upper()
-                reason = str(body.get("resolutionNote") or body.get("agentGuidance") or f"Spctre escalation resolved: {outcome}.")
+                reason = str(
+                    body.get("resolutionNote")
+                    or body.get("agentGuidance")
+                    or f"Spctre escalation resolved: {outcome}."
+                )
                 return outcome == "PROCEED", reason
             if body.get("status") == "EXPIRED":
                 return False, "Spctre escalation expired; fail-closed."
@@ -233,7 +285,9 @@ def _spctre_install_antigravity_enforcement_hook():
         if _SPCTRE_EXPECTED_SDK_VERSION:
             installed_version = importlib.metadata.version("google-antigravity")
             if installed_version != _SPCTRE_EXPECTED_SDK_VERSION:
-                raise RuntimeError(f"google-antigravity {installed_version} does not match required {_SPCTRE_EXPECTED_SDK_VERSION}.")
+                raise RuntimeError(
+                    f"google-antigravity {installed_version} does not match required {_SPCTRE_EXPECTED_SDK_VERSION}."
+                )
         agent_module = importlib.import_module("google.antigravity.agent")
         hooks_module = importlib.import_module("google.antigravity.hooks")
         types_module = importlib.import_module("google.antigravity.types")
@@ -242,27 +296,53 @@ def _spctre_install_antigravity_enforcement_hook():
         HookResult = getattr(types_module, "HookResult", None)
         hook_decorator = getattr(hooks_module, "pre_tool_call_decide", None)
         ask_user = getattr(policy_module, "ask_user", None)
-        if Agent is None or HookResult is None or not callable(hook_decorator) or not callable(ask_user) or getattr(Agent, "_spctre_enforcement_patched", False):
+        if (
+            Agent is None
+            or HookResult is None
+            or not callable(hook_decorator)
+            or not callable(ask_user)
+            or getattr(Agent, "_spctre_enforcement_patched", False)
+        ):
             return
 
         @hook_decorator
         async def _spctre_pre_tool_call_decide(tool_call):
             tool_name = getattr(tool_call, "name", None)
             try:
-                outcome, reason, decision_id, queued = await asyncio.to_thread(_spctre_gateway_decide, tool_call)
+                outcome, reason, decision_id, queued = await asyncio.to_thread(
+                    _spctre_gateway_decide, tool_call
+                )
             except Exception as exc:
                 if _SPCTRE_OUTAGE_POLICY == "fail-open":
-                    _spctre_emit_async(_spctre_action(tool_name), "WARN", f"Gateway unavailable; fail-open allowed execution ({type(exc).__name__}).")
+                    _spctre_emit_async(
+                        _spctre_action(tool_name),
+                        "WARN",
+                        f"Gateway unavailable; fail-open allowed execution ({type(exc).__name__}).",
+                    )
                     return HookResult(allow=True)
-                outcome, reason, decision_id, queued = "ABORT", f"Spctre gateway unavailable; fail-closed ({type(exc).__name__}).", None, False
+                outcome, reason, decision_id, queued = (
+                    "ABORT",
+                    f"Spctre gateway unavailable; fail-closed ({type(exc).__name__}).",
+                    None,
+                    False,
+                )
 
             if outcome == "PROCEED":
-                _SPCTRE_PENDING_GATEWAY_DECISIONS[getattr(tool_call, "id", None) or decision_id] = (outcome, reason, decision_id, queued)
+                _SPCTRE_PENDING_GATEWAY_DECISIONS[getattr(tool_call, "id", None) or decision_id] = (
+                    outcome,
+                    reason,
+                    decision_id,
+                    queued,
+                )
                 return HookResult(allow=True, message=reason)
             if outcome == "ESCALATE" and queued:
-                allowed, resolution_reason = await asyncio.to_thread(_spctre_wait_for_resolution, decision_id)
+                allowed, resolution_reason = await asyncio.to_thread(
+                    _spctre_wait_for_resolution, decision_id
+                )
                 if allowed:
-                    _SPCTRE_PENDING_GATEWAY_DECISIONS[getattr(tool_call, "id", None) or decision_id] = ("PROCEED", resolution_reason, decision_id, False)
+                    _SPCTRE_PENDING_GATEWAY_DECISIONS[
+                        getattr(tool_call, "id", None) or decision_id
+                    ] = ("PROCEED", resolution_reason, decision_id, False)
                     return HookResult(allow=True, message=resolution_reason)
                 _spctre_emit_async(_spctre_action(tool_name), "ESCALATE", resolution_reason)
                 return HookResult(allow=False, message=resolution_reason)
@@ -279,14 +359,24 @@ def _spctre_install_antigravity_enforcement_hook():
                 except Exception as exc:
                     if _SPCTRE_OUTAGE_POLICY == "fail-open":
                         return True
-                    _spctre_emit_async(_spctre_action(getattr(tool_call, "name", None)), "DENY", f"Spctre gateway unavailable; fail-closed ({type(exc).__name__}).")
+                    _spctre_emit_async(
+                        _spctre_action(getattr(tool_call, "name", None)),
+                        "DENY",
+                        f"Spctre gateway unavailable; fail-closed ({type(exc).__name__}).",
+                    )
                     return False
             outcome, reason, decision_id, queued = pending
             if outcome == "PROCEED":
                 return True
             if outcome == "ESCALATE" and queued and decision_id:
-                allowed, resolution_reason = await asyncio.to_thread(_spctre_wait_for_resolution, decision_id)
-                _spctre_emit_async(_spctre_action(getattr(tool_call, "name", None)), "ALLOW" if allowed else "ESCALATE", resolution_reason)
+                allowed, resolution_reason = await asyncio.to_thread(
+                    _spctre_wait_for_resolution, decision_id
+                )
+                _spctre_emit_async(
+                    _spctre_action(getattr(tool_call, "name", None)),
+                    "ALLOW" if allowed else "ESCALATE",
+                    resolution_reason,
+                )
                 return allowed
             _spctre_emit_async(_spctre_action(getattr(tool_call, "name", None)), "DENY", reason)
             return False
@@ -299,15 +389,25 @@ def _spctre_install_antigravity_enforcement_hook():
             hooks = list(getattr(config, "hooks", []) or [])
             hooks.append(_spctre_pre_tool_call_decide)
             policies = list(getattr(config, "policies", []) or [])
-            policies.append(ask_user("*", handler=_spctre_ask_user, name="spctre_gateway_human_review"))
+            policies.append(
+                ask_user("*", handler=_spctre_ask_user, name="spctre_gateway_human_review")
+            )
             model_copy = getattr(config, "model_copy", None)
             if not callable(model_copy):
-                raise RuntimeError("Antigravity AgentConfig does not support model_copy; refusing unverified enforcement install.")
-            return original_init(self, model_copy(update={"hooks": hooks, "policies": policies}), *args, **kwargs)
+                raise RuntimeError(
+                    "Antigravity AgentConfig does not support model_copy; refusing unverified enforcement install."
+                )
+            return original_init(
+                self, model_copy(update={"hooks": hooks, "policies": policies}), *args, **kwargs
+            )
 
         Agent.__init__ = _patched_init
         Agent._spctre_enforcement_patched = True
-        _spctre_emit_async("governance_active", "ALLOW", "Google Antigravity SDK native gateway and ask_user policy installed.")
+        _spctre_emit_async(
+            "governance_active",
+            "ALLOW",
+            "Google Antigravity SDK native gateway and ask_user policy installed.",
+        )
     except Exception as exc:
         # Observe-mode telemetry is intentionally best-effort, but an explicit
         # enforcement opt-in must never degrade to an unpatched runtime.
@@ -333,11 +433,37 @@ def _spctre_install_antigravity_usage_hook():
             async for step in original_receive_steps(self, *args, **kwargs):
                 yield step
             after = self.total_usage
-            prompt_tokens = max(0, _spctre_usage_value(after, "prompt_token_count") - _spctre_usage_value(before, "prompt_token_count"))
-            completion_tokens = max(0, (_spctre_usage_value(after, "candidates_token_count") + _spctre_usage_value(after, "thoughts_token_count")) - (_spctre_usage_value(before, "candidates_token_count") + _spctre_usage_value(before, "thoughts_token_count")))
-            total_tokens = max(0, _spctre_usage_value(after, "total_token_count") - _spctre_usage_value(before, "total_token_count"))
+            prompt_tokens = max(
+                0,
+                _spctre_usage_value(after, "prompt_token_count")
+                - _spctre_usage_value(before, "prompt_token_count"),
+            )
+            completion_tokens = max(
+                0,
+                (
+                    _spctre_usage_value(after, "candidates_token_count")
+                    + _spctre_usage_value(after, "thoughts_token_count")
+                )
+                - (
+                    _spctre_usage_value(before, "candidates_token_count")
+                    + _spctre_usage_value(before, "thoughts_token_count")
+                ),
+            )
+            total_tokens = max(
+                0,
+                _spctre_usage_value(after, "total_token_count")
+                - _spctre_usage_value(before, "total_token_count"),
+            )
             if total_tokens or prompt_tokens or completion_tokens:
-                _spctre_emit_async("llm_turn", "ALLOW", "Antigravity SDK turn completed with token usage.", int((time.monotonic() - start) * 1000), prompt_tokens, completion_tokens, total_tokens)
+                _spctre_emit_async(
+                    "llm_turn",
+                    "ALLOW",
+                    "Antigravity SDK turn completed with token usage.",
+                    int((time.monotonic() - start) * 1000),
+                    prompt_tokens,
+                    completion_tokens,
+                    total_tokens,
+                )
 
         Conversation.receive_steps = _patched_receive_steps
         Conversation._spctre_usage_patched = True

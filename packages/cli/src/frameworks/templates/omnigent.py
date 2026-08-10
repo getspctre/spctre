@@ -17,12 +17,12 @@
 # Then launch with:
 #   PYTHONPATH=./.spctre:$PYTHONPATH SPCTRE_API_TOKEN=... omnigent server --config server_config.yaml
 
+import asyncio
 import json
 import os
 import re
-import asyncio
-import threading
 import sys
+import threading
 import time
 import urllib.request
 import uuid
@@ -35,7 +35,9 @@ _SPCTRE_WORKSPACE = os.environ.get("SPCTRE_WORKSPACE", "__SPCTRE_WORKSPACE_ID__"
 _SPCTRE_AGENT = os.environ.get("SPCTRE_AGENT", "__SPCTRE_AGENT_ID__")
 _SPCTRE_ENV = os.environ.get("SPCTRE_ENVIRONMENT", "__SPCTRE_ENVIRONMENT__")
 _SPCTRE_ARTIFACT_HASH = os.environ.get("SPCTRE_ARTIFACT_HASH", "__SPCTRE_ARTIFACT_HASH__")
-_SPCTRE_POLICY_CONTEXT = json.loads(os.environ.get("SPCTRE_POLICY_CONTEXT", "__SPCTRE_POLICY_CONTEXT_JSON__"))
+_SPCTRE_POLICY_CONTEXT = json.loads(
+    os.environ.get("SPCTRE_POLICY_CONTEXT", "__SPCTRE_POLICY_CONTEXT_JSON__")
+)
 
 try:
     from omnigent.policies.schema import PolicyCallable, PolicyEvent, PolicyResponse
@@ -45,28 +47,35 @@ except ImportError:
     PolicyCallable = Any
 
 BASH_CONNECTOR_PATTERNS = [
-    (re.compile(r'\bstripe\b', re.IGNORECASE), "stripe", ["billing"]),
-    (re.compile(r'github\.com\b|(?:^|\s|/)gh\s', re.IGNORECASE), "github", ["vcs"]),
-    (re.compile(r'gitlab\.com\b', re.IGNORECASE), "gitlab", ["vcs"]),
-    (re.compile(r'\bslack\.com\b|\bslack\s', re.IGNORECASE), "slack", ["messaging"]),
-    (re.compile(r'\btwilio\b', re.IGNORECASE), "twilio", ["messaging"]),
-    (re.compile(r'\bsendgrid\b', re.IGNORECASE), "sendgrid", ["email"]),
-    (re.compile(r'\bsalesforce\b', re.IGNORECASE), "salesforce", ["crm"]),
-    (re.compile(r'\bzendesk\b', re.IGNORECASE), "zendesk", ["support"]),
-    (re.compile(r'\bpsql\b|\bpg_dump\b|\bpg_restore\b', re.IGNORECASE), "postgres", ["database"]),
-    (re.compile(r'\bmysql\b|\bmysqldump\b', re.IGNORECASE), "mysql", ["database"]),
-    (re.compile(r'\bmongo\b', re.IGNORECASE), "mongodb", ["database"]),
-    (re.compile(r'(?:^|\s)aws\s|awscli\b|s3://', re.IGNORECASE), "aws", ["infrastructure"]),
-    (re.compile(r'(?:^|\s)gcloud\s', re.IGNORECASE), "gcp", ["infrastructure"]),
-    (re.compile(r'(?:^|\s)kubectl\s', re.IGNORECASE), "kubernetes", ["infrastructure"]),
-    (re.compile(r'\bterraform\b', re.IGNORECASE), "terraform", ["infrastructure"]),
-    (re.compile(r'\bpulumi\b', re.IGNORECASE), "pulumi", ["infrastructure"]),
-    (re.compile(r'(?:^|\s)az\s+[a-z]', re.IGNORECASE), "azure", ["infrastructure"]),
+    (re.compile(r"\bstripe\b", re.IGNORECASE), "stripe", ["billing"]),
+    (re.compile(r"github\.com\b|(?:^|\s|/)gh\s", re.IGNORECASE), "github", ["vcs"]),
+    (re.compile(r"gitlab\.com\b", re.IGNORECASE), "gitlab", ["vcs"]),
+    (re.compile(r"\bslack\.com\b|\bslack\s", re.IGNORECASE), "slack", ["messaging"]),
+    (re.compile(r"\btwilio\b", re.IGNORECASE), "twilio", ["messaging"]),
+    (re.compile(r"\bsendgrid\b", re.IGNORECASE), "sendgrid", ["email"]),
+    (re.compile(r"\bsalesforce\b", re.IGNORECASE), "salesforce", ["crm"]),
+    (re.compile(r"\bzendesk\b", re.IGNORECASE), "zendesk", ["support"]),
+    (re.compile(r"\bpsql\b|\bpg_dump\b|\bpg_restore\b", re.IGNORECASE), "postgres", ["database"]),
+    (re.compile(r"\bmysql\b|\bmysqldump\b", re.IGNORECASE), "mysql", ["database"]),
+    (re.compile(r"\bmongo\b", re.IGNORECASE), "mongodb", ["database"]),
+    (re.compile(r"(?:^|\s)aws\s|awscli\b|s3://", re.IGNORECASE), "aws", ["infrastructure"]),
+    (re.compile(r"(?:^|\s)gcloud\s", re.IGNORECASE), "gcp", ["infrastructure"]),
+    (re.compile(r"(?:^|\s)kubectl\s", re.IGNORECASE), "kubernetes", ["infrastructure"]),
+    (re.compile(r"\bterraform\b", re.IGNORECASE), "terraform", ["infrastructure"]),
+    (re.compile(r"\bpulumi\b", re.IGNORECASE), "pulumi", ["infrastructure"]),
+    (re.compile(r"(?:^|\s)az\s+[a-z]", re.IGNORECASE), "azure", ["infrastructure"]),
 ]
 
 SHELL_TOOL_NAMES = {
-    "Bash", "bash", "Shell", "shell", "terminal", "exec_command", "shell_command",
-    "sys_os_shell", "developer__shell",
+    "Bash",
+    "bash",
+    "Shell",
+    "shell",
+    "terminal",
+    "exec_command",
+    "shell_command",
+    "sys_os_shell",
+    "developer__shell",
 }
 
 WEB_FETCH_TOOL_NAMES = {"WebFetch", "web_fetch", "web.fetch", "fetch"}
@@ -115,16 +124,26 @@ def _resolve_governed_action(tool_name: str, tool_input: dict) -> tuple[str, str
 
     tool_suffix = _tool_suffix(tool_name)
 
-    if tool_name in WEB_FETCH_TOOL_NAMES or tool_name in WEB_SEARCH_TOOL_NAMES or tool_suffix in WEB_FETCH_TOOL_NAMES or tool_suffix in WEB_SEARCH_TOOL_NAMES:
+    if (
+        tool_name in WEB_FETCH_TOOL_NAMES
+        or tool_name in WEB_SEARCH_TOOL_NAMES
+        or tool_suffix in WEB_FETCH_TOOL_NAMES
+        or tool_suffix in WEB_SEARCH_TOOL_NAMES
+    ):
         is_search = tool_name in WEB_SEARCH_TOOL_NAMES or tool_suffix in WEB_SEARCH_TOOL_NAMES
         raw = tool_input.get("query") if is_search else tool_input.get("url")
         if not raw or not isinstance(raw, str):
             return "web", "search" if is_search else "fetch", ["external"]
         try:
             from urllib.parse import urlparse
+
             url = raw if raw.startswith("http") else f"https://{raw}"
             hostname = urlparse(url).hostname or "web"
-            return hostname[4:] if hostname.startswith("www.") else hostname, "search" if is_search else "fetch", ["external"]
+            return (
+                hostname[4:] if hostname.startswith("www.") else hostname,
+                "search" if is_search else "fetch",
+                ["external"],
+            )
         except Exception:
             return "web", "search" if is_search else "fetch", ["external"]
 
@@ -187,18 +206,22 @@ def _spctre_evaluate(
     if not _SPCTRE_KEY:
         raise RuntimeError("SPCTRE_API_TOKEN is required for Omnigent policy evaluation.")
 
-    return _http_json(decision_endpoint, {
-        "agentId": _SPCTRE_AGENT,
-        "workspaceId": _SPCTRE_WORKSPACE,
-        "environment": _SPCTRE_ENV,
-        "connector": connector,
-        "action": action,
-        "domains": domains,
-        "artifactHash": _SPCTRE_ARTIFACT_HASH or "omnigent-unresolved",
-        "toolIntent": tool_input.get("toolIntent") or tool_input.get("tool_intent"),
-        "planSummary": tool_input.get("planSummary") or tool_input.get("plan_summary"),
-        "toolParameters": tool_input,
-    }, timeout_seconds)
+    return _http_json(
+        decision_endpoint,
+        {
+            "agentId": _SPCTRE_AGENT,
+            "workspaceId": _SPCTRE_WORKSPACE,
+            "environment": _SPCTRE_ENV,
+            "connector": connector,
+            "action": action,
+            "domains": domains,
+            "artifactHash": _SPCTRE_ARTIFACT_HASH or "omnigent-unresolved",
+            "toolIntent": tool_input.get("toolIntent") or tool_input.get("tool_intent"),
+            "planSummary": tool_input.get("planSummary") or tool_input.get("plan_summary"),
+            "toolParameters": tool_input,
+        },
+        timeout_seconds,
+    )
 
 
 def _spctre_emit(
@@ -215,7 +238,10 @@ def _spctre_emit(
 ) -> None:
     if not _SPCTRE_KEY:
         if warn_on_failure:
-            print("Warning: SPCTRE_API_TOKEN is not set; Omnigent governance_active evidence was not emitted.", file=sys.stderr)
+            print(
+                "Warning: SPCTRE_API_TOKEN is not set; Omnigent governance_active evidence was not emitted.",
+                file=sys.stderr,
+            )
         return
     payload = {
         "decisionId": decision_id,
@@ -240,7 +266,10 @@ def _spctre_emit(
         _http_json("/api/evidence", payload, timeout_seconds)
     except Exception as exc:
         if warn_on_failure:
-            print(f"Warning: Omnigent governance_active evidence emit failed ({type(exc).__name__}: {exc}).", file=sys.stderr)
+            print(
+                f"Warning: Omnigent governance_active evidence emit failed ({type(exc).__name__}: {exc}).",
+                file=sys.stderr,
+            )
 
 
 def _spctre_emit_background(*args: Any, **kwargs: Any) -> None:
@@ -261,7 +290,9 @@ def _extract_result(response: dict) -> tuple[str, str, list[str], str]:
     refs = result.get("matchedRefs") or result.get("policyRefs") or response.get("policyRefs") or []
     if not isinstance(refs, list):
         refs = [str(refs)]
-    decision_id = response.get("decisionId") or result.get("decisionId") or f"omnigent-{uuid.uuid4()}"
+    decision_id = (
+        response.get("decisionId") or result.get("decisionId") or f"omnigent-{uuid.uuid4()}"
+    )
     return status, str(reason), [str(ref) for ref in refs], str(decision_id)
 
 

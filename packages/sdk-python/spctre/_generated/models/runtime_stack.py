@@ -1,0 +1,26 @@
+from enum import Enum
+
+
+class RuntimeStack(str, Enum):
+    AUTOGEN = "AUTOGEN"
+    AWS_BEDROCK = "AWS_BEDROCK"
+    AZURE_AI = "AZURE_AI"
+    CLAUDE_CODE = "CLAUDE_CODE"
+    CLAUDE_COWORK = "CLAUDE_COWORK"
+    CREWAI = "CREWAI"
+    CUSTOM = "CUSTOM"
+    GOOGLE_ADK = "GOOGLE_ADK"
+    HERMES = "HERMES"
+    LANGCHAIN = "LANGCHAIN"
+    LANGGRAPH = "LANGGRAPH"
+    LOCAL = "LOCAL"
+    NEMOCLAW = "NEMOCLAW"
+    ODYSSEUS = "ODYSSEUS"
+    OMNIGENT = "OMNIGENT"
+    OPENAI_AGENTS = "OPENAI_AGENTS"
+    OPENCLAW = "OPENCLAW"
+    OPENCODE = "OPENCODE"
+    PAPERCLIP = "PAPERCLIP"
+
+    def __str__(self) -> str:
+        return str(self.value)
