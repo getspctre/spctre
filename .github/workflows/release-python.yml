@@ -203,8 +203,11 @@ jobs:
           name: dist-${{ matrix.project }}
           path: dist
 
+      # Pinned to the commit behind v1.14.2 rather than the mutable
+      # `release/v1` branch ref, matching how setup-uv is pinned elsewhere.
+      # Dependabot keeps it current.
       - name: Publish
-        uses: pypa/gh-action-pypi-publish@release/v1
+        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
         with:
           # Empty means pypi.org; TestPyPI needs the legacy upload endpoint.
           repository-url: ${{ inputs.target == 'pypi' && '' || 'https://test.pypi.org/legacy/' }}
