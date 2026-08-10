@@ -1,5 +1,30 @@
 # @spctre/cli
 
+## 0.4.0
+
+### Minor Changes
+
+- ebb2278: Retire the TypeScript policy evaluator. `evaluateDecision` is now a transport
+  onto the Rust kernel rather than a second implementation of matching, semantic
+  checks, parameter constraints and effect precedence. The CLI's local hook and
+  `spctre test` evaluate through the portable kernel, so a locally blocked action
+  and a runtime-blocked action are the same judgement, and neither needs a
+  per-platform native binary.
+
+  Removes the now-duplicate exports `classifySemanticIntent`,
+  `evaluateSemanticChecks` and `evaluateParameterConstraints`. Callers that
+  evaluated policy through them should call `evaluateDecision` (or the portable
+  kernel) instead, which returns the same verdicts plus the decision trace and
+  evaluator provenance.
+
+### Patch Changes
+
+- Updated dependencies [7f4c51e]
+- Updated dependencies [d0f2189]
+- Updated dependencies [ebb2278]
+- Updated dependencies [1038508]
+  - @spctre/policy-schema@0.5.0
+
 ## 0.3.2
 
 ### Patch Changes
