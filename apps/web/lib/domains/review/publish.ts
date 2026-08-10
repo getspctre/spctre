@@ -1,10 +1,14 @@
 import { createHash } from "crypto";
 import { logger } from "@spctre/platform/logging";
-import { evaluatePublishReadiness } from "@spctre/policy-schema";
+import {
+  describePolicyRequestBudget,
+  evaluatePublishReadiness,
+  measurePolicyRequestBudget,
+} from "@spctre/policy-schema";
 import { getBranchPermissions, getActiveActor } from "@/lib/actors";
 import type { ActiveScope } from "@/lib/workspace";
 import { getBooleanEnv } from "@/lib/platform/config";
-import { recordDuration } from "@spctre/platform/metrics";
+import { recordDuration, setGauge } from "@spctre/platform/metrics";
 import { withSpan } from "@spctre/platform/tracing";
 import {
   getApprovals,
@@ -14,6 +18,7 @@ import {
   insertPolicyPublish,
   revisionExistsOnPublishBranch,
 } from "@/lib/repositories/policy";
+import { listPublishedCompositionLayers } from "@/lib/repositories/shared/composition";
 import { appendOperationsLog } from "@/lib/repositories/operations-log";
 import {
   approvalRulesFromWorkflow,
@@ -88,6 +93,49 @@ async function authorizePublish(
   return { branchRow, actor };
 }
 
+/**
+ * Refuses a publish whose composed policy would not fit the kernel's bounded
+ * request.
+ *
+ * Enforcement sends the whole composed layer set on every decision, so a policy
+ * over the limit does not degrade — every gateway decision for the workspace
+ * fails closed with no prior signal. The ceiling is reached by publishing, so
+ * this is the point at which it is actionable: the author can still split or
+ * trim the policy. Utilization is recorded on the span either way, so headroom
+ * is observable well before it runs out.
+ */
+async function checkEvaluationBudget(
+  input: PublishRevisionInput,
+  scope: ActiveScope,
+  branchRow: PublishBranchRow,
+  rules: Awaited<ReturnType<typeof getRulesForRevision>>,
+): Promise<string | null> {
+  const workspaceId = branchRow.workspace_id ?? scope.workspaceId;
+  const published = await listPublishedCompositionLayers(workspaceId, scope.tenantId);
+  // What enforcement would load after this publish: every other branch's
+  // current layer, with this branch's contributed by the revision under review.
+  const prospective = [
+    ...published
+      .filter((layer) => layer.branchId !== input.branchId)
+      .map((layer) => ({ scope: layer.scope, rules: layer.rules })),
+    { scope: branchRow.scope, rules },
+  ];
+
+  const budget = measurePolicyRequestBudget(prospective);
+  // A gauge, not a duration: this is the headroom signal to watch in staging.
+  setGauge("spctre.policy.evaluation_budget.utilization", budget.utilization, {
+    workspace_id: workspaceId ?? "organization",
+    outcome: budget.fits ? "fits" : "exceeded",
+  });
+  if (budget.fits) return null;
+  return (
+    `Publish is blocked: ${describePolicyRequestBudget(budget)}. ` +
+    "Every gateway decision sends the composed policy to the evaluator, so " +
+    "publishing this would fail closed for the whole workspace. Split the " +
+    "policy across narrower scopes or remove rules before publishing."
+  );
+}
+
 // Approval/verification readiness plus the gateway-escalation gate. Returns an
 // error message when the revision is not publishable yet.
 async function checkPublishReadiness(
@@ -108,6 +156,8 @@ async function checkPublishReadiness(
   if (rules.length === 0) {
     return "Publish is blocked: a policy revision must contain at least one rule.";
   }
+  const budgetError = await checkEvaluationBudget(input, scope, branchRow, rules);
+  if (budgetError) return budgetError;
   const verificationPolicy = approvalWorkflow.verificationPolicy ?? { requireVerification: false };
   const verificationSummary = verificationPolicy.requireVerification
     ? await getLatestVerificationStatus(branchRow.workspace_id ?? scope.workspaceId, tenantId, {

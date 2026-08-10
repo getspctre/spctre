@@ -20,6 +20,7 @@ type NativeBinding = {
   jsEvaluatePolicyDecision(inputJson: string): string;
   jsBuildOperationsContentHash(inputJson: string): string;
   jsValidateOperationsLogChain(entriesJson: string): string;
+  jsPolicyKernelLimits(): string;
 };
 
 let binding: NativeBinding | undefined;
@@ -65,4 +66,8 @@ export function jsBuildOperationsContentHash(inputJson: string): string {
 
 export function jsValidateOperationsLogChain(entriesJson: string): string {
   return load().jsValidateOperationsLogChain(entriesJson);
+}
+
+export function jsPolicyKernelLimits(): string {
+  return load().jsPolicyKernelLimits();
 }

@@ -1,6 +1,7 @@
 use napi_derive::napi;
 
 use crate::eval::{evaluate_gateway_decision, evaluate_policy_decision};
+use crate::ffi::{MAX_REQUEST_BYTES, MAX_RESPONSE_BYTES};
 use crate::integrity::{build_operations_content_hash, validate_operations_log_chain};
 use crate::types::*;
 
@@ -39,9 +40,29 @@ pub fn js_validate_operations_log_chain(entries_json: String) -> napi::Result<St
     serde_json::to_string(&issues).map_err(|e| napi::Error::from_reason(e.to_string()))
 }
 
+/// Reports the kernel's own resource limits so hosts can check a policy against
+/// them instead of restating the numbers. A host that hardcodes these drifts
+/// silently the moment the kernel changes them.
+#[napi]
+pub fn js_policy_kernel_limits() -> napi::Result<String> {
+    serde_json::to_string(&PolicyKernelLimits {
+        max_request_bytes: MAX_REQUEST_BYTES,
+        max_response_bytes: MAX_RESPONSE_BYTES,
+    })
+    .map_err(|e| napi::Error::from_reason(e.to_string()))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn napi_limits_report_the_abi_constants() {
+        let limits: PolicyKernelLimits =
+            serde_json::from_str(&js_policy_kernel_limits().unwrap()).unwrap();
+        assert_eq!(limits.max_request_bytes, MAX_REQUEST_BYTES);
+        assert_eq!(limits.max_response_bytes, MAX_RESPONSE_BYTES);
+    }
 
     #[test]
     fn napi_gateway_roundtrip() {
