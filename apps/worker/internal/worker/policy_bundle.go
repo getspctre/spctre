@@ -2,6 +2,8 @@ package worker
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 )
@@ -38,25 +40,52 @@ func (e *errPolicyRulesUnmaterialized) Error() string {
 	)
 }
 
+// publishedPolicyComposition is the enforced policy artifact: the ordered
+// layers the kernel composes, plus the hash that identifies exactly which
+// published bytes produced them.
+type publishedPolicyComposition struct {
+	Layers []CompositionLayer
+	// ArtifactHash is a sha256 over the ordered layer identities, not over the
+	// rules themselves. It answers "which published artifact was enforced", so
+	// a recorded decision can be replayed against the same input after the
+	// kernel is upgraded. Empty only when nothing is published.
+	ArtifactHash string
+}
+
 // loadPublishedCompositionLayers mirrors the TypeScript query of the same name,
 // including the scope ordering that decides which layer overrides which.
 func (s *Server) loadPublishedCompositionLayers(
 	ctx context.Context,
 	tenantID, workspaceID string,
-) ([]CompositionLayer, error) {
+) (publishedPolicyComposition, error) {
+	// The per-layer identity prefers exact-byte publish custody
+	// (policy_publish_content_artifact, migration 014) and falls back to the
+	// revision's own hash for publishes predating it, so the artifact hash is
+	// always computable rather than sometimes absent.
 	rows, err := s.db.Query(ctx, `
 		WITH latest_publish AS (
 			SELECT DISTINCT ON (pp.branch_id)
-				pp.branch_id, pp.revision_id, pp.published_at
+				pp.id, pp.branch_id, pp.revision_id, pp.published_at
 			FROM policy_publish pp
 			JOIN policy_branch pb ON pb.id = pp.branch_id AND pb.tenant_id = pp.tenant_id
 			WHERE pp.tenant_id = $1
 				AND (pp.workspace_id = $2 OR pb.scope = 'ORGANIZATION')
 			ORDER BY pp.branch_id, pp.published_at DESC
 		)
-		SELECT lp.revision_id::text, pb.scope
+		SELECT
+			lp.revision_id::text,
+			pb.scope,
+			COALESCE((
+				SELECT string_agg(ppca.content_hash, ',' ORDER BY ppca.content_hash)
+				FROM policy_publish_content_artifact ppca
+				WHERE ppca.tenant_id = $1
+					AND ppca.publish_id = lp.id
+					AND ppca.revision_id = lp.revision_id
+			), '') AS content_hashes,
+			COALESCE(pr.artifact_hash, pr.source_hash) AS revision_hash
 		FROM latest_publish lp
 		JOIN policy_branch pb ON pb.id = lp.branch_id AND pb.tenant_id = $1
+		JOIN policy_revision pr ON pr.id = lp.revision_id AND pr.tenant_id = $1
 		ORDER BY
 			CASE pb.scope
 				WHEN 'ORGANIZATION' THEN 1
@@ -68,27 +97,29 @@ func (s *Server) loadPublishedCompositionLayers(
 			lp.published_at ASC
 	`, tenantID, workspaceID)
 	if err != nil {
-		return nil, err
+		return publishedPolicyComposition{}, err
 	}
 	defer rows.Close()
 
 	type layerRef struct {
-		revisionID string
-		scope      string
+		revisionID    string
+		scope         string
+		contentHashes string
+		revisionHash  string
 	}
 	var refs []layerRef
 	for rows.Next() {
 		var ref layerRef
-		if err := rows.Scan(&ref.revisionID, &ref.scope); err != nil {
-			return nil, err
+		if err := rows.Scan(&ref.revisionID, &ref.scope, &ref.contentHashes, &ref.revisionHash); err != nil {
+			return publishedPolicyComposition{}, err
 		}
 		refs = append(refs, ref)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return publishedPolicyComposition{}, err
 	}
 	if len(refs) == 0 {
-		return nil, nil
+		return publishedPolicyComposition{}, nil
 	}
 
 	revisionIDs := make([]string, 0, len(refs))
@@ -97,17 +128,28 @@ func (s *Server) loadPublishedCompositionLayers(
 	}
 	rulesByRevision, err := s.loadRulesForRevisions(ctx, tenantID, revisionIDs)
 	if err != nil {
-		return nil, err
+		return publishedPolicyComposition{}, err
 	}
 
 	layers := make([]CompositionLayer, 0, len(refs))
+	digest := sha256.New()
 	for _, ref := range refs {
 		layers = append(layers, CompositionLayer{
 			Scope: ref.scope,
 			Rules: rulesByRevision[ref.revisionID],
 		})
+		identity := ref.contentHashes
+		if identity == "" {
+			identity = ref.revisionHash
+		}
+		// Newline-delimited and order-sensitive: reordering layers changes the
+		// composed policy, so it must change the hash.
+		fmt.Fprintf(digest, "%s\n%s\n%s\n", ref.scope, ref.revisionID, identity)
 	}
-	return layers, nil
+	return publishedPolicyComposition{
+		Layers:       layers,
+		ArtifactHash: "sha256:" + hex.EncodeToString(digest.Sum(nil)),
+	}, nil
 }
 
 // loadRulesForRevisions reads materialised rules, failing closed on any
@@ -203,31 +245,33 @@ func (s *Server) applyPublishedPolicyDecision(
 	input GatewayDecisionRequest,
 	auth authResult,
 	decision GatewayDecision,
-) (GatewayDecision, error) {
+) (GatewayDecision, *policyKernelProvenance, error) {
 	if input.Connector == nil || input.Action == nil {
-		return decision, nil
+		return decision, nil, nil
 	}
 
-	layers, err := s.loadPublishedCompositionLayers(ctx, auth.TenantID, auth.WorkspaceID)
+	composition, err := s.loadPublishedCompositionLayers(ctx, auth.TenantID, auth.WorkspaceID)
 	if err != nil {
-		return decision, err
+		return decision, nil, err
 	}
-	if len(layers) == 0 {
-		return decision, nil
+	if len(composition.Layers) == 0 {
+		return decision, nil, nil
 	}
 
 	policyInput := PolicyEvaluationInput{
-		Connector:      *input.Connector,
-		Action:         *input.Action,
-		Layers:         layers,
-		ToolIntent:     derefString(input.ToolIntent),
-		PlanSummary:    derefString(input.PlanSummary),
-		ToolParameters: derefToolParameters(input.ToolParameters),
+		Connector:          *input.Connector,
+		Action:             *input.Action,
+		Layers:             composition.Layers,
+		ToolIntent:         derefString(input.ToolIntent),
+		PlanSummary:        derefString(input.PlanSummary),
+		ToolParameters:     derefToolParameters(input.ToolParameters),
+		PolicyArtifactHash: composition.ArtifactHash,
 	}
 	evaluated, err := evaluatePolicyRulesWithKernel(policyInput)
 	if err != nil {
-		return decision, fmt.Errorf("evaluate published policy kernel: %w", err)
+		return decision, nil, fmt.Errorf("evaluate published policy kernel: %w", err)
 	}
+	provenance := newPolicyKernelProvenance(composition, evaluated)
 
 	switch evaluated.Status {
 	case statusDeny:
@@ -236,10 +280,10 @@ func (s *Server) applyPublishedPolicyDecision(
 			Reason:      evaluated.Reason,
 			RiskLevel:   "HIGH",
 			ShouldQueue: false,
-		}, nil
+		}, provenance, nil
 	case statusEscalate:
 		if decision.Outcome != "PROCEED" {
-			return decision, nil
+			return decision, provenance, nil
 		}
 		return GatewayDecision{
 			Outcome:     "ESCALATE",
@@ -247,9 +291,9 @@ func (s *Server) applyPublishedPolicyDecision(
 			RiskLevel:   "HIGH",
 			ShouldQueue: true,
 			SLAHours:    intPtr(4),
-		}, nil
+		}, provenance, nil
 	default:
-		return decision, nil
+		return decision, provenance, nil
 	}
 }
 

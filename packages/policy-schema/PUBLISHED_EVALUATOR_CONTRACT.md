@@ -15,6 +15,16 @@ version, result-schema version, the policy artifact hash, and a bounded trace
 with each decision. An implementation must fail closed when it cannot parse a
 supported request or when a request exceeds its documented resource limits.
 
+A host that records decisions must retain at least the policy artifact hash and
+the evaluator version on the decision record. Those two fields are what make a
+recorded decision reproducible after the kernel is upgraded. The trace need not
+be stored per decision: it is regenerable by replaying the recorded artifact
+through the recorded evaluator version.
+
+A host must also verify the contract version it was handed. Accepting a result
+from an unrecognized major version would apply presumed-compatible semantics to
+published policy, which is a silent reinterpretation rather than an upgrade.
+
 Compatibility is major-versioned. A consumer may accept a contract version
 only when it recognizes that major version; it must reject an unknown major
 version rather than applying presumed-compatible semantics. Adding optional
@@ -29,7 +39,9 @@ policy languages.
 The C ABI accepts bounded UTF-8 JSON bytes through `spctre_policy_evaluate`.
 It currently limits requests and responses to 1 MiB, returns explicit status
 codes, and uses `spctre_policy_buffer_free` for every successful response.
-Callers must fail closed for every nonzero status code. The static library is
+Callers must fail closed for every nonzero status code. A panic inside the
+kernel is contained and reported as `SPCTRE_POLICY_INTERNAL_ERROR` rather than
+unwinding into the host, which would abort the host process. The static library is
 linked into its host process; it is not a policy-evaluator network service.
 The supported C declarations are checked in at `native/include/spctre_policy_core.h`.
 

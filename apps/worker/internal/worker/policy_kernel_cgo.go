@@ -17,14 +17,15 @@ import (
 )
 
 type policyKernelRequest struct {
-	Connector      string             `json:"connector"`
-	Action         string             `json:"action"`
-	Domains        []string           `json:"domains"`
-	Rules          []PolicyRule       `json:"rules"`
-	Layers         []CompositionLayer `json:"layers"`
-	ToolIntent     string             `json:"toolIntent"`
-	PlanSummary    string             `json:"planSummary"`
-	ToolParameters map[string]any     `json:"toolParameters"`
+	Connector          string             `json:"connector"`
+	Action             string             `json:"action"`
+	Domains            []string           `json:"domains"`
+	Rules              []PolicyRule       `json:"rules"`
+	Layers             []CompositionLayer `json:"layers"`
+	ToolIntent         string             `json:"toolIntent"`
+	PlanSummary        string             `json:"planSummary"`
+	ToolParameters     map[string]any     `json:"toolParameters"`
+	PolicyArtifactHash *string            `json:"policyArtifactHash"`
 }
 
 func marshalPolicyKernelRequest(input PolicyEvaluationInput) ([]byte, error) {
@@ -32,10 +33,14 @@ func marshalPolicyKernelRequest(input PolicyEvaluationInput) ([]byte, error) {
 	if parameters == nil {
 		parameters = map[string]any{}
 	}
+	var artifactHash *string
+	if input.PolicyArtifactHash != "" {
+		artifactHash = &input.PolicyArtifactHash
+	}
 	return json.Marshal(policyKernelRequest{
 		Connector: input.Connector, Action: input.Action, Domains: input.Domains,
 		Rules: input.Rules, Layers: input.Layers, ToolIntent: input.ToolIntent, PlanSummary: input.PlanSummary,
-		ToolParameters: parameters,
+		ToolParameters: parameters, PolicyArtifactHash: artifactHash,
 	})
 }
 
@@ -86,6 +91,9 @@ func evaluatePolicyRulesWithKernel(input PolicyEvaluationInput) (PolicyEvaluatio
 	var result PolicyEvaluationResult
 	if err := json.Unmarshal(response, &result); err != nil {
 		return PolicyEvaluationResult{}, fmt.Errorf("decode policy kernel response: %w", err)
+	}
+	if err := validateEvaluatorContract(result); err != nil {
+		return PolicyEvaluationResult{}, err
 	}
 	return result, nil
 }

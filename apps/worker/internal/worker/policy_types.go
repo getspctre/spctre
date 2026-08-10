@@ -47,17 +47,26 @@ type PolicyEvaluationResult struct {
 	Trace       []EvaluationTraceStep `json:"trace"`
 	RuleCount   int                   `json:"ruleCount"`
 	EvaluatedAt string                `json:"evaluatedAt"`
+
+	// Deterministic provenance, required of every implementation by
+	// PUBLISHED_EVALUATOR_CONTRACT.md. Dropping these on deserialization is
+	// what previously made a kernel-made decision unreplayable.
+	EvaluatorVersion     string  `json:"evaluatorVersion"`
+	RequestSchemaVersion string  `json:"requestSchemaVersion"`
+	ResultSchemaVersion  string  `json:"resultSchemaVersion"`
+	PolicyArtifactHash   *string `json:"policyArtifactHash"`
 }
 
 type PolicyEvaluationInput struct {
-	Connector      string
-	Action         string
-	Domains        []string
-	Rules          []PolicyRule
-	Layers         []CompositionLayer
-	ToolIntent     string
-	PlanSummary    string
-	ToolParameters map[string]any
+	Connector          string
+	Action             string
+	Domains            []string
+	Rules              []PolicyRule
+	Layers             []CompositionLayer
+	ToolIntent         string
+	PlanSummary        string
+	ToolParameters     map[string]any
+	PolicyArtifactHash string
 }
 
 const (
