@@ -21,6 +21,9 @@ const preSessionFiles = [
   "apps/web/lib/repositories/auth/grants.ts",
   "apps/web/lib/repositories/onboarding/cli.ts",
   "apps/web/lib/repositories/onboarding/device.ts",
+  // Hosted checkout provisioning runs with no session at all: the buyer has
+  // not signed in yet and the tenant is created mid-call.
+  "apps/web/lib/repositories/provisioning.ts",
 ];
 
 // `${file}::${function}` entries that legitimately use the tenant-aware `sql`
