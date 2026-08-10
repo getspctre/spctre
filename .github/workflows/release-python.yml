@@ -1,0 +1,214 @@
+name: Release (Python)
+
+# Publishes the public Python distributions to PyPI / TestPyPI:
+#   - spctre-hermes     (packages/adapters/hermes)
+#   - spctre-odysseus   (packages/adapters/odysseus)
+#   - spctre-sdk        (generated from the OpenAPI spec into target/sdk-python)
+#
+# Authentication is PyPI Trusted Publishing (OIDC). There is deliberately no
+# API-token bootstrap step here, and none is needed: unlike npm, PyPI supports
+# *pending* publishers, so a project that does not exist yet can be registered
+# in advance and is created by its first OIDC publish. Do not copy the
+# NODE_AUTH_TOKEN bootstrap dance from release.yml into this workflow.
+#
+# ENVIRONMENTS. PyPI requires each *pending* publisher to be unique on
+# (owner, repo, workflow, environment), so a monorepo publishing three projects
+# from one workflow needs a distinct environment per project. That constraint
+# applies only while a project is pending — once all three exist on a registry
+# they can share a single environment, at which point the per-package ones
+# below can be collapsed and deleted (both here and on PyPI).
+#
+#   project           pypi.org env     test.pypi.org env
+#   spctre-sdk        pypi             testpypi
+#   spctre-hermes     pypi-hermes      testpypi-hermes
+#   spctre-odysseus   pypi-odysseus    testpypi-odysseus
+#
+# Releases are manual for now. There is no version automation for these
+# packages (Changesets covers only the npm packages), so the operator bumps
+# the version in the source of truth, merges, and dispatches this workflow.
+
+on:
+  workflow_dispatch:
+    inputs:
+      package:
+        description: Which distribution to publish
+        type: choice
+        default: all
+        options: [all, spctre-hermes, spctre-odysseus, spctre-sdk]
+      target:
+        description: Target registry
+        type: choice
+        default: testpypi
+        options: [testpypi, pypi]
+
+permissions:
+  contents: read
+
+concurrency:
+  # Never cancel an in-flight publish.
+  group: release-python-${{ inputs.target }}
+  cancel-in-progress: false
+
+jobs:
+  # The matrix is built here rather than declared statically because the
+  # `matrix` context is not available to a job-level `if:` (only github, needs,
+  # vars and inputs are), so a static matrix cannot be filtered by the
+  # `package` input.
+  setup:
+    name: Select distributions
+    if: github.repository == 'getspctre/spctre'
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.select.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Select
+        id: select
+        env:
+          PACKAGE: ${{ inputs.package }}
+        run: |
+          matrix="$(node --input-type=module -e '
+            const all = [
+              {
+                project: "spctre-hermes",
+                path: "packages/adapters/hermes",
+                version_file: "packages/adapters/hermes/spctre_hermes/_version.py",
+                pypi_env: "pypi-hermes",
+                testpypi_env: "testpypi-hermes",
+              },
+              {
+                project: "spctre-odysseus",
+                path: "packages/adapters/odysseus",
+                version_file: "packages/adapters/odysseus/spctre_odysseus/_version.py",
+                pypi_env: "pypi-odysseus",
+                testpypi_env: "testpypi-odysseus",
+              },
+              {
+                project: "spctre-sdk",
+                path: "target/sdk-python",
+                version_file: "",
+                pypi_env: "pypi",
+                testpypi_env: "testpypi",
+              },
+            ];
+            const want = process.env.PACKAGE;
+            const include = want === "all" ? all : all.filter((p) => p.project === want);
+            if (include.length === 0) throw new Error(`unknown package: ${want}`);
+            console.log(JSON.stringify({ include }));
+          ')"
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+          echo "$matrix"
+
+  build:
+    name: Build ${{ matrix.project }}
+    needs: setup
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.setup.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Set up uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9
+
+      # TestPyPI burns version numbers permanently, exactly like PyPI. Dry runs
+      # therefore publish a .devN suffix so the clean version stays available
+      # for the real release.
+      - name: Resolve version
+        id: version
+        run: |
+          if [ -n "${{ matrix.version_file }}" ]; then
+            base="$(sed -n 's/^__version__ = "\(.*\)"$/\1/p' "${{ matrix.version_file }}")"
+          else
+            base="$(sed -n 's/^VERSION="${SPCTRE_SDK_VERSION:-\(.*\)}"$/\1/p' scripts/generate-python-sdk.sh)"
+          fi
+          if [ -z "$base" ]; then
+            echo "could not resolve base version for ${{ matrix.project }}" >&2
+            exit 1
+          fi
+          if [ "${{ inputs.target }}" = "pypi" ]; then
+            version="$base"
+          else
+            version="${base}.dev${{ github.run_number }}"
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "Building ${{ matrix.project }} $version for ${{ inputs.target }}"
+
+      # The SDK is generated rather than checked in, so it needs the Node
+      # toolchain to emit the spec and a JRE for openapi-generator.
+      - uses: pnpm/action-setup@v6.0.10
+        if: matrix.project == 'spctre-sdk'
+      - uses: actions/setup-node@v7
+        if: matrix.project == 'spctre-sdk'
+        with:
+          node-version: 25
+          cache: pnpm
+      - uses: actions/setup-java@v5
+        if: matrix.project == 'spctre-sdk'
+        with:
+          distribution: temurin
+          java-version: 21
+      - name: Generate Python SDK
+        if: matrix.project == 'spctre-sdk'
+        env:
+          SPCTRE_SDK_VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm --filter @spctre/api-contracts emit
+          pnpm generate:python-sdk
+
+      - name: Stamp version
+        if: matrix.version_file != ''
+        run: |
+          printf '__version__ = "%s"\n' "${{ steps.version.outputs.version }}" \
+            > "${{ matrix.version_file }}"
+
+      - name: Build distributions
+        run: uv build --out-dir "${{ github.workspace }}/dist" "${{ matrix.path }}"
+
+      # Guard: uv build emits into a shared --out-dir, so a mismatch here means
+      # the wrong project or a stale artifact would be uploaded under this
+      # project's trusted-publisher identity.
+      - name: Verify built artifacts
+        run: |
+          ls -l dist
+          normalized="$(echo "${{ matrix.project }}" | tr '-' '_')"
+          test -f "dist/${normalized}-${{ steps.version.outputs.version }}.tar.gz"
+          ls "dist/${normalized}-${{ steps.version.outputs.version }}-"*.whl
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: dist-${{ matrix.project }}
+          path: dist/
+          if-no-files-found: error
+          retention-days: 1
+
+  publish:
+    name: Publish ${{ matrix.project }} to ${{ inputs.target }}
+    needs: [setup, build]
+    runs-on: ubuntu-latest
+    strategy:
+      # Publishes are not atomic across projects; do not abandon the rest of a
+      # release because one project failed.
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.setup.outputs.matrix) }}
+    environment:
+      name: ${{ inputs.target == 'pypi' && matrix.pypi_env || matrix.testpypi_env }}
+      url: ${{ inputs.target == 'pypi' && format('https://pypi.org/p/{0}', matrix.project) || format('https://test.pypi.org/p/{0}', matrix.project) }}
+    permissions:
+      id-token: write # PyPI Trusted Publishing (OIDC) + PEP 740 attestations
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: dist-${{ matrix.project }}
+          path: dist
+
+      # Pinned to the commit behind v1.14.2 rather than the mutable
+      # `release/v1` branch ref, matching how setup-uv is pinned elsewhere.
+      # Dependabot keeps it current.
+      - name: Publish
+        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
+        with:
+          # Empty means pypi.org; TestPyPI needs the legacy upload endpoint.
+          repository-url: ${{ inputs.target == 'pypi' && '' || 'https://test.pypi.org/legacy/' }}
+          print-hash: true

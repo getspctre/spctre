@@ -15,6 +15,34 @@ Use [Changesets](https://github.com/changesets/changesets) for consumer-facing
 changes to these packages. Run `pnpm changeset` and commit the generated file
 with the implementation change.
 
+## Python distributions
+
+- `spctre-hermes` (`packages/adapters/hermes`)
+- `spctre-odysseus` (`packages/adapters/odysseus`)
+- `spctre-sdk` (generated from the OpenAPI spec into `target/sdk-python`)
+
+These are outside Changesets. Each adapter's version is single-sourced in its
+`_version.py` and exported as `__version__`; the SDK's default is the
+`SPCTRE_SDK_VERSION` fallback in `scripts/generate-python-sdk.sh`. Bump the
+relevant file, merge, then dispatch **Release (Python)** with the distribution
+and target registry.
+
+Authentication is PyPI Trusted Publishing (OIDC), with no API token at any
+point — PyPI supports _pending_ publishers, so each project was registered
+before it existed and is created by its first publish. This is why the Python
+release path has no equivalent of the npm token bootstrap below.
+
+PyPI requires a pending publisher to be unique on
+(owner, repo, workflow, environment), so each distribution currently publishes
+from its own GitHub Environment: `pypi`/`testpypi` for `spctre-sdk`, and
+`pypi-<name>`/`testpypi-<name>` for the adapters. That constraint disappears
+once a project exists, so after all three have published to a registry the
+per-package environments can be collapsed into one and deleted.
+
+Always dispatch against `testpypi` first. TestPyPI burns version numbers
+permanently just like PyPI, so test runs publish a `.dev<run-number>` suffix
+and leave the clean version available for the real release.
+
 ## Dry-run verification
 
 Pushing a `v*` tag, or manually dispatching **Release readiness**, performs no
@@ -33,4 +61,5 @@ Before creating the first public release tag:
 4. Create the annotated `v0.1.0` tag from the public commit.
 5. Review the generated GitHub Release notes and attestations.
 
-Actual publication remains disabled until npm Trusted Publishing is configured.
+npm publication is live: `release.yml` publishes the four npm packages via
+Changesets, tokenlessly through npm Trusted Publishing.

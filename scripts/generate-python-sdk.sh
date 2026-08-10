@@ -7,6 +7,9 @@ set -euo pipefail
 
 SPEC="packages/api-contracts/openapi.json"
 OUT="${1:-target/sdk-python}"
+# The release workflow overrides this to publish a version other than the
+# development default (for example a .devN suffix for TestPyPI dry runs).
+VERSION="${SPCTRE_SDK_VERSION:-0.1.0}"
 
 if [[ ! -f "$SPEC" ]]; then
   echo "Spec not found. Run: pnpm --filter @spctre/api-contracts emit" >&2
@@ -19,10 +22,10 @@ npx @openapitools/openapi-generator-cli generate \
   -o "$OUT" \
   --package-name spctre \
   --additional-properties=\
-packageVersion=0.1.0,\
+packageVersion="$VERSION",\
 projectName=spctre-sdk,\
-packageUrl=https://github.com/spctre/spctre,\
-httpUserAgent=spctre-sdk-python/0.1.0,\
+packageUrl=https://github.com/getspctre/spctre,\
+httpUserAgent=spctre-sdk-python/"$VERSION",\
 generateSourceCodeOnly=false
 
-echo "Python SDK written to $OUT"
+echo "Python SDK $VERSION written to $OUT"
