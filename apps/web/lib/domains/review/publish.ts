@@ -19,6 +19,7 @@ import {
   revisionExistsOnPublishBranch,
 } from "@/lib/repositories/policy";
 import { listPublishedCompositionLayers } from "@/lib/repositories/shared/composition";
+import { runWithTenantContext } from "@/lib/tenant-context";
 import { appendOperationsLog } from "@/lib/repositories/operations-log";
 import {
   approvalRulesFromWorkflow,
@@ -111,7 +112,12 @@ async function checkEvaluationBudget(
   rules: Awaited<ReturnType<typeof getRulesForRevision>>,
 ): Promise<string | null> {
   const workspaceId = branchRow.workspace_id ?? scope.workspaceId;
-  const published = await listPublishedCompositionLayers(workspaceId, scope.tenantId);
+  // Bound explicitly: this runs inside a server action whose other reads are
+  // repository calls that bind their own context, so nothing here would have a
+  // tenant on the connection and RLS would reject the read.
+  const published = await runWithTenantContext(scope.tenantId, () =>
+    listPublishedCompositionLayers(workspaceId, scope.tenantId),
+  );
   // What enforcement would load after this publish: every other branch's
   // current layer, with this branch's contributed by the revision under review.
   const prospective = [
