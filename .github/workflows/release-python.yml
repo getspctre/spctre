@@ -167,6 +167,10 @@ jobs:
       - name: Publish
         uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
         with:
-          # Empty means pypi.org; TestPyPI needs the legacy upload endpoint.
-          repository-url: ${{ inputs.target == 'pypi' && '' || 'https://test.pypi.org/legacy/' }}
+          # Both branches must be non-empty. An empty string is falsy in a
+          # GitHub expression, so `target == 'pypi' && '' || <testpypi>` always
+          # evaluated to the TestPyPI URL — the production path uploaded to the
+          # wrong index and was only caught by PyPI rejecting the OIDC claims.
+          # Name the PyPI endpoint explicitly rather than relying on a default.
+          repository-url: ${{ inputs.target == 'pypi' && 'https://upload.pypi.org/legacy/' || 'https://test.pypi.org/legacy/' }}
           print-hash: true
