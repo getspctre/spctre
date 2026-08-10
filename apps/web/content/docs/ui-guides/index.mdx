@@ -23,5 +23,15 @@ description: Step-by-step guides for every role in the Spctre control plane. No 
 
 1. **Policy Creator** — browses packs, authors rules, and organises them into branches. When ready, submits the branch for review.
 2. **Reviewer / Approver** — evaluates the branch, leaves feedback, and approves or rejects. Escalations route to a senior reviewer when needed.
-3. **Compliance Officer** — once a branch is approved and the bundle is live, reads the compliance reports, operations logs, and audit trails generated from accumulated agent evidence.
+3. **Compliance Officer** — once a branch is approved and the bundle is live, prepares audit packages and reviews the decision evidence and change history generated from accumulated agent activity.
 4. **Workspace Admin** — manages the platform foundation: user accounts, roles, SSO, SCIM provisioning, and workspace settings that all other roles depend on.
+
+## Product navigation
+
+The control plane groups the main work by intent:
+
+| Group | Use it for |
+|---|---|
+| **Policy lifecycle** | Creating and maintaining policy branches, rules, and packs, then reviewing and publishing changes. |
+| **Audit** | Inspecting recorded agent decisions, verifying platform changes, and assembling an external audit handoff. |
+| **Agent governance** | Monitoring the agent fleet, defining agent blueprints, and handling escalations. |

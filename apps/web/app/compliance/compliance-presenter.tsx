@@ -190,7 +190,7 @@ function ComplianceViewNav({
 }) {
   const tabs: { href: string; label: string; view: ComplianceView }[] = [
     { href: compliancePath, label: "Overview", view: "overview" },
-    { href: `${compliancePath}/packet`, label: "Audit packet", view: "packet" },
+    { href: `${compliancePath}/packet`, label: "Audit package", view: "packet" },
     { href: `${compliancePath}/evidence`, label: "Evidence & retention", view: "evidence" },
     { href: `${compliancePath}/delivery`, label: "Delivery", view: "delivery" },
   ];
@@ -825,7 +825,7 @@ export function CompliancePresenter({
     <>
       <PageHeader
         eyebrow={formatWorkspaceEyebrow(workspaceContext)}
-        title="Compliance Report"
+        title="Audit package"
         actions={
           <>
             {activeExport && view === "packet" ? (

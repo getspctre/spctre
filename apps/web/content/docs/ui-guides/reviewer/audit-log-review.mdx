@@ -1,17 +1,17 @@
 ---
-title: Reviewing the Audit Log
-description: Filtering the Audit Log by connector, agent, risk level, and status; bulk actions.
+title: Reviewing decision evidence
+description: Filtering recorded decisions by connector, agent, risk level, and status; bulk actions.
 ---
 
-The Audit Log contains `WARN` decisions — actions that agents were allowed to take but that your policies flagged as worth human attention. These are not blocking: the action already happened. Your job is to acknowledge, note, and optionally escalate patterns you see.
+Decision evidence contains `WARN` decisions — actions that agents were allowed to take but that your policies flagged as worth human attention. These are not blocking: the action already happened. Your job is to acknowledge, note, and optionally escalate patterns you see.
 
 ## Opening the queue
 
-In the left nav under **Audit**, click **Audit Log**.
+In the left nav under **Audit**, click **Decision evidence**.
 
 ## What you see
 
-Each row in the Audit Log represents a single decision record with:
+Each row in Decision evidence represents a single decision record with:
 - **Decision ID** — unique identifier for this record
 - **Agent** — the agent instance that made the decision
 - **Connector** — which connector was called (e.g. `stripe`, `slack`)

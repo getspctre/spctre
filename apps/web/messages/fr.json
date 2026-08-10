@@ -22,15 +22,21 @@
     "slide_out": { "close": "Fermer le panneau" }
   },
   "navigation": {
+    "agent_blueprints": "Blueprints d’agents",
+    "agent_fleet": "Flotte d’agents",
+    "agent_governance": "Gouvernance des agents",
     "agents": "Agents",
     "alerting": "Alertes",
     "account": "Compte",
     "admin": "Admin",
     "api_docs": "Docs API",
     "audit": "Audit",
-    "audit_ledger": "Registre d'audit",
-    "audit_log": "Journal d'audit",
-    "compliance_report": "Rapport de conformité",
+    "audit_package": "Dossier d’audit",
+    "audit_ledger": "Registre des modifications",
+    "audit_log": "Preuves de décision",
+    "change_ledger": "Registre des modifications",
+    "compliance_report": "Dossier d’audit",
+    "decision_evidence": "Preuves de décision",
     "cost": "Coût",
     "cost_usage": "Coût et usage",
     "escalations": "Escalades",
@@ -38,9 +44,13 @@
     "evidence": "Preuves",
     "help_docs": "Documentation",
     "operations": "Opérations",
-    "packs": "Packs",
-    "policies": "Politiques",
-    "review": "Revue",
+    "packs": "Packs de politiques",
+    "policies": "Branches de politiques",
+    "policy_branches": "Branches de politiques",
+    "policy_lifecycle": "Cycle de vie des politiques",
+    "policy_packs": "Packs de politiques",
+    "review": "Revoir et publier",
+    "review_publish": "Revoir et publier",
     "rules": "Règles",
     "siem_export": "Export SIEM",
     "usage_billing": "Usage et facturation"
@@ -64,14 +74,17 @@
         "description": "Performance des advisors et recommandations",
         "label": "Conseillers"
       },
-      "agents": { "description": "Santé et état de la flotte d'agents", "label": "Agents" },
+      "agents": {
+        "description": "Santé et état de la flotte d'agents",
+        "label": "Flotte d’agents"
+      },
       "audit_ledger": {
         "description": "Journal d'événements infalsifiable chaîné par hash",
-        "label": "Registre d'audit"
+        "label": "Registre des modifications"
       },
       "audit_log": {
-        "description": "Décisions runtime des agents et simulations",
-        "label": "Journal d'audit"
+        "description": "Décisions d’agents enregistrées et simulations",
+        "label": "Preuves de décision"
       },
       "billing": {
         "description": "Plan d'abonnement et facturation",
@@ -79,7 +92,7 @@
       },
       "compliance": {
         "description": "Paquet de conformité, rétention et export",
-        "label": "Rapport de conformité"
+        "label": "Dossier d’audit"
       },
       "cost_usage": {
         "description": "Dépenses, usage, budgets et enforcement des breaches",
@@ -92,9 +105,12 @@
       },
       "packs": {
         "description": "Parcourir et installer des packs de politiques",
-        "label": "Packs"
+        "label": "Packs de politiques"
       },
-      "policies": { "description": "Gérer les branches de politiques", "label": "Politiques" },
+      "policies": {
+        "description": "Gérer les branches de politiques",
+        "label": "Branches de politiques"
+      },
       "review": { "description": "Examiner les diffs et publier", "label": "Revue et publication" },
       "siem_export": {
         "description": "Exporter les preuves d’exécution gouvernée vers Splunk ou Sentinel",

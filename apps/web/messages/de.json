@@ -22,15 +22,21 @@
     "slide_out": { "close": "Panel schließen" }
   },
   "navigation": {
+    "agent_blueprints": "Agenten-Blueprints",
+    "agent_fleet": "Agentenflotte",
+    "agent_governance": "Agent Governance",
     "agents": "Agenten",
     "alerting": "Alarmierung",
     "account": "Konto",
     "admin": "Admin",
     "api_docs": "API-Dokumentation",
     "audit": "Audit",
-    "audit_ledger": "Audit-Ledger",
-    "audit_log": "Audit-Log",
-    "compliance_report": "Compliance-Bericht",
+    "audit_package": "Audit-Paket",
+    "audit_ledger": "Änderungsledger",
+    "audit_log": "Entscheidungsnachweise",
+    "change_ledger": "Änderungsledger",
+    "compliance_report": "Audit-Paket",
+    "decision_evidence": "Entscheidungsnachweise",
     "cost": "Kosten",
     "cost_usage": "Kosten & Nutzung",
     "escalations": "Eskalationen",
@@ -38,9 +44,13 @@
     "evidence": "Nachweise",
     "help_docs": "Hilfe-Dokumentation",
     "operations": "Operationen",
-    "packs": "Packs",
-    "policies": "Richtlinien",
-    "review": "Review",
+    "packs": "Policy-Pakete",
+    "policies": "Policy-Branches",
+    "policy_branches": "Policy-Branches",
+    "policy_lifecycle": "Policy-Lebenszyklus",
+    "policy_packs": "Policy-Pakete",
+    "review": "Prüfen & veröffentlichen",
+    "review_publish": "Prüfen & veröffentlichen",
     "rules": "Regeln",
     "siem_export": "SIEM-Export",
     "usage_billing": "Nutzung & Abrechnung"
@@ -66,14 +76,14 @@
     },
     "items": {
       "advisors": { "description": "Advisor-Performance und Empfehlungen", "label": "Berater" },
-      "agents": { "description": "Zustand und Status der Agent-Flotte", "label": "Agenten" },
+      "agents": { "description": "Zustand und Status der Agent-Flotte", "label": "Agentenflotte" },
       "audit_ledger": {
         "description": "Hash-verkettetes manipulationssicheres Ereignislog",
-        "label": "Audit-Ledger"
+        "label": "Änderungsledger"
       },
       "audit_log": {
-        "description": "Runtime-Agent-Entscheidungen und Simulationen",
-        "label": "Audit-Log"
+        "description": "Aufgezeichnete Agentenentscheidungen und Simulationen",
+        "label": "Entscheidungsnachweise"
       },
       "billing": {
         "description": "Abonnementplan und Abrechnung",
@@ -81,7 +91,7 @@
       },
       "compliance": {
         "description": "Kuratiertes Compliance-Paket, Aufbewahrung und Export",
-        "label": "Compliance-Bericht"
+        "label": "Audit-Paket"
       },
       "cost_usage": {
         "description": "Ausgaben, Nutzung, Budgets und Breach-Enforcement",
@@ -92,8 +102,11 @@
         "description": "Policy-Verstöße und Prüferbenachrichtigungen weiterleiten",
         "label": "Eskalationsrouting"
       },
-      "packs": { "description": "Policy Packs durchsuchen und installieren", "label": "Packs" },
-      "policies": { "description": "Policy-Branches verwalten", "label": "Richtlinien" },
+      "packs": {
+        "description": "Policy Packs durchsuchen und installieren",
+        "label": "Policy-Pakete"
+      },
+      "policies": { "description": "Policy-Branches verwalten", "label": "Policy-Branches" },
       "review": {
         "description": "Diffs prüfen und veröffentlichen",
         "label": "Review & Veröffentlichung"
