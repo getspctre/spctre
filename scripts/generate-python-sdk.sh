@@ -25,6 +25,8 @@ npx @openapitools/openapi-generator-cli generate \
 packageVersion="$VERSION",\
 projectName=spctre-sdk,\
 packageUrl=https://github.com/getspctre/spctre,\
+gitUserId=getspctre,\
+gitRepoId=spctre,\
 httpUserAgent=spctre-sdk-python/"$VERSION",\
 generateSourceCodeOnly=false
 

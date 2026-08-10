@@ -5,12 +5,13 @@
     "version": "2026-01",
     "description": "The Spctre public REST API. All endpoints are versioned under `/api/v1/` and follow the same envelope convention: every response carries a `meta` object with a `traceId`, `version`, and `ts` timestamp. Authenticate with a service account API key issued from the Spctre web UI (`spctre init` or Settings → API Keys).",
     "license": {
-      "name": "Apache 2.0",
+      "name": "Apache-2.0",
       "url": "https://www.apache.org/licenses/LICENSE-2.0.html"
     },
     "contact": {
       "name": "Spctre",
-      "url": "https://spctre.dev"
+      "url": "https://spctre.dev",
+      "email": "support@spctre.dev"
     }
   },
   "servers": [

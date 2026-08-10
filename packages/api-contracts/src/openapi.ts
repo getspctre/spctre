@@ -18,8 +18,13 @@ export const SPCTRE_OPENAPI_SPEC = {
     version: "2026-01",
     description:
       "The Spctre public REST API. All endpoints are versioned under `/api/v1/` and follow the same envelope convention: every response carries a `meta` object with a `traceId`, `version`, and `ts` timestamp. Authenticate with a service account API key issued from the Spctre web UI (`spctre init` or Settings → API Keys).",
-    license: { name: "Apache 2.0", url: "https://www.apache.org/licenses/LICENSE-2.0.html" },
-    contact: { name: "Spctre", url: "https://spctre.dev" },
+    // These feed generated-SDK package metadata, not just the docs: the Python
+    // generator renders license into `license=` and contact.email into
+    // `author_email=`. An SPDX identifier keeps the published package's
+    // License field machine-readable, and omitting contact.email makes the
+    // generator substitute its own default (team@openapitools.org).
+    license: { name: "Apache-2.0", url: "https://www.apache.org/licenses/LICENSE-2.0.html" },
+    contact: { name: "Spctre", url: "https://spctre.dev", email: "support@spctre.dev" },
   },
   servers: [{ url: "/api/v1", description: "Spctre Public API v1" }],
   security: [{ bearerAuth: [] }],
