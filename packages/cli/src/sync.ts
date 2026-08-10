@@ -8,6 +8,12 @@ export interface SyncResult {
   artifactHash: string;
   previousHash: string | null;
   changed: boolean;
+  /**
+   * False when the workspace has no published policy bundle yet. The local
+   * bundle file is left untouched in that case, so a previously synced bundle
+   * is never clobbered by an unpublish.
+   */
+  published: boolean;
 }
 
 interface SyncSettings {
@@ -75,10 +81,14 @@ interface FetchedBundle {
   newRevisionId: string;
 }
 
-async function fetchBundle(targetUrl: string, key: string): Promise<FetchedBundle> {
+async function fetchBundle(targetUrl: string, key: string): Promise<FetchedBundle | null> {
   const response = await fetch(targetUrl, {
     headers: { Authorization: `Bearer ${key}`, Accept: "application/json" },
   });
+
+  // A workspace that has never published is the normal state of a new install,
+  // not a failure. Report it as absence so callers can keep running.
+  if (response.status === 404) return null;
 
   if (!response.ok) {
     const errorText = await response.text();
@@ -128,38 +138,79 @@ export async function sync(options: {
   const previousHash = resolved?.artifactHash ?? null;
 
   try {
-    const { bundle, newHash, newBranchId, newRevisionId } = await fetchBundle(targetUrl, key);
-    const changed = !!newHash && newHash !== previousHash;
-
+    const fetched = await fetchBundle(targetUrl, key);
     const outputPath = path.resolve(process.cwd(), output);
-    fs.mkdirSync(path.dirname(outputPath), { recursive: true });
-    fs.writeFileSync(outputPath, bundle);
-    if (resolved?.agentId) await syncBlueprint(url, key, resolved.agentId, outputPath);
 
-    if (changed && !options.quiet) {
-      const prev = previousHash ? previousHash.slice(0, 19) : "none";
-      const next = newHash.slice(0, 19);
-      console.log(`Policy updated: ${prev} → ${next}`);
+    // Nothing published yet: leave any previously synced bundle in place and
+    // let the caller decide whether that is worth reporting.
+    if (!fetched) {
+      return {
+        outputPath,
+        artifactHash: previousHash ?? "",
+        previousHash,
+        changed: false,
+        published: false,
+      };
     }
 
-    if (changed && newHash && resolved) {
-      persistArtifactMetadata(newHash, newBranchId, newRevisionId);
-    }
-
-    // Write a sidecar file agents can poll to detect bundle changes cheaply.
-    if (changed || !fs.existsSync(lastSyncPath())) {
-      writeLastSync({
-        artifactHash: newHash || previousHash || "",
-        branchId: newBranchId,
-        revisionId: newRevisionId,
-      });
-    }
-
-    return { outputPath, artifactHash: newHash || previousHash || "", previousHash, changed };
+    return await applyFetchedBundle({
+      fetched,
+      outputPath,
+      previousHash,
+      resolved,
+      url,
+      key,
+      quiet: options.quiet,
+    });
   } catch (error) {
     console.error(`Sync failed: ${String(error)}`);
     process.exit(1);
   }
+}
+
+async function applyFetchedBundle(params: {
+  fetched: FetchedBundle;
+  outputPath: string;
+  previousHash: string | null;
+  resolved: SyncSettings["resolved"];
+  url: string;
+  key: string;
+  quiet?: boolean;
+}): Promise<SyncResult> {
+  const { fetched, outputPath, previousHash, resolved, url, key, quiet } = params;
+  const { bundle, newHash, newBranchId, newRevisionId } = fetched;
+  const changed = !!newHash && newHash !== previousHash;
+
+  fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+  fs.writeFileSync(outputPath, bundle);
+  if (resolved?.agentId) await syncBlueprint(url, key, resolved.agentId, outputPath);
+
+  if (changed && !quiet) {
+    const prev = previousHash ? previousHash.slice(0, 19) : "none";
+    const next = newHash.slice(0, 19);
+    console.log(`Policy updated: ${prev} → ${next}`);
+  }
+
+  if (changed && newHash && resolved) {
+    persistArtifactMetadata(newHash, newBranchId, newRevisionId);
+  }
+
+  // Write a sidecar file agents can poll to detect bundle changes cheaply.
+  if (changed || !fs.existsSync(lastSyncPath())) {
+    writeLastSync({
+      artifactHash: newHash || previousHash || "",
+      branchId: newBranchId,
+      revisionId: newRevisionId,
+    });
+  }
+
+  return {
+    outputPath,
+    artifactHash: newHash || previousHash || "",
+    previousHash,
+    changed,
+    published: true,
+  };
 }
 
 function lastSyncPath() {

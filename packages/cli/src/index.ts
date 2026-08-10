@@ -39,7 +39,12 @@ program
   .option("-u, --url <url>", "control plane URL", "http://localhost:3000")
   .action(async (options) => {
     const { sync } = await import("./sync.js");
-    await sync(options);
+    const result = await sync(options);
+    if (result && !result.published) {
+      console.log(
+        "No policy bundle has been published for this workspace yet. Nothing to sync — publish a revision, then run this again.",
+      );
+    }
   });
 
 const bundleCommand = program
