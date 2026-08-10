@@ -110,6 +110,13 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # The portable kernel ships in the same tarball. Rebuild it here rather
+      # than trusting whatever was staged in the commit, so the published module
+      # is built by release from the source being released.
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build portable WASM policy kernel
+        run: pnpm --filter @spctre/policy-schema build:wasm
+
       # Collect every platform binary from the matrix so the packed
       # @spctre/policy-schema tarball ships native support for all targets.
       - name: Download native binaries
