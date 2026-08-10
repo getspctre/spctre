@@ -22,8 +22,19 @@ import pathlib
 import sys
 
 root = pathlib.Path(sys.argv[1])
+
+# Only generated source counts. Importing the package writes __pycache__ into
+# this tree, and regeneration removes the directory wholesale — so counting
+# bytecode would make this check fail purely because the tests ran first.
+def tracked(path: pathlib.Path) -> bool:
+    if not path.is_file():
+        return False
+    if path.suffix in {".pyc", ".pyo"}:
+        return False
+    return "__pycache__" not in path.parts
+
 digest = hashlib.sha256()
-for path in sorted(p for p in root.rglob("*") if p.is_file()):
+for path in sorted(p for p in root.rglob("*") if tracked(p)):
     digest.update(str(path.relative_to(root)).encode())
     digest.update(path.read_bytes())
 print(digest.hexdigest())

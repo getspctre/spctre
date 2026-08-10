@@ -131,8 +131,8 @@ mcp = MCP(
         "SPCTRE_API_URL": "http://localhost:3000",
         "SPCTRE_API_TOKEN": "your-token",
         "SPCTRE_WORKSPACE_ID": "ws-example",
-        "SPCTRE_AGENT_ID": "langchain-agent"
-    }
+        "SPCTRE_AGENT_ID": "langchain-agent",
+    },
 )
 ```
 

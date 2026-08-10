@@ -16,7 +16,14 @@ pip install spctre-hermes
 
 ```python
 from spctre_hermes import SpctreHermesPlugin
-plugin = SpctreHermesPlugin(api_key="...", base_url="https://api.spctre.dev/api", agent_id="agent-1", tenant_id="tenant-1", workspace_id="workspace-1")
+
+plugin = SpctreHermesPlugin(
+    api_key="...",
+    base_url="https://api.spctre.dev/api",
+    agent_id="agent-1",
+    tenant_id="tenant-1",
+    workspace_id="workspace-1",
+)
 agent.register_plugin(plugin)
 ```
 
