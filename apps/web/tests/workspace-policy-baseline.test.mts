@@ -17,9 +17,7 @@ vi.mock("@/lib/repositories/policy/publish", () => ({
   getLatestPublishedBundle: getLatestPublishedBundleSpy,
 }));
 
-vi.mock("@/lib/repositories/shared/database", () => ({
-  isDatabaseConfigured: () => true,
-}));
+vi.mock("@/lib/repositories/shared/database", () => ({ isDatabaseConfigured: () => true }));
 
 vi.mock("@/lib/demo", () => ({
   DEMO_TENANT_ID: "demo-tenant",
@@ -46,9 +44,7 @@ vi.mock("@/lib/repositories/auth/session", () => ({
   resolveTenantIdOrDemo: vi.fn(),
 }));
 
-vi.mock("@/lib/repositories/mfa", () => ({
-  markSessionMfaVerified: markSessionMfaVerifiedRowSpy,
-}));
+vi.mock("@/lib/repositories/mfa", () => ({ markSessionMfaVerified: markSessionMfaVerifiedRowSpy }));
 
 const { ensureWorkspacePolicyBaseline } = await import("@/lib/domains/auth/service");
 
