@@ -198,7 +198,11 @@ async function handlePostApiAuthMfaEnrollSmsVerify(request: Request) {
     principalId: session.principalId,
   });
 
-  await markSessionMfaVerified({ sessionId: session.sessionId, tenantId: session.tenantId });
+  await markSessionMfaVerified({
+    sessionId: session.sessionId,
+    tenantId: session.tenantId,
+    principalId: session.principalId,
+  });
 
   const workspaceId = await getPrimaryWorkspaceIdForTenant(session.tenantId);
 

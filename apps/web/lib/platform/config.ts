@@ -31,6 +31,15 @@ export function workerInternalSecret(): string {
   return getStringEnv("SPCTRE_WORKER_INTERNAL_SECRET");
 }
 
+// ── Provisioning ─────────────────────────────────────────────────────────────
+
+// Shared secret the checkout surface presents when asking the control plane to
+// provision a paid tenant. Distinct from the worker secret: a leak of one must
+// not grant the other's capability.
+export function provisioningSecret(): string {
+  return getStringEnv("SPCTRE_PROVISIONING_SECRET");
+}
+
 // ── Site ──────────────────────────────────────────────────────────────────────
 
 export function getSiteUrl(): string {

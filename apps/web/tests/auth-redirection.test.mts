@@ -48,15 +48,6 @@ vi.mock("@/lib/domains/auth/service", () => ({
   bootstrapDemoTenant: ensureAuthDemoTenantSpy,
   authenticatePrincipalForLogin: getPrincipalForLoginSpy,
   getPrimaryWorkspaceId: async () => "demo-workspace",
-  provisionDefaultPolicyPackIfNeeded: async (params: any) => {
-    if (params.tenantId !== "demo-tenant" && params.workspaceId && !params.requireMfa) {
-      await ensureDefaultPublishedPolicyPackSpy({
-        tenantId: params.tenantId,
-        workspaceId: params.workspaceId,
-        actorId: params.actorId,
-      });
-    }
-  },
   verifyMfaLoginCode: async (params: any) => {
     if (params.code === "123456") return { ok: true };
     return { error: "Invalid MFA code." };
@@ -176,22 +167,9 @@ describe("Auth and signup redirection targets", () => {
         "/onboarding/cli/approve?code=abc123",
       );
       expect(redirectSpy).toHaveBeenCalledWith("/onboarding/cli/approve?code=abc123");
+      // Sign-in itself no longer seeds; createAuthSession owns the baseline.
+      // See tests/workspace-policy-baseline.test.mts.
       expect(ensureDefaultPublishedPolicyPackSpy).not.toHaveBeenCalled();
-    });
-
-    it("ensures the default published policy pack for non-demo sign in", async () => {
-      getPrincipalForLoginSpy.mockResolvedValue({
-        id: "p-local",
-        tenant_id: "local-tenant",
-        subject: "user@example.com",
-        require_mfa: false,
-        disabled_at: null,
-      });
-
-      const formData = new FormData();
-      formData.set("principalId", "p-local");
-
-      await expect(loginWithPrincipal(null, formData)).rejects.toThrow("/");
     });
 
     it("sanitizes open redirects by falling back to root", async () => {

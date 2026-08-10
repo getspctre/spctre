@@ -220,6 +220,7 @@ async function handlePostApiAuthMfaVerify(request: Request) {
   const sessionResult = await markSessionMfaVerified({
     sessionId: session.sessionId,
     tenantId: session.tenantId,
+    principalId: session.principalId,
   });
   if (sessionResult === "db-unavailable") {
     const response = NextResponse.json(

@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { SESSION_GUARD_COOKIE, verifySessionGuardToken } from "@/lib/session-guard";
+import { swallow } from "@/lib/platform/swallow";
 import {
   ensureAuthDemoTenant,
   fetchSessionForAuth,
@@ -83,7 +84,7 @@ export async function createAuthSession(params: {
 
   const expiresAt = new Date(Date.now() + sessionTtlHours() * 60 * 60 * 1000).toISOString();
 
-  return createSessionRow(
+  const sessionId = await createSessionRow(
     {
       principalId: params.principalId,
       tenantId: params.tenantId,
@@ -95,6 +96,20 @@ export async function createAuthSession(params: {
     },
     params.db,
   );
+
+  // Every sign-in route creates its session here, which makes this the one
+  // place a workspace baseline can be seeded for all of them. Tenants that
+  // still owe MFA are seeded once they verify, not now. A failure here must
+  // never cost the user their sign-in.
+  if (params.mfaVerifiedAt) {
+    const { ensureWorkspacePolicyBaseline } = await import("@/lib/domains/auth/service");
+    await ensureWorkspacePolicyBaseline({
+      tenantId: params.tenantId,
+      principalId: params.principalId,
+    }).catch(swallow("ensureWorkspacePolicyBaseline", undefined));
+  }
+
+  return sessionId;
 }
 
 export async function revokeAuthSession(sessionId: string, tenantId: string): Promise<void> {

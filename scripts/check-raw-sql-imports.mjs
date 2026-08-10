@@ -23,6 +23,10 @@ const allowed = new Set([
   "apps/web/lib/repositories/operations-log/log.ts",
   "apps/web/lib/repositories/packs.ts",
   "apps/web/lib/repositories/policy/rules.ts",
+  // Hosted checkout provisioning: the tenant does not exist yet, so the owner
+  // connection creates it and looks up an existing owner. Every RLS-gated write
+  // that follows runs bound to the new tenant.
+  "apps/web/lib/repositories/provisioning.ts",
   "apps/web/lib/repositories/scim-token.ts",
   "apps/web/lib/repositories/trust.ts",
   "apps/web/lib/repositories/verification.ts",
