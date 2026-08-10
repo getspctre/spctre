@@ -3,8 +3,9 @@ name: Public boundary
 on:
   push:
     branches: [main]
+  # Unfiltered by base branch so stacked pull requests are checked too; see the
+  # note on the same trigger in ci.yml.
   pull_request:
-    branches: [main]
 
 jobs:
   check:
