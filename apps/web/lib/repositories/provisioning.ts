@@ -105,12 +105,43 @@ async function insertTenant(company: string, email: string): Promise<string | nu
   return null;
 }
 
+const OWNER_EMAIL_UNIQUE_INDEX = "app_principal_magic_link_owner_email_idx";
+
+function isOwnerEmailConflict(error: unknown): boolean {
+  const candidate = error as { code?: string; constraint_name?: string } | null;
+  return (
+    candidate?.code === "23505" &&
+    (candidate.constraint_name === OWNER_EMAIL_UNIQUE_INDEX ||
+      String(error).includes(OWNER_EMAIL_UNIQUE_INDEX))
+  );
+}
+
+/**
+ * Undo a tenant row whose dependent writes did not land.
+ *
+ * The tenant is created on the owner connection before any tenant context
+ * exists, so it cannot join the transaction that writes everything else. When
+ * that transaction rolls back, the tenant row is the one thing left behind.
+ */
+async function deleteAbandonedTenant(tenantId: string): Promise<void> {
+  if (!rawSql) return;
+  await rawSql`DELETE FROM tenant WHERE id = ${tenantId}`;
+}
+
+export type CreateHostedTenantOutcome =
+  | { status: "created"; tenant: ProvisionedTenant }
+  // Another caller created the same owner between our check and our insert.
+  | { status: "conflict" }
+  | { status: "failed" };
+
 /**
  * Create the tenant, commercial profile, workspace, owner principal and grants
  * that a hosted checkout needs.
  *
  * Everything after the tenant row is RLS-gated, so it runs bound to the tenant
- * that was just created.
+ * that was just created, and inside one transaction: a subscription webhook
+ * arrives alongside its siblings, and a loser that had already written a
+ * profile and a workspace would leave an ownerless tenant behind.
  */
 export async function createHostedTenant(params: {
   email: string;
@@ -119,17 +150,44 @@ export async function createHostedTenant(params: {
   planCode: HostedPlanCode;
   lifecycleStatus: HostedLifecycleStatus;
   billingCustomerId: string | null;
-}): Promise<ProvisionedTenant | null> {
-  if (!rawSql || !sql) return null;
+}): Promise<CreateHostedTenantOutcome> {
+  if (!rawSql || !sql) return { status: "failed" };
 
   const tenantId = await insertTenant(params.company, params.email);
-  if (!tenantId) return null;
+  if (!tenantId) return { status: "failed" };
 
-  return runWithTenantContext(tenantId, async () => {
+  try {
+    const tenant = await runWithTenantContext(tenantId, () =>
+      writeTenantDependents(tenantId, params),
+    );
+    if (!tenant) {
+      await deleteAbandonedTenant(tenantId);
+      return { status: "failed" };
+    }
+    return { status: "created", tenant };
+  } catch (error) {
+    await deleteAbandonedTenant(tenantId);
+    if (isOwnerEmailConflict(error)) return { status: "conflict" };
+    throw error;
+  }
+}
+
+async function writeTenantDependents(
+  tenantId: string,
+  params: {
+    email: string;
+    displayName: string;
+    company: string;
+    planCode: HostedPlanCode;
+    lifecycleStatus: HostedLifecycleStatus;
+    billingCustomerId: string | null;
+  },
+): Promise<ProvisionedTenant | null> {
+  return sql!.begin(async (tx) => {
     // billing_provider defaults to 'PADDLE'; billing_customer_id is supplied
     // when the caller already knows it (subscription webhooks) and left null
     // when it does not (checkout before the subscription exists).
-    await sql`
+    await tx`
       INSERT INTO tenant_commercial_profile (
         tenant_id, plan_code, lifecycle_status, sales_status,
         billing_contact_email, billing_customer_id
@@ -149,7 +207,7 @@ export async function createHostedTenant(params: {
         updated_at = now()
     `;
 
-    const workspaceRows = await sql<{ id: string }[]>`
+    const workspaceRows = await tx<{ id: string }[]>`
       INSERT INTO workspace (tenant_id, slug, name)
       VALUES (${tenantId}, ${DEFAULT_WORKSPACE_SLUG}, ${DEFAULT_WORKSPACE_NAME})
       ON CONFLICT (tenant_id, slug) DO UPDATE SET name = EXCLUDED.name
@@ -158,7 +216,7 @@ export async function createHostedTenant(params: {
     const workspaceId = workspaceRows[0]?.id;
     if (!workspaceId) return null;
 
-    const principalRows = await sql<{ id: string }[]>`
+    const principalRows = await tx<{ id: string }[]>`
       INSERT INTO app_principal (
         tenant_id, subject, display_name, email,
         principal_type, auth_method, org_role, invite_status
@@ -177,7 +235,7 @@ export async function createHostedTenant(params: {
     // row, because Postgres treats NULL workspace_id values as distinct — so
     // guard both explicitly rather than relying on ON CONFLICT.
     for (const workspaceScope of [null, workspaceId]) {
-      await sql`
+      await tx`
         INSERT INTO principal_permission_grant (
           tenant_id, principal_id, workspace_id, grant_role,
           reviewer_roles, publish_scopes, allowed_environments

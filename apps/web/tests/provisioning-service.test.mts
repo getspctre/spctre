@@ -38,9 +38,8 @@ describe("provisionHostedTenant", () => {
     ensureDefaultPublishedPolicyPackSpy.mockReset();
     boundTenants.length = 0;
     createHostedTenantSpy.mockResolvedValue({
-      tenantId: TENANT_ID,
-      workspaceId: WORKSPACE_ID,
-      principalId: PRINCIPAL_ID,
+      status: "created",
+      tenant: { tenantId: TENANT_ID, workspaceId: WORKSPACE_ID, principalId: PRINCIPAL_ID },
     });
     findHostedOwnerByEmailSpy.mockResolvedValue(null);
   });
@@ -145,8 +144,49 @@ describe("provisionHostedTenant", () => {
     expect(createHostedTenantSpy).not.toHaveBeenCalled();
   });
 
+  it("resolves to the winner's tenant when a concurrent caller created it first", async () => {
+    // Paddle delivers subscription.created, subscription.activated and
+    // transaction.completed within milliseconds of each other. All three pass
+    // the existence check before any of them commits.
+    createHostedTenantSpy.mockResolvedValue({ status: "conflict" });
+    findHostedOwnerByEmailSpy
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({
+        tenantId: TENANT_ID,
+        workspaceId: WORKSPACE_ID,
+        principalId: PRINCIPAL_ID,
+      });
+
+    const result = await provisionHostedTenant({
+      email: "buyer@example.com",
+      displayName: "Buyer",
+    });
+
+    expect(result).toEqual({
+      ok: true,
+      created: false,
+      tenantId: TENANT_ID,
+      workspaceId: WORKSPACE_ID,
+      principalId: PRINCIPAL_ID,
+    });
+    // The winner already seeded it; the loser must not seed again.
+    expect(ensureDefaultPublishedPolicyPackSpy).not.toHaveBeenCalled();
+  });
+
+  it("fails rather than inventing a tenant when a conflict resolves to nothing", async () => {
+    createHostedTenantSpy.mockResolvedValue({ status: "conflict" });
+    findHostedOwnerByEmailSpy.mockResolvedValue(null);
+
+    const result = await provisionHostedTenant({
+      email: "buyer@example.com",
+      displayName: "Buyer",
+    });
+
+    expect(result).toEqual({ error: "create_failed" });
+  });
+
   it("does not seed a baseline when tenant creation fails", async () => {
-    createHostedTenantSpy.mockResolvedValue(null);
+    createHostedTenantSpy.mockResolvedValue({ status: "failed" });
 
     const result = await provisionHostedTenant({
       email: "buyer@example.com",

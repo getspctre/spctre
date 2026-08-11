@@ -60,7 +60,7 @@ export async function provisionHostedTenant(params: {
   if (existing) return { ok: true, created: false, ...existing };
 
   const company = params.company?.trim() || `${displayName}'s Org`;
-  const provisioned = await createHostedTenant({
+  const outcome = await createHostedTenant({
     email,
     displayName,
     company,
@@ -68,7 +68,18 @@ export async function provisionHostedTenant(params: {
     lifecycleStatus: normalizeLifecycleStatus(params.lifecycleStatus),
     billingCustomerId: params.billingCustomerId?.trim() || null,
   });
-  if (!provisioned) return { error: "create_failed" };
+
+  // A subscription webhook arrives alongside its siblings, so several callers
+  // can pass the existence check above before any of them commits. The unique
+  // owner-email index decides who wins; the losers resolve to that tenant
+  // rather than failing, which is what the check was trying to express.
+  if (outcome.status === "conflict") {
+    const winner = await findHostedOwnerByEmail(email);
+    return winner ? { ok: true, created: false, ...winner } : { error: "create_failed" };
+  }
+  if (outcome.status === "failed") return { error: "create_failed" };
+
+  const provisioned = outcome.tenant;
 
   await runWithTenantContext(provisioned.tenantId, () =>
     ensureDefaultPublishedPolicyPack({
