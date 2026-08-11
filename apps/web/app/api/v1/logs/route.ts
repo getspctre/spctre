@@ -1,5 +1,6 @@
 import {
   error,
+  enforceEvidenceRateLimit,
   handleGenericRecords,
   isJsonRecord,
   readJsonRecord,
@@ -7,6 +8,8 @@ import {
 import { extractTraceId } from "@spctre/api-contracts";
 export const dynamic = "force-dynamic";
 export async function POST(request: Request) {
+  const throttle = await enforceEvidenceRateLimit(request);
+  if (throttle) return throttle;
   const payload = await readJsonRecord(request);
   if (payload instanceof Response)
     return error("OTLP/HTTP logs must use JSON encoding.", 400, extractTraceId(request));

@@ -1,4 +1,4 @@
-import { error, handleGenericRecords, readJsonRecord } from "@/app/api/ingest/_shared";
+import { enforceEvidenceRateLimit, error, handleGenericRecords, readJsonRecord } from "@/app/api/ingest/_shared";
 import {
   normalizeManagedProviderEvent,
   type ManagedProvider,
@@ -13,6 +13,8 @@ const providers = new Set<ManagedProvider>([
 ]);
 
 export async function POST(request: Request, context: { params: Promise<{ provider: string }> }) {
+  const throttle = await enforceEvidenceRateLimit(request);
+  if (throttle) return throttle;
   const { provider } = await context.params;
   const traceId = extractTraceId(request);
   if (!providers.has(provider as ManagedProvider))

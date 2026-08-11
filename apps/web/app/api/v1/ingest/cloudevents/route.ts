@@ -1,7 +1,9 @@
-import { error, handleGenericRecords, readJsonRecord } from "@/app/api/ingest/_shared";
+import { enforceEvidenceRateLimit, error, handleGenericRecords, readJsonRecord } from "@/app/api/ingest/_shared";
 import { extractTraceId } from "@spctre/api-contracts";
 export const dynamic = "force-dynamic";
 export async function POST(request: Request) {
+  const throttle = await enforceEvidenceRateLimit(request);
+  if (throttle) return throttle;
   const payload = await readJsonRecord(request);
   if (payload instanceof Response)
     return error("CloudEvent body must be a JSON object.", 400, extractTraceId(request));

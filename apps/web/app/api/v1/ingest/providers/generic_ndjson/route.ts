@@ -1,8 +1,10 @@
-import { error, handleGenericRecords, isJsonRecord, readBoundedText } from "@/app/api/ingest/_shared";
+import { enforceEvidenceRateLimit, error, handleGenericRecords, isJsonRecord, readBoundedText } from "@/app/api/ingest/_shared";
 import { extractTraceId } from "@spctre/api-contracts";
 import { logger } from "@spctre/platform/logging";
 export const dynamic = "force-dynamic";
 export async function POST(request: Request) {
+  const throttle = await enforceEvidenceRateLimit(request);
+  if (throttle) return throttle;
   const body = await readBoundedText(request);
   if (body instanceof Response)
     return error("Request body exceeds the 1 MiB limit.", 413, extractTraceId(request));

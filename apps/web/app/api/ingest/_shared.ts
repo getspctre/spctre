@@ -35,15 +35,6 @@ export async function handleGenericRecords(params: {
     return error("Request body exceeds the 1 MiB limit.", 413, traceId);
   const integrationId = params.request.headers.get("x-spctre-integration-id");
   if (!integrationId) return error("x-spctre-integration-id is required.", 400, traceId);
-  const rateLimit = await checkEvidenceRateLimit(params.request);
-  if (!rateLimit.allowed)
-    return withTraceId(
-      Response.json(
-        { error: "Too many evidence records. Retry after the indicated delay.", meta: makeMeta(traceId) },
-        { status: 429, headers: { "Retry-After": String(rateLimit.retryAfterSeconds) } },
-      ),
-      traceId,
-    );
   const auth = await authenticateServiceToken(params.request, "evidence:write");
   if (!auth.ok) return error("Missing or invalid service token.", 401, traceId);
   const results: Array<Record<string, unknown>> = [];
@@ -79,6 +70,19 @@ export async function handleGenericRecords(params: {
     Response.json(
       { results, meta: makeMeta(traceId) },
       { status: rejected ? 207 : accepted ? 201 : 200 },
+    ),
+    traceId,
+  );
+}
+
+export async function enforceEvidenceRateLimit(request: Request): Promise<Response | null> {
+  const rateLimit = await checkEvidenceRateLimit(request);
+  if (rateLimit.allowed) return null;
+  const traceId = extractTraceId(request);
+  return withTraceId(
+    Response.json(
+      { error: "Too many evidence records. Retry after the indicated delay.", meta: makeMeta(traceId) },
+      { status: 429, headers: { "Retry-After": String(rateLimit.retryAfterSeconds) } },
     ),
     traceId,
   );
