@@ -6,8 +6,12 @@ import {
 import { authenticateServiceToken } from "@/lib/service-tokens";
 import { isRecord } from "@/lib/records";
 import { logger } from "@spctre/platform/logging";
+import { checkAuthRateLimit } from "@/lib/auth-rate-limit";
+import { createHash } from "node:crypto";
 
 export const MAX_REQUEST_BYTES = 1_048_576;
+const evidenceRateLimit = 120;
+const evidenceRateWindowSeconds = 60;
 export type GenericProviderType =
   | "generic_json"
   | "generic_ndjson"
@@ -28,6 +32,15 @@ export async function handleGenericRecords(params: {
     return error("Request body exceeds the 1 MiB limit.", 413, traceId);
   const integrationId = params.request.headers.get("x-spctre-integration-id");
   if (!integrationId) return error("x-spctre-integration-id is required.", 400, traceId);
+  const rateLimit = await checkEvidenceRateLimit(params.request);
+  if (!rateLimit.allowed)
+    return withTraceId(
+      Response.json(
+        { error: "Too many evidence records. Retry after the indicated delay.", meta: makeMeta(traceId) },
+        { status: 429, headers: { "Retry-After": String(rateLimit.retryAfterSeconds) } },
+      ),
+      traceId,
+    );
   const auth = await authenticateServiceToken(params.request, "evidence:write");
   if (!auth.ok) return error("Missing or invalid service token.", 401, traceId);
   const results: Array<Record<string, unknown>> = [];
@@ -66,6 +79,19 @@ export async function handleGenericRecords(params: {
     ),
     traceId,
   );
+}
+
+async function checkEvidenceRateLimit(request: Request) {
+  const credential =
+    request.headers.get("authorization")?.trim() ||
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    "anonymous";
+  const digest = createHash("sha256").update(credential).digest("hex").slice(0, 32);
+  return checkAuthRateLimit({
+    key: `evidence-ingest:${digest}`,
+    limit: evidenceRateLimit,
+    windowSeconds: evidenceRateWindowSeconds,
+  });
 }
 
 export async function readJsonRecord(
