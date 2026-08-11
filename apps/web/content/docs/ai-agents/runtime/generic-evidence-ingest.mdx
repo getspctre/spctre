@@ -67,4 +67,6 @@ their documented attributes: `aws.request_id`, `aws.agent.id`,
 `aws.operation.name`, and `aws.resource.arn`. AgentCore stores its telemetry in
 CloudWatch Logs; a production pull collector should use a customer-owned,
 read-only role scoped to those log groups. CloudWatch Transaction Search must
-be enabled separately when span search is desired.
+be enabled separately when span search is desired. A bare runtime only emits
+service logs; add ADOT or another supported OpenTelemetry instrumentor to an
+agent when custom trace and span payloads are required.
