@@ -230,13 +230,14 @@ export async function persistGenericEvidence(params: {
   if (!sql) throw new Error("Database not configured.");
 
   const contentHash = sourceContentHash(params.payload);
-  const key = sourceIdempotencyKey(undefined, params.payload);
+  const sourceEventID = evidenceSourceEventID(params.payload, params.integration.fieldMapping);
+  const key = sourceIdempotencyKey(sourceEventID ?? undefined, params.payload);
   const sourceRows = await sql<{ id: string }[]>`
     INSERT INTO evidence_source_record (
-      tenant_id, integration_id, mapping_revision_id, idempotency_key, content_hash, source_payload
+      tenant_id, integration_id, mapping_revision_id, source_event_id, idempotency_key, content_hash, source_payload
     ) VALUES (
       ${params.integration.tenantId}::uuid, ${params.integration.id}::uuid,
-      ${params.integration.mappingRevisionId}::uuid, ${key}, ${contentHash},
+      ${params.integration.mappingRevisionId}::uuid, ${sourceEventID}, ${key}, ${contentHash},
       ${sql.json(params.payload as JSONValue)}::jsonb
     )
     ON CONFLICT (tenant_id, integration_id, idempotency_key) DO NOTHING
@@ -288,4 +289,13 @@ export async function persistGenericEvidence(params: {
     RETURNING id
   `;
   return { outcome: "accepted", sourceRecordId, canonicalEventId: rows[0]!.id, evidence };
+}
+
+function evidenceSourceEventID(payload: Record<string, unknown>, mapping: unknown): string | null {
+  try {
+    return normalizeGenericEvidence(payload, mapping).sourceEventId ?? null;
+  } catch {
+    // Invalid mappings still retain their receipt and rejection reason below.
+    return null;
+  }
 }
