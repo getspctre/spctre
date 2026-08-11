@@ -1,5 +1,14 @@
 # @spctre/policy-schema
 
+## 0.6.0
+
+### Minor Changes
+
+- 00b605d: Add the `GATEWAY_DECISION_REPLAY_DIVERGED` operations-log event type. Gateway
+  decisions are now first-write-wins audit records, so a replayed decision that
+  disagrees with the persisted one is retained as its own event rather than
+  rewriting the original.
+
 ## 0.5.0
 
 ### Minor Changes
