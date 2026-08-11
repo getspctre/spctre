@@ -14,6 +14,7 @@ import { getSpctrePlan } from "@/lib/feature-flags-server";
 import { archivalService } from "@/lib/ee-adapters/archival";
 import { getCommercialProfile } from "@/lib/repositories/workspace";
 import { resolveRetainUntil } from "@/lib/entitlements/retention";
+import { countIngestedEventForBilling } from "@/lib/repositories/usage/metering";
 
 export async function countRuntimeEvidence(
   workspaceId: string | null,
@@ -593,6 +594,10 @@ export async function insertRuntimeEvidenceWithDedup(params: {
         SET last_hash = ${contentHash}, updated_at = now()
         WHERE tenant_id = ${params.tenantId}
       `;
+      // Count the event against the billing period, in this transaction. The
+      // dedupe key above already rejected replays, so reaching here means a
+      // genuinely new governed event and the count is exactly-once.
+      await countIngestedEventForBilling(tx, { tenantId: params.tenantId });
     }
 
     return insertedRows;
@@ -711,6 +716,7 @@ export async function insertGatewayEvidenceEvent(params: {
         SET last_hash = ${contentHash}, updated_at = now()
         WHERE tenant_id = ${params.tenantId}
       `;
+      await countIngestedEventForBilling(tx, { tenantId: params.tenantId });
     }
 
     return insertedRows;

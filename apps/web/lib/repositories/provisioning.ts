@@ -196,11 +196,13 @@ async function writeTenantDependents(
       INSERT INTO tenant_commercial_profile (
         tenant_id, plan_code, lifecycle_status, sales_status,
         billing_contact_email, billing_customer_id,
-        retention_window_days, entitlement_version, entitlement_effective_at
+        retention_window_days, retained_event_capacity,
+        entitlement_version, entitlement_effective_at
       ) VALUES (
         ${tenantId}, ${params.planCode}, ${params.lifecycleStatus}, 'CUSTOMER',
         ${params.email}, ${params.billingCustomerId},
-        ${entitlements.retentionWindowDays.value}, ${ENTITLEMENT_CATALOG_VERSION}, now()
+        ${entitlements.retentionWindowDays.value}, ${entitlements.retainedEvents.value},
+        ${ENTITLEMENT_CATALOG_VERSION}, now()
       )
       ON CONFLICT (tenant_id) DO UPDATE SET
         plan_code = EXCLUDED.plan_code,
@@ -212,6 +214,7 @@ async function writeTenantDependents(
           tenant_commercial_profile.billing_customer_id
         ),
         retention_window_days = EXCLUDED.retention_window_days,
+        retained_event_capacity = EXCLUDED.retained_event_capacity,
         entitlement_version = EXCLUDED.entitlement_version,
         entitlement_effective_at = EXCLUDED.entitlement_effective_at,
         updated_at = now()

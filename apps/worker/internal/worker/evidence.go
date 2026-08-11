@@ -543,6 +543,40 @@ func (s *Server) insertEvidence(ctx context.Context, evidence EvidenceRequest) (
 		return false, err
 	}
 
+	// Count the event against the tenant's billing period, in this transaction.
+	// The dedupe key insert above already rejected replays, so reaching here
+	// means a genuinely new governed event and the count is exactly-once.
+	//
+	// The period boundary is derived in SQL rather than in Go so this stays one
+	// statement with no clock disagreement between the worker and the web app,
+	// which increments the same rows. date_trunc('month', now() AT TIME ZONE
+	// 'UTC') matches resolveBillingPeriod in
+	// apps/web/lib/entitlements/billing-period.ts.
+	if _, err := tx.Exec(ctx, `
+		INSERT INTO tenant_usage_period (
+			tenant_id, period_start, period_end, metric, ingested_count
+		) VALUES (
+			$1,
+			date_trunc('month', now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC',
+			(date_trunc('month', now() AT TIME ZONE 'UTC') + interval '1 month') AT TIME ZONE 'UTC',
+			'RETAINED_EVENTS',
+			1
+		)
+		ON CONFLICT (tenant_id, metric, period_start) DO UPDATE SET
+			ingested_count = tenant_usage_period.ingested_count + 1,
+			-- Maintain the standing retained gauge too, but only once the audit
+			-- has seeded it. A NULL means no baseline exists yet, and starting
+			-- from 1 would claim the tenant holds a single retained event when
+			-- it may hold millions from earlier months.
+			retained_count = CASE
+				WHEN tenant_usage_period.retained_count IS NULL THEN NULL
+				ELSE tenant_usage_period.retained_count + 1
+			END,
+			updated_at = now()
+	`, evidence.TenantID); err != nil {
+		return false, err
+	}
+
 	if err := tx.Commit(ctx); err != nil {
 		return false, err
 	}

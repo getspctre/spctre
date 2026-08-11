@@ -18,6 +18,7 @@ const (
 	LockIDEscalationSLA      = 7004
 	LockIDNotificationSender = 7005
 	LockIDSiemForwarder      = 7007
+	LockIDUsageReconcile     = 7008
 )
 
 type Job struct {
@@ -46,6 +47,9 @@ func Jobs(db *pgxpool.Pool, logger *slog.Logger, intervals JobIntervals, notific
 	}})
 	jobs = append(jobs, Job{Name: "siem-forwarder", Every: intervals.SiemForwarder, Run: func(ctx context.Context) error {
 		return runSiemForwarder(ctx, db, logger, safeHTTPClient)
+	}})
+	jobs = append(jobs, Job{Name: "usage-reconcile", Every: intervals.UsageReconcile, Run: func(ctx context.Context) error {
+		return runUsageReconciliation(ctx, db, logger)
 	}})
 	return jobs
 }

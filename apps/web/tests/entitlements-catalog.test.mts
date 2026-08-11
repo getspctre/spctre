@@ -126,12 +126,24 @@ describe("the retention worker reads the provisioned window", () => {
     ).not.toMatch(/CASE tcp\.plan_code/);
   });
 
-  it("skips profiles with no provisioned window rather than guessing one", async () => {
+  it("prunes from the provisioned column", async () => {
     const source = await workerSource();
-    // Guessing here deletes evidence irreversibly. Both plausible defaults are
-    // wrong: the trial window would destroy an Enterprise tenant's history, and
-    // the longest would silently stop pruning.
-    expect(source).toMatch(/tcp\.retention_window_days IS NOT NULL/);
     expect(source).toMatch(/make_interval\(days => tcp\.retention_window_days\)/);
+  });
+
+  // The window is NOT NULL as of migration 019, so an unprovisioned profile is
+  // impossible rather than merely unlikely. That invariant is what allows the
+  // sweep to read the column without a guard, so it is asserted here — if the
+  // constraint is ever dropped, this fails rather than the pruning quietly
+  // becoming dependent on data hygiene.
+  it("relies on a NOT NULL retention window", async () => {
+    const migration = await readFile(
+      fileURLToPath(
+        new URL("../../../db/migrations/019_retained_event_metering.sql", import.meta.url),
+      ),
+      "utf8",
+    );
+    expect(migration).toMatch(/ALTER COLUMN retention_window_days SET NOT NULL/);
+    expect(migration).toMatch(/ALTER COLUMN retained_event_capacity SET NOT NULL/);
   });
 });

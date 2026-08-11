@@ -212,11 +212,13 @@ export async function recordBillingLifecycleEvent(
       INSERT INTO tenant_commercial_profile (
         tenant_id, plan_code, lifecycle_status, sales_status,
         billing_provider, billing_customer_id, updated_at,
-        retention_window_days, entitlement_version, entitlement_effective_at
+        retention_window_days, retained_event_capacity,
+        entitlement_version, entitlement_effective_at
       ) VALUES (
         ${tenantId}, ${insertPlanCode}, ${event.lifecycleStatus}, ${event.salesStatus},
         ${event.billingProvider}, ${event.billingCustomerId ?? null}, now(),
-        ${entitlements.retentionWindowDays.value}, ${ENTITLEMENT_CATALOG_VERSION}, now()
+        ${entitlements.retentionWindowDays.value}, ${entitlements.retainedEvents.value},
+        ${ENTITLEMENT_CATALOG_VERSION}, now()
       )
       ON CONFLICT (tenant_id) DO UPDATE SET
         plan_code = CASE
@@ -232,6 +234,12 @@ export async function recordBillingLifecycleEvent(
             AND tenant_commercial_profile.plan_code IS DISTINCT FROM EXCLUDED.plan_code
           THEN EXCLUDED.retention_window_days
           ELSE tenant_commercial_profile.retention_window_days
+        END,
+        retained_event_capacity = CASE
+          WHEN ${planCode}::text IS NOT NULL
+            AND tenant_commercial_profile.plan_code IS DISTINCT FROM EXCLUDED.plan_code
+          THEN EXCLUDED.retained_event_capacity
+          ELSE tenant_commercial_profile.retained_event_capacity
         END,
         entitlement_version = CASE
           WHEN ${planCode}::text IS NOT NULL
@@ -320,11 +328,13 @@ export async function requestCommercialReview(params: {
     await tx`
       INSERT INTO tenant_commercial_profile (
         tenant_id, plan_code, lifecycle_status, sales_status, updated_by, updated_at,
-        retention_window_days, entitlement_version, entitlement_effective_at
+        retention_window_days, retained_event_capacity,
+        entitlement_version, entitlement_effective_at
       ) VALUES (
         ${params.tenantId}, 'HOSTED_TRIAL', 'EVALUATING',
         'REQUESTED', ${params.principalId}, now(),
         ${planEntitlements("HOSTED_TRIAL").retentionWindowDays.value},
+        ${planEntitlements("HOSTED_TRIAL").retainedEvents.value},
         ${ENTITLEMENT_CATALOG_VERSION}, now()
       )
       ON CONFLICT (tenant_id) DO UPDATE SET
