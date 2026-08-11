@@ -1,6 +1,7 @@
 import { appendOperationsLog } from "@/lib/repositories/operations-log";
 import { evidenceIngestUrl, workerInternalSecret } from "@/lib/platform/config";
 import { fetchWithRetry } from "@/lib/platform/fetch-retry";
+import { reportSwallowedError } from "@/lib/platform/swallow";
 import {
   getGenericEvidenceIntegration,
   isGenericEvidenceDatabaseConfigured,
@@ -72,6 +73,9 @@ async function delegateGenericEvidenceToWorker(params: {
   try {
     canonical = normalizeGenericEvidence(params.payload, params.integration.fieldMapping);
   } catch (error) {
+    reportSwallowedError("delegateGenericEvidenceToWorker.mapping", error, {
+      integrationId: params.integration.id,
+    });
     rejectedReason =
       error instanceof Error ? error.message : "The active mapping rejected this record.";
   }

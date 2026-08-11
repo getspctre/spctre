@@ -1,5 +1,6 @@
 import type { JSONValue } from "postgres";
 import { logger } from "@spctre/platform/logging";
+import { reportSwallowedError } from "@/lib/platform/swallow";
 import { sql } from "@/lib/db";
 import {
   normalizeGenericEvidence,
@@ -321,8 +322,9 @@ async function resolveCanonicalEvidenceAgent(params: {
 function evidenceSourceEventID(payload: Record<string, unknown>, mapping: unknown): string | null {
   try {
     return normalizeGenericEvidence(payload, mapping).sourceEventId ?? null;
-  } catch {
+  } catch (error) {
     // Invalid mappings still retain their receipt and rejection reason below.
+    reportSwallowedError("evidenceSourceEventID", error);
     return null;
   }
 }

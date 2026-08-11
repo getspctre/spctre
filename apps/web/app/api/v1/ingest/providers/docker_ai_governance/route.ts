@@ -6,6 +6,7 @@ import {
   readBoundedText,
 } from "@/app/api/ingest/_shared";
 import { normalizeManagedProviderEvent } from "@/lib/domains/evidence/managed-adapters";
+import { reportSwallowedError } from "@/lib/platform/swallow";
 import { extractTraceId } from "@spctre/api-contracts";
 
 export const dynamic = "force-dynamic";
@@ -32,7 +33,8 @@ export async function POST(request: Request) {
       return isJsonRecord(raw)
         ? normalizeManagedProviderEvent("docker_ai_governance", raw)
         : { error: "Docker audit events must be JSON objects." };
-    } catch {
+    } catch (error) {
+      reportSwallowedError("dockerAiGovernanceIngest.parseLine", error);
       return { error: "Malformed Docker audit JSON line." };
     }
   });

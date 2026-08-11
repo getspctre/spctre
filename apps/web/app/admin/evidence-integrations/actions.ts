@@ -8,6 +8,7 @@ import { createEvidenceIntegrationSetup } from "@/lib/domains/evidence/integrati
 import { normalizeGenericEvidence } from "@/lib/domains/evidence/generic-mapping";
 import { isRecord } from "@/lib/records";
 import { logger } from "@spctre/platform/logging";
+import { reportSwallowedError } from "@/lib/platform/swallow";
 
 const providerTypes = [
   "generic_json",
@@ -40,6 +41,7 @@ export async function previewEvidenceMappingAction(
     if (!isRecord(sample)) return { error: "Sample payload must be a JSON object." };
     return { ok: true, preview: normalizeGenericEvidence(sample, mapping) };
   } catch (error) {
+    reportSwallowedError("previewEvidenceMappingAction", error);
     return { error: error instanceof Error ? error.message : "Could not preview this mapping." };
   }
 }
