@@ -53,3 +53,12 @@ Ship each completed line unchanged. Docker's event fields are interpreted as:
 The audit directory is customer-controlled. Spctre does not read developer
 machines or Docker Hub directly; run the shipper where Docker writes the audit
 file and use a narrowly scoped `evidence:write` integration token.
+
+## Resolve agent identity
+
+An audit event's `agent.name` is retained as an external identity. To connect
+it to an existing Spctre agent, create an agent-surface binding with
+`surfaceType` set to `evidence:docker_ai_governance` and `surfaceAgentId` set
+to that Docker agent name. Future receipts then show the canonical agent in the
+Evidence integrations provenance table; unbound identities remain explicitly
+marked for review.

@@ -50,6 +50,7 @@ export type GenericEvidenceProvenance = {
   receivedAt: string;
   action: string | null;
   decision: string | null;
+  canonicalAgentId: string | null;
   unresolved: boolean;
   rejectedReason: string | null;
 };
@@ -96,6 +97,7 @@ export async function listGenericEvidenceProvenance(params: {
            source.source_event_id AS "sourceEventId", source.content_hash AS "contentHash",
            mapping.version AS "mappingVersion", event.occurred_at::text AS "occurredAt",
            source.received_at::text AS "receivedAt", event.action, event.enforcement_decision AS decision,
+           event.canonical_agent_id AS "canonicalAgentId",
            COALESCE(event.unresolved, true) AS unresolved, source.rejected_reason AS "rejectedReason"
     FROM evidence_source_record source
     JOIN evidence_ingest_integration integration ON integration.id = source.integration_id
@@ -264,16 +266,22 @@ export async function persistGenericEvidence(params: {
     return { outcome: "rejected", sourceRecordId, reason };
   }
 
-  // An external agent ID is useful provenance but is not an internal Spctre
-  // agent correlation. Until the correlator resolves it, make that uncertainty
-  // explicit so coverage dashboards do not overstate attribution.
-  const unresolved = !evidence.agentExternalId;
-  const correlationConfidence = unresolved ? 0 : 0.5;
+  const canonicalAgentId = await resolveCanonicalEvidenceAgent({
+    tenantId: params.integration.tenantId,
+    workspaceId: params.integration.workspaceId,
+    providerType: params.integration.providerType,
+    externalAgentId: evidence.agentExternalId,
+  });
+  // An external agent ID is provenance, not a correlation. Only a binding in
+  // the cross-surface identity registry resolves it to a canonical Spctre
+  // agent. An unbound external ID is deliberately shown as partial confidence.
+  const unresolved = !canonicalAgentId;
+  const correlationConfidence = canonicalAgentId ? 1 : evidence.agentExternalId ? 0.5 : 0;
 
   const rows = await sql<{ id: string }[]>`
     INSERT INTO canonical_evidence_event (
       tenant_id, workspace_id, source_record_id, mapping_revision_id, provider_type,
-      source_event_id, occurred_at, received_at, principal_id, agent_external_id,
+      source_event_id, occurred_at, received_at, principal_id, agent_external_id, canonical_agent_id,
       action, target_resource, policy_reference, environment, enforcement_decision,
       correlation_confidence, unresolved, source_attributes
     ) VALUES (
@@ -281,7 +289,7 @@ export async function persistGenericEvidence(params: {
       ${sourceRecordId}::uuid, ${params.integration.mappingRevisionId}::uuid,
       ${params.integration.providerType}, ${evidence.sourceEventId ?? null},
       ${evidence.occurredAt}, now(), ${evidence.principalId ?? null},
-      ${evidence.agentExternalId ?? null}, ${evidence.action}, ${evidence.targetResource ?? null},
+      ${evidence.agentExternalId ?? null}, ${canonicalAgentId}, ${evidence.action}, ${evidence.targetResource ?? null},
       ${evidence.policyReference ?? null}, ${evidence.environment ?? null},
       ${evidence.enforcementDecision}, ${correlationConfidence}, ${unresolved},
       ${sql.json(evidence.sourceAttributes as JSONValue)}::jsonb
@@ -289,6 +297,25 @@ export async function persistGenericEvidence(params: {
     RETURNING id
   `;
   return { outcome: "accepted", sourceRecordId, canonicalEventId: rows[0]!.id, evidence };
+}
+
+async function resolveCanonicalEvidenceAgent(params: {
+  tenantId: string;
+  workspaceId: string;
+  providerType: GenericIntegration["providerType"];
+  externalAgentId: string | undefined;
+}): Promise<string | null> {
+  if (!params.externalAgentId) return null;
+  const rows = await sql<{ canonical_agent_id: string }[]>`
+    SELECT canonical_agent_id
+    FROM agt_agent_surface_binding
+    WHERE tenant_id = ${params.tenantId}::uuid
+      AND workspace_id = ${params.workspaceId}::uuid
+      AND surface_type = ${`evidence:${params.providerType}`}
+      AND surface_agent_id = ${params.externalAgentId}
+    LIMIT 1
+  `;
+  return rows[0]?.canonical_agent_id ?? null;
 }
 
 function evidenceSourceEventID(payload: Record<string, unknown>, mapping: unknown): string | null {

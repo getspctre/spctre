@@ -189,6 +189,7 @@ export function EvidenceIntegrationWizard({
                     <th>Source</th>
                     <th>Mapping</th>
                     <th>Result</th>
+                    <th>Correlation</th>
                     <th>Receipt</th>
                   </tr>
                 </thead>
@@ -206,6 +207,15 @@ export function EvidenceIntegrationWizard({
                           <span className="pill pillWarn">Rejected: {item.rejectedReason}</span>
                         ) : (
                           <span className="pill pillNeutral">{item.decision ?? "unresolved"}</span>
+                        )}
+                      </td>
+                      <td>
+                        {item.canonicalAgentId ? (
+                          <span className="pill pillNeutral">Resolved: {item.canonicalAgentId}</span>
+                        ) : item.unresolved ? (
+                          <span className="pill pillWarn">Needs binding</span>
+                        ) : (
+                          <span className="pill pillNeutral">Not supplied</span>
                         )}
                       </td>
                       <td>{new Date(item.receivedAt).toLocaleString()}</td>

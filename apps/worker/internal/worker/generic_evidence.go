@@ -213,21 +213,32 @@ func (s *Server) persistGenericEvidence(ctx context.Context, command genericEvid
 	}
 
 	canonical := command.Canonical
+	canonicalAgentID, err := resolveGenericEvidenceAgent(ctx, tx, command, canonical.AgentExternalID)
+	if err != nil {
+		return genericEvidenceResponse{}, 0, err
+	}
+	unresolved := canonicalAgentID == nil
+	correlationConfidence := 0.0
+	if canonicalAgentID != nil {
+		correlationConfidence = 1
+	} else if canonical.AgentExternalID != nil {
+		correlationConfidence = 0.5
+	}
 	var canonicalEventID string
 	err = tx.QueryRow(ctx, `
 		INSERT INTO canonical_evidence_event (
 			tenant_id, workspace_id, source_record_id, mapping_revision_id, provider_type,
-			source_event_id, occurred_at, received_at, principal_id, agent_external_id,
+			source_event_id, occurred_at, received_at, principal_id, agent_external_id, canonical_agent_id,
 			action, target_resource, policy_reference, environment, enforcement_decision,
 			correlation_confidence, unresolved, source_attributes
 		) VALUES (
-			$1::uuid, $2::uuid, $3::uuid, $4::uuid, $5, $6, $7::timestamptz, now(), $8, $9,
-			$10, $11, $12, $13, $14, $15, $16, $17::jsonb
+			$1::uuid, $2::uuid, $3::uuid, $4::uuid, $5, $6, $7::timestamptz, now(), $8, $9, $10,
+			$11, $12, $13, $14, $15, $16, $17, $18::jsonb
 		) RETURNING id::text
 	`, command.TenantID, command.WorkspaceID, sourceRecordID, command.MappingRevisionID, command.ProviderType,
 		canonical.SourceEventID, canonical.OccurredAt, canonical.PrincipalID, canonical.AgentExternalID,
-		canonical.Action, canonical.TargetResource, canonical.PolicyReference, canonical.Environment,
-		canonical.EnforcementDecision, canonical.CorrelationConfidence, canonical.Unresolved, string(canonical.SourceAttributes)).Scan(&canonicalEventID)
+		canonicalAgentID, canonical.Action, canonical.TargetResource, canonical.PolicyReference, canonical.Environment,
+		canonical.EnforcementDecision, correlationConfidence, unresolved, string(canonical.SourceAttributes)).Scan(&canonicalEventID)
 	if err != nil {
 		return genericEvidenceResponse{}, 0, err
 	}
@@ -244,4 +255,27 @@ func (s *Server) persistGenericEvidence(ctx context.Context, command genericEvid
 		return genericEvidenceResponse{}, 0, err
 	}
 	return genericEvidenceResponse{Outcome: "accepted", SourceRecordID: sourceRecordID, CanonicalEventID: canonicalEventID}, http.StatusCreated, nil
+}
+
+func resolveGenericEvidenceAgent(ctx context.Context, tx pgx.Tx, command genericEvidenceCommand, externalAgentID *string) (*string, error) {
+	if externalAgentID == nil || strings.TrimSpace(*externalAgentID) == "" {
+		return nil, nil
+	}
+	var canonicalAgentID string
+	err := tx.QueryRow(ctx, `
+		SELECT canonical_agent_id
+		FROM agt_agent_surface_binding
+		WHERE tenant_id = $1::uuid
+		  AND workspace_id = $2::uuid
+		  AND surface_type = $3
+		  AND surface_agent_id = $4
+		LIMIT 1
+	`, command.TenantID, command.WorkspaceID, "evidence:"+command.ProviderType, *externalAgentID).Scan(&canonicalAgentID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &canonicalAgentID, nil
 }
