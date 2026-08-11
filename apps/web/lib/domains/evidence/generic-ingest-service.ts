@@ -1,4 +1,6 @@
 import { appendOperationsLog } from "@/lib/repositories/operations-log";
+import { evidenceIngestUrl, workerInternalSecret } from "@/lib/platform/config";
+import { fetchWithRetry } from "@/lib/platform/fetch-retry";
 import {
   getGenericEvidenceIntegration,
   isGenericEvidenceDatabaseConfigured,
@@ -6,6 +8,11 @@ import {
   type GenericIntegration,
 } from "@/lib/repositories/evidence";
 import { runWithTenantContext } from "@/lib/tenant-context";
+import {
+  normalizeGenericEvidence,
+  sourceContentHash,
+  sourceIdempotencyKey,
+} from "@/lib/domains/evidence/generic-mapping";
 
 export function isGenericEvidenceIngestAvailable(): boolean {
   return isGenericEvidenceDatabaseConfigured();
@@ -22,6 +29,8 @@ export async function ingestGenericEvidence(params: {
   return runWithTenantContext(params.tenantId, async () => {
     const integration = await getGenericEvidenceIntegration(params);
     if (!integration) return { outcome: "not_found" as const };
+    const delegated = await delegateGenericEvidenceToWorker({ integration, ...params });
+    if (delegated) return delegated;
     const result = await persistGenericEvidence({ integration, payload: params.payload });
     if (result.outcome === "accepted") {
       void appendOperationsLog({
@@ -43,4 +52,93 @@ export async function ingestGenericEvidence(params: {
     }
     return result;
   });
+}
+
+async function delegateGenericEvidenceToWorker(params: {
+  integration: GenericIntegration;
+  tenantId: string;
+  serviceTokenId: string;
+  integrationId: string;
+  providerType: GenericIntegration["providerType"];
+  payload: Record<string, unknown>;
+  actorId: string;
+}) {
+  const baseUrl = evidenceIngestUrl();
+  const secret = workerInternalSecret();
+  if (!baseUrl || !secret) return null;
+
+  let canonical: ReturnType<typeof normalizeGenericEvidence> | null = null;
+  let rejectedReason: string | null = null;
+  try {
+    canonical = normalizeGenericEvidence(params.payload, params.integration.fieldMapping);
+  } catch (error) {
+    rejectedReason =
+      error instanceof Error ? error.message : "The active mapping rejected this record.";
+  }
+  const sourceEventId = canonical?.sourceEventId ?? null;
+  const target = new URL(
+    "/internal/generic-evidence",
+    baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`,
+  );
+  const response = await fetchWithRetry(target, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-spctre-internal-secret": secret,
+    },
+    body: JSON.stringify({
+      tenantId: params.tenantId,
+      workspaceId: params.integration.workspaceId,
+      integrationId: params.integration.id,
+      mappingRevisionId: params.integration.mappingRevisionId,
+      serviceTokenId: params.serviceTokenId,
+      providerType: params.providerType,
+      actorId: params.actorId,
+      sourceEventId,
+      idempotencyKey: sourceIdempotencyKey(sourceEventId ?? undefined, params.payload),
+      contentHash: sourceContentHash(params.payload),
+      sourcePayload: params.payload,
+      rejectedReason,
+      canonical: canonical
+        ? {
+            sourceEventId: canonical.sourceEventId ?? null,
+            occurredAt: canonical.occurredAt,
+            principalId: canonical.principalId ?? null,
+            agentExternalId: canonical.agentExternalId ?? null,
+            action: canonical.action,
+            targetResource: canonical.targetResource ?? null,
+            policyReference: canonical.policyReference ?? null,
+            environment: canonical.environment ?? null,
+            enforcementDecision: canonical.enforcementDecision,
+            correlationConfidence: canonical.agentExternalId ? 0.5 : 0,
+            unresolved: !canonical.agentExternalId,
+            sourceAttributes: canonical.sourceAttributes,
+          }
+        : null,
+    }),
+    cache: "no-store",
+    timeoutMs: 15_000,
+  });
+  if (!response.ok) {
+    throw new Error(`Worker generic evidence ingest failed with status ${response.status}.`);
+  }
+  const result = (await response.json()) as {
+    outcome: "accepted" | "duplicate" | "rejected";
+    sourceRecordId?: string;
+    canonicalEventId?: string;
+    reason?: string;
+  };
+  if (result.outcome === "accepted" && result.sourceRecordId && result.canonicalEventId) {
+    return {
+      outcome: "accepted" as const,
+      sourceRecordId: result.sourceRecordId,
+      canonicalEventId: result.canonicalEventId,
+      evidence: canonical!,
+    };
+  }
+  if (result.outcome === "duplicate") return { outcome: "duplicate" as const };
+  if (result.outcome === "rejected" && result.sourceRecordId && result.reason) {
+    return { outcome: "rejected" as const, sourceRecordId: result.sourceRecordId, reason: result.reason };
+  }
+  throw new Error("Worker generic evidence ingest returned an invalid response.");
 }

@@ -72,7 +72,7 @@ description: Full table of SPCTRE_* and platform env vars with types and default
 
 | Variable | Type | Default | Description |
 |---|---|---|---|
-| `SPCTRE_WORKER_INTERNAL_SECRET` | string | — | Auth secret for job HTTP endpoints |
+| `SPCTRE_WORKER_INTERNAL_SECRET` | string | — | Auth secret for worker job endpoints and web-to-worker generic evidence handoff |
 | `SPCTRE_DISABLE_INTERNAL_SCHEDULER` | boolean | `false` | Disable internal cron; use HTTP triggers instead |
 | `WORKER_SIEM_FORWARDER_INTERVAL_MINUTES` | integer | `5` | SIEM event forwarding job interval in minutes |
 
