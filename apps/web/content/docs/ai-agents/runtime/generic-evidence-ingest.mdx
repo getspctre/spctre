@@ -1,0 +1,56 @@
+---
+title: Generic evidence ingest
+description: Provider-neutral JSON, NDJSON, CloudEvents, and OTLP log ingestion with immutable source provenance.
+---
+
+Generic evidence ingest accepts provider source events without changing the
+existing runtime-decision endpoint. Every accepted record is retained twice:
+the immutable source record and the canonical evidence event created by the
+integration's active mapping revision.
+
+## Integration setup
+
+An administrator creates an `evidence_ingest_integration`, binds it to one
+service token, and activates an immutable mapping revision. The token and
+`x-spctre-integration-id` must both match that integration; an evidence-write
+token cannot submit to another integration.
+
+Mappings are declarative. They support object traversal and array indexes in a
+restricted JSONPath subset, defaults, and `string`, `number`, `lowercase`, or
+`uppercase` transforms. JavaScript, templates, and network calls are never
+evaluated.
+
+```json
+{
+  "occurred_at": "$.timestamp",
+  "action": "$.tool.name",
+  "source_event_id": "$.event_id",
+  "enforcement_decision": { "path": "$.decision", "transform": "lowercase" }
+}
+```
+
+`occurred_at` and `action` are required. The decision defaults to `observe`;
+known decisions are `allow`, `deny`, `escalate`, and `observe`.
+
+## Receivers
+
+All receivers require `Authorization: Bearer <service-token>` and
+`x-spctre-integration-id: <integration-id>`.
+
+| Endpoint | Input |
+| --- | --- |
+| `POST /api/v1/ingest/providers/generic_json` | One JSON object |
+| `POST /api/v1/ingest/providers/generic_ndjson` | One JSON object per line |
+| `POST /api/v1/ingest/cloudevents` | CloudEvents structured or binary HTTP JSON |
+| `POST /api/v1/logs` | OTLP/HTTP JSON logs |
+
+The OTLP endpoint follows the OTLP/HTTP logs suffix: configure a non-signal
+specific exporter endpoint ending in `/api`, which resolves to `/api/v1/logs`.
+
+Batch responses contain a result for every NDJSON or OTLP log record. A bad
+record does not prevent unrelated records from being ingested; a partial batch
+returns `207 Multi-Status`. Requests are capped at 1 MiB.
+
+Source delivery is at-least-once. A deterministic SHA-256 hash of each source
+payload is used as the idempotency key, so retries with the same payload are
+reported as duplicates rather than creating a second source record.
