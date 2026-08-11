@@ -29,6 +29,7 @@ import {
 } from "@/lib/repositories/evidence";
 import { getCommercialProfile } from "@/lib/repositories/workspace";
 import { PLAN_ENTITLEMENTS, enforcedEntitlementValue } from "@/lib/entitlements/catalog";
+import { getMeteredRetainedCount } from "@/lib/repositories/usage/metering";
 import { ingestTrustScoreEvent } from "@/lib/repositories/trust";
 import { recordConversionTelemetry } from "@/lib/repositories/onboarding/telemetry";
 import { getPublishedBlueprintContext } from "@/lib/repositories/agent-blueprints";
@@ -612,7 +613,15 @@ export async function ingestRuntimeEvidence(input: {
     // are marked unenforced to say so.
     const trialCapacity = enforcedEntitlementValue(PLAN_ENTITLEMENTS.HOSTED_TRIAL.retainedEvents);
     if (profile?.planCode === "HOSTED_TRIAL" && trialCapacity !== null) {
-      const totalCount = await countTotalEvidenceEvents(tenantId);
+      // Prefer the maintained gauge: it is an indexed single-row read, where
+      // countTotalEvidenceEvents scans the tenant's whole key table on every
+      // trial ingest. The gauge is null until the audit seeds it, and a null
+      // must not be read as zero — that would disable the cap — so the count
+      // remains the fallback.
+      const meteredCount = await getMeteredRetainedCount(tenantId).catch(
+        swallow("getMeteredRetainedCount", null),
+      );
+      const totalCount = meteredCount ?? (await countTotalEvidenceEvents(tenantId));
       if (totalCount >= trialCapacity) {
         return apiError(
           429,

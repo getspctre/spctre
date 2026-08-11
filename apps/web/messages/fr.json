@@ -1227,7 +1227,8 @@
     "meters": {
       "eyebrow": "Dimensions d'usage",
       "title": "Compteurs d'usage",
-      "sample_only": "Échantillon uniquement"
+      "sample_only": "Échantillon uniquement",
+      "not_metered": "Non mesuré"
     },
     "anchors": {
       "eyebrow": "Surface de confiance",

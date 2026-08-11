@@ -1226,7 +1226,8 @@
     "meters": {
       "eyebrow": "Nutzungsdimensionen",
       "title": "Nutzungszähler",
-      "sample_only": "Nur Beispiel"
+      "sample_only": "Nur Beispiel",
+      "not_metered": "Nicht erfasst"
     },
     "anchors": {
       "eyebrow": "Vertrauensfläche",

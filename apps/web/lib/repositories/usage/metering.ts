@@ -147,3 +147,16 @@ export async function getUsagePeriod(
     measuredAt: row.measured_at ? row.measured_at.toISOString() : null,
   };
 }
+
+/**
+ * The tenant's current retained-event count, taken from the maintained gauge.
+ *
+ * Returns null when no measurement exists yet — either the period has had no
+ * governed events, or the audit has not seeded the gauge. Callers that enforce
+ * a limit must fall back to a durable count rather than treat null as zero: an
+ * unseeded gauge would otherwise disable the cap it is meant to apply.
+ */
+export async function getMeteredRetainedCount(tenantId: string): Promise<number | null> {
+  const period = await getUsagePeriod(tenantId);
+  return period?.retainedCount ?? null;
+}
