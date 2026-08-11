@@ -1,61 +1,17 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { SESSION_GUARD_COOKIE, verifySessionGuardToken } from "@/lib/session-guard";
+import {
+  HEALTH_PATHS,
+  PUBLIC_PATH_PREFIXES,
+  PUBLIC_PATHS,
+  SELF_AUTHENTICATING_PATHS,
+  SERVICE_API_PATH_PREFIXES,
+  SERVICE_API_PATHS,
+} from "@/lib/proxy-paths";
 
 const SESSION_COOKIE = "spctre_session_id";
 const DOCS_HOST = process.env.SPCTRE_DOCS_HOST || "docs.spctre.dev";
-const PUBLIC_PATHS = new Set([
-  "/login",
-  "/signup",
-  "/api/auth/oidc/authorize",
-  "/api/auth/oidc/callback",
-  "/icon.svg",
-  "/favicon.ico",
-  "/llms.txt",
-  "/llms-full.txt",
-]);
-const PUBLIC_PATH_PREFIXES = ["/login/", "/signup/"];
-const SERVICE_API_PATHS = new Set([
-  "/api/health",
-  "/api/ready",
-  "/api/evidence",
-  "/api/v1/evidence",
-  "/api/bundle/latest",
-  "/api/v1/bundle/latest",
-  "/api/agent-blueprints/runtime",
-  "/api/compliance/export",
-  "/api/v1/compliance/export",
-  "/api/gateway/decide",
-  "/api/v1/gateway/decide",
-  "/api/gateway/escalations",
-  "/api/v1/gateway/escalations",
-  "/api/gateway/escalations/status",
-  "/api/v1/gateway/escalations/status",
-  "/api/verification",
-  "/api/v1/verification",
-  "/api/v1/openapi.json",
-  "/api/v1/policy/imports",
-  "/api/v1/blueprint/imports",
-  "/api/compliance/seal",
-  "/api/internal/provisioning/tenant",
-  // Exempted from the source-IP allowlist below, but that is only the first
-  // gate: without this entry the session check answers 401 and the route's
-  // signature verification never runs.
-  "/api/billing/paddle/webhook",
-  "/api/token/refresh",
-  "/api/v1/token/refresh",
-  "/api/token/revoke",
-  "/api/v1/token/revoke",
-  "/api/search",
-]);
-const SERVICE_API_PATH_PREFIXES = [
-  "/api/e2e/",
-  "/api/scim/v2/",
-  "/api/v1/scim/v2/",
-  "/api/gateway-ingest/",
-  "/api/agents/",
-  "/api/onboarding/cli/",
-];
 
 function isDocsHost(request: NextRequest): boolean {
   const forwardedHost = firstForwardedHeaderValue(request.headers.get("x-forwarded-host"));
@@ -158,25 +114,15 @@ function getClientIp(request: NextRequest): string {
 }
 
 function isHealthPath(pathname: string): boolean {
-  return pathname === "/api/health" || pathname === "/api/ready";
+  return HEALTH_PATHS.has(pathname);
 }
 
-// Paddle delivers webhooks from its own fleet, whose source IPs are not a
-// stable customer-controlled allowlist. This one endpoint authenticates every
-// request with Paddle's HMAC signature before doing any billing work.
-function isPaddleWebhookRequest(request: NextRequest): boolean {
-  return request.method === "POST" && request.nextUrl.pathname === "/api/billing/paddle/webhook";
-}
-
-// Server-to-server calls from the checkout surface, which reaches this service
-// over the internet from its own infrastructure rather than from an operator's
-// address. Like the Paddle webhook above, the endpoint authenticates every
-// request itself — a timing-safe comparison against a shared secret, 401
-// without it — so a source-IP allowlist is not what protects it.
-function isInternalProvisioningRequest(request: NextRequest): boolean {
-  return (
-    request.method === "POST" && request.nextUrl.pathname === "/api/internal/provisioning/tenant"
-  );
+// A payment provider's fleet and our own checkout surface both reach this
+// service from addresses that are not, and will never be, an operator address.
+// The source-IP allowlist is not what protects these endpoints: each verifies
+// its own credential — a signature or a shared secret — before doing any work.
+function isSelfAuthenticatingRequest(request: NextRequest): boolean {
+  return request.method === "POST" && SELF_AUTHENTICATING_PATHS.has(request.nextUrl.pathname);
 }
 
 function generateNonce(): string {
@@ -310,8 +256,7 @@ export async function proxy(request: NextRequest) {
   if (
     allowedSourceIps.size > 0 &&
     !isHealthPath(pathname) &&
-    !isPaddleWebhookRequest(request) &&
-    !isInternalProvisioningRequest(request) &&
+    !isSelfAuthenticatingRequest(request) &&
     !allowedSourceIps.has(ip)
   ) {
     return NextResponse.json({ error: "Forbidden." }, { status: 403 });
