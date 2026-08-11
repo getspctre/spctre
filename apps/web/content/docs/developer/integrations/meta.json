@@ -12,6 +12,7 @@
     "git-checkpoints",
     "python-sdk",
     "typescript-sdk",
+    "bedrock-agentcore",
     "docker-ai-governance",
     "webhooks",
     "oauth-social-login",

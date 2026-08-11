@@ -1,0 +1,94 @@
+---
+title: Amazon Bedrock AgentCore evidence
+description: Forward AgentCore CloudWatch spans to Spctre with a customer-owned subscription bridge.
+---
+
+AgentCore publishes runtime span data to CloudWatch Logs when observability is
+enabled. Spctre accepts those span records through its Bedrock AgentCore managed
+provider endpoint; no AWS credentials are stored by Spctre.
+
+## Prerequisites
+
+Enable CloudWatch Transaction Search and AgentCore observability for the runtime.
+AgentCore spans are written either to the runtime log group
+`/aws/bedrock-agentcore/runtimes/<agent>-<endpoint>` or to the shared
+`aws/spans` log group, depending on the configured span destination.
+
+Create a **Bedrock AgentCore** source in **Admin → Evidence integrations**. Keep
+the resulting `evidence:write` service token and integration ID in your AWS
+secret store, not in Lambda environment variables.
+
+## Subscription bridge
+
+Attach a CloudWatch Logs subscription filter to the AgentCore span log group.
+Its destination Lambda needs only permission to read its invocation payload and
+permission to read the Secrets Manager secret containing the Spctre token. The
+Lambda execution role does not need Bedrock or broad CloudWatch read access.
+
+Use this Node.js 20 handler. Configure `SPCTRE_URL`,
+`SPCTRE_INTEGRATION_ID`, and `SPCTRE_TOKEN_SECRET_ARN`; store the raw Spctre
+service token as the secret value.
+
+```js
+import { gunzipSync } from "node:zlib";
+import { SecretsManagerClient, GetSecretValueCommand } from "@aws-sdk/client-secrets-manager";
+
+const secrets = new SecretsManagerClient({});
+let token;
+
+async function spctreToken() {
+  if (token) return token;
+  const result = await secrets.send(new GetSecretValueCommand({
+    SecretId: process.env.SPCTRE_TOKEN_SECRET_ARN,
+  }));
+  token = result.SecretString?.trim();
+  if (!token) throw new Error("Spctre token secret is empty");
+  return token;
+}
+
+export const handler = async (event) => {
+  const encoded = event.awslogs?.data;
+  if (!encoded) throw new Error("Expected a CloudWatch Logs subscription event");
+  const envelope = JSON.parse(gunzipSync(Buffer.from(encoded, "base64")).toString("utf8"));
+  const auth = await spctreToken();
+  const target = new URL("/api/v1/ingest/providers/bedrock_agentcore", process.env.SPCTRE_URL);
+
+  for (const logEvent of envelope.logEvents ?? []) {
+    let span;
+    try {
+      span = JSON.parse(logEvent.message);
+    } catch {
+      // A non-JSON application line is not an AgentCore span.
+      continue;
+    }
+    const response = await fetch(target, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: `Bearer ${auth}`,
+        "x-spctre-integration-id": process.env.SPCTRE_INTEGRATION_ID,
+      },
+      body: JSON.stringify(span),
+    });
+    // Throw to keep CloudWatch Logs' at-least-once retry semantics. Spctre
+    // deduplicates AgentCore records by aws.request_id.
+    if (!response.ok && response.status !== 207) {
+      throw new Error(`Spctre ingest failed: ${response.status}`);
+    }
+  }
+};
+```
+
+Keep the subscription filter focused on the runtime span stream. It should not
+forward application logs containing prompts, responses, or unrelated secrets.
+The managed adapter preserves `aws.request_id`, `aws.agent.id`,
+`aws.operation.name`, and `aws.resource.arn` as source identity, agent,
+action, and target resource respectively.
+
+## Verify
+
+Invoke the AgentCore runtime once, then confirm a receipt in **Admin → Evidence
+integrations**. A replayed CloudWatch delivery produces a duplicate outcome,
+not a second canonical event. If no receipt appears, first verify that the
+runtime has observability enabled and that the subscription is attached to the
+span log group rather than only the application-log stream.
