@@ -34,23 +34,24 @@ func (c *fakeNotificationClient) Do(req *http.Request) (*http.Response, error) {
 
 func TestJobsIncludesNotificationSenderAlways(t *testing.T) {
 	intervals := JobIntervals{
-		Retention:     time.Hour,
-		Verification:  time.Hour,
-		Metrics:       time.Hour,
-		EscalationSLA: time.Hour,
-		Notification:  time.Hour,
-		SiemForwarder: time.Hour,
+		Retention:      time.Hour,
+		Verification:   time.Hour,
+		Metrics:        time.Hour,
+		EscalationSLA:  time.Hour,
+		Notification:   time.Hour,
+		SiemForwarder:  time.Hour,
+		UsageReconcile: time.Hour,
 	}
 
 	withoutWebhook := Jobs(nil, slog.Default(), intervals, NotificationConfig{})
-	if len(withoutWebhook) != 6 {
-		t.Fatalf("expected 6 jobs, got %d", len(withoutWebhook))
+	if len(withoutWebhook) != 7 {
+		t.Fatalf("expected 7 jobs, got %d", len(withoutWebhook))
 	}
 	names := make(map[string]bool)
 	for _, j := range withoutWebhook {
 		names[j.Name] = true
 	}
-	for _, expected := range []string{"notification-sender", "siem-forwarder"} {
+	for _, expected := range []string{"notification-sender", "siem-forwarder", "usage-reconcile"} {
 		if !names[expected] {
 			t.Errorf("expected job %q to be registered", expected)
 		}

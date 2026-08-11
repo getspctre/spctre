@@ -22,7 +22,7 @@ func TestBatchedPruneEvidenceDeletesMatchingRowsAndKeys(t *testing.T) {
 	targetRecent := target.insertRuntimeEvidence(t, "staging", recent)
 	otherExpired := other.insertRuntimeEvidence(t, "staging", old.Add(2*time.Minute))
 
-	pruned, err := batchedPruneEvidence(ctx, pool,
+	pruned, err := batchedPruneEvidence(ctx, pool, slog.Default(),
 		`tenant_id = $1 AND environment = 'staging' AND created_at < now() - interval '2 days'`,
 		target.tenantID,
 	)
@@ -106,7 +106,7 @@ func TestPruneOrphanedPolicyContentArtifactsRetainsEvidenceAndVerificationRefere
 		t.Fatalf("insert verification reference: %v", err)
 	}
 
-	if _, err := batchedPruneEvidence(ctx, pool,
+	if _, err := batchedPruneEvidence(ctx, pool, slog.Default(),
 		`tenant_id = $1 AND environment = 'staging' AND created_at < now() - interval '2 days'`, fixture.tenantID); err != nil {
 		t.Fatal(err)
 	}

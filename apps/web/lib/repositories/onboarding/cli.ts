@@ -211,19 +211,22 @@ export async function exchangeCliOnboardingCode(code: string): Promise<CliOnboar
         await tx`
         INSERT INTO tenant_commercial_profile (
           tenant_id, plan_code, lifecycle_status, sales_status, billing_provider, billing_customer_id, updated_at,
-          retention_window_days, entitlement_version, entitlement_effective_at
+          retention_window_days, retained_event_capacity,
+          entitlement_version, entitlement_effective_at
         ) VALUES (
           ${approvedTenantId}, 'HOSTED_TRIAL', 'EVALUATING', 'NONE', 'PADDLE', ${billingCustomerId}, now(),
           ${planEntitlements("HOSTED_TRIAL").retentionWindowDays.value},
+          ${planEntitlements("HOSTED_TRIAL").retainedEvents.value},
           ${ENTITLEMENT_CATALOG_VERSION}, now()
         )
         ON CONFLICT (tenant_id) DO UPDATE SET
           plan_code = 'HOSTED_TRIAL',
           billing_provider = 'PADDLE',
           billing_customer_id = coalesce(tenant_commercial_profile.billing_customer_id, EXCLUDED.billing_customer_id),
-          -- This branch forces the plan to HOSTED_TRIAL, so the trial window
-          -- applies regardless of what the profile carried before.
+          -- This branch forces the plan to HOSTED_TRIAL, so the trial
+          -- entitlements apply regardless of what the profile carried before.
           retention_window_days = EXCLUDED.retention_window_days,
+          retained_event_capacity = EXCLUDED.retained_event_capacity,
           entitlement_version = EXCLUDED.entitlement_version,
           entitlement_effective_at = EXCLUDED.entitlement_effective_at,
           updated_at = now()

@@ -21,12 +21,13 @@ type Config struct {
 }
 
 type JobIntervals struct {
-	Retention     time.Duration
-	Verification  time.Duration
-	Metrics       time.Duration
-	EscalationSLA time.Duration
-	Notification  time.Duration
-	SiemForwarder time.Duration
+	Retention      time.Duration
+	Verification   time.Duration
+	Metrics        time.Duration
+	EscalationSLA  time.Duration
+	Notification   time.Duration
+	SiemForwarder  time.Duration
+	UsageReconcile time.Duration
 }
 
 type NotificationConfig struct {
@@ -50,6 +51,11 @@ func LoadConfig() Config {
 			EscalationSLA: envDurationMinutes("WORKER_ESCALATION_SLA_INTERVAL_MINUTES", 5),
 			Notification:  envDurationMinutes("WORKER_NOTIFICATION_INTERVAL_MINUTES", 5),
 			SiemForwarder: envDurationMinutes("WORKER_SIEM_FORWARDER_INTERVAL_MINUTES", 5),
+			// Daily. The gauge is maintained incrementally at ingest and prune,
+			// so this is an audit that repairs drift rather than the mechanism
+			// that produces the number. It is a full recount, so its cost grows
+			// with retained volume — the reason not to run it hourly.
+			UsageReconcile: envDurationMinutes("WORKER_USAGE_RECONCILE_INTERVAL_MINUTES", 24*60),
 		},
 		Notification: NotificationConfig{
 			WebhookURL:  os.Getenv("WORKER_NOTIFICATION_WEBHOOK_URL"),

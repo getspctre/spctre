@@ -15,28 +15,39 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// reportUnprovisionedRetentionWindows surfaces tenants whose commercial profile
-// carries no effective retention window.
+// discountPrunedEventsFromBilling removes pruned events from the tenant's
+// standing retained-event gauge.
 //
-// Such a tenant's production evidence is never pruned, because the sweep below
-// refuses to guess a window rather than delete irreversibly on an assumption.
-// That is the safe failure, but it is silent, so name it on every run: the fix
-// is to reprovision the profile, and nobody will do that if the state is
-// invisible.
-func reportUnprovisionedRetentionWindows(ctx context.Context, db *pgxpool.Pool, logger *slog.Logger) {
-	var unprovisioned int64
-	err := db.QueryRow(ctx, `
-		SELECT count(*)
-		FROM tenant_commercial_profile
-		WHERE retention_window_days IS NULL
-	`).Scan(&unprovisioned)
-	if err != nil {
-		logger.Error("failed to count unprovisioned retention windows", "error", err)
+// Retained governed events are a standing capacity, so pruning frees it again.
+// Maintaining the gauge at both ends is what lets the reconciliation job be an
+// audit rather than the mechanism that produces the number: a full recount is
+// O(retained events) and cannot run often enough to keep a figure current.
+//
+// Only the open period is adjusted — a closed period's measurement is the
+// record of what was billed. GREATEST(..., 0) absorbs the transient case where
+// evidence ingested before the gauge was seeded is pruned after it, which would
+// otherwise drive the count negative. A NULL gauge is left alone: the audit has
+// not yet established a baseline, and there is nothing to discount from.
+//
+// A failure here is logged rather than returned. The rows are already gone, and
+// abandoning the sweep over a stale counter that the audit repairs anyway would
+// trade a correct, self-healing number for an incomplete prune.
+func discountPrunedEventsFromBilling(ctx context.Context, db *pgxpool.Pool, logger *slog.Logger, tenantID string, prunedCount int) {
+	if prunedCount <= 0 {
 		return
 	}
-	if unprovisioned > 0 {
-		logger.Warn("commercial profiles have no retention window; their production evidence is not being pruned",
-			"count", unprovisioned)
+	if _, err := db.Exec(ctx, `
+		UPDATE tenant_usage_period
+		SET retained_count = GREATEST(retained_count - $2, 0),
+		    updated_at = now()
+		WHERE tenant_id = $1
+		  AND metric = 'RETAINED_EVENTS'
+		  AND retained_count IS NOT NULL
+		  AND now() >= period_start
+		  AND now() < period_end
+	`, tenantID, prunedCount); err != nil {
+		logger.Error("failed to discount pruned events from the retained gauge",
+			"error", err, "tenant_id", tenantID, "pruned", prunedCount)
 	}
 }
 
@@ -45,10 +56,8 @@ func runRetention(ctx context.Context, db *pgxpool.Pool, logger *slog.Logger) er
 		return err
 	}
 
-	reportUnprovisionedRetentionWindows(ctx, db, logger)
-
 	// 1. Prune staging evidence unconditionally after 2 days, in bounded batches.
-	prunedStaging, err := batchedPruneEvidence(ctx, db,
+	prunedStaging, err := batchedPruneEvidence(ctx, db, logger,
 		`environment = 'staging' AND created_at < now() - interval '2 days'`)
 	if err != nil {
 		return err
@@ -62,23 +71,20 @@ func runRetention(ctx context.Context, db *pgxpool.Pool, logger *slog.Logger) er
 	//
 	// This used to re-derive the window from plan_code with a CASE that
 	// duplicated the plan defaults. Provisioning now writes the effective
-	// window whenever a plan is established or changes (migration 018
-	// backfilled every existing profile), so the column is read directly and
-	// the plan defaults live in exactly one place:
+	// window whenever a plan is established or changes, so the column is read
+	// directly and the plan defaults live in exactly one place:
 	// apps/web/lib/entitlements/catalog.ts.
 	//
-	// A NULL window is deliberately not defaulted. Guessing here deletes
-	// evidence irreversibly, and the two plausible guesses are both wrong: the
-	// trial default would destroy an Enterprise tenant's history, and the
-	// longest window would silently stop pruning. An unprovisioned profile is
-	// instead skipped and reported by reportUnprovisionedRetentionWindows below,
-	// so it is visible and fixable rather than acted on.
+	// retention_window_days is NOT NULL as of migration 019, so there is no
+	// unprovisioned case to handle. Were one to exist anyway — a worker running
+	// ahead of the migration — make_interval(days => NULL) yields NULL and the
+	// comparison is never true, so the tenant's evidence is skipped rather than
+	// deleted on a guess. The safe outcome does not depend on the guard.
 	rowsProd, err := db.Query(ctx, `
 		SELECT ree.tenant_id::text, ree.decision_id
 		FROM runtime_evidence_event ree
 		JOIN tenant_commercial_profile tcp ON ree.tenant_id = tcp.tenant_id
 		WHERE ree.environment = 'production'
-		  AND tcp.retention_window_days IS NOT NULL
 		  AND (
 		    (
 		      (tcp.downgraded_at IS NULL OR tcp.downgraded_at < now() - interval '365 days')
@@ -186,12 +192,13 @@ func runRetention(ctx context.Context, db *pgxpool.Pool, logger *slog.Logger) er
 					logger.Error("failed to delete archived evidence keys", "error", err, "tenant_id", tenantID)
 				}
 			}
+			discountPrunedEventsFromBilling(ctx, db, logger, tenantID, len(decisionIDs))
 			logger.Info("successfully archived and pruned production evidence records", "tenant_id", tenantID, "count", len(decisionIDs))
 		}
 	}
 
 	// 3. Prune other environments unconditionally after DefaultComplianceRetentionDays.
-	prunedDefault, err := batchedPruneEvidence(ctx, db,
+	prunedDefault, err := batchedPruneEvidence(ctx, db, logger,
 		`environment <> ALL($1::text[]) AND created_at < now() - make_interval(days => $2)`,
 		[]string{"production", "staging"}, DefaultComplianceRetentionDays)
 	if err != nil {
@@ -289,7 +296,7 @@ const retentionDeleteBatchSize = 5000
 // bounded ctid batches, pruning the matching key rows after each batch, until a
 // batch comes back short. whereSQL is a trusted constant (never user input);
 // its placeholders bind positionally to args.
-func batchedPruneEvidence(ctx context.Context, db *pgxpool.Pool, whereSQL string, args ...any) (int, error) {
+func batchedPruneEvidence(ctx context.Context, db *pgxpool.Pool, logger *slog.Logger, whereSQL string, args ...any) (int, error) {
 	// Delete by the (id, created_at) primary key, not ctid: runtime_evidence_event
 	// is range-partitioned, so ctid is only unique within a partition and an
 	// "IN (SELECT ctid ...)" delete across the parent could match rows in other
@@ -331,6 +338,7 @@ func batchedPruneEvidence(ctx context.Context, db *pgxpool.Pool, whereSQL string
 			if err := pruneEvidenceKeysBatched(ctx, db, tenantID, decisionIDs); err != nil {
 				return total, err
 			}
+			discountPrunedEventsFromBilling(ctx, db, logger, tenantID, len(decisionIDs))
 		}
 
 		total += batchCount

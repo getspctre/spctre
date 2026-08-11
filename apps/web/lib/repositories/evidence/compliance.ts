@@ -1,4 +1,5 @@
 import { sql } from "@/lib/db";
+import { discountPrunedEventsFromBilling } from "@/lib/repositories/usage/metering";
 
 export interface PublishedRevisionRow {
   publish_id: string;
@@ -134,6 +135,10 @@ export async function deleteExpiredEvidenceEvents(
         WHERE tenant_id = ${tenantId}
           AND decision_id = ANY(${rows.map((row) => row.decision_id)})
       `;
+      // These events have left the retained set, so they no longer occupy the
+      // tenant's capacity. Same transaction as the delete: a gauge that counted
+      // down for rows that were never removed is worse than one that is stale.
+      await discountPrunedEventsFromBilling(tx, { tenantId, prunedCount: rows.length });
     }
     return rows;
   });
