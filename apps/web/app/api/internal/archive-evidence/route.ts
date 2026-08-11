@@ -3,6 +3,7 @@ import { workerInternalSecret } from "@/lib/platform/config";
 import { archivalService } from "@/lib/ee-adapters/archival";
 import { getCommercialProfile } from "@/lib/repositories/workspace";
 import { getRawEvidenceForArchival } from "@/lib/repositories/evidence/runtime";
+import { resolveRetainUntil } from "@/lib/entitlements/retention";
 import { swallow } from "@/lib/platform/swallow";
 
 export const dynamic = "force-dynamic";
@@ -35,15 +36,7 @@ export async function POST(req: NextRequest) {
     const profile = await getCommercialProfile(tenantId).catch(
       swallow("getCommercialProfile", null),
     );
-    let retentionDays = 90;
-    if (profile?.planCode === "TEAM") {
-      retentionDays = 365;
-    } else if (profile?.planCode === "BUSINESS") {
-      retentionDays = 1095;
-    } else if (profile?.planCode === "ENTERPRISE") {
-      retentionDays = profile.retentionWindowDays ?? 2555;
-    }
-    const retainUntil = new Date(Date.now() + retentionDays * 24 * 60 * 60 * 1000);
+    const retainUntil = resolveRetainUntil(profile);
 
     let archivedCount = 0;
     for (const record of records) {

@@ -30,7 +30,16 @@ func runRetention(ctx context.Context, db *pgxpool.Pool, logger *slog.Logger) er
 		logger.Info("pruned expired staging evidence records", "count", prunedStaging)
 	}
 
-	// 2. Select expired production evidence records per tenant based on their plan
+	// 2. Select expired production evidence records per tenant based on their plan.
+	//
+	// The COALESCE below is the canonical retention semantic: an explicit
+	// retention_window_days overrides the plan default for every plan, not only
+	// ENTERPRISE. apps/web/lib/entitlements/retention.ts now mirrors it exactly
+	// for the archival and compliance call sites, which previously consulted the
+	// override for ENTERPRISE alone and so pruned and archived on different
+	// schedules. Keep the two in step until provisioning materializes the
+	// effective window onto every profile, at which point this CASE is deleted
+	// and the column read directly.
 	rowsProd, err := db.Query(ctx, `
 		SELECT ree.tenant_id::text, ree.decision_id
 		FROM runtime_evidence_event ree
