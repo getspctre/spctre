@@ -13,6 +13,7 @@ import { isFeatureEnabledForPlan } from "@/lib/feature-flags";
 import { getSpctrePlan } from "@/lib/feature-flags-server";
 import { archivalService } from "@/lib/ee-adapters/archival";
 import { getCommercialProfile } from "@/lib/repositories/workspace";
+import { resolveRetainUntil } from "@/lib/entitlements/retention";
 
 export async function countRuntimeEvidence(
   workspaceId: string | null,
@@ -610,15 +611,7 @@ export async function insertRuntimeEvidenceWithDedup(params: {
       // See concurrency-and-memory-audit finding 6.
       try {
         const profile = await getCommercialProfile(params.tenantId);
-        let retentionDays = 90;
-        if (profile?.planCode === "TEAM") {
-          retentionDays = 365;
-        } else if (profile?.planCode === "BUSINESS") {
-          retentionDays = 1095;
-        } else if (profile?.planCode === "ENTERPRISE") {
-          retentionDays = profile.retentionWindowDays ?? 2555;
-        }
-        const retainUntil = new Date(Date.now() + retentionDays * 24 * 60 * 60 * 1000);
+        const retainUntil = resolveRetainUntil(profile);
         await archivalService.store({
           decisionId: params.evidence.decisionId,
           workspaceId: params.workspaceId,

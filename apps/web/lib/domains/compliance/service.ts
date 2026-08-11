@@ -62,6 +62,7 @@ import {
   listGrcDeliveryDestinations,
   type GrcDeliveryDestination,
 } from "@/lib/repositories/grc-delivery-destinations";
+import { describeRetentionWindow, resolveRetentionWindowDays } from "@/lib/entitlements/retention";
 import { swallow } from "@/lib/platform/swallow";
 
 export interface CompliancePacket {
@@ -273,18 +274,8 @@ export async function recordComplianceOperation(params: Parameters<typeof append
 
 function resolveActiveRules(profile: Awaited<ReturnType<typeof getCommercialProfile>> | null) {
   const planCode = profile?.planCode ?? "HOSTED_TRIAL";
-  let retentionDays = 90;
-  let label = "Hosted Trial 90-day retention limit";
-  if (planCode === "TEAM") {
-    retentionDays = 365;
-    label = "Team 1-year retention limit";
-  } else if (planCode === "BUSINESS") {
-    retentionDays = 1095;
-    label = "Business 3-year retention limit";
-  } else if (planCode === "ENTERPRISE") {
-    retentionDays = profile?.retentionWindowDays ?? 2555;
-    label = `Enterprise ${retentionDays}-day retention limit`;
-  }
+  const retentionDays = resolveRetentionWindowDays(profile);
+  const label = describeRetentionWindow(profile);
   return [
     { id: `ret-${planCode.toLowerCase()}`, label, retentionDays, appliesTo: {}, exportable: true },
   ];
