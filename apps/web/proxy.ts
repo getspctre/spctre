@@ -37,6 +37,7 @@ const SERVICE_API_PATHS = new Set([
   "/api/v1/policy/imports",
   "/api/v1/blueprint/imports",
   "/api/compliance/seal",
+  "/api/internal/provisioning/tenant",
   "/api/token/refresh",
   "/api/v1/token/refresh",
   "/api/token/revoke",
@@ -161,6 +162,17 @@ function isHealthPath(pathname: string): boolean {
 // request with Paddle's HMAC signature before doing any billing work.
 function isPaddleWebhookRequest(request: NextRequest): boolean {
   return request.method === "POST" && request.nextUrl.pathname === "/api/billing/paddle/webhook";
+}
+
+// Server-to-server calls from the checkout surface, which reaches this service
+// over the internet from its own infrastructure rather than from an operator's
+// address. Like the Paddle webhook above, the endpoint authenticates every
+// request itself — a timing-safe comparison against a shared secret, 401
+// without it — so a source-IP allowlist is not what protects it.
+function isInternalProvisioningRequest(request: NextRequest): boolean {
+  return (
+    request.method === "POST" && request.nextUrl.pathname === "/api/internal/provisioning/tenant"
+  );
 }
 
 function generateNonce(): string {
@@ -295,6 +307,7 @@ export async function proxy(request: NextRequest) {
     allowedSourceIps.size > 0 &&
     !isHealthPath(pathname) &&
     !isPaddleWebhookRequest(request) &&
+    !isInternalProvisioningRequest(request) &&
     !allowedSourceIps.has(ip)
   ) {
     return NextResponse.json({ error: "Forbidden." }, { status: 403 });
