@@ -28,6 +28,9 @@ export async function handleGenericRecords(params: {
 }) {
   const traceId = extractTraceId(params.request);
   if (!isGenericEvidenceIngestAvailable()) return error("Database not configured.", 503, traceId);
+  const contentEncoding = params.request.headers.get("content-encoding");
+  if (contentEncoding && contentEncoding.toLowerCase() !== "identity")
+    return error("Compressed evidence payloads are not supported.", 415, traceId);
   if (Number(params.request.headers.get("content-length") ?? 0) > MAX_REQUEST_BYTES)
     return error("Request body exceeds the 1 MiB limit.", 413, traceId);
   const integrationId = params.request.headers.get("x-spctre-integration-id");
