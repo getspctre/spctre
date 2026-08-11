@@ -1209,6 +1209,126 @@ export const SPCTRE_OPENAPI_SPEC = {
   // Paths
   // ──────────────────────────────────────────────────────────
   paths: {
+    "/ingest/providers/generic_json": {
+      post: {
+        operationId: "ingestGenericJsonEvidence",
+        summary: "Ingest one mapped generic JSON evidence record",
+        "x-spctre-plan": "oss",
+        tags: ["Evidence"],
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          {
+            name: "x-spctre-integration-id",
+            in: "header",
+            required: true,
+            schema: { type: "string", format: "uuid" },
+          },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": { schema: { type: "object", additionalProperties: true } },
+          },
+        },
+        responses: {
+          "201": { description: "Source record and canonical evidence accepted." },
+          "200": { description: "Duplicate source record." },
+          "400": { $ref: "#/components/responses/BadRequest" },
+          "401": { $ref: "#/components/responses/Unauthorized" },
+          "404": { $ref: "#/components/responses/NotFound" },
+          "413": { description: "Request exceeds the receiver limit." },
+        },
+      },
+    },
+    "/ingest/providers/generic_ndjson": {
+      post: {
+        operationId: "ingestGenericNdjsonEvidence",
+        summary: "Ingest independently reported NDJSON evidence records",
+        "x-spctre-plan": "oss",
+        tags: ["Evidence"],
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          {
+            name: "x-spctre-integration-id",
+            in: "header",
+            required: true,
+            schema: { type: "string", format: "uuid" },
+          },
+        ],
+        requestBody: {
+          required: true,
+          content: { "application/x-ndjson": { schema: { type: "string" } } },
+        },
+        responses: {
+          "201": { description: "All records accepted." },
+          "200": { description: "All records duplicated." },
+          "207": { description: "Record-level outcomes include accepted and rejected records." },
+          "400": { $ref: "#/components/responses/BadRequest" },
+          "401": { $ref: "#/components/responses/Unauthorized" },
+          "404": { $ref: "#/components/responses/NotFound" },
+          "413": { description: "Request exceeds the receiver limit." },
+        },
+      },
+    },
+    "/ingest/cloudevents": {
+      post: {
+        operationId: "ingestCloudEventEvidence",
+        summary: "Ingest a structured or binary JSON CloudEvent",
+        "x-spctre-plan": "oss",
+        tags: ["Evidence"],
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          {
+            name: "x-spctre-integration-id",
+            in: "header",
+            required: true,
+            schema: { type: "string", format: "uuid" },
+          },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": { schema: { type: "object", additionalProperties: true } },
+          },
+        },
+        responses: {
+          "201": { description: "CloudEvent accepted." },
+          "400": { $ref: "#/components/responses/BadRequest" },
+          "401": { $ref: "#/components/responses/Unauthorized" },
+          "404": { $ref: "#/components/responses/NotFound" },
+        },
+      },
+    },
+    "/logs": {
+      post: {
+        operationId: "ingestOtlpLogs",
+        summary: "Ingest OTLP/HTTP JSON log records",
+        "x-spctre-plan": "oss",
+        tags: ["Evidence"],
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          {
+            name: "x-spctre-integration-id",
+            in: "header",
+            required: true,
+            schema: { type: "string", format: "uuid" },
+          },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": { schema: { type: "object", additionalProperties: true } },
+          },
+        },
+        responses: {
+          "201": { description: "All log records accepted." },
+          "207": { description: "Record-level outcomes include rejected records." },
+          "400": { $ref: "#/components/responses/BadRequest" },
+          "401": { $ref: "#/components/responses/Unauthorized" },
+          "404": { $ref: "#/components/responses/NotFound" },
+        },
+      },
+    },
     // ── Evidence ─────────────────────────────────────────────
     "/evidence": {
       post: {
