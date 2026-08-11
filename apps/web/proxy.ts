@@ -38,6 +38,10 @@ const SERVICE_API_PATHS = new Set([
   "/api/v1/blueprint/imports",
   "/api/compliance/seal",
   "/api/internal/provisioning/tenant",
+  // Exempted from the source-IP allowlist below, but that is only the first
+  // gate: without this entry the session check answers 401 and the route's
+  // signature verification never runs.
+  "/api/billing/paddle/webhook",
   "/api/token/refresh",
   "/api/v1/token/refresh",
   "/api/token/revoke",
