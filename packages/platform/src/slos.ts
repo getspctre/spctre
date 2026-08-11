@@ -31,7 +31,14 @@ export const SLO_THRESHOLDS: Record<string, SloThresholds> = {
     errorRateThreshold: 0.01,
     slowQueryThresholdMs: 200,
   },
-  "gateway.decide": { p95Ms: 200, p99Ms: 500, errorRateThreshold: 0.01, slowQueryThresholdMs: 100 },
+  /**
+   * Bound to the customer-facing availability contract (p95 < 150 ms,
+   * p99 < 300 ms for Cloud gateway decisions). Internal alerting must not be
+   * looser than the published commitment, or a contract breach can burn
+   * without firing. Changing these numbers changes a customer promise: update
+   * the availability contract and the observability reference together.
+   */
+  "gateway.decide": { p95Ms: 150, p99Ms: 300, errorRateThreshold: 0.01, slowQueryThresholdMs: 100 },
   "gateway.resolve": {
     p95Ms: 500,
     p99Ms: 1_000,

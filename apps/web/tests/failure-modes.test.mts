@@ -401,6 +401,15 @@ describe("SLO thresholds — contract assertions", () => {
     expect(SLO_THRESHOLDS["token.refresh"].p95Ms).toBeLessThanOrEqual(100);
   });
 
+  // The production availability contract publishes p95 < 150 ms and
+  // p99 < 300 ms for Cloud gateway decisions. Internal alerting that is looser
+  // than the published number lets a contract breach burn without firing, so
+  // pin both ends here rather than only asserting an upper bound.
+  it("gateway.decide matches the published availability contract", () => {
+    expect(SLO_THRESHOLDS["gateway.decide"].p95Ms).toBeLessThanOrEqual(150);
+    expect(SLO_THRESHOLDS["gateway.decide"].p99Ms).toBeLessThanOrEqual(300);
+  });
+
   it("all workflows have error rate threshold below 10%", () => {
     for (const [name, thresholds] of Object.entries(SLO_THRESHOLDS)) {
       expect(thresholds.errorRateThreshold).toBeLessThan(0.1);
