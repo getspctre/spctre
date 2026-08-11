@@ -4,6 +4,7 @@ import {
   recordConversionTelemetry,
   type ConversionTelemetryEventType,
 } from "@/lib/repositories/onboarding/telemetry";
+import { ENTITLEMENT_CATALOG_VERSION, planEntitlements } from "@/lib/entitlements/catalog";
 import { swallow } from "@/lib/platform/swallow";
 
 export interface CommercialUsageSummary {
@@ -200,13 +201,22 @@ export async function recordBillingLifecycleEvent(
   const insertPlanCode = planCode ?? "HOSTED_TRIAL";
 
   await runWithTenantContext(tenantId, async () => {
+    // The effective retention window is rewritten only when the plan actually
+    // changes. A lifecycle event that leaves the plan alone (a payment, a
+    // status transition) must not reset the window, or a negotiated Enterprise
+    // term would be silently replaced by the catalog default. When the plan
+    // does change, the prior negotiated window no longer describes the tenant's
+    // entitlement and the new plan's default takes over.
+    const entitlements = planEntitlements(insertPlanCode);
     await sql`
       INSERT INTO tenant_commercial_profile (
         tenant_id, plan_code, lifecycle_status, sales_status,
-        billing_provider, billing_customer_id, updated_at
+        billing_provider, billing_customer_id, updated_at,
+        retention_window_days, entitlement_version, entitlement_effective_at
       ) VALUES (
         ${tenantId}, ${insertPlanCode}, ${event.lifecycleStatus}, ${event.salesStatus},
-        ${event.billingProvider}, ${event.billingCustomerId ?? null}, now()
+        ${event.billingProvider}, ${event.billingCustomerId ?? null}, now(),
+        ${entitlements.retentionWindowDays.value}, ${ENTITLEMENT_CATALOG_VERSION}, now()
       )
       ON CONFLICT (tenant_id) DO UPDATE SET
         plan_code = CASE
@@ -217,6 +227,24 @@ export async function recordBillingLifecycleEvent(
         sales_status = EXCLUDED.sales_status,
         billing_provider = EXCLUDED.billing_provider,
         billing_customer_id = coalesce(EXCLUDED.billing_customer_id, tenant_commercial_profile.billing_customer_id),
+        retention_window_days = CASE
+          WHEN ${planCode}::text IS NOT NULL
+            AND tenant_commercial_profile.plan_code IS DISTINCT FROM EXCLUDED.plan_code
+          THEN EXCLUDED.retention_window_days
+          ELSE tenant_commercial_profile.retention_window_days
+        END,
+        entitlement_version = CASE
+          WHEN ${planCode}::text IS NOT NULL
+            AND tenant_commercial_profile.plan_code IS DISTINCT FROM EXCLUDED.plan_code
+          THEN EXCLUDED.entitlement_version
+          ELSE tenant_commercial_profile.entitlement_version
+        END,
+        entitlement_effective_at = CASE
+          WHEN ${planCode}::text IS NOT NULL
+            AND tenant_commercial_profile.plan_code IS DISTINCT FROM EXCLUDED.plan_code
+          THEN EXCLUDED.entitlement_effective_at
+          ELSE tenant_commercial_profile.entitlement_effective_at
+        END,
         updated_at = now()
     `;
 
@@ -285,12 +313,19 @@ export async function requestCommercialReview(params: {
 }): Promise<void> {
   if (!sql) return;
   await sql.begin(async (tx) => {
+    // Only the sales status changes here, so the existing window is left
+    // alone on conflict. The insert branch still provisions one: this is a
+    // profile-creating path, and a row with no window would be invisible to
+    // the retention worker.
     await tx`
       INSERT INTO tenant_commercial_profile (
-        tenant_id, plan_code, lifecycle_status, sales_status, updated_by, updated_at
+        tenant_id, plan_code, lifecycle_status, sales_status, updated_by, updated_at,
+        retention_window_days, entitlement_version, entitlement_effective_at
       ) VALUES (
         ${params.tenantId}, 'HOSTED_TRIAL', 'EVALUATING',
-        'REQUESTED', ${params.principalId}, now()
+        'REQUESTED', ${params.principalId}, now(),
+        ${planEntitlements("HOSTED_TRIAL").retentionWindowDays.value},
+        ${ENTITLEMENT_CATALOG_VERSION}, now()
       )
       ON CONFLICT (tenant_id) DO UPDATE SET
         sales_status = 'REQUESTED',

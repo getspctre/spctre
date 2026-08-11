@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { readFile } from "node:fs/promises";
-import { fileURLToPath } from "node:url";
+import { PLAN_ENTITLEMENTS } from "../lib/entitlements/catalog.ts";
 import {
   FALLBACK_RETENTION_WINDOW_DAYS,
   PLAN_RETENTION_WINDOW_DAYS,
@@ -91,40 +90,24 @@ describe("describeRetentionWindow", () => {
   });
 });
 
-// The retention worker prunes; this module decides how long to archive and what
-// compliance reports claim. If the two disagree a tenant's evidence is deleted
-// on one schedule and retained on another, which is exactly the state this
-// change repaired. Parse the worker's SQL so drift fails here rather than in
-// production.
-describe("parity with the retention worker", () => {
-  it("matches the plan defaults in jobs_retention.go", async () => {
-    const source = await readFile(
-      fileURLToPath(new URL("../../worker/internal/worker/jobs_retention.go", import.meta.url)),
-      "utf8",
+// This module and the catalog must stay in step: the plan defaults exposed here
+// are what provisioning materializes onto the profile, and the retention worker
+// prunes from that materialized value.
+//
+// The worker previously carried its own copy of the plan defaults and a test
+// here parsed them to keep the two aligned. It no longer derives anything —
+// `entitlements-catalog.test.mts` asserts that, which is a stronger guarantee
+// than parity between two implementations.
+describe("catalog alignment", () => {
+  it("exposes the catalog's retention windows", () => {
+    expect(PLAN_RETENTION_WINDOW_DAYS).toEqual({
+      HOSTED_TRIAL: PLAN_ENTITLEMENTS.HOSTED_TRIAL.retentionWindowDays.value,
+      TEAM: PLAN_ENTITLEMENTS.TEAM.retentionWindowDays.value,
+      BUSINESS: PLAN_ENTITLEMENTS.BUSINESS.retentionWindowDays.value,
+      ENTERPRISE: PLAN_ENTITLEMENTS.ENTERPRISE.retentionWindowDays.value,
+    });
+    expect(FALLBACK_RETENTION_WINDOW_DAYS).toBe(
+      PLAN_ENTITLEMENTS.HOSTED_TRIAL.retentionWindowDays.value,
     );
-
-    const caseBlock = source.match(/CASE tcp\.plan_code([\s\S]*?)END/);
-    expect(caseBlock, "plan_code CASE block not found in jobs_retention.go").not.toBeNull();
-
-    const workerDefaults = new Map<string, number>();
-    for (const [, plan, days] of caseBlock![1].matchAll(/WHEN '([A-Z_]+)' THEN (\d+)/g)) {
-      workerDefaults.set(plan, Number(days));
-    }
-
-    expect(Object.fromEntries(workerDefaults)).toEqual(PLAN_RETENTION_WINDOW_DAYS);
-
-    const elseDays = caseBlock![1].match(/ELSE (\d+)/);
-    expect(elseDays, "CASE has no ELSE branch").not.toBeNull();
-    expect(Number(elseDays![1])).toBe(FALLBACK_RETENTION_WINDOW_DAYS);
-  });
-
-  it("agrees that an explicit window overrides the plan default", async () => {
-    const source = await readFile(
-      fileURLToPath(new URL("../../worker/internal/worker/jobs_retention.go", import.meta.url)),
-      "utf8",
-    );
-    // COALESCE(retention_window_days, CASE ...) is what makes the override win
-    // for every plan. resolveRetentionWindowDays mirrors precisely this.
-    expect(source).toMatch(/COALESCE\(\s*tcp\.retention_window_days,\s*CASE tcp\.plan_code/);
   });
 });

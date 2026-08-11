@@ -4,6 +4,7 @@ import { rawSql, runWithTenantContext, sql } from "@/lib/db";
 import type { AuthSession } from "@/lib/auth-session";
 import { ensureDemoTenant } from "@/lib/repositories/seed/local-dev";
 import { issueAccessRefreshPair, type ServiceTokenScope } from "@/lib/service-tokens";
+import { ENTITLEMENT_CATALOG_VERSION, planEntitlements } from "@/lib/entitlements/catalog";
 import { ensureStarterPublishedBundle, ONBOARDING_TTL_MINUTES, slugifyWorkspace } from "./shared";
 import { recordConversionTelemetry } from "./telemetry";
 import { swallow } from "@/lib/platform/swallow";
@@ -209,14 +210,22 @@ export async function exchangeCliOnboardingCode(code: string): Promise<CliOnboar
           existingProfile[0]?.billing_customer_id || `ctm_trial_${randomBytes(8).toString("hex")}`;
         await tx`
         INSERT INTO tenant_commercial_profile (
-          tenant_id, plan_code, lifecycle_status, sales_status, billing_provider, billing_customer_id, updated_at
+          tenant_id, plan_code, lifecycle_status, sales_status, billing_provider, billing_customer_id, updated_at,
+          retention_window_days, entitlement_version, entitlement_effective_at
         ) VALUES (
-          ${approvedTenantId}, 'HOSTED_TRIAL', 'EVALUATING', 'NONE', 'PADDLE', ${billingCustomerId}, now()
+          ${approvedTenantId}, 'HOSTED_TRIAL', 'EVALUATING', 'NONE', 'PADDLE', ${billingCustomerId}, now(),
+          ${planEntitlements("HOSTED_TRIAL").retentionWindowDays.value},
+          ${ENTITLEMENT_CATALOG_VERSION}, now()
         )
         ON CONFLICT (tenant_id) DO UPDATE SET
           plan_code = 'HOSTED_TRIAL',
           billing_provider = 'PADDLE',
           billing_customer_id = coalesce(tenant_commercial_profile.billing_customer_id, EXCLUDED.billing_customer_id),
+          -- This branch forces the plan to HOSTED_TRIAL, so the trial window
+          -- applies regardless of what the profile carried before.
+          retention_window_days = EXCLUDED.retention_window_days,
+          entitlement_version = EXCLUDED.entitlement_version,
+          entitlement_effective_at = EXCLUDED.entitlement_effective_at,
           updated_at = now()
       `;
 

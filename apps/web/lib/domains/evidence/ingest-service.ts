@@ -28,6 +28,7 @@ import {
   validateEvidenceWorkspaceBoundary,
 } from "@/lib/repositories/evidence";
 import { getCommercialProfile } from "@/lib/repositories/workspace";
+import { PLAN_ENTITLEMENTS, enforcedEntitlementValue } from "@/lib/entitlements/catalog";
 import { ingestTrustScoreEvent } from "@/lib/repositories/trust";
 import { recordConversionTelemetry } from "@/lib/repositories/onboarding/telemetry";
 import { getPublishedBlueprintContext } from "@/lib/repositories/agent-blueprints";
@@ -602,14 +603,20 @@ export async function ingestRuntimeEvidence(input: {
       validateEvidencePolicyContextBoundary(scopedInput.policyContext, tenantId, workspaceId),
     ]);
 
-    // Enforce Free Tier (HOSTED_TRIAL) 1,000 total retained governed event capacity limit.
-    // The count depends on the profile plan, so it stays sequential after the fetch.
-    if (profile?.planCode === "HOSTED_TRIAL") {
+    // Enforce the free tier's retained-event capacity. The count depends on the
+    // profile plan, so it stays sequential after the fetch.
+    //
+    // The capacity comes from the entitlement catalog rather than a literal, so
+    // the free tier is defined in one place. Only HOSTED_TRIAL is gated here:
+    // the paid plans' capacities are not yet measured, and their entitlements
+    // are marked unenforced to say so.
+    const trialCapacity = enforcedEntitlementValue(PLAN_ENTITLEMENTS.HOSTED_TRIAL.retainedEvents);
+    if (profile?.planCode === "HOSTED_TRIAL" && trialCapacity !== null) {
       const totalCount = await countTotalEvidenceEvents(tenantId);
-      if (totalCount >= 1000) {
+      if (totalCount >= trialCapacity) {
         return apiError(
           429,
-          "Evidence ingestion limit exceeded. Free trial is limited to 1,000 total retained governed events. Upgrade to a paid plan.",
+          `Evidence ingestion limit exceeded. Free trial is limited to ${trialCapacity.toLocaleString("en-US")} total retained governed events. Upgrade to a paid plan.`,
         );
       }
     }
