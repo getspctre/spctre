@@ -60,6 +60,7 @@ export type GenericEvidenceCoverage = {
   resolved: number;
   unresolved: number;
   lastReceivedAt: string | null;
+  stale: boolean;
 };
 
 export async function getGenericEvidenceCoverage(params: {
@@ -71,7 +72,8 @@ export async function getGenericEvidenceCoverage(params: {
     SELECT integration.provider_type AS "providerType", COUNT(*)::int AS total,
       COUNT(*) FILTER (WHERE event.id IS NOT NULL AND NOT event.unresolved)::int AS resolved,
       COUNT(*) FILTER (WHERE event.id IS NULL OR event.unresolved)::int AS unresolved,
-      MAX(source.received_at)::text AS "lastReceivedAt"
+      MAX(source.received_at)::text AS "lastReceivedAt",
+      MAX(source.received_at) < now() - interval '24 hours' AS stale
     FROM evidence_source_record source
     JOIN evidence_ingest_integration integration ON integration.id = source.integration_id
     LEFT JOIN canonical_evidence_event event ON event.source_record_id = source.id

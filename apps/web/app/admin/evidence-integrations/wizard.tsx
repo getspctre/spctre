@@ -135,6 +135,7 @@ export function EvidenceIntegrationWizard({
                     <th>Provider</th>
                     <th>Resolved</th>
                     <th>Unresolved</th>
+                    <th>Drift</th>
                     <th>Last receipt</th>
                   </tr>
                 </thead>
@@ -143,6 +144,13 @@ export function EvidenceIntegrationWizard({
                     <tr key={item.providerType}>
                       <td>
                         <strong>{item.providerType}</strong>
+                      </td>
+                      <td>
+                        {item.stale ? (
+                          <span className="pill pillWarn">No receipt in 24h</span>
+                        ) : (
+                          <span className="pill pillNeutral">Current</span>
+                        )}
                       </td>
                       <td>
                         {item.resolved} / {item.total}
