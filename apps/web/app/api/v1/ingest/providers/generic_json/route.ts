@@ -1,4 +1,9 @@
-import { enforceEvidenceRateLimit, error, handleGenericRecords, readJsonRecord } from "@/app/api/ingest/_shared";
+import {
+  enforceEvidenceRateLimit,
+  error,
+  handleGenericRecords,
+  readJsonRecord,
+} from "@/app/api/ingest/_shared";
 import { extractTraceId } from "@spctre/api-contracts";
 export const dynamic = "force-dynamic";
 export async function POST(request: Request) {

@@ -86,10 +86,7 @@ async function delegateGenericEvidenceToWorker(params: {
   );
   const response = await fetchWithRetry(target, {
     method: "POST",
-    headers: {
-      "content-type": "application/json",
-      "x-spctre-internal-secret": secret,
-    },
+    headers: { "content-type": "application/json", "x-spctre-internal-secret": secret },
     body: JSON.stringify({
       tenantId: params.tenantId,
       workspaceId: params.integration.workspaceId,
@@ -142,7 +139,11 @@ async function delegateGenericEvidenceToWorker(params: {
   }
   if (result.outcome === "duplicate") return { outcome: "duplicate" as const };
   if (result.outcome === "rejected" && result.sourceRecordId && result.reason) {
-    return { outcome: "rejected" as const, sourceRecordId: result.sourceRecordId, reason: result.reason };
+    return {
+      outcome: "rejected" as const,
+      sourceRecordId: result.sourceRecordId,
+      reason: result.reason,
+    };
   }
   throw new Error("Worker generic evidence ingest returned an invalid response.");
 }

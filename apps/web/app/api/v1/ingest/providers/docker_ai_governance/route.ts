@@ -22,9 +22,10 @@ export async function POST(request: Request) {
   const body = await readBoundedText(request);
   if (body instanceof Response) return error("Request body exceeds the 1 MiB limit.", 413, traceId);
   const contentType = request.headers.get("content-type")?.toLowerCase() ?? "";
-  const lines = contentType.includes("ndjson") || contentType.includes("jsonl")
-    ? body.split(/\r?\n/).filter(Boolean)
-    : [body];
+  const lines =
+    contentType.includes("ndjson") || contentType.includes("jsonl")
+      ? body.split(/\r?\n/).filter(Boolean)
+      : [body];
   if (!lines.length || !lines[0]?.trim())
     return error("Request body must contain at least one Docker audit event.", 400, traceId);
   const records = lines.map((line) => {

@@ -1,4 +1,9 @@
-import { enforceEvidenceRateLimit, error, handleGenericRecords, readJsonRecord } from "@/app/api/ingest/_shared";
+import {
+  enforceEvidenceRateLimit,
+  error,
+  handleGenericRecords,
+  readJsonRecord,
+} from "@/app/api/ingest/_shared";
 import {
   normalizeManagedProviderEvent,
   type ManagedProvider,

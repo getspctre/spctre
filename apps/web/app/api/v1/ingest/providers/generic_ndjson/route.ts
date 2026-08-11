@@ -1,4 +1,10 @@
-import { enforceEvidenceRateLimit, error, handleGenericRecords, isJsonRecord, readBoundedText } from "@/app/api/ingest/_shared";
+import {
+  enforceEvidenceRateLimit,
+  error,
+  handleGenericRecords,
+  isJsonRecord,
+  readBoundedText,
+} from "@/app/api/ingest/_shared";
 import { extractTraceId } from "@spctre/api-contracts";
 import { logger } from "@spctre/platform/logging";
 export const dynamic = "force-dynamic";

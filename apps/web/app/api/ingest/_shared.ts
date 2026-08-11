@@ -81,7 +81,10 @@ export async function enforceEvidenceRateLimit(request: Request): Promise<Respon
   const traceId = extractTraceId(request);
   return withTraceId(
     Response.json(
-      { error: "Too many evidence records. Retry after the indicated delay.", meta: makeMeta(traceId) },
+      {
+        error: "Too many evidence records. Retry after the indicated delay.",
+        meta: makeMeta(traceId),
+      },
       { status: 429, headers: { "Retry-After": String(rateLimit.retryAfterSeconds) } },
     ),
     traceId,

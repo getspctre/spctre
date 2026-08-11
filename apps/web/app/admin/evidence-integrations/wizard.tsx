@@ -211,7 +211,9 @@ export function EvidenceIntegrationWizard({
                       </td>
                       <td>
                         {item.canonicalAgentId ? (
-                          <span className="pill pillNeutral">Resolved: {item.canonicalAgentId}</span>
+                          <span className="pill pillNeutral">
+                            Resolved: {item.canonicalAgentId}
+                          </span>
                         ) : item.unresolved ? (
                           <span className="pill pillWarn">Needs binding</span>
                         ) : (
@@ -285,7 +287,12 @@ export function EvidenceIntegrationWizard({
               <pre className="serviceKeyCodeSample">{SAMPLE}</pre>
               <label className="eyebrow">
                 Sample JSON
-                <textarea className="input" value={sample} onChange={(event) => setSample(event.target.value)} rows={8} />
+                <textarea
+                  className="input"
+                  value={sample}
+                  onChange={(event) => setSample(event.target.value)}
+                  rows={8}
+                />
               </label>
               <button
                 type="button"

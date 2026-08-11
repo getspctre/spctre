@@ -26,8 +26,7 @@ export type EvidenceIntegrationSetupState =
   | null;
 
 export type EvidenceMappingPreviewState =
-  | { ok: true; preview: Record<string, unknown> }
-  | { ok?: never; error: string };
+  { ok: true; preview: Record<string, unknown> } | { ok?: never; error: string };
 
 export async function previewEvidenceMappingAction(
   mappingText: string,

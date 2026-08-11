@@ -25,7 +25,7 @@ export function normalizeManagedProviderEvent(
           id:
             raw.agent_id ??
             raw.agentId ??
-            (isRecord(raw.agent) ? raw.agent.name ?? raw.agent.id : undefined),
+            (isRecord(raw.agent) ? (raw.agent.name ?? raw.agent.id) : undefined),
         },
         occurred_at: raw.timestamp ?? raw.occurred_at,
         action: raw.action ?? raw.action_type ?? raw.event_type ?? "docker.governance.observe",
