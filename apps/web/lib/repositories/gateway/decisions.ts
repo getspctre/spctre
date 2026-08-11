@@ -148,31 +148,25 @@ export async function persistGatewayDecision(
       ${v.toolIntent}, ${v.planSummary},
       ${v.toolParameters}::jsonb, ${v.connector}, ${v.action}
     )
-    ON CONFLICT (tenant_id, decision_id, artifact_hash)
-    DO UPDATE SET
-      outcome = EXCLUDED.outcome,
-      reason = EXCLUDED.reason,
-      consequence = EXCLUDED.consequence,
-      customer_tier = EXCLUDED.customer_tier,
-      confidence = EXCLUDED.confidence,
-      amount_usd = EXCLUDED.amount_usd,
-      data_sensitivity = EXCLUDED.data_sensitivity,
-      trust_score = EXCLUDED.trust_score,
-      context_budget = EXCLUDED.context_budget,
-      risk_level = EXCLUDED.risk_level,
-      evaluated_by = EXCLUDED.evaluated_by,
-      agent_id = EXCLUDED.agent_id,
-      session_id = EXCLUDED.session_id,
-      tool_intent = EXCLUDED.tool_intent,
-      plan_summary = EXCLUDED.plan_summary,
-      tool_parameters = EXCLUDED.tool_parameters,
-      connector = EXCLUDED.connector,
-      action = EXCLUDED.action,
-      evaluated_at = now()
+    -- A gateway decision is an audit record: the first evaluation wins and is
+    -- never rewritten. A replay carrying the same
+    -- (tenant_id, decision_id, artifact_hash) resolves to the original row.
+    -- Mirrors persistGatewayDecision in the Go worker.
+    ON CONFLICT (tenant_id, decision_id, artifact_hash) DO NOTHING
     RETURNING id
   `;
 
-  const gatewayDecisionId = rows[0]?.id;
+  let gatewayDecisionId = rows[0]?.id;
+  if (!gatewayDecisionId) {
+    // Replay of an already-persisted decision: return the decision of record.
+    const existing = await sql<{ id: string }[]>`
+      SELECT id FROM gateway_decision
+      WHERE tenant_id = ${record.tenantId}
+        AND decision_id = ${record.decisionId}
+        AND artifact_hash = ${record.artifactHash}
+    `;
+    gatewayDecisionId = existing[0]?.id;
+  }
   if (!gatewayDecisionId) return null;
 
   if (record.shouldQueue) {
