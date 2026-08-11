@@ -21,10 +21,17 @@ export function normalizeManagedProviderEvent(
       return {
         ...raw,
         provider,
-        agent: { id: raw.agent_id ?? raw.agentId },
+        agent: {
+          id:
+            raw.agent_id ??
+            raw.agentId ??
+            (isRecord(raw.agent) ? raw.agent.name ?? raw.agent.id : undefined),
+        },
         occurred_at: raw.timestamp ?? raw.occurred_at,
-        action: raw.action ?? raw.event_type ?? "docker.governance.observe",
-        source_event_id: raw.event_id ?? raw.id,
+        action: raw.action ?? raw.action_type ?? raw.event_type ?? "docker.governance.observe",
+        source_event_id: raw.audit_event_id ?? raw.event_id ?? raw.id,
+        target_resource: raw.resource_id ?? raw.target_resource,
+        enforcement_decision: dockerDecision(raw.decision),
       };
     case "langsmith": {
       const inputs = isRecord(raw.inputs) ? raw.inputs : {};
@@ -38,5 +45,19 @@ export function normalizeManagedProviderEvent(
         inputs,
       };
     }
+  }
+}
+
+function dockerDecision(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  switch (value.toLowerCase()) {
+    case "audit_decision_allow":
+    case "allow":
+      return "allow";
+    case "audit_decision_deny":
+    case "deny":
+      return "deny";
+    default:
+      return "observe";
   }
 }
