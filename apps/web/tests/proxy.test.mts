@@ -90,6 +90,24 @@ describe("proxy rate limiting", () => {
     expect(response.status).toBe(200);
   });
 
+  it("lets Paddle reach the billing webhook, which verifies its own signature", async () => {
+    // The allowlist exemption alone is not enough: Paddle sends no session
+    // cookie, so the session gate answered 401 and the route's signature
+    // verification never ran.
+    process.env.DATABASE_URL = "postgres://spctre.test/app";
+    process.env.SPCTRE_ALLOWED_SOURCE_IPS = "198.51.100.7";
+
+    const { proxy } = await import("../proxy");
+    const response = await proxy(
+      makeRequest("/api/billing/paddle/webhook", "203.0.113.10", {
+        method: "POST",
+        headers: { "paddle-signature": "ts=1;h1=abc" },
+      }),
+    );
+
+    expect(response.status).toBe(200);
+  });
+
   it("still blocks other internal routes outside the source IP allowlist", async () => {
     process.env.DATABASE_URL = "postgres://spctre.test/app";
     process.env.SPCTRE_ALLOWED_SOURCE_IPS = "198.51.100.7";
