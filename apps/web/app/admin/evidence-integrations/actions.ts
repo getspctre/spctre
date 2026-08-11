@@ -5,6 +5,8 @@ import { requireAdminSession } from "../admin-session";
 import { getRequiredWorkspaceContext } from "@/lib/workspace";
 import { verifyWriteAccess } from "@/lib/demo-guard";
 import { createEvidenceIntegrationSetup } from "@/lib/domains/evidence/integration-service";
+import { normalizeGenericEvidence } from "@/lib/domains/evidence/generic-mapping";
+import { isRecord } from "@/lib/records";
 import { logger } from "@spctre/platform/logging";
 
 const providerTypes = [
@@ -21,6 +23,26 @@ export type EvidenceIntegrationSetupState =
   | { ok: true; integrationId: string; rawToken: string; tokenPrefix: string }
   | { ok?: never; error: string }
   | null;
+
+export type EvidenceMappingPreviewState =
+  | { ok: true; preview: Record<string, unknown> }
+  | { ok?: never; error: string };
+
+export async function previewEvidenceMappingAction(
+  mappingText: string,
+  sampleText: string,
+): Promise<EvidenceMappingPreviewState> {
+  const guard = await requireAdminSession();
+  if ("error" in guard) return { error: guard.error ?? "Admin permission is required." };
+  try {
+    const mapping: unknown = JSON.parse(mappingText);
+    const sample: unknown = JSON.parse(sampleText);
+    if (!isRecord(sample)) return { error: "Sample payload must be a JSON object." };
+    return { ok: true, preview: normalizeGenericEvidence(sample, mapping) };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Could not preview this mapping." };
+  }
+}
 
 export async function createEvidenceIntegrationAction(
   _previous: EvidenceIntegrationSetupState,

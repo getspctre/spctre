@@ -1,11 +1,11 @@
 "use client";
-import { useActionState, useState } from "react";
+import { useActionState, useState, useTransition } from "react";
 import type {
   EvidenceIntegrationSummary,
   GenericEvidenceCoverage,
   GenericEvidenceProvenance,
 } from "@/lib/repositories/evidence";
-import { createEvidenceIntegrationAction } from "./actions";
+import { createEvidenceIntegrationAction, previewEvidenceMappingAction } from "./actions";
 const SAMPLE = JSON.stringify(
   {
     timestamp: "2026-08-11T12:00:00Z",
@@ -67,6 +67,10 @@ export function EvidenceIntegrationWizard({
   const [name, setName] = useState("");
   const [providerType, setProviderType] = useState("generic_json");
   const [mapping, setMapping] = useState(MAPPING);
+  const [sample, setSample] = useState(SAMPLE);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [previewError, setPreviewError] = useState<string | null>(null);
+  const [previewing, startPreview] = useTransition();
   const [state, action, pending] = useActionState(createEvidenceIntegrationAction, null);
   if (state?.ok)
     return (
@@ -269,6 +273,26 @@ export function EvidenceIntegrationWizard({
                 />
               </label>
               <pre className="serviceKeyCodeSample">{SAMPLE}</pre>
+              <label className="eyebrow">
+                Sample JSON
+                <textarea className="input" value={sample} onChange={(event) => setSample(event.target.value)} rows={8} />
+              </label>
+              <button
+                type="button"
+                className="button"
+                disabled={previewing}
+                onClick={() =>
+                  startPreview(async () => {
+                    const result = await previewEvidenceMappingAction(mapping, sample);
+                    setPreview(result.ok ? JSON.stringify(result.preview, null, 2) : null);
+                    setPreviewError(result.ok ? null : result.error);
+                  })
+                }
+              >
+                {previewing ? "Validating…" : "Preview mapping"}
+              </button>
+              {previewError && <p className="serviceKeyTokenRevealWarn">{previewError}</p>}
+              {preview && <pre className="serviceKeyCodeSample">{preview}</pre>}
             </>
           )}
           {step === 3 && (
