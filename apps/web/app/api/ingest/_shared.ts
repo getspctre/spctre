@@ -7,7 +7,7 @@ import { authenticateServiceToken } from "@/lib/service-tokens";
 import { isRecord } from "@/lib/records";
 import { logger } from "@spctre/platform/logging";
 
-const MAX_REQUEST_BYTES = 1_048_576;
+export const MAX_REQUEST_BYTES = 1_048_576;
 export type GenericProviderType =
   | "generic_json"
   | "generic_ndjson"
@@ -72,13 +72,41 @@ export async function readJsonRecord(
   request: Request,
 ): Promise<Record<string, unknown> | Response> {
   try {
-    const payload: unknown = await request.json();
+    const body = await readBoundedText(request);
+    if (body instanceof Response) return body;
+    const payload: unknown = JSON.parse(body);
     return isRecord(payload)
       ? payload
       : Response.json({ error: "Request body must be a JSON object." }, { status: 400 });
   } catch {
     return Response.json({ error: "Request body must be JSON." }, { status: 400 });
   }
+}
+
+export async function readBoundedText(request: Request): Promise<string | Response> {
+  if (Number(request.headers.get("content-length") ?? 0) > MAX_REQUEST_BYTES)
+    return Response.json({ error: "Request body exceeds the 1 MiB limit." }, { status: 413 });
+  if (!request.body) return "";
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    size += value.byteLength;
+    if (size > MAX_REQUEST_BYTES) {
+      await reader.cancel();
+      return Response.json({ error: "Request body exceeds the 1 MiB limit." }, { status: 413 });
+    }
+    chunks.push(value);
+  }
+  const body = new Uint8Array(size);
+  let offset = 0;
+  for (const chunk of chunks) {
+    body.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return new TextDecoder().decode(body);
 }
 export function error(message: string, status: number, traceId: string) {
   return withTraceId(

@@ -1,10 +1,10 @@
-import { error, handleGenericRecords, isJsonRecord } from "@/app/api/ingest/_shared";
+import { error, handleGenericRecords, isJsonRecord, readBoundedText } from "@/app/api/ingest/_shared";
 import { extractTraceId } from "@spctre/api-contracts";
 import { logger } from "@spctre/platform/logging";
 export const dynamic = "force-dynamic";
 export async function POST(request: Request) {
-  const body = await request.text();
-  if (body.length > 1_048_576)
+  const body = await readBoundedText(request);
+  if (body instanceof Response)
     return error("Request body exceeds the 1 MiB limit.", 413, extractTraceId(request));
   const records = body
     .split(/\r?\n/)
