@@ -13,18 +13,25 @@
  * on one schedule and archived on another.
  */
 
-export type CommercialPlanCode = "HOSTED_TRIAL" | "TEAM" | "BUSINESS" | "ENTERPRISE";
+import {
+  COMMERCIAL_PLAN_CODES,
+  FALLBACK_PLAN_CODE,
+  PLAN_ENTITLEMENTS,
+  isCommercialPlanCode,
+  planEntitlements,
+  type CommercialPlanCode,
+} from "./catalog";
+
+export type { CommercialPlanCode };
 
 /** Default window per plan, in days, when the tenant has no explicit override. */
-export const PLAN_RETENTION_WINDOW_DAYS: Record<CommercialPlanCode, number> = {
-  HOSTED_TRIAL: 90,
-  TEAM: 365,
-  BUSINESS: 1095,
-  ENTERPRISE: 2555,
-};
+export const PLAN_RETENTION_WINDOW_DAYS: Record<CommercialPlanCode, number> = Object.fromEntries(
+  COMMERCIAL_PLAN_CODES.map((plan) => [plan, PLAN_ENTITLEMENTS[plan].retentionWindowDays.value]),
+) as Record<CommercialPlanCode, number>;
 
 /** Applied when the plan code is absent or unrecognized. */
-export const FALLBACK_RETENTION_WINDOW_DAYS = PLAN_RETENTION_WINDOW_DAYS.HOSTED_TRIAL;
+export const FALLBACK_RETENTION_WINDOW_DAYS =
+  PLAN_ENTITLEMENTS[FALLBACK_PLAN_CODE].retentionWindowDays.value;
 
 /**
  * The fields of a commercial profile that bear on retention. Declared
@@ -36,10 +43,7 @@ export interface RetentionProfileInput {
 }
 
 function planDefaultDays(planCode: string | null | undefined): number {
-  if (!planCode) return FALLBACK_RETENTION_WINDOW_DAYS;
-  return (
-    PLAN_RETENTION_WINDOW_DAYS[planCode as CommercialPlanCode] ?? FALLBACK_RETENTION_WINDOW_DAYS
-  );
+  return planEntitlements(planCode).retentionWindowDays.value;
 }
 
 /**
@@ -68,13 +72,6 @@ export function resolveRetainUntil(
   return new Date(from.getTime() + days * 24 * 60 * 60 * 1000);
 }
 
-const PLAN_DISPLAY_NAMES: Record<CommercialPlanCode, string> = {
-  HOSTED_TRIAL: "Hosted Trial",
-  TEAM: "Team",
-  BUSINESS: "Business",
-  ENTERPRISE: "Enterprise",
-};
-
 /** Copy for a plan sitting on its default window, where the duration is fixed. */
 const PLAN_DEFAULT_RETENTION_LABELS: Record<CommercialPlanCode, string> = {
   HOSTED_TRIAL: "Hosted Trial 90-day retention limit",
@@ -89,10 +86,8 @@ const PLAN_DEFAULT_RETENTION_LABELS: Record<CommercialPlanCode, string> = {
 export function describeRetentionWindow(profile: RetentionProfileInput | null): string {
   const days = resolveRetentionWindowDays(profile);
   const rawPlan = profile?.planCode;
-  const planCode = (
-    rawPlan && rawPlan in PLAN_DISPLAY_NAMES ? rawPlan : "HOSTED_TRIAL"
-  ) as CommercialPlanCode;
-  const displayName = PLAN_DISPLAY_NAMES[planCode];
+  const planCode = isCommercialPlanCode(rawPlan) ? rawPlan : FALLBACK_PLAN_CODE;
+  const displayName = PLAN_ENTITLEMENTS[planCode].displayName;
 
   if (days !== planDefaultDays(planCode) || planCode === "ENTERPRISE") {
     return `${displayName} ${days}-day retention limit`;

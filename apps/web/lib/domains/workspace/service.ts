@@ -27,6 +27,7 @@ import {
 } from "@/lib/repositories/auth/session";
 import { ensureDefaultPublishedPolicyPack } from "@/lib/repositories/default-policy";
 import { findActorById } from "@/lib/actors";
+import { planEntitlements } from "@/lib/entitlements/catalog";
 import { verifyWriteAccess } from "@/lib/demo-guard";
 import { isDatabaseConfigured } from "@/lib/repositories/shared/database";
 import {
@@ -140,10 +141,7 @@ export async function createWorkspace(params: {
     swallow("countTenantWorkspaces", 0),
   );
 
-  let limit = 1;
-  if (planCode === "TEAM") limit = 3;
-  else if (planCode === "BUSINESS") limit = 12;
-  else if (planCode === "ENTERPRISE") limit = 50;
+  const limit = planEntitlements(planCode).workspaces.value;
 
   if (wsCount >= limit) {
     return {

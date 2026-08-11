@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from "crypto";
 import { rawSql, sql, runWithTenantContext } from "@/lib/db";
+import { ENTITLEMENT_CATALOG_VERSION, planEntitlements } from "@/lib/entitlements/catalog";
 
 export type HostedPlanCode = "HOSTED_TRIAL" | "TEAM" | "BUSINESS" | "ENTERPRISE";
 
@@ -187,13 +188,19 @@ async function writeTenantDependents(
     // billing_provider defaults to 'PADDLE'; billing_customer_id is supplied
     // when the caller already knows it (subscription webhooks) and left null
     // when it does not (checkout before the subscription exists).
+    // Materialize the plan's retention window and the catalog version that
+    // produced it, so the retention worker reads a provisioned value rather
+    // than re-deriving one from the plan name.
+    const entitlements = planEntitlements(params.planCode);
     await tx`
       INSERT INTO tenant_commercial_profile (
         tenant_id, plan_code, lifecycle_status, sales_status,
-        billing_contact_email, billing_customer_id
+        billing_contact_email, billing_customer_id,
+        retention_window_days, entitlement_version, entitlement_effective_at
       ) VALUES (
         ${tenantId}, ${params.planCode}, ${params.lifecycleStatus}, 'CUSTOMER',
-        ${params.email}, ${params.billingCustomerId}
+        ${params.email}, ${params.billingCustomerId},
+        ${entitlements.retentionWindowDays.value}, ${ENTITLEMENT_CATALOG_VERSION}, now()
       )
       ON CONFLICT (tenant_id) DO UPDATE SET
         plan_code = EXCLUDED.plan_code,
@@ -204,6 +211,9 @@ async function writeTenantDependents(
           EXCLUDED.billing_customer_id,
           tenant_commercial_profile.billing_customer_id
         ),
+        retention_window_days = EXCLUDED.retention_window_days,
+        entitlement_version = EXCLUDED.entitlement_version,
+        entitlement_effective_at = EXCLUDED.entitlement_effective_at,
         updated_at = now()
     `;
 

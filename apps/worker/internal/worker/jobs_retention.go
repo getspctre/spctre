@@ -15,10 +15,37 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+// reportUnprovisionedRetentionWindows surfaces tenants whose commercial profile
+// carries no effective retention window.
+//
+// Such a tenant's production evidence is never pruned, because the sweep below
+// refuses to guess a window rather than delete irreversibly on an assumption.
+// That is the safe failure, but it is silent, so name it on every run: the fix
+// is to reprovision the profile, and nobody will do that if the state is
+// invisible.
+func reportUnprovisionedRetentionWindows(ctx context.Context, db *pgxpool.Pool, logger *slog.Logger) {
+	var unprovisioned int64
+	err := db.QueryRow(ctx, `
+		SELECT count(*)
+		FROM tenant_commercial_profile
+		WHERE retention_window_days IS NULL
+	`).Scan(&unprovisioned)
+	if err != nil {
+		logger.Error("failed to count unprovisioned retention windows", "error", err)
+		return
+	}
+	if unprovisioned > 0 {
+		logger.Warn("commercial profiles have no retention window; their production evidence is not being pruned",
+			"count", unprovisioned)
+	}
+}
+
 func runRetention(ctx context.Context, db *pgxpool.Pool, logger *slog.Logger) error {
 	if _, err := db.Exec(ctx, `SELECT spctre_ensure_runtime_evidence_partitions(1, 6)`); err != nil {
 		return err
 	}
+
+	reportUnprovisionedRetentionWindows(ctx, db, logger)
 
 	// 1. Prune staging evidence unconditionally after 2 days, in bounded batches.
 	prunedStaging, err := batchedPruneEvidence(ctx, db,
@@ -30,36 +57,32 @@ func runRetention(ctx context.Context, db *pgxpool.Pool, logger *slog.Logger) er
 		logger.Info("pruned expired staging evidence records", "count", prunedStaging)
 	}
 
-	// 2. Select expired production evidence records per tenant based on their plan.
+	// 2. Select expired production evidence records per tenant using the
+	// retention window provisioning materialized onto the profile.
 	//
-	// The COALESCE below is the canonical retention semantic: an explicit
-	// retention_window_days overrides the plan default for every plan, not only
-	// ENTERPRISE. apps/web/lib/entitlements/retention.ts now mirrors it exactly
-	// for the archival and compliance call sites, which previously consulted the
-	// override for ENTERPRISE alone and so pruned and archived on different
-	// schedules. Keep the two in step until provisioning materializes the
-	// effective window onto every profile, at which point this CASE is deleted
-	// and the column read directly.
+	// This used to re-derive the window from plan_code with a CASE that
+	// duplicated the plan defaults. Provisioning now writes the effective
+	// window whenever a plan is established or changes (migration 018
+	// backfilled every existing profile), so the column is read directly and
+	// the plan defaults live in exactly one place:
+	// apps/web/lib/entitlements/catalog.ts.
+	//
+	// A NULL window is deliberately not defaulted. Guessing here deletes
+	// evidence irreversibly, and the two plausible guesses are both wrong: the
+	// trial default would destroy an Enterprise tenant's history, and the
+	// longest window would silently stop pruning. An unprovisioned profile is
+	// instead skipped and reported by reportUnprovisionedRetentionWindows below,
+	// so it is visible and fixable rather than acted on.
 	rowsProd, err := db.Query(ctx, `
 		SELECT ree.tenant_id::text, ree.decision_id
 		FROM runtime_evidence_event ree
 		JOIN tenant_commercial_profile tcp ON ree.tenant_id = tcp.tenant_id
 		WHERE ree.environment = 'production'
+		  AND tcp.retention_window_days IS NOT NULL
 		  AND (
 		    (
 		      (tcp.downgraded_at IS NULL OR tcp.downgraded_at < now() - interval '365 days')
-		      AND ree.created_at < now() - make_interval(days => 
-		        COALESCE(
-		          tcp.retention_window_days,
-		          CASE tcp.plan_code
-		            WHEN 'HOSTED_TRIAL' THEN 90
-		            WHEN 'TEAM' THEN 365
-		            WHEN 'BUSINESS' THEN 1095
-		            WHEN 'ENTERPRISE' THEN 2555
-		            ELSE 90
-		          END
-		        )
-		      )
+		      AND ree.created_at < now() - make_interval(days => tcp.retention_window_days)
 		    )
 		    OR
 		    (
