@@ -72,6 +72,39 @@ describe("proxy rate limiting", () => {
     expect(response.status).toBe(200);
   });
 
+  it("lets the checkout surface reach provisioning when the source IP allowlist is enabled", async () => {
+    // The checkout surface calls this from its own infrastructure, never from
+    // an operator address, and the route authenticates the shared secret
+    // itself. Blocking it here left paid signups unprovisioned.
+    process.env.DATABASE_URL = "postgres://spctre.test/app";
+    process.env.SPCTRE_ALLOWED_SOURCE_IPS = "99.58.60.229";
+
+    const { proxy } = await import("../proxy");
+    const response = await proxy(
+      makeRequest("/api/internal/provisioning/tenant", "203.0.113.10", {
+        method: "POST",
+        headers: { authorization: "Bearer provisioning-secret" },
+      }),
+    );
+
+    expect(response.status).toBe(200);
+  });
+
+  it("still blocks other internal routes outside the source IP allowlist", async () => {
+    process.env.DATABASE_URL = "postgres://spctre.test/app";
+    process.env.SPCTRE_ALLOWED_SOURCE_IPS = "99.58.60.229";
+
+    const { proxy } = await import("../proxy");
+    const response = await proxy(
+      makeRequest("/api/internal/archive-evidence", "203.0.113.10", {
+        method: "POST",
+        headers: { authorization: "Bearer worker-secret" },
+      }),
+    );
+
+    expect(response.status).toBe(403);
+  });
+
   it("keeps readiness available when the source IP allowlist is enabled", async () => {
     process.env.DATABASE_URL = "postgres://spctre.test/app";
     process.env.SPCTRE_ALLOWED_SOURCE_IPS = "99.58.60.229";
