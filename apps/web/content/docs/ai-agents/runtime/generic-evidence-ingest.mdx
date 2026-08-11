@@ -54,3 +54,17 @@ returns `207 Multi-Status`. Requests are capped at 1 MiB.
 Source delivery is at-least-once. A deterministic SHA-256 hash of each source
 payload is used as the idempotency key, so retries with the same payload are
 reported as duplicates rather than creating a second source record.
+
+## Managed providers
+
+The same receiver accepts normalized records for Bedrock AgentCore, Docker AI
+Governance, and LangSmith at `/api/v1/ingest/providers/<provider>`. Create the
+matching managed-provider integration in the admin wizard first; its dedicated
+token and integration ID remain mandatory.
+
+For Bedrock AgentCore, send CloudWatch-exported span records after normalizing
+their documented attributes: `aws.request_id`, `aws.agent.id`,
+`aws.operation.name`, and `aws.resource.arn`. AgentCore stores its telemetry in
+CloudWatch Logs; a production pull collector should use a customer-owned,
+read-only role scoped to those log groups. CloudWatch Transaction Search must
+be enabled separately when span search is desired.

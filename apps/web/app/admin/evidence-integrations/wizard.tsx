@@ -26,6 +26,34 @@ const MAPPING = JSON.stringify(
   null,
   2,
 );
+const MANAGED_MAPPINGS: Record<string, string> = {
+  bedrock_agentcore: JSON.stringify(
+    {
+      occurred_at: "$.occurred_at",
+      action: "$.action",
+      source_event_id: "$.source_event_id",
+      agent_external_id: "$.agent.id",
+      target_resource: "$.target_resource",
+    },
+    null,
+    2,
+  ),
+  docker_ai_governance: JSON.stringify(
+    { occurred_at: "$.occurred_at", action: "$.action", source_event_id: "$.source_event_id" },
+    null,
+    2,
+  ),
+  langsmith: JSON.stringify(
+    {
+      occurred_at: "$.occurred_at",
+      action: "$.action",
+      source_event_id: "$.source_event_id",
+      agent_external_id: "$.agent.id",
+    },
+    null,
+    2,
+  ),
+};
 export function EvidenceIntegrationWizard({
   integrations,
   provenance,
@@ -203,12 +231,19 @@ export function EvidenceIntegrationWizard({
                 <select
                   className="input"
                   value={providerType}
-                  onChange={(event) => setProviderType(event.target.value)}
+                  onChange={(event) => {
+                    const next = event.target.value;
+                    setProviderType(next);
+                    setMapping(MANAGED_MAPPINGS[next] ?? MAPPING);
+                  }}
                 >
                   <option value="generic_json">Generic JSON</option>
                   <option value="generic_ndjson">Generic NDJSON</option>
                   <option value="cloudevents">CloudEvents</option>
                   <option value="otlp_logs">OTLP logs</option>
+                  <option value="bedrock_agentcore">Amazon Bedrock AgentCore</option>
+                  <option value="docker_ai_governance">Docker AI Governance</option>
+                  <option value="langsmith">LangSmith</option>
                 </select>
               </label>
             </>

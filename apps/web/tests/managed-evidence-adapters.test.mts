@@ -8,11 +8,13 @@ describe("managed evidence adapters", () => {
         "aws.agent.id": "agent-1",
         "aws.request_id": "req-1",
         "aws.operation.name": "InvokeAgentRuntime",
+        "aws.resource.arn": "arn:aws:bedrock-agentcore:us-east-1:123456789012:runtime/r-1",
       }),
     ).toMatchObject({
       source_event_id: "req-1",
       action: "InvokeAgentRuntime",
       agent: { id: "agent-1" },
+      target_resource: "arn:aws:bedrock-agentcore:us-east-1:123456789012:runtime/r-1",
     });
   });
   it("maps LangSmith run identity without discarding source fields", () => {

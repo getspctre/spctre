@@ -15,6 +15,7 @@ export function normalizeManagedProviderEvent(
         occurred_at: raw.event_timestamp ?? raw.timestamp ?? raw.time,
         action: raw["aws.operation.name"] ?? raw.operation ?? "agentcore.observe",
         source_event_id: raw["aws.request_id"] ?? raw.request_id,
+        target_resource: raw["aws.resource.arn"] ?? raw.resource_arn,
       };
     case "docker_ai_governance":
       return {

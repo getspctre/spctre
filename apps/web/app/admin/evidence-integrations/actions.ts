@@ -7,6 +7,16 @@ import { verifyWriteAccess } from "@/lib/demo-guard";
 import { createEvidenceIntegrationSetup } from "@/lib/domains/evidence/integration-service";
 import { logger } from "@spctre/platform/logging";
 
+const providerTypes = [
+  "generic_json",
+  "generic_ndjson",
+  "cloudevents",
+  "otlp_logs",
+  "bedrock_agentcore",
+  "docker_ai_governance",
+  "langsmith",
+] as const;
+
 export type EvidenceIntegrationSetupState =
   | { ok: true; integrationId: string; rawToken: string; tokenPrefix: string }
   | { ok?: never; error: string }
@@ -26,7 +36,7 @@ export async function createEvidenceIntegrationAction(
   const providerType = String(formData.get("providerType") ?? "");
   const mappingText = String(formData.get("mapping") ?? "");
   if (!name) return { error: "An integration name is required." };
-  if (!["generic_json", "generic_ndjson", "cloudevents", "otlp_logs"].includes(providerType))
+  if (!providerTypes.includes(providerType as (typeof providerTypes)[number]))
     return { error: "Choose a supported source type." };
   let fieldMapping: unknown;
   try {
@@ -44,7 +54,7 @@ export async function createEvidenceIntegrationAction(
       workspaceId: scope.workspaceId,
       principalId: guard.session.principalId,
       name,
-      providerType: providerType as "generic_json" | "generic_ndjson" | "cloudevents" | "otlp_logs",
+      providerType: providerType as (typeof providerTypes)[number],
       fieldMapping,
     });
     revalidatePath("/admin/evidence-integrations");

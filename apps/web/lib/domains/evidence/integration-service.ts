@@ -5,6 +5,7 @@ import {
   getGenericEvidenceCoverage,
   listEvidenceIntegrations,
   listGenericEvidenceProvenance,
+  type GenericIntegration,
 } from "@/lib/repositories/evidence";
 import { runWithTenantContext } from "@/lib/tenant-context";
 import { validateEvidenceMapping } from "./generic-mapping";
@@ -32,7 +33,7 @@ export async function createEvidenceIntegrationSetup(params: {
   workspaceId: string;
   principalId: string;
   name: string;
-  providerType: "generic_json" | "generic_ndjson" | "cloudevents" | "otlp_logs";
+  providerType: GenericIntegration["providerType"];
   fieldMapping: unknown;
 }) {
   const mapping = validateEvidenceMapping(params.fieldMapping);
