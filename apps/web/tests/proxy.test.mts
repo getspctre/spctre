@@ -53,7 +53,7 @@ describe("proxy rate limiting", () => {
 
   it("blocks requests outside the configured source IP allowlist", async () => {
     process.env.DATABASE_URL = "postgres://spctre.test/app";
-    process.env.SPCTRE_ALLOWED_SOURCE_IPS = "99.58.60.229";
+    process.env.SPCTRE_ALLOWED_SOURCE_IPS = "198.51.100.7";
 
     const { proxy } = await import("../proxy");
     const response = await proxy(makeRequest("/login", "203.0.113.10"));
@@ -64,10 +64,10 @@ describe("proxy rate limiting", () => {
 
   it("allows configured source IPs through the public login route", async () => {
     process.env.DATABASE_URL = "postgres://spctre.test/app";
-    process.env.SPCTRE_ALLOWED_SOURCE_IPS = "99.58.60.229";
+    process.env.SPCTRE_ALLOWED_SOURCE_IPS = "198.51.100.7";
 
     const { proxy } = await import("../proxy");
-    const response = await proxy(makeRequest("/login", "99.58.60.229"));
+    const response = await proxy(makeRequest("/login", "198.51.100.7"));
 
     expect(response.status).toBe(200);
   });
@@ -77,7 +77,7 @@ describe("proxy rate limiting", () => {
     // an operator address, and the route authenticates the shared secret
     // itself. Blocking it here left paid signups unprovisioned.
     process.env.DATABASE_URL = "postgres://spctre.test/app";
-    process.env.SPCTRE_ALLOWED_SOURCE_IPS = "99.58.60.229";
+    process.env.SPCTRE_ALLOWED_SOURCE_IPS = "198.51.100.7";
 
     const { proxy } = await import("../proxy");
     const response = await proxy(
@@ -92,7 +92,7 @@ describe("proxy rate limiting", () => {
 
   it("still blocks other internal routes outside the source IP allowlist", async () => {
     process.env.DATABASE_URL = "postgres://spctre.test/app";
-    process.env.SPCTRE_ALLOWED_SOURCE_IPS = "99.58.60.229";
+    process.env.SPCTRE_ALLOWED_SOURCE_IPS = "198.51.100.7";
 
     const { proxy } = await import("../proxy");
     const response = await proxy(
@@ -107,7 +107,7 @@ describe("proxy rate limiting", () => {
 
   it("keeps readiness available when the source IP allowlist is enabled", async () => {
     process.env.DATABASE_URL = "postgres://spctre.test/app";
-    process.env.SPCTRE_ALLOWED_SOURCE_IPS = "99.58.60.229";
+    process.env.SPCTRE_ALLOWED_SOURCE_IPS = "198.51.100.7";
 
     const { proxy } = await import("../proxy");
     const response = await proxy(makeRequest("/api/ready", "203.0.113.10"));
