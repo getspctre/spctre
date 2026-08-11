@@ -271,7 +271,13 @@ export type OperationsLogEventType =
   | "NOTIFICATION_FAILED"
   | "VERIFICATION_RUN"
   | "ACTION_RECEIPT_ISSUED"
-  | "COMPLIANCE_EXPORT";
+  | "COMPLIANCE_EXPORT"
+  /**
+   * A replayed gateway decision whose evaluation disagreed with the persisted
+   * decision of record. The original row is never rewritten, so the divergence
+   * is retained here instead of being discarded.
+   */
+  | "GATEWAY_DECISION_REPLAY_DIVERGED";
 
 export interface OperationsLogEntry {
   id: string;

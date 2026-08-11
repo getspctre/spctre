@@ -3,6 +3,7 @@ package worker
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -37,6 +38,12 @@ func (s *Server) persistGatewayDecision(ctx context.Context, record GatewayDecis
 		}
 	}
 
+	// A gateway decision is an audit record: the first evaluation wins and is
+	// never rewritten. A retry or replay carrying the same
+	// (tenant_id, decision_id, artifact_hash) returns the original row exactly.
+	// The previous ON CONFLICT DO UPDATE rewrote outcome, reason, risk, actor,
+	// tool parameters and evaluated_at, so a replay could silently restate what
+	// the control plane had already decided and proved.
 	var gatewayDecisionID string
 	err = tx.QueryRow(ctx, `
 		INSERT INTO gateway_decision (
@@ -52,30 +59,7 @@ func (s *Server) persistGatewayDecision(ctx context.Context, record GatewayDecis
 			$16, $17, $18, $19, $20, $21, $22::jsonb, $23::jsonb,
 			$24, $25, $26, $27
 		)
-		ON CONFLICT (tenant_id, decision_id, artifact_hash)
-		DO UPDATE SET
-			outcome = EXCLUDED.outcome,
-			reason = EXCLUDED.reason,
-			consequence = EXCLUDED.consequence,
-			customer_tier = EXCLUDED.customer_tier,
-			confidence = EXCLUDED.confidence,
-			amount_usd = EXCLUDED.amount_usd,
-			data_sensitivity = EXCLUDED.data_sensitivity,
-			trust_score = EXCLUDED.trust_score,
-			context_budget = EXCLUDED.context_budget,
-			risk_level = EXCLUDED.risk_level,
-			evaluated_by = EXCLUDED.evaluated_by,
-			agent_id = EXCLUDED.agent_id,
-			session_id = EXCLUDED.session_id,
-			tool_intent = EXCLUDED.tool_intent,
-			plan_summary = EXCLUDED.plan_summary,
-			tool_parameters = EXCLUDED.tool_parameters,
-			safeguard_telemetry = EXCLUDED.safeguard_telemetry,
-			connector = EXCLUDED.connector,
-			action = EXCLUDED.action,
-			policy_artifact_hash = EXCLUDED.policy_artifact_hash,
-			policy_evaluator_version = EXCLUDED.policy_evaluator_version,
-			evaluated_at = now()
+		ON CONFLICT (tenant_id, decision_id, artifact_hash) DO NOTHING
 		RETURNING id
 	`, auth.TenantID, auth.WorkspaceID, record.DecisionID,
 		nullableString(hasContext, firstContext.RevisionID), nullableString(hasContext, firstContext.BranchID),
@@ -83,7 +67,37 @@ func (s *Server) persistGatewayDecision(ctx context.Context, record GatewayDecis
 		record.Confidence, record.AmountUsd, record.DataSensitivity, record.TrustScore, record.ContextBudget,
 		string(decision.RiskLevel), auth.PrincipalID, record.AgentID, record.SessionID, record.ToolIntent, record.PlanSummary, toolParamsJSON, telemetryJSON,
 		record.Connector, record.Action, policyProvenanceHash(provenance), policyProvenanceEvaluator(provenance)).Scan(&gatewayDecisionID)
-	if err != nil {
+	if errors.Is(err, pgx.ErrNoRows) {
+		// Replay of an already-persisted decision. Read the original back so the
+		// caller keeps operating on the decision of record.
+		var persistedOutcome string
+		if err := tx.QueryRow(ctx, `
+			SELECT id, outcome FROM gateway_decision
+			WHERE tenant_id = $1 AND decision_id = $2 AND artifact_hash = $3
+		`, auth.TenantID, record.DecisionID, record.ArtifactHash).Scan(&gatewayDecisionID, &persistedOutcome); err != nil {
+			return "", err
+		}
+		// First-write-wins must not silently discard a governance decision that
+		// disagrees with the record. An identical replay is uninteresting and
+		// writes nothing; a divergent one is retained as its own audit event so
+		// the disagreement stays inspectable without mutating the original.
+		if persistedOutcome != string(decision.Outcome) {
+			s.logger.Warn("gateway decision replay diverged from persisted record",
+				"decision_id", record.DecisionID,
+				"persisted_outcome", persistedOutcome,
+				"replayed_outcome", string(decision.Outcome))
+			if err := appendGenericOperationsLogTx(ctx, tx, auth.TenantID, auth.WorkspaceID,
+				"GATEWAY_DECISION_REPLAY_DIVERGED", record.DecisionID, "gateway_decision", auth.PrincipalID,
+				map[string]any{
+					"persistedOutcome": persistedOutcome,
+					"replayedOutcome":  string(decision.Outcome),
+					"replayedReason":   decision.Reason,
+					"artifactHash":     record.ArtifactHash,
+				}); err != nil {
+				return "", err
+			}
+		}
+	} else if err != nil {
 		return "", err
 	}
 
@@ -98,7 +112,7 @@ func (s *Server) persistGatewayDecision(ctx context.Context, record GatewayDecis
 	if decision.SLAHours != nil {
 		slaHours = *decision.SLAHours
 	}
-	_, err = tx.Exec(ctx, `
+	escalationTag, err := tx.Exec(ctx, `
 		INSERT INTO gateway_escalation_queue (
 			tenant_id, workspace_id, gateway_decision_id, decision_id, revision_id,
 			artifact_hash, status, sla_due_at, handoff_notes
@@ -115,6 +129,12 @@ func (s *Server) persistGatewayDecision(ctx context.Context, record GatewayDecis
 			sla_due_at = EXCLUDED.sla_due_at,
 			handoff_notes = EXCLUDED.handoff_notes,
 			updated_at = now()
+		-- A retry may refresh an open escalation, but must never resurrect a
+		-- terminal human or SLA decision. That would create a second approval
+		-- opportunity for the same decisionId and violates F3 terminal
+		-- immutability. Mirrors the web fallback path in
+		-- apps/web/lib/repositories/gateway/decisions.ts.
+		WHERE gateway_escalation_queue.status NOT IN ('RESOLVED', 'EXPIRED')
 	`, auth.TenantID, auth.WorkspaceID, gatewayDecisionID, record.DecisionID,
 		nullableString(hasContext, firstContext.RevisionID), record.ArtifactHash, slaHours, decision.Reason)
 	if err != nil {
@@ -123,6 +143,15 @@ func (s *Server) persistGatewayDecision(ctx context.Context, record GatewayDecis
 
 	if err := tx.Commit(ctx); err != nil {
 		return "", err
+	}
+
+	// The guard above left a terminal escalation untouched. Announcing it as a
+	// newly created escalation would call reviewers back to a decision they have
+	// already closed.
+	if escalationTag.RowsAffected() == 0 {
+		s.logger.Warn("gateway escalation not requeued: terminal escalation already exists",
+			"decision_id", record.DecisionID)
+		return gatewayDecisionID, nil
 	}
 
 	slaDueTime := time.Now().Add(time.Duration(slaHours) * time.Hour)

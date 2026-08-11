@@ -36,13 +36,22 @@ type Server struct {
 	// ingest burst can't spawn unbounded goroutines all contending for the
 	// small (MaxConns=2 on serverless) connection pool.
 	spawnSem chan struct{}
+	// rateLimiter sheds over-rate runtime ingress before authentication and
+	// database work. nil when limiting is disabled.
+	rateLimiter *rateLimiter
 }
 
 func NewServer(db *pgxpool.Pool, logger *slog.Logger, notification NotificationConfig) *Server {
 	// Size the background-work semaphore relative to the pool, with a floor so
 	// tiny serverless pools still allow a little parallelism.
 	sem := max(int(db.Config().MaxConns)*2, 4)
-	return &Server{db: db, logger: logger, notification: notification, spawnSem: make(chan struct{}, sem)}
+	return &Server{
+		db:           db,
+		logger:       logger,
+		notification: notification,
+		spawnSem:     make(chan struct{}, sem),
+		rateLimiter:  newRateLimiterFromEnv(),
+	}
 }
 
 // spawn runs fn in a tracked goroutine with a bounded timeout context and a
@@ -106,7 +115,8 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("/internal/jobs/escalation-sla", s.handleJobEscalationSLA)
 	mux.HandleFunc("/internal/jobs/notification-sender", s.handleJobNotificationSender)
 	mux.HandleFunc("/internal/jobs/siem-forwarder", s.handleJobSiemForwarder)
-	return requestID(mux)
+	// Throttle inside requestID so a shed request still carries its trace id.
+	return requestID(s.throttleRuntimeIngress(mux))
 }
 
 func authenticateJobTriggerRequest(w http.ResponseWriter, r *http.Request, traceID string) bool {
@@ -321,7 +331,10 @@ func (s *Server) handleMetrics(w http.ResponseWriter, _ *http.Request) {
 			formatMetric("spctre_worker_db_pool_idle", float64(stats.IdleConns())) +
 			"# HELP spctre_worker_db_pool_total Total database connections.\n" +
 			"# TYPE spctre_worker_db_pool_total gauge\n" +
-			formatMetric("spctre_worker_db_pool_total", float64(stats.TotalConns())),
+			formatMetric("spctre_worker_db_pool_total", float64(stats.TotalConns())) +
+			"# HELP spctre_worker_ingress_throttled_total Runtime ingress requests shed by the per-credential rate limit.\n" +
+			"# TYPE spctre_worker_ingress_throttled_total counter\n" +
+			formatMetric("spctre_worker_ingress_throttled_total", float64(s.throttledRequests())),
 	)); err != nil {
 		s.logger.Warn("metrics response write failed", "error", err)
 	}
