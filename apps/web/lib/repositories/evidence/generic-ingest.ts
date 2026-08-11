@@ -261,6 +261,12 @@ export async function persistGenericEvidence(params: {
     return { outcome: "rejected", sourceRecordId, reason };
   }
 
+  // An external agent ID is useful provenance but is not an internal Spctre
+  // agent correlation. Until the correlator resolves it, make that uncertainty
+  // explicit so coverage dashboards do not overstate attribution.
+  const unresolved = !evidence.agentExternalId;
+  const correlationConfidence = unresolved ? 0 : 0.5;
+
   const rows = await sql<{ id: string }[]>`
     INSERT INTO canonical_evidence_event (
       tenant_id, workspace_id, source_record_id, mapping_revision_id, provider_type,
@@ -274,7 +280,7 @@ export async function persistGenericEvidence(params: {
       ${evidence.occurredAt}, now(), ${evidence.principalId ?? null},
       ${evidence.agentExternalId ?? null}, ${evidence.action}, ${evidence.targetResource ?? null},
       ${evidence.policyReference ?? null}, ${evidence.environment ?? null},
-      ${evidence.enforcementDecision}, 1, false,
+      ${evidence.enforcementDecision}, ${correlationConfidence}, ${unresolved},
       ${sql.json(evidence.sourceAttributes as JSONValue)}::jsonb
     )
     RETURNING id
