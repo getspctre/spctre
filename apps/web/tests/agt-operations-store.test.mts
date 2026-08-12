@@ -949,16 +949,16 @@ describe("GET /api/operations/verify", () => {
 
 describe("POST /api/trust/ingest", () => {
   it("accepts a valid trust score payload", async () => {
-    const req = new Request("http://localhost:3000/api/trust/ingest", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: "Bearer svc-token" },
-      body: JSON.stringify({
+    const req = createRouteRequest({
+      path: "/api/trust/ingest",
+      token: "svc-token",
+      body: {
         agentId: "agent-trust-api",
         environment: "production",
         runtimeStack: "AWS_BEDROCK",
         trustScore: 0.92,
         source: "POLICY_EVALUATION",
-      }),
+      },
     });
 
     const res = await trustIngestPost(req);
@@ -969,16 +969,16 @@ describe("POST /api/trust/ingest", () => {
   });
 
   it("rejects trust score > 1", async () => {
-    const req = new Request("http://localhost:3000/api/trust/ingest", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: "Bearer svc-token" },
-      body: JSON.stringify({
+    const req = createRouteRequest({
+      path: "/api/trust/ingest",
+      token: "svc-token",
+      body: {
         agentId: "a",
         environment: "test",
         runtimeStack: "LOCAL",
         trustScore: 1.5,
         source: "MANUAL",
-      }),
+      },
     });
 
     const res = await trustIngestPost(req);
@@ -986,16 +986,16 @@ describe("POST /api/trust/ingest", () => {
   });
 
   it("rejects trust score < 0", async () => {
-    const req = new Request("http://localhost:3000/api/trust/ingest", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: "Bearer svc-token" },
-      body: JSON.stringify({
+    const req = createRouteRequest({
+      path: "/api/trust/ingest",
+      token: "svc-token",
+      body: {
         agentId: "a",
         environment: "test",
         runtimeStack: "LOCAL",
         trustScore: -0.1,
         source: "MANUAL",
-      }),
+      },
     });
 
     const res = await trustIngestPost(req);
@@ -1003,15 +1003,10 @@ describe("POST /api/trust/ingest", () => {
   });
 
   it("requires agentId", async () => {
-    const req = new Request("http://localhost:3000/api/trust/ingest", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: "Bearer svc-token" },
-      body: JSON.stringify({
-        environment: "test",
-        runtimeStack: "LOCAL",
-        trustScore: 0.5,
-        source: "MANUAL",
-      }),
+    const req = createRouteRequest({
+      path: "/api/trust/ingest",
+      token: "svc-token",
+      body: { environment: "test", runtimeStack: "LOCAL", trustScore: 0.5, source: "MANUAL" },
     });
 
     const res = await trustIngestPost(req);
@@ -1023,13 +1018,13 @@ describe("POST /api/trust/ingest", () => {
 
 describe("GET /api/trust/history", () => {
   it("requires agentId query param", async () => {
-    const req = new Request("http://localhost:3000/api/trust/history");
+    const req = createRouteRequest({ path: "/api/trust/history", method: "GET" });
     const res = await trustHistoryGet(req);
     expect(res.status).toBe(400);
   });
 
   it("returns 200 with events array", async () => {
-    const req = new Request("http://localhost:3000/api/trust/history?agentId=agent-h");
+    const req = createRouteRequest({ path: "/api/trust/history?agentId=agent-h", method: "GET" });
     const res = await trustHistoryGet(req);
     expect(res.status).toBe(200);
 
