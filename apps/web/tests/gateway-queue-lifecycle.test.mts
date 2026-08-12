@@ -881,10 +881,10 @@ describe("Gateway decide API — outcome and queue routing", () => {
 
   it("merges toolIntent, planSummary, and toolParameters into raw_evidence when client provides custom rawEvidence", async () => {
     conflictDecision = false;
-    const req = new Request("http://localhost:3000/api/evidence", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${DEMO_TOKEN}` },
-      body: JSON.stringify({
+    const req = createRouteRequest({
+      path: "/api/evidence",
+      token: DEMO_TOKEN,
+      body: {
         decisionId: "dec-evidence-custom-raw",
         tenantId: "22222222-2222-4222-8222-222222222222",
         workspaceId: "regular-workspace",
@@ -909,7 +909,7 @@ describe("Gateway decide API — outcome and queue routing", () => {
         planSummary: "Analyze contents and print summary",
         toolParameters: { path: "/etc/passwd", format: "json" },
         rawEvidence: { clientCustomField: "customVal" },
-      }),
+      },
     });
     const res = await evidencePost(req);
     expect(res.status).toBe(201);
