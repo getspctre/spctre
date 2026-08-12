@@ -10,6 +10,7 @@
  */
 
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
+import { createRouteRequest } from "./route-test-helper";
 import { handleValidationSelect } from "./sql-mock-helper";
 
 // ── Mock setup ────────────────────────────────────────────────────────────────
@@ -200,10 +201,10 @@ function buildEvidenceRequest(
   decisionId: string,
   gatewayFields: Record<string, unknown> = {},
 ): Request {
-  return new Request("http://localhost:3000/api/evidence", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${DEMO_TOKEN}` },
-    body: JSON.stringify({
+  return createRouteRequest({
+    path: "/api/evidence",
+    token: DEMO_TOKEN,
+    body: {
       decisionId,
       tenantId: "22222222-2222-4222-8222-222222222222",
       workspaceId: "regular-workspace",
@@ -225,7 +226,7 @@ function buildEvidenceRequest(
         },
       ],
       ...gatewayFields,
-    }),
+    },
   });
 }
 
