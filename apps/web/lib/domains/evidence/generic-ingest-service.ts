@@ -41,6 +41,8 @@ export async function ingestGenericEvidence(params: {
       rejectedReason: normalized.rejectedReason,
     });
     if (result.outcome === "accepted") {
+      // The worker writes this event in its persistence transaction. This
+      // fallback is the only path that needs a separate post-commit append.
       void appendOperationsLog({
         tenantId: params.tenantId,
         workspaceId: integration.workspaceId,
@@ -161,9 +163,7 @@ function normalizeEvidence(
       rejectedReason: null,
     };
   } catch (error) {
-    reportSwallowedError("ingestGenericEvidence.mapping", error, {
-      integrationId: integration.id,
-    });
+    reportSwallowedError("ingestGenericEvidence.mapping", error, { integrationId: integration.id });
     return {
       evidence: null,
       rejectedReason:

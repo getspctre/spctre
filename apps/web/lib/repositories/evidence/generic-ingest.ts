@@ -235,83 +235,77 @@ export async function persistGenericEvidence(params: {
   const contentHash = sourceContentHash(params.payload);
   const sourceEventID = params.evidence?.sourceEventId ?? null;
   const key = sourceIdempotencyKey(sourceEventID ?? undefined, params.payload);
-  const sourceRows = await sql<{ id: string }[]>`
-    INSERT INTO evidence_source_record (
-      tenant_id, integration_id, mapping_revision_id, source_event_id, idempotency_key, content_hash, source_payload
-    ) VALUES (
-      ${params.integration.tenantId}::uuid, ${params.integration.id}::uuid,
-      ${params.integration.mappingRevisionId}::uuid, ${sourceEventID}, ${key}, ${contentHash},
-      ${sql.json(params.payload as JSONValue)}::jsonb
-    )
-    ON CONFLICT (tenant_id, integration_id, idempotency_key) DO NOTHING
-    RETURNING id
-  `;
-  const sourceRecordId = sourceRows[0]?.id;
-  if (!sourceRecordId) return { outcome: "duplicate" };
-
-  const evidence = params.evidence;
-  if (!evidence) {
-    const reason = params.rejectedReason ?? "The active mapping rejected this record.";
-    logger.warn("Generic evidence mapping rejected source record", {
-      integrationId: params.integration.id,
-      reason,
-    });
-    await sql`
-      UPDATE evidence_source_record
-      SET rejected_reason = ${reason}
-      WHERE id = ${sourceRecordId}::uuid
+  return sql.begin(async (tx) => {
+    const sourceRows = await tx<{ id: string }[]>`
+      INSERT INTO evidence_source_record (
+        tenant_id, integration_id, mapping_revision_id, source_event_id, idempotency_key, content_hash, source_payload
+      ) VALUES (
+        ${params.integration.tenantId}::uuid, ${params.integration.id}::uuid,
+        ${params.integration.mappingRevisionId}::uuid, ${sourceEventID}, ${key}, ${contentHash},
+        ${tx.json(params.payload as JSONValue)}::jsonb
+      )
+      ON CONFLICT (tenant_id, integration_id, idempotency_key) DO NOTHING
+      RETURNING id
     `;
-    return { outcome: "rejected", sourceRecordId, reason };
-  }
+    const sourceRecordId = sourceRows[0]?.id;
+    if (!sourceRecordId) return { outcome: "duplicate" as const };
 
-  const canonicalAgentId = await resolveCanonicalEvidenceAgent({
-    tenantId: params.integration.tenantId,
-    workspaceId: params.integration.workspaceId,
-    providerType: params.integration.providerType,
-    externalAgentId: evidence.agentExternalId,
+    const evidence = params.evidence;
+    if (!evidence) {
+      const reason = params.rejectedReason ?? "The active mapping rejected this record.";
+      logger.warn("Generic evidence mapping rejected source record", {
+        integrationId: params.integration.id,
+        reason,
+      });
+      await tx`
+        UPDATE evidence_source_record
+        SET rejected_reason = ${reason}
+        WHERE id = ${sourceRecordId}::uuid
+      `;
+      return { outcome: "rejected" as const, sourceRecordId, reason };
+    }
+
+    const canonicalAgentRows = evidence.agentExternalId
+      ? await tx<{ canonical_agent_id: string }[]>`
+          SELECT canonical_agent_id
+          FROM agt_agent_surface_binding
+          WHERE tenant_id = ${params.integration.tenantId}::uuid
+            AND workspace_id = ${params.integration.workspaceId}::uuid
+            AND surface_type = ${`evidence:${params.integration.providerType}`}
+            AND surface_agent_id = ${evidence.agentExternalId}
+          LIMIT 1
+        `
+      : [];
+    const canonicalAgentId = canonicalAgentRows[0]?.canonical_agent_id ?? null;
+    // An external agent ID is provenance, not a correlation. Only a binding in
+    // the cross-surface identity registry resolves it to a canonical Spctre
+    // agent. An unbound external ID is deliberately shown as partial confidence.
+    const unresolved = !canonicalAgentId;
+    const correlationConfidence = canonicalAgentId ? 1 : evidence.agentExternalId ? 0.5 : 0;
+
+    const rows = await tx<{ id: string }[]>`
+      INSERT INTO canonical_evidence_event (
+        tenant_id, workspace_id, source_record_id, mapping_revision_id, provider_type,
+        source_event_id, occurred_at, received_at, principal_id, agent_external_id, canonical_agent_id,
+        action, target_resource, policy_reference, environment, enforcement_decision,
+        correlation_confidence, unresolved, source_attributes
+      ) VALUES (
+        ${params.integration.tenantId}::uuid, ${params.integration.workspaceId}::uuid,
+        ${sourceRecordId}::uuid, ${params.integration.mappingRevisionId}::uuid,
+        ${params.integration.providerType}, ${evidence.sourceEventId ?? null},
+        ${evidence.occurredAt}, now(), ${evidence.principalId ?? null},
+        ${evidence.agentExternalId ?? null}, ${canonicalAgentId}, ${evidence.action}, ${evidence.targetResource ?? null},
+        ${evidence.policyReference ?? null}, ${evidence.environment ?? null},
+        ${evidence.enforcementDecision}, ${correlationConfidence}, ${unresolved},
+        ${tx.json(evidence.sourceAttributes as JSONValue)}::jsonb
+      )
+      RETURNING id
+    `;
+    return {
+      outcome: "accepted" as const,
+      sourceRecordId,
+      canonicalEventId: rows[0]!.id,
+      evidence,
+    };
   });
-  // An external agent ID is provenance, not a correlation. Only a binding in
-  // the cross-surface identity registry resolves it to a canonical Spctre
-  // agent. An unbound external ID is deliberately shown as partial confidence.
-  const unresolved = !canonicalAgentId;
-  const correlationConfidence = canonicalAgentId ? 1 : evidence.agentExternalId ? 0.5 : 0;
-
-  const rows = await sql<{ id: string }[]>`
-    INSERT INTO canonical_evidence_event (
-      tenant_id, workspace_id, source_record_id, mapping_revision_id, provider_type,
-      source_event_id, occurred_at, received_at, principal_id, agent_external_id, canonical_agent_id,
-      action, target_resource, policy_reference, environment, enforcement_decision,
-      correlation_confidence, unresolved, source_attributes
-    ) VALUES (
-      ${params.integration.tenantId}::uuid, ${params.integration.workspaceId}::uuid,
-      ${sourceRecordId}::uuid, ${params.integration.mappingRevisionId}::uuid,
-      ${params.integration.providerType}, ${evidence.sourceEventId ?? null},
-      ${evidence.occurredAt}, now(), ${evidence.principalId ?? null},
-      ${evidence.agentExternalId ?? null}, ${canonicalAgentId}, ${evidence.action}, ${evidence.targetResource ?? null},
-      ${evidence.policyReference ?? null}, ${evidence.environment ?? null},
-      ${evidence.enforcementDecision}, ${correlationConfidence}, ${unresolved},
-      ${sql.json(evidence.sourceAttributes as JSONValue)}::jsonb
-    )
-    RETURNING id
-  `;
-  return { outcome: "accepted", sourceRecordId, canonicalEventId: rows[0]!.id, evidence };
-}
-
-async function resolveCanonicalEvidenceAgent(params: {
-  tenantId: string;
-  workspaceId: string;
-  providerType: GenericIntegration["providerType"];
-  externalAgentId: string | undefined;
-}): Promise<string | null> {
-  if (!params.externalAgentId) return null;
-  const rows = await sql<{ canonical_agent_id: string }[]>`
-    SELECT canonical_agent_id
-    FROM agt_agent_surface_binding
-    WHERE tenant_id = ${params.tenantId}::uuid
-      AND workspace_id = ${params.workspaceId}::uuid
-      AND surface_type = ${`evidence:${params.providerType}`}
-      AND surface_agent_id = ${params.externalAgentId}
-    LIMIT 1
-  `;
-  return rows[0]?.canonical_agent_id ?? null;
 }
