@@ -1037,15 +1037,9 @@ describe("GET /api/trust/history", () => {
 
 describe("POST /api/identity/event", () => {
   it("records a CREATED event", async () => {
-    const req = new Request("http://localhost:3000/api/identity/event", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        principalId: "user-prov-1",
-        eventType: "CREATED",
-        source: "ADMIN",
-        detail: {},
-      }),
+    const req = createRouteRequest({
+      path: "/api/identity/event",
+      body: { principalId: "user-prov-1", eventType: "CREATED", source: "ADMIN", detail: {} },
     });
 
     const res = await identityEventPost(req);
@@ -1053,10 +1047,9 @@ describe("POST /api/identity/event", () => {
   });
 
   it("records AGT v4.1.0 signature verification fields", async () => {
-    const req = new Request("http://localhost:3000/api/identity/event", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+    const req = createRouteRequest({
+      path: "/api/identity/event",
+      body: {
         principalId: "agent:route-1",
         eventType: "CREATED",
         source: "SYSTEM",
@@ -1068,7 +1061,7 @@ describe("POST /api/identity/event", () => {
         signature: "ed25519:signature",
         signatureVerificationOutcome: "PASS",
         signatureVerifiedAt: "2026-06-10T00:00:00.000Z",
-      }),
+      },
     });
 
     const res = await identityEventPost(req);
@@ -1076,10 +1069,9 @@ describe("POST /api/identity/event", () => {
   });
 
   it("rejects invalid eventType", async () => {
-    const req = new Request("http://localhost:3000/api/identity/event", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ principalId: "user-bad", eventType: "INVALID_TYPE", source: "ADMIN" }),
+    const req = createRouteRequest({
+      path: "/api/identity/event",
+      body: { principalId: "user-bad", eventType: "INVALID_TYPE", source: "ADMIN" },
     });
 
     const res = await identityEventPost(req);
@@ -1087,10 +1079,9 @@ describe("POST /api/identity/event", () => {
   });
 
   it("requires principalId", async () => {
-    const req = new Request("http://localhost:3000/api/identity/event", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ eventType: "CREATED", source: "ADMIN" }),
+    const req = createRouteRequest({
+      path: "/api/identity/event",
+      body: { eventType: "CREATED", source: "ADMIN" },
     });
 
     const res = await identityEventPost(req);
@@ -1102,7 +1093,7 @@ describe("POST /api/identity/event", () => {
 
 describe("GET /api/identity/events", () => {
   it("returns 200 with events array", async () => {
-    const req = new Request("http://localhost:3000/api/identity/events");
+    const req = createRouteRequest({ path: "/api/identity/events", method: "GET" });
     const res = await identityEventsGet(req);
     expect(res.status).toBe(200);
 
