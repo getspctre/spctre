@@ -1,4 +1,5 @@
 import { vi } from "vitest";
+import { createRouteRequest } from "./route-test-helper";
 import { handleValidationSelect } from "./sql-mock-helper";
 
 const DEMO_TOKEN = "demo-token-for-tests";
@@ -61,11 +62,7 @@ export function buildEvidenceRequest(
     ...overrides,
   };
 
-  return new Request("http://localhost:3000/api/evidence", {
-    method: "POST",
-    headers,
-    body: JSON.stringify(body),
-  });
+  return createRouteRequest({ path: "/api/evidence", body, headers });
 }
 
 export function findDedupTelemetry(consoleSpy: {

@@ -1,19 +1,20 @@
 import { randomUUID } from "crypto";
-import { afterEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
+import { createTestTenantFixture } from "./test-db-fixtures";
 
 const databaseAvailable = Boolean(process.env.DATABASE_URL);
 const { rawSql, runWithTenantContext } = await import("../lib/db");
 const { requestCommercialReview } = await import("../lib/repositories/workspace");
 
-const tenantIds: string[] = [];
+const testTenants = createTestTenantFixture();
 
 async function createFixture() {
-  if (!rawSql) throw new Error("DATABASE_URL is required for repository contract tests.");
-  const tenantId = randomUUID();
+  const tenantId = await testTenants.create({
+    slugPrefix: "test-commercial",
+    name: "Commercial test",
+  });
   const workspaceId = randomUUID();
   const principalId = randomUUID();
-  tenantIds.push(tenantId);
-  await rawSql`INSERT INTO tenant (id, slug, name) VALUES (${tenantId}, ${`test-commercial-${tenantId}`}, 'Commercial test')`;
   await rawSql`INSERT INTO workspace (id, tenant_id, slug, name) VALUES (${workspaceId}, ${tenantId}, 'test', 'Test workspace')`;
   await rawSql`
     INSERT INTO app_principal (id, tenant_id, subject, display_name, principal_type)
@@ -21,13 +22,6 @@ async function createFixture() {
   `;
   return { tenantId, workspaceId, principalId };
 }
-
-afterEach(async () => {
-  if (!rawSql) return;
-  await Promise.all(
-    tenantIds.splice(0).map((tenantId) => rawSql`DELETE FROM tenant WHERE id = ${tenantId}`),
-  );
-});
 
 describe.skipIf(!databaseAvailable)("commercial review repository contract", () => {
   it("creates a Hosted Trial review profile and durable commercial/audit records", async () => {

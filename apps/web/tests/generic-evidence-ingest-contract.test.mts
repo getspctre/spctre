@@ -1,12 +1,14 @@
 import { createHash, randomUUID } from "crypto";
-import { afterEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
+import { createRouteRequest } from "./route-test-helper";
+import { createTestTenantFixture } from "./test-db-fixtures";
 
 const databaseAvailable = Boolean(process.env.DATABASE_URL);
 const { rawSql } = await import("../lib/db");
 const { POST } = await import("../app/api/v1/ingest/providers/generic_json/route");
 
 type Fixture = { tenantId: string; workspaceId: string; principalId: string };
-const tenantIds: string[] = [];
+const testTenants = createTestTenantFixture();
 
 function hashToken(token: string) {
   return createHash("sha256").update(token).digest("hex");
@@ -14,9 +16,11 @@ function hashToken(token: string) {
 
 async function createFixture(): Promise<Fixture> {
   if (!rawSql) throw new Error("DATABASE_URL is required for generic evidence contract tests.");
-  const fixture = { tenantId: randomUUID(), workspaceId: randomUUID(), principalId: randomUUID() };
-  tenantIds.push(fixture.tenantId);
-  await rawSql`INSERT INTO tenant (id, slug, name) VALUES (${fixture.tenantId}, ${`test-evidence-${fixture.tenantId}`}, 'Evidence test')`;
+  const fixture = {
+    tenantId: await testTenants.create({ slugPrefix: "test-evidence", name: "Evidence test" }),
+    workspaceId: randomUUID(),
+    principalId: randomUUID(),
+  };
   await rawSql`INSERT INTO workspace (id, tenant_id, slug, name) VALUES (${fixture.workspaceId}, ${fixture.tenantId}, 'evidence', 'Evidence')`;
   await rawSql`
     INSERT INTO app_principal (id, tenant_id, subject, display_name, principal_type)
@@ -46,22 +50,13 @@ async function createIntegration(fixture: Fixture, mapping: unknown) {
 }
 
 function request(token: string, integrationId: string, body: Record<string, unknown>) {
-  return new Request("http://localhost:3000/api/v1/ingest/providers/generic_json", {
-    method: "POST",
-    headers: {
-      authorization: `Bearer ${token}`,
-      "content-type": "application/json",
-      "x-spctre-integration-id": integrationId,
-    },
-    body: JSON.stringify(body),
+  return createRouteRequest({
+    path: "/api/v1/ingest/providers/generic_json",
+    token,
+    body,
+    headers: { "x-spctre-integration-id": integrationId },
   });
 }
-
-afterEach(async () => {
-  if (!rawSql) return;
-  for (const tenantId of tenantIds.splice(0))
-    await rawSql`DELETE FROM tenant WHERE id = ${tenantId}`;
-});
 
 describe.skipIf(!databaseAvailable)("generic evidence ingest contract", () => {
   const mapping = { occurred_at: "$.timestamp", action: "$.action", source_event_id: "$.id" };
