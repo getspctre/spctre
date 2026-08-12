@@ -4,6 +4,7 @@ import { incrementCounter } from "@spctre/platform/metrics";
 import { withSpan } from "@spctre/platform/tracing";
 
 type Span = Parameters<Parameters<typeof withSpan>[2]>[0];
+type NextRouteContext = { params: Promise<unknown> };
 
 export interface ApiRouteContext {
   traceId: string;
@@ -25,13 +26,13 @@ export interface ApiRouteContext {
  * The span is named api.<segments> from the route path
  * (e.g. /api/gateway/decide -> api.gateway.decide).
  */
-export function withApiRoute<TContext = undefined>(
+export function withApiRoute<TContext = NextRouteContext>(
   route: string,
   handler: (request: Request, ctx: ApiRouteContext, routeContext: TContext) => Promise<Response>,
-): (request: Request, routeContext?: TContext) => Promise<Response> {
+): (request: Request, routeContext: TContext) => Promise<Response> {
   const spanName = route.replace(/^\//, "").replaceAll("/", ".");
 
-  return async (request: Request, routeContext?: TContext) => {
+  return async (request: Request, routeContext: TContext) => {
     const traceId = extractTraceId(request);
     return withSpan(
       spanName,
@@ -56,7 +57,7 @@ export function withApiRoute<TContext = undefined>(
         };
 
         try {
-          return await handler(request, ctx, routeContext as TContext);
+          return await handler(request, ctx, routeContext);
         } catch (err) {
           logger.error(`[${route}] unhandled error:`, {
             error: err instanceof Error ? err.message : String(err),
