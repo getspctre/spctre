@@ -1,6 +1,6 @@
 {
   "name": "@spctre/sdk",
-  "version": "0.4.2",
+  "version": "0.5.0",
   "description": "Official TypeScript SDK for the Spctre API",
   "license": "Apache-2.0",
   "homepage": "https://github.com/getspctre/spctre/tree/main/packages/sdk#readme",
