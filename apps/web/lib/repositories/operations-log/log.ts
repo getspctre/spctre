@@ -1,6 +1,7 @@
 import { logger } from "@spctre/platform/logging";
 import type { JSONValue } from "postgres";
 import { sql, rawSql } from "@/lib/db";
+import type { TxClient } from "@/lib/db";
 import { isRecord } from "@/lib/records";
 import type { KeysetCursor } from "@/lib/pagination/keyset";
 import { buildOperationsContentHash, validateOperationsLogChain } from "@spctre/policy-schema";
@@ -21,51 +22,64 @@ export async function appendOperationsLog(params: {
 }): Promise<void> {
   if (!sql) return;
   try {
-    // Serialize per-tenant appends through the chain-head row: the upsert takes
-    // a row lock so concurrent appends can't read the same prev_hash and fork
-    // the chain, and last_hash gives an O(1) prev-hash read. Mirrors the
-    // worker's evidence-chain fix. See concurrency-and-memory-audit finding 2.
-    await sql.begin(async (tx) => {
-      const headRows = await tx<{ last_hash: string | null }[]>`
+    await sql.begin((tx) => appendOperationsLogInTransaction(tx, params));
+  } catch (err) {
+    logger.error("[operations_log] append failed (non-fatal):", {
+      error: err instanceof Error ? err.message : String(err),
+    });
+  }
+}
+
+export async function appendOperationsLogInTransaction(
+  tx: TxClient,
+  params: {
+    tenantId: string;
+    workspaceId?: string;
+    eventType: OperationsLogEventType;
+    sourceId?: string;
+    sourceTable?: string;
+    actorId: string | null;
+    payload: Record<string, unknown>;
+  },
+): Promise<void> {
+  // Serialize per-tenant appends through the chain-head row: the upsert takes
+  // a row lock so concurrent appends can't read the same prev_hash and fork
+  // the chain, and last_hash gives an O(1) prev-hash read. Mirrors the
+  // worker's evidence-chain fix. See concurrency-and-memory-audit finding 2.
+  const headRows = await tx<{ last_hash: string | null }[]>`
         INSERT INTO agt_operations_log_chain_head (tenant_id, last_hash)
         VALUES (${params.tenantId}, NULL)
         ON CONFLICT (tenant_id) DO UPDATE SET updated_at = now()
         RETURNING last_hash
       `;
-      const prevHash = headRows[0]?.last_hash ?? null;
+  const prevHash = headRows[0]?.last_hash ?? null;
 
-      const contentHash = buildOperationsContentHash({
-        eventType: params.eventType,
-        sourceId: params.sourceId ?? null,
-        sourceTable: params.sourceTable ?? null,
-        actorId: params.actorId ?? "",
-        payload: params.payload,
-        prevHash,
-      });
+  const contentHash = buildOperationsContentHash({
+    eventType: params.eventType,
+    sourceId: params.sourceId ?? null,
+    sourceTable: params.sourceTable ?? null,
+    actorId: params.actorId ?? "",
+    payload: params.payload,
+    prevHash,
+  });
 
-      await tx`
+  await tx`
         INSERT INTO agt_operations_log (
           tenant_id, workspace_id, event_type, source_id, source_table,
           actor_id, payload, content_hash, prev_hash
         ) VALUES (
           ${params.tenantId}, ${params.workspaceId ?? null}, ${params.eventType},
           ${params.sourceId ?? null}, ${params.sourceTable ?? null},
-          ${params.actorId ?? ""}, ${sql.json(params.payload as JSONValue)}::jsonb,
+          ${params.actorId ?? ""}, ${tx.json(params.payload as JSONValue)}::jsonb,
           ${contentHash}, ${prevHash}
         )
       `;
 
-      await tx`
+  await tx`
         UPDATE agt_operations_log_chain_head
         SET last_hash = ${contentHash}, updated_at = now()
         WHERE tenant_id = ${params.tenantId}
-      `;
-    });
-  } catch (err) {
-    logger.error("[operations_log] append failed (non-fatal):", {
-      error: err instanceof Error ? err.message : String(err),
-    });
-  }
+  `;
 }
 
 type OperationsLogDbRow = {

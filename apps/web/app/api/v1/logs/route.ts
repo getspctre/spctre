@@ -1,13 +1,12 @@
 import {
   authorizeEvidenceIngest,
-  error,
   handleGenericRecords,
   readJsonRecord,
 } from "@/app/api/ingest/_shared";
-import { extractTraceId } from "@spctre/api-contracts";
 import { isRecord } from "@/lib/records";
+import { withApiRoute } from "@/lib/platform/api-route";
 export const dynamic = "force-dynamic";
-export async function POST(request: Request) {
+const handlePostOtlpLogs = withApiRoute("/api/v1/logs", async (request, ctx) => {
   const authorization = await authorizeEvidenceIngest(request);
   if (authorization instanceof Response) return authorization;
   const payload = await readJsonRecord(request);
@@ -33,5 +32,7 @@ export async function POST(request: Request) {
         providerType: "otlp_logs",
         records,
       })
-    : error("OTLP payload contains no log records.", 400, extractTraceId(request));
-}
+    : ctx.error(400, "OTLP payload contains no log records.");
+});
+
+export { handlePostOtlpLogs as POST };

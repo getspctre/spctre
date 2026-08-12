@@ -1413,6 +1413,21 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description Compressed evidence payloads are not supported. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Evidence ingest rate limit exceeded. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            503: components["responses"]["ServiceUnavailable"];
         };
     };
     ingestGenericNdjsonEvidence: {
@@ -1461,6 +1476,21 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description Compressed evidence payloads are not supported. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Evidence ingest rate limit exceeded. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            503: components["responses"]["ServiceUnavailable"];
         };
     };
     ingestCloudEventEvidence: {
@@ -1511,6 +1541,21 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description Compressed evidence payloads are not supported. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Evidence ingest rate limit exceeded. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            503: components["responses"]["ServiceUnavailable"];
         };
     };
     ingestOtlpLogs: {
@@ -1561,6 +1606,21 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description Compressed evidence payloads are not supported. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Evidence ingest rate limit exceeded. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            503: components["responses"]["ServiceUnavailable"];
         };
     };
     ingestEvidence: {

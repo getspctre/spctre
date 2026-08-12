@@ -119,4 +119,20 @@ describe.skipIf(!databaseAvailable)("generic evidence ingest contract", () => {
 
     expect(response.status).toBe(404);
   });
+
+  it("returns 404 when a same-tenant evidence token does not own the integration", async () => {
+    const fixture = await createFixture();
+    const owner = await createIntegration(fixture, mapping);
+    const otherToken = await createIntegration(fixture, mapping);
+
+    const response = await POST(
+      request(otherToken.token, owner.integrationId, {
+        id: "same-tenant-foreign-1",
+        timestamp: "2026-08-12T12:00:00Z",
+        action: "filesystem.write",
+      }),
+    );
+
+    expect(response.status).toBe(404);
+  });
 });

@@ -3,6 +3,7 @@ import type { TxClient } from "@/lib/db";
 import { logger } from "@spctre/platform/logging";
 import { issueServiceAccountKeyInTransaction } from "@/lib/service-tokens";
 import { sql } from "@/lib/db";
+import { appendOperationsLogInTransaction } from "@/lib/repositories/operations-log";
 import {
   sourceContentHash,
   sourceIdempotencyKey,
@@ -129,18 +130,6 @@ export async function listEvidenceIntegrations(params: {
   `;
 }
 
-export async function createEvidenceIntegration(params: {
-  tenantId: string;
-  workspaceId: string;
-  serviceTokenId: string;
-  name: string;
-  providerType: GenericIntegration["providerType"];
-  fieldMapping: unknown;
-}): Promise<EvidenceIntegrationSummary> {
-  if (!sql) throw new Error("Database not configured.");
-  return sql.begin((tx) => createEvidenceIntegrationInTransaction(tx, params));
-}
-
 export async function createEvidenceIntegrationInTransaction(
   tx: TxClient,
   params: {
@@ -178,7 +167,7 @@ export async function createEvidenceIntegrationInTransaction(
   };
 }
 
-export async function createEvidenceIntegrationSetup(params: {
+export async function createEvidenceIntegrationWithToken(params: {
   tenantId: string;
   workspaceId: string;
   principalId: string;
@@ -255,6 +244,7 @@ export async function persistGenericEvidence(params: {
   payload: Record<string, unknown>;
   evidence: NormalizedGenericEvidence | null;
   rejectedReason: string | null;
+  actorId: string;
 }): Promise<
   | {
       outcome: "accepted";
@@ -336,6 +326,22 @@ export async function persistGenericEvidence(params: {
       )
       RETURNING id
     `;
+    await appendOperationsLogInTransaction(tx, {
+      tenantId: params.integration.tenantId,
+      workspaceId: params.integration.workspaceId,
+      eventType: "EVIDENCE_INGEST",
+      sourceId: rows[0]!.id,
+      sourceTable: "canonical_evidence_event",
+      actorId: params.actorId,
+      payload: {
+        integrationId: params.integration.id,
+        mappingVersion: params.integration.mappingVersion,
+        sourceRecordId,
+        sourceEventId: evidence.sourceEventId,
+        action: evidence.action,
+        enforcementDecision: evidence.enforcementDecision,
+      },
+    });
     return {
       outcome: "accepted" as const,
       sourceRecordId,

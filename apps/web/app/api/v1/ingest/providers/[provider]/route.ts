@@ -28,8 +28,7 @@ const handlePostManagedProvider = withApiRoute<{ params: Promise<{ provider: str
     if (!providers.has(provider as ManagedProvider))
       return error("Unknown managed evidence provider.", 404, traceId);
     const payload = await readJsonRecord(request);
-    if (payload instanceof Response)
-      return error("Request body must be a JSON object.", 400, traceId);
+    if (payload instanceof Response) return payload;
     return handleGenericRecords({
       request,
       auth: authorization.auth,

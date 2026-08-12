@@ -2128,6 +2128,15 @@
           },
           "413": {
             "description": "Request exceeds the receiver limit."
+          },
+          "415": {
+            "description": "Compressed evidence payloads are not supported."
+          },
+          "429": {
+            "description": "Evidence ingest rate limit exceeded."
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceUnavailable"
           }
         }
       }
@@ -2187,6 +2196,15 @@
           },
           "413": {
             "description": "Request exceeds the receiver limit."
+          },
+          "415": {
+            "description": "Compressed evidence payloads are not supported."
+          },
+          "429": {
+            "description": "Evidence ingest rate limit exceeded."
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceUnavailable"
           }
         }
       }
@@ -2247,6 +2265,15 @@
           },
           "413": {
             "description": "Request exceeds the receiver limit."
+          },
+          "415": {
+            "description": "Compressed evidence payloads are not supported."
+          },
+          "429": {
+            "description": "Evidence ingest rate limit exceeded."
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceUnavailable"
           }
         }
       }
@@ -2307,6 +2334,15 @@
           },
           "413": {
             "description": "Request exceeds the receiver limit."
+          },
+          "415": {
+            "description": "Compressed evidence payloads are not supported."
+          },
+          "429": {
+            "description": "Evidence ingest rate limit exceeded."
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceUnavailable"
           }
         }
       }

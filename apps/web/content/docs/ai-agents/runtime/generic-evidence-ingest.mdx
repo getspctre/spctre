@@ -53,6 +53,9 @@ specific exporter endpoint ending in `/api`, which resolves to `/api/v1/logs`.
 Batch responses contain a result for every NDJSON or OTLP log record. A bad
 record does not prevent unrelated records from being ingested; a partial batch
 returns `207 Multi-Status`. Requests are capped at 1 MiB and 500 records.
+Compressed payloads are not accepted (`415`). Receivers apply both an IP
+pre-auth guard and a per-token limit; respect `429` responses and their
+`Retry-After` header. A receiver without its database returns `503`.
 
 Source delivery is at-least-once. When the active mapping resolves a source
 event ID, that ID is the idempotency key (`source:<sourceEventId>`). A retry

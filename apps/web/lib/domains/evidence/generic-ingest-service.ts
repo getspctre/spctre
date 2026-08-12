@@ -1,4 +1,3 @@
-import { appendOperationsLog } from "@/lib/repositories/operations-log";
 import { evidenceIngestUrl, workerInternalSecret } from "@/lib/platform/config";
 import { fetchWithRetry } from "@/lib/platform/fetch-retry";
 import { reportSwallowedError } from "@/lib/platform/swallow";
@@ -59,9 +58,8 @@ export async function ingestGenericEvidenceBatch(params: {
           payload: params.payloads[index]!,
           evidence: normalized[index]!.evidence,
           rejectedReason: normalized[index]!.rejectedReason,
+          actorId: params.actorId,
         });
-        if (result.outcome === "accepted")
-          await appendFallbackOperationsLog(params, integration, result);
       } catch (error) {
         reportSwallowedError("ingestGenericEvidenceBatch.persist", error, {
           integrationId: integration.id,
@@ -186,31 +184,6 @@ function workerResult(result: WorkerResult, normalized: NormalizedEvidence) {
       reason: result.reason,
     };
   throw new Error("Worker generic evidence ingest returned an invalid response.");
-}
-
-async function appendFallbackOperationsLog(
-  params: { tenantId: string; actorId: string },
-  integration: GenericIntegration,
-  result: { sourceRecordId: string; canonicalEventId: string; evidence: NormalizedGenericEvidence },
-) {
-  // The worker writes this event in its persistence transaction. This fallback
-  // must await its post-commit append so audit failures cannot be silent.
-  await appendOperationsLog({
-    tenantId: params.tenantId,
-    workspaceId: integration.workspaceId,
-    eventType: "EVIDENCE_INGEST",
-    sourceId: result.canonicalEventId,
-    sourceTable: "canonical_evidence_event",
-    actorId: params.actorId,
-    payload: {
-      integrationId: integration.id,
-      mappingVersion: integration.mappingVersion,
-      sourceRecordId: result.sourceRecordId,
-      sourceEventId: result.evidence.sourceEventId,
-      action: result.evidence.action,
-      enforcementDecision: result.evidence.enforcementDecision,
-    },
-  });
 }
 
 type NormalizedEvidence = {

@@ -12,6 +12,7 @@ import { createHash } from "node:crypto";
 export const MAX_REQUEST_BYTES = 1_048_576;
 export const MAX_RECORDS_PER_REQUEST = 500;
 const evidenceRateLimit = 120;
+const evidenceIpRateLimit = 240;
 const evidenceRateWindowSeconds = 60;
 export type GenericProviderType =
   | "generic_json"
@@ -26,22 +27,12 @@ export async function authorizeEvidenceIngest(
   request: Request,
 ): Promise<{ auth: ServiceTokenAuth } | Response> {
   const traceId = extractTraceId(request);
+  const ipRateLimit = await checkEvidenceRateLimit(request, "ip", evidenceIpRateLimit);
+  if (!ipRateLimit.allowed) return rateLimitResponse(traceId, ipRateLimit.retryAfterSeconds);
   const auth = await authenticateServiceToken(request, "evidence:write");
-  // Never use a caller-controlled bearer value as a bucket key. Valid callers
-  // are stable by token ID; invalid callers share an IP-based bucket.
-  const rateLimit = await checkEvidenceRateLimit(request, auth.ok ? auth.auth.tokenId : undefined);
-  if (!rateLimit.allowed)
-    return withTraceId(
-      Response.json(
-        {
-          error: "Too many evidence records. Retry after the indicated delay.",
-          meta: makeMeta(traceId),
-        },
-        { status: 429, headers: { "Retry-After": String(rateLimit.retryAfterSeconds) } },
-      ),
-      traceId,
-    );
   if (!auth.ok) return error("Missing or invalid service token.", 401, traceId);
+  const tokenRateLimit = await checkEvidenceRateLimit(request, `token:${auth.auth.tokenId}`);
+  if (!tokenRateLimit.allowed) return rateLimitResponse(traceId, tokenRateLimit.retryAfterSeconds);
   return { auth: auth.auth };
 }
 
@@ -116,14 +107,31 @@ export async function handleGenericRecords(params: {
   );
 }
 
-async function checkEvidenceRateLimit(request: Request, tokenId?: string) {
+function rateLimitResponse(traceId: string, retryAfterSeconds: number) {
+  return withTraceId(
+    Response.json(
+      {
+        error: "Too many evidence records. Retry after the indicated delay.",
+        meta: makeMeta(traceId),
+      },
+      { status: 429, headers: { "Retry-After": String(retryAfterSeconds) } },
+    ),
+    traceId,
+  );
+}
+
+async function checkEvidenceRateLimit(
+  request: Request,
+  identity: string,
+  limit = evidenceRateLimit,
+) {
   const clientAddress =
     request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "anonymous";
-  const identity = tokenId ? `token:${tokenId}` : `ip:${clientAddress}`;
-  const digest = createHash("sha256").update(identity).digest("hex").slice(0, 32);
+  const bucketIdentity = identity === "ip" ? `ip:${clientAddress}` : identity;
+  const digest = createHash("sha256").update(bucketIdentity).digest("hex").slice(0, 32);
   return checkAuthRateLimit({
     key: `evidence-ingest:${digest}`,
-    limit: evidenceRateLimit,
+    limit,
     windowSeconds: evidenceRateWindowSeconds,
   });
 }

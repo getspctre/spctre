@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS public.evidence_ingest_integration (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id uuid NOT NULL REFERENCES public.tenant(id) ON DELETE CASCADE,
   workspace_id uuid NOT NULL REFERENCES public.workspace(id) ON DELETE CASCADE,
-  service_token_id uuid NOT NULL REFERENCES public.service_token(id) ON DELETE CASCADE,
+  service_token_id uuid NOT NULL REFERENCES public.service_token(id) ON DELETE RESTRICT,
   provider_type text NOT NULL CHECK (
     provider_type IN (
       'generic_json', 'generic_ndjson', 'cloudevents', 'otlp_logs',

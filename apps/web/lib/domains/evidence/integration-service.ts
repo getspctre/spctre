@@ -1,6 +1,6 @@
 import { appendOperationsLog } from "@/lib/repositories/operations-log";
 import {
-  createEvidenceIntegrationSetup as createEvidenceIntegrationSetupRecord,
+  createEvidenceIntegrationWithToken,
   getGenericEvidenceCoverage,
   listEvidenceIntegrations,
   listGenericEvidenceProvenance,
@@ -37,7 +37,7 @@ export async function createEvidenceIntegrationSetup(params: {
 }) {
   const mapping = validateEvidenceMapping(params.fieldMapping);
   return runWithTenantContext(params.tenantId, async () => {
-    const { key, integration } = await createEvidenceIntegrationSetupRecord({
+    const { key, integration } = await createEvidenceIntegrationWithToken({
       ...params,
       fieldMapping: mapping,
     });
