@@ -7,7 +7,12 @@ CREATE TABLE IF NOT EXISTS public.evidence_ingest_integration (
   tenant_id uuid NOT NULL REFERENCES public.tenant(id) ON DELETE CASCADE,
   workspace_id uuid NOT NULL REFERENCES public.workspace(id) ON DELETE CASCADE,
   service_token_id uuid NOT NULL REFERENCES public.service_token(id) ON DELETE CASCADE,
-  provider_type text NOT NULL CHECK (provider_type IN ('generic_json', 'generic_ndjson', 'cloudevents', 'otlp_logs')),
+  provider_type text NOT NULL CHECK (
+    provider_type IN (
+      'generic_json', 'generic_ndjson', 'cloudevents', 'otlp_logs',
+      'bedrock_agentcore', 'docker_ai_governance', 'langsmith'
+    )
+  ),
   name text NOT NULL,
   active boolean NOT NULL DEFAULT true,
   created_at timestamptz NOT NULL DEFAULT now(),
@@ -59,6 +64,7 @@ CREATE TABLE IF NOT EXISTS public.canonical_evidence_event (
   received_at timestamptz NOT NULL,
   principal_id text,
   agent_external_id text,
+  canonical_agent_id text,
   action text NOT NULL,
   target_resource text,
   policy_reference text,
@@ -75,6 +81,10 @@ CREATE INDEX IF NOT EXISTS canonical_evidence_event_tenant_time_idx
 
 CREATE INDEX IF NOT EXISTS canonical_evidence_event_workspace_time_idx
   ON public.canonical_evidence_event (tenant_id, workspace_id, occurred_at DESC);
+
+CREATE INDEX IF NOT EXISTS canonical_evidence_event_canonical_agent_idx
+  ON public.canonical_evidence_event (tenant_id, workspace_id, canonical_agent_id, occurred_at DESC)
+  WHERE canonical_agent_id IS NOT NULL;
 
 ALTER TABLE public.evidence_ingest_integration ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.evidence_ingest_mapping_revision ENABLE ROW LEVEL SECURITY;
