@@ -12,6 +12,7 @@
  */
 
 import { describe, expect, it, vi, beforeEach } from "vitest";
+import { createRouteRequest } from "./route-test-helper";
 import { buildOperationsContentHash } from "@spctre/policy-schema";
 import { isRecord } from "../lib/records";
 
@@ -867,7 +868,7 @@ describe("GET /api/operations", () => {
       created_at: new Date(),
     });
 
-    const req = new Request("http://localhost:3000/api/operations");
+    const req = createRouteRequest({ path: "/api/operations", method: "GET" });
     const res = await operationsGet(req);
     expect(res.status).toBe(200);
 
@@ -878,13 +879,16 @@ describe("GET /api/operations", () => {
   });
 
   it("respects limit query param", async () => {
-    const req = new Request("http://localhost:3000/api/operations?limit=5");
+    const req = createRouteRequest({ path: "/api/operations?limit=5", method: "GET" });
     const res = await operationsGet(req);
     expect(res.status).toBe(200);
   });
 
   it("respects eventType filter", async () => {
-    const req = new Request("http://localhost:3000/api/operations?eventType=POLICY_PUBLISH");
+    const req = createRouteRequest({
+      path: "/api/operations?eventType=POLICY_PUBLISH",
+      method: "GET",
+    });
     const res = await operationsGet(req);
     expect(res.status).toBe(200);
   });
@@ -908,7 +912,7 @@ describe("GET /api/operations/verify", () => {
       }),
     );
 
-    const req = new Request("http://localhost:3000/api/operations/verify");
+    const req = createRouteRequest({ path: "/api/operations/verify", method: "GET" });
     const res = await chainVerifyGet(req);
     expect(res.status).toBe(200);
 
@@ -932,7 +936,7 @@ describe("GET /api/operations/verify", () => {
       }),
     );
 
-    const req = new Request("http://localhost:3000/api/operations/verify");
+    const req = createRouteRequest({ path: "/api/operations/verify", method: "GET" });
     const res = await chainVerifyGet(req);
     expect(res.status).toBe(409);
 
