@@ -3,7 +3,7 @@
 // These live outside proxy.ts so the invariant between them can be asserted in
 // a test: the proxy applies two independent gates, and an endpoint excused from
 // one but not the other fails in a way that looks like it was handled. That
-// mistake has been made three times — the Paddle billing webhook, the internal
+// mistake has been made three times — the billing webhook, the internal
 // provisioning API, and once more before it — so the relationship is encoded
 // here rather than left to reviewers to notice.
 //
@@ -47,7 +47,6 @@ export const SERVICE_API_PATHS = new Set([
   "/api/v1/blueprint/imports",
   "/api/compliance/seal",
   "/api/internal/provisioning/tenant",
-  "/api/billing/paddle/webhook",
   "/api/token/refresh",
   "/api/v1/token/refresh",
   "/api/token/revoke",
@@ -71,10 +70,24 @@ export const SERVICE_API_PATH_PREFIXES = [
 //
 // Every entry must also be reachable past the session gate, which is what
 // `proxy-path-invariants.test.mts` enforces.
-export const SELF_AUTHENTICATING_PATHS = new Set([
-  "/api/billing/paddle/webhook",
-  "/api/internal/provisioning/tenant",
-]);
+export const SELF_AUTHENTICATING_PATHS = new Set(["/api/internal/provisioning/tenant"]);
+
+/**
+ * The inbound billing webhook, whose path carries the provider as a segment
+ * because verifying a delivery is a commercial slot's job.
+ *
+ * One constant, referenced by both gates, so the pair cannot drift: an endpoint
+ * excused from the source-IP allowlist but stranded behind the session gate
+ * fails in a way that looks handled. Matching is anchored — `/webhook` must end
+ * the path — so no sibling billing route inherits the exemption.
+ */
+export const BILLING_WEBHOOK_PATH = /^\/api\/billing\/[a-z0-9-]{1,32}\/webhook$/;
+
+/** Path families reachable past the session gate, matched by pattern. */
+export const SERVICE_API_PATH_PATTERNS = [BILLING_WEBHOOK_PATH];
+
+/** Path families excused from the source-IP allowlist, matched by pattern. */
+export const SELF_AUTHENTICATING_PATH_PATTERNS = [BILLING_WEBHOOK_PATH];
 
 // Always reachable, so an unhealthy deployment can still be diagnosed.
 export const HEALTH_PATHS = new Set(["/api/health", "/api/ready"]);

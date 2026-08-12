@@ -1,3 +1,4 @@
+export type { BillingLifecycleEvent } from "@/lib/repositories/workspace/commercial";
 export {
   getCommercialProfileWithContext,
   normalizeCommercialPlanCode,
