@@ -1,4 +1,5 @@
 import type { JSONValue } from "postgres";
+import type { TxClient } from "@/lib/db";
 import { logger } from "@spctre/platform/logging";
 import { sql } from "@/lib/db";
 import {
@@ -136,8 +137,21 @@ export async function createEvidenceIntegration(params: {
   fieldMapping: unknown;
 }): Promise<EvidenceIntegrationSummary> {
   if (!sql) throw new Error("Database not configured.");
-  const rows = await sql.begin(async (tx) => {
-    const integration = await tx<{ id: string; created_at: Date }[]>`
+  return sql.begin((tx) => createEvidenceIntegrationInTransaction(tx, params));
+}
+
+export async function createEvidenceIntegrationInTransaction(
+  tx: TxClient,
+  params: {
+    tenantId: string;
+    workspaceId: string;
+    serviceTokenId: string;
+    name: string;
+    providerType: GenericIntegration["providerType"];
+    fieldMapping: unknown;
+  },
+): Promise<EvidenceIntegrationSummary> {
+  const integration = await tx<{ id: string; created_at: Date }[]>`
       INSERT INTO evidence_ingest_integration
         (tenant_id, workspace_id, service_token_id, provider_type, name)
       VALUES (
@@ -145,7 +159,7 @@ export async function createEvidenceIntegration(params: {
         ${params.serviceTokenId}::uuid, ${params.providerType}, ${params.name}
       ) RETURNING id, created_at
     `;
-    const mapping = await tx<{ version: number }[]>`
+  const mapping = await tx<{ version: number }[]>`
       INSERT INTO evidence_ingest_mapping_revision
         (tenant_id, integration_id, version, field_mapping, activated_at)
       VALUES (
@@ -153,19 +167,13 @@ export async function createEvidenceIntegration(params: {
         ${tx.json(params.fieldMapping as JSONValue)}::jsonb, now()
       ) RETURNING version
     `;
-    return {
-      id: integration[0]!.id,
-      version: mapping[0]!.version,
-      createdAt: integration[0]!.created_at,
-    };
-  });
   return {
-    id: rows.id,
+    id: integration[0]!.id,
     name: params.name,
     providerType: params.providerType,
-    mappingVersion: rows.version,
+    mappingVersion: mapping[0]!.version,
     active: true,
-    createdAt: rows.createdAt.toISOString(),
+    createdAt: integration[0]!.created_at.toISOString(),
   };
 }
 

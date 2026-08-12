@@ -1,12 +1,13 @@
-import { issueServiceAccountKey } from "@/lib/service-tokens";
+import { issueServiceAccountKeyInTransaction } from "@/lib/service-tokens";
 import { appendOperationsLog } from "@/lib/repositories/operations-log";
 import {
-  createEvidenceIntegration,
+  createEvidenceIntegrationInTransaction,
   getGenericEvidenceCoverage,
   listEvidenceIntegrations,
   listGenericEvidenceProvenance,
   type GenericIntegration,
 } from "@/lib/repositories/evidence";
+import { sql } from "@/lib/db";
 import { runWithTenantContext } from "@/lib/tenant-context";
 import { validateEvidenceMapping } from "./generic-mapping";
 
@@ -38,18 +39,22 @@ export async function createEvidenceIntegrationSetup(params: {
 }) {
   const mapping = validateEvidenceMapping(params.fieldMapping);
   return runWithTenantContext(params.tenantId, async () => {
-    const key = await issueServiceAccountKey({
-      tenantId: params.tenantId,
-      workspaceId: params.workspaceId,
-      principalId: params.principalId,
-      createdBy: params.principalId,
-      label: `Evidence ingest: ${params.name}`,
-      scopes: ["evidence:write"],
-    });
-    const integration = await createEvidenceIntegration({
-      ...params,
-      serviceTokenId: key.tokenId,
-      fieldMapping: mapping,
+    if (!sql) throw new Error("Database not configured.");
+    const { key, integration } = await sql.begin(async (tx) => {
+      const key = await issueServiceAccountKeyInTransaction(tx, {
+        tenantId: params.tenantId,
+        workspaceId: params.workspaceId,
+        principalId: params.principalId,
+        createdBy: params.principalId,
+        label: `Evidence ingest: ${params.name}`,
+        scopes: ["evidence:write"],
+      });
+      const integration = await createEvidenceIntegrationInTransaction(tx, {
+        ...params,
+        serviceTokenId: key.tokenId,
+        fieldMapping: mapping,
+      });
+      return { key, integration };
     });
     await appendOperationsLog({
       tenantId: params.tenantId,
