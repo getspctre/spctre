@@ -150,6 +150,3 @@ export function error(message: string, status: number, traceId: string) {
     traceId,
   );
 }
-export function isJsonRecord(value: unknown): value is Record<string, unknown> {
-  return isRecord(value);
-}

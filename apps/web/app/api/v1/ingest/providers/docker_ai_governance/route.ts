@@ -2,11 +2,11 @@ import {
   enforceEvidenceRateLimit,
   error,
   handleGenericRecords,
-  isJsonRecord,
   readBoundedText,
 } from "@/app/api/ingest/_shared";
 import { normalizeManagedProviderEvent } from "@/lib/domains/evidence/managed-adapters";
 import { withApiRoute } from "@/lib/platform/api-route";
+import { isRecord } from "@/lib/records";
 import { reportSwallowedError } from "@/lib/platform/swallow";
 import { extractTraceId } from "@spctre/api-contracts";
 
@@ -35,7 +35,7 @@ const handlePostDockerAiGovernance = withApiRoute(
     const records = lines.map((line) => {
       try {
         const raw: unknown = JSON.parse(line);
-        return isJsonRecord(raw)
+        return isRecord(raw)
           ? normalizeManagedProviderEvent("docker_ai_governance", raw)
           : { error: "Docker audit events must be JSON objects." };
       } catch (error) {

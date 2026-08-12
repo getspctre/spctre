@@ -2,12 +2,12 @@ import {
   enforceEvidenceRateLimit,
   error,
   handleGenericRecords,
-  isJsonRecord,
   readBoundedText,
 } from "@/app/api/ingest/_shared";
 import { extractTraceId } from "@spctre/api-contracts";
 import { logger } from "@spctre/platform/logging";
 import { withApiRoute } from "@/lib/platform/api-route";
+import { isRecord } from "@/lib/records";
 
 export const dynamic = "force-dynamic";
 
@@ -25,7 +25,7 @@ const handlePostGenericNdjson = withApiRoute(
       .map((line) => {
         try {
           const value: unknown = JSON.parse(line);
-          return isJsonRecord(value) ? value : { error: "NDJSON lines must be JSON objects." };
+          return isRecord(value) ? value : { error: "NDJSON lines must be JSON objects." };
         } catch (caught) {
           logger.warn("Malformed generic NDJSON record", {
             error: caught instanceof Error ? caught.message : String(caught),

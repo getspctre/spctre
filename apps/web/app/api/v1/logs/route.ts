@@ -2,10 +2,10 @@ import {
   error,
   enforceEvidenceRateLimit,
   handleGenericRecords,
-  isJsonRecord,
   readJsonRecord,
 } from "@/app/api/ingest/_shared";
 import { extractTraceId } from "@spctre/api-contracts";
+import { isRecord } from "@/lib/records";
 export const dynamic = "force-dynamic";
 export async function POST(request: Request) {
   const throttle = await enforceEvidenceRateLimit(request);
@@ -15,11 +15,11 @@ export async function POST(request: Request) {
     return error("OTLP/HTTP logs must use JSON encoding.", 400, extractTraceId(request));
   const records: Record<string, unknown>[] = [];
   for (const resourceLog of Array.isArray(payload.resourceLogs) ? payload.resourceLogs : []) {
-    if (!isJsonRecord(resourceLog)) continue;
+    if (!isRecord(resourceLog)) continue;
     for (const scopeLog of Array.isArray(resourceLog.scopeLogs) ? resourceLog.scopeLogs : []) {
-      if (!isJsonRecord(scopeLog)) continue;
+      if (!isRecord(scopeLog)) continue;
       for (const logRecord of Array.isArray(scopeLog.logRecords) ? scopeLog.logRecords : [])
-        if (isJsonRecord(logRecord))
+        if (isRecord(logRecord))
           records.push({
             ...logRecord,
             resource: resourceLog.resource ?? {},
