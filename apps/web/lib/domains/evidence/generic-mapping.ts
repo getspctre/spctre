@@ -50,6 +50,8 @@ export function normalizeGenericEvidence(
     policyReference: optionalString(resolve(mapping.policy_reference, payload)),
     environment: optionalString(resolve(mapping.environment, payload)),
     enforcementDecision: enforcementDecision.data,
+    // Keep the canonical event self-contained for event reads. The immutable
+    // source receipt also stores this payload separately for provenance.
     sourceAttributes: payload,
   };
 }
