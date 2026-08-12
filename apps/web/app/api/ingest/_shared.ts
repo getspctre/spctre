@@ -1,6 +1,6 @@
 import { extractTraceId, makeMeta, withTraceId } from "@spctre/api-contracts";
 import {
-  ingestGenericEvidence,
+  ingestGenericEvidenceBatch,
   isGenericEvidenceIngestAvailable,
 } from "@/lib/domains/evidence/generic-ingest-service";
 import { authenticateServiceToken } from "@/lib/service-tokens";
@@ -45,31 +45,43 @@ export async function handleGenericRecords(params: {
   const auth = await authenticateServiceToken(params.request, "evidence:write");
   if (!auth.ok) return error("Missing or invalid service token.", 401, traceId);
   const results: Array<Record<string, unknown>> = [];
-  for (let index = 0; index < params.records.length; index++) {
+  const valid = params.records.flatMap((record, index) =>
+    "error" in record ? [] : [{ index, payload: record }],
+  );
+  let persisted: Awaited<ReturnType<typeof ingestGenericEvidenceBatch>> | null = [];
+  if (valid.length) {
+    try {
+      persisted = await ingestGenericEvidenceBatch({
+        tenantId: auth.auth.tenantId,
+        serviceTokenId: auth.auth.tokenId,
+        integrationId,
+        providerType: params.providerType,
+        payloads: valid.map((record) => record.payload),
+        actorId: auth.auth.principalId,
+      });
+    } catch (caught) {
+      logger.warn("Generic evidence batch persistence failed", {
+        error: caught instanceof Error ? caught.message : String(caught),
+        providerType: params.providerType,
+      });
+      persisted = null;
+    }
+  }
+  for (let index = 0, validIndex = 0; index < params.records.length; index++) {
     const record = params.records[index]!;
     if ("error" in record) {
       results.push({ index, outcome: "rejected", error: record.error });
       continue;
     }
-    try {
-      const result = await ingestGenericEvidence({
-        tenantId: auth.auth.tenantId,
-        serviceTokenId: auth.auth.tokenId,
-        integrationId,
-        providerType: params.providerType,
-        payload: record,
-        actorId: auth.auth.principalId,
-      });
-      if (result.outcome === "not_found")
-        return error("Unknown, inactive, or unauthorized integration.", 404, traceId);
-      results.push({ index, ...result });
-    } catch (caught) {
-      logger.warn("Generic evidence record persistence failed", {
-        error: caught instanceof Error ? caught.message : String(caught),
-        providerType: params.providerType,
-      });
+    if (!persisted) {
+      validIndex++;
       results.push({ index, outcome: "rejected", error: "Unable to persist this record." });
+      continue;
     }
+    const result = persisted[validIndex++]!;
+    if (result.outcome === "not_found")
+      return error("Unknown, inactive, or unauthorized integration.", 404, traceId);
+    results.push({ index, ...result });
   }
   const rejected = results.some((result) => result.outcome === "rejected");
   const accepted = results.some((result) => result.outcome === "accepted");

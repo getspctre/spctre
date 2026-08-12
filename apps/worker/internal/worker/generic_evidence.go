@@ -56,6 +56,17 @@ type genericEvidenceResponse struct {
 	Meta             APIMeta `json:"meta"`
 }
 
+const maxGenericEvidenceCommands = 500
+
+type genericEvidenceBatchCommand struct {
+	Commands []genericEvidenceCommand `json:"commands"`
+}
+
+type genericEvidenceBatchResponse struct {
+	Results []genericEvidenceResponse `json:"results"`
+	Meta    APIMeta                   `json:"meta"`
+}
+
 func (s *Server) handleGenericEvidence(w http.ResponseWriter, r *http.Request) {
 	tid := traceID(r)
 	if r.Method != http.MethodPost {
@@ -66,30 +77,56 @@ func (s *Server) handleGenericEvidence(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var command genericEvidenceCommand
-	decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<20))
+	var batch genericEvidenceBatchCommand
+	// The web command carries both immutable source_payload and canonical
+	// source_attributes. A 1 MiB external batch can therefore expand to roughly
+	// twice that size on this private hop.
+	decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, 3<<20))
 	decoder.DisallowUnknownFields()
-	if err := decoder.Decode(&command); err != nil {
-		writeError(w, http.StatusBadRequest, "Internal generic evidence command must be JSON.", tid, nil)
+	if err := decoder.Decode(&batch); err != nil {
+		writeError(w, http.StatusBadRequest, "Internal generic evidence batch must be JSON.", tid, nil)
 		return
 	}
-	if err := command.validate(); err != nil {
-		writeError(w, http.StatusBadRequest, err.Error(), tid, nil)
+	if len(batch.Commands) == 0 || len(batch.Commands) > maxGenericEvidenceCommands {
+		writeError(w, http.StatusBadRequest, "Internal generic evidence batch has an invalid command count.", tid, nil)
 		return
 	}
-
-	result, status, err := s.persistGenericEvidence(r.Context(), command)
-	if err != nil {
-		if errors.Is(err, errGenericEvidenceBinding) {
-			writeError(w, http.StatusForbidden, "Generic evidence integration binding is invalid.", tid, nil)
+	for _, command := range batch.Commands {
+		if err := command.validate(); err != nil {
+			writeError(w, http.StatusBadRequest, err.Error(), tid, nil)
 			return
 		}
-		s.logger.Error("generic evidence persistence failed", "error", err, "integration_id", command.IntegrationID)
-		writeError(w, http.StatusInternalServerError, "Service temporarily unavailable.", tid, nil)
-		return
 	}
-	result.Meta = makeMeta(tid)
-	writeJSON(w, status, result)
+
+	results := make([]genericEvidenceResponse, 0, len(batch.Commands))
+	hasRejected := false
+	hasAccepted := false
+	for _, command := range batch.Commands {
+		result, _, err := s.persistGenericEvidence(r.Context(), command)
+		if err != nil {
+			if errors.Is(err, errGenericEvidenceBinding) {
+				writeError(w, http.StatusForbidden, "Generic evidence integration binding is invalid.", tid, nil)
+				return
+			}
+			s.logger.Error("generic evidence persistence failed", "error", err, "integration_id", command.IntegrationID)
+			result = genericEvidenceResponse{Outcome: "rejected", Reason: "Unable to persist this record."}
+		}
+		result.Meta = makeMeta(tid)
+		if result.Outcome == "rejected" {
+			hasRejected = true
+		}
+		if result.Outcome == "accepted" {
+			hasAccepted = true
+		}
+		results = append(results, result)
+	}
+	status := http.StatusOK
+	if hasRejected {
+		status = http.StatusMultiStatus
+	} else if hasAccepted {
+		status = http.StatusCreated
+	}
+	writeJSON(w, status, genericEvidenceBatchResponse{Results: results, Meta: makeMeta(tid)})
 }
 
 var errGenericEvidenceBinding = errors.New("generic evidence integration binding is invalid")
