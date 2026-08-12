@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { createRouteRequest } from "./route-test-helper";
 
 const ingestRuntimeEvidenceSpy = vi.fn();
 const revalidatePathSpy = vi.fn();
@@ -39,10 +40,10 @@ describe("POST /api/v1/evidence/git-checkpoints", () => {
 
   it("normalizes checkpoint metadata into gateway-mode evidence", async () => {
     const response = await route.POST(
-      new Request("http://localhost:3000/api/v1/evidence/git-checkpoints", {
-        method: "POST",
-        headers: { "content-type": "application/json", "x-request-id": "git-checkpoint-test" },
-        body: JSON.stringify(validPayload),
+      createRouteRequest({
+        path: "/api/v1/evidence/git-checkpoints",
+        body: validPayload,
+        headers: { "x-request-id": "git-checkpoint-test" },
       }),
     );
 
@@ -66,13 +67,12 @@ describe("POST /api/v1/evidence/git-checkpoints", () => {
 
   it("rejects a diff without a representation", async () => {
     const response = await route.POST(
-      new Request("http://localhost:3000/api/v1/evidence/git-checkpoints", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
+      createRouteRequest({
+        path: "/api/v1/evidence/git-checkpoints",
+        body: {
           ...validPayload,
           checkpoint: { ...validPayload.checkpoint, diff: { format: "unified" } },
-        }),
+        },
       }),
     );
 

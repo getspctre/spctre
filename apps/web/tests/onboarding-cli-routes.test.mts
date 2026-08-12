@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { createRouteRequest } from "./route-test-helper";
 
 const startCliOnboardingSpy = vi.fn();
 const exchangeCliOnboardingCodeSpy = vi.fn();
@@ -25,15 +26,15 @@ describe("CLI onboarding routes", () => {
     });
 
     const response = await startRoute.POST(
-      new Request("http://localhost:3000/api/onboarding/cli/start", {
-        method: "POST",
-        body: JSON.stringify({
+      createRouteRequest({
+        path: "/api/onboarding/cli/start",
+        body: {
           controlPlaneUrl: "http://localhost:3000",
           workspaceSlug: "default",
           agentId: "solo-agent",
           environment: "production",
           bundlePath: "spctre-policy.json",
-        }),
+        },
       }),
     );
 
@@ -54,10 +55,7 @@ describe("CLI onboarding routes", () => {
     );
 
     const response = await exchangeRoute.POST(
-      new Request("http://localhost:3000/api/onboarding/cli/exchange", {
-        method: "POST",
-        body: JSON.stringify({ code: "abc123" }),
-      }),
+      createRouteRequest({ path: "/api/onboarding/cli/exchange", body: { code: "abc123" } }),
     );
 
     expect(response.status).toBe(202);
@@ -75,10 +73,7 @@ describe("CLI onboarding routes", () => {
     });
 
     const response = await exchangeRoute.POST(
-      new Request("http://localhost:3000/api/onboarding/cli/exchange", {
-        method: "POST",
-        body: JSON.stringify({ code: "abc123" }),
-      }),
+      createRouteRequest({ path: "/api/onboarding/cli/exchange", body: { code: "abc123" } }),
     );
 
     expect(response.status).toBe(200);

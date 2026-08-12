@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { createRouteRequest } from "./route-test-helper";
 
 const cookieSetSpy = vi.fn();
 const cookiesSpy = vi.fn(async () => ({ set: cookieSetSpy }));
@@ -54,10 +55,9 @@ describe("POST /api/workspace/normalize", () => {
       return [];
     });
 
-    const request = new Request("http://localhost/api/workspace/normalize", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ workspaceId: "workspace-2" }),
+    const request = createRouteRequest({
+      path: "/api/workspace/normalize",
+      body: { workspaceId: "workspace-2" },
     });
 
     const response = await POST(request);
@@ -92,10 +92,9 @@ describe("POST /api/workspace/normalize", () => {
       return [];
     });
 
-    const request = new Request("http://localhost/api/workspace/normalize", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ workspaceId: "missing-workspace" }),
+    const request = createRouteRequest({
+      path: "/api/workspace/normalize",
+      body: { workspaceId: "missing-workspace" },
     });
 
     const response = await POST(request);

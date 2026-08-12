@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { createRouteRequest } from "./route-test-helper";
 
 // Regression coverage for the /api/verification auth contract. POST has always
 // mapped *every* auth failure (including "Workspace context unavailable.") to
@@ -59,9 +60,7 @@ describe("/api/verification auth contract", () => {
     getAuthSessionSpy.mockResolvedValueOnce(session());
     getActiveScopeSpy.mockResolvedValueOnce(null);
 
-    const response = await verificationPost(
-      new Request("http://localhost:3000/api/verification", { method: "POST" }),
-    );
+    const response = await verificationPost(createRouteRequest({ path: "/api/verification" }));
 
     expect(response.status).toBe(401);
     await expect(response.json()).resolves.toMatchObject({
@@ -83,7 +82,9 @@ describe("/api/verification auth contract", () => {
     getAuthSessionSpy.mockResolvedValueOnce(session());
     getActiveScopeSpy.mockResolvedValueOnce(null);
 
-    const response = await verificationGet(new Request("http://localhost:3000/api/verification"));
+    const response = await verificationGet(
+      createRouteRequest({ path: "/api/verification", method: "GET" }),
+    );
 
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toMatchObject({
