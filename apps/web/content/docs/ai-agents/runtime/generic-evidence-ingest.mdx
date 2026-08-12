@@ -51,9 +51,13 @@ Batch responses contain a result for every NDJSON or OTLP log record. A bad
 record does not prevent unrelated records from being ingested; a partial batch
 returns `207 Multi-Status`. Requests are capped at 1 MiB.
 
-Source delivery is at-least-once. A deterministic SHA-256 hash of each source
-payload is used as the idempotency key, so retries with the same payload are
-reported as duplicates rather than creating a second source record.
+Source delivery is at-least-once. When the active mapping resolves a source
+event ID, that ID is the idempotency key (`source:<sourceEventId>`). A retry
+with the same source event ID is therefore reported as a duplicate even if its
+payload differs. When no source event ID is resolved, the service falls back to
+a deterministic SHA-256 hash of the source payload
+(`hash:sha256:<digest>`), so only retries with the same payload are reported as
+duplicates rather than creating a second source record.
 
 ## Managed providers
 
