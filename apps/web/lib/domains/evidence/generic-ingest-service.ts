@@ -60,6 +60,8 @@ export async function ingestGenericEvidenceBatch(params: {
           evidence: normalized[index]!.evidence,
           rejectedReason: normalized[index]!.rejectedReason,
         });
+        if (result.outcome === "accepted")
+          await appendFallbackOperationsLog(params, integration, result);
       } catch (error) {
         reportSwallowedError("ingestGenericEvidenceBatch.persist", error, {
           integrationId: integration.id,
@@ -67,7 +69,6 @@ export async function ingestGenericEvidenceBatch(params: {
         results.push({ outcome: "rejected" as const, reason: "Unable to persist this record." });
         continue;
       }
-      if (result.outcome === "accepted") appendFallbackOperationsLog(params, integration, result);
       results.push(result);
     }
     return results;
@@ -187,13 +188,14 @@ function workerResult(result: WorkerResult, normalized: NormalizedEvidence) {
   throw new Error("Worker generic evidence ingest returned an invalid response.");
 }
 
-function appendFallbackOperationsLog(
+async function appendFallbackOperationsLog(
   params: { tenantId: string; actorId: string },
   integration: GenericIntegration,
   result: { sourceRecordId: string; canonicalEventId: string; evidence: NormalizedGenericEvidence },
 ) {
-  // The worker writes this event in its persistence transaction. This fallback is the only path that needs a separate post-commit append.
-  void appendOperationsLog({
+  // The worker writes this event in its persistence transaction. This fallback
+  // must await its post-commit append so audit failures cannot be silent.
+  await appendOperationsLog({
     tenantId: params.tenantId,
     workspaceId: integration.workspaceId,
     eventType: "EVIDENCE_INGEST",
