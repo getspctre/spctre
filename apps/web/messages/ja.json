@@ -1202,7 +1202,8 @@
     "meters": {
       "eyebrow": "使用量ディメンション",
       "title": "使用量メーター",
-      "sample_only": "サンプルのみ"
+      "sample_only": "サンプルのみ",
+      "not_metered": "未計測"
     },
     "anchors": {
       "eyebrow": "信頼サーフェス",

@@ -2,9 +2,12 @@ package worker
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
+	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -18,12 +21,13 @@ import (
 const usageDriftLogThreshold = 100
 
 type usageMeasurement struct {
-	tenantID string
-	periodID string
-	previous *int64
-	retained int64
-	capacity *int64
-	overCap  bool
+	tenantID      string
+	periodID      string
+	previous      *int64
+	retained      int64
+	capacity      *int64
+	overCap       bool
+	capNotifiedAt *time.Time
 }
 
 // runUsageReconciliation audits each tenant's retained-event measurement
@@ -89,7 +93,8 @@ func measureOpenUsagePeriods(ctx context.Context, db *pgxpool.Pool) ([]usageMeas
 			-- plan_code: provisioning materializes it from the entitlement
 			-- catalog (apps/web/lib/entitlements/catalog.ts) so the plan ladder
 			-- is not duplicated here in a second language.
-			COALESCE(tcp.retained_event_capacity, tup.included_capacity) AS capacity
+			COALESCE(tcp.retained_event_capacity, tup.included_capacity) AS capacity,
+			tup.cap_notified_at
 		FROM tenant_usage_period tup
 		JOIN tenant_commercial_profile tcp ON tcp.tenant_id = tup.tenant_id
 		LEFT JOIN (
@@ -111,7 +116,7 @@ func measureOpenUsagePeriods(ctx context.Context, db *pgxpool.Pool) ([]usageMeas
 	measurements := []usageMeasurement{}
 	for rows.Next() {
 		var m usageMeasurement
-		if err := rows.Scan(&m.tenantID, &m.periodID, &m.previous, &m.retained, &m.capacity); err != nil {
+		if err := rows.Scan(&m.tenantID, &m.periodID, &m.previous, &m.retained, &m.capacity, &m.capNotifiedAt); err != nil {
 			return nil, fmt.Errorf("scanning usage measurement: %w", err)
 		}
 		m.overCap = m.capacity != nil && m.retained > *m.capacity
@@ -150,6 +155,23 @@ func applyUsageMeasurement(ctx context.Context, db *pgxpool.Pool, m usageMeasure
 		return fmt.Errorf("persisting usage measurement: %w", err)
 	}
 
+	// Record the moment a period first exceeds its included capacity.
+	//
+	// The cap is soft by design: ingest is never refused, the tenant is told,
+	// and the overage is metered. cap_notified_at is the idempotency guard, so a
+	// tenant is notified once per period rather than once per audit for as long
+	// as it stays over. It is set in the same transaction as the measurement
+	// that justified it.
+	//
+	// This is recorded for every tenant regardless of deployment plan. The
+	// record is tenant-scoped fact; whether it becomes an upgrade prompt is a
+	// presentation decision, made where the deployment's plan is known.
+	if m.overCap && m.capNotifiedAt == nil {
+		if err := notifyCapacityExceeded(ctx, tx, m); err != nil {
+			return fmt.Errorf("recording capacity transition: %w", err)
+		}
+	}
+
 	// A first measurement is not drift — there is nothing to have drifted from.
 	if m.previous != nil {
 		drift := m.retained - *m.previous
@@ -175,4 +197,37 @@ func applyUsageMeasurement(ctx context.Context, db *pgxpool.Pool, m usageMeasure
 	}
 
 	return tx.Commit(ctx)
+}
+
+// notifyCapacityExceeded records that a tenant's period crossed its included
+// capacity, and stamps the guard that keeps it to once per period.
+//
+// commercial_event already carries USAGE_LIMIT_EXCEEDED, so this needs no new
+// event type — the type was defined for exactly this and had no producer.
+func notifyCapacityExceeded(ctx context.Context, tx pgx.Tx, m usageMeasurement) error {
+	metadata := map[string]any{
+		"metric":        "RETAINED_EVENTS",
+		"retainedCount": m.retained,
+		"periodId":      m.periodID,
+	}
+	if m.capacity != nil {
+		metadata["includedCapacity"] = *m.capacity
+		metadata["overageCount"] = m.retained - *m.capacity
+	}
+	metadataBytes, err := json.Marshal(metadata)
+	if err != nil {
+		return err
+	}
+
+	if _, err := tx.Exec(ctx, `
+		INSERT INTO commercial_event (tenant_id, event_type, metadata)
+		VALUES ($1, 'USAGE_LIMIT_EXCEEDED', $2::jsonb)
+	`, m.tenantID, string(metadataBytes)); err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(ctx, `
+		UPDATE tenant_usage_period SET cap_notified_at = now() WHERE id = $1::uuid
+	`, m.periodID)
+	return err
 }

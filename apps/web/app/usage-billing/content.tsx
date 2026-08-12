@@ -10,6 +10,15 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { POLICY_PACKS } from "@spctre/policy-schema";
+import {
+  COMMERCIAL_PLAN_CODES,
+  PLAN_ENTITLEMENTS,
+  enforcedEntitlementValue,
+  planEntitlements,
+  type CommercialPlanCode,
+  type PlanEntitlements,
+} from "@/lib/entitlements/catalog";
+import { describeRetentionWindow, resolveRetentionWindowDays } from "@/lib/entitlements/retention";
 import { getUsageBillingInputs } from "@/lib/domains/usage-billing/service";
 
 import { getWorkspaceContext } from "@/lib/workspace";
@@ -24,46 +33,6 @@ import { getTranslations } from "next-intl/server";
 type UsageBillingTranslations = Awaited<ReturnType<typeof getTranslations>>;
 
 const planRank = { HOSTED_TRIAL: 1, TEAM: 2, BUSINESS: 3, ENTERPRISE: 4 };
-type CommercialPlanCode = keyof typeof planRank;
-
-type PlanEntry = {
-  label: string;
-  workspaces: number;
-  auditEvents: number;
-  retentionWindow: string;
-  simulationEvents: number | null; // null = sample only, not a metered quota
-};
-
-const planCatalog: Record<CommercialPlanCode, PlanEntry> = {
-  HOSTED_TRIAL: {
-    label: "Hosted Trial",
-    workspaces: 1,
-    auditEvents: 1000,
-    retentionWindow: "90 days",
-    simulationEvents: null,
-  },
-  TEAM: {
-    label: "Team",
-    workspaces: 3,
-    auditEvents: 100000,
-    retentionWindow: "1 year",
-    simulationEvents: null,
-  },
-  BUSINESS: {
-    label: "Business",
-    workspaces: 12,
-    auditEvents: 1000000,
-    retentionWindow: "3 years",
-    simulationEvents: 50000,
-  },
-  ENTERPRISE: {
-    label: "Enterprise",
-    workspaces: 50,
-    auditEvents: 10000000,
-    retentionWindow: "Custom",
-    simulationEvents: 1000000,
-  },
-};
 
 const commercialLevers = [
   {
@@ -92,9 +61,18 @@ const commercialLevers = [
 interface UsageRow {
   label: string;
   value: number;
+  /** The enforced limit, or null when the product does not hold the tenant to one. */
   included: number | null;
   businessIncluded: number;
   detail: string;
+  /**
+   * What the meter reads when there is no enforced limit. A null `included`
+   * covers three different situations — a duration rather than a count, a
+   * capacity that is measured but not capped, and a sample-only allowance —
+   * and calling all three "sample only" was misleading.
+   */
+  unmeteredLabel?: string;
+  sampleOnly?: boolean;
 }
 
 type UsageBillingInputs = Awaited<ReturnType<typeof getUsageBillingInputs>>;
@@ -103,58 +81,76 @@ type UsageWorkspaceContext = Awaited<ReturnType<typeof getWorkspaceContext>>;
 // Derive the usage meters, recommended plan, and readiness labels from the
 // measured usage.
 function computeUsagePosture(inputs: UsageBillingInputs, workspaceContext: UsageWorkspaceContext) {
-  const { usage, profile, branches, agents, simulations } = inputs;
-  const activePlan = planCatalog[profile.planCode];
+  const { usage, profile, branches, agents, simulations, usagePeriod } = inputs;
+  const activePlan = planEntitlements(profile.planCode);
   const importedPackIds = new Set(branches.map((branch) => branch.name));
   const importedPackCount = POLICY_PACKS.filter((pack) => importedPackIds.has(pack.id)).length;
   const simulationEventCount = simulations.reduce((sum, run) => sum + run.sourceEventCount, 0);
   const connectorCount = new Set(agents.flatMap((agent) => agent.connectors)).size;
 
+  // Prefer the reconciled measurement over the request-time count. The
+  // measurement is what a bill would be drawn against; the count is a display
+  // fallback for a tenant whose period has not been measured yet.
+  const measuredRetained = usagePeriod?.retainedCount ?? null;
+  const retainedEvents = measuredRetained ?? usage.retainedAuditEventCount;
+  const totalWorkspaces = usage.workspaceCount || workspaceContext.workspaces.length;
+
   const usageRows: UsageRow[] = [
     {
       label: "Workspaces",
-      value: usage.workspaceCount || workspaceContext.workspaces.length,
-      included: activePlan.workspaces,
-      businessIncluded: planCatalog.BUSINESS.workspaces,
+      value: totalWorkspaces,
+      // enforcedEntitlementValue returns null for an entitlement the product
+      // does not measure, and a null `included` renders as plan information
+      // rather than as a limit the tenant is being held to.
+      included: enforcedEntitlementValue(activePlan.workspaces),
+      businessIncluded: PLAN_ENTITLEMENTS.BUSINESS.workspaces.value,
       detail: workspaceContext.tenantSlug,
     },
     {
       label: "Retained governed events",
-      value: usage.retainedAuditEventCount,
-      included: activePlan.auditEvents,
-      businessIncluded: planCatalog.BUSINESS.auditEvents,
-      detail: `${connectorCount} active connectors`,
+      value: retainedEvents,
+      included: enforcedEntitlementValue(activePlan.retainedEvents),
+      businessIncluded: PLAN_ENTITLEMENTS.BUSINESS.retainedEvents.value,
+      // Measured on every plan, but only capped on the trial. Showing a
+      // denominator on the others would assert a limit nothing applies.
+      unmeteredLabel: `${retainedEvents}`,
+      detail:
+        measuredRetained === null
+          ? `${connectorCount} active connectors · awaiting measurement`
+          : `${connectorCount} active connectors`,
     },
     {
       label: "Retention window",
       value: 0,
       included: null,
       businessIncluded: 0,
-      detail: `${activePlan.retentionWindow} searchable evidence history`,
+      unmeteredLabel: `${resolveRetentionWindowDays(profile)} days`,
+      detail: `${describeRetentionWindow(profile)} · searchable evidence history`,
     },
     {
       label: "Simulation events",
       value: simulationEventCount,
-      included: activePlan.simulationEvents,
-      businessIncluded: planCatalog.BUSINESS.simulationEvents!,
+      included: enforcedEntitlementValue(activePlan.simulationEvents),
+      businessIncluded: PLAN_ENTITLEMENTS.BUSINESS.simulationEvents.value ?? 0,
+      sampleOnly: activePlan.simulationEvents.value === null,
       detail: `${simulations.length} replay runs`,
     },
   ];
 
-  const totalWorkspaces = usage.workspaceCount || workspaceContext.workspaces.length;
-  const totalRetainedEvents = usage.retainedAuditEventCount;
-  let recommendedPlan: CommercialPlanCode = profile.planCode;
-  let usagePlan: CommercialPlanCode = "HOSTED_TRIAL";
-  if (totalWorkspaces > 12 || totalRetainedEvents > 250000 || simulationEventCount > 50000) {
-    usagePlan = "ENTERPRISE";
-  } else if (totalWorkspaces > 3 || totalRetainedEvents > 25000 || simulationEventCount > 0) {
-    usagePlan = "BUSINESS";
-  } else if (totalWorkspaces > 1 || totalRetainedEvents > 1000) {
-    usagePlan = "TEAM";
-  }
-  if (planRank[usagePlan] > planRank[profile.planCode]) {
-    recommendedPlan = usagePlan;
-  }
+  // Recommend the smallest plan whose entitlements cover current usage, rather
+  // than comparing against thresholds maintained separately from the catalog.
+  // Those thresholds had drifted from every published figure.
+  const usagePlan =
+    COMMERCIAL_PLAN_CODES.find((plan) => {
+      const candidate = PLAN_ENTITLEMENTS[plan];
+      return (
+        totalWorkspaces <= candidate.workspaces.value &&
+        retainedEvents <= candidate.retainedEvents.value &&
+        simulationEventCount <= (candidate.simulationEvents.value ?? 0)
+      );
+    }) ?? "ENTERPRISE";
+  const recommendedPlan: CommercialPlanCode =
+    planRank[usagePlan] > planRank[profile.planCode] ? usagePlan : profile.planCode;
 
   const overIncluded = usageRows.filter(
     (row) => row.included !== null && row.value > row.included,
@@ -164,10 +160,10 @@ function computeUsagePosture(inputs: UsageBillingInputs, workspaceContext: Usage
       ? "Hosted trial"
       : overIncluded > 0
         ? "Billing fit"
-        : usage.retainedAuditEventCount > 0
+        : retainedEvents > 0
           ? "Active evaluation"
           : "Setup";
-  const primaryHeroLabel = overIncluded > 0 ? "Paid signal" : planCatalog[profile.planCode].label;
+  const primaryHeroLabel = overIncluded > 0 ? "Paid signal" : activePlan.displayName;
   const showReadinessHeroPill = readinessLabel.toLowerCase() !== primaryHeroLabel.toLowerCase();
 
   return {
@@ -188,7 +184,7 @@ function UsageMetersPanel({
   t,
 }: {
   usageRows: UsageRow[];
-  activePlan: PlanEntry;
+  activePlan: PlanEntitlements;
   t: UsageBillingTranslations;
 }) {
   return (
@@ -199,11 +195,11 @@ function UsageMetersPanel({
       </div>
       <div className="commercialMeterList">
         {usageRows.map((row) => {
-          const isSampleOnly = row.included === null;
-          const percent = isSampleOnly
+          const unmetered = row.included === null;
+          const percent = unmetered
             ? 0
             : Math.min(100, Math.round((row.value / Math.max(row.included!, 1)) * 100));
-          const over = !isSampleOnly && row.value > row.included!;
+          const over = !unmetered && row.value > row.included!;
           return (
             <article className="commercialMeter" key={row.label}>
               <div className="rowHeader">
@@ -212,12 +208,13 @@ function UsageMetersPanel({
                   <p className="meta">{row.detail}</p>
                 </div>
                 <span className={over ? "pill pillWarn" : "pill pillNeutral"}>
-                  {row.label === "Retention window"
-                    ? activePlan.retentionWindow
-                    : `${row.value} / ${isSampleOnly ? t("meters.sample_only") : row.included}`}
+                  {unmetered
+                    ? (row.unmeteredLabel ??
+                      (row.sampleOnly ? t("meters.sample_only") : t("meters.not_metered")))
+                    : `${row.value} / ${row.included}`}
                 </span>
               </div>
-              {!isSampleOnly && (
+              {!unmetered && (
                 <div className="commercialMeterTrack" aria-hidden="true">
                   <span className="commercialMeterFill" style={{ width: `${percent}%` }} />
                 </div>
@@ -249,17 +246,18 @@ function PlanUpgradeSection({
       <section className="commercialAnchorGroup" aria-label="Upgrade plan">
         <div className="commercialAnchorGroupHeader">
           <p className="eyebrow">Self-serve upgrade</p>
-          <h3>Upgrade to {planCatalog[recommendedPlan].label}</h3>
+          <h3>Upgrade to {PLAN_ENTITLEMENTS[recommendedPlan].displayName}</h3>
         </div>
         <p className="meta">
-          Your usage fits the {planCatalog[recommendedPlan].label} plan. No sales call needed.
+          Your usage fits the {PLAN_ENTITLEMENTS[recommendedPlan].displayName} plan. No sales call
+          needed.
         </p>
         <a
           className="button buttonPrimary"
           href={`${siteUrl}/pricing?plan=${recommendedPlan}#checkout`}
         >
           <Send size={16} />
-          Upgrade to {planCatalog[recommendedPlan].label}
+          Upgrade to {PLAN_ENTITLEMENTS[recommendedPlan].displayName}
         </a>
       </section>
     );
@@ -382,14 +380,14 @@ function BillingPosturePanel({
       <div className="commercialPlanStrip">
         <div>
           <span className="meta">{t("posture.current_plan")}</span>
-          <strong>{planCatalog[profile.planCode].label}</strong>
+          <strong>{PLAN_ENTITLEMENTS[profile.planCode].displayName}</strong>
           <p className="meta">
             {profile.lifecycleStatus.toLowerCase()} / sales {profile.salesStatus.toLowerCase()}
           </p>
         </div>
         <div>
           <span className="meta">{t("posture.recommended_plan")}</span>
-          <strong>{planCatalog[recommendedPlan].label}</strong>
+          <strong>{PLAN_ENTITLEMENTS[recommendedPlan].displayName}</strong>
           <p className="meta">{t("posture.dimensions_beyond", { count: overIncluded })}</p>
         </div>
         <div>
@@ -560,11 +558,11 @@ export async function UsageBillingPageContent({ workspaceSlug }: { workspaceSlug
           <div className="usageBillingHeroStats">
             <div>
               <span className="metadata">{t("overview.current_plan")}</span>
-              <strong>{activePlan.label}</strong>
+              <strong>{activePlan.displayName}</strong>
             </div>
             <div>
               <span className="metadata">{t("overview.recommended")}</span>
-              <strong>{planCatalog[recommendedPlan].label}</strong>
+              <strong>{PLAN_ENTITLEMENTS[recommendedPlan].displayName}</strong>
             </div>
             <div>
               <span className="metadata">{t("overview.governed_agents")}</span>

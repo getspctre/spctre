@@ -1206,7 +1206,8 @@
     "meters": {
       "eyebrow": "Usage dimensions",
       "title": "Usage meters",
-      "sample_only": "Sample only"
+      "sample_only": "Sample only",
+      "not_metered": "Not metered"
     },
     "anchors": {
       "eyebrow": "Trust surface",
