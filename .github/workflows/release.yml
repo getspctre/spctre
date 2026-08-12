@@ -35,6 +35,16 @@ name: Release
 on:
   push:
     branches: [main]
+  # Recovery trigger. GitHub raises no event for a push whose commits are
+  # authored by github-actions[bot], which is what a squash-merged Version PR
+  # is: changesets authors that branch, and the squash inherits its authorship.
+  # Merging the Version PR therefore lands the bumped manifests on main without
+  # running this workflow, and the release sits unpublished until some later
+  # human-authored push happens to trigger it — silently, with a green merge and
+  # no failed run to notice. Dispatching this workflow against main republishes
+  # whatever is ahead of the registry; `changeset publish` is a no-op when the
+  # registry is already current, so it is safe to run at any time.
+  workflow_dispatch:
 
 concurrency:
   # Never cancel an in-flight publish; serialize releases on main.
