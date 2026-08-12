@@ -10,6 +10,7 @@ import { checkAuthRateLimit } from "@/lib/auth-rate-limit";
 import { createHash } from "node:crypto";
 
 export const MAX_REQUEST_BYTES = 1_048_576;
+export const MAX_RECORDS_PER_REQUEST = 500;
 const evidenceRateLimit = 120;
 const evidenceRateWindowSeconds = 60;
 export type GenericProviderType =
@@ -27,6 +28,12 @@ export async function handleGenericRecords(params: {
   records: Array<Record<string, unknown> | { error: string }>;
 }) {
   const traceId = extractTraceId(params.request);
+  if (params.records.length > MAX_RECORDS_PER_REQUEST)
+    return error(
+      `Request contains more than ${MAX_RECORDS_PER_REQUEST} evidence records.`,
+      413,
+      traceId,
+    );
   if (!isGenericEvidenceIngestAvailable()) return error("Database not configured.", 503, traceId);
   const contentEncoding = params.request.headers.get("content-encoding");
   if (contentEncoding && contentEncoding.toLowerCase() !== "identity")

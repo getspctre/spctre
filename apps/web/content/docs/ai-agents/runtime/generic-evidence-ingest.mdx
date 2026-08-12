@@ -37,19 +37,19 @@ known decisions are `allow`, `deny`, `escalate`, and `observe`.
 All receivers require `Authorization: Bearer <service-token>` and
 `x-spctre-integration-id: <integration-id>`.
 
-| Endpoint | Input |
-| --- | --- |
-| `POST /api/v1/ingest/providers/generic_json` | One JSON object |
-| `POST /api/v1/ingest/providers/generic_ndjson` | One JSON object per line |
-| `POST /api/v1/ingest/cloudevents` | CloudEvents structured or binary HTTP JSON |
-| `POST /api/v1/logs` | OTLP/HTTP JSON logs |
+| Endpoint                                       | Input                                      |
+| ---------------------------------------------- | ------------------------------------------ |
+| `POST /api/v1/ingest/providers/generic_json`   | One JSON object                            |
+| `POST /api/v1/ingest/providers/generic_ndjson` | One JSON object per line                   |
+| `POST /api/v1/ingest/cloudevents`              | CloudEvents structured or binary HTTP JSON |
+| `POST /api/v1/logs`                            | OTLP/HTTP JSON logs                        |
 
 The OTLP endpoint follows the OTLP/HTTP logs suffix: configure a non-signal
 specific exporter endpoint ending in `/api`, which resolves to `/api/v1/logs`.
 
 Batch responses contain a result for every NDJSON or OTLP log record. A bad
 record does not prevent unrelated records from being ingested; a partial batch
-returns `207 Multi-Status`. Requests are capped at 1 MiB.
+returns `207 Multi-Status`. Requests are capped at 1 MiB and 500 records.
 
 Source delivery is at-least-once. When the active mapping resolves a source
 event ID, that ID is the idempotency key (`source:<sourceEventId>`). A retry
