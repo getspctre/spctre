@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from "crypto";
-import { afterEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
+import { createTestTenantFixture } from "./test-db-fixtures";
 
 // Contract for POST /api/v1/blueprint/imports: the blueprint:import scope is
 // required (a runtime bundle:read token is rejected); the import is FAIL-CLOSED
@@ -14,7 +15,21 @@ const { POST } = await import("../app/api/v1/blueprint/imports/route");
 const { setAgentBlueprintRevisionStatus } = await import("../lib/domains/agent-blueprints/service");
 
 type Fixture = { tenantId: string; workspaceId: string; principalId: string };
-const tenantIds: string[] = [];
+const testTenants = createTestTenantFixture({
+  cleanup: async (tenantId) => {
+    if (!rawSql) return;
+    // Break the blueprint → active revision FK cycle before deleting revisions.
+    await rawSql`UPDATE agent_blueprint SET active_revision_id = NULL WHERE tenant_id = ${tenantId}`;
+    await rawSql`DELETE FROM agent_blueprint_approval WHERE tenant_id = ${tenantId}`;
+    await rawSql`DELETE FROM agent_blueprint_revision WHERE tenant_id = ${tenantId}`;
+    await rawSql`DELETE FROM agent_blueprint WHERE tenant_id = ${tenantId}`;
+    await rawSql`DELETE FROM policy_publish WHERE tenant_id = ${tenantId}`;
+    await rawSql`UPDATE policy_branch SET active_revision_id = NULL WHERE tenant_id = ${tenantId}`;
+    await rawSql`DELETE FROM policy_revision WHERE tenant_id = ${tenantId}`;
+    await rawSql`DELETE FROM policy_branch WHERE tenant_id = ${tenantId}`;
+    await rawSql`DELETE FROM service_token WHERE tenant_id = ${tenantId}`;
+  },
+});
 
 function hashServiceToken(token: string) {
   return createHash("sha256").update(token).digest("hex");
@@ -22,11 +37,9 @@ function hashServiceToken(token: string) {
 
 async function createFixture(): Promise<Fixture> {
   if (!rawSql) throw new Error("DATABASE_URL is required for this contract test.");
-  const tenantId = randomUUID();
+  const tenantId = await testTenants.create({ slugPrefix: "test-bp", name: "Blueprint test" });
   const workspaceId = randomUUID();
   const principalId = randomUUID();
-  tenantIds.push(tenantId);
-  await rawSql`INSERT INTO tenant (id, slug, name) VALUES (${tenantId}, ${`test-bp-${tenantId}`}, 'Blueprint test')`;
   await rawSql`INSERT INTO workspace (id, tenant_id, slug, name) VALUES (${workspaceId}, ${tenantId}, 'acquisition', 'Acquisition')`;
   await rawSql`
     INSERT INTO app_principal (id, tenant_id, subject, display_name, principal_type)
@@ -110,23 +123,6 @@ async function blueprintRevisionCount(blueprintId: string): Promise<number> {
   >`SELECT count(*)::text FROM agent_blueprint_revision WHERE blueprint_id = ${blueprintId}`;
   return Number(rows[0].count);
 }
-
-afterEach(async () => {
-  if (!rawSql) return;
-  for (const tenantId of tenantIds.splice(0)) {
-    // Break the blueprint → active revision FK cycle before deleting revisions.
-    await rawSql`UPDATE agent_blueprint SET active_revision_id = NULL WHERE tenant_id = ${tenantId}`;
-    await rawSql`DELETE FROM agent_blueprint_approval WHERE tenant_id = ${tenantId}`;
-    await rawSql`DELETE FROM agent_blueprint_revision WHERE tenant_id = ${tenantId}`;
-    await rawSql`DELETE FROM agent_blueprint WHERE tenant_id = ${tenantId}`;
-    await rawSql`DELETE FROM policy_publish WHERE tenant_id = ${tenantId}`;
-    await rawSql`UPDATE policy_branch SET active_revision_id = NULL WHERE tenant_id = ${tenantId}`;
-    await rawSql`DELETE FROM policy_revision WHERE tenant_id = ${tenantId}`;
-    await rawSql`DELETE FROM policy_branch WHERE tenant_id = ${tenantId}`;
-    await rawSql`DELETE FROM service_token WHERE tenant_id = ${tenantId}`;
-    await rawSql`DELETE FROM tenant WHERE id = ${tenantId}`;
-  }
-});
 
 describe.skipIf(!databaseAvailable)("POST /api/v1/blueprint/imports contract", () => {
   it("rejects a token that lacks the blueprint:import scope", async () => {

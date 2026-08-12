@@ -1,12 +1,13 @@
 import { createHash, randomUUID } from "crypto";
-import { afterEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
+import { createTestTenantFixture } from "./test-db-fixtures";
 
 const databaseAvailable = Boolean(process.env.DATABASE_URL);
 const { rawSql, runWithTenantContext } = await import("../lib/db");
 const { authenticateServiceToken } = await import("../lib/repositories/auth/service-tokens");
 
 type Fixture = { tenantId: string; workspaceId: string; principalId: string };
-const tenantIds: string[] = [];
+const testTenants = createTestTenantFixture();
 
 function hashServiceToken(token: string) {
   return createHash("sha256").update(token).digest("hex");
@@ -19,12 +20,9 @@ function requestWithAuth(value?: string) {
 }
 
 async function createFixture(): Promise<Fixture> {
-  if (!rawSql) throw new Error("DATABASE_URL is required for repository contract tests.");
-  const tenantId = randomUUID();
+  const tenantId = await testTenants.create({ slugPrefix: "test-token", name: "Token test" });
   const workspaceId = randomUUID();
   const principalId = randomUUID();
-  tenantIds.push(tenantId);
-  await rawSql`INSERT INTO tenant (id, slug, name) VALUES (${tenantId}, ${`test-token-${tenantId}`}, 'Token test')`;
   await rawSql`INSERT INTO workspace (id, tenant_id, slug, name) VALUES (${workspaceId}, ${tenantId}, 'test', 'Test workspace')`;
   await rawSql`
     INSERT INTO app_principal (id, tenant_id, subject, display_name, principal_type)
@@ -49,13 +47,6 @@ async function issueToken(
     )
   `;
 }
-
-afterEach(async () => {
-  if (!rawSql) return;
-  await Promise.all(
-    tenantIds.splice(0).map((tenantId) => rawSql`DELETE FROM tenant WHERE id = ${tenantId}`),
-  );
-});
 
 describe.skipIf(!databaseAvailable)("service token authentication contract", () => {
   it("rejects missing bearer tokens", async () => {

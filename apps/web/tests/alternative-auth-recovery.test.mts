@@ -1,5 +1,6 @@
 import { randomUUID } from "crypto";
-import { afterEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
+import { createTestTenantFixture } from "./test-db-fixtures";
 
 // These are repository contract tests. They intentionally use the migrated
 // Postgres service configured by the web-integration CI job instead of
@@ -15,19 +16,15 @@ const { listPrincipalSessions, revokeSessionAndRecord } =
 
 type Fixture = { tenantId: string; principalId: string; workspaceId: string };
 
-const tenantIds: string[] = [];
+const testTenants = createTestTenantFixture();
 
 async function createFixture(): Promise<Fixture> {
-  if (!rawSql) throw new Error("DATABASE_URL is required for repository contract tests.");
-  const tenantId = randomUUID();
+  const tenantId = await testTenants.create({
+    slugPrefix: "test-auth",
+    name: "Auth repository test",
+  });
   const principalId = randomUUID();
   const workspaceId = randomUUID();
-  tenantIds.push(tenantId);
-
-  await rawSql`
-    INSERT INTO tenant (id, slug, name)
-    VALUES (${tenantId}, ${`test-auth-${tenantId}`}, 'Auth repository test')
-  `;
   await rawSql`
     INSERT INTO workspace (id, tenant_id, slug, name)
     VALUES (${workspaceId}, ${tenantId}, 'test', 'Test workspace')
@@ -38,13 +35,6 @@ async function createFixture(): Promise<Fixture> {
   `;
   return { tenantId, principalId, workspaceId };
 }
-
-afterEach(async () => {
-  if (!rawSql) return;
-  await Promise.all(
-    tenantIds.splice(0).map((tenantId) => rawSql`DELETE FROM tenant WHERE id = ${tenantId}`),
-  );
-});
 
 describe.skipIf(!databaseAvailable)(
   "Alternative Auth & Account Recovery repository contracts",
