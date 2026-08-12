@@ -1,9 +1,7 @@
 import type { JSONValue } from "postgres";
 import { logger } from "@spctre/platform/logging";
-import { reportSwallowedError } from "@/lib/platform/swallow";
 import { sql } from "@/lib/db";
 import {
-  normalizeGenericEvidence,
   sourceContentHash,
   sourceIdempotencyKey,
   type NormalizedGenericEvidence,
@@ -220,6 +218,8 @@ export async function getGenericEvidenceIntegration(params: {
 export async function persistGenericEvidence(params: {
   integration: GenericIntegration;
   payload: Record<string, unknown>;
+  evidence: NormalizedGenericEvidence | null;
+  rejectedReason: string | null;
 }): Promise<
   | {
       outcome: "accepted";
@@ -233,7 +233,7 @@ export async function persistGenericEvidence(params: {
   if (!sql) throw new Error("Database not configured.");
 
   const contentHash = sourceContentHash(params.payload);
-  const sourceEventID = evidenceSourceEventID(params.payload, params.integration.fieldMapping);
+  const sourceEventID = params.evidence?.sourceEventId ?? null;
   const key = sourceIdempotencyKey(sourceEventID ?? undefined, params.payload);
   const sourceRows = await sql<{ id: string }[]>`
     INSERT INTO evidence_source_record (
@@ -249,12 +249,9 @@ export async function persistGenericEvidence(params: {
   const sourceRecordId = sourceRows[0]?.id;
   if (!sourceRecordId) return { outcome: "duplicate" };
 
-  let evidence: NormalizedGenericEvidence;
-  try {
-    evidence = normalizeGenericEvidence(params.payload, params.integration.fieldMapping);
-  } catch (error) {
-    const reason =
-      error instanceof Error ? error.message : "The active mapping rejected this record.";
+  const evidence = params.evidence;
+  if (!evidence) {
+    const reason = params.rejectedReason ?? "The active mapping rejected this record.";
     logger.warn("Generic evidence mapping rejected source record", {
       integrationId: params.integration.id,
       reason,
@@ -317,14 +314,4 @@ async function resolveCanonicalEvidenceAgent(params: {
     LIMIT 1
   `;
   return rows[0]?.canonical_agent_id ?? null;
-}
-
-function evidenceSourceEventID(payload: Record<string, unknown>, mapping: unknown): string | null {
-  try {
-    return normalizeGenericEvidence(payload, mapping).sourceEventId ?? null;
-  } catch (error) {
-    // Invalid mappings still retain their receipt and rejection reason below.
-    reportSwallowedError("evidenceSourceEventID", error);
-    return null;
-  }
 }

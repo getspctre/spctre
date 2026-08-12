@@ -13,6 +13,7 @@ import {
   normalizeGenericEvidence,
   sourceContentHash,
   sourceIdempotencyKey,
+  type NormalizedGenericEvidence,
 } from "@/lib/domains/evidence/generic-mapping";
 
 export function isGenericEvidenceIngestAvailable(): boolean {
@@ -30,9 +31,15 @@ export async function ingestGenericEvidence(params: {
   return runWithTenantContext(params.tenantId, async () => {
     const integration = await getGenericEvidenceIntegration(params);
     if (!integration) return { outcome: "not_found" as const };
-    const delegated = await delegateGenericEvidenceToWorker({ integration, ...params });
+    const normalized = normalizeEvidence(params.payload, integration);
+    const delegated = await delegateGenericEvidenceToWorker({ integration, normalized, ...params });
     if (delegated) return delegated;
-    const result = await persistGenericEvidence({ integration, payload: params.payload });
+    const result = await persistGenericEvidence({
+      integration,
+      payload: params.payload,
+      evidence: normalized.evidence,
+      rejectedReason: normalized.rejectedReason,
+    });
     if (result.outcome === "accepted") {
       void appendOperationsLog({
         tenantId: params.tenantId,
@@ -57,6 +64,7 @@ export async function ingestGenericEvidence(params: {
 
 async function delegateGenericEvidenceToWorker(params: {
   integration: GenericIntegration;
+  normalized: NormalizedEvidence;
   tenantId: string;
   serviceTokenId: string;
   integrationId: string;
@@ -68,17 +76,7 @@ async function delegateGenericEvidenceToWorker(params: {
   const secret = workerInternalSecret();
   if (!baseUrl || !secret) return null;
 
-  let canonical: ReturnType<typeof normalizeGenericEvidence> | null = null;
-  let rejectedReason: string | null = null;
-  try {
-    canonical = normalizeGenericEvidence(params.payload, params.integration.fieldMapping);
-  } catch (error) {
-    reportSwallowedError("delegateGenericEvidenceToWorker.mapping", error, {
-      integrationId: params.integration.id,
-    });
-    rejectedReason =
-      error instanceof Error ? error.message : "The active mapping rejected this record.";
-  }
+  const { evidence: canonical, rejectedReason } = params.normalized;
   const sourceEventId = canonical?.sourceEventId ?? null;
   const target = new URL(
     "/internal/generic-evidence",
@@ -146,4 +144,30 @@ async function delegateGenericEvidenceToWorker(params: {
     };
   }
   throw new Error("Worker generic evidence ingest returned an invalid response.");
+}
+
+type NormalizedEvidence = {
+  evidence: NormalizedGenericEvidence | null;
+  rejectedReason: string | null;
+};
+
+function normalizeEvidence(
+  payload: Record<string, unknown>,
+  integration: GenericIntegration,
+): NormalizedEvidence {
+  try {
+    return {
+      evidence: normalizeGenericEvidence(payload, integration.fieldMapping),
+      rejectedReason: null,
+    };
+  } catch (error) {
+    reportSwallowedError("ingestGenericEvidence.mapping", error, {
+      integrationId: integration.id,
+    });
+    return {
+      evidence: null,
+      rejectedReason:
+        error instanceof Error ? error.message : "The active mapping rejected this record.",
+    };
+  }
 }
