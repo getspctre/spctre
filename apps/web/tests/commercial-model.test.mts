@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { API_VERSION } from "@spctre/api-contracts";
+import { createRouteRequest } from "./route-test-helper";
 
 const getWorkspaceContextSpy = vi.fn();
 const getCommercialProfileSpy = vi.fn();
@@ -101,7 +102,9 @@ describe("commercial model", () => {
     listCommercialEventsSpy.mockResolvedValue([]);
 
     const response = await usageBillingRoute.GET(
-      new Request("http://localhost:3000/api/usage-billing/export", {
+      createRouteRequest({
+        path: "/api/usage-billing/export",
+        method: "GET",
         headers: { "x-request-id": "trace-usage-export" },
       }),
     );
