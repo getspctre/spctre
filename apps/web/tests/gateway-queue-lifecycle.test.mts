@@ -664,21 +664,17 @@ describe("Gateway decide API — outcome and queue routing", () => {
   });
 
   it("returns PROCEED for low-risk inputs", async () => {
-    const req = new Request("http://localhost:3000/api/gateway/decide", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        decisionId: "dec-decide-low",
-        artifactHash: "sha256:decide-test",
-        policyContext: [
-          {
-            scope: "WORKSPACE",
-            branchId: "b-1",
-            revisionId: "r-1",
-            artifactHash: "sha256:decide-test",
-          },
-        ],
-      }),
+    const req = gatewayRequest("/api/gateway/decide", {
+      decisionId: "dec-decide-low",
+      artifactHash: "sha256:decide-test",
+      policyContext: [
+        {
+          scope: "WORKSPACE",
+          branchId: "b-1",
+          revisionId: "r-1",
+          artifactHash: "sha256:decide-test",
+        },
+      ],
     });
     const res = await decidePost(req);
     const body = (await res.json()) as {
@@ -692,22 +688,18 @@ describe("Gateway decide API — outcome and queue routing", () => {
   });
 
   it("returns ESCALATE and queued=true for high-risk input", async () => {
-    const req = new Request("http://localhost:3000/api/gateway/decide", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        decisionId: "dec-decide-high",
-        artifactHash: "sha256:decide-test",
-        policyContext: [
-          {
-            scope: "WORKSPACE",
-            branchId: "b-1",
-            revisionId: "r-1",
-            artifactHash: "sha256:decide-test",
-          },
-        ],
-        consequence: "HIGH",
-      }),
+    const req = gatewayRequest("/api/gateway/decide", {
+      decisionId: "dec-decide-high",
+      artifactHash: "sha256:decide-test",
+      policyContext: [
+        {
+          scope: "WORKSPACE",
+          branchId: "b-1",
+          revisionId: "r-1",
+          artifactHash: "sha256:decide-test",
+        },
+      ],
+      consequence: "HIGH",
     });
     const res = await decidePost(req);
     const body = (await res.json()) as { decision: { outcome: string }; queued: boolean };
@@ -730,23 +722,19 @@ describe("Gateway decide API — outcome and queue routing", () => {
         ],
       },
     });
-    const req = new Request("http://localhost:3000/api/gateway/decide", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        decisionId: "dec-scout-brief",
-        artifactHash: "sha256:decide-test",
-        policyContext: [
-          {
-            scope: "WORKSPACE",
-            branchId: "b-1",
-            revisionId: "r-1",
-            artifactHash: "sha256:decide-test",
-          },
-        ],
-        connector: "acquisition-scout",
-        action: "brief.file",
-      }),
+    const req = gatewayRequest("/api/gateway/decide", {
+      decisionId: "dec-scout-brief",
+      artifactHash: "sha256:decide-test",
+      policyContext: [
+        {
+          scope: "WORKSPACE",
+          branchId: "b-1",
+          revisionId: "r-1",
+          artifactHash: "sha256:decide-test",
+        },
+      ],
+      connector: "acquisition-scout",
+      action: "brief.file",
     });
     const body = (await (await decidePost(req)).json()) as {
       decision: { outcome: string };
