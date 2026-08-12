@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { createRouteRequest } from "./route-test-helper";
 
 const {
   getActiveScopeSpy,
@@ -78,7 +79,9 @@ describe("shared route scope helper integrations", () => {
   it("keeps compliance status unauthorized and success envelopes stable", async () => {
     getAuthSessionSpy.mockResolvedValueOnce(null);
     await expectAuthRequired(
-      await complianceStatusGet(new Request("http://localhost:3000/api/compliance/status")),
+      await complianceStatusGet(
+        createRouteRequest({ path: "/api/compliance/status", method: "GET" }),
+      ),
     );
 
     getAuthSessionSpy.mockResolvedValueOnce(session());
@@ -86,7 +89,7 @@ describe("shared route scope helper integrations", () => {
     getCompliancePacketSpy.mockResolvedValueOnce(null);
 
     const response = await complianceStatusGet(
-      new Request("http://localhost:3000/api/compliance/status"),
+      createRouteRequest({ path: "/api/compliance/status", method: "GET" }),
     );
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toMatchObject({
@@ -98,7 +101,7 @@ describe("shared route scope helper integrations", () => {
   it("keeps workflow config unauthorized and success envelopes stable", async () => {
     getAuthSessionSpy.mockResolvedValueOnce(null);
     await expectAuthRequired(
-      await workflowConfigGet(new Request("http://localhost:3000/api/workflow/config")),
+      await workflowConfigGet(createRouteRequest({ path: "/api/workflow/config", method: "GET" })),
     );
 
     getAuthSessionSpy.mockResolvedValueOnce(session());
@@ -106,7 +109,7 @@ describe("shared route scope helper integrations", () => {
     getApprovalWorkflowConfigSpy.mockResolvedValueOnce({ mode: "manual" });
 
     const response = await workflowConfigGet(
-      new Request("http://localhost:3000/api/workflow/config?environment=prod"),
+      createRouteRequest({ path: "/api/workflow/config?environment=prod", method: "GET" }),
     );
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toMatchObject({
@@ -119,9 +122,10 @@ describe("shared route scope helper integrations", () => {
   it("keeps agent surface delete unauthorized and success envelopes stable", async () => {
     getAuthSessionSpy.mockResolvedValueOnce(null);
     await expectAuthRequired(
-      await agentSurfaceDelete(new Request("http://localhost:3000/api/agents/a-1/surfaces/s-1"), {
-        params: Promise.resolve({ id: "agent-1", surfaceId: "surface-1" }),
-      }),
+      await agentSurfaceDelete(
+        createRouteRequest({ path: "/api/agents/a-1/surfaces/s-1", method: "DELETE" }),
+        { params: Promise.resolve({ id: "agent-1", surfaceId: "surface-1" }) },
+      ),
     );
 
     getAuthSessionSpy.mockResolvedValueOnce(session());
@@ -133,7 +137,7 @@ describe("shared route scope helper integrations", () => {
     unlinkAgentSurfaceSpy.mockResolvedValueOnce(true);
 
     const response = await agentSurfaceDelete(
-      new Request("http://localhost:3000/api/agents/a-1/surfaces/s-1"),
+      createRouteRequest({ path: "/api/agents/a-1/surfaces/s-1", method: "DELETE" }),
       { params: Promise.resolve({ id: "agent-1", surfaceId: "surface-1" }) },
     );
     expect(response.status).toBe(200);
