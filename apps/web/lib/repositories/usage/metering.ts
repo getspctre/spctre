@@ -5,6 +5,7 @@ import { resolveBillingPeriod } from "@/lib/entitlements/billing-period";
 export type UsageMetric = "RETAINED_EVENTS" | "SIMULATION_EVENTS";
 
 export interface UsagePeriodSummary {
+  periodId: string;
   periodStart: string;
   periodEnd: string;
   metric: UsageMetric;
@@ -109,6 +110,7 @@ export async function getUsagePeriod(
 
   const rows = await sql<
     {
+      id: string;
       period_start: Date;
       period_end: Date;
       metric: UsageMetric;
@@ -121,7 +123,7 @@ export async function getUsagePeriod(
       measured_at: Date | null;
     }[]
   >`
-    SELECT period_start, period_end, metric, ingested_count, retained_count,
+    SELECT id, period_start, period_end, metric, ingested_count, retained_count,
            included_capacity, entitlement_version, overage_state,
            cap_notified_at, measured_at
     FROM tenant_usage_period
@@ -135,6 +137,7 @@ export async function getUsagePeriod(
   if (!row) return null;
 
   return {
+    periodId: row.id,
     periodStart: row.period_start.toISOString(),
     periodEnd: row.period_end.toISOString(),
     metric: row.metric,
