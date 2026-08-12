@@ -1,6 +1,7 @@
 import { runWithTenantContext } from "@/lib/tenant-context";
 import { billingMeteringService } from "@/lib/ee-adapters/billing-metering";
-import { enforcedEntitlementValue, planEntitlements } from "@/lib/entitlements/catalog";
+import { enforcedEntitlementValue } from "@/lib/entitlements/catalog";
+import { resolvePlanEntitlements } from "@/lib/ee-adapters/entitlement-catalog";
 import { getCommercialProfile } from "@/lib/repositories/workspace";
 import {
   listUnreportedClosedPeriods,
@@ -147,6 +148,9 @@ async function reportPeriod(
  * code path — which is the point, because the catalog is the thing the pricing
  * check and the product surfaces already agree with.
  *
+ * A deployment with no commercial catalog resolves unmetered entitlements and
+ * so never charges, which is the same answer its billing slot would give.
+ *
  * A charge failure is deliberately not fatal to the report. The usage figure is
  * already with the provider and the submission is recorded; losing that because
  * a subsequent invoice call failed would make the next retry re-report a period
@@ -164,7 +168,9 @@ async function chargeOverageIfEnforced(
   // customer record.
   if (planCode === "HOSTED_TRIAL") return false;
 
-  const enforcedCapacity = enforcedEntitlementValue(planEntitlements(planCode).retainedEvents);
+  const enforcedCapacity = enforcedEntitlementValue(
+    (await resolvePlanEntitlements(planCode)).retainedEvents,
+  );
   if (enforcedCapacity === null) return false;
   if (request.reportedQuantity <= enforcedCapacity) return false;
 

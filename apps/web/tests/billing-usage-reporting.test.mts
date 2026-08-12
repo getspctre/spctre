@@ -124,7 +124,7 @@ describe("the overage billing switch", () => {
   it("charges only when the plan's entitlement is enforced", async () => {
     const source = await read("../lib/domains/billing/usage-reporting.ts");
     expect(source).toMatch(
-      /enforcedEntitlementValue\(planEntitlements\(planCode\)\.retainedEvents\)/,
+      /enforcedEntitlementValue\(\s*\(await resolvePlanEntitlements\(planCode\)\)\.retainedEvents,?\s*\)/,
     );
     expect(source).toMatch(/if \(enforcedCapacity === null\) return false;/);
   });

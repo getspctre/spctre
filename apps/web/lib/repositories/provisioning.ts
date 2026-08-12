@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from "crypto";
 import { rawSql, sql, runWithTenantContext } from "@/lib/db";
-import { ENTITLEMENT_CATALOG_VERSION, planEntitlements } from "@/lib/entitlements/catalog";
+import { planEntitlements } from "@/lib/entitlements/catalog";
+import { resolveEntitlementCatalog } from "@/lib/ee-adapters/entitlement-catalog";
 
 export type HostedPlanCode = "HOSTED_TRIAL" | "TEAM" | "BUSINESS" | "ENTERPRISE";
 
@@ -190,8 +191,10 @@ async function writeTenantDependents(
     // when it does not (checkout before the subscription exists).
     // Materialize the plan's retention window and the catalog version that
     // produced it, so the retention worker reads a provisioned value rather
-    // than re-deriving one from the plan name.
-    const entitlements = planEntitlements(params.planCode);
+    // than re-deriving one from the plan name. A null window is stored as NULL
+    // and the worker prunes nothing for the tenant.
+    const catalog = await resolveEntitlementCatalog();
+    const entitlements = planEntitlements(catalog, params.planCode);
     await tx`
       INSERT INTO tenant_commercial_profile (
         tenant_id, plan_code, lifecycle_status, sales_status,
@@ -202,7 +205,7 @@ async function writeTenantDependents(
         ${tenantId}, ${params.planCode}, ${params.lifecycleStatus}, 'CUSTOMER',
         ${params.email}, ${params.billingCustomerId},
         ${entitlements.retentionWindowDays.value}, ${entitlements.retainedEvents.value},
-        ${ENTITLEMENT_CATALOG_VERSION}, now()
+        ${catalog.version}, now()
       )
       ON CONFLICT (tenant_id) DO UPDATE SET
         plan_code = EXCLUDED.plan_code,

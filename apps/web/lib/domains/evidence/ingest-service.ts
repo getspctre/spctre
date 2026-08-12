@@ -28,7 +28,8 @@ import {
   validateEvidenceWorkspaceBoundary,
 } from "@/lib/repositories/evidence";
 import { getCommercialProfile } from "@/lib/repositories/workspace";
-import { PLAN_ENTITLEMENTS, enforcedEntitlementValue } from "@/lib/entitlements/catalog";
+import { enforcedEntitlementValue } from "@/lib/entitlements/catalog";
+import { resolveEntitlementCatalog } from "@/lib/ee-adapters/entitlement-catalog";
 import { getMeteredRetainedCount } from "@/lib/repositories/usage/metering";
 import { ingestTrustScoreEvent } from "@/lib/repositories/trust";
 import { recordConversionTelemetry } from "@/lib/repositories/onboarding/telemetry";
@@ -598,20 +599,26 @@ export async function ingestRuntimeEvidence(input: {
     // These checks are independent of one another, so run them concurrently
     // rather than strictly sequentially on the ingest hot path.
     // See database-optimizations-audit finding 4.
-    const [profile, workspaceCheck, contextCheck] = await Promise.all([
+    const [profile, workspaceCheck, contextCheck, catalog] = await Promise.all([
       getCommercialProfile(tenantId).catch(swallow("getCommercialProfile", null)),
       validateEvidenceWorkspaceBoundary(tenantId, workspaceId),
       validateEvidencePolicyContextBoundary(scopedInput.policyContext, tenantId, workspaceId),
+      resolveEntitlementCatalog(),
     ]);
 
     // Enforce the free tier's retained-event capacity. The count depends on the
     // profile plan, so it stays sequential after the fetch.
     //
-    // The capacity comes from the entitlement catalog rather than a literal, so
-    // the free tier is defined in one place. Only HOSTED_TRIAL is gated here:
-    // the paid plans' capacities are not yet measured, and their entitlements
-    // are marked unenforced to say so.
-    const trialCapacity = enforcedEntitlementValue(PLAN_ENTITLEMENTS.HOSTED_TRIAL.retainedEvents);
+    // The capacity comes from the active entitlement catalog rather than a
+    // literal, so the free tier is defined in one place. Only HOSTED_TRIAL is
+    // gated here: the paid plans' capacities are not yet measured, and their
+    // entitlements are marked unenforced to say so.
+    //
+    // An OSS deployment resolves the unmetered catalog, where the trial's
+    // capacity is unenforced and this yields null. That is the whole gate: a
+    // self-hosted install has no free tier to be held to, and every tenant it
+    // creates carries HOSTED_TRIAL as its default plan code.
+    const trialCapacity = enforcedEntitlementValue(catalog.plans.HOSTED_TRIAL.retainedEvents);
     if (profile?.planCode === "HOSTED_TRIAL" && trialCapacity !== null) {
       // Prefer the maintained gauge: it is an indexed single-row read, where
       // countTotalEvidenceEvents scans the tenant's whole key table on every

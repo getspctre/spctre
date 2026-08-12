@@ -14,6 +14,7 @@ import { getSpctrePlan } from "@/lib/feature-flags-server";
 import { archivalService } from "@/lib/ee-adapters/archival";
 import { getCommercialProfile } from "@/lib/repositories/workspace";
 import { resolveRetainUntil } from "@/lib/entitlements/retention";
+import { resolveEntitlementCatalog } from "@/lib/ee-adapters/entitlement-catalog";
 import { countIngestedEventForBilling } from "@/lib/repositories/usage/metering";
 
 export async function countRuntimeEvidence(
@@ -616,7 +617,7 @@ export async function insertRuntimeEvidenceWithDedup(params: {
       // See concurrency-and-memory-audit finding 6.
       try {
         const profile = await getCommercialProfile(params.tenantId);
-        const retainUntil = resolveRetainUntil(profile);
+        const retainUntil = resolveRetainUntil(profile, await resolveEntitlementCatalog());
         await archivalService.store({
           decisionId: params.evidence.decisionId,
           workspaceId: params.workspaceId,

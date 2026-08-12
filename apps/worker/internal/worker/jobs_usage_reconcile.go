@@ -90,9 +90,10 @@ func measureOpenUsagePeriods(ctx context.Context, db *pgxpool.Pool) ([]usageMeas
 			tup.retained_count,
 			COALESCE(retained.retained_count, 0) AS measured,
 			-- Capacity is read from the profile rather than derived from
-			-- plan_code: provisioning materializes it from the entitlement
-			-- catalog (apps/web/lib/entitlements/catalog.ts) so the plan ladder
-			-- is not duplicated here in a second language.
+			-- plan_code: provisioning materializes it from whichever
+			-- entitlement catalog the deployment supplies, so the plan ladder
+			-- is not duplicated here in a second language — and a deployment
+			-- with no commercial catalog materializes NULL, which is no cap.
 			COALESCE(tcp.retained_event_capacity, tup.included_capacity) AS capacity,
 			tup.cap_notified_at
 		FROM tenant_usage_period tup

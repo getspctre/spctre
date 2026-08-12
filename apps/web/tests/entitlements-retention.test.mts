@@ -1,8 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { PLAN_ENTITLEMENTS } from "../lib/entitlements/catalog.ts";
+import { OSS_ENTITLEMENT_CATALOG, type EntitlementCatalog } from "../lib/entitlements/catalog.ts";
 import {
-  FALLBACK_RETENTION_WINDOW_DAYS,
-  PLAN_RETENTION_WINDOW_DAYS,
   describeRetentionWindow,
   resolveRetainUntil,
   resolveRetentionWindowDays,
@@ -11,12 +9,51 @@ import {
 
 const PLAN_CODES: CommercialPlanCode[] = ["HOSTED_TRIAL", "TEAM", "BUSINESS", "ENTERPRISE"];
 
+/**
+ * A stand-in for a commercial catalog. The real windows are supplied by the
+ * deployment that sells them, so these tests state their own rather than
+ * asserting numbers this repository is no longer entitled to hold.
+ */
+const metered: EntitlementCatalog = {
+  version: "test.1",
+  plans: {
+    HOSTED_TRIAL: {
+      displayName: "Hosted Trial",
+      workspaces: { value: 1, enforced: true },
+      retainedEvents: { value: 1_000, enforced: true },
+      retentionWindowDays: { value: 90, enforced: true },
+      simulationEvents: { value: null, enforced: false },
+    },
+    TEAM: {
+      displayName: "Team",
+      workspaces: { value: 3, enforced: true },
+      retainedEvents: { value: 100_000, enforced: false },
+      retentionWindowDays: { value: 365, enforced: true },
+      simulationEvents: { value: null, enforced: false },
+    },
+    BUSINESS: {
+      displayName: "Business",
+      workspaces: { value: 12, enforced: true },
+      retainedEvents: { value: 1_000_000, enforced: false },
+      retentionWindowDays: { value: 1095, enforced: true },
+      simulationEvents: { value: 50_000, enforced: false },
+    },
+    ENTERPRISE: {
+      displayName: "Enterprise",
+      workspaces: { value: 50, enforced: true },
+      retainedEvents: { value: 10_000_000, enforced: false },
+      retentionWindowDays: { value: 2555, enforced: true },
+      simulationEvents: { value: 1_000_000, enforced: false },
+    },
+  },
+};
+
 describe("resolveRetentionWindowDays", () => {
-  it("returns the documented default for every plan", () => {
-    expect(resolveRetentionWindowDays({ planCode: "HOSTED_TRIAL" })).toBe(90);
-    expect(resolveRetentionWindowDays({ planCode: "TEAM" })).toBe(365);
-    expect(resolveRetentionWindowDays({ planCode: "BUSINESS" })).toBe(1095);
-    expect(resolveRetentionWindowDays({ planCode: "ENTERPRISE" })).toBe(2555);
+  it("returns the catalog's default for every plan", () => {
+    expect(resolveRetentionWindowDays({ planCode: "HOSTED_TRIAL" }, metered)).toBe(90);
+    expect(resolveRetentionWindowDays({ planCode: "TEAM" }, metered)).toBe(365);
+    expect(resolveRetentionWindowDays({ planCode: "BUSINESS" }, metered)).toBe(1095);
+    expect(resolveRetentionWindowDays({ planCode: "ENTERPRISE" }, metered)).toBe(2555);
   });
 
   // The bug this module exists to fix: the archival and compliance call sites
@@ -25,89 +62,85 @@ describe("resolveRetentionWindowDays", () => {
   // deciding how long to archive for.
   it("lets an explicit window override the plan default on every plan", () => {
     for (const planCode of PLAN_CODES) {
-      expect(resolveRetentionWindowDays({ planCode, retentionWindowDays: 730 })).toBe(730);
+      expect(resolveRetentionWindowDays({ planCode, retentionWindowDays: 730 }, metered)).toBe(730);
     }
   });
 
   it("treats a non-positive or non-finite stored window as unset", () => {
     for (const invalid of [0, -1, Number.NaN, Number.POSITIVE_INFINITY]) {
-      expect(resolveRetentionWindowDays({ planCode: "TEAM", retentionWindowDays: invalid })).toBe(
-        365,
-      );
+      expect(
+        resolveRetentionWindowDays({ planCode: "TEAM", retentionWindowDays: invalid }, metered),
+      ).toBe(365);
     }
   });
 
-  it("falls back when the plan code is missing or unrecognized", () => {
-    expect(resolveRetentionWindowDays(null)).toBe(FALLBACK_RETENTION_WINDOW_DAYS);
-    expect(resolveRetentionWindowDays({})).toBe(FALLBACK_RETENTION_WINDOW_DAYS);
-    expect(resolveRetentionWindowDays({ planCode: "OSS_EVALUATION" })).toBe(
-      FALLBACK_RETENTION_WINDOW_DAYS,
-    );
+  it("falls back to the trial when the plan code is missing or unrecognized", () => {
+    const trial = metered.plans.HOSTED_TRIAL.retentionWindowDays.value;
+    expect(resolveRetentionWindowDays(null, metered)).toBe(trial);
+    expect(resolveRetentionWindowDays({}, metered)).toBe(trial);
+    expect(resolveRetentionWindowDays({ planCode: "OSS_EVALUATION" }, metered)).toBe(trial);
+  });
+});
+
+// Where a self-hosted install used to inherit the hosted trial's 90 days and
+// prune its own evidence on it.
+describe("with no commercial catalog", () => {
+  it("gives every plan an indefinite window", () => {
+    for (const planCode of PLAN_CODES) {
+      expect(resolveRetentionWindowDays({ planCode }, OSS_ENTITLEMENT_CATALOG)).toBeNull();
+    }
+    expect(resolveRetentionWindowDays(null, OSS_ENTITLEMENT_CATALOG)).toBeNull();
+  });
+
+  it("still honours a window an operator set explicitly", () => {
+    expect(
+      resolveRetentionWindowDays(
+        { planCode: "TEAM", retentionWindowDays: 30 },
+        OSS_ENTITLEMENT_CATALOG,
+      ),
+    ).toBe(30);
+  });
+
+  it("gives archived evidence no expiry", () => {
+    expect(resolveRetainUntil({ planCode: "TEAM" }, OSS_ENTITLEMENT_CATALOG)).toBeNull();
   });
 });
 
 describe("resolveRetainUntil", () => {
   it("offsets from the supplied instant by the effective window", () => {
     const from = new Date("2026-01-01T00:00:00.000Z");
-    expect(resolveRetainUntil({ planCode: "TEAM" }, from).toISOString()).toBe(
+    expect(resolveRetainUntil({ planCode: "TEAM" }, metered, from)?.toISOString()).toBe(
       "2027-01-01T00:00:00.000Z",
     );
     expect(
-      resolveRetainUntil({ planCode: "TEAM", retentionWindowDays: 1 }, from).toISOString(),
+      resolveRetainUntil(
+        { planCode: "TEAM", retentionWindowDays: 1 },
+        metered,
+        from,
+      )?.toISOString(),
     ).toBe("2026-01-02T00:00:00.000Z");
   });
 });
 
 describe("describeRetentionWindow", () => {
-  it("names the plan limit when the window is the plan default", () => {
-    expect(describeRetentionWindow({ planCode: "BUSINESS" })).toBe(
-      "Business 3-year retention limit",
+  it("reports the effective day count", () => {
+    expect(describeRetentionWindow({ planCode: "BUSINESS" }, metered)).toBe(
+      "Business 1095-day retention limit",
     );
-  });
-
-  it("reports the effective day count when a tenant overrides the default", () => {
-    expect(describeRetentionWindow({ planCode: "TEAM", retentionWindowDays: 730 })).toBe(
+    expect(describeRetentionWindow({ planCode: "TEAM", retentionWindowDays: 730 }, metered)).toBe(
       "Team 730-day retention limit",
     );
   });
 
-  // Enterprise windows are negotiated, so the duration is shown even at the
-  // default. This preserves the string the compliance surface rendered before
-  // the derivation was centralized.
-  it("always shows the day count for Enterprise", () => {
-    expect(describeRetentionWindow({ planCode: "ENTERPRISE" })).toBe(
-      "Enterprise 2555-day retention limit",
-    );
-    expect(describeRetentionWindow({ planCode: "ENTERPRISE", retentionWindowDays: 3650 })).toBe(
-      "Enterprise 3650-day retention limit",
-    );
-  });
-
   it("falls back to trial copy for an unrecognized plan", () => {
-    expect(describeRetentionWindow({ planCode: "OSS_EVALUATION" })).toBe(
+    expect(describeRetentionWindow({ planCode: "OSS_EVALUATION" }, metered)).toBe(
       "Hosted Trial 90-day retention limit",
     );
   });
-});
 
-// This module and the catalog must stay in step: the plan defaults exposed here
-// are what provisioning materializes onto the profile, and the retention worker
-// prunes from that materialized value.
-//
-// The worker previously carried its own copy of the plan defaults and a test
-// here parsed them to keep the two aligned. It no longer derives anything —
-// `entitlements-catalog.test.mts` asserts that, which is a stronger guarantee
-// than parity between two implementations.
-describe("catalog alignment", () => {
-  it("exposes the catalog's retention windows", () => {
-    expect(PLAN_RETENTION_WINDOW_DAYS).toEqual({
-      HOSTED_TRIAL: PLAN_ENTITLEMENTS.HOSTED_TRIAL.retentionWindowDays.value,
-      TEAM: PLAN_ENTITLEMENTS.TEAM.retentionWindowDays.value,
-      BUSINESS: PLAN_ENTITLEMENTS.BUSINESS.retentionWindowDays.value,
-      ENTERPRISE: PLAN_ENTITLEMENTS.ENTERPRISE.retentionWindowDays.value,
-    });
-    expect(FALLBACK_RETENTION_WINDOW_DAYS).toBe(
-      PLAN_ENTITLEMENTS.HOSTED_TRIAL.retentionWindowDays.value,
+  it("says so plainly when nothing expires", () => {
+    expect(describeRetentionWindow({ planCode: "TEAM" }, OSS_ENTITLEMENT_CATALOG)).toBe(
+      "Team — evidence retained indefinitely",
     );
   });
 });

@@ -8,7 +8,13 @@ export interface ArchivalRecord {
   workspaceId: string;
   tenantId: string;
   payload: unknown;
-  retainUntil: Date;
+  /**
+   * When the archived record becomes eligible for pruning, or null when the
+   * tenant's entitlement sets no retention window. A null must be stored as
+   * "no expiry": an implementation that coerces it to a date would prune
+   * evidence the tenant was told would be kept.
+   */
+  retainUntil: Date | null;
 }
 
 export interface ArchivalResult {

@@ -12,12 +12,13 @@ import {
 import { POLICY_PACKS } from "@spctre/policy-schema";
 import {
   COMMERCIAL_PLAN_CODES,
-  PLAN_ENTITLEMENTS,
   enforcedEntitlementValue,
   planEntitlements,
   type CommercialPlanCode,
+  type EntitlementCatalog,
   type PlanEntitlements,
 } from "@/lib/entitlements/catalog";
+import { resolveEntitlementCatalog } from "@/lib/ee-adapters/entitlement-catalog";
 import { describeRetentionWindow, resolveRetentionWindowDays } from "@/lib/entitlements/retention";
 import { getUsageBillingInputs } from "@/lib/domains/usage-billing/service";
 
@@ -63,7 +64,6 @@ interface UsageRow {
   value: number;
   /** The enforced limit, or null when the product does not hold the tenant to one. */
   included: number | null;
-  businessIncluded: number;
   detail: string;
   /**
    * What the meter reads when there is no enforced limit. A null `included`
@@ -80,9 +80,13 @@ type UsageWorkspaceContext = Awaited<ReturnType<typeof getWorkspaceContext>>;
 
 // Derive the usage meters, recommended plan, and readiness labels from the
 // measured usage.
-function computeUsagePosture(inputs: UsageBillingInputs, workspaceContext: UsageWorkspaceContext) {
+function computeUsagePosture(
+  inputs: UsageBillingInputs,
+  workspaceContext: UsageWorkspaceContext,
+  catalog: EntitlementCatalog,
+) {
   const { usage, profile, branches, agents, simulations, usagePeriod } = inputs;
-  const activePlan = planEntitlements(profile.planCode);
+  const activePlan = planEntitlements(catalog, profile.planCode);
   const importedPackIds = new Set(branches.map((branch) => branch.name));
   const importedPackCount = POLICY_PACKS.filter((pack) => importedPackIds.has(pack.id)).length;
   const simulationEventCount = simulations.reduce((sum, run) => sum + run.sourceEventCount, 0);
@@ -95,6 +99,8 @@ function computeUsagePosture(inputs: UsageBillingInputs, workspaceContext: Usage
   const retainedEvents = measuredRetained ?? usage.retainedAuditEventCount;
   const totalWorkspaces = usage.workspaceCount || workspaceContext.workspaces.length;
 
+  const retentionWindowDays = resolveRetentionWindowDays(profile, catalog);
+
   const usageRows: UsageRow[] = [
     {
       label: "Workspaces",
@@ -103,14 +109,12 @@ function computeUsagePosture(inputs: UsageBillingInputs, workspaceContext: Usage
       // does not measure, and a null `included` renders as plan information
       // rather than as a limit the tenant is being held to.
       included: enforcedEntitlementValue(activePlan.workspaces),
-      businessIncluded: PLAN_ENTITLEMENTS.BUSINESS.workspaces.value,
       detail: workspaceContext.tenantSlug,
     },
     {
       label: "Retained governed events",
       value: retainedEvents,
       included: enforcedEntitlementValue(activePlan.retainedEvents),
-      businessIncluded: PLAN_ENTITLEMENTS.BUSINESS.retainedEvents.value,
       // Measured on every plan, but only capped on the trial. Showing a
       // denominator on the others would assert a limit nothing applies.
       unmeteredLabel: `${retainedEvents}`,
@@ -123,15 +127,13 @@ function computeUsagePosture(inputs: UsageBillingInputs, workspaceContext: Usage
       label: "Retention window",
       value: 0,
       included: null,
-      businessIncluded: 0,
-      unmeteredLabel: `${resolveRetentionWindowDays(profile)} days`,
-      detail: `${describeRetentionWindow(profile)} · searchable evidence history`,
+      unmeteredLabel: retentionWindowDays === null ? "No limit" : `${retentionWindowDays} days`,
+      detail: `${describeRetentionWindow(profile, catalog)} · searchable evidence history`,
     },
     {
       label: "Simulation events",
       value: simulationEventCount,
       included: enforcedEntitlementValue(activePlan.simulationEvents),
-      businessIncluded: PLAN_ENTITLEMENTS.BUSINESS.simulationEvents.value ?? 0,
       sampleOnly: activePlan.simulationEvents.value === null,
       detail: `${simulations.length} replay runs`,
     },
@@ -142,11 +144,16 @@ function computeUsagePosture(inputs: UsageBillingInputs, workspaceContext: Usage
   // Those thresholds had drifted from every published figure.
   const usagePlan =
     COMMERCIAL_PLAN_CODES.find((plan) => {
-      const candidate = PLAN_ENTITLEMENTS[plan];
+      // A null capacity is unlimited, so it covers any usage. This is what the
+      // whole list looks like on a deployment with no commercial catalog, where
+      // the recommendation collapses to the tenant's own plan.
+      const candidate = catalog.plans[plan];
+      const covers = (used: number, entitlement: number | null) =>
+        entitlement === null || used <= entitlement;
       return (
-        totalWorkspaces <= candidate.workspaces.value &&
-        retainedEvents <= candidate.retainedEvents.value &&
-        simulationEventCount <= (candidate.simulationEvents.value ?? 0)
+        covers(totalWorkspaces, candidate.workspaces.value) &&
+        covers(retainedEvents, candidate.retainedEvents.value) &&
+        covers(simulationEventCount, candidate.simulationEvents.value)
       );
     }) ?? "ENTERPRISE";
   const recommendedPlan: CommercialPlanCode =
@@ -232,11 +239,13 @@ function PlanUpgradeSection({
   currentPlan,
   workspaceSlug,
   siteUrl,
+  catalog,
 }: {
   recommendedPlan: CommercialPlanCode;
   currentPlan: CommercialPlanCode;
   workspaceSlug: string;
   siteUrl: string;
+  catalog: EntitlementCatalog;
 }) {
   if (
     recommendedPlan !== currentPlan &&
@@ -246,10 +255,10 @@ function PlanUpgradeSection({
       <section className="commercialAnchorGroup" aria-label="Upgrade plan">
         <div className="commercialAnchorGroupHeader">
           <p className="eyebrow">Self-serve upgrade</p>
-          <h3>Upgrade to {PLAN_ENTITLEMENTS[recommendedPlan].displayName}</h3>
+          <h3>Upgrade to {catalog.plans[recommendedPlan].displayName}</h3>
         </div>
         <p className="meta">
-          Your usage fits the {PLAN_ENTITLEMENTS[recommendedPlan].displayName} plan. No sales call
+          Your usage fits the {catalog.plans[recommendedPlan].displayName} plan. No sales call
           needed.
         </p>
         <a
@@ -257,7 +266,7 @@ function PlanUpgradeSection({
           href={`${siteUrl}/pricing?plan=${recommendedPlan}#checkout`}
         >
           <Send size={16} />
-          Upgrade to {PLAN_ENTITLEMENTS[recommendedPlan].displayName}
+          Upgrade to {catalog.plans[recommendedPlan].displayName}
         </a>
       </section>
     );
@@ -296,12 +305,14 @@ function ValueAnchorsPanel({
   currentPlan,
   workspaceSlug,
   siteUrl,
+  catalog,
   t,
 }: {
   recommendedPlan: CommercialPlanCode;
   currentPlan: CommercialPlanCode;
   workspaceSlug: string;
   siteUrl: string;
+  catalog: EntitlementCatalog;
   t: UsageBillingTranslations;
 }) {
   return (
@@ -340,6 +351,7 @@ function ValueAnchorsPanel({
         currentPlan={currentPlan}
         workspaceSlug={workspaceSlug}
         siteUrl={siteUrl}
+        catalog={catalog}
       />
     </div>
   );
@@ -353,10 +365,12 @@ function BillingPosturePanel({
   agentCount,
   retainedEventCount,
   importedPackCount,
+  catalog,
   t,
 }: {
   profile: UsageBillingInputs["profile"];
   recommendedPlan: CommercialPlanCode;
+  catalog: EntitlementCatalog;
   overIncluded: number;
   readinessLabel: string;
   agentCount: number;
@@ -380,14 +394,14 @@ function BillingPosturePanel({
       <div className="commercialPlanStrip">
         <div>
           <span className="meta">{t("posture.current_plan")}</span>
-          <strong>{PLAN_ENTITLEMENTS[profile.planCode].displayName}</strong>
+          <strong>{catalog.plans[profile.planCode].displayName}</strong>
           <p className="meta">
             {profile.lifecycleStatus.toLowerCase()} / sales {profile.salesStatus.toLowerCase()}
           </p>
         </div>
         <div>
           <span className="meta">{t("posture.recommended_plan")}</span>
-          <strong>{PLAN_ENTITLEMENTS[recommendedPlan].displayName}</strong>
+          <strong>{catalog.plans[recommendedPlan].displayName}</strong>
           <p className="meta">{t("posture.dimensions_beyond", { count: overIncluded })}</p>
         </div>
         <div>
@@ -483,6 +497,7 @@ export async function UsageBillingPageContent({ workspaceSlug }: { workspaceSlug
     workspaceId: workspaceContext.workspaceId,
   });
 
+  const catalog = await resolveEntitlementCatalog();
   const inputs = await getUsageBillingInputs({
     workspaceId: workspaceContext.workspaceId,
     tenantId: workspaceContext.tenantId,
@@ -500,7 +515,7 @@ export async function UsageBillingPageContent({ workspaceSlug }: { workspaceSlug
     readinessLabel,
     primaryHeroLabel,
     showReadinessHeroPill,
-  } = computeUsagePosture(inputs, workspaceContext);
+  } = computeUsagePosture(inputs, workspaceContext, catalog);
   const siteUrl = getSiteUrl();
   const evidenceHref = buildWorkspacePath(workspaceContext.workspaceSlug, "/evidence");
   const packsHref = buildWorkspacePath(workspaceContext.workspaceSlug, "/packs");
@@ -562,7 +577,7 @@ export async function UsageBillingPageContent({ workspaceSlug }: { workspaceSlug
             </div>
             <div>
               <span className="metadata">{t("overview.recommended")}</span>
-              <strong>{PLAN_ENTITLEMENTS[recommendedPlan].displayName}</strong>
+              <strong>{catalog.plans[recommendedPlan].displayName}</strong>
             </div>
             <div>
               <span className="metadata">{t("overview.governed_agents")}</span>
@@ -583,6 +598,7 @@ export async function UsageBillingPageContent({ workspaceSlug }: { workspaceSlug
           agentCount={agents.length}
           retainedEventCount={usage.retainedAuditEventCount}
           importedPackCount={importedPackCount}
+          catalog={catalog}
           t={t}
         />
 
@@ -593,6 +609,7 @@ export async function UsageBillingPageContent({ workspaceSlug }: { workspaceSlug
           currentPlan={profile.planCode}
           workspaceSlug={workspaceContext.workspaceSlug}
           siteUrl={siteUrl}
+          catalog={catalog}
           t={t}
         />
 

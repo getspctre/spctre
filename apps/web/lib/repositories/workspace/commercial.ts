@@ -4,7 +4,8 @@ import {
   recordConversionTelemetry,
   type ConversionTelemetryEventType,
 } from "@/lib/repositories/onboarding/telemetry";
-import { ENTITLEMENT_CATALOG_VERSION, planEntitlements } from "@/lib/entitlements/catalog";
+import { planEntitlements } from "@/lib/entitlements/catalog";
+import { resolveEntitlementCatalog } from "@/lib/ee-adapters/entitlement-catalog";
 import { swallow } from "@/lib/platform/swallow";
 
 export interface CommercialUsageSummary {
@@ -207,7 +208,8 @@ export async function recordBillingLifecycleEvent(
     // term would be silently replaced by the catalog default. When the plan
     // does change, the prior negotiated window no longer describes the tenant's
     // entitlement and the new plan's default takes over.
-    const entitlements = planEntitlements(insertPlanCode);
+    const catalog = await resolveEntitlementCatalog();
+    const entitlements = planEntitlements(catalog, insertPlanCode);
     await sql`
       INSERT INTO tenant_commercial_profile (
         tenant_id, plan_code, lifecycle_status, sales_status,
@@ -218,7 +220,7 @@ export async function recordBillingLifecycleEvent(
         ${tenantId}, ${insertPlanCode}, ${event.lifecycleStatus}, ${event.salesStatus},
         ${event.billingProvider}, ${event.billingCustomerId ?? null}, now(),
         ${entitlements.retentionWindowDays.value}, ${entitlements.retainedEvents.value},
-        ${ENTITLEMENT_CATALOG_VERSION}, now()
+        ${catalog.version}, now()
       )
       ON CONFLICT (tenant_id) DO UPDATE SET
         plan_code = CASE
@@ -320,6 +322,8 @@ export async function requestCommercialReview(params: {
   requestedBy: string;
 }): Promise<void> {
   if (!sql) return;
+  const catalog = await resolveEntitlementCatalog();
+  const trialEntitlements = planEntitlements(catalog, "HOSTED_TRIAL");
   await sql.begin(async (tx) => {
     // Only the sales status changes here, so the existing window is left
     // alone on conflict. The insert branch still provisions one: this is a
@@ -333,9 +337,9 @@ export async function requestCommercialReview(params: {
       ) VALUES (
         ${params.tenantId}, 'HOSTED_TRIAL', 'EVALUATING',
         'REQUESTED', ${params.principalId}, now(),
-        ${planEntitlements("HOSTED_TRIAL").retentionWindowDays.value},
-        ${planEntitlements("HOSTED_TRIAL").retainedEvents.value},
-        ${ENTITLEMENT_CATALOG_VERSION}, now()
+        ${trialEntitlements.retentionWindowDays.value},
+        ${trialEntitlements.retainedEvents.value},
+        ${catalog.version}, now()
       )
       ON CONFLICT (tenant_id) DO UPDATE SET
         sales_status = 'REQUESTED',
