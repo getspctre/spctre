@@ -1,21 +1,19 @@
 import { randomUUID } from "crypto";
-import { afterEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
+import { createTestTenantFixture } from "./test-db-fixtures";
 
 const databaseAvailable = Boolean(process.env.DATABASE_URL);
 const { rawSql, runWithTenantContext } = await import("../lib/db");
 const { getExistingPublishArtifactHash, insertPolicyPublish } =
   await import("../lib/repositories/policy");
 
-const tenantIds: string[] = [];
+const testTenants = createTestTenantFixture();
 
 async function createFixture() {
-  if (!rawSql) throw new Error("DATABASE_URL is required for repository contract tests.");
-  const tenantId = randomUUID();
+  const tenantId = await testTenants.create({ slugPrefix: "test-publish", name: "Publish test" });
   const workspaceId = randomUUID();
   const branchId = randomUUID();
   const revisionId = randomUUID();
-  tenantIds.push(tenantId);
-  await rawSql`INSERT INTO tenant (id, slug, name) VALUES (${tenantId}, ${`test-publish-${tenantId}`}, 'Publish test')`;
   await rawSql`INSERT INTO workspace (id, tenant_id, slug, name) VALUES (${workspaceId}, ${tenantId}, 'test', 'Test workspace')`;
   await rawSql`
     INSERT INTO policy_branch (id, tenant_id, workspace_id, scope, name, created_by)
@@ -27,13 +25,6 @@ async function createFixture() {
   `;
   return { tenantId, branchId, revisionId };
 }
-
-afterEach(async () => {
-  if (!rawSql) return;
-  await Promise.all(
-    tenantIds.splice(0).map((tenantId) => rawSql`DELETE FROM tenant WHERE id = ${tenantId}`),
-  );
-});
 
 describe.skipIf(!databaseAvailable)("policy publish idempotency repository contract", () => {
   it("finds an existing production publication and leaves one durable publish record", async () => {

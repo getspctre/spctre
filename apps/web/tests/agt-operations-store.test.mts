@@ -12,6 +12,7 @@
  */
 
 import { describe, expect, it, vi, beforeEach } from "vitest";
+import { createRouteRequest } from "./route-test-helper";
 import { buildOperationsContentHash } from "@spctre/policy-schema";
 import { isRecord } from "../lib/records";
 
@@ -867,7 +868,7 @@ describe("GET /api/operations", () => {
       created_at: new Date(),
     });
 
-    const req = new Request("http://localhost:3000/api/operations");
+    const req = createRouteRequest({ path: "/api/operations", method: "GET" });
     const res = await operationsGet(req);
     expect(res.status).toBe(200);
 
@@ -878,13 +879,16 @@ describe("GET /api/operations", () => {
   });
 
   it("respects limit query param", async () => {
-    const req = new Request("http://localhost:3000/api/operations?limit=5");
+    const req = createRouteRequest({ path: "/api/operations?limit=5", method: "GET" });
     const res = await operationsGet(req);
     expect(res.status).toBe(200);
   });
 
   it("respects eventType filter", async () => {
-    const req = new Request("http://localhost:3000/api/operations?eventType=POLICY_PUBLISH");
+    const req = createRouteRequest({
+      path: "/api/operations?eventType=POLICY_PUBLISH",
+      method: "GET",
+    });
     const res = await operationsGet(req);
     expect(res.status).toBe(200);
   });
@@ -908,7 +912,7 @@ describe("GET /api/operations/verify", () => {
       }),
     );
 
-    const req = new Request("http://localhost:3000/api/operations/verify");
+    const req = createRouteRequest({ path: "/api/operations/verify", method: "GET" });
     const res = await chainVerifyGet(req);
     expect(res.status).toBe(200);
 
@@ -932,7 +936,7 @@ describe("GET /api/operations/verify", () => {
       }),
     );
 
-    const req = new Request("http://localhost:3000/api/operations/verify");
+    const req = createRouteRequest({ path: "/api/operations/verify", method: "GET" });
     const res = await chainVerifyGet(req);
     expect(res.status).toBe(409);
 
@@ -945,16 +949,16 @@ describe("GET /api/operations/verify", () => {
 
 describe("POST /api/trust/ingest", () => {
   it("accepts a valid trust score payload", async () => {
-    const req = new Request("http://localhost:3000/api/trust/ingest", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: "Bearer svc-token" },
-      body: JSON.stringify({
+    const req = createRouteRequest({
+      path: "/api/trust/ingest",
+      token: "svc-token",
+      body: {
         agentId: "agent-trust-api",
         environment: "production",
         runtimeStack: "AWS_BEDROCK",
         trustScore: 0.92,
         source: "POLICY_EVALUATION",
-      }),
+      },
     });
 
     const res = await trustIngestPost(req);
@@ -965,16 +969,16 @@ describe("POST /api/trust/ingest", () => {
   });
 
   it("rejects trust score > 1", async () => {
-    const req = new Request("http://localhost:3000/api/trust/ingest", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: "Bearer svc-token" },
-      body: JSON.stringify({
+    const req = createRouteRequest({
+      path: "/api/trust/ingest",
+      token: "svc-token",
+      body: {
         agentId: "a",
         environment: "test",
         runtimeStack: "LOCAL",
         trustScore: 1.5,
         source: "MANUAL",
-      }),
+      },
     });
 
     const res = await trustIngestPost(req);
@@ -982,16 +986,16 @@ describe("POST /api/trust/ingest", () => {
   });
 
   it("rejects trust score < 0", async () => {
-    const req = new Request("http://localhost:3000/api/trust/ingest", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: "Bearer svc-token" },
-      body: JSON.stringify({
+    const req = createRouteRequest({
+      path: "/api/trust/ingest",
+      token: "svc-token",
+      body: {
         agentId: "a",
         environment: "test",
         runtimeStack: "LOCAL",
         trustScore: -0.1,
         source: "MANUAL",
-      }),
+      },
     });
 
     const res = await trustIngestPost(req);
@@ -999,15 +1003,10 @@ describe("POST /api/trust/ingest", () => {
   });
 
   it("requires agentId", async () => {
-    const req = new Request("http://localhost:3000/api/trust/ingest", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: "Bearer svc-token" },
-      body: JSON.stringify({
-        environment: "test",
-        runtimeStack: "LOCAL",
-        trustScore: 0.5,
-        source: "MANUAL",
-      }),
+    const req = createRouteRequest({
+      path: "/api/trust/ingest",
+      token: "svc-token",
+      body: { environment: "test", runtimeStack: "LOCAL", trustScore: 0.5, source: "MANUAL" },
     });
 
     const res = await trustIngestPost(req);
@@ -1019,13 +1018,13 @@ describe("POST /api/trust/ingest", () => {
 
 describe("GET /api/trust/history", () => {
   it("requires agentId query param", async () => {
-    const req = new Request("http://localhost:3000/api/trust/history");
+    const req = createRouteRequest({ path: "/api/trust/history", method: "GET" });
     const res = await trustHistoryGet(req);
     expect(res.status).toBe(400);
   });
 
   it("returns 200 with events array", async () => {
-    const req = new Request("http://localhost:3000/api/trust/history?agentId=agent-h");
+    const req = createRouteRequest({ path: "/api/trust/history?agentId=agent-h", method: "GET" });
     const res = await trustHistoryGet(req);
     expect(res.status).toBe(200);
 
@@ -1038,15 +1037,9 @@ describe("GET /api/trust/history", () => {
 
 describe("POST /api/identity/event", () => {
   it("records a CREATED event", async () => {
-    const req = new Request("http://localhost:3000/api/identity/event", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        principalId: "user-prov-1",
-        eventType: "CREATED",
-        source: "ADMIN",
-        detail: {},
-      }),
+    const req = createRouteRequest({
+      path: "/api/identity/event",
+      body: { principalId: "user-prov-1", eventType: "CREATED", source: "ADMIN", detail: {} },
     });
 
     const res = await identityEventPost(req);
@@ -1054,10 +1047,9 @@ describe("POST /api/identity/event", () => {
   });
 
   it("records AGT v4.1.0 signature verification fields", async () => {
-    const req = new Request("http://localhost:3000/api/identity/event", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+    const req = createRouteRequest({
+      path: "/api/identity/event",
+      body: {
         principalId: "agent:route-1",
         eventType: "CREATED",
         source: "SYSTEM",
@@ -1069,7 +1061,7 @@ describe("POST /api/identity/event", () => {
         signature: "ed25519:signature",
         signatureVerificationOutcome: "PASS",
         signatureVerifiedAt: "2026-06-10T00:00:00.000Z",
-      }),
+      },
     });
 
     const res = await identityEventPost(req);
@@ -1077,10 +1069,9 @@ describe("POST /api/identity/event", () => {
   });
 
   it("rejects invalid eventType", async () => {
-    const req = new Request("http://localhost:3000/api/identity/event", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ principalId: "user-bad", eventType: "INVALID_TYPE", source: "ADMIN" }),
+    const req = createRouteRequest({
+      path: "/api/identity/event",
+      body: { principalId: "user-bad", eventType: "INVALID_TYPE", source: "ADMIN" },
     });
 
     const res = await identityEventPost(req);
@@ -1088,10 +1079,9 @@ describe("POST /api/identity/event", () => {
   });
 
   it("requires principalId", async () => {
-    const req = new Request("http://localhost:3000/api/identity/event", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ eventType: "CREATED", source: "ADMIN" }),
+    const req = createRouteRequest({
+      path: "/api/identity/event",
+      body: { eventType: "CREATED", source: "ADMIN" },
     });
 
     const res = await identityEventPost(req);
@@ -1103,7 +1093,7 @@ describe("POST /api/identity/event", () => {
 
 describe("GET /api/identity/events", () => {
   it("returns 200 with events array", async () => {
-    const req = new Request("http://localhost:3000/api/identity/events");
+    const req = createRouteRequest({ path: "/api/identity/events", method: "GET" });
     const res = await identityEventsGet(req);
     expect(res.status).toBe(200);
 
@@ -1116,17 +1106,17 @@ describe("GET /api/identity/events", () => {
 
 describe("POST /api/verification", () => {
   it("records a PASS verification result", async () => {
-    const req = new Request("http://localhost:3000/api/verification", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: "Bearer svc-token" },
-      body: JSON.stringify({
+    const req = createRouteRequest({
+      path: "/api/verification",
+      token: "svc-token",
+      body: {
         artifactHash: "sha256:route-test",
         verificationType: "AGT_VERIFY",
         outcome: "PASS",
         revisionId: "rev-route-1",
         runtimeVersion: "2.0.0",
         summary: {},
-      }),
+      },
     });
 
     const res = await verificationPost(req);
@@ -1138,10 +1128,10 @@ describe("POST /api/verification", () => {
   });
 
   it("records AGT v4.1.0 engine and escrow fields", async () => {
-    const req = new Request("http://localhost:3000/api/verification", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: "Bearer svc-token" },
-      body: JSON.stringify({
+    const req = createRouteRequest({
+      path: "/api/verification",
+      token: "svc-token",
+      body: {
         artifactHash: "sha256:route-agt410",
         verificationType: "AGT_VERIFY_EVIDENCE",
         outcome: "PASS",
@@ -1159,7 +1149,7 @@ describe("POST /api/verification", () => {
         escrowSignature: "ed25519:escrow-signature",
         escrowVerificationOutcome: "PASS",
         escrowVerifiedAt: "2026-06-10T00:00:01.000Z",
-      }),
+      },
     });
 
     const res = await verificationPost(req);
@@ -1167,15 +1157,15 @@ describe("POST /api/verification", () => {
   });
 
   it("rejects invalid AGT tamper-evidence timestamps", async () => {
-    const req = new Request("http://localhost:3000/api/verification", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: "Bearer svc-token" },
-      body: JSON.stringify({
+    const req = createRouteRequest({
+      path: "/api/verification",
+      token: "svc-token",
+      body: {
         artifactHash: "sha256:bad-time",
         verificationType: "AGT_REPLAY",
         outcome: "PASS",
         issuedAt: "not-a-date",
-      }),
+      },
     });
 
     const res = await verificationPost(req);
@@ -1183,14 +1173,10 @@ describe("POST /api/verification", () => {
   });
 
   it("rejects invalid verificationType", async () => {
-    const req = new Request("http://localhost:3000/api/verification", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: "Bearer svc-token" },
-      body: JSON.stringify({
-        artifactHash: "sha256:bad",
-        verificationType: "NOT_REAL",
-        outcome: "PASS",
-      }),
+    const req = createRouteRequest({
+      path: "/api/verification",
+      token: "svc-token",
+      body: { artifactHash: "sha256:bad", verificationType: "NOT_REAL", outcome: "PASS" },
     });
 
     const res = await verificationPost(req);
@@ -1198,14 +1184,10 @@ describe("POST /api/verification", () => {
   });
 
   it("rejects invalid outcome", async () => {
-    const req = new Request("http://localhost:3000/api/verification", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: "Bearer svc-token" },
-      body: JSON.stringify({
-        artifactHash: "sha256:bad",
-        verificationType: "AGT_VERIFY",
-        outcome: "UNKNOWN",
-      }),
+    const req = createRouteRequest({
+      path: "/api/verification",
+      token: "svc-token",
+      body: { artifactHash: "sha256:bad", verificationType: "AGT_VERIFY", outcome: "UNKNOWN" },
     });
 
     const res = await verificationPost(req);
@@ -1213,15 +1195,15 @@ describe("POST /api/verification", () => {
   });
 
   it("rejects invalid compatibilityCheckOutcome", async () => {
-    const req = new Request("http://localhost:3000/api/verification", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: "Bearer svc-token" },
-      body: JSON.stringify({
+    const req = createRouteRequest({
+      path: "/api/verification",
+      token: "svc-token",
+      body: {
         artifactHash: "sha256:bad-compat-outcome",
         verificationType: "AGT_VERIFY",
         outcome: "PASS",
         compatibilityCheckOutcome: "UNKNOWN",
-      }),
+      },
     });
 
     const res = await verificationPost(req);
@@ -1229,15 +1211,15 @@ describe("POST /api/verification", () => {
   });
 
   it("rejects invalid escrowVerificationOutcome", async () => {
-    const req = new Request("http://localhost:3000/api/verification", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: "Bearer svc-token" },
-      body: JSON.stringify({
+    const req = createRouteRequest({
+      path: "/api/verification",
+      token: "svc-token",
+      body: {
         artifactHash: "sha256:bad-escrow-outcome",
         verificationType: "AGT_VERIFY",
         outcome: "PASS",
         escrowVerificationOutcome: "UNKNOWN",
-      }),
+      },
     });
 
     const res = await verificationPost(req);
@@ -1245,10 +1227,10 @@ describe("POST /api/verification", () => {
   });
 
   it("requires artifactHash", async () => {
-    const req = new Request("http://localhost:3000/api/verification", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: "Bearer svc-token" },
-      body: JSON.stringify({ verificationType: "AGT_VERIFY", outcome: "PASS" }),
+    const req = createRouteRequest({
+      path: "/api/verification",
+      token: "svc-token",
+      body: { verificationType: "AGT_VERIFY", outcome: "PASS" },
     });
 
     const res = await verificationPost(req);
@@ -1260,7 +1242,7 @@ describe("POST /api/verification", () => {
 
 describe("GET /api/verification", () => {
   it("returns 200 with results array", async () => {
-    const req = new Request("http://localhost:3000/api/verification");
+    const req = createRouteRequest({ path: "/api/verification", method: "GET" });
     const res = await verificationGet(req);
     expect(res.status).toBe(200);
 
@@ -1275,14 +1257,10 @@ describe("Evidence ingest → operations log side-effect", () => {
   it("evidence POST appends to operations log", async () => {
     const before = store.operationsLog.length;
 
-    const req = new Request("http://localhost:3000/api/evidence", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: "Bearer svc-token",
-        // No x-spctre-principal-id: uses authenticateServiceToken mock path
-      },
-      body: JSON.stringify({
+    const req = createRouteRequest({
+      path: "/api/evidence",
+      token: "svc-token",
+      body: {
         decisionId: "dec-e2e-ops",
         tenantId: "demo-tenant",
         workspaceId: "demo-ws",
@@ -1303,7 +1281,7 @@ describe("Evidence ingest → operations log side-effect", () => {
             artifactHash: "sha256:e2e-ops",
           },
         ],
-      }),
+      },
     });
 
     const res = await evidencePost(req);
@@ -1314,10 +1292,10 @@ describe("Evidence ingest → operations log side-effect", () => {
   });
 
   it("evidence response includes gateway field", async () => {
-    const req = new Request("http://localhost:3000/api/evidence", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: "Bearer svc-token" },
-      body: JSON.stringify({
+    const req = createRouteRequest({
+      path: "/api/evidence",
+      token: "svc-token",
+      body: {
         decisionId: "dec-gw-e2e",
         tenantId: "demo-tenant",
         workspaceId: "demo-ws",
@@ -1338,7 +1316,7 @@ describe("Evidence ingest → operations log side-effect", () => {
             artifactHash: "sha256:gw-e2e",
           },
         ],
-      }),
+      },
     });
 
     const res = await evidencePost(req);

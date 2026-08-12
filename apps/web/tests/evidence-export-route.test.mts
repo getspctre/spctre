@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { createRouteRequest } from "./route-test-helper";
 
 const authenticateServiceTokenSpy = vi.fn();
 
@@ -37,8 +38,10 @@ describe("evidence export route", () => {
   it("rejects a caller-supplied connector that disagrees with token identity", async () => {
     authenticateServiceTokenSpy.mockResolvedValue(evidenceExportAuth);
     const response = await route.GET(
-      new Request("http://localhost:3000/api/evidence/export?connector=acquisition-author", {
-        headers: { authorization: "Bearer token" },
+      createRouteRequest({
+        path: "/api/evidence/export?connector=acquisition-author",
+        method: "GET",
+        token: "token",
       }),
     );
     expect(response.status).toBe(403);
@@ -50,9 +53,7 @@ describe("evidence export route", () => {
       auth: { ...evidenceExportAuth.auth, connector: undefined, evidenceExportGrants: [] },
     });
     const response = await route.GET(
-      new Request("http://localhost:3000/api/evidence/export", {
-        headers: { authorization: "Bearer token" },
-      }),
+      createRouteRequest({ path: "/api/evidence/export", method: "GET", token: "token" }),
     );
     expect(response.status).toBe(401);
   });
@@ -60,8 +61,10 @@ describe("evidence export route", () => {
   it("does not mint an AGT verification packet from an evidence export", async () => {
     authenticateServiceTokenSpy.mockResolvedValue(evidenceExportAuth);
     const response = await route.GET(
-      new Request("http://localhost:3000/api/evidence/export?format=agt-verification", {
-        headers: { authorization: "Bearer token" },
+      createRouteRequest({
+        path: "/api/evidence/export?format=agt-verification",
+        method: "GET",
+        token: "token",
       }),
     );
     expect(response.status).toBe(403);
@@ -83,8 +86,10 @@ describe("evidence export route", () => {
       },
     });
     const response = await route.GET(
-      new Request("http://localhost:3000/api/evidence/export?format=json", {
-        headers: { authorization: "Bearer token" },
+      createRouteRequest({
+        path: "/api/evidence/export?format=json",
+        method: "GET",
+        token: "token",
       }),
     );
 
@@ -106,7 +111,7 @@ describe("evidence export route", () => {
 
   it("does not mint an AGT verification packet for a session either", async () => {
     const response = await route.GET(
-      new Request("http://localhost:3000/api/evidence/export?format=agt-verification"),
+      createRouteRequest({ path: "/api/evidence/export?format=agt-verification", method: "GET" }),
     );
 
     expect(response.status).toBe(403);

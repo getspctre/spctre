@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { createRouteRequest } from "./route-test-helper";
 import { DEMO_TENANT_ID } from "../lib/demo";
 
 const getAuthSessionSpy = vi.fn();
@@ -58,9 +59,9 @@ describe("auth demo route boundary", () => {
 
   it("blocks SMS enrollment for the demo tenant before sending or writing enrollment state", async () => {
     const response = await smsStartRoute.POST(
-      new Request("http://localhost:3000/api/auth/mfa/enroll-sms/start", {
-        method: "POST",
-        body: JSON.stringify({ phoneNumber: "+15555550100", recaptchaToken: "token" }),
+      createRouteRequest({
+        path: "/api/auth/mfa/enroll-sms/start",
+        body: { phoneNumber: "+15555550100", recaptchaToken: "token" },
       }),
     );
 

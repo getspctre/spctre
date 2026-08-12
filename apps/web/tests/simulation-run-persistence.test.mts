@@ -1,6 +1,7 @@
 import { randomUUID } from "crypto";
-import { afterEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { buildSimulationRun } from "@spctre/policy-schema";
+import { createTestTenantFixture } from "./test-db-fixtures";
 
 const databaseAvailable = Boolean(process.env.DATABASE_URL);
 const { rawSql, runWithTenantContext } = await import("../lib/db");
@@ -8,16 +9,16 @@ const { getLatestManagedSimulationRegression, persistSimulationRun } =
   await import("../lib/repositories/evidence/simulation");
 const { createDraftRevision } = await import("../lib/repositories/policy/branches");
 
-const tenantIds: string[] = [];
+const testTenants = createTestTenantFixture();
 
 async function createFixture() {
-  if (!rawSql) throw new Error("DATABASE_URL is required for repository contract tests.");
-  const tenantId = randomUUID();
+  const tenantId = await testTenants.create({
+    slugPrefix: "test-simulation",
+    name: "Simulation test",
+  });
   const workspaceId = randomUUID();
   const branchId = randomUUID();
   const revisionId = randomUUID();
-  tenantIds.push(tenantId);
-  await rawSql`INSERT INTO tenant (id, slug, name) VALUES (${tenantId}, ${`test-simulation-${tenantId}`}, 'Simulation test')`;
   await rawSql`INSERT INTO workspace (id, tenant_id, slug, name) VALUES (${workspaceId}, ${tenantId}, 'test', 'Test workspace')`;
   await rawSql`
     INSERT INTO policy_branch (id, tenant_id, workspace_id, scope, name, created_by)
@@ -29,13 +30,6 @@ async function createFixture() {
   `;
   return { tenantId, workspaceId, branchId, revisionId };
 }
-
-afterEach(async () => {
-  if (!rawSql) return;
-  await Promise.all(
-    tenantIds.splice(0).map((tenantId) => rawSql`DELETE FROM tenant WHERE id = ${tenantId}`),
-  );
-});
 
 describe.skipIf(!databaseAvailable)("simulation run persistence repository contract", () => {
   it("round-trips retained-log regression metadata and replay findings as JSONB", async () => {

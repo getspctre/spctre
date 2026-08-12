@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { API_VERSION } from "@spctre/api-contracts";
+import { createRouteRequest } from "./route-test-helper";
 
 const getAuthSessionSpy = vi.fn();
 const getWorkspaceContextSpy = vi.fn();
@@ -44,7 +45,9 @@ describe("operations route response shape", () => {
     ]);
 
     const response = await route.GET(
-      new Request("http://localhost:3000/api/operations?limit=25&offset=5", {
+      createRouteRequest({
+        path: "/api/operations?limit=25&offset=5",
+        method: "GET",
         headers: { "x-request-id": "trace-operations" },
       }),
     );

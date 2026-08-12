@@ -151,6 +151,12 @@ const { addApproval, rollbackBranch, publishRevision } =
   await import("../app/review/publish-actions");
 const { createDraftRuleRevision, commitRuleRevision } = await import("../app/review/rule-actions");
 
+function formData(values: Record<string, string>): FormData {
+  const data = new FormData();
+  for (const [key, value] of Object.entries(values)) data.set(key, value);
+  return data;
+}
+
 describe("Demo Write Guard - Premium Onboarding CTA Block", () => {
   const DEMO_TENANT = "00000000-0000-0000-0000-000000000001";
   const REGULAR_TENANT = "10000000-0000-0000-0000-000000000001";
@@ -208,125 +214,92 @@ describe("Demo Write Guard - Premium Onboarding CTA Block", () => {
       });
     });
 
-    it("blocks workspace-actions -> createWorkspace", async () => {
-      const formData = new FormData();
-      formData.set("workspaceName", "New Workspace");
-      const result = await createWorkspace(null, formData);
-      expect(result).toEqual({ error: FRIENDLY_ERROR });
-    });
+    const blockedActions = [
+      [
+        "workspace-actions -> createWorkspace",
+        () => createWorkspace(null, formData({ workspaceName: "New Workspace" })),
+      ],
+      [
+        "branch-actions -> deleteBranchAdmin",
+        () => deleteBranchAdmin(null, formData({ branchId: "b-123", confirm: "DELETE" })),
+      ],
+      [
+        "policy-actions -> importPolicy",
+        () => importPolicy(null, formData({ source: "rules:\n  - stableRuleId: r1" })),
+      ],
+      [
+        "policy-actions -> createPolicyBranch",
+        () => createPolicyBranch(null, formData({ branchName: "new-policy" })),
+      ],
+      [
+        "publish-actions -> addApproval",
+        () => addApproval(null, formData({ revisionId: "rev-1" })),
+      ],
+      [
+        "publish-actions -> rollbackBranch",
+        () => rollbackBranch(null, formData({ branchId: "b-1" })),
+      ],
+      [
+        "publish-actions -> publishRevision",
+        () => publishRevision(null, formData({ revisionId: "rev-1" })),
+      ],
+      [
+        "rule-actions -> createDraftRuleRevision",
+        () => createDraftRuleRevision(null, formData({ branchId: "b-1", baseRevisionId: "rev-1" })),
+      ],
+      [
+        "rule-actions -> commitRuleRevision",
+        () =>
+          commitRuleRevision(
+            null,
+            formData({
+              branchId: "b-1",
+              parentRevisionId: "rev-1",
+              rulesPayload: JSON.stringify([
+                { stableRuleId: "r1", title: "Rule 1", effect: "ALLOW" },
+              ]),
+            }),
+          ),
+      ],
+      [
+        "evidence-actions -> runSimulation",
+        () => runSimulation(null, formData({ branchId: "b-1", revisionId: "rev-1" })),
+        () => expect(runSimulationDecisionSpy).not.toHaveBeenCalled(),
+      ],
+      [
+        "evidence-actions -> generateSimulationChangeRecommendation",
+        () =>
+          generateSimulationChangeRecommendation(
+            null,
+            formData({ branchId: "b-1", revisionId: "rev-1" }),
+          ),
+        () => expect(generateSimulationChangeRecommendationDecisionSpy).not.toHaveBeenCalled(),
+      ],
+      [
+        "evidence-actions -> applySimulationChangeRecommendation",
+        () => applySimulationChangeRecommendation(null, formData({ decision: "ACCEPT" })),
+        () => expect(applySimulationChangeDecisionSpy).not.toHaveBeenCalled(),
+      ],
+      [
+        "escalations-actions -> claimEscalation",
+        () => claimEscalation(null, formData({ queueId: "q-1" })),
+        () => expect(claimEscalationDecisionSpy).not.toHaveBeenCalled(),
+      ],
+      [
+        "escalations-actions -> resolveEscalation",
+        () => resolveEscalation(null, formData({ queueId: "q-1", resolutionOutcome: "PROCEED" })),
+        () => expect(resolveEscalationDecisionSpy).not.toHaveBeenCalled(),
+      ],
+      [
+        "packs-actions -> importPolicyPack",
+        () => importPolicyPack(null, formData({ packId: "pack-1" })),
+        () => expect(importPolicyPackDecisionSpy).not.toHaveBeenCalled(),
+      ],
+    ] as const;
 
-    it("blocks branch-actions -> deleteBranchAdmin", async () => {
-      const formData = new FormData();
-      formData.set("branchId", "b-123");
-      formData.set("confirm", "DELETE");
-      const result = await deleteBranchAdmin(null, formData);
-      expect(result).toEqual({ error: FRIENDLY_ERROR });
-    });
-
-    it("blocks policy-actions -> importPolicy", async () => {
-      const formData = new FormData();
-      formData.set("source", "rules:\n  - stableRuleId: r1");
-      const result = await importPolicy(null, formData);
-      expect(result).toEqual({ error: FRIENDLY_ERROR });
-    });
-
-    it("blocks policy-actions -> createPolicyBranch", async () => {
-      const formData = new FormData();
-      formData.set("branchName", "new-policy");
-      const result = await createPolicyBranch(null, formData);
-      expect(result).toEqual({ error: FRIENDLY_ERROR });
-    });
-
-    it("blocks publish-actions -> addApproval", async () => {
-      const formData = new FormData();
-      formData.set("revisionId", "rev-1");
-      const result = await addApproval(null, formData);
-      expect(result).toEqual({ error: FRIENDLY_ERROR });
-    });
-
-    it("blocks publish-actions -> rollbackBranch", async () => {
-      const formData = new FormData();
-      formData.set("branchId", "b-1");
-      const result = await rollbackBranch(null, formData);
-      expect(result).toEqual({ error: FRIENDLY_ERROR });
-    });
-
-    it("blocks publish-actions -> publishRevision", async () => {
-      const formData = new FormData();
-      formData.set("revisionId", "rev-1");
-      const result = await publishRevision(null, formData);
-      expect(result).toEqual({ error: FRIENDLY_ERROR });
-    });
-
-    it("blocks rule-actions -> createDraftRuleRevision", async () => {
-      const formData = new FormData();
-      formData.set("branchId", "b-1");
-      formData.set("baseRevisionId", "rev-1");
-      const result = await createDraftRuleRevision(null, formData);
-      expect(result).toEqual({ error: FRIENDLY_ERROR });
-    });
-
-    it("blocks rule-actions -> commitRuleRevision", async () => {
-      const formData = new FormData();
-      formData.set("branchId", "b-1");
-      formData.set("parentRevisionId", "rev-1");
-      formData.set(
-        "rulesPayload",
-        JSON.stringify([{ stableRuleId: "r1", title: "Rule 1", effect: "ALLOW" }]),
-      );
-      const result = await commitRuleRevision(null, formData);
-      expect(result).toEqual({ error: FRIENDLY_ERROR });
-    });
-
-    it("blocks evidence-actions -> runSimulation", async () => {
-      const formData = new FormData();
-      formData.set("branchId", "b-1");
-      formData.set("revisionId", "rev-1");
-      const result = await runSimulation(null, formData);
-      expect(result).toEqual({ error: FRIENDLY_ERROR });
-      expect(runSimulationDecisionSpy).not.toHaveBeenCalled();
-    });
-
-    it("blocks evidence-actions -> generateSimulationChangeRecommendation", async () => {
-      const formData = new FormData();
-      formData.set("branchId", "b-1");
-      formData.set("revisionId", "rev-1");
-      const result = await generateSimulationChangeRecommendation(null, formData);
-      expect(result).toEqual({ error: FRIENDLY_ERROR });
-      expect(generateSimulationChangeRecommendationDecisionSpy).not.toHaveBeenCalled();
-    });
-
-    it("blocks evidence-actions -> applySimulationChangeRecommendation", async () => {
-      const formData = new FormData();
-      formData.set("decision", "ACCEPT");
-      const result = await applySimulationChangeRecommendation(null, formData);
-      expect(result).toEqual({ error: FRIENDLY_ERROR });
-      expect(applySimulationChangeDecisionSpy).not.toHaveBeenCalled();
-    });
-
-    it("blocks escalations-actions -> claimEscalation", async () => {
-      const formData = new FormData();
-      formData.set("queueId", "q-1");
-      const result = await claimEscalation(null, formData);
-      expect(result).toEqual({ error: FRIENDLY_ERROR });
-      expect(claimEscalationDecisionSpy).not.toHaveBeenCalled();
-    });
-
-    it("blocks escalations-actions -> resolveEscalation", async () => {
-      const formData = new FormData();
-      formData.set("queueId", "q-1");
-      formData.set("resolutionOutcome", "PROCEED");
-      const result = await resolveEscalation(null, formData);
-      expect(result).toEqual({ error: FRIENDLY_ERROR });
-      expect(resolveEscalationDecisionSpy).not.toHaveBeenCalled();
-    });
-
-    it("blocks packs-actions -> importPolicyPack", async () => {
-      const formData = new FormData();
-      formData.set("packId", "pack-1");
-      const result = await importPolicyPack(null, formData);
-      expect(result).toEqual({ error: FRIENDLY_ERROR });
-      expect(importPolicyPackDecisionSpy).not.toHaveBeenCalled();
+    it.each(blockedActions)("blocks %s", async (_name, invoke, assertBlocked) => {
+      await expect(invoke()).resolves.toEqual({ error: FRIENDLY_ERROR });
+      assertBlocked?.();
     });
   });
 

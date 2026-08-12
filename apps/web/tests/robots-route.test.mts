@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { GET, hostFromRequest, isSiteHost } from "../app/robots.txt/route";
 
 describe("robots.txt route", () => {
+  // These requests exercise host and forwarded-host classification directly.
   afterEach(() => {
     delete process.env.SPCTRE_SITE_URL;
   });

@@ -1,4 +1,5 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
+import { createRouteRequest } from "./route-test-helper";
 
 // Hoist mock state and sql function together
 const { state, sqlMock } = vi.hoisted(() => {
@@ -245,10 +246,10 @@ describe("JIT Ephemeral Credentials Brokering", () => {
         action: "charge",
       };
 
-      const req = new Request("http://localhost:3000/api/gateway/decide", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: "Bearer some-token" },
-        body: JSON.stringify(requestBody),
+      const req = createRouteRequest({
+        path: "/api/gateway/decide",
+        token: "some-token",
+        body: requestBody,
       });
 
       const resp = await handlePostDecide(req);
@@ -280,10 +281,10 @@ describe("JIT Ephemeral Credentials Brokering", () => {
         action: "charge",
       };
 
-      const req = new Request("http://localhost:3000/api/gateway/decide", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: "Bearer some-token" },
-        body: JSON.stringify(requestBody),
+      const req = createRouteRequest({
+        path: "/api/gateway/decide",
+        token: "some-token",
+        body: requestBody,
       });
 
       const resp = await handlePostDecide(req);
@@ -318,10 +319,10 @@ describe("JIT Ephemeral Credentials Brokering", () => {
         action: "charge",
       };
 
-      const req = new Request("http://localhost:3000/api/gateway/decide", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: "Bearer some-token" },
-        body: JSON.stringify(requestBody),
+      const req = createRouteRequest({
+        path: "/api/gateway/decide",
+        token: "some-token",
+        body: requestBody,
       });
 
       const resp = await handlePostDecide(req);
@@ -358,10 +359,11 @@ describe("JIT Ephemeral Credentials Brokering", () => {
         broker_config: {},
       };
 
-      const req = new Request(
-        "http://localhost:3000/api/gateway/escalations/status?decisionId=dec-status-1",
-        { method: "GET", headers: { Authorization: "Bearer some-token" } },
-      );
+      const req = createRouteRequest({
+        path: "/api/gateway/escalations/status?decisionId=dec-status-1",
+        method: "GET",
+        token: "some-token",
+      });
 
       const resp = await handleGetStatus(req);
       expect(resp.status).toBe(200);
@@ -397,10 +399,11 @@ describe("JIT Ephemeral Credentials Brokering", () => {
         broker_config: {},
       };
 
-      const req = new Request(
-        "http://localhost:3000/api/gateway/escalations/status?decisionId=dec-status-2",
-        { method: "GET", headers: { Authorization: "Bearer some-token" } },
-      );
+      const req = createRouteRequest({
+        path: "/api/gateway/escalations/status?decisionId=dec-status-2",
+        method: "GET",
+        token: "some-token",
+      });
 
       const resp = await handleGetStatus(req);
       expect(resp.status).toBe(200);
@@ -439,10 +442,11 @@ describe("JIT Ephemeral Credentials Brokering", () => {
 
       state.grantIssuedMock = true;
 
-      const req = new Request(
-        "http://localhost:3000/api/gateway/escalations/status?decisionId=dec-status-3",
-        { method: "GET", headers: { Authorization: "Bearer some-token" } },
-      );
+      const req = createRouteRequest({
+        path: "/api/gateway/escalations/status?decisionId=dec-status-3",
+        method: "GET",
+        token: "some-token",
+      });
 
       const resp = await handleGetStatus(req);
       expect(resp.status).toBe(200);
@@ -477,10 +481,11 @@ describe("JIT Ephemeral Credentials Brokering", () => {
       };
       state.forceGrantInsertConflict = true;
 
-      const req = new Request(
-        "http://localhost:3000/api/gateway/escalations/status?decisionId=dec-status-4",
-        { method: "GET", headers: { Authorization: "Bearer some-token" } },
-      );
+      const req = createRouteRequest({
+        path: "/api/gateway/escalations/status?decisionId=dec-status-4",
+        method: "GET",
+        token: "some-token",
+      });
 
       const resp = await handleGetStatus(req);
       expect(resp.status).toBe(200);
@@ -509,10 +514,10 @@ describe("JIT Ephemeral Credentials Brokering", () => {
         action: "charge",
       };
 
-      const req = new Request("http://localhost:3000/api/gateway/decide", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: "Bearer some-token" },
-        body: JSON.stringify(requestBody),
+      const req = createRouteRequest({
+        path: "/api/gateway/decide",
+        token: "some-token",
+        body: requestBody,
       });
 
       const resp = await handlePostDecide(req);

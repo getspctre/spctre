@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { createRouteRequest } from "./route-test-helper";
 
 const {
   state,
@@ -69,8 +70,10 @@ describe("workspace MCP policy registry", () => {
 
   it("returns fallback capabilities when no registry grants exist", async () => {
     const response = await GET(
-      new Request("http://localhost/api/workspace/mcp-policy?agentId=agent-1", {
-        headers: { Authorization: "Bearer token" },
+      createRouteRequest({
+        path: "/api/workspace/mcp-policy?agentId=agent-1",
+        method: "GET",
+        token: "token",
       }),
     );
 
@@ -100,8 +103,10 @@ describe("workspace MCP policy registry", () => {
     ];
 
     const response = await GET(
-      new Request("http://localhost/api/workspace/mcp-policy?agentId=agent-1", {
-        headers: { Authorization: "Bearer token" },
+      createRouteRequest({
+        path: "/api/workspace/mcp-policy?agentId=agent-1",
+        method: "GET",
+        token: "token",
       }),
     );
 
@@ -127,9 +132,7 @@ describe("workspace MCP policy registry", () => {
     });
 
     const response = await GET(
-      new Request("http://localhost/api/workspace/mcp-policy", {
-        headers: { Authorization: "Bearer token" },
-      }),
+      createRouteRequest({ path: "/api/workspace/mcp-policy", method: "GET", token: "token" }),
     );
 
     expect(response.status).toBe(401);
@@ -149,7 +152,7 @@ describe("workspace MCP policy registry", () => {
     });
 
     const response = await GET(
-      new Request("http://localhost/api/workspace/mcp-policy?environment=staging"),
+      createRouteRequest({ path: "/api/workspace/mcp-policy?environment=staging", method: "GET" }),
     );
 
     expect(response.status).toBe(200);
@@ -166,7 +169,9 @@ describe("workspace MCP policy registry", () => {
     hasBearerTokenMock.mockReturnValueOnce(false);
     getAuthSessionMock.mockResolvedValueOnce(null);
 
-    const response = await GET(new Request("http://localhost/api/workspace/mcp-policy"));
+    const response = await GET(
+      createRouteRequest({ path: "/api/workspace/mcp-policy", method: "GET" }),
+    );
 
     expect(response.status).toBe(401);
     await expect(response.json()).resolves.toMatchObject({

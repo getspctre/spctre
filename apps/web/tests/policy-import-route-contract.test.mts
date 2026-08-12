@@ -1,5 +1,7 @@
 import { createHash, randomUUID } from "crypto";
-import { afterEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
+import { createRouteRequest } from "./route-test-helper";
+import { createTestTenantFixture } from "./test-db-fixtures";
 
 // Contract for POST /api/v1/policy/imports: the policy:import scope is required
 // (a runtime bundle:read token is rejected), and import is idempotent on the
@@ -12,7 +14,17 @@ const { rawSql } = await import("../lib/db");
 const { POST } = await import("../app/api/v1/policy/imports/route");
 
 type Fixture = { tenantId: string; workspaceId: string; principalId: string };
-const tenantIds: string[] = [];
+const testTenants = createTestTenantFixture({
+  cleanup: async (tenantId) => {
+    if (!rawSql) return;
+    // Break the branch → active revision FK cycle before deleting revisions.
+    await rawSql`UPDATE policy_branch SET active_revision_id = NULL WHERE tenant_id = ${tenantId}`;
+    await rawSql`DELETE FROM policy_rule WHERE tenant_id = ${tenantId}`;
+    await rawSql`DELETE FROM policy_revision WHERE tenant_id = ${tenantId}`;
+    await rawSql`DELETE FROM policy_branch WHERE tenant_id = ${tenantId}`;
+    await rawSql`DELETE FROM service_token WHERE tenant_id = ${tenantId}`;
+  },
+});
 
 function hashServiceToken(token: string) {
   return createHash("sha256").update(token).digest("hex");
@@ -20,11 +32,9 @@ function hashServiceToken(token: string) {
 
 async function createFixture(): Promise<Fixture> {
   if (!rawSql) throw new Error("DATABASE_URL is required for this contract test.");
-  const tenantId = randomUUID();
+  const tenantId = await testTenants.create({ slugPrefix: "test-import", name: "Import test" });
   const workspaceId = randomUUID();
   const principalId = randomUUID();
-  tenantIds.push(tenantId);
-  await rawSql`INSERT INTO tenant (id, slug, name) VALUES (${tenantId}, ${`test-import-${tenantId}`}, 'Import test')`;
   await rawSql`INSERT INTO workspace (id, tenant_id, slug, name) VALUES (${workspaceId}, ${tenantId}, 'acquisition', 'Acquisition')`;
   await rawSql`
     INSERT INTO app_principal (id, tenant_id, subject, display_name, principal_type)
@@ -49,11 +59,7 @@ async function mintToken(fixture: Fixture, scopes: string[]): Promise<string> {
 }
 
 function importRequest(token: string, body: Record<string, unknown>) {
-  return new Request("http://localhost:3000/api/v1/policy/imports", {
-    method: "POST",
-    headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
-    body: JSON.stringify(body),
-  });
+  return createRouteRequest({ path: "/api/v1/policy/imports", token, body });
 }
 
 function pack(effectAction: string) {
@@ -85,19 +91,6 @@ async function branchCount(tenantId: string, name: string): Promise<number> {
   >`SELECT count(*)::text FROM policy_branch WHERE tenant_id = ${tenantId} AND name = ${name}`;
   return Number(rows[0].count);
 }
-
-afterEach(async () => {
-  if (!rawSql) return;
-  for (const tenantId of tenantIds.splice(0)) {
-    // Break the branch → active revision FK cycle before deleting revisions.
-    await rawSql`UPDATE policy_branch SET active_revision_id = NULL WHERE tenant_id = ${tenantId}`;
-    await rawSql`DELETE FROM policy_rule WHERE tenant_id = ${tenantId}`;
-    await rawSql`DELETE FROM policy_revision WHERE tenant_id = ${tenantId}`;
-    await rawSql`DELETE FROM policy_branch WHERE tenant_id = ${tenantId}`;
-    await rawSql`DELETE FROM service_token WHERE tenant_id = ${tenantId}`;
-    await rawSql`DELETE FROM tenant WHERE id = ${tenantId}`;
-  }
-});
 
 describe.skipIf(!databaseAvailable)("POST /api/v1/policy/imports contract", () => {
   it("rejects a token that lacks the policy:import scope", async () => {

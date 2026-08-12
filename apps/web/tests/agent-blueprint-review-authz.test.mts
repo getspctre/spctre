@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { createRouteRequest } from "./route-test-helper";
 
 // Regression coverage for the Blueprint reviewer-authorization slug fix. The
 // approvals and rollback routes previously gated on a hardcoded "workspace-demo"
@@ -98,7 +99,10 @@ describe("Blueprint approvals read route scopes revisions to the active workspac
     getBlueprintSpy.mockResolvedValue(null);
 
     const response = await approvalsGet(
-      new Request("http://localhost/api/agent-blueprints/bp-1/revisions/rev-1/approvals"),
+      createRouteRequest({
+        path: "/api/agent-blueprints/bp-1/revisions/rev-1/approvals",
+        method: "GET",
+      }),
       { params: Promise.resolve({ id: "bp-1", revisionId: "rev-1" }) },
     );
 
@@ -108,11 +112,7 @@ describe("Blueprint approvals read route scopes revisions to the active workspac
 });
 
 function approvalsRequest(body: unknown) {
-  return new Request("http://localhost/api/agent-blueprints/bp-1/revisions/rev-1/approvals", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
+  return createRouteRequest({ path: "/api/agent-blueprints/bp-1/revisions/rev-1/approvals", body });
 }
 
 describe("Blueprint approvals route authorizes against the real workspace slug", () => {
@@ -197,10 +197,10 @@ describe("Blueprint approvals route authorizes against the real workspace slug",
 
 describe("Blueprint lifecycle mirrors the policy authoring/publish split", () => {
   function patchRequest(status: string) {
-    return new Request("http://localhost/api/agent-blueprints/bp-1", {
+    return createRouteRequest({
+      path: "/api/agent-blueprints/bp-1",
       method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ revisionId: "rev-1", status }),
+      body: { revisionId: "rev-1", status },
     });
   }
 
@@ -259,11 +259,7 @@ describe("Blueprint lifecycle mirrors the policy authoring/publish split", () =>
 
 describe("Appending a Blueprint revision needs only workspace write access", () => {
   function appendRequest(body: unknown) {
-    return new Request("http://localhost/api/agent-blueprints/bp-1", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
+    return createRouteRequest({ path: "/api/agent-blueprints/bp-1", body });
   }
 
   it("allows a non-admin workspace member to append a revision", async () => {
@@ -308,11 +304,7 @@ describe("Appending a Blueprint revision needs only workspace write access", () 
 
 describe("Creating a Blueprint requires a workspace admin, like a policy branch", () => {
   function createRequest(body: unknown) {
-    return new Request("http://localhost/api/agent-blueprints", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
+    return createRouteRequest({ path: "/api/agent-blueprints", body });
   }
 
   it("denies a non-admin workspace member", async () => {
@@ -348,10 +340,9 @@ describe("Blueprint rollback route authorizes admin against the real workspace s
     rollbackSpy.mockResolvedValue({ id: "rev-0", definitionHash: "hash" });
 
     const response = await rollbackPost(
-      new Request("http://localhost/api/agent-blueprints/bp-1/rollback", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ targetRevisionId: "rev-0" }),
+      createRouteRequest({
+        path: "/api/agent-blueprints/bp-1/rollback",
+        body: { targetRevisionId: "rev-0" },
       }),
       { params: Promise.resolve({ id: "bp-1" }) },
     );
@@ -368,10 +359,9 @@ describe("Blueprint rollback route authorizes admin against the real workspace s
     });
 
     const response = await rollbackPost(
-      new Request("http://localhost/api/agent-blueprints/bp-1/rollback", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ targetRevisionId: "rev-0" }),
+      createRouteRequest({
+        path: "/api/agent-blueprints/bp-1/rollback",
+        body: { targetRevisionId: "rev-0" },
       }),
       { params: Promise.resolve({ id: "bp-1" }) },
     );

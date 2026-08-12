@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { createRouteRequest } from "./route-test-helper";
 
 const getLatestPublishedPolicyBundleSpy = vi.fn();
 const retainPublishedPolicyContentArtifactSpy = vi.fn();
@@ -37,9 +38,7 @@ describe("published bundle custody route", () => {
   });
 
   it("retains the exact serialized bundle under its immutable publication", async () => {
-    const response = await route.POST(
-      new Request("http://localhost:3000/api/bundle/latest/custody", { method: "POST" }),
-    );
+    const response = await route.POST(createRouteRequest({ path: "/api/bundle/latest/custody" }));
 
     expect(response.status).toBe(201);
     expect(retainPublishedPolicyContentArtifactSpy).toHaveBeenCalledWith({
@@ -59,9 +58,7 @@ describe("published bundle custody route", () => {
 
   it("does not retain when no publication exists", async () => {
     getLatestPublishedPolicyBundleSpy.mockResolvedValue(null);
-    const response = await route.POST(
-      new Request("http://localhost:3000/api/bundle/latest/custody", { method: "POST" }),
-    );
+    const response = await route.POST(createRouteRequest({ path: "/api/bundle/latest/custody" }));
     expect(response.status).toBe(404);
     expect(retainPublishedPolicyContentArtifactSpy).not.toHaveBeenCalled();
   });

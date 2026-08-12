@@ -8,6 +8,7 @@ import {
 
 describe("generic evidence request limits", () => {
   it("rejects a streamed body that exceeds the limit without Content-Length", async () => {
+    // A streamed body without Content-Length is the transport behavior under test.
     const request = new Request("https://example.test/ingest", {
       method: "POST",
       body: new ReadableStream({
@@ -25,6 +26,7 @@ describe("generic evidence request limits", () => {
 
   it("rejects batches that exceed the record limit before persistence", async () => {
     const response = await handleGenericRecords({
+      // This unit calls the parser directly with its minimal transport request.
       request: new Request("https://example.test/ingest", { method: "POST" }),
       auth: {
         tokenId: "token-1",

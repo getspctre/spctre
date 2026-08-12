@@ -1,26 +1,14 @@
-import { randomUUID } from "crypto";
-import { afterEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
+import { createTestTenantFixture } from "./test-db-fixtures";
 
 const databaseAvailable = Boolean(process.env.DATABASE_URL);
 const { rawSql, runWithTenantContext } = await import("../lib/db");
 const { recordConversionTelemetry } = await import("../lib/repositories/onboarding/telemetry");
 
-const tenantIds: string[] = [];
-
 async function createTenant(): Promise<string> {
-  if (!rawSql) throw new Error("DATABASE_URL is required for repository contract tests.");
-  const tenantId = randomUUID();
-  tenantIds.push(tenantId);
-  await rawSql`INSERT INTO tenant (id, slug, name) VALUES (${tenantId}, ${`test-telemetry-${tenantId}`}, 'Telemetry test')`;
-  return tenantId;
+  return testTenants.create({ slugPrefix: "test-telemetry", name: "Telemetry test" });
 }
-
-afterEach(async () => {
-  if (!rawSql) return;
-  await Promise.all(
-    tenantIds.splice(0).map((tenantId) => rawSql`DELETE FROM tenant WHERE id = ${tenantId}`),
-  );
-});
+const testTenants = createTestTenantFixture();
 
 describe.skipIf(!databaseAvailable)("conversion telemetry repository contract", () => {
   it("records a first-occurrence event once and preserves structured metadata", async () => {

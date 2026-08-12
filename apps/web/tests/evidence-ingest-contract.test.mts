@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { createRouteRequest } from "./route-test-helper";
 import type { EvidenceIngestInput } from "@spctre/api-contracts";
 
 const appendOperationsLogSpy = vi.fn(async () => undefined);
@@ -91,7 +92,7 @@ const baseParsed: EvidenceIngestInput = {
 };
 
 function evidenceRequest(headers: HeadersInit = { authorization: "Bearer token" }) {
-  return new Request("http://localhost:3000/api/evidence", { method: "POST", headers });
+  return createRouteRequest({ path: "/api/evidence", headers });
 }
 
 function ingest(parsed: EvidenceIngestInput = baseParsed, headers?: HeadersInit) {
