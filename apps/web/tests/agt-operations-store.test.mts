@@ -1157,15 +1157,15 @@ describe("POST /api/verification", () => {
   });
 
   it("rejects invalid AGT tamper-evidence timestamps", async () => {
-    const req = new Request("http://localhost:3000/api/verification", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: "Bearer svc-token" },
-      body: JSON.stringify({
+    const req = createRouteRequest({
+      path: "/api/verification",
+      token: "svc-token",
+      body: {
         artifactHash: "sha256:bad-time",
         verificationType: "AGT_REPLAY",
         outcome: "PASS",
         issuedAt: "not-a-date",
-      }),
+      },
     });
 
     const res = await verificationPost(req);
@@ -1173,14 +1173,10 @@ describe("POST /api/verification", () => {
   });
 
   it("rejects invalid verificationType", async () => {
-    const req = new Request("http://localhost:3000/api/verification", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: "Bearer svc-token" },
-      body: JSON.stringify({
-        artifactHash: "sha256:bad",
-        verificationType: "NOT_REAL",
-        outcome: "PASS",
-      }),
+    const req = createRouteRequest({
+      path: "/api/verification",
+      token: "svc-token",
+      body: { artifactHash: "sha256:bad", verificationType: "NOT_REAL", outcome: "PASS" },
     });
 
     const res = await verificationPost(req);
@@ -1188,14 +1184,10 @@ describe("POST /api/verification", () => {
   });
 
   it("rejects invalid outcome", async () => {
-    const req = new Request("http://localhost:3000/api/verification", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: "Bearer svc-token" },
-      body: JSON.stringify({
-        artifactHash: "sha256:bad",
-        verificationType: "AGT_VERIFY",
-        outcome: "UNKNOWN",
-      }),
+    const req = createRouteRequest({
+      path: "/api/verification",
+      token: "svc-token",
+      body: { artifactHash: "sha256:bad", verificationType: "AGT_VERIFY", outcome: "UNKNOWN" },
     });
 
     const res = await verificationPost(req);
@@ -1203,15 +1195,15 @@ describe("POST /api/verification", () => {
   });
 
   it("rejects invalid compatibilityCheckOutcome", async () => {
-    const req = new Request("http://localhost:3000/api/verification", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: "Bearer svc-token" },
-      body: JSON.stringify({
+    const req = createRouteRequest({
+      path: "/api/verification",
+      token: "svc-token",
+      body: {
         artifactHash: "sha256:bad-compat-outcome",
         verificationType: "AGT_VERIFY",
         outcome: "PASS",
         compatibilityCheckOutcome: "UNKNOWN",
-      }),
+      },
     });
 
     const res = await verificationPost(req);
@@ -1235,10 +1227,10 @@ describe("POST /api/verification", () => {
   });
 
   it("requires artifactHash", async () => {
-    const req = new Request("http://localhost:3000/api/verification", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: "Bearer svc-token" },
-      body: JSON.stringify({ verificationType: "AGT_VERIFY", outcome: "PASS" }),
+    const req = createRouteRequest({
+      path: "/api/verification",
+      token: "svc-token",
+      body: { verificationType: "AGT_VERIFY", outcome: "PASS" },
     });
 
     const res = await verificationPost(req);
@@ -1250,7 +1242,7 @@ describe("POST /api/verification", () => {
 
 describe("GET /api/verification", () => {
   it("returns 200 with results array", async () => {
-    const req = new Request("http://localhost:3000/api/verification");
+    const req = createRouteRequest({ path: "/api/verification", method: "GET" });
     const res = await verificationGet(req);
     expect(res.status).toBe(200);
 
@@ -1265,14 +1257,10 @@ describe("Evidence ingest → operations log side-effect", () => {
   it("evidence POST appends to operations log", async () => {
     const before = store.operationsLog.length;
 
-    const req = new Request("http://localhost:3000/api/evidence", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: "Bearer svc-token",
-        // No x-spctre-principal-id: uses authenticateServiceToken mock path
-      },
-      body: JSON.stringify({
+    const req = createRouteRequest({
+      path: "/api/evidence",
+      token: "svc-token",
+      body: {
         decisionId: "dec-e2e-ops",
         tenantId: "demo-tenant",
         workspaceId: "demo-ws",
@@ -1293,7 +1281,7 @@ describe("Evidence ingest → operations log side-effect", () => {
             artifactHash: "sha256:e2e-ops",
           },
         ],
-      }),
+      },
     });
 
     const res = await evidencePost(req);
@@ -1304,10 +1292,10 @@ describe("Evidence ingest → operations log side-effect", () => {
   });
 
   it("evidence response includes gateway field", async () => {
-    const req = new Request("http://localhost:3000/api/evidence", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: "Bearer svc-token" },
-      body: JSON.stringify({
+    const req = createRouteRequest({
+      path: "/api/evidence",
+      token: "svc-token",
+      body: {
         decisionId: "dec-gw-e2e",
         tenantId: "demo-tenant",
         workspaceId: "demo-ws",
@@ -1328,7 +1316,7 @@ describe("Evidence ingest → operations log side-effect", () => {
             artifactHash: "sha256:gw-e2e",
           },
         ],
-      }),
+      },
     });
 
     const res = await evidencePost(req);
