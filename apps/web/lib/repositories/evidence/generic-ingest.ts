@@ -1,6 +1,7 @@
 import type { JSONValue } from "postgres";
 import type { TxClient } from "@/lib/db";
 import { logger } from "@spctre/platform/logging";
+import { issueServiceAccountKeyInTransaction } from "@/lib/service-tokens";
 import { sql } from "@/lib/db";
 import {
   sourceContentHash,
@@ -175,6 +176,32 @@ export async function createEvidenceIntegrationInTransaction(
     active: true,
     createdAt: integration[0]!.created_at.toISOString(),
   };
+}
+
+export async function createEvidenceIntegrationSetup(params: {
+  tenantId: string;
+  workspaceId: string;
+  principalId: string;
+  name: string;
+  providerType: GenericIntegration["providerType"];
+  fieldMapping: unknown;
+}) {
+  if (!sql) throw new Error("Database not configured.");
+  return sql.begin(async (tx) => {
+    const key = await issueServiceAccountKeyInTransaction(tx, {
+      tenantId: params.tenantId,
+      workspaceId: params.workspaceId,
+      principalId: params.principalId,
+      createdBy: params.principalId,
+      label: `Evidence ingest: ${params.name}`,
+      scopes: ["evidence:write"],
+    });
+    const integration = await createEvidenceIntegrationInTransaction(tx, {
+      ...params,
+      serviceTokenId: key.tokenId,
+    });
+    return { key, integration };
+  });
 }
 
 export async function getGenericEvidenceIntegration(params: {

@@ -43,6 +43,10 @@ def _parse_response(
         response_201 = cast(Any, None)
         return response_201
 
+    if response.status_code == 207:
+        response_207 = cast(Any, None)
+        return response_207
+
     if response.status_code == 400:
         response_400 = ApiError.from_dict(response.json())
 

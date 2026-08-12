@@ -28,10 +28,10 @@ export interface ApiRouteContext {
 export function withApiRoute<TContext = undefined>(
   route: string,
   handler: (request: Request, ctx: ApiRouteContext, routeContext: TContext) => Promise<Response>,
-): (request: Request, routeContext: TContext) => Promise<Response> {
+): (request: Request, routeContext?: TContext) => Promise<Response> {
   const spanName = route.replace(/^\//, "").replaceAll("/", ".");
 
-  return async (request: Request, routeContext: TContext) => {
+  return async (request: Request, routeContext?: TContext) => {
     const traceId = extractTraceId(request);
     return withSpan(
       spanName,
@@ -56,7 +56,7 @@ export function withApiRoute<TContext = undefined>(
         };
 
         try {
-          return await handler(request, ctx, routeContext);
+          return await handler(request, ctx, routeContext as TContext);
         } catch (err) {
           logger.error(`[${route}] unhandled error:`, {
             error: err instanceof Error ? err.message : String(err),

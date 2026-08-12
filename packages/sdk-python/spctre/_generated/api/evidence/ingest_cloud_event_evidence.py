@@ -35,9 +35,17 @@ def _get_kwargs(
 def _parse_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
 ) -> Any | ApiError | None:
+    if response.status_code == 200:
+        response_200 = cast(Any, None)
+        return response_200
+
     if response.status_code == 201:
         response_201 = cast(Any, None)
         return response_201
+
+    if response.status_code == 207:
+        response_207 = cast(Any, None)
+        return response_207
 
     if response.status_code == 400:
         response_400 = ApiError.from_dict(response.json())
@@ -53,6 +61,10 @@ def _parse_response(
         response_404 = ApiError.from_dict(response.json())
 
         return response_404
+
+    if response.status_code == 413:
+        response_413 = cast(Any, None)
+        return response_413
 
     if client.raise_on_unexpected_status:
         raise errors.UnexpectedStatus(response.status_code, response.content)
