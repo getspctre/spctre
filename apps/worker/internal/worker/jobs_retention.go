@@ -72,14 +72,14 @@ func runRetention(ctx context.Context, db *pgxpool.Pool, logger *slog.Logger) er
 	// This used to re-derive the window from plan_code with a CASE that
 	// duplicated the plan defaults. Provisioning now writes the effective
 	// window whenever a plan is established or changes, so the column is read
-	// directly and the plan defaults live in exactly one place:
-	// apps/web/lib/entitlements/catalog.ts.
+	// directly and the plan defaults live in exactly one place: the entitlement
+	// catalog the deployment supplies.
 	//
-	// retention_window_days is NOT NULL as of migration 019, so there is no
-	// unprovisioned case to handle. Were one to exist anyway — a worker running
-	// ahead of the migration — make_interval(days => NULL) yields NULL and the
-	// comparison is never true, so the tenant's evidence is skipped rather than
-	// deleted on a guess. The safe outcome does not depend on the guard.
+	// A NULL window is the deliberate, load-bearing case as of migration 022: a
+	// deployment with no commercial catalog provisions no window at all.
+	// make_interval(days => NULL) yields NULL and the comparison is never true,
+	// so nothing is deleted. Evidence outliving a limit nobody set is the only
+	// acceptable direction for this query to fail.
 	rowsProd, err := db.Query(ctx, `
 		SELECT ree.tenant_id::text, ree.decision_id
 		FROM runtime_evidence_event ree

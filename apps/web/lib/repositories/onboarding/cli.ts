@@ -4,7 +4,8 @@ import { rawSql, runWithTenantContext, sql } from "@/lib/db";
 import type { AuthSession } from "@/lib/auth-session";
 import { ensureDemoTenant } from "@/lib/repositories/seed/local-dev";
 import { issueAccessRefreshPair, type ServiceTokenScope } from "@/lib/service-tokens";
-import { ENTITLEMENT_CATALOG_VERSION, planEntitlements } from "@/lib/entitlements/catalog";
+import { planEntitlements } from "@/lib/entitlements/catalog";
+import { resolveEntitlementCatalog } from "@/lib/ee-adapters/entitlement-catalog";
 import { ensureStarterPublishedBundle, ONBOARDING_TTL_MINUTES, slugifyWorkspace } from "./shared";
 import { recordConversionTelemetry } from "./telemetry";
 import { swallow } from "@/lib/platform/swallow";
@@ -160,6 +161,10 @@ export async function exchangeCliOnboardingCode(code: string): Promise<CliOnboar
   const approvedWorkspaceId = request.approved_workspace_id;
   const serviceSubject = `service:spctre-cli:${request.requested_agent_id}`;
   const serviceDisplayName = `Spctre CLI ${request.requested_agent_id}`;
+  // Resolved before the transaction opens: loading a commercial slot is a
+  // dynamic import, and holding a transaction across it serves nothing.
+  const catalog = await resolveEntitlementCatalog();
+  const trialEntitlements = planEntitlements(catalog, "HOSTED_TRIAL");
   const exchange = await runWithTenantContext(approvedTenantId, () =>
     sql.begin(async (tx) => {
       const principalRows = await tx<{ id: string }[]>`
@@ -215,9 +220,9 @@ export async function exchangeCliOnboardingCode(code: string): Promise<CliOnboar
           entitlement_version, entitlement_effective_at
         ) VALUES (
           ${approvedTenantId}, 'HOSTED_TRIAL', 'EVALUATING', 'NONE', 'PADDLE', ${billingCustomerId}, now(),
-          ${planEntitlements("HOSTED_TRIAL").retentionWindowDays.value},
-          ${planEntitlements("HOSTED_TRIAL").retainedEvents.value},
-          ${ENTITLEMENT_CATALOG_VERSION}, now()
+          ${trialEntitlements.retentionWindowDays.value},
+          ${trialEntitlements.retainedEvents.value},
+          ${catalog.version}, now()
         )
         ON CONFLICT (tenant_id) DO UPDATE SET
           plan_code = 'HOSTED_TRIAL',

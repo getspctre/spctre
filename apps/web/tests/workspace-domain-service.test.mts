@@ -20,6 +20,7 @@ const isDatabaseConfiguredSpy = vi.fn();
 const checkSlugInUseSpy = vi.fn();
 const updateWorkspaceDetailsSpy = vi.fn();
 const deleteWorkspaceByIdSpy = vi.fn();
+const resolvePlanEntitlementsSpy = vi.fn();
 
 vi.mock("@/lib/repositories/workspace", () => ({
   verifyWorkspaceOwnership: verifyWorkspaceOwnershipSpy,
@@ -32,6 +33,9 @@ vi.mock("@/lib/repositories/workspace", () => ({
   checkSlugInUse: checkSlugInUseSpy,
   updateWorkspaceDetails: updateWorkspaceDetailsSpy,
   deleteWorkspaceById: deleteWorkspaceByIdSpy,
+}));
+vi.mock("@/lib/ee-adapters/entitlement-catalog", () => ({
+  resolvePlanEntitlements: resolvePlanEntitlementsSpy,
 }));
 vi.mock("@/lib/repositories/auth/principal", () => ({
   getPrincipalSubject: getPrincipalSubjectSpy,
@@ -64,6 +68,15 @@ describe("workspace domain service", () => {
     findActorByIdSpy.mockResolvedValue({ reviewerRoles: ["Admin"] });
     listWorkspaceSlugsWithPrefixSpy.mockResolvedValue([]);
     insertAdminAuditEventSpy.mockResolvedValue(undefined);
+    // The default is a deployment with a commercial catalog. A deployment
+    // without one resolves unlimited, which the OSS case below covers.
+    resolvePlanEntitlementsSpy.mockResolvedValue({
+      displayName: "Hosted Trial",
+      workspaces: { value: 1, enforced: true },
+      retainedEvents: { value: 1_000, enforced: true },
+      retentionWindowDays: { value: 90, enforced: true },
+      simulationEvents: { value: null, enforced: false },
+    });
   });
 
   describe("switchWorkspace", () => {
@@ -97,6 +110,31 @@ describe("workspace domain service", () => {
             "Your current plan (HOSTED_TRIAL) is limited to 1 workspace(s). Upgrade your plan to create more workspaces.",
         }),
       );
+    });
+
+    // The limit is the selling deployment's to apply. An install that bought no
+    // plan resolves an unenforced entitlement and must not be capped — every
+    // tenant carries HOSTED_TRIAL as its default plan code, so a compiled-in
+    // trial limit held self-hosted installs to one workspace.
+    it("applies no limit when no catalog claims one", async () => {
+      getCommercialProfileSpy.mockResolvedValue({ planCode: "HOSTED_TRIAL" });
+      countTenantWorkspacesSpy.mockResolvedValue(9);
+      resolvePlanEntitlementsSpy.mockResolvedValue({
+        displayName: "Hosted Trial",
+        workspaces: { value: null, enforced: false },
+        retainedEvents: { value: null, enforced: false },
+        retentionWindowDays: { value: null, enforced: false },
+        simulationEvents: { value: null, enforced: false },
+      });
+      insertWorkspaceSpy.mockResolvedValue({ id: "ws-new", slug: "my-ws" });
+
+      const result = await service.createWorkspace({
+        tenantId: "t1",
+        principalId: "p1",
+        workspaceName: "My Ws",
+      });
+
+      expect(result).toEqual(expect.objectContaining({ ok: true }));
     });
 
     it("requires admin permissions", async () => {

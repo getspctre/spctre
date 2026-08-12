@@ -65,10 +65,13 @@ describe("the trial cap", () => {
     expect(source).toMatch(/meteredCount \?\? \(await countTotalEvidenceEvents\(tenantId\)\)/);
   });
 
-  it("still reads its capacity from the catalog", async () => {
+  it("still reads its capacity from the deployment's catalog", async () => {
     const source = await read("../lib/domains/evidence/ingest-service.ts");
-    expect(source).toMatch(/PLAN_ENTITLEMENTS\.HOSTED_TRIAL\.retainedEvents/);
+    expect(source).toMatch(/catalog\.plans\.HOSTED_TRIAL\.retainedEvents/);
     expect(source).not.toMatch(/totalCount >= 1000/);
+    // The cap applies only where a catalog claims it. Enforcing a compiled-in
+    // capacity refused ingest on deployments that had bought no plan.
+    expect(source).toMatch(/resolveEntitlementCatalog\(\)/);
   });
 });
 

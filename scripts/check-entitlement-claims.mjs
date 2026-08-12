@@ -8,7 +8,7 @@
  * tells a tenant they are being held to something nothing enforces.
  *
  * That distinction only holds if presentation surfaces read it, so this check
- * enforces two rules:
+ * enforces three rules:
  *
  *   1. A surface that renders a capacity must obtain it through
  *      `enforcedEntitlementValue`, which yields null for an unenforced entry,
@@ -18,8 +18,16 @@
  *      such literal previously drifted from every other statement of the same
  *      number.
  *
+ *   3. The OSS catalog holds no capacity and enforces nothing. A paid plan's
+ *      numbers reaching this repository is not a documentation slip: it is a
+ *      deployment that bought nothing being held to a limit somebody else
+ *      priced. That is how the hosted trial's 1,000-event cap and 90-day
+ *      retention window came to bind self-hosted installs — the numbers were
+ *      compiled in, and every tenant defaults to the trial plan code.
+ *
  * This is deliberately narrow. It knows nothing about prices — upstream does
- * not publish them — and only inspects files that render usage to a user.
+ * not publish them — and only inspects the catalog and the files that render
+ * usage to a user.
  */
 
 import { readFile } from "node:fs/promises";
@@ -65,13 +73,35 @@ function numericLiterals(source) {
 
 const catalogSource = await read(CATALOG);
 
-// The catalog is the one place these numbers are allowed to appear, and it must
-// keep saying which of them are enforced.
+// The catalog defines the enforcement contract, and must keep doing so.
 if (!/enforced:\s*(true|false)/.test(catalogSource)) {
   failures.push(`${CATALOG}: entitlements no longer carry an explicit \`enforced\` flag.`);
 }
 if (!/export function enforcedEntitlementValue/.test(catalogSource)) {
   failures.push(`${CATALOG}: enforcedEntitlementValue is missing; surfaces have no safe accessor.`);
+}
+
+// Rule 3. Anything a commercial deployment sells lives in its own catalog slot,
+// so nothing here may carry a capacity or a window, and nothing here may claim
+// to enforce one.
+{
+  const source = stripComments(catalogSource);
+  const literals = numericLiterals(source);
+  const restated = [...CAPACITY_LITERALS, ...RETENTION_LITERALS].filter((value) =>
+    literals.has(value),
+  );
+  if (restated.length > 0) {
+    failures.push(
+      `${CATALOG}: carries plan capacities (${restated.join(", ")}). A capacity belongs to the ` +
+        `deployment that sells it, supplied through the entitlement-catalog slot.`,
+    );
+  }
+  if (/enforced:\s*true/.test(source)) {
+    failures.push(
+      `${CATALOG}: marks an entitlement enforced. The catalog shipped here binds deployments ` +
+        `that bought no plan, so every entry must be unenforced.`,
+    );
+  }
 }
 
 for (const surface of PRESENTATION_SURFACES) {

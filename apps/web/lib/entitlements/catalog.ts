@@ -1,13 +1,23 @@
 /**
- * The commercial entitlement catalog.
+ * The entitlement catalog contract, and the catalog an OSS deployment uses.
  *
  * One versioned definition of what each plan includes, read by provisioning,
  * quota checks, the retention worker (via the window materialized onto the
  * tenant profile), the usage and billing surface, and billing.
  *
- * Like `./retention.ts`, this module is deliberately dependency-free: it is
- * reachable from client components, so a transitive import of the database
- * layer would pull `async_hooks` into a client bundle and fail the web build.
+ * ## Where the numbers live
+ *
+ * A plan's capacities are commercial packaging, not product behaviour: they
+ * belong to whoever operates a paid offering, and they change on a commercial
+ * cadence rather than a release one. This module therefore defines the *shape*
+ * of a catalog and ships the one an unlicensed deployment runs on — every
+ * entitlement unlimited and unenforced. A commercial deployment supplies its
+ * own catalog through the entitlement-catalog slot
+ * (`@/lib/ee-adapters/entitlement-catalog`).
+ *
+ * That split is what keeps a hosted packaging decision out of a self-hosted
+ * install. Nothing here may carry a paid plan's capacity, because everything
+ * here binds a deployment that never bought one.
  *
  * ## Enforcement state is part of the contract
  *
@@ -17,6 +27,14 @@
  * an active limit, and no upgrade prompt may imply a cap is being calculated
  * from it. This is what stops published capacity claims from outrunning the
  * code that enforces them.
+ *
+ * A `null` value means unlimited: no capacity, and — for the retention window —
+ * no expiry, so evidence is retained until an operator says otherwise.
+ *
+ * This module is deliberately dependency-free: it is reachable from client
+ * components, so a transitive import of the database layer would pull
+ * `async_hooks` into a client bundle and fail the web build. Resolving the
+ * active catalog is a server concern and lives in the slot adapter.
  */
 
 export type CommercialPlanCode = "HOSTED_TRIAL" | "TEAM" | "BUSINESS" | "ENTERPRISE";
@@ -27,13 +45,6 @@ export const COMMERCIAL_PLAN_CODES: readonly CommercialPlanCode[] = [
   "BUSINESS",
   "ENTERPRISE",
 ];
-
-/**
- * Bumped whenever a value in this catalog changes. Persisted with every
- * provisioning decision so a historical retention or capacity decision stays
- * explainable after the catalog moves on.
- */
-export const ENTITLEMENT_CATALOG_VERSION = "2026-08-11.1";
 
 export interface Entitlement<T> {
   value: T;
@@ -46,66 +57,67 @@ export interface Entitlement<T> {
 
 export interface PlanEntitlements {
   displayName: string;
-  /** Maximum workspaces per tenant. */
-  workspaces: Entitlement<number>;
+  /** Maximum workspaces per tenant; `null` is unlimited. */
+  workspaces: Entitlement<number | null>;
   /**
    * Standing capacity of retained governed events — how many the tenant may
    * hold, not a per-period ingest throughput allowance. Evidence leaving the
-   * retention window frees capacity again.
+   * retention window frees capacity again. `null` is unlimited.
    */
-  retainedEvents: Entitlement<number>;
-  /** Evidence retention window in days. */
-  retentionWindowDays: Entitlement<number>;
-  /** Included bulk-simulation source events; `null` means sample-only, no quota. */
+  retainedEvents: Entitlement<number | null>;
+  /**
+   * Evidence retention window in days. `null` retains indefinitely: the
+   * retention worker prunes nothing and archived records are given no expiry.
+   */
+  retentionWindowDays: Entitlement<number | null>;
+  /** Included bulk-simulation source events; `null` means no quota. */
   simulationEvents: Entitlement<number | null>;
 }
 
+export interface EntitlementCatalog {
+  /**
+   * Bumped whenever a value in the catalog changes. Persisted with every
+   * provisioning decision so a historical retention or capacity decision stays
+   * explainable after the catalog moves on.
+   */
+  version: string;
+  plans: Record<CommercialPlanCode, PlanEntitlements>;
+}
+
+export const OSS_ENTITLEMENT_CATALOG_VERSION = "oss-unmetered.1";
+
+/** Unlimited, and explicitly not enforced. */
+function unmetered(): Entitlement<number | null> {
+  return { value: null, enforced: false };
+}
+
+function unmeteredPlan(displayName: string): PlanEntitlements {
+  return {
+    displayName,
+    workspaces: unmetered(),
+    retainedEvents: unmetered(),
+    retentionWindowDays: unmetered(),
+    simulationEvents: unmetered(),
+  };
+}
+
 /**
- * Enforcement states reflect what the code does *right now*, which is why the
- * same entitlement can be enforced on one plan and not another:
+ * The catalog an OSS deployment runs on.
  *
- * - `workspaces` — enforced at workspace creation, every plan.
- * - `retentionWindowDays` — enforced by the retention worker's prune.
- * - `retainedEvents` — enforced on HOSTED_TRIAL only, as a hard cap: ingest
- *   returns 429 once a trial tenant holds this many retained events. Paid
- *   plans are not yet measured, so their capacity must not render as a live
- *   limit. Flipping those to `true` is the final rollout step and is gated on
- *   a complete billing period of reconciled measurement.
- * - `simulationEvents` — surfaced only. No metering hook exists in the
- *   simulation path.
+ * Plan names survive because a self-hosted operator may still be looking at a
+ * hosted plan they are considering; the capacities do not, because no part of
+ * this deployment is entitled to enforce them. A deployment that never entered
+ * a commercial relationship must not have its ingest refused, its workspaces
+ * capped, or — most consequentially — its evidence pruned on a schedule set by
+ * someone else's free tier.
  */
-export const PLAN_ENTITLEMENTS: Record<CommercialPlanCode, PlanEntitlements> = {
-  HOSTED_TRIAL: {
-    displayName: "Hosted Trial",
-    workspaces: { value: 1, enforced: true },
-    // Enforced as a hard 429 on the ingest path. Changing this number changes
-    // the free tier.
-    retainedEvents: { value: 1_000, enforced: true },
-    retentionWindowDays: { value: 90, enforced: true },
-    simulationEvents: { value: null, enforced: false },
-  },
-  TEAM: {
-    displayName: "Team",
-    workspaces: { value: 3, enforced: true },
-    retainedEvents: { value: 100_000, enforced: false },
-    retentionWindowDays: { value: 365, enforced: true },
-    simulationEvents: { value: null, enforced: false },
-  },
-  BUSINESS: {
-    displayName: "Business",
-    workspaces: { value: 12, enforced: true },
-    retainedEvents: { value: 1_000_000, enforced: false },
-    retentionWindowDays: { value: 1095, enforced: true },
-    simulationEvents: { value: 50_000, enforced: false },
-  },
-  ENTERPRISE: {
-    displayName: "Enterprise",
-    // Enterprise entitlements are negotiated. These are the starting reference
-    // point; a contracted tenant overrides them on its own profile.
-    workspaces: { value: 50, enforced: true },
-    retainedEvents: { value: 10_000_000, enforced: false },
-    retentionWindowDays: { value: 2555, enforced: true },
-    simulationEvents: { value: 1_000_000, enforced: false },
+export const OSS_ENTITLEMENT_CATALOG: EntitlementCatalog = {
+  version: OSS_ENTITLEMENT_CATALOG_VERSION,
+  plans: {
+    HOSTED_TRIAL: unmeteredPlan("Hosted Trial"),
+    TEAM: unmeteredPlan("Team"),
+    BUSINESS: unmeteredPlan("Business"),
+    ENTERPRISE: unmeteredPlan("Enterprise"),
   },
 };
 
@@ -113,12 +125,15 @@ export const PLAN_ENTITLEMENTS: Record<CommercialPlanCode, PlanEntitlements> = {
 export const FALLBACK_PLAN_CODE: CommercialPlanCode = "HOSTED_TRIAL";
 
 export function isCommercialPlanCode(value: unknown): value is CommercialPlanCode {
-  return typeof value === "string" && value in PLAN_ENTITLEMENTS;
+  return typeof value === "string" && COMMERCIAL_PLAN_CODES.includes(value as CommercialPlanCode);
 }
 
 /** Resolve a stored plan code to a catalog entry, falling back to the trial. */
-export function planEntitlements(planCode: string | null | undefined): PlanEntitlements {
-  return PLAN_ENTITLEMENTS[isCommercialPlanCode(planCode) ? planCode : FALLBACK_PLAN_CODE];
+export function planEntitlements(
+  catalog: EntitlementCatalog,
+  planCode: string | null | undefined,
+): PlanEntitlements {
+  return catalog.plans[isCommercialPlanCode(planCode) ? planCode : FALLBACK_PLAN_CODE];
 }
 
 /**
@@ -133,8 +148,9 @@ export function entitlementValue<T>(entitlement: Entitlement<T>): T {
 /**
  * The value of an entitlement only if the product actually enforces it, and
  * `null` otherwise. Presentation surfaces must use this so an unenforced
- * intention never renders as an active limit.
+ * intention never renders as an active limit, and enforcement paths must use it
+ * so an unenforced intention never becomes one.
  */
-export function enforcedEntitlementValue<T>(entitlement: Entitlement<T>): T | null {
+export function enforcedEntitlementValue<T>(entitlement: Entitlement<T | null>): T | null {
   return entitlement.enforced ? entitlement.value : null;
 }

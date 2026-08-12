@@ -63,6 +63,7 @@ import {
   type GrcDeliveryDestination,
 } from "@/lib/repositories/grc-delivery-destinations";
 import { describeRetentionWindow, resolveRetentionWindowDays } from "@/lib/entitlements/retention";
+import { resolveEntitlementCatalog } from "@/lib/ee-adapters/entitlement-catalog";
 import { swallow } from "@/lib/platform/swallow";
 
 export interface CompliancePacket {
@@ -272,10 +273,23 @@ export async function recordComplianceOperation(params: Parameters<typeof append
   return appendOperationsLog(params);
 }
 
-function resolveActiveRules(profile: Awaited<ReturnType<typeof getCommercialProfile>> | null) {
+/**
+ * The retention rules in force for a tenant, or null when its evidence has no
+ * expiry at all.
+ *
+ * Null is not an empty rule set: `buildEvidenceRetentionPlan` treats a decision
+ * matched by no rule as retained for zero days, so returning `[]` here would
+ * mark every record EXPIRED and hand the prune path the tenant's whole
+ * evidence log. Callers must branch on null instead.
+ */
+async function resolveActiveRules(
+  profile: Awaited<ReturnType<typeof getCommercialProfile>> | null,
+) {
   const planCode = profile?.planCode ?? "HOSTED_TRIAL";
-  const retentionDays = resolveRetentionWindowDays(profile);
-  const label = describeRetentionWindow(profile);
+  const catalog = await resolveEntitlementCatalog();
+  const retentionDays = resolveRetentionWindowDays(profile, catalog);
+  if (retentionDays === null) return null;
+  const label = describeRetentionWindow(profile, catalog);
   return [
     { id: `ret-${planCode.toLowerCase()}`, label, retentionDays, appliesTo: {}, exportable: true },
   ];
@@ -289,7 +303,9 @@ export async function getEvidenceRetentionPlan(
   if (!evidence.length) return null;
 
   const profile = await getCommercialProfile(tenantId).catch(swallow("getCommercialProfile", null));
-  const activeRules = resolveActiveRules(profile);
+  const activeRules = await resolveActiveRules(profile);
+  // No window means nothing expires, so there is no retention plan to draw.
+  if (!activeRules) return null;
 
   return buildEvidenceRetentionPlan({
     id: `ret-${new Date().toISOString().slice(0, 7)}`,
@@ -319,7 +335,9 @@ async function pruneExpiredEvidenceInTenant(
   if (!evidence.length) return { prunedCount: 0, prunedDecisionIds: [] };
 
   const profile = await getCommercialProfile(tenantId).catch(swallow("getCommercialProfile", null));
-  const activeRules = resolveActiveRules(profile);
+  const activeRules = await resolveActiveRules(profile);
+  // Nothing can have expired under a window that does not exist.
+  if (!activeRules) return { prunedCount: 0, prunedDecisionIds: [] };
 
   const plan = buildEvidenceRetentionPlan({
     id: `prune-${new Date().toISOString()}`,

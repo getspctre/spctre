@@ -4,6 +4,7 @@ import { archivalService } from "@/lib/ee-adapters/archival";
 import { getCommercialProfile } from "@/lib/repositories/workspace";
 import { getRawEvidenceForArchival } from "@/lib/repositories/evidence/runtime";
 import { resolveRetainUntil } from "@/lib/entitlements/retention";
+import { resolveEntitlementCatalog } from "@/lib/ee-adapters/entitlement-catalog";
 import { swallow } from "@/lib/platform/swallow";
 
 export const dynamic = "force-dynamic";
@@ -36,7 +37,7 @@ export async function POST(req: NextRequest) {
     const profile = await getCommercialProfile(tenantId).catch(
       swallow("getCommercialProfile", null),
     );
-    const retainUntil = resolveRetainUntil(profile);
+    const retainUntil = resolveRetainUntil(profile, await resolveEntitlementCatalog());
 
     let archivedCount = 0;
     for (const record of records) {

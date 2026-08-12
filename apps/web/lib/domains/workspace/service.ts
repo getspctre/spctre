@@ -27,7 +27,8 @@ import {
 } from "@/lib/repositories/auth/session";
 import { ensureDefaultPublishedPolicyPack } from "@/lib/repositories/default-policy";
 import { findActorById } from "@/lib/actors";
-import { planEntitlements } from "@/lib/entitlements/catalog";
+import { enforcedEntitlementValue } from "@/lib/entitlements/catalog";
+import { resolvePlanEntitlements } from "@/lib/ee-adapters/entitlement-catalog";
 import { verifyWriteAccess } from "@/lib/demo-guard";
 import { isDatabaseConfigured } from "@/lib/repositories/shared/database";
 import {
@@ -141,9 +142,11 @@ export async function createWorkspace(params: {
     swallow("countTenantWorkspaces", 0),
   );
 
-  const limit = planEntitlements(planCode).workspaces.value;
+  // An unenforced entitlement yields null, which is what an OSS deployment
+  // resolves for every plan: no catalog claims a limit, so none is applied.
+  const limit = enforcedEntitlementValue((await resolvePlanEntitlements(planCode)).workspaces);
 
-  if (wsCount >= limit) {
+  if (limit !== null && wsCount >= limit) {
     return {
       error: `Your current plan (${planCode}) is limited to ${limit} workspace(s). Upgrade your plan to create more workspaces.`,
     };
