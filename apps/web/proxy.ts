@@ -6,8 +6,10 @@ import {
   PUBLIC_PATH_PREFIXES,
   PUBLIC_PATHS,
   SELF_AUTHENTICATING_PATHS,
+  SELF_AUTHENTICATING_PATH_PATTERNS,
   SERVICE_API_PATH_PREFIXES,
   SERVICE_API_PATHS,
+  SERVICE_API_PATH_PATTERNS,
 } from "@/lib/proxy-paths";
 
 const SESSION_COOKIE = "spctre_session_id";
@@ -26,7 +28,11 @@ function isPublicPath(pathname: string): boolean {
 
 function isServiceApiPath(pathname: string): boolean {
   // These endpoints authenticate via bearer token or are pre-auth bootstrap paths.
-  return SERVICE_API_PATHS.has(pathname) || hasAnyPrefix(pathname, SERVICE_API_PATH_PREFIXES);
+  return (
+    SERVICE_API_PATHS.has(pathname) ||
+    hasAnyPrefix(pathname, SERVICE_API_PATH_PREFIXES) ||
+    SERVICE_API_PATH_PATTERNS.some((pattern) => pattern.test(pathname))
+  );
 }
 
 function isAuthApiPath(pathname: string): boolean {
@@ -122,7 +128,12 @@ function isHealthPath(pathname: string): boolean {
 // The source-IP allowlist is not what protects these endpoints: each verifies
 // its own credential — a signature or a shared secret — before doing any work.
 function isSelfAuthenticatingRequest(request: NextRequest): boolean {
-  return request.method === "POST" && SELF_AUTHENTICATING_PATHS.has(request.nextUrl.pathname);
+  if (request.method !== "POST") return false;
+  const { pathname } = request.nextUrl;
+  return (
+    SELF_AUTHENTICATING_PATHS.has(pathname) ||
+    SELF_AUTHENTICATING_PATH_PATTERNS.some((pattern) => pattern.test(pathname))
+  );
 }
 
 function generateNonce(): string {

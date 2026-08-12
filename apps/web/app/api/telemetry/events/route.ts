@@ -9,9 +9,9 @@ async function handlePostApiTelemetryEvents(request: Request) {
       {
         error: "This public telemetry endpoint has been retired.",
         message:
-          "Conversion and billing lifecycle events are now recorded server-side. Use authenticated product flows or the signed Paddle billing webhook.",
+          "Conversion and billing lifecycle events are now recorded server-side. Use authenticated product flows or the signed billing provider webhook.",
         migration: {
-          billingWebhook: "/api/billing/paddle/webhook",
+          billingWebhook: "/api/billing/{provider}/webhook",
           replacement: "server-side conversion telemetry",
         },
         meta: makeMeta(traceId),
