@@ -1,4 +1,5 @@
 import { describe, expect, it, beforeEach, vi } from "vitest";
+import { createRouteRequest } from "./route-test-helper";
 
 const getAuthSessionSpy = vi.fn();
 const getActiveScopeSpy = vi.fn();
@@ -36,7 +37,9 @@ describe("bundle latest export route", () => {
   });
 
   it("preserves legacy raw bundle download when no format is requested", async () => {
-    const response = await route.GET(new Request("http://localhost:3000/api/bundle/latest"));
+    const response = await route.GET(
+      createRouteRequest({ path: "/api/bundle/latest", method: "GET" }),
+    );
 
     expect(response.status).toBe(200);
     expect(response.headers.get("content-type")).toContain("application/json");
@@ -53,7 +56,7 @@ describe("bundle latest export route", () => {
 
   it("returns an export envelope for supported target formats", async () => {
     const response = await route.GET(
-      new Request("http://localhost:3000/api/bundle/latest?format=opa-bundle"),
+      createRouteRequest({ path: "/api/bundle/latest?format=opa-bundle", method: "GET" }),
     );
 
     expect(response.status).toBe(200);
@@ -91,7 +94,7 @@ describe("bundle latest export route", () => {
 
   it("returns preview manifests for all supported target formats", async () => {
     const response = await route.GET(
-      new Request("http://localhost:3000/api/bundle/latest?preview=true"),
+      createRouteRequest({ path: "/api/bundle/latest?preview=true", method: "GET" }),
     );
 
     expect(response.status).toBe(200);
@@ -119,7 +122,7 @@ describe("bundle latest export route", () => {
 
   it("returns 400 for unsupported formats", async () => {
     const response = await route.GET(
-      new Request("http://localhost:3000/api/bundle/latest?format=wasm"),
+      createRouteRequest({ path: "/api/bundle/latest?format=wasm", method: "GET" }),
     );
 
     expect(response.status).toBe(400);
@@ -146,7 +149,7 @@ describe("bundle latest export route", () => {
     );
 
     const response = await route.GET(
-      new Request("http://localhost:3000/api/bundle/latest?format=cedar"),
+      createRouteRequest({ path: "/api/bundle/latest?format=cedar", method: "GET" }),
     );
 
     expect(response.status).toBe(409);

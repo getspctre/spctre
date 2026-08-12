@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
+import { createRouteRequest } from "./route-test-helper";
 
 const authenticateServiceTokenSpy = vi.fn();
 const retainPolicyContentArtifactSpy = vi.fn();
@@ -39,6 +40,7 @@ function contentHash(bytes: Uint8Array) {
 describe("policy artifact routes", () => {
   it("rejects a mismatched claimed hash before retaining bytes", async () => {
     authenticateServiceTokenSpy.mockResolvedValue(evidenceExportAuth);
+    // Raw YAML body and its media type are the route contract under test.
     const response = await postRoute.POST(
       new Request("http://localhost:3000/api/evidence/policy-artifacts", {
         method: "POST",
@@ -59,6 +61,7 @@ describe("policy artifact routes", () => {
     const bytes = new TextEncoder().encode("rules: []\n");
     authenticateServiceTokenSpy.mockResolvedValue(evidenceExportAuth);
     retainPolicyContentArtifactSpy.mockResolvedValue(undefined);
+    // Raw bytes must remain un-JSON-serialized for the content-hash contract.
     const response = await postRoute.POST(
       new Request("http://localhost:3000/api/evidence/policy-artifacts", {
         method: "POST",
@@ -86,7 +89,10 @@ describe("policy artifact routes", () => {
   it("does not reveal or load an artifact before token authorization", async () => {
     authenticateServiceTokenSpy.mockResolvedValue({ ok: false });
     const response = await getRoute.GET(
-      new Request("http://localhost:3000/api/evidence/policy-artifacts/sha256:" + "a".repeat(64)),
+      createRouteRequest({
+        path: "/api/evidence/policy-artifacts/sha256:" + "a".repeat(64),
+        method: "GET",
+      }),
       { params: Promise.resolve({ contentHash: `sha256:${"a".repeat(64)}` }) },
     );
 
@@ -100,8 +106,10 @@ describe("policy artifact routes", () => {
     authenticateServiceTokenSpy.mockResolvedValue(evidenceExportAuth);
     readPolicyContentArtifactSpy.mockResolvedValue({ bytes, mediaType: "application/yaml" });
     const response = await getRoute.GET(
-      new Request(`http://localhost:3000/api/evidence/policy-artifacts/${hash}`, {
-        headers: { authorization: "Bearer token" },
+      createRouteRequest({
+        path: `/api/evidence/policy-artifacts/${hash}`,
+        method: "GET",
+        token: "token",
       }),
       { params: Promise.resolve({ contentHash: hash }) },
     );
@@ -127,8 +135,10 @@ describe("policy artifact routes", () => {
     });
 
     const response = await getRoute.GET(
-      new Request(`http://localhost:3000/api/evidence/policy-artifacts/${hash}`, {
-        headers: { authorization: "Bearer token" },
+      createRouteRequest({
+        path: `/api/evidence/policy-artifacts/${hash}`,
+        method: "GET",
+        token: "token",
       }),
       { params: Promise.resolve({ contentHash: hash }) },
     );
