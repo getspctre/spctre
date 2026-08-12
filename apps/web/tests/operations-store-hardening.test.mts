@@ -4,6 +4,7 @@
  */
 
 import { describe, expect, it, vi, beforeEach } from "vitest";
+import { createRouteRequest } from "./route-test-helper";
 
 // ── Shared mocks ──────────────────────────────────────────────────────────────
 
@@ -131,10 +132,7 @@ describe("POST /api/evidence/prune", () => {
       prunedDecisionIds: ["d-1", "d-2", "d-3"],
     });
 
-    const req = new Request("http://localhost:3000/api/evidence/prune", {
-      method: "POST",
-      headers: { Authorization: "Bearer svc-token" },
-    });
+    const req = createRouteRequest({ path: "/api/evidence/prune", token: "svc-token" });
 
     const res = await prunePost(req);
     expect(res.status).toBe(200);
@@ -148,10 +146,7 @@ describe("POST /api/evidence/prune", () => {
   it("returns prunedCount: 0 when nothing expired", async () => {
     pruneExpiredEvidenceMock.mockResolvedValue({ prunedCount: 0, prunedDecisionIds: [] });
 
-    const req = new Request("http://localhost:3000/api/evidence/prune", {
-      method: "POST",
-      headers: { Authorization: "Bearer svc-token" },
-    });
+    const req = createRouteRequest({ path: "/api/evidence/prune", token: "svc-token" });
 
     const res = await prunePost(req);
     expect(res.status).toBe(200);
@@ -163,10 +158,7 @@ describe("POST /api/evidence/prune", () => {
   it("returns 500 when prune throws", async () => {
     pruneExpiredEvidenceMock.mockRejectedValue(new Error("DB error"));
 
-    const req = new Request("http://localhost:3000/api/evidence/prune", {
-      method: "POST",
-      headers: { Authorization: "Bearer svc-token" },
-    });
+    const req = createRouteRequest({ path: "/api/evidence/prune", token: "svc-token" });
 
     const res = await prunePost(req);
     expect(res.status).toBe(500);
