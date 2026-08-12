@@ -68,6 +68,7 @@ describe("Conversion & Trial-to-Paid Funnel", () => {
   });
 
   describe("Paddle conversion webhook", () => {
+    // Direct requests preserve each raw signed webhook body for signature verification.
     it("records trial conversion from a signed transaction.completed webhook without telemetry PII", async () => {
       process.env.PADDLE_WEBHOOK_SECRET = "pdl_ntfset_test";
       let capturedEvent: { metadata?: Record<string, unknown> } | undefined;

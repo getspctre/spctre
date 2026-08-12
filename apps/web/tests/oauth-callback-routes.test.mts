@@ -89,6 +89,7 @@ describe("OAuth callback routes", () => {
   });
 
   it("rejects a GitHub callback with a mismatched state cookie", async () => {
+    // Callback cookie and query-string state binding are the behavior under test.
     const request = new Request(
       "http://localhost:3000/api/auth/github/callback?code=abc&state=state-1:%2Faccount",
       { headers: { cookie: "spctre_github_state=state-2" } },
@@ -104,6 +105,7 @@ describe("OAuth callback routes", () => {
   });
 
   it("rejects a Google callback with a mismatched state cookie", async () => {
+    // Callback cookie and query-string state binding are the behavior under test.
     const request = new Request(
       "http://localhost:3000/api/auth/google/callback?code=abc&state=state-1:%2Faccount",
       { headers: { cookie: "spctre_google_state=state-2" } },
@@ -120,6 +122,7 @@ describe("OAuth callback routes", () => {
 
   it("redirects when GitHub token exchange fails before session finalization", async () => {
     fetchWithTimeoutSpy.mockResolvedValue({ ok: false });
+    // Callback cookie and query-string state binding are the behavior under test.
     const request = new Request(
       "http://localhost:3000/api/auth/github/callback?code=abc&state=state-1:%2Faccount",
       { headers: { cookie: "spctre_github_state=state-1" } },

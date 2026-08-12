@@ -14,6 +14,7 @@ vi.mock("@/lib/platform/config", () => ({
 const { resolveWebhookRegistration } = await import("../app/api/gateway-ingest/_shared");
 
 describe("gateway webhook authentication", () => {
+  // These direct requests exercise provider-specific webhook-secret headers.
   beforeEach(() => {
     resolveBySecretSpy.mockReset();
   });

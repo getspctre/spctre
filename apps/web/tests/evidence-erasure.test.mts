@@ -53,6 +53,7 @@ describe("POST /api/evidence/erase", () => {
   });
 
   it("returns 400 when the body is not valid JSON", async () => {
+    // Raw malformed JSON is the behavior under test, so this bypasses the helper.
     const req = new Request("http://localhost:3000/api/evidence/erase", {
       method: "POST",
       headers: { Authorization: "Bearer svc-token" },
