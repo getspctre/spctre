@@ -11,6 +11,12 @@ import type {
   OperationsLogEventType,
 } from "@spctre/policy-schema";
 
+/**
+ * Append to the operations log in its own transaction, treating failure as
+ * non-fatal: the append is logged and swallowed so an audit outage cannot fail
+ * the caller's work. Callers that must not commit without their audit entry
+ * should use {@link appendOperationsLogInTransaction} instead.
+ */
 export async function appendOperationsLog(params: {
   tenantId: string;
   workspaceId?: string;
@@ -30,6 +36,13 @@ export async function appendOperationsLog(params: {
   }
 }
 
+/**
+ * Append to the operations log inside a caller-owned transaction. Unlike
+ * {@link appendOperationsLog}, failure is NOT swallowed: a throw here rolls
+ * back the caller's transaction, so the audited write and its audit entry
+ * commit together or not at all. Use this wherever losing the entry silently
+ * would leave an unexplained record behind.
+ */
 export async function appendOperationsLogInTransaction(
   tx: TxClient,
   params: {

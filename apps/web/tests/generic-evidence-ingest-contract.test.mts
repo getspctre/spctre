@@ -103,6 +103,62 @@ describe.skipIf(!databaseAvailable)("generic evidence ingest contract", () => {
     `).resolves.toEqual([{ count: "1" }]);
   });
 
+  it("commits the operations-log entry in the ingest transaction", async () => {
+    const fixture = await createFixture();
+    const integration = await createIntegration(fixture, mapping);
+
+    const response = await POST(
+      request(integration.token, integration.integrationId, {
+        id: "audited-1",
+        timestamp: "2026-08-12T12:00:00Z",
+        action: "filesystem.write",
+      }),
+    );
+    expect(response.status).toBe(201);
+
+    // The append moved inside persistGenericEvidence's transaction, so this is
+    // the only coverage of tx.json payload serialization and the chain-head
+    // update against real Postgres; the unit suite mocks sql.begin entirely.
+    const [entry] = await rawSql<
+      {
+        event_type: string;
+        source_table: string;
+        source_id: string;
+        actor_id: string;
+        payload: Record<string, unknown>;
+        content_hash: string;
+        prev_hash: string | null;
+        last_hash: string;
+      }[]
+    >`
+      SELECT log.event_type, log.source_table, log.source_id::text, log.actor_id::text,
+             log.payload, log.content_hash, log.prev_hash, head.last_hash
+      FROM agt_operations_log log
+      JOIN agt_operations_log_chain_head head ON head.tenant_id = log.tenant_id
+      WHERE log.tenant_id = ${fixture.tenantId}
+    `;
+
+    expect(entry).toMatchObject({
+      event_type: "EVIDENCE_INGEST",
+      source_table: "canonical_evidence_event",
+      actor_id: fixture.principalId,
+      payload: {
+        integrationId: integration.integrationId,
+        mappingVersion: 1,
+        sourceEventId: "audited-1",
+        action: "filesystem.write",
+        enforcementDecision: "observe",
+      },
+    });
+    // First entry for this tenant, and the chain head advanced to it.
+    expect(entry!.prev_hash).toBeNull();
+    expect(entry!.last_hash).toBe(entry!.content_hash);
+
+    await expect(rawSql<{ id: string }[]>`
+      SELECT id::text FROM canonical_evidence_event WHERE tenant_id = ${fixture.tenantId}
+    `).resolves.toEqual([{ id: entry!.source_id }]);
+  });
+
   it("returns 404 when an evidence token does not own the integration", async () => {
     const owner = await createFixture();
     const other = await createFixture();
