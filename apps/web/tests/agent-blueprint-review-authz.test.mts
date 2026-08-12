@@ -99,7 +99,10 @@ describe("Blueprint approvals read route scopes revisions to the active workspac
     getBlueprintSpy.mockResolvedValue(null);
 
     const response = await approvalsGet(
-      new Request("http://localhost/api/agent-blueprints/bp-1/revisions/rev-1/approvals"),
+      createRouteRequest({
+        path: "/api/agent-blueprints/bp-1/revisions/rev-1/approvals",
+        method: "GET",
+      }),
       { params: Promise.resolve({ id: "bp-1", revisionId: "rev-1" }) },
     );
 
@@ -337,10 +340,9 @@ describe("Blueprint rollback route authorizes admin against the real workspace s
     rollbackSpy.mockResolvedValue({ id: "rev-0", definitionHash: "hash" });
 
     const response = await rollbackPost(
-      new Request("http://localhost/api/agent-blueprints/bp-1/rollback", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ targetRevisionId: "rev-0" }),
+      createRouteRequest({
+        path: "/api/agent-blueprints/bp-1/rollback",
+        body: { targetRevisionId: "rev-0" },
       }),
       { params: Promise.resolve({ id: "bp-1" }) },
     );
@@ -357,10 +359,9 @@ describe("Blueprint rollback route authorizes admin against the real workspace s
     });
 
     const response = await rollbackPost(
-      new Request("http://localhost/api/agent-blueprints/bp-1/rollback", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ targetRevisionId: "rev-0" }),
+      createRouteRequest({
+        path: "/api/agent-blueprints/bp-1/rollback",
+        body: { targetRevisionId: "rev-0" },
       }),
       { params: Promise.resolve({ id: "bp-1" }) },
     );

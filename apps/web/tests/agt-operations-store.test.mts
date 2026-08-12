@@ -1211,15 +1211,15 @@ describe("POST /api/verification", () => {
   });
 
   it("rejects invalid escrowVerificationOutcome", async () => {
-    const req = new Request("http://localhost:3000/api/verification", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: "Bearer svc-token" },
-      body: JSON.stringify({
+    const req = createRouteRequest({
+      path: "/api/verification",
+      token: "svc-token",
+      body: {
         artifactHash: "sha256:bad-escrow-outcome",
         verificationType: "AGT_VERIFY",
         outcome: "PASS",
         escrowVerificationOutcome: "UNKNOWN",
-      }),
+      },
     });
 
     const res = await verificationPost(req);

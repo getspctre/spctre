@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createHmac } from "node:crypto";
+import { createRouteRequest } from "./route-test-helper";
 
 const mockGetCommercialProfile = vi.fn();
 const mockRecordBillingLifecycleEvent = vi.fn();
@@ -53,9 +54,9 @@ describe("Conversion & Trial-to-Paid Funnel", () => {
   describe("Monthly Event Cap & Telemetry", () => {
     it("returns a 410 tombstone for the retired public telemetry endpoint", async () => {
       const response = await telemetryEventsRoute.POST(
-        new Request("http://localhost:3000/api/telemetry/events", {
-          method: "POST",
-          body: JSON.stringify({ tenantId: "tenant-1", eventType: "TRIAL_START" }),
+        createRouteRequest({
+          path: "/api/telemetry/events",
+          body: { tenantId: "tenant-1", eventType: "TRIAL_START" },
         }),
       );
       const payload = await response.json();
