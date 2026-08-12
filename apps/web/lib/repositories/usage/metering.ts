@@ -163,3 +163,69 @@ export async function getMeteredRetainedCount(tenantId: string): Promise<number 
   const period = await getUsagePeriod(tenantId);
   return period?.retainedCount ?? null;
 }
+
+/**
+ * Closed periods whose usage has not been reported.
+ *
+ * Usage is reported at period close, not during. A period's retained count
+ * moves for as long as the period is open — evidence arrives and ages out —
+ * and the submission's idempotency key is per-period, so reporting early would
+ * permanently record a figure that was still changing. A closed period's
+ * measurement is final, which is what makes it billable.
+ *
+ * A FAILED submission does not count as reported: it is the state a retry is
+ * meant to resume from.
+ */
+export async function listUnreportedClosedPeriods(
+  tenantId: string,
+  metric: UsageMetric = "RETAINED_EVENTS",
+): Promise<UsagePeriodSummary[]> {
+  if (!sql) return [];
+
+  const rows = await sql<
+    {
+      id: string;
+      period_start: Date;
+      period_end: Date;
+      metric: UsageMetric;
+      ingested_count: string;
+      retained_count: string | null;
+      included_capacity: string | null;
+      entitlement_version: string | null;
+      overage_state: "WITHIN_CAPACITY" | "OVER_CAPACITY";
+      cap_notified_at: Date | null;
+      measured_at: Date | null;
+    }[]
+  >`
+    SELECT p.id, p.period_start, p.period_end, p.metric, p.ingested_count, p.retained_count,
+           p.included_capacity, p.entitlement_version, p.overage_state,
+           p.cap_notified_at, p.measured_at
+    FROM tenant_usage_period p
+    WHERE p.tenant_id = ${tenantId}
+      AND p.metric = ${metric}
+      AND p.period_end <= now()
+      -- An unmeasured period has no defensible quantity to bill against.
+      AND p.retained_count IS NOT NULL
+      AND NOT EXISTS (
+        SELECT 1
+        FROM tenant_usage_submission s
+        WHERE s.usage_period_id = p.id
+          AND s.status <> 'FAILED'
+      )
+    ORDER BY p.period_start ASC
+  `;
+
+  return rows.map((row) => ({
+    periodId: row.id,
+    periodStart: row.period_start.toISOString(),
+    periodEnd: row.period_end.toISOString(),
+    metric: row.metric,
+    ingestedCount: Number(row.ingested_count),
+    retainedCount: row.retained_count === null ? null : Number(row.retained_count),
+    includedCapacity: row.included_capacity === null ? null : Number(row.included_capacity),
+    entitlementVersion: row.entitlement_version,
+    overageState: row.overage_state,
+    capNotifiedAt: row.cap_notified_at ? row.cap_notified_at.toISOString() : null,
+    measuredAt: row.measured_at ? row.measured_at.toISOString() : null,
+  }));
+}

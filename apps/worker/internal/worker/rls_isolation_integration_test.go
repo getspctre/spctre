@@ -16,12 +16,13 @@ import (
 //   - USING: a tenant sees its own rows and NOT another tenant's.
 //   - secure-by-default: with no tenant context, zero rows are visible.
 //   - WITH CHECK: a tenant cannot INSERT a row owned by another tenant.
+//
 // It guards the RLS policies against regressions — in particular the finding-M4
 // rewrite of the isolation predicates to the scalar-subselect form.
 //
 // Note on "secure by default": with no tenant GUC set, the isolation predicate
 // evaluates current_setting('app.current_tenant_id', true) — which on a reused
-// pooled connection is '' (empty), so ''::uuid errors out rather than returning
+// pooled connection is ” (empty), so ”::uuid errors out rather than returning
 // NULL. That still fails closed (an error returns no data), but it is a
 // connection-dependent backstop the app never actually hits (the web BFF's
 // runWithTenantContext and the worker's beginTenantTx always set context before

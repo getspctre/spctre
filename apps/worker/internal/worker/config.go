@@ -28,6 +28,7 @@ type JobIntervals struct {
 	Notification   time.Duration
 	SiemForwarder  time.Duration
 	UsageReconcile time.Duration
+	UsageReport    time.Duration
 }
 
 type NotificationConfig struct {
@@ -56,6 +57,10 @@ func LoadConfig() Config {
 			// that produces the number. It is a full recount, so its cost grows
 			// with retained volume — the reason not to run it hourly.
 			UsageReconcile: envDurationMinutes("WORKER_USAGE_RECONCILE_INTERVAL_MINUTES", 24*60),
+			// Daily. Periods are reported at close, so this has at most one
+			// period per tenant to act on and is a no-op the rest of the month;
+			// running it often simply shortens the delay after a period ends.
+			UsageReport: envDurationMinutes("WORKER_USAGE_REPORT_INTERVAL_MINUTES", 24*60),
 		},
 		Notification: NotificationConfig{
 			WebhookURL:  os.Getenv("WORKER_NOTIFICATION_WEBHOOK_URL"),
