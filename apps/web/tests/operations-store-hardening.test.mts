@@ -169,7 +169,7 @@ describe("POST /api/evidence/prune", () => {
 
 describe("GET /api/token/revocations", () => {
   it("returns 200 with revocations array", async () => {
-    const req = new Request("http://localhost:3000/api/token/revocations");
+    const req = createRouteRequest({ path: "/api/token/revocations", method: "GET" });
     const res = await revocationsGet(req);
     expect(res.status).toBe(200);
 
@@ -181,7 +181,7 @@ describe("GET /api/token/revocations", () => {
   });
 
   it("revocation records include revokedAt and principalId", async () => {
-    const req = new Request("http://localhost:3000/api/token/revocations");
+    const req = createRouteRequest({ path: "/api/token/revocations", method: "GET" });
     const res = await revocationsGet(req);
     const body = (await res.json()) as { revocations: Array<Record<string, unknown>> };
 
@@ -193,7 +193,7 @@ describe("GET /api/token/revocations", () => {
   });
 
   it("respects limit param", async () => {
-    const req = new Request("http://localhost:3000/api/token/revocations?limit=10");
+    const req = createRouteRequest({ path: "/api/token/revocations?limit=10", method: "GET" });
     const res = await revocationsGet(req);
     expect(res.status).toBe(200);
   });
@@ -203,7 +203,10 @@ describe("GET /api/token/revocations", () => {
 
 describe("GET /api/compliance/export — framework annotation", () => {
   it("includes frameworkAnnotation when framework=soc2", async () => {
-    const req = new Request("http://localhost:3000/api/compliance/export?framework=soc2");
+    const req = createRouteRequest({
+      path: "/api/compliance/export?framework=soc2",
+      method: "GET",
+    });
     const res = await complianceExportGet(req);
     expect(res.status).toBe(200);
 
@@ -217,7 +220,10 @@ describe("GET /api/compliance/export — framework annotation", () => {
   });
 
   it("includes frameworkAnnotation when framework=eu-ai-act", async () => {
-    const req = new Request("http://localhost:3000/api/compliance/export?framework=eu-ai-act");
+    const req = createRouteRequest({
+      path: "/api/compliance/export?framework=eu-ai-act",
+      method: "GET",
+    });
     const res = await complianceExportGet(req);
     expect(res.status).toBe(200);
 
@@ -226,7 +232,10 @@ describe("GET /api/compliance/export — framework annotation", () => {
   });
 
   it("includes frameworkAnnotation when framework=hipaa", async () => {
-    const req = new Request("http://localhost:3000/api/compliance/export?framework=hipaa");
+    const req = createRouteRequest({
+      path: "/api/compliance/export?framework=hipaa",
+      method: "GET",
+    });
     const res = await complianceExportGet(req);
     expect(res.status).toBe(200);
 
@@ -235,7 +244,7 @@ describe("GET /api/compliance/export — framework annotation", () => {
   });
 
   it("sets frameworkAnnotation to null when no framework param", async () => {
-    const req = new Request("http://localhost:3000/api/compliance/export");
+    const req = createRouteRequest({ path: "/api/compliance/export", method: "GET" });
     const res = await complianceExportGet(req);
     expect(res.status).toBe(200);
 
@@ -244,9 +253,10 @@ describe("GET /api/compliance/export — framework annotation", () => {
   });
 
   it("sets frameworkAnnotation to null for unknown framework value", async () => {
-    const req = new Request(
-      "http://localhost:3000/api/compliance/export?framework=not-a-real-framework",
-    );
+    const req = createRouteRequest({
+      path: "/api/compliance/export?framework=not-a-real-framework",
+      method: "GET",
+    });
     const res = await complianceExportGet(req);
     expect(res.status).toBe(200);
 
