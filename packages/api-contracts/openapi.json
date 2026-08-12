@@ -2114,6 +2114,9 @@
           "201": {
             "description": "Source record and canonical evidence accepted."
           },
+          "207": {
+            "description": "The source record was rejected by its active mapping."
+          },
           "400": {
             "$ref": "#/components/responses/BadRequest"
           },
@@ -2224,8 +2227,14 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Duplicate source record."
+          },
           "201": {
             "description": "CloudEvent accepted."
+          },
+          "207": {
+            "description": "The CloudEvent was rejected by its active mapping."
           },
           "400": {
             "$ref": "#/components/responses/BadRequest"
@@ -2235,6 +2244,9 @@
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
+          },
+          "413": {
+            "description": "Request exceeds the receiver limit."
           }
         }
       }
@@ -2275,6 +2287,9 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "All log records duplicated."
+          },
           "201": {
             "description": "All log records accepted."
           },
@@ -2289,6 +2304,9 @@
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
+          },
+          "413": {
+            "description": "Request exceeds the receiver limit."
           }
         }
       }

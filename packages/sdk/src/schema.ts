@@ -1396,6 +1396,13 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description The source record was rejected by its active mapping. */
+            207: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
@@ -1473,8 +1480,22 @@ export interface operations {
             };
         };
         responses: {
+            /** @description Duplicate source record. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             /** @description CloudEvent accepted. */
             201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The CloudEvent was rejected by its active mapping. */
+            207: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1483,6 +1504,13 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
+            /** @description Request exceeds the receiver limit. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
     };
     ingestOtlpLogs: {
@@ -1502,6 +1530,13 @@ export interface operations {
             };
         };
         responses: {
+            /** @description All log records duplicated. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             /** @description All log records accepted. */
             201: {
                 headers: {
@@ -1519,6 +1554,13 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
+            /** @description Request exceeds the receiver limit. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
     };
     ingestEvidence: {

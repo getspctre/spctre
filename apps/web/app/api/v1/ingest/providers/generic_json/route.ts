@@ -16,7 +16,7 @@ const handlePostGenericJson = withApiRoute(
     if (throttle) return throttle;
     const payload = await readJsonRecord(request);
     return payload instanceof Response
-      ? error("Request body must be a JSON object.", 400, extractTraceId(request))
+      ? payload
       : handleGenericRecords({ request, providerType: "generic_json", records: [payload] });
   },
 );

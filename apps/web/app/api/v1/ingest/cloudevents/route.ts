@@ -13,8 +13,7 @@ const handlePostCloudEvents = withApiRoute("/api/v1/ingest/cloudevents", async (
   const throttle = await enforceEvidenceRateLimit(request);
   if (throttle) return throttle;
   const payload = await readJsonRecord(request);
-  if (payload instanceof Response)
-    return error("CloudEvent body must be a JSON object.", 400, extractTraceId(request));
+  if (payload instanceof Response) return payload;
   const type = request.headers.get("ce-type");
   if (!type && (!payload.specversion || !payload.type || !payload.source))
     return error(

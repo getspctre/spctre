@@ -11,8 +11,7 @@ export async function POST(request: Request) {
   const throttle = await enforceEvidenceRateLimit(request);
   if (throttle) return throttle;
   const payload = await readJsonRecord(request);
-  if (payload instanceof Response)
-    return error("OTLP/HTTP logs must use JSON encoding.", 400, extractTraceId(request));
+  if (payload instanceof Response) return payload;
   const records: Record<string, unknown>[] = [];
   for (const resourceLog of Array.isArray(payload.resourceLogs) ? payload.resourceLogs : []) {
     if (!isRecord(resourceLog)) continue;

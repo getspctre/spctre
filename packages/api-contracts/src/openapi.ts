@@ -1233,6 +1233,7 @@ export const SPCTRE_OPENAPI_SPEC = {
         responses: {
           "201": { description: "Source record and canonical evidence accepted." },
           "200": { description: "Duplicate source record." },
+          "207": { description: "The source record was rejected by its active mapping." },
           "400": { $ref: "#/components/responses/BadRequest" },
           "401": { $ref: "#/components/responses/Unauthorized" },
           "404": { $ref: "#/components/responses/NotFound" },
@@ -1293,9 +1294,12 @@ export const SPCTRE_OPENAPI_SPEC = {
         },
         responses: {
           "201": { description: "CloudEvent accepted." },
+          "200": { description: "Duplicate source record." },
+          "207": { description: "The CloudEvent was rejected by its active mapping." },
           "400": { $ref: "#/components/responses/BadRequest" },
           "401": { $ref: "#/components/responses/Unauthorized" },
           "404": { $ref: "#/components/responses/NotFound" },
+          "413": { description: "Request exceeds the receiver limit." },
         },
       },
     },
@@ -1322,10 +1326,12 @@ export const SPCTRE_OPENAPI_SPEC = {
         },
         responses: {
           "201": { description: "All log records accepted." },
+          "200": { description: "All log records duplicated." },
           "207": { description: "Record-level outcomes include rejected records." },
           "400": { $ref: "#/components/responses/BadRequest" },
           "401": { $ref: "#/components/responses/Unauthorized" },
           "404": { $ref: "#/components/responses/NotFound" },
+          "413": { description: "Request exceeds the receiver limit." },
         },
       },
     },
