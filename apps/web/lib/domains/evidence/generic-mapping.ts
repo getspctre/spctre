@@ -29,7 +29,7 @@ export function normalizeGenericEvidence(
   mappingInput: unknown,
 ): NormalizedGenericEvidence {
   const mapping = validateEvidenceMapping(mappingInput);
-  const occurredAt = requiredString(resolve(mapping.occurred_at, payload), "occurred_at");
+  const occurredAt = requiredOccurredAt(resolve(mapping.occurred_at, payload));
   if (Number.isNaN(Date.parse(occurredAt)))
     throw new Error("occurred_at must resolve to an ISO-8601 timestamp.");
   const action = requiredString(resolve(mapping.action, payload), "action");
@@ -95,7 +95,16 @@ function requiredString(value: unknown, field: string): string {
   return result;
 }
 
+function requiredOccurredAt(value: unknown): string {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    const occurredAt = new Date(value);
+    if (!Number.isNaN(occurredAt.getTime())) return occurredAt.toISOString();
+  }
+  return requiredString(value, "occurred_at");
+}
+
 function optionalString(value: unknown): string | undefined {
+  if (typeof value === "number" && Number.isFinite(value)) return String(value);
   return typeof value === "string" && value.trim() ? value.trim() : undefined;
 }
 

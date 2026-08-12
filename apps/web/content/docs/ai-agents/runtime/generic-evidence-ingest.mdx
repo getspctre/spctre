@@ -32,6 +32,9 @@ evaluated.
 `occurred_at` and `action` are required. The decision defaults to `observe`;
 known decisions are `allow`, `deny`, `escalate`, and `observe`.
 
+Use `{"path":"$.timestamp","transform":"number"}` for an `occurred_at`
+value expressed as Unix epoch milliseconds; it is converted to ISO-8601.
+
 ## Receivers
 
 All receivers require `Authorization: Bearer <service-token>` and

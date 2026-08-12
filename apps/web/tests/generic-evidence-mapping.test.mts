@@ -38,6 +38,15 @@ describe("generic evidence mapping", () => {
     );
   });
 
+  it("converts numeric occurred_at mappings from Unix epoch milliseconds", () => {
+    expect(
+      normalizeGenericEvidence(
+        { timestamp: "1723464000000", tool: { name: "filesystem.write" } },
+        { ...mapping, occurred_at: { path: "$.timestamp", transform: "number" } },
+      ).occurredAt,
+    ).toBe("2024-08-12T12:00:00.000Z");
+  });
+
   it("rejects executable mapping expressions and missing baseline fields", () => {
     expect(() => validateEvidenceMapping({ ...mapping, action: "$.tool()" })).toThrow();
     expect(() => normalizeGenericEvidence({ timestamp: "2026-08-11T12:00:00Z" }, mapping)).toThrow(
