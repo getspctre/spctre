@@ -56,7 +56,7 @@ CREATE TABLE IF NOT EXISTS public.canonical_evidence_event (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id uuid NOT NULL REFERENCES public.tenant(id) ON DELETE CASCADE,
   workspace_id uuid REFERENCES public.workspace(id) ON DELETE SET NULL,
-  source_record_id uuid NOT NULL UNIQUE REFERENCES public.evidence_source_record(id) ON DELETE RESTRICT,
+  source_record_id uuid NOT NULL UNIQUE REFERENCES public.evidence_source_record(id) ON DELETE CASCADE,
   mapping_revision_id uuid REFERENCES public.evidence_ingest_mapping_revision(id),
   provider_type text NOT NULL,
   source_event_id text,
