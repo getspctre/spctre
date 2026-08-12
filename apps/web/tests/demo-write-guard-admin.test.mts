@@ -96,6 +96,14 @@ const { inviteOrganizationMember } = await import("../app/admin/members/member-a
 const { upsertApprovalWorkflow, disableApprovalWorkflow, removeApprovalWorkflowRule } =
   await import("../app/admin/workflows/workflow-actions");
 
+function formData(values: Record<string, string | string[]>): FormData {
+  const data = new FormData();
+  for (const [key, value] of Object.entries(values)) {
+    for (const entry of Array.isArray(value) ? value : [value]) data.append(key, entry);
+  }
+  return data;
+}
+
 describe("Demo Write Guard - Admin Routes", () => {
   const DEMO_TENANT = "00000000-0000-0000-0000-000000000001";
   const REGULAR_TENANT = "regular-tenant-uuid";
@@ -127,64 +135,69 @@ describe("Demo Write Guard - Admin Routes", () => {
       getActiveScopeSpy.mockResolvedValue({ tenantId: DEMO_TENANT, workspaceId: "w-123" });
     });
 
-    it("blocks service-keys -> createServiceKey", async () => {
-      const formData = new FormData();
-      formData.set("label", "My Key");
-      formData.append("scopes", "read");
-      const result = await createServiceKey(null, formData);
-      expect(result).toEqual({ error: FRIENDLY_ERROR, errorCode: "write_denied" });
-    });
+    const blockedActions = [
+      [
+        "service-keys -> createServiceKey",
+        () => createServiceKey(null, formData({ label: "My Key", scopes: ["read"] })),
+        { error: FRIENDLY_ERROR, errorCode: "write_denied" },
+      ],
+      [
+        "auth -> upsertIdentityProvider",
+        () =>
+          upsertIdentityProvider(
+            null,
+            formData({
+              name: "My IdP",
+              issuer: "https://idp.example.com",
+              providerType: "OIDC",
+              clientId: "client-abc",
+            }),
+          ),
+        { error: FRIENDLY_ERROR },
+      ],
+      [
+        "auth -> updateTenantMfaSettings",
+        () => updateTenantMfaSettings(null, formData({ requireMfa: "on", mfaGraceDays: "7" })),
+        { error: FRIENDLY_ERROR },
+      ],
+      [
+        "members -> inviteOrganizationMember",
+        () =>
+          inviteOrganizationMember(
+            null,
+            formData({ displayName: "Alice", email: "alice@example.com", orgRole: "REVIEWER" }),
+          ),
+        { error: FRIENDLY_ERROR },
+      ],
+      [
+        "workflows -> upsertApprovalWorkflow",
+        () =>
+          upsertApprovalWorkflow(
+            null,
+            formData({
+              name: "My Workflow",
+              role: "Security",
+              requiredCount: "1",
+              eligibleRole: ["Security"],
+            }),
+          ),
+        { error: FRIENDLY_ERROR },
+      ],
+      [
+        "workflows -> disableApprovalWorkflow",
+        () => disableApprovalWorkflow(null, formData({ workflowId: "wf-123" })),
+        { error: FRIENDLY_ERROR },
+      ],
+      [
+        "workflows -> removeApprovalWorkflowRule",
+        () =>
+          removeApprovalWorkflowRule(null, formData({ workflowId: "wf-123", ruleId: "rule-456" })),
+        { error: FRIENDLY_ERROR },
+      ],
+    ] as const;
 
-    it("blocks auth -> upsertIdentityProvider", async () => {
-      const formData = new FormData();
-      formData.set("name", "My IdP");
-      formData.set("issuer", "https://idp.example.com");
-      formData.set("providerType", "OIDC");
-      formData.set("clientId", "client-abc");
-      const result = await upsertIdentityProvider(null, formData);
-      expect(result).toEqual({ error: FRIENDLY_ERROR });
-    });
-
-    it("blocks auth -> updateTenantMfaSettings", async () => {
-      const formData = new FormData();
-      formData.set("requireMfa", "on");
-      formData.set("mfaGraceDays", "7");
-      const result = await updateTenantMfaSettings(null, formData);
-      expect(result).toEqual({ error: FRIENDLY_ERROR });
-    });
-
-    it("blocks members -> inviteOrganizationMember", async () => {
-      const formData = new FormData();
-      formData.set("displayName", "Alice");
-      formData.set("email", "alice@example.com");
-      formData.set("orgRole", "REVIEWER");
-      const result = await inviteOrganizationMember(null, formData);
-      expect(result).toEqual({ error: FRIENDLY_ERROR });
-    });
-
-    it("blocks workflows -> upsertApprovalWorkflow", async () => {
-      const formData = new FormData();
-      formData.set("name", "My Workflow");
-      formData.set("role", "Security");
-      formData.set("requiredCount", "1");
-      formData.append("eligibleRole", "Security");
-      const result = await upsertApprovalWorkflow(null, formData);
-      expect(result).toEqual({ error: FRIENDLY_ERROR });
-    });
-
-    it("blocks workflows -> disableApprovalWorkflow", async () => {
-      const formData = new FormData();
-      formData.set("workflowId", "wf-123");
-      const result = await disableApprovalWorkflow(null, formData);
-      expect(result).toEqual({ error: FRIENDLY_ERROR });
-    });
-
-    it("blocks workflows -> removeApprovalWorkflowRule", async () => {
-      const formData = new FormData();
-      formData.set("workflowId", "wf-123");
-      formData.set("ruleId", "rule-456");
-      const result = await removeApprovalWorkflowRule(null, formData);
-      expect(result).toEqual({ error: FRIENDLY_ERROR });
+    it.each(blockedActions)("blocks %s", async (_name, invoke, expected) => {
+      await expect(invoke()).resolves.toEqual(expected);
     });
   });
 

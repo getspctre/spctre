@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from "crypto";
 import { describe, expect, it } from "vitest";
+import { createRouteRequest } from "./route-test-helper";
 import { createTestTenantFixture } from "./test-db-fixtures";
 
 const databaseAvailable = Boolean(process.env.DATABASE_URL);
@@ -14,7 +15,9 @@ function hashServiceToken(token: string) {
 }
 
 function requestWithAuth(value?: string) {
-  return new Request("http://localhost:3000/api/evidence", {
+  return createRouteRequest({
+    path: "/api/evidence",
+    method: "GET",
     headers: value ? { authorization: value } : {},
   });
 }

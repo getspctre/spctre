@@ -5,6 +5,7 @@
  */
 
 import { describe, expect, it, vi, beforeEach } from "vitest";
+import { createRouteRequest } from "./route-test-helper";
 
 const authenticateServiceTokenMock = vi.fn();
 
@@ -20,11 +21,7 @@ vi.mock("@/lib/domains/compliance/service", () => ({ eraseEvidencePii: eraseEvid
 const { POST: erasePost } = await import("../app/api/evidence/erase/route");
 
 function eraseRequest(body: unknown): Request {
-  return new Request("http://localhost:3000/api/evidence/erase", {
-    method: "POST",
-    headers: { Authorization: "Bearer svc-token", "content-type": "application/json" },
-    body: JSON.stringify(body),
-  });
+  return createRouteRequest({ path: "/api/evidence/erase", token: "svc-token", body });
 }
 
 beforeEach(() => {

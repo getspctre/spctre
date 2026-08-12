@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from "crypto";
 import { describe, expect, it } from "vitest";
+import { createRouteRequest } from "./route-test-helper";
 import { createTestTenantFixture } from "./test-db-fixtures";
 
 // Contract for POST /api/v1/blueprint/imports: the blueprint:import scope is
@@ -110,11 +111,7 @@ function blueprintSource(params: {
 }
 
 function importRequest(token: string, source: string) {
-  return new Request("http://localhost:3000/api/v1/blueprint/imports", {
-    method: "POST",
-    headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
-    body: JSON.stringify({ source }),
-  });
+  return createRouteRequest({ path: "/api/v1/blueprint/imports", token, body: { source } });
 }
 
 async function blueprintRevisionCount(blueprintId: string): Promise<number> {

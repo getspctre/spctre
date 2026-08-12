@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { createRouteRequest } from "./route-test-helper";
 import {
   PASSKEY_LOGIN_CHALLENGE_COOKIE,
   PASSKEY_REG_CHALLENGE_COOKIE,
@@ -84,19 +85,11 @@ const loginFinish = await import("../app/api/auth/passkey/login/finish/route");
 const registerFinish = await import("../app/api/auth/passkey/register/finish/route");
 
 function loginRequest(body: unknown) {
-  return new Request("http://localhost:3000/api/auth/passkey/login/finish", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify(body),
-  });
+  return createRouteRequest({ path: "/api/auth/passkey/login/finish", body });
 }
 
 function registerRequest(body: unknown) {
-  return new Request("http://localhost:3000/api/auth/passkey/register/finish", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify(body),
-  });
+  return createRouteRequest({ path: "/api/auth/passkey/register/finish", body });
 }
 
 const storedCredential = {

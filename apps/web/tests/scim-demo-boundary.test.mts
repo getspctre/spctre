@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { createRouteRequest } from "./route-test-helper";
 
 const getSpctrePlanSpy = vi.fn();
 const handleRequestSpy = vi.fn();
@@ -15,7 +16,7 @@ vi.mock("@/lib/domains/scim-token/service", () => ({
 const scimRoute = await import("../app/api/scim/v2/[...scimPath]/route");
 
 function scimUsersRequest(headers?: HeadersInit) {
-  return new Request("http://localhost:3000/api/scim/v2/Users", { method: "GET", headers });
+  return createRouteRequest({ path: "/api/scim/v2/Users", method: "GET", headers });
 }
 
 function scimParams() {
