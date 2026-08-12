@@ -624,21 +624,9 @@ describe("Gateway resolve API — input validation", () => {
       resolutionNote: "Reviewed and cleared.",
     };
 
-    const firstResponse = await resolvePost(
-      new Request("http://localhost:3000/api/gateway/resolve", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(requestBody),
-      }),
-    );
+    const firstResponse = await resolvePost(gatewayRequest("/api/gateway/resolve", requestBody));
 
-    const secondResponse = await resolvePost(
-      new Request("http://localhost:3000/api/gateway/resolve", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(requestBody),
-      }),
-    );
+    const secondResponse = await resolvePost(gatewayRequest("/api/gateway/resolve", requestBody));
 
     expect(firstResponse.status).toBe(200);
     expect(secondResponse.status).toBe(200);
@@ -746,23 +734,19 @@ describe("Gateway decide API — outcome and queue routing", () => {
 
   it("fails closed when the published policy bundle cannot be read", async () => {
     getLatestPublishedBundleSpy.mockRejectedValue(new Error("connection terminated"));
-    const req = new Request("http://localhost:3000/api/gateway/decide", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        decisionId: "dec-bundle-read-fails",
-        artifactHash: "sha256:decide-test",
-        policyContext: [
-          {
-            scope: "WORKSPACE",
-            branchId: "b-1",
-            revisionId: "r-1",
-            artifactHash: "sha256:decide-test",
-          },
-        ],
-        connector: "acquisition-scout",
-        action: "brief.file",
-      }),
+    const req = gatewayRequest("/api/gateway/decide", {
+      decisionId: "dec-bundle-read-fails",
+      artifactHash: "sha256:decide-test",
+      policyContext: [
+        {
+          scope: "WORKSPACE",
+          branchId: "b-1",
+          revisionId: "r-1",
+          artifactHash: "sha256:decide-test",
+        },
+      ],
+      connector: "acquisition-scout",
+      action: "brief.file",
     });
     const res = await decidePost(req);
     // Must not degrade to "no rules matched" -> PROCEED.
@@ -772,21 +756,17 @@ describe("Gateway decide API — outcome and queue routing", () => {
   });
 
   it("skips the policy bundle read when connector/action are absent", async () => {
-    const req = new Request("http://localhost:3000/api/gateway/decide", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        decisionId: "dec-no-connector",
-        artifactHash: "sha256:decide-test",
-        policyContext: [
-          {
-            scope: "WORKSPACE",
-            branchId: "b-1",
-            revisionId: "r-1",
-            artifactHash: "sha256:decide-test",
-          },
-        ],
-      }),
+    const req = gatewayRequest("/api/gateway/decide", {
+      decisionId: "dec-no-connector",
+      artifactHash: "sha256:decide-test",
+      policyContext: [
+        {
+          scope: "WORKSPACE",
+          branchId: "b-1",
+          revisionId: "r-1",
+          artifactHash: "sha256:decide-test",
+        },
+      ],
     });
     const body = (await (await decidePost(req)).json()) as { decision: { outcome: string } };
     expect(body.decision.outcome).toBe("PROCEED");
@@ -795,22 +775,18 @@ describe("Gateway decide API — outcome and queue routing", () => {
 
   it("gateway disabled — high-risk input still returns PROCEED and queued=false", async () => {
     process.env.GATEWAY_ENABLED = "false";
-    const req = new Request("http://localhost:3000/api/gateway/decide", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        decisionId: "dec-decide-disabled",
-        artifactHash: "sha256:decide-test",
-        policyContext: [
-          {
-            scope: "WORKSPACE",
-            branchId: "b-1",
-            revisionId: "r-1",
-            artifactHash: "sha256:decide-test",
-          },
-        ],
-        consequence: "HIGH",
-      }),
+    const req = gatewayRequest("/api/gateway/decide", {
+      decisionId: "dec-decide-disabled",
+      artifactHash: "sha256:decide-test",
+      policyContext: [
+        {
+          scope: "WORKSPACE",
+          branchId: "b-1",
+          revisionId: "r-1",
+          artifactHash: "sha256:decide-test",
+        },
+      ],
+      consequence: "HIGH",
     });
     const res = await decidePost(req);
     const body = (await res.json()) as {
@@ -824,22 +800,18 @@ describe("Gateway decide API — outcome and queue routing", () => {
   });
 
   it("ABORT outcome is returned correctly and queued=false", async () => {
-    const req = new Request("http://localhost:3000/api/gateway/decide", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        decisionId: "dec-decide-abort",
-        artifactHash: "sha256:decide-test",
-        policyContext: [
-          {
-            scope: "WORKSPACE",
-            branchId: "b-1",
-            revisionId: "r-1",
-            artifactHash: "sha256:decide-test",
-          },
-        ],
-        consequence: "PROHIBITED",
-      }),
+    const req = gatewayRequest("/api/gateway/decide", {
+      decisionId: "dec-decide-abort",
+      artifactHash: "sha256:decide-test",
+      policyContext: [
+        {
+          scope: "WORKSPACE",
+          branchId: "b-1",
+          revisionId: "r-1",
+          artifactHash: "sha256:decide-test",
+        },
+      ],
+      consequence: "PROHIBITED",
     });
     const res = await decidePost(req);
     const body = (await res.json()) as { decision: { outcome: string }; queued: boolean };
@@ -853,22 +825,18 @@ describe("Gateway decide API — outcome and queue routing", () => {
       workspaceId: "demo-workspace",
     });
 
-    const req = new Request("http://localhost:3000/api/gateway/decide", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        decisionId: "dec-decide-demo",
-        artifactHash: "sha256:decide-test",
-        policyContext: [
-          {
-            scope: "WORKSPACE",
-            branchId: "b-1",
-            revisionId: "r-1",
-            artifactHash: "sha256:decide-test",
-          },
-        ],
-        consequence: "HIGH",
-      }),
+    const req = gatewayRequest("/api/gateway/decide", {
+      decisionId: "dec-decide-demo",
+      artifactHash: "sha256:decide-test",
+      policyContext: [
+        {
+          scope: "WORKSPACE",
+          branchId: "b-1",
+          revisionId: "r-1",
+          artifactHash: "sha256:decide-test",
+        },
+      ],
+      consequence: "HIGH",
     });
     const res = await decidePost(req);
     const body = (await res.json()) as {
@@ -883,24 +851,20 @@ describe("Gateway decide API — outcome and queue routing", () => {
   });
 
   it("propagates and persists toolIntent, planSummary, and toolParameters", async () => {
-    const req = new Request("http://localhost:3000/api/gateway/decide", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        decisionId: "dec-decide-intent",
-        artifactHash: "sha256:decide-test",
-        policyContext: [
-          {
-            scope: "WORKSPACE",
-            branchId: "b-1",
-            revisionId: "r-1",
-            artifactHash: "sha256:decide-test",
-          },
-        ],
-        toolIntent: "Read user file",
-        planSummary: "Analyze contents and print summary",
-        toolParameters: { path: "/etc/passwd", format: "json" },
-      }),
+    const req = gatewayRequest("/api/gateway/decide", {
+      decisionId: "dec-decide-intent",
+      artifactHash: "sha256:decide-test",
+      policyContext: [
+        {
+          scope: "WORKSPACE",
+          branchId: "b-1",
+          revisionId: "r-1",
+          artifactHash: "sha256:decide-test",
+        },
+      ],
+      toolIntent: "Read user file",
+      planSummary: "Analyze contents and print summary",
+      toolParameters: { path: "/etc/passwd", format: "json" },
     });
     const res = await decidePost(req);
     expect(res.status).toBe(200);

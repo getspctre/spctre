@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { createRouteRequest } from "./route-test-helper";
 
 const ingestRuntimeEvidenceSpy = vi.fn();
 const delegateToGoIngestorSpy = vi.fn();
@@ -53,10 +54,10 @@ describe("POST /api/evidence contract", () => {
 
   it("wraps successful ingest responses with trace metadata and revalidates returned paths", async () => {
     const response = await evidenceRoute.POST(
-      new Request("http://localhost:3000/api/evidence", {
-        method: "POST",
-        headers: { "content-type": "application/json", "x-request-id": "trace-route-contract" },
-        body: JSON.stringify(validPayload),
+      createRouteRequest({
+        path: "/api/evidence",
+        body: validPayload,
+        headers: { "x-request-id": "trace-route-contract" },
       }),
     );
 
@@ -80,6 +81,7 @@ describe("POST /api/evidence contract", () => {
   });
 
   it("returns a stable JSON error envelope for invalid JSON", async () => {
+    // Raw malformed JSON is the behavior under test, so this intentionally bypasses the helper.
     const response = await evidenceRoute.POST(
       new Request("http://localhost:3000/api/evidence", {
         method: "POST",
@@ -99,10 +101,10 @@ describe("POST /api/evidence contract", () => {
 
   it("returns parse issues without calling the ingest service", async () => {
     const response = await evidenceRoute.POST(
-      new Request("http://localhost:3000/api/evidence", {
-        method: "POST",
-        headers: { "content-type": "application/json", "x-request-id": "trace-parse-issues" },
-        body: JSON.stringify({ decisionId: "missing-required-fields" }),
+      createRouteRequest({
+        path: "/api/evidence",
+        body: { decisionId: "missing-required-fields" },
+        headers: { "x-request-id": "trace-parse-issues" },
       }),
     );
 
