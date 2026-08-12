@@ -1106,17 +1106,17 @@ describe("GET /api/identity/events", () => {
 
 describe("POST /api/verification", () => {
   it("records a PASS verification result", async () => {
-    const req = new Request("http://localhost:3000/api/verification", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: "Bearer svc-token" },
-      body: JSON.stringify({
+    const req = createRouteRequest({
+      path: "/api/verification",
+      token: "svc-token",
+      body: {
         artifactHash: "sha256:route-test",
         verificationType: "AGT_VERIFY",
         outcome: "PASS",
         revisionId: "rev-route-1",
         runtimeVersion: "2.0.0",
         summary: {},
-      }),
+      },
     });
 
     const res = await verificationPost(req);
@@ -1128,10 +1128,10 @@ describe("POST /api/verification", () => {
   });
 
   it("records AGT v4.1.0 engine and escrow fields", async () => {
-    const req = new Request("http://localhost:3000/api/verification", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: "Bearer svc-token" },
-      body: JSON.stringify({
+    const req = createRouteRequest({
+      path: "/api/verification",
+      token: "svc-token",
+      body: {
         artifactHash: "sha256:route-agt410",
         verificationType: "AGT_VERIFY_EVIDENCE",
         outcome: "PASS",
@@ -1149,7 +1149,7 @@ describe("POST /api/verification", () => {
         escrowSignature: "ed25519:escrow-signature",
         escrowVerificationOutcome: "PASS",
         escrowVerifiedAt: "2026-06-10T00:00:01.000Z",
-      }),
+      },
     });
 
     const res = await verificationPost(req);
