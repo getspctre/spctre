@@ -351,7 +351,7 @@ describe("framework adapter writers", () => {
       ],
       {
         encoding: "utf8",
-        env: { ...process.env, PYTHONPATH: path.join(tempDir, ".spctre"), SPCTRE_KEY: "" },
+        env: { ...process.env, PYTHONPATH: path.join(tempDir, ".spctre"), SPCTRE_API_TOKEN: "" },
       },
     ).trim();
 
