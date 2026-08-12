@@ -137,9 +137,9 @@ export function EvidenceIntegrationWizard({
                 <thead>
                   <tr>
                     <th>Provider</th>
+                    <th>Drift</th>
                     <th>Resolved</th>
                     <th>Unresolved</th>
-                    <th>Drift</th>
                     <th>Last receipt</th>
                   </tr>
                 </thead>
