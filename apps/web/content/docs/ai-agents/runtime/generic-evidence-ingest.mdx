@@ -1,0 +1,82 @@
+---
+title: Generic evidence ingest
+description: Provider-neutral JSON, NDJSON, CloudEvents, and OTLP log ingestion with immutable source provenance.
+---
+
+Generic evidence ingest accepts provider source events without changing the
+existing runtime-decision endpoint. Every accepted record is retained twice:
+the immutable source record and the canonical evidence event created by the
+integration's active mapping revision.
+
+## Integration setup
+
+An administrator creates an `evidence_ingest_integration`, binds it to one
+service token, and activates an immutable mapping revision. The token and
+`x-spctre-integration-id` must both match that integration; an evidence-write
+token cannot submit to another integration.
+
+Mappings are declarative. They support object traversal and array indexes in a
+restricted JSONPath subset, defaults, and `string`, `number`, `lowercase`, or
+`uppercase` transforms. JavaScript, templates, and network calls are never
+evaluated.
+
+```json
+{
+  "occurred_at": "$.timestamp",
+  "action": "$.tool.name",
+  "source_event_id": "$.event_id",
+  "enforcement_decision": { "path": "$.decision", "transform": "lowercase" }
+}
+```
+
+`occurred_at` and `action` are required. The decision defaults to `observe`;
+known decisions are `allow`, `deny`, `escalate`, and `observe`.
+
+Use `{"path":"$.timestamp","transform":"number"}` for an `occurred_at`
+value expressed as Unix epoch milliseconds; it is converted to ISO-8601.
+
+## Receivers
+
+All receivers require `Authorization: Bearer <service-token>` and
+`x-spctre-integration-id: <integration-id>`.
+
+| Endpoint                                       | Input                                      |
+| ---------------------------------------------- | ------------------------------------------ |
+| `POST /api/v1/ingest/providers/generic_json`   | One JSON object                            |
+| `POST /api/v1/ingest/providers/generic_ndjson` | One JSON object per line                   |
+| `POST /api/v1/ingest/cloudevents`              | CloudEvents structured or binary HTTP JSON |
+| `POST /api/v1/logs`                            | OTLP/HTTP JSON logs                        |
+
+The OTLP endpoint follows the OTLP/HTTP logs suffix: configure a non-signal
+specific exporter endpoint ending in `/api`, which resolves to `/api/v1/logs`.
+
+Batch responses contain a result for every NDJSON or OTLP log record. A bad
+record does not prevent unrelated records from being ingested; a partial batch
+returns `207 Multi-Status`. Requests are capped at 1 MiB and 500 records.
+Compressed payloads are not accepted (`415`). Receivers apply both an IP
+pre-auth guard and a per-token limit; respect `429` responses and their
+`Retry-After` header. A receiver without its database returns `503`.
+
+Source delivery is at-least-once. When the active mapping resolves a source
+event ID, that ID is the idempotency key (`source:<sourceEventId>`). A retry
+with the same source event ID is therefore reported as a duplicate even if its
+payload differs. When no source event ID is resolved, the service falls back to
+a deterministic SHA-256 hash of the source payload
+(`hash:sha256:<digest>`), so only retries with the same payload are reported as
+duplicates rather than creating a second source record.
+
+## Managed providers
+
+The same receiver accepts normalized records for Bedrock AgentCore, Docker AI
+Governance, and LangSmith at `/api/v1/ingest/providers/<provider>`. Create the
+matching managed-provider integration in the admin wizard first; its dedicated
+token and integration ID remain mandatory.
+
+For Bedrock AgentCore, send CloudWatch-exported span records after normalizing
+their documented attributes: `aws.request_id`, `aws.agent.id`,
+`aws.operation.name`, and `aws.resource.arn`. AgentCore stores its telemetry in
+CloudWatch Logs; a production pull collector should use a customer-owned,
+read-only role scoped to those log groups. CloudWatch Transaction Search must
+be enabled separately when span search is desired. A bare runtime only emits
+service logs; add ADOT or another supported OpenTelemetry instrumentor to an
+agent when custom trace and span payloads are required.

@@ -1209,6 +1209,144 @@ export const SPCTRE_OPENAPI_SPEC = {
   // Paths
   // ──────────────────────────────────────────────────────────
   paths: {
+    "/ingest/providers/generic_json": {
+      post: {
+        operationId: "ingestGenericJsonEvidence",
+        summary: "Ingest one mapped generic JSON evidence record",
+        "x-spctre-plan": "oss",
+        tags: ["Evidence"],
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          {
+            name: "x-spctre-integration-id",
+            in: "header",
+            required: true,
+            schema: { type: "string", format: "uuid" },
+          },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": { schema: { type: "object", additionalProperties: true } },
+          },
+        },
+        responses: {
+          "201": { description: "Source record and canonical evidence accepted." },
+          "200": { description: "Duplicate source record." },
+          "207": { description: "The source record was rejected by its active mapping." },
+          "400": { $ref: "#/components/responses/BadRequest" },
+          "401": { $ref: "#/components/responses/Unauthorized" },
+          "404": { $ref: "#/components/responses/NotFound" },
+          "413": { description: "Request exceeds the receiver limit." },
+          "415": { description: "Compressed evidence payloads are not supported." },
+          "429": { description: "Evidence ingest rate limit exceeded." },
+          "503": { $ref: "#/components/responses/ServiceUnavailable" },
+        },
+      },
+    },
+    "/ingest/providers/generic_ndjson": {
+      post: {
+        operationId: "ingestGenericNdjsonEvidence",
+        summary: "Ingest independently reported NDJSON evidence records",
+        "x-spctre-plan": "oss",
+        tags: ["Evidence"],
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          {
+            name: "x-spctre-integration-id",
+            in: "header",
+            required: true,
+            schema: { type: "string", format: "uuid" },
+          },
+        ],
+        requestBody: {
+          required: true,
+          content: { "application/x-ndjson": { schema: { type: "string" } } },
+        },
+        responses: {
+          "201": { description: "All records accepted." },
+          "200": { description: "All records duplicated." },
+          "207": { description: "Record-level outcomes include accepted and rejected records." },
+          "400": { $ref: "#/components/responses/BadRequest" },
+          "401": { $ref: "#/components/responses/Unauthorized" },
+          "404": { $ref: "#/components/responses/NotFound" },
+          "413": { description: "Request exceeds the receiver limit." },
+          "415": { description: "Compressed evidence payloads are not supported." },
+          "429": { description: "Evidence ingest rate limit exceeded." },
+          "503": { $ref: "#/components/responses/ServiceUnavailable" },
+        },
+      },
+    },
+    "/ingest/cloudevents": {
+      post: {
+        operationId: "ingestCloudEventEvidence",
+        summary: "Ingest a structured or binary JSON CloudEvent",
+        "x-spctre-plan": "oss",
+        tags: ["Evidence"],
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          {
+            name: "x-spctre-integration-id",
+            in: "header",
+            required: true,
+            schema: { type: "string", format: "uuid" },
+          },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": { schema: { type: "object", additionalProperties: true } },
+          },
+        },
+        responses: {
+          "201": { description: "CloudEvent accepted." },
+          "200": { description: "Duplicate source record." },
+          "207": { description: "The CloudEvent was rejected by its active mapping." },
+          "400": { $ref: "#/components/responses/BadRequest" },
+          "401": { $ref: "#/components/responses/Unauthorized" },
+          "404": { $ref: "#/components/responses/NotFound" },
+          "413": { description: "Request exceeds the receiver limit." },
+          "415": { description: "Compressed evidence payloads are not supported." },
+          "429": { description: "Evidence ingest rate limit exceeded." },
+          "503": { $ref: "#/components/responses/ServiceUnavailable" },
+        },
+      },
+    },
+    "/logs": {
+      post: {
+        operationId: "ingestOtlpLogs",
+        summary: "Ingest OTLP/HTTP JSON log records",
+        "x-spctre-plan": "oss",
+        tags: ["Evidence"],
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          {
+            name: "x-spctre-integration-id",
+            in: "header",
+            required: true,
+            schema: { type: "string", format: "uuid" },
+          },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": { schema: { type: "object", additionalProperties: true } },
+          },
+        },
+        responses: {
+          "201": { description: "All log records accepted." },
+          "200": { description: "All log records duplicated." },
+          "207": { description: "Record-level outcomes include rejected records." },
+          "400": { $ref: "#/components/responses/BadRequest" },
+          "401": { $ref: "#/components/responses/Unauthorized" },
+          "404": { $ref: "#/components/responses/NotFound" },
+          "413": { description: "Request exceeds the receiver limit." },
+          "415": { description: "Compressed evidence payloads are not supported." },
+          "429": { description: "Evidence ingest rate limit exceeded." },
+          "503": { $ref: "#/components/responses/ServiceUnavailable" },
+        },
+      },
+    },
     // ── Evidence ─────────────────────────────────────────────
     "/evidence": {
       post: {

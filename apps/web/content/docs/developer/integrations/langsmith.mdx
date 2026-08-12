@@ -1,0 +1,100 @@
+---
+title: LangSmith evidence
+description: Pull LangSmith runs into Spctre with a customer-owned, cursor-based collector.
+---
+
+LangSmith exposes trace runs through its authenticated `/api/v1/runs/query`
+API. Spctre's LangSmith managed adapter accepts those runs directly and keeps
+the LangSmith run ID as the source event ID. The collector below stays in your
+environment, so the LangSmith key never enters Spctre storage.
+
+## Configure an integration
+
+Create a **LangSmith** source in **Admin → Evidence integrations**. Save its
+`evidence:write` service token and integration ID with the LangSmith credentials
+in your secret manager.
+
+Use a LangSmith workspace-scoped service key where possible. If the key is
+organization-scoped, set `LANGSMITH_WORKSPACE_ID` so every query is pinned to
+the intended workspace.
+
+## Cursor-based collector
+
+Run this Python 3.10+ program from a CronJob or scheduled host with a persistent
+volume mounted at `CURSOR_PATH`. It queries at most 100 runs over a seven-day-or-
+shorter window, advances the cursor only after all accepted deliveries, and uses
+a five-minute overlap. Replayed runs are safe because Spctre deduplicates by
+LangSmith run ID.
+
+```python
+import json
+import os
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+from urllib.request import Request, urlopen
+
+endpoint = os.getenv("LANGSMITH_ENDPOINT", "https://api.smith.langchain.com").rstrip("/")
+api_key = os.environ["LANGSMITH_API_KEY"]
+workspace = os.environ["LANGSMITH_WORKSPACE_ID"]
+spctre_url = os.environ["SPCTRE_URL"].rstrip("/")
+spctre_token = os.environ["SPCTRE_EVIDENCE_TOKEN"]
+integration_id = os.environ["SPCTRE_INTEGRATION_ID"]
+cursor_path = Path(os.getenv("CURSOR_PATH", "/var/lib/spctre/langsmith-cursor.json"))
+now = datetime.now(timezone.utc)
+
+try:
+    cursor = datetime.fromisoformat(json.loads(cursor_path.read_text())["cursor"])
+except Exception:
+    cursor = now - timedelta(minutes=10)
+start = max(cursor - timedelta(minutes=5), now - timedelta(days=7))
+
+query = {
+    "start_time": start.isoformat(),
+    "limit": 100,
+    "order": "asc",
+    "select": ["id", "name", "run_type", "start_time", "end_time", "session_id", "inputs", "outputs", "error"],
+}
+request = Request(
+    f"{endpoint}/api/v1/runs/query",
+    data=json.dumps(query).encode(),
+    headers={"content-type": "application/json", "x-api-key": api_key, "x-tenant-id": workspace},
+    method="POST",
+)
+with urlopen(request, timeout=30) as response:
+    runs = json.load(response)["runs"]
+
+latest = cursor
+for run in runs:
+    body = json.dumps(run).encode()
+    delivery = Request(
+        f"{spctre_url}/api/v1/ingest/providers/langsmith",
+        data=body,
+        headers={
+            "content-type": "application/json",
+            "authorization": f"Bearer {spctre_token}",
+            "x-spctre-integration-id": integration_id,
+        },
+        method="POST",
+    )
+    with urlopen(delivery, timeout=15) as response:
+        if response.status not in (200, 201, 207):
+            raise RuntimeError(f"Spctre delivery failed: {response.status}")
+    occurred = run.get("start_time")
+    if occurred:
+        latest = max(latest, datetime.fromisoformat(occurred.replace("Z", "+00:00")))
+
+cursor_path.parent.mkdir(parents=True, exist_ok=True)
+cursor_path.write_text(json.dumps({"cursor": latest.isoformat()}))
+```
+
+Keep the job interval at five minutes or slower. LangSmith rate-limits run
+queries; the bounded `start_time`, `limit`, and selected fields above avoid the
+large-window and full-payload query tiers. For historical exports, use
+LangSmith's bulk-export flow instead of increasing this collector's window.
+
+## Verify and correlate
+
+After the first scheduled run, receipts appear in **Admin → Evidence
+integrations**. To resolve a LangSmith `session_id` or run ID to a canonical
+Spctre agent, create an agent-surface binding with `surfaceType`
+`evidence:langsmith` and the mapped external ID as `surfaceAgentId`.

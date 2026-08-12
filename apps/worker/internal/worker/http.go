@@ -98,6 +98,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("/readyz", s.handleReady)
 	mux.HandleFunc("/metrics", s.handleMetrics)
 	mux.HandleFunc("/api/evidence", s.handleEvidence)
+	mux.HandleFunc("/internal/generic-evidence", s.handleGenericEvidence)
 	mux.HandleFunc("/api/gateway/claim", s.handleGatewayClaim)
 	mux.HandleFunc("/api/gateway/decide", s.handleGatewayDecide)
 	mux.HandleFunc("/api/gateway-ingest/helicone", s.handleGatewayIngestHelicone)

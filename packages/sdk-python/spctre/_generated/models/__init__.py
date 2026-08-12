@@ -138,9 +138,12 @@ from .git_checkpoint_ingest_request_checkpoint_repository import (
     GitCheckpointIngestRequestCheckpointRepository,
 )
 from .git_checkpoint_ingest_request_metadata import GitCheckpointIngestRequestMetadata
+from .ingest_cloud_event_evidence_body import IngestCloudEventEvidenceBody
 from .ingest_context_budget_event_response_201 import (
     IngestContextBudgetEventResponse201,
 )
+from .ingest_generic_json_evidence_body import IngestGenericJsonEvidenceBody
+from .ingest_otlp_logs_body import IngestOtlpLogsBody
 from .ingest_trust_score_response_201 import IngestTrustScoreResponse201
 from .list_escalations_response_200 import ListEscalationsResponse200
 from .list_verifications_response_200 import ListVerificationsResponse200
@@ -275,7 +278,10 @@ __all__ = (
     "GitCheckpointIngestRequestCheckpointDiffFormat",
     "GitCheckpointIngestRequestCheckpointRepository",
     "GitCheckpointIngestRequestMetadata",
+    "IngestCloudEventEvidenceBody",
     "IngestContextBudgetEventResponse201",
+    "IngestGenericJsonEvidenceBody",
+    "IngestOtlpLogsBody",
     "IngestTrustScoreResponse201",
     "ListEscalationsResponse200",
     "ListVerificationsResponse200",

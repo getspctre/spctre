@@ -10,6 +10,7 @@ export * from "./validate";
 
 // Domain schemas
 export * from "./schemas/evidence";
+export * from "./schemas/generic-evidence";
 export * from "./schemas/git-checkpoint";
 export * from "./schemas/gateway";
 export * from "./schemas/token";

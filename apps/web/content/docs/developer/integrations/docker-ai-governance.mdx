@@ -1,0 +1,64 @@
+---
+title: Docker AI Governance evidence
+description: Forward sealed Docker AI Governance audit files to Spctre as provider-native evidence.
+---
+
+Docker AI Governance records every sandbox policy evaluation as structured JSON
+Lines on the machine that enforced it. Spctre accepts those records directly,
+preserving the Docker audit event ID and source payload before normalizing the
+decision into canonical evidence.
+
+## Configure an integration
+
+In **Admin → Evidence integrations**, create a **Docker AI Governance** source.
+Store the displayed service token in your log shipper and set its integration
+ID as `X-Spctre-Integration-Id`.
+
+Send records to:
+
+```
+POST https://<spctre-host>/api/v1/ingest/providers/docker_ai_governance
+Authorization: Bearer <evidence-write-token>
+X-Spctre-Integration-Id: <integration-id>
+Content-Type: application/x-ndjson
+```
+
+The endpoint accepts either one JSON event or bounded NDJSON batches. It
+deduplicates by Docker's `audit_event_id`; retrying a completed file is safe.
+Limit each request to 1 MiB or less.
+
+## Ship completed audit files only
+
+Docker seals audit files by atomically renaming a temporary file to `.jsonl`.
+Configure the shipper to read only `*.jsonl`, never `*.tmp` files. Default
+directories are:
+
+| Platform | Directory |
+| --- | --- |
+| macOS | `~/Library/Logs/com.docker.sandboxes/sandboxes/auditkit/` |
+| Linux | `${XDG_STATE_HOME:-~/.local/state}/sandboxes/sandboxes/auditkit/` |
+| Windows | `%LOCALAPPDATA%\DockerSandboxes\sandboxes\logs\auditkit\` |
+
+Ship each completed line unchanged. Docker's event fields are interpreted as:
+
+| Docker field | Canonical evidence field |
+| --- | --- |
+| `audit_event_id` | source event ID and idempotency key |
+| `timestamp` | occurrence time |
+| `action_type` | action |
+| `resource_id` | target resource |
+| `AUDIT_DECISION_ALLOW` / `AUDIT_DECISION_DENY` | allow / deny decision |
+| `agent.name` | external agent identity |
+
+The audit directory is customer-controlled. Spctre does not read developer
+machines or Docker Hub directly; run the shipper where Docker writes the audit
+file and use a narrowly scoped `evidence:write` integration token.
+
+## Resolve agent identity
+
+An audit event's `agent.name` is retained as an external identity. To connect
+it to an existing Spctre agent, create an agent-surface binding with
+`surfaceType` set to `evidence:docker_ai_governance` and `surfaceAgentId` set
+to that Docker agent name. Future receipts then show the canonical agent in the
+Evidence integrations provenance table; unbound identities remain explicitly
+marked for review.
