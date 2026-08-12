@@ -197,6 +197,10 @@ const { POST: decidePost } = await import("../app/api/gateway/decide/route");
 
 const DEMO_TOKEN = "demo-token-gateway-tests";
 
+function gatewayRequest(path: "/api/gateway/decide" | "/api/gateway/resolve", body: unknown) {
+  return createRouteRequest({ path, body });
+}
+
 function buildEvidenceRequest(
   decisionId: string,
   gatewayFields: Record<string, unknown> = {},
@@ -556,11 +560,7 @@ describe("Gateway resolve API — input validation", () => {
   });
 
   it("rejects request missing queueId", async () => {
-    const req = new Request("http://localhost:3000/api/gateway/resolve", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ resolutionOutcome: "PROCEED" }),
-    });
+    const req = gatewayRequest("/api/gateway/resolve", { resolutionOutcome: "PROCEED" });
     const res = await resolvePost(req);
     expect(res.status).toBe(400);
     const body = (await res.json()) as { error: string };
@@ -568,10 +568,9 @@ describe("Gateway resolve API — input validation", () => {
   });
 
   it("rejects invalid resolutionOutcome", async () => {
-    const req = new Request("http://localhost:3000/api/gateway/resolve", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ queueId: "q-1", resolutionOutcome: "MAYBE" }),
+    const req = gatewayRequest("/api/gateway/resolve", {
+      queueId: "q-1",
+      resolutionOutcome: "MAYBE",
     });
     const res = await resolvePost(req);
     expect(res.status).toBe(400);
@@ -585,10 +584,9 @@ describe("Gateway resolve API — input validation", () => {
       workspaceId: "demo-workspace",
     });
 
-    const req = new Request("http://localhost:3000/api/gateway/resolve", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ queueId: "q-demo", resolutionOutcome: "PROCEED" }),
+    const req = gatewayRequest("/api/gateway/resolve", {
+      queueId: "q-demo",
+      resolutionOutcome: "PROCEED",
     });
     const res = await resolvePost(req);
     expect(res.status).toBe(403);
@@ -597,14 +595,10 @@ describe("Gateway resolve API — input validation", () => {
   });
 
   it("accepts PROCEED as a valid resolution outcome and returns ok", async () => {
-    const req = new Request("http://localhost:3000/api/gateway/resolve", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        queueId: "q-1",
-        resolutionOutcome: "PROCEED",
-        resolutionNote: "Reviewed and cleared.",
-      }),
+    const req = gatewayRequest("/api/gateway/resolve", {
+      queueId: "q-1",
+      resolutionOutcome: "PROCEED",
+      resolutionNote: "Reviewed and cleared.",
     });
     const res = await resolvePost(req);
     expect(res.status).toBe(200);
@@ -613,10 +607,9 @@ describe("Gateway resolve API — input validation", () => {
   });
 
   it("accepts ABORT as a valid resolution outcome", async () => {
-    const req = new Request("http://localhost:3000/api/gateway/resolve", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ queueId: "q-2", resolutionOutcome: "ABORT" }),
+    const req = gatewayRequest("/api/gateway/resolve", {
+      queueId: "q-2",
+      resolutionOutcome: "ABORT",
     });
     const res = await resolvePost(req);
     expect(res.status).toBe(200);
