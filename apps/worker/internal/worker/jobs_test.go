@@ -41,17 +41,18 @@ func TestJobsIncludesNotificationSenderAlways(t *testing.T) {
 		Notification:   time.Hour,
 		SiemForwarder:  time.Hour,
 		UsageReconcile: time.Hour,
+		UsageReport:    time.Hour,
 	}
 
 	withoutWebhook := Jobs(nil, slog.Default(), intervals, NotificationConfig{})
-	if len(withoutWebhook) != 7 {
-		t.Fatalf("expected 7 jobs, got %d", len(withoutWebhook))
+	if len(withoutWebhook) != 8 {
+		t.Fatalf("expected 8 jobs, got %d", len(withoutWebhook))
 	}
 	names := make(map[string]bool)
 	for _, j := range withoutWebhook {
 		names[j.Name] = true
 	}
-	for _, expected := range []string{"notification-sender", "siem-forwarder", "usage-reconcile"} {
+	for _, expected := range []string{"notification-sender", "siem-forwarder", "usage-reconcile", "usage-report"} {
 		if !names[expected] {
 			t.Errorf("expected job %q to be registered", expected)
 		}

@@ -82,6 +82,20 @@ describe("usage reporting", () => {
     expect(source).toMatch(/runWithTenantContext\(tenantId, async \(\) => \{/);
   });
 
+  // A period's retained count moves for as long as the period is open, and the
+  // idempotency key is per-period. Reporting early would permanently record a
+  // figure that was still changing.
+  it("reports periods at close, never while they are open", async () => {
+    const source = await read("../lib/domains/billing/usage-reporting.ts");
+    expect(source).toMatch(/listUnreportedClosedPeriods/);
+
+    const repository = await read("../lib/repositories/usage/metering.ts");
+    expect(repository).toMatch(/p\.period_end <= now\(\)/);
+    // A failed submission is the state a retry resumes from, so it must not
+    // count as reported.
+    expect(repository).toMatch(/s\.status <> 'FAILED'/);
+  });
+
   it("claims the submission before calling the provider", async () => {
     const source = await read("../lib/domains/billing/usage-reporting.ts");
     const claimAt = source.indexOf("claimUsageSubmission(");
@@ -101,5 +115,58 @@ describe("usage reporting", () => {
   it("does not re-report a period unless the previous attempt failed", async () => {
     const source = await read("../lib/domains/billing/usage-reporting.ts");
     expect(source).toMatch(/claim\.alreadyClaimed && claim\.record\.status !== "FAILED"/);
+  });
+});
+
+// Stage 5 — enabling overage billing — is meant to be a change to the catalog
+// rather than to a code path. These pin that property.
+describe("the overage billing switch", () => {
+  it("charges only when the plan's entitlement is enforced", async () => {
+    const source = await read("../lib/domains/billing/usage-reporting.ts");
+    expect(source).toMatch(
+      /enforcedEntitlementValue\(planEntitlements\(planCode\)\.retainedEvents\)/,
+    );
+    expect(source).toMatch(/if \(enforcedCapacity === null\) return false;/);
+  });
+
+  it("never charges the free tier", async () => {
+    const source = await read("../lib/domains/billing/usage-reporting.ts");
+    // The trial's capacity is enforced, but as a refusal at ingest rather than
+    // a billable overage: it has no subscription to settle a charge against.
+    // Without this the enforced flag alone would make the free tier chargeable.
+    expect(source).toMatch(/if \(planCode === "HOSTED_TRIAL"\) return false;/);
+  });
+
+  it("does not let a failed charge lose the reported usage", async () => {
+    const source = await read("../lib/domains/billing/usage-reporting.ts");
+    // The figure is already with the provider. Throwing here would make the
+    // next retry re-report a period the provider has accepted.
+    const fn = source.slice(source.indexOf("async function chargeOverageIfEnforced"));
+    expect(fn).toMatch(/charge\.status === "FAILED"/);
+    expect(fn).not.toMatch(/throw /);
+  });
+});
+
+describe("the reporting trigger", () => {
+  it("fans out per tenant rather than batching", async () => {
+    const source = await read("../../worker/internal/worker/jobs_usage_report.go");
+    // One tenant's provider outage must not stall everyone else's billing.
+    expect(source).toMatch(/for _, tenantID := range tenantIDs/);
+    expect(source).toMatch(/continue/);
+  });
+
+  it("asks the control plane rather than deciding what is owed", async () => {
+    const source = await read("../../worker/internal/worker/jobs_usage_report.go");
+    expect(source).toMatch(/\/api\/internal\/report-usage/);
+    // The catalog and the billing slot live in the control plane; the worker
+    // owns only the schedule.
+    expect(source).not.toMatch(/retained_event_capacity|enforced/);
+  });
+
+  it("selects the same periods the control plane will", async () => {
+    const worker = await read("../../worker/internal/worker/jobs_usage_report.go");
+    expect(worker).toMatch(/p\.period_end <= now\(\)/);
+    expect(worker).toMatch(/p\.retained_count IS NOT NULL/);
+    expect(worker).toMatch(/s\.status <> 'FAILED'/);
   });
 });

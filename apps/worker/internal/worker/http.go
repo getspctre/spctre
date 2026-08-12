@@ -116,6 +116,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("/internal/jobs/notification-sender", s.handleJobNotificationSender)
 	mux.HandleFunc("/internal/jobs/siem-forwarder", s.handleJobSiemForwarder)
 	mux.HandleFunc("/internal/jobs/usage-reconcile", s.handleJobUsageReconcile)
+	mux.HandleFunc("/internal/jobs/usage-report", s.handleJobUsageReport)
 	// Throttle inside requestID so a shed request still carries its trace id.
 	return requestID(s.throttleRuntimeIngress(mux))
 }
@@ -302,6 +303,19 @@ func (s *Server) handleJobUsageReconcile(w http.ResponseWriter, r *http.Request)
 	}
 	s.runJobEndpoint(w, r, "usage-reconcile", LockIDUsageReconcile, func(ctx context.Context) error {
 		return runUsageReconciliation(ctx, s.db, s.logger)
+	})
+}
+
+func (s *Server) handleJobUsageReport(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeError(w, http.StatusMethodNotAllowed, "Method not allowed.", traceID(r), nil)
+		return
+	}
+	if !authenticateJobTriggerRequest(w, r, traceID(r)) {
+		return
+	}
+	s.runJobEndpoint(w, r, "usage-report", LockIDUsageReport, func(ctx context.Context) error {
+		return runUsageReporting(ctx, s.db, s.logger)
 	})
 }
 

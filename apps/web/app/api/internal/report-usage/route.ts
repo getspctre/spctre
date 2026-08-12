@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { workerInternalSecret } from "@/lib/platform/config";
-import { reportUsageForCurrentPeriod } from "@/lib/domains/billing/usage-reporting";
+import { reportClosedPeriods } from "@/lib/domains/billing/usage-reporting";
 
 export const dynamic = "force-dynamic";
 
 /**
- * Report a tenant's measured usage to the billing provider.
+ * Report a tenant's closed billing periods to the billing provider.
  *
  * Internal, worker-triggered, and shaped like the archive-evidence route: the
  * scheduler lives in the worker, while the work needs the entitlement catalog
@@ -36,14 +36,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "tenantId is required." }, { status: 400 });
   }
 
-  const result = await reportUsageForCurrentPeriod(tenantId.trim());
+  const result = await reportClosedPeriods(tenantId.trim());
 
   // A failed provider call is reported as 502 so the caller can retry it. The
-  // submission row already records the attempt, so a retry resumes rather than
+  // submission rows already record the attempts, so a retry resumes rather than
   // starting a second charge.
-  if (result.status === "failed") {
-    return NextResponse.json(result, { status: 502 });
-  }
-
-  return NextResponse.json(result);
+  const failed = result.outcomes.some((outcome) => outcome.status === "failed");
+  return NextResponse.json(result, { status: failed ? 502 : 200 });
 }

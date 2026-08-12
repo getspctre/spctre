@@ -19,6 +19,7 @@ const (
 	LockIDNotificationSender = 7005
 	LockIDSiemForwarder      = 7007
 	LockIDUsageReconcile     = 7008
+	LockIDUsageReport        = 7009
 )
 
 type Job struct {
@@ -50,6 +51,9 @@ func Jobs(db *pgxpool.Pool, logger *slog.Logger, intervals JobIntervals, notific
 	}})
 	jobs = append(jobs, Job{Name: "usage-reconcile", Every: intervals.UsageReconcile, Run: func(ctx context.Context) error {
 		return runUsageReconciliation(ctx, db, logger)
+	}})
+	jobs = append(jobs, Job{Name: "usage-report", Every: intervals.UsageReport, Run: func(ctx context.Context) error {
+		return runUsageReporting(ctx, db, logger)
 	}})
 	return jobs
 }
