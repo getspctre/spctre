@@ -1,5 +1,5 @@
 import {
-  enforceEvidenceRateLimit,
+  authorizeEvidenceIngest,
   error,
   handleGenericRecords,
   readBoundedText,
@@ -14,8 +14,8 @@ export const dynamic = "force-dynamic";
 const handlePostGenericNdjson = withApiRoute(
   "/api/v1/ingest/providers/generic_ndjson",
   async (request) => {
-    const throttle = await enforceEvidenceRateLimit(request);
-    if (throttle) return throttle;
+    const authorization = await authorizeEvidenceIngest(request);
+    if (authorization instanceof Response) return authorization;
     const body = await readBoundedText(request);
     if (body instanceof Response)
       return error("Request body exceeds the 1 MiB limit.", 413, extractTraceId(request));
@@ -34,7 +34,12 @@ const handlePostGenericNdjson = withApiRoute(
         }
       });
     return records.length
-      ? handleGenericRecords({ request, providerType: "generic_ndjson", records })
+      ? handleGenericRecords({
+          request,
+          auth: authorization.auth,
+          providerType: "generic_ndjson",
+          records,
+        })
       : error(
           "Request body must contain at least one NDJSON record.",
           400,

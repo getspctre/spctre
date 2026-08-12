@@ -1,5 +1,5 @@
 import {
-  enforceEvidenceRateLimit,
+  authorizeEvidenceIngest,
   error,
   handleGenericRecords,
   readJsonRecord,
@@ -12,12 +12,17 @@ export const dynamic = "force-dynamic";
 const handlePostGenericJson = withApiRoute(
   "/api/v1/ingest/providers/generic_json",
   async (request) => {
-    const throttle = await enforceEvidenceRateLimit(request);
-    if (throttle) return throttle;
+    const authorization = await authorizeEvidenceIngest(request);
+    if (authorization instanceof Response) return authorization;
     const payload = await readJsonRecord(request);
     return payload instanceof Response
       ? payload
-      : handleGenericRecords({ request, providerType: "generic_json", records: [payload] });
+      : handleGenericRecords({
+          request,
+          auth: authorization.auth,
+          providerType: "generic_json",
+          records: [payload],
+        });
   },
 );
 

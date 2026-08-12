@@ -1,5 +1,5 @@
 import {
-  enforceEvidenceRateLimit,
+  authorizeEvidenceIngest,
   error,
   handleGenericRecords,
   readBoundedText,
@@ -19,8 +19,8 @@ export const dynamic = "force-dynamic";
 const handlePostDockerAiGovernance = withApiRoute(
   "/api/v1/ingest/providers/docker_ai_governance",
   async (request) => {
-    const throttle = await enforceEvidenceRateLimit(request);
-    if (throttle) return throttle;
+    const authorization = await authorizeEvidenceIngest(request);
+    if (authorization instanceof Response) return authorization;
     const traceId = extractTraceId(request);
     const body = await readBoundedText(request);
     if (body instanceof Response)
@@ -43,7 +43,12 @@ const handlePostDockerAiGovernance = withApiRoute(
         return { error: "Malformed Docker audit JSON line." };
       }
     });
-    return handleGenericRecords({ request, providerType: "docker_ai_governance", records });
+    return handleGenericRecords({
+      request,
+      auth: authorization.auth,
+      providerType: "docker_ai_governance",
+      records,
+    });
   },
 );
 

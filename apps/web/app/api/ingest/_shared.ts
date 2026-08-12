@@ -3,7 +3,7 @@ import {
   ingestGenericEvidenceBatch,
   isGenericEvidenceIngestAvailable,
 } from "@/lib/domains/evidence/generic-ingest-service";
-import { authenticateServiceToken } from "@/lib/service-tokens";
+import { authenticateServiceToken, type ServiceTokenAuth } from "@/lib/service-tokens";
 import { isRecord } from "@/lib/records";
 import { logger } from "@spctre/platform/logging";
 import { checkAuthRateLimit } from "@/lib/auth-rate-limit";
@@ -22,8 +22,32 @@ export type GenericProviderType =
   | "docker_ai_governance"
   | "langsmith";
 
+export async function authorizeEvidenceIngest(
+  request: Request,
+): Promise<{ auth: ServiceTokenAuth } | Response> {
+  const traceId = extractTraceId(request);
+  const auth = await authenticateServiceToken(request, "evidence:write");
+  // Never use a caller-controlled bearer value as a bucket key. Valid callers
+  // are stable by token ID; invalid callers share an IP-based bucket.
+  const rateLimit = await checkEvidenceRateLimit(request, auth.ok ? auth.auth.tokenId : undefined);
+  if (!rateLimit.allowed)
+    return withTraceId(
+      Response.json(
+        {
+          error: "Too many evidence records. Retry after the indicated delay.",
+          meta: makeMeta(traceId),
+        },
+        { status: 429, headers: { "Retry-After": String(rateLimit.retryAfterSeconds) } },
+      ),
+      traceId,
+    );
+  if (!auth.ok) return error("Missing or invalid service token.", 401, traceId);
+  return { auth: auth.auth };
+}
+
 export async function handleGenericRecords(params: {
   request: Request;
+  auth: ServiceTokenAuth;
   providerType: GenericProviderType;
   records: Array<Record<string, unknown> | { error: string }>;
 }) {
@@ -42,8 +66,6 @@ export async function handleGenericRecords(params: {
     return error("Request body exceeds the 1 MiB limit.", 413, traceId);
   const integrationId = params.request.headers.get("x-spctre-integration-id");
   if (!integrationId) return error("x-spctre-integration-id is required.", 400, traceId);
-  const auth = await authenticateServiceToken(params.request, "evidence:write");
-  if (!auth.ok) return error("Missing or invalid service token.", 401, traceId);
   const results: Array<Record<string, unknown>> = [];
   const valid = params.records.flatMap((record, index) =>
     "error" in record ? [] : [{ index, payload: record }],
@@ -52,12 +74,12 @@ export async function handleGenericRecords(params: {
   if (valid.length) {
     try {
       persisted = await ingestGenericEvidenceBatch({
-        tenantId: auth.auth.tenantId,
-        serviceTokenId: auth.auth.tokenId,
+        tenantId: params.auth.tenantId,
+        serviceTokenId: params.auth.tokenId,
         integrationId,
         providerType: params.providerType,
         payloads: valid.map((record) => record.payload),
-        actorId: auth.auth.principalId,
+        actorId: params.auth.principalId,
       });
     } catch (caught) {
       logger.warn("Generic evidence batch persistence failed", {
@@ -94,28 +116,11 @@ export async function handleGenericRecords(params: {
   );
 }
 
-export async function enforceEvidenceRateLimit(request: Request): Promise<Response | null> {
-  const rateLimit = await checkEvidenceRateLimit(request);
-  if (rateLimit.allowed) return null;
-  const traceId = extractTraceId(request);
-  return withTraceId(
-    Response.json(
-      {
-        error: "Too many evidence records. Retry after the indicated delay.",
-        meta: makeMeta(traceId),
-      },
-      { status: 429, headers: { "Retry-After": String(rateLimit.retryAfterSeconds) } },
-    ),
-    traceId,
-  );
-}
-
-async function checkEvidenceRateLimit(request: Request) {
-  const credential =
-    request.headers.get("authorization")?.trim() ||
-    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    "anonymous";
-  const digest = createHash("sha256").update(credential).digest("hex").slice(0, 32);
+async function checkEvidenceRateLimit(request: Request, tokenId?: string) {
+  const clientAddress =
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "anonymous";
+  const identity = tokenId ? `token:${tokenId}` : `ip:${clientAddress}`;
+  const digest = createHash("sha256").update(identity).digest("hex").slice(0, 32);
   return checkAuthRateLimit({
     key: `evidence-ingest:${digest}`,
     limit: evidenceRateLimit,

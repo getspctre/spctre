@@ -1,5 +1,5 @@
 import {
-  enforceEvidenceRateLimit,
+  authorizeEvidenceIngest,
   error,
   handleGenericRecords,
   readJsonRecord,
@@ -10,8 +10,8 @@ import { withApiRoute } from "@/lib/platform/api-route";
 export const dynamic = "force-dynamic";
 
 const handlePostCloudEvents = withApiRoute("/api/v1/ingest/cloudevents", async (request) => {
-  const throttle = await enforceEvidenceRateLimit(request);
-  if (throttle) return throttle;
+  const authorization = await authorizeEvidenceIngest(request);
+  if (authorization instanceof Response) return authorization;
   const payload = await readJsonRecord(request);
   if (payload instanceof Response) return payload;
   const type = request.headers.get("ce-type");
@@ -29,7 +29,12 @@ const handlePostCloudEvents = withApiRoute("/api/v1/ingest/cloudevents", async (
         ),
       }
     : payload;
-  return handleGenericRecords({ request, providerType: "cloudevents", records: [record] });
+  return handleGenericRecords({
+    request,
+    auth: authorization.auth,
+    providerType: "cloudevents",
+    records: [record],
+  });
 });
 
 export { handlePostCloudEvents as POST };

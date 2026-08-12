@@ -26,6 +26,14 @@ describe("generic evidence request limits", () => {
   it("rejects batches that exceed the record limit before persistence", async () => {
     const response = await handleGenericRecords({
       request: new Request("https://example.test/ingest", { method: "POST" }),
+      auth: {
+        tokenId: "token-1",
+        tenantId: "tenant-1",
+        workspaceId: "workspace-1",
+        principalId: "principal-1",
+        evidenceExportGrants: [],
+        scopes: ["evidence:write"],
+      },
       providerType: "generic_ndjson",
       records: Array.from({ length: MAX_RECORDS_PER_REQUEST + 1 }, () => ({})),
     });

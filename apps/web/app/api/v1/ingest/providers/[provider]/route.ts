@@ -1,5 +1,5 @@
 import {
-  enforceEvidenceRateLimit,
+  authorizeEvidenceIngest,
   error,
   handleGenericRecords,
   readJsonRecord,
@@ -21,8 +21,8 @@ const providers = new Set<ManagedProvider>([
 const handlePostManagedProvider = withApiRoute<{ params: Promise<{ provider: string }> }>(
   "/api/v1/ingest/providers/[provider]",
   async (request, _ctx, context) => {
-    const throttle = await enforceEvidenceRateLimit(request);
-    if (throttle) return throttle;
+    const authorization = await authorizeEvidenceIngest(request);
+    if (authorization instanceof Response) return authorization;
     const { provider } = await context.params;
     const traceId = extractTraceId(request);
     if (!providers.has(provider as ManagedProvider))
@@ -32,6 +32,7 @@ const handlePostManagedProvider = withApiRoute<{ params: Promise<{ provider: str
       return error("Request body must be a JSON object.", 400, traceId);
     return handleGenericRecords({
       request,
+      auth: authorization.auth,
       providerType: provider as ManagedProvider,
       records: [normalizeManagedProviderEvent(provider as ManagedProvider, payload)],
     });
