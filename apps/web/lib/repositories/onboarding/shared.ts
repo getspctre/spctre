@@ -10,6 +10,21 @@ import type { ServiceTokenScope } from "@/lib/service-tokens";
 import { swallow } from "@/lib/platform/swallow";
 
 export const ONBOARDING_TTL_MINUTES = 10;
+
+/**
+ * How long a device authorization lives when the CLI asked for a trial.
+ *
+ * Ten minutes is sized for the flow it was written for: an operator who is
+ * already signed in walks to the browser and approves, and the whole hop is
+ * seconds. A trial request is the one case where the operator may have no
+ * account yet, so the same window has to absorb creating one and following a
+ * link out of an inbox — and email latency is the part nobody controls.
+ *
+ * Longer than the magic link's own fifteen-minute life would be pointless: the
+ * link is what carries them back here, so the approval cannot usefully outlive
+ * it. Matching it means whichever expires first, both are already spent.
+ */
+export const TRIAL_ONBOARDING_TTL_MINUTES = 15;
 const STARTER_BRANCH_NAME = "starter/runtime-onboarding";
 export const WEB_ONBOARDING_TOKEN_LABEL = "Spctre web onboarding setup";
 export const WEB_ONBOARDING_TOKEN_SCOPES: ServiceTokenScope[] = [
