@@ -16,6 +16,12 @@ async function handleDeletePublicationSigningKey(
   context: { params: Promise<{ id: string }> },
 ) {
   const traceId = extractTraceId(request);
+  const auth = await authenticateServiceToken(request, "evidence:manage");
+  if (!auth.ok)
+    return withTraceId(
+      Response.json({ error: auth.error, meta: makeMeta(traceId) }, { status: 401 }),
+      traceId,
+    );
   const parsed = parseBody(
     PublicationSigningKeyRevokeSchema,
     await request.json().catch(() => ({})),
@@ -26,12 +32,6 @@ async function handleDeletePublicationSigningKey(
         { error: parsed.error, issues: parsed.issues, meta: makeMeta(traceId) },
         { status: 400 },
       ),
-      traceId,
-    );
-  const auth = await authenticateServiceToken(request, "evidence:manage");
-  if (!auth.ok)
-    return withTraceId(
-      Response.json({ error: auth.error, meta: makeMeta(traceId) }, { status: 401 }),
       traceId,
     );
   const { id } = await context.params;

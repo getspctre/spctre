@@ -70,6 +70,12 @@ async function handleGetPublications(request: Request) {
 
 async function handlePostPublication(request: Request) {
   const traceId = extractTraceId(request);
+  const auth = await authenticateServiceToken(request, "evidence:write");
+  if (!auth.ok)
+    return withTraceId(
+      Response.json({ error: auth.error, meta: makeMeta(traceId) }, { status: 401 }),
+      traceId,
+    );
   const payload = await request.json().catch(() => null);
   if (!payload)
     return withTraceId(
@@ -101,13 +107,6 @@ async function handlePostPublication(request: Request) {
       traceId,
     );
   }
-  const auth = await authenticateServiceToken(request, "evidence:write");
-  if (!auth.ok)
-    return withTraceId(
-      Response.json({ error: auth.error, meta: makeMeta(traceId) }, { status: 401 }),
-      traceId,
-    );
-
   const receipt = parsed.value.receipt;
   const receiptVerified = receipt
     ? verifyPublicationAttestation(receipt as Parameters<typeof verifyPublicationAttestation>[0])

@@ -77,6 +77,35 @@ describe("publication signing-key routes", () => {
     );
   });
 
+  it("authenticates before validating signing-key mutation bodies", async () => {
+    authenticateServiceTokenSpy.mockResolvedValue({ ok: false, error: "Unauthorized" });
+
+    const challengeResponse = await challengeRoute.POST(
+      createRouteRequest({
+        path: "/api/v1/evidence/publication-signing-keys/challenges",
+        body: {},
+      }),
+    );
+    const enrollResponse = await keyRoute.POST(
+      createRouteRequest({ path: "/api/v1/evidence/publication-signing-keys", body: {} }),
+    );
+    const revokeResponse = await keyDetailRoute.DELETE(
+      createRouteRequest({
+        path: "/api/v1/evidence/publication-signing-keys/key-id",
+        method: "DELETE",
+        body: { reason: 42 },
+      }),
+      { params: Promise.resolve({ id: "key-id" }) },
+    );
+
+    expect([challengeResponse.status, enrollResponse.status, revokeResponse.status]).toEqual([
+      401, 401, 401,
+    ]);
+    expect(createChallengeSpy).not.toHaveBeenCalled();
+    expect(consumeChallengeSpy).not.toHaveBeenCalled();
+    expect(revokeKeySpy).not.toHaveBeenCalled();
+  });
+
   it("requires the signed challenge to bind the requested enrollment", async () => {
     const response = await keyRoute.POST(
       createRouteRequest({ path: "/api/v1/evidence/publication-signing-keys", body: enrollment }),

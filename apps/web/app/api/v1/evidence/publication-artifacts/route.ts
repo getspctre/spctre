@@ -47,13 +47,19 @@ async function handlePostPublicationArtifact(request: Request) {
       }),
     );
   } catch (error) {
+    const clientError =
+      error instanceof Error &&
+      (error.message === "Unsupported publication artifact media type." ||
+        error.message === "Publication artifact content hash mismatch.");
+    if (!clientError)
+      console.error("[evidence/publication-artifacts] retention failed", error);
     return withTraceId(
       Response.json(
         {
-          error: error instanceof Error ? error.message : "Artifact retention failed.",
+          error: clientError ? error.message : "Artifact retention temporarily unavailable.",
           meta: makeMeta(traceId),
         },
-        { status: 400 },
+        { status: clientError ? 400 : 503 },
       ),
       traceId,
     );

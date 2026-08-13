@@ -13,6 +13,12 @@ export const dynamic = "force-dynamic";
 
 async function handlePostPublicationSigningKeyChallenge(request: Request) {
   const traceId = extractTraceId(request);
+  const auth = await authenticateServiceToken(request, "evidence:manage");
+  if (!auth.ok)
+    return withTraceId(
+      Response.json({ error: auth.error, meta: makeMeta(traceId) }, { status: 401 }),
+      traceId,
+    );
   const parsed = parseBody(
     PublicationSigningKeyChallengeSchema,
     await request.json().catch(() => null),
@@ -23,12 +29,6 @@ async function handlePostPublicationSigningKeyChallenge(request: Request) {
         { error: parsed.error, issues: parsed.issues, meta: makeMeta(traceId) },
         { status: 400 },
       ),
-      traceId,
-    );
-  const auth = await authenticateServiceToken(request, "evidence:manage");
-  if (!auth.ok)
-    return withTraceId(
-      Response.json({ error: auth.error, meta: makeMeta(traceId) }, { status: 401 }),
       traceId,
     );
   try {

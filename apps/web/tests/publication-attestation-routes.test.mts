@@ -92,6 +92,42 @@ describe("publication attestation routes", () => {
     expect(retainPublicationContentArtifactSpy).not.toHaveBeenCalled();
   });
 
+  it("does not validate an unauthenticated attestation body", async () => {
+    authenticateServiceTokenSpy.mockResolvedValue({ ok: false, error: "Unauthorized" });
+
+    const response = await publicationRoute.POST(
+      createRouteRequest({ path: "/api/v1/evidence/publications", body: {} }),
+    );
+
+    expect(response.status).toBe(401);
+    expect(insertPublicationAttestationSpy).not.toHaveBeenCalled();
+  });
+
+  it("returns a retryable generic error for artifact retention configuration failures", async () => {
+    const bytes = new TextEncoder().encode("publication bytes");
+    const contentHash = `sha256:${createHash("sha256").update(bytes).digest("hex")}`;
+    retainPublicationContentArtifactSpy.mockRejectedValue(
+      new Error("SPCTRE_CREDENTIAL_ENCRYPTION_KEY is not set."),
+    );
+
+    const response = await artifactRoute.POST(
+      new Request("http://localhost:3000/api/v1/evidence/publication-artifacts", {
+        method: "POST",
+        headers: {
+          authorization: "Bearer token",
+          "content-type": "application/octet-stream",
+          "x-spctre-content-hash": contentHash,
+        },
+        body: bytes,
+      }),
+    );
+
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toMatchObject({
+      error: "Artifact retention temporarily unavailable.",
+    });
+  });
+
   it("rejects an attestation whose artifact was not retained", async () => {
     publicationArtifactExistsSpy.mockResolvedValue(false);
     const response = await publicationRoute.POST(
