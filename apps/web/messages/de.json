@@ -959,6 +959,16 @@
       "token_scope": "Token-Scope",
       "errors": { "missing_code": "Gerätecode fehlt." }
     },
+    "self_serve_signup": {
+      "email": "Geschäftliche E-Mail",
+      "error": "Registrierung konnte nicht gestartet werden. Bitte erneut versuchen.",
+      "name": "Ihr Name",
+      "prompt": "Noch kein Konto? Erstellen Sie eines und kehren Sie direkt hierher zurück.",
+      "sent_description": "Öffnen Sie den gesendeten Anmeldelink, um die CLI-Verbindung abzuschließen. Danach können Sie diesen Tab schließen.",
+      "sent_title": "Prüfen Sie Ihre E-Mails",
+      "submit": "Konto erstellen",
+      "submitting": "Konto wird erstellt…"
+    },
     "login": {
       "email": {
         "email": "E-Mail-Adresse",

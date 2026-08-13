@@ -4,6 +4,7 @@ type SecurityEventType =
   | "mfa_verified"
   | "mfa_failed"
   | "magic_link_requested"
+  | "self_serve_signup_provisioned"
   | "rate_limited";
 
 interface SecurityEventContext {

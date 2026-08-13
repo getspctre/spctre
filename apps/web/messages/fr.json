@@ -960,6 +960,16 @@
       "token_scope": "Scope du token",
       "errors": { "missing_code": "Code appareil manquant." }
     },
+    "self_serve_signup": {
+      "email": "E-mail professionnel",
+      "error": "Impossible de démarrer l'inscription. Veuillez réessayer.",
+      "name": "Votre nom",
+      "prompt": "Pas encore de compte ? Créez-en un et revenez directement ici.",
+      "sent_description": "Ouvrez le lien de connexion que nous avons envoyé pour terminer la connexion de la CLI. Vous pourrez ensuite fermer cet onglet.",
+      "sent_title": "Consultez votre messagerie",
+      "submit": "Créer un compte",
+      "submitting": "Création du compte…"
+    },
     "login": {
       "email": {
         "email": "Adresse e-mail",

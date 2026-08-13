@@ -7,7 +7,7 @@ import {
   exchangeCliOnboardingCode,
   type CliOnboardingExchange,
 } from "./cli";
-import { ONBOARDING_TTL_MINUTES } from "./shared";
+import { ONBOARDING_TTL_MINUTES, TRIAL_ONBOARDING_TTL_MINUTES } from "./shared";
 
 export interface DeviceOnboardingStart {
   deviceCode: string;
@@ -39,9 +39,12 @@ export async function startDeviceOnboarding(params: {
   const userCode = `SPCTRE-${rawPart1}-${rawPart2}`;
   const deviceCode = randomBytes(32).toString("base64url");
   const code = randomBytes(8).toString("base64url");
-  const expiresAt = new Date(Date.now() + ONBOARDING_TTL_MINUTES * 60 * 1000).toISOString();
   const baseUrl = params.controlPlaneUrl.replace(/\/+$/, "");
   const isTrial = params.trial ?? false;
+  // A trial request is the one that may have to wait on an account being made
+  // and an email being read. See TRIAL_ONBOARDING_TTL_MINUTES.
+  const ttlMinutes = isTrial ? TRIAL_ONBOARDING_TTL_MINUTES : ONBOARDING_TTL_MINUTES;
+  const expiresAt = new Date(Date.now() + ttlMinutes * 60 * 1000).toISOString();
 
   await ensureDemoTenant();
   // Device authorization begins before a browser session identifies a tenant.
@@ -63,7 +66,7 @@ export async function startDeviceOnboarding(params: {
     userCode,
     verificationUri: `${baseUrl}/auth/device`,
     verificationUriComplete: `${baseUrl}/auth/device?user_code=${encodeURIComponent(userCode)}`,
-    expiresIn: ONBOARDING_TTL_MINUTES * 60,
+    expiresIn: ttlMinutes * 60,
     interval: 5,
   };
 }

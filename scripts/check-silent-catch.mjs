@@ -53,9 +53,11 @@ const CATCH_STATEMENT = /\bcatch\s*(\([^)]*\))?\s*\{/g;
 
 // Anything that makes the failure visible or hands it onward: a report call, a
 // log, a rethrow, or returning an error response to the caller. `swallow` is
-// included because a catch body may call it directly.
+// included because a catch body may call it directly. `ctx.error` is the
+// withApiRoute envelope's error response — the same disclosure as a bare
+// Response.json, and the form new routes are expected to use.
 const HANDLES_ERROR =
-  /\b(reportSwallowedError|swallow|logger\s*\.|console\s*\.|throw\b|captureException|Response\s*\.\s*json|NextResponse)/;
+  /\b(reportSwallowedError|swallow|logger\s*\.|console\s*\.|throw\b|captureException|Response\s*\.\s*json|NextResponse|ctx\s*\.\s*error)/;
 
 function blockBody(source, openBraceIndex) {
   let depth = 0;
