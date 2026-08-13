@@ -6,6 +6,8 @@ import { getAuthSession } from "@/lib/auth-session";
 import { isDemoTenant } from "@/lib/demo-guard";
 import { approveDevice } from "./actions";
 import { PendingSubmitButton } from "@/app/pending-submit-button";
+import { loadSelfServeSignupSlot } from "@/lib/ee-adapters/self-serve-signup";
+import { SelfServeSignupForm } from "@/app/self-serve-signup-form";
 import { swallow } from "@/lib/platform/swallow";
 
 export const dynamic = "force-dynamic";
@@ -29,6 +31,15 @@ export default async function DeviceAuthPage({
   const session = await getAuthSession().catch(swallow("getAuthSession", null));
 
   if (session && isDemoTenant(session.tenantId)) redirect("/");
+
+  // This is where `spctre cloud login` sends an operator, so it is the first
+  // page a prospect with no account ever sees. Only resolved when signed out.
+  const devicePath = `/auth/device${prefillCode ? `?user_code=${encodeURIComponent(prefillCode)}` : ""}`;
+  const signupAvailable = session
+    ? false
+    : await loadSelfServeSignupSlot()
+        .then((slot) => slot.available())
+        .catch(swallow("loadSelfServeSignupSlot", false));
 
   return (
     <section className="panel onboardingPanel">
@@ -106,15 +117,18 @@ export default async function DeviceAuthPage({
           </div>
         </form>
       ) : (
-        <div className="toolbar">
-          <Link
-            className="button buttonPrimary"
-            href={`/login?next=${encodeURIComponent(`/auth/device${prefillCode ? `?user_code=${prefillCode}` : ""}`)}`}
-          >
-            <ShieldCheck size={16} />
-            {t("sign_in")}
-          </Link>
-        </div>
+        <>
+          <div className="toolbar">
+            <Link
+              className="button buttonPrimary"
+              href={`/login?next=${encodeURIComponent(devicePath)}`}
+            >
+              <ShieldCheck size={16} />
+              {t("sign_in")}
+            </Link>
+          </div>
+          {signupAvailable ? <SelfServeSignupForm returnTo={devicePath} /> : null}
+        </>
       )}
     </section>
   );

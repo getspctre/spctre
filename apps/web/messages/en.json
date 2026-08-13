@@ -939,6 +939,16 @@
       "token_scope": "Token scope",
       "errors": { "missing_code": "Missing device code." }
     },
+    "self_serve_signup": {
+      "email": "Work email",
+      "error": "Could not start signup. Please try again.",
+      "name": "Your name",
+      "prompt": "No account yet? Create one and come straight back here.",
+      "sent_description": "Open the sign-in link we sent to finish connecting the CLI. You can close this tab once you do.",
+      "sent_title": "Check your email",
+      "submit": "Create account",
+      "submitting": "Creating account…"
+    },
     "login": {
       "email": {
         "email": "Email address",

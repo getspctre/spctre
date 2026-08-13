@@ -6,6 +6,8 @@ import { getAuthSession } from "@/lib/auth-session";
 import { isDemoTenant } from "@/lib/demo-guard";
 import { approveCliOnboarding } from "./actions";
 import { PendingSubmitButton } from "@/app/pending-submit-button";
+import { loadSelfServeSignupSlot } from "@/lib/ee-adapters/self-serve-signup";
+import { SelfServeSignupForm } from "@/app/self-serve-signup-form";
 import { swallow } from "@/lib/platform/swallow";
 
 export const dynamic = "force-dynamic";
@@ -24,6 +26,16 @@ export default async function CliOnboardingApprovePage({
   const session = await getAuthSession().catch(swallow("getAuthSession", null));
 
   if (session && isDemoTenant(session.tenantId)) redirect("/");
+
+  // Only resolved for a signed-out visitor: a signed-in one is already past the
+  // point where making an account could help.
+  const approvePath = `/onboarding/cli/approve?code=${encodeURIComponent(code)}`;
+  const returnTo = encodeURIComponent(approvePath);
+  const signupAvailable = session
+    ? false
+    : await loadSelfServeSignupSlot()
+        .then((slot) => slot.available())
+        .catch(swallow("loadSelfServeSignupSlot", false));
 
   return (
     <section className="panel onboardingPanel">
@@ -90,15 +102,15 @@ export default async function CliOnboardingApprovePage({
           </PendingSubmitButton>
         </form>
       ) : (
-        <div className="toolbar">
-          <Link
-            className="button buttonPrimary"
-            href={`/login?next=${encodeURIComponent(`/onboarding/cli/approve?code=${code}`)}`}
-          >
-            <ShieldCheck size={16} />
-            {t("sign_in")}
-          </Link>
-        </div>
+        <>
+          <div className="toolbar">
+            <Link className="button buttonPrimary" href={`/login?next=${returnTo}`}>
+              <ShieldCheck size={16} />
+              {t("sign_in")}
+            </Link>
+          </div>
+          {signupAvailable ? <SelfServeSignupForm returnTo={approvePath} /> : null}
+        </>
       )}
     </section>
   );
