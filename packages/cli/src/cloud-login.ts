@@ -60,12 +60,16 @@ export async function cloudLogin(options: CloudLoginOptions) {
 
   console.log("");
   if (options.trial) {
+    // No capacities or windows here. The trial's numbers come from the
+    // deployment's entitlement catalog, which this client cannot read, so
+    // anything stated here is a copy that drifts — the retention line used to
+    // say 7 days against a catalog granting 90. The approval page can read the
+    // catalog; it states the terms.
     console.log("----------------------------------------------------------------");
     console.log("              ACTIVATE SPCTRE CLOUD HOSTED TRIAL                ");
     console.log("----------------------------------------------------------------");
-    console.log("   • 7-day evidence retention depth                             ");
-    console.log("   • 1,000 retained governed events capacity                    ");
-    console.log("   • No credit card required!                                   ");
+    console.log("   • No credit card required                                    ");
+    console.log("   • Terms are shown on the approval page before you accept     ");
     console.log("----------------------------------------------------------------");
   } else {
     console.log("Connecting to Spctre Cloud...");
