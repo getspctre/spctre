@@ -52,6 +52,7 @@ export const SERVICE_API_PATHS = new Set([
   "/api/token/revoke",
   "/api/v1/token/revoke",
   "/api/search",
+  "/api/workspace/mcp-policy",
 ]);
 
 export const SERVICE_API_PATH_PREFIXES = [

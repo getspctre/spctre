@@ -171,6 +171,25 @@ describe("proxy rate limiting", () => {
     expect(response.status).toBe(200);
   });
 
+  it("passes MCP policy fetches through to their bearer-authenticated route", async () => {
+    // The MCP server loads its governed tool and connector registry with a
+    // bundle:read service token and no session cookie. Missing from the
+    // service path set, the session gate answered 401 before the route ran,
+    // and the failure was invisible: the server caches the failed load and
+    // falls back to its env-var allowlists, so it kept serving tools with no
+    // registry behind them.
+    process.env.DATABASE_URL = "postgres://spctre.test/app";
+
+    const { proxy } = await import("../proxy");
+    const response = await proxy(
+      makeRequest("/api/workspace/mcp-policy?agentId=scout", "203.0.113.10", {
+        headers: { authorization: "Bearer mcp-token" },
+      }),
+    );
+
+    expect(response.status).toBe(200);
+  });
+
   it("rejects cookie-authenticated mutations from a mismatched origin", async () => {
     process.env.DATABASE_URL = "postgres://spctre.test/app";
 
