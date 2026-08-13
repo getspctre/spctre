@@ -144,6 +144,18 @@ describe("stateless HTTP transport", () => {
     ]);
   });
 
+  it("never falls back to the service credential for an unauthenticated HTTP request", async () => {
+    const permissiveConfig = { ...baseConfig, requireBearerAuth: false };
+    const { app, createdServers } = makeApp(permissiveConfig);
+    const baseUrl = await listen(app);
+
+    const response = await fetch(`${baseUrl}/mcp`, discoverRequest());
+
+    expect(response.status, await response.text()).toBe(200);
+    expect(createdServers).toHaveLength(1);
+    expect(createdServers[0]).toMatchObject({ apiToken: undefined, apiRefreshToken: undefined });
+  });
+
   it("does not expose the legacy SSE or session-message endpoints", async () => {
     const { app } = makeApp();
     const baseUrl = await listen(app);

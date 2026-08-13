@@ -11,7 +11,11 @@ import {
   discoverMcpTools,
   authorizeMcpToolCall,
 } from "../src/handlers/tools.js";
-import { getEvidenceResource, getApprovalsResource } from "../src/handlers/resources.js";
+import {
+  getAgentAuditResource,
+  getApprovalsResource,
+  getEvidenceResource,
+} from "../src/handlers/resources.js";
 
 const baseConfig: SpctreConfig = {
   apiBaseUrl: "http://localhost:3000",
@@ -55,6 +59,27 @@ function parseToolText(result: { content: Array<{ type: string; text: string }> 
 function parseResourceText(result: { contents: Array<{ text: string }> }) {
   return JSON.parse(result.contents[0].text);
 }
+
+describe("agent audit resource", () => {
+  it("uses the agent ID from the resource path, not the URI authority", async () => {
+    const getWithAuth = vi.fn(async () =>
+      axiosResponse({
+        decisions: [],
+        summary: { decisionsAllowed: 1, complianceStatus: "COMPLIANT" },
+      }),
+    );
+
+    const result = await getAgentAuditResource(
+      makeContext({ getWithAuth }),
+      "spctre://agents/scout/audit",
+    );
+
+    expect(getWithAuth).toHaveBeenCalledWith("/api/agents/scout/audit", {
+      workspace_id: "ws-test",
+    });
+    expect(parseResourceText(result).agent_id).toBe("scout");
+  });
+});
 
 const evalArgs = {
   connector: "slack",
