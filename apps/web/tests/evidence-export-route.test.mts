@@ -2,9 +2,12 @@ import { describe, expect, it, vi } from "vitest";
 import { createRouteRequest } from "./route-test-helper";
 
 const authenticateServiceTokenSpy = vi.fn();
+const listPublicationAttestationsSpy = vi.fn().mockResolvedValue([]);
+const filterPublicationAttestationsForExportSpy = vi.fn((attestations) => attestations);
 
 vi.mock("@/lib/repositories/publication-attestations", () => ({
-  listPublicationAttestations: vi.fn().mockResolvedValue([]),
+  listPublicationAttestations: listPublicationAttestationsSpy,
+  filterPublicationAttestationsForExport: filterPublicationAttestationsForExportSpy,
 }));
 
 vi.mock("@/lib/tenant-context", () => ({
@@ -115,6 +118,14 @@ describe("evidence export route", () => {
         ],
       },
     });
+    expect(filterPublicationAttestationsForExportSpy).toHaveBeenCalledWith(
+      [],
+      evidenceExportAuth.auth.evidenceExportGrants.concat({
+        revisionId: "revision-2",
+        notBefore: "2026-02-01T00:00:00.000Z",
+        notAfter: "2026-03-01T00:00:00.000Z",
+      }),
+    );
   });
 
   it("does not mint an AGT verification packet for a session either", async () => {

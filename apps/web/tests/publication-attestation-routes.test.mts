@@ -1,4 +1,5 @@
-import { createHash } from "node:crypto";
+import { createHash, generateKeyPairSync } from "node:crypto";
+import { signPublicationAttestation } from "@spctre/policy-schema";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createRouteRequest } from "./route-test-helper";
 
@@ -60,6 +61,7 @@ describe("publication attestation routes", () => {
     authenticateServiceTokenSpy.mockResolvedValue(auth);
     publicationArtifactExistsSpy.mockResolvedValue(true);
     resolvePublicationPolicyContextSpy.mockResolvedValue({ revisionId: "revision-1" });
+    findTrustedPublicationSigningKeySpy.mockResolvedValue(true);
     insertPublicationAttestationSpy.mockResolvedValue({
       id: payload.attestation.attestationId,
       deduplicated: false,
@@ -104,6 +106,29 @@ describe("publication attestation routes", () => {
         workspaceId: "workspace-1",
         policyContext: { revisionId: "revision-1" },
       }),
+    );
+  });
+
+  it("accepts a receipt over the unnormalized signed facts", async () => {
+    const { privateKey } = generateKeyPairSync("ed25519");
+    const receipt = signPublicationAttestation({
+      privateKey: privateKey.export({ type: "pkcs8", format: "pem" }).toString(),
+      keyId: "editorial-key-2026",
+      // `classification` is intentionally absent: parsing supplies {}, but it
+      // was not part of the publisher's signed payload.
+      payload: payload.attestation,
+    });
+
+    const response = await publicationRoute.POST(
+      createRouteRequest({
+        path: "/api/v1/evidence/publications",
+        body: { ...payload, receipt },
+      }),
+    );
+
+    expect(response.status).toBe(201);
+    expect(insertPublicationAttestationSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ attestation: payload.attestation }),
     );
   });
 

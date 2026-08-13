@@ -74,6 +74,7 @@ async function handlePostPublication(request: Request) {
       ),
       traceId,
     );
+  const rawAttestation = payload.attestation as Record<string, unknown>;
   if (parsed.value.attestation.content.artifactRef !== parsed.value.attestation.content.hash) {
     return withTraceId(
       Response.json(
@@ -112,7 +113,7 @@ async function handlePostPublication(request: Request) {
   if (
     receipt &&
     canonicalizeReceiptPayload(receipt.payload as { schema: string }) !==
-      canonicalizeReceiptPayload(parsed.value.attestation)
+      canonicalizeReceiptPayload(rawAttestation as { schema: string })
   ) {
     return withTraceId(
       Response.json(
@@ -154,7 +155,9 @@ async function handlePostPublication(request: Request) {
         tenantId: auth.auth.tenantId,
         workspaceId: auth.auth.workspaceId,
         idempotencyKey: parsed.value.idempotencyKey,
-        attestation: parsed.value.attestation,
+        // Retain and hash precisely the facts covered by the receipt. Zod's
+        // normalized result is only for validation and server-side lookups.
+        attestation: rawAttestation as typeof parsed.value.attestation,
         receipt: receipt as Record<string, unknown> | undefined,
         receiptVerified: Boolean(receiptVerified?.verified),
         policyContext,

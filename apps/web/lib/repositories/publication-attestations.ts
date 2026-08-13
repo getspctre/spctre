@@ -1,5 +1,6 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { canonicalizeReceiptPayload } from "@spctre/policy-schema";
+import type { PublicationAttestationIngestInput } from "@spctre/api-contracts";
 import type { JSONValue } from "postgres";
 import { sql } from "@/lib/db";
 import { appendOperationsLogInTransaction } from "@/lib/repositories/operations-log";
@@ -48,7 +49,7 @@ export async function insertPublicationAttestation(params: {
   tenantId: string;
   workspaceId: string;
   idempotencyKey: string;
-  attestation: Record<string, unknown> & { schema: string; attestationId: string };
+  attestation: PublicationAttestationIngestInput["attestation"];
   receipt?: Record<string, unknown>;
   receiptVerified: boolean;
   policyContext: Record<string, string>;
@@ -57,8 +58,8 @@ export async function insertPublicationAttestation(params: {
   const payloadHash = publicationContentHash(
     new TextEncoder().encode(canonicalizeReceiptPayload(params.attestation)),
   );
-  const content = params.attestation.content as Record<string, unknown>;
-  const timestamps = params.attestation.timestamps as Record<string, unknown>;
+  const content = params.attestation.content;
+  const timestamps = params.attestation.timestamps;
   const supersedes =
     typeof params.attestation.supersedes === "string" ? params.attestation.supersedes : null;
   const rows = await sql.begin(async (tx) => {
@@ -87,7 +88,7 @@ export async function insertPublicationAttestation(params: {
       ${params.idempotencyKey}, ${content.hash as string}, ${content.identity as string},
       ${content.version as string}, ${supersedes}, ${payloadHash}, ${tx.json(params.policyContext as unknown as JSONValue)},
       ${tx.json(params.attestation as unknown as JSONValue)}, ${receipt}::jsonb,
-      ${params.receiptVerified}, ${timestamps.attestedAt as string}
+      ${params.receiptVerified}, ${timestamps.attestedAt.value}
     )
     ON CONFLICT (tenant_id, workspace_id, idempotency_key) DO NOTHING
     RETURNING id
@@ -218,6 +219,22 @@ export async function listPublicationAttestations(params: {
     LIMIT ${params.limit}
   `;
   return rows.map(publicationRecord);
+}
+
+export function filterPublicationAttestationsForExport(
+  attestations: PublicationAttestationRecord[],
+  grants: Array<{ revisionId: string; notBefore: string; notAfter?: string }>,
+): PublicationAttestationRecord[] {
+  return attestations.filter((attestation) =>
+    grants.some((grant) => {
+      const attestedAt = new Date(attestation.attestedAt).getTime();
+      return (
+        attestation.policyContext.revisionId === grant.revisionId &&
+        attestedAt >= new Date(grant.notBefore).getTime() &&
+        (!grant.notAfter || attestedAt < new Date(grant.notAfter).getTime())
+      );
+    }),
+  );
 }
 
 export async function getPublicationAttestation(params: {

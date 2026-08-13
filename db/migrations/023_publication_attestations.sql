@@ -53,7 +53,7 @@ $$;
 
 DROP TRIGGER IF EXISTS publication_attestation_no_update ON public.publication_attestation;
 CREATE TRIGGER publication_attestation_no_update
-  BEFORE UPDATE OR DELETE ON public.publication_attestation
+  BEFORE UPDATE ON public.publication_attestation
   FOR EACH ROW EXECUTE FUNCTION public.prevent_publication_attestation_mutation();
 
 ALTER TABLE public.publication_content_artifact ENABLE ROW LEVEL SECURITY;
