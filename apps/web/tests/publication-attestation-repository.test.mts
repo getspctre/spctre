@@ -4,7 +4,11 @@ import { createTestTenantFixture } from "./test-db-fixtures";
 
 const databaseAvailable = Boolean(process.env.DATABASE_URL);
 const { rawSql, runWithTenantContext } = await import("../lib/db");
-const { insertPublicationAttestation } = await import("../lib/repositories/publication-attestations");
+const {
+  createPublicationSigningChallenge,
+  insertPublicationAttestation,
+  listPublicationAttestations,
+} = await import("../lib/repositories/publication-attestations");
 
 const testTenants = createTestTenantFixture();
 const hash = `sha256:${"a".repeat(64)}`;
@@ -36,43 +40,100 @@ async function createFixture() {
   return { tenantId, workspaceId };
 }
 
-async function insertFixtureAttestation(fixture: { tenantId: string; workspaceId: string }) {
-  const id = randomUUID();
-  await runWithTenantContext(fixture.tenantId, () =>
+async function insertFixtureAttestation(
+  fixture: { tenantId: string; workspaceId: string },
+  options: { attestedAt?: string } = {},
+) {
+  const attestationId = randomUUID();
+  const result = await runWithTenantContext(fixture.tenantId, () =>
     insertPublicationAttestation({
       tenantId: fixture.tenantId,
       workspaceId: fixture.workspaceId,
-      idempotencyKey: `publication:${id}`,
+      idempotencyKey: `publication:${attestationId}`,
       attestation: {
         schema: "spctre.publication-attestation.v1",
-        attestationId: id,
+        attestationId,
         content: { hash, artifactRef: hash, version: "v1", identity: "article-1", modality: "text" },
         generation: { class: fact("generated") },
         editorial: { control: fact("reviewed") },
         publisher: { entityRef: fact("entity:test"), role: fact("publisher") },
         classification: {},
         disclosure: { decision: fact("not_required") },
-        timestamps: { attestedAt: fact(attestedAt) },
+        timestamps: { attestedAt: fact(options.attestedAt ?? attestedAt) },
       },
       receiptVerified: false,
       policyContext: {},
     }),
   );
-  return id;
+  return { recordId: result.id, attestationId };
 }
 
 describe.skipIf(!databaseAvailable)("publication attestation repository contract", () => {
   it("binds the attestedAt fact value and permits tenant cascade deletion", async () => {
     const fixture = await createFixture();
-    const id = await insertFixtureAttestation(fixture);
+    const { recordId, attestationId } = await insertFixtureAttestation(fixture);
+    expect(recordId).not.toBe(attestationId);
 
     await expect(rawSql!<{ attested_at: Date }[]>`
-      SELECT attested_at FROM publication_attestation WHERE id = ${id}
+      SELECT attested_at FROM publication_attestation WHERE id = ${recordId}
     `).resolves.toEqual([{ attested_at: new Date(attestedAt) }]);
 
     await rawSql!`DELETE FROM tenant WHERE id = ${fixture.tenantId}`;
     await expect(rawSql!<{ count: string }[]>`
-      SELECT count(*)::text AS count FROM publication_attestation WHERE id = ${id}
+      SELECT count(*)::text AS count FROM publication_attestation WHERE id = ${recordId}
     `).resolves.toEqual([{ count: "0" }]);
+  });
+
+  it("replaces an expired or consumed signing challenge for the same key", async () => {
+    const fixture = await createFixture();
+    const first = await runWithTenantContext(fixture.tenantId, () =>
+      createPublicationSigningChallenge({
+        ...fixture,
+        entityRef: "entity:test",
+        keyId: "editorial-key-2026",
+        publicKey: "public-key",
+      }),
+    );
+    const retry = await runWithTenantContext(fixture.tenantId, () =>
+      createPublicationSigningChallenge({
+        ...fixture,
+        entityRef: "entity:test",
+        keyId: "editorial-key-2026",
+        publicKey: "public-key",
+      }),
+    );
+
+    expect(retry.id).not.toBe(first.id);
+    await expect(rawSql!<{ count: string }[]>`
+      SELECT count(*)::text AS count FROM publication_attestation_signing_challenge
+      WHERE tenant_id = ${fixture.tenantId} AND workspace_id = ${fixture.workspaceId}
+    `).resolves.toEqual([{ count: "1" }]);
+  });
+
+  it("uses the attested-at and ID pair for ledger pagination", async () => {
+    const fixture = await createFixture();
+    await insertFixtureAttestation(fixture);
+    await insertFixtureAttestation(fixture);
+    await insertFixtureAttestation(fixture);
+
+    const firstPage = await runWithTenantContext(fixture.tenantId, () =>
+      listPublicationAttestations({ ...fixture, limit: 1 }),
+    );
+    const secondPage = await runWithTenantContext(fixture.tenantId, () =>
+      listPublicationAttestations({
+        ...fixture,
+        limit: 1,
+        before: { attestedAt: firstPage[0]!.attestedAt, id: firstPage[0]!.id },
+      }),
+    );
+    const thirdPage = await runWithTenantContext(fixture.tenantId, () =>
+      listPublicationAttestations({
+        ...fixture,
+        limit: 1,
+        before: { attestedAt: secondPage[0]!.attestedAt, id: secondPage[0]!.id },
+      }),
+    );
+
+    expect(new Set([...firstPage, ...secondPage, ...thirdPage].map((record) => record.id)).size).toBe(3);
   });
 });

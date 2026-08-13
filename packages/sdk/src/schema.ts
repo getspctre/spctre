@@ -2017,6 +2017,7 @@ export interface operations {
         parameters: {
             query?: {
                 contentIdentity?: string;
+                /** @description Opaque cursor returned by the preceding response. */
                 before?: string;
                 limit?: number;
             };
@@ -2034,6 +2035,7 @@ export interface operations {
                 content: {
                     "application/json": {
                         attestations: components["schemas"]["PublicationAttestationRecord"][];
+                        nextCursor: string | null;
                         meta: components["schemas"]["ApiMeta"];
                     };
                 };

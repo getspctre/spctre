@@ -29,9 +29,9 @@ export function signPublicationAttestation(params: {
     privateKey: params.privateKey,
     keyId: params.keyId,
     payload: {
+      ...params.payload,
       schema: "spctre.publication-attestation.v1",
       attestationId: params.payload.attestationId ?? randomUUID(),
-      ...params.payload,
     },
   });
 }

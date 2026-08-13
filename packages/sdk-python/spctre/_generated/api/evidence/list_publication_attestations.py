@@ -1,6 +1,5 @@
 from http import HTTPStatus
 from typing import Any
-from uuid import UUID
 
 import httpx
 
@@ -16,7 +15,7 @@ from ...types import UNSET, Response, Unset
 def _get_kwargs(
     *,
     content_identity: str | Unset = UNSET,
-    before: UUID | Unset = UNSET,
+    before: str | Unset = UNSET,
     limit: int | Unset = UNSET,
 ) -> dict[str, Any]:
 
@@ -24,10 +23,7 @@ def _get_kwargs(
 
     params["contentIdentity"] = content_identity
 
-    json_before: str | Unset = UNSET
-    if not isinstance(before, Unset):
-        json_before = str(before)
-    params["before"] = json_before
+    params["before"] = before
 
     params["limit"] = limit
 
@@ -76,7 +72,7 @@ def sync_detailed(
     *,
     client: AuthenticatedClient,
     content_identity: str | Unset = UNSET,
-    before: UUID | Unset = UNSET,
+    before: str | Unset = UNSET,
     limit: int | Unset = UNSET,
 ) -> Response[ApiError | ListPublicationAttestationsResponse200]:
     """List immutable publication attestations
@@ -85,7 +81,7 @@ def sync_detailed(
 
     Args:
         content_identity (str | Unset):
-        before (UUID | Unset):
+        before (str | Unset):
         limit (int | Unset):
 
     Raises:
@@ -113,7 +109,7 @@ def sync(
     *,
     client: AuthenticatedClient,
     content_identity: str | Unset = UNSET,
-    before: UUID | Unset = UNSET,
+    before: str | Unset = UNSET,
     limit: int | Unset = UNSET,
 ) -> ApiError | ListPublicationAttestationsResponse200 | None:
     """List immutable publication attestations
@@ -122,7 +118,7 @@ def sync(
 
     Args:
         content_identity (str | Unset):
-        before (UUID | Unset):
+        before (str | Unset):
         limit (int | Unset):
 
     Raises:
@@ -145,7 +141,7 @@ async def asyncio_detailed(
     *,
     client: AuthenticatedClient,
     content_identity: str | Unset = UNSET,
-    before: UUID | Unset = UNSET,
+    before: str | Unset = UNSET,
     limit: int | Unset = UNSET,
 ) -> Response[ApiError | ListPublicationAttestationsResponse200]:
     """List immutable publication attestations
@@ -154,7 +150,7 @@ async def asyncio_detailed(
 
     Args:
         content_identity (str | Unset):
-        before (UUID | Unset):
+        before (str | Unset):
         limit (int | Unset):
 
     Raises:
@@ -180,7 +176,7 @@ async def asyncio(
     *,
     client: AuthenticatedClient,
     content_identity: str | Unset = UNSET,
-    before: UUID | Unset = UNSET,
+    before: str | Unset = UNSET,
     limit: int | Unset = UNSET,
 ) -> ApiError | ListPublicationAttestationsResponse200 | None:
     """List immutable publication attestations
@@ -189,7 +185,7 @@ async def asyncio(
 
     Args:
         content_identity (str | Unset):
-        before (UUID | Unset):
+        before (str | Unset):
         limit (int | Unset):
 
     Raises:

@@ -1656,7 +1656,12 @@ export const SPCTRE_OPENAPI_SPEC = {
         security: [{ bearerAuth: [] }],
         parameters: [
           { name: "contentIdentity", in: "query", schema: { type: "string" } },
-          { name: "before", in: "query", schema: { type: "string", format: "uuid" } },
+          {
+            name: "before",
+            in: "query",
+            description: "Opaque cursor returned by the preceding response.",
+            schema: { type: "string" },
+          },
           { name: "limit", in: "query", schema: { type: "integer", minimum: 1, maximum: 500 } },
         ],
         responses: {
@@ -1666,12 +1671,13 @@ export const SPCTRE_OPENAPI_SPEC = {
               "application/json": {
                 schema: {
                   type: "object",
-                  required: ["attestations", "meta"],
+                  required: ["attestations", "nextCursor", "meta"],
                   properties: {
                     attestations: {
                       type: "array",
                       items: { $ref: "#/components/schemas/PublicationAttestationRecord" },
                     },
+                    nextCursor: { type: "string", nullable: true },
                     meta: { $ref: "#/components/schemas/ApiMeta" },
                   },
                 },

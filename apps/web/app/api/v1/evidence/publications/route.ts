@@ -8,6 +8,8 @@ import {
 import { canonicalizeReceiptPayload, verifyPublicationAttestation } from "@spctre/policy-schema";
 import {
   insertPublicationAttestation,
+  decodePublicationAttestationCursor,
+  encodePublicationAttestationCursor,
   findTrustedPublicationSigningKey,
   listPublicationAttestations,
   publicationArtifactExists,
@@ -30,16 +32,28 @@ async function handleGetPublications(request: Request) {
   const rawLimit = Number(url.searchParams.get("limit") ?? "100");
   const limit = Number.isInteger(rawLimit) ? Math.min(Math.max(rawLimit, 1), 500) : 100;
   try {
+    const before = decodePublicationAttestationCursor(url.searchParams.get("before") ?? undefined);
     const attestations = await runWithTenantContext(auth.auth.tenantId, () =>
       listPublicationAttestations({
         tenantId: auth.auth.tenantId,
         workspaceId: auth.auth.workspaceId,
         contentIdentity: url.searchParams.get("contentIdentity") ?? undefined,
-        before: url.searchParams.get("before") ?? undefined,
+        before,
         limit,
       }),
     );
-    return withTraceId(Response.json({ attestations, meta: makeMeta(traceId) }), traceId);
+    const last = attestations.at(-1);
+    return withTraceId(
+      Response.json({
+        attestations,
+        nextCursor:
+          attestations.length === limit && last
+            ? encodePublicationAttestationCursor({ attestedAt: last.attestedAt, id: last.id })
+            : null,
+        meta: makeMeta(traceId),
+      }),
+      traceId,
+    );
   } catch (error) {
     return withTraceId(
       Response.json(

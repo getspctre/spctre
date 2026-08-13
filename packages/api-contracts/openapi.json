@@ -2914,9 +2914,9 @@
           {
             "name": "before",
             "in": "query",
+            "description": "Opaque cursor returned by the preceding response.",
             "schema": {
-              "type": "string",
-              "format": "uuid"
+              "type": "string"
             }
           },
           {
@@ -2938,6 +2938,7 @@
                   "type": "object",
                   "required": [
                     "attestations",
+                    "nextCursor",
                     "meta"
                   ],
                   "properties": {
@@ -2946,6 +2947,10 @@
                       "items": {
                         "$ref": "#/components/schemas/PublicationAttestationRecord"
                       }
+                    },
+                    "nextCursor": {
+                      "type": "string",
+                      "nullable": true
                     },
                     "meta": {
                       "$ref": "#/components/schemas/ApiMeta"

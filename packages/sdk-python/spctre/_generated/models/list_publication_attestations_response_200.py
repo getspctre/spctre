@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from typing import TYPE_CHECKING, Any, Self, TypeVar
+from typing import TYPE_CHECKING, Any, Self, TypeVar, cast
 
 from attrs import define as _attrs_define
 from attrs import field as _attrs_field
@@ -19,10 +19,12 @@ class ListPublicationAttestationsResponse200:
     """
     Attributes:
         attestations (list[PublicationAttestationRecord]):
+        next_cursor (None | str):
         meta (ApiMeta):
     """
 
     attestations: list[PublicationAttestationRecord]
+    next_cursor: None | str
     meta: ApiMeta
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
@@ -32,6 +34,9 @@ class ListPublicationAttestationsResponse200:
             attestations_item = attestations_item_data.to_dict()
             attestations.append(attestations_item)
 
+        next_cursor: None | str
+        next_cursor = self.next_cursor
+
         meta = self.meta.to_dict()
 
         field_dict: dict[str, Any] = {}
@@ -39,6 +44,7 @@ class ListPublicationAttestationsResponse200:
         field_dict.update(
             {
                 "attestations": attestations,
+                "nextCursor": next_cursor,
                 "meta": meta,
             }
         )
@@ -60,10 +66,18 @@ class ListPublicationAttestationsResponse200:
 
             attestations.append(attestations_item)
 
+        def _parse_next_cursor(data: object) -> None | str:
+            if data is None:
+                return data
+            return cast(None | str, data)
+
+        next_cursor = _parse_next_cursor(d.pop("nextCursor"))
+
         meta = ApiMeta.from_dict(d.pop("meta"))
 
         list_publication_attestations_response_200 = cls(
             attestations=attestations,
+            next_cursor=next_cursor,
             meta=meta,
         )
 

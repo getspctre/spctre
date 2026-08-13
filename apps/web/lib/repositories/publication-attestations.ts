@@ -84,7 +84,7 @@ export async function insertPublicationAttestation(params: {
       content_version, supersedes_id, payload_hash, policy_context, payload, signed_receipt,
       receipt_verified, attested_at
     ) VALUES (
-      ${params.attestation.attestationId}, ${params.tenantId}, ${params.workspaceId},
+      ${randomUUID()}, ${params.tenantId}, ${params.workspaceId},
       ${params.idempotencyKey}, ${content.hash as string}, ${content.identity as string},
       ${content.version as string}, ${supersedes}, ${payloadHash}, ${tx.json(params.policyContext as unknown as JSONValue)},
       ${tx.json(params.attestation as unknown as JSONValue)}, ${receipt}::jsonb,
@@ -206,7 +206,7 @@ export async function listPublicationAttestations(params: {
   workspaceId: string | null;
   contentIdentity?: string;
   limit: number;
-  before?: string;
+  before?: PublicationAttestationCursor;
 }): Promise<PublicationAttestationRecord[]> {
   if (!sql) return [];
   const rows = await sql<Parameters<typeof publicationRecord>[0][]>`
@@ -214,11 +214,52 @@ export async function listPublicationAttestations(params: {
     WHERE tenant_id = ${params.tenantId}
       AND (${params.workspaceId}::uuid IS NULL OR workspace_id = ${params.workspaceId}::uuid)
       AND (${params.contentIdentity ?? null}::text IS NULL OR content_identity = ${params.contentIdentity ?? null})
-      AND (${params.before ?? null}::uuid IS NULL OR id < ${params.before ?? null}::uuid)
+      AND (
+        ${params.before?.attestedAt ?? null}::timestamptz IS NULL
+        OR attested_at < ${params.before?.attestedAt ?? null}::timestamptz
+        OR (
+          attested_at = ${params.before?.attestedAt ?? null}::timestamptz
+          AND id < ${params.before?.id ?? null}::uuid
+        )
+      )
     ORDER BY attested_at DESC, id DESC
     LIMIT ${params.limit}
   `;
   return rows.map(publicationRecord);
+}
+
+export interface PublicationAttestationCursor {
+  attestedAt: string;
+  id: string;
+}
+
+export function encodePublicationAttestationCursor(
+  cursor: PublicationAttestationCursor,
+): string {
+  return Buffer.from(JSON.stringify(cursor)).toString("base64url");
+}
+
+export function decodePublicationAttestationCursor(
+  encoded: string | undefined,
+): PublicationAttestationCursor | undefined {
+  if (!encoded) return undefined;
+  try {
+    const parsed = JSON.parse(Buffer.from(encoded, "base64url").toString("utf8")) as unknown;
+    if (
+      !parsed ||
+      typeof parsed !== "object" ||
+      typeof (parsed as Record<string, unknown>).attestedAt !== "string" ||
+      Number.isNaN(new Date((parsed as Record<string, string>).attestedAt).getTime()) ||
+      typeof (parsed as Record<string, unknown>).id !== "string" ||
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+        (parsed as Record<string, string>).id,
+      )
+    )
+      throw new Error("Invalid publication-attestation cursor.");
+    return parsed as PublicationAttestationCursor;
+  } catch {
+    throw new Error("Invalid publication-attestation cursor.");
+  }
 }
 
 export function filterPublicationAttestationsForExport(
@@ -312,6 +353,13 @@ export async function createPublicationSigningChallenge(params: {
     INSERT INTO publication_attestation_signing_challenge
       (id, tenant_id, workspace_id, entity_ref, key_id, public_key, challenge, expires_at)
     VALUES (${id}, ${params.tenantId}, ${params.workspaceId}, ${params.entityRef}, ${params.keyId}, ${params.publicKey}, ${challenge}, ${expiresAt})
+    ON CONFLICT (tenant_id, workspace_id, key_id, public_key) DO UPDATE SET
+      id = EXCLUDED.id,
+      entity_ref = EXCLUDED.entity_ref,
+      challenge = EXCLUDED.challenge,
+      expires_at = EXCLUDED.expires_at,
+      consumed_at = NULL,
+      created_at = now()
   `;
   return { id, challenge, expiresAt };
 }

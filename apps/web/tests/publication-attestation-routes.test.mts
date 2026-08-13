@@ -13,6 +13,8 @@ const insertPublicationAttestationSpy = vi.fn();
 const resolvePublicationPolicyContextSpy = vi.fn();
 const findTrustedPublicationSigningKeySpy = vi.fn();
 const listPublicationAttestationsSpy = vi.fn();
+const decodePublicationAttestationCursorSpy = vi.fn();
+const encodePublicationAttestationCursorSpy = vi.fn();
 
 vi.mock("@/lib/service-tokens", () => ({ authenticateServiceToken: authenticateServiceTokenSpy }));
 vi.mock("@/lib/tenant-context", () => ({ runWithTenantContext: runWithTenantContextSpy }));
@@ -23,6 +25,8 @@ vi.mock("@/lib/repositories/publication-attestations", () => ({
   retainPublicationContentArtifact: retainPublicationContentArtifactSpy,
   publicationArtifactExists: publicationArtifactExistsSpy,
   insertPublicationAttestation: insertPublicationAttestationSpy,
+  decodePublicationAttestationCursor: decodePublicationAttestationCursorSpy,
+  encodePublicationAttestationCursor: encodePublicationAttestationCursorSpy,
   resolvePublicationPolicyContext: resolvePublicationPolicyContextSpy,
   findTrustedPublicationSigningKey: findTrustedPublicationSigningKeySpy,
   listPublicationAttestations: listPublicationAttestationsSpy,
@@ -67,6 +71,8 @@ describe("publication attestation routes", () => {
       deduplicated: false,
     });
     listPublicationAttestationsSpy.mockResolvedValue([]);
+    decodePublicationAttestationCursorSpy.mockReturnValue(undefined);
+    encodePublicationAttestationCursorSpy.mockReturnValue("next-cursor");
   });
 
   it("rejects mismatched artifact bytes before retention", async () => {

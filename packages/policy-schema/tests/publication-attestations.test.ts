@@ -23,6 +23,18 @@ describe("publication attestations", () => {
     expect(verifyPublicationAttestation(receipt)).toEqual({ verified: true });
   });
 
+  it("generates an attestation ID when callers explicitly pass undefined", () => {
+    const receipt = signPublicationAttestation({
+      privateKey: privatePem,
+      keyId: "test-ed25519-2026",
+      payload: { attestationId: undefined, content: { hash: "sha256:abc" } },
+    });
+    expect(receipt.payload.attestationId).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+    );
+    expect(verifyPublicationAttestation(receipt)).toEqual({ verified: true });
+  });
+
   it("rejects a tampered publication-attestation payload", () => {
     const receipt = signPublicationAttestation({
       privateKey: privatePem,
