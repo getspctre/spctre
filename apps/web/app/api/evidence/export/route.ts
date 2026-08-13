@@ -248,11 +248,11 @@ async function handleGetApiEvidenceExport(request: Request) {
 async function* publicationExportPages(
   params: { tenantId: string; workspaceId: string; grants?: PublicationExportGrant[] },
   initialPage: PublicationAttestationRecord[],
-): AsyncGenerator<PublicationAttestationRecord> {
+): AsyncGenerator<PublicationAttestationRecord[]> {
   let page = initialPage;
   let before: PublicationAttestationCursor | undefined;
   for (;;) {
-    yield* page;
+    yield page;
     if (page.length < 500) return;
     const last = page.at(-1)!;
     before = { attestedAt: last.attestedAt, id: last.id };
@@ -271,7 +271,7 @@ async function* publicationExportPages(
 function streamJsonEvidenceExport(params: {
   evidence: unknown[];
   workspaceId: string;
-  publicationPages: AsyncGenerator<PublicationAttestationRecord>;
+  publicationPages: AsyncGenerator<PublicationAttestationRecord[]>;
   authorization?: { connector: string; revisionGrants: unknown[] };
   onComplete: () => void;
 }): ReadableStream<Uint8Array> {
@@ -297,10 +297,9 @@ function streamJsonEvidenceExport(params: {
         }
         const next = await iterator.next();
         if (!next.done) {
-          controller.enqueue(
-            encoder.encode(`${firstAttestation ? "" : ","}${JSON.stringify(next.value)}`),
-          );
-          firstAttestation = false;
+          const records = next.value.map((attestation) => JSON.stringify(attestation)).join(",");
+          controller.enqueue(encoder.encode(`${firstAttestation ? "" : ","}${records}`));
+          firstAttestation = firstAttestation && next.value.length === 0;
           return;
         }
         controller.enqueue(
@@ -314,6 +313,9 @@ function streamJsonEvidenceExport(params: {
         reportSwallowedError("evidenceExport.stream", error);
         controller.error(error);
       }
+    },
+    async cancel() {
+      await iterator.return?.(undefined);
     },
   });
 }
