@@ -89,9 +89,10 @@ describe("publication signing-key routes", () => {
 
   it("lists and revokes only scoped keys", async () => {
     const listResponse = await keyRoute.GET(
-      new Request(
-        "http://localhost:3000/api/v1/evidence/publication-signing-keys?entityRef=entity:spctre",
-      ),
+      createRouteRequest({
+        path: "/api/v1/evidence/publication-signing-keys?entityRef=entity:spctre",
+        method: "GET",
+      }),
     );
     expect(listResponse.status).toBe(200);
     expect(listKeysSpy).toHaveBeenCalledWith(

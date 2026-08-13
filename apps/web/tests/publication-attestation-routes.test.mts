@@ -68,6 +68,7 @@ describe("publication attestation routes", () => {
   });
 
   it("rejects mismatched artifact bytes before retention", async () => {
+    // Raw content bytes and their media type are the artifact route contract.
     const response = await artifactRoute.POST(
       new Request("http://localhost:3000/api/v1/evidence/publication-artifacts", {
         method: "POST",
@@ -108,7 +109,10 @@ describe("publication attestation routes", () => {
 
   it("lists publication facts only for the authenticated workspace", async () => {
     const response = await publicationRoute.GET(
-      new Request("http://localhost:3000/api/v1/evidence/publications?contentIdentity=article-1"),
+      createRouteRequest({
+        path: "/api/v1/evidence/publications?contentIdentity=article-1",
+        method: "GET",
+      }),
     );
     expect(response.status).toBe(200);
     expect(listPublicationAttestationsSpy).toHaveBeenCalledWith(
