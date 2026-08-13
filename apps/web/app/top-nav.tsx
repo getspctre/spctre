@@ -240,6 +240,13 @@ function UserDropdown({
                 <Link className="topNavAction" href="/admin/service-keys" role="menuitem">
                   API service keys
                 </Link>
+                <Link
+                  className="topNavAction"
+                  href="/admin/publication-signing-keys"
+                  role="menuitem"
+                >
+                  Publication signing keys
+                </Link>
                 <Link className="topNavAction" href="/admin/webhooks" role="menuitem">
                   Gateway webhooks
                 </Link>

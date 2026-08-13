@@ -129,6 +129,139 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/evidence/publication-artifacts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Retain a byte-exact publication content artifact
+         * @description Stores exact publication bytes addressed by X-Spctre-Content-Hash. The artifact must be retained before a publication attestation can reference it.
+         */
+        post: operations["retainPublicationContentArtifact"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/evidence/publication-artifacts/{hash}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export a retained publication artifact
+         * @description Returns retained exact bytes. Requires an evidence:export service token.
+         */
+        get: operations["exportPublicationContentArtifact"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/evidence/publications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List immutable publication attestations
+         * @description Returns publication fact metadata. Requires an evidence:read service token.
+         */
+        get: operations["listPublicationAttestations"];
+        put?: never;
+        /**
+         * Ingest immutable publication facts
+         * @description Accepts normalized publication facts bound to a retained artifact. The server validates shape, artifact binding, authorization, idempotency, and optional receipt signatures; it does not adjudicate legal compliance.
+         */
+        post: operations["ingestPublicationAttestation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/evidence/publications/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get an immutable publication attestation */
+        get: operations["getPublicationAttestation"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/evidence/publication-signing-keys/challenges": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create a signing-key possession challenge */
+        post: operations["createPublicationSigningKeyChallenge"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/evidence/publication-signing-keys": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List trusted publication signing keys */
+        get: operations["listPublicationSigningKeys"];
+        put?: never;
+        /** Enroll or rotate an ownership-verified signing key */
+        post: operations["enrollPublicationSigningKey"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/evidence/publication-signing-keys/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Revoke an enrolled publication signing key */
+        delete: operations["revokePublicationSigningKey"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/evidence/policy-artifacts": {
         parameters: {
             query?: never;
@@ -895,6 +1028,96 @@ export interface components {
             /** @description Caller-supplied references retained as metadata. Policy context is resolved server-side. */
             policyRefs?: string[];
             metadata?: {
+                [key: string]: unknown;
+            };
+        };
+        /** @description Framework-agnostic publication facts. Clients submit normalized facts bound to a previously retained byte-exact artifact; the server never fetches a URL, renders a page, or adjudicates compliance. */
+        PublicationAttestationIngestRequest: {
+            idempotencyKey: string;
+            attestation: {
+                /** @enum {string} */
+                schema: "spctre.publication-attestation.v1";
+                /** Format: uuid */
+                attestationId: string;
+                /** Format: uuid */
+                supersedes?: string;
+                content: {
+                    hash: string;
+                    artifactRef: string;
+                    version: string;
+                    identity: string;
+                    /** @enum {string} */
+                    modality: "text" | "image" | "audio" | "video" | "other";
+                };
+                generation: {
+                    [key: string]: unknown;
+                };
+                editorial: {
+                    [key: string]: unknown;
+                };
+                publisher: {
+                    [key: string]: unknown;
+                };
+                classification?: {
+                    [key: string]: unknown;
+                };
+                disclosure: {
+                    [key: string]: unknown;
+                };
+                timestamps: {
+                    [key: string]: unknown;
+                };
+            } & {
+                [key: string]: unknown;
+            };
+            receipt?: {
+                [key: string]: unknown;
+            };
+        };
+        PublicationContentArtifactRetainResponse: {
+            contentHash: string;
+            retained: boolean;
+            meta: components["schemas"]["ApiMeta"];
+        };
+        PublicationAttestationIngestResponse: {
+            /** Format: uuid */
+            attestationId: string;
+            deduplicated: boolean;
+            receiptVerified: boolean | null;
+            meta: components["schemas"]["ApiMeta"];
+        };
+        PublicationAttestationRecord: {
+            /** Format: uuid */
+            id: string;
+            contentHash: string;
+            contentIdentity: string;
+            contentVersion: string;
+            /** Format: uuid */
+            supersedesId?: string | null;
+            payloadHash: string;
+            policyContext: {
+                [key: string]: string;
+            };
+            receiptVerified: boolean;
+            /** Format: date-time */
+            attestedAt: string;
+            /** Format: date-time */
+            createdAt: string;
+            payload: {
+                [key: string]: unknown;
+            };
+        };
+        PublicationSigningKeyChallengeRequest: {
+            entityRef: string;
+            keyId: string;
+            publicKey: string;
+        };
+        PublicationSigningKeyEnrollRequest: components["schemas"]["PublicationSigningKeyChallengeRequest"] & {
+            /** Format: uuid */
+            challengeId: string;
+            /** Format: uuid */
+            replacesKeyId?: string;
+            proof: {
                 [key: string]: unknown;
             };
         };
@@ -1729,6 +1952,255 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             503: components["responses"]["ServiceUnavailable"];
+        };
+    };
+    retainPublicationContentArtifact: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Spctre-Content-Hash": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/octet-stream": string;
+            };
+        };
+        responses: {
+            /** @description Publication artifact retained. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicationContentArtifactRetainResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            /** @description Artifact body exceeds the 10 MiB maximum. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    exportPublicationContentArtifact: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                hash: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Byte-exact artifact. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/octet-stream": string;
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listPublicationAttestations: {
+        parameters: {
+            query?: {
+                contentIdentity?: string;
+                /** @description Opaque cursor returned by the preceding response. */
+                before?: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Publication attestations. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        attestations: components["schemas"]["PublicationAttestationRecord"][];
+                        nextCursor: string | null;
+                        meta: components["schemas"]["ApiMeta"];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    ingestPublicationAttestation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PublicationAttestationIngestRequest"];
+            };
+        };
+        responses: {
+            /** @description Duplicate submission suppressed. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicationAttestationIngestResponse"];
+                };
+            };
+            /** @description Publication attestation ingested. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicationAttestationIngestResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    getPublicationAttestation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Publication attestation. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        attestation: components["schemas"]["PublicationAttestationRecord"];
+                        meta: components["schemas"]["ApiMeta"];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    createPublicationSigningKeyChallenge: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PublicationSigningKeyChallengeRequest"];
+            };
+        };
+        responses: {
+            /** @description Challenge created. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    listPublicationSigningKeys: {
+        parameters: {
+            query?: {
+                entityRef?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Signing keys. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    enrollPublicationSigningKey: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PublicationSigningKeyEnrollRequest"];
+            };
+        };
+        responses: {
+            /** @description Signing key enrolled. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    revokePublicationSigningKey: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    reason?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Signing key revoked. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
         };
     };
     retainPolicyContentArtifact: {

@@ -1,0 +1,190 @@
+import { createHash, generateKeyPairSync } from "node:crypto";
+import { signPublicationAttestation } from "@spctre/policy-schema";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { createRouteRequest } from "./route-test-helper";
+
+const authenticateServiceTokenSpy = vi.fn();
+const runWithTenantContextSpy = vi.fn(async (_tenantId: string, operation: () => unknown) =>
+  operation(),
+);
+const retainPublicationContentArtifactSpy = vi.fn();
+const publicationArtifactExistsSpy = vi.fn();
+const insertPublicationAttestationSpy = vi.fn();
+const resolvePublicationPolicyContextSpy = vi.fn();
+const findTrustedPublicationSigningKeySpy = vi.fn();
+const listPublicationAttestationsSpy = vi.fn();
+const decodePublicationAttestationCursorSpy = vi.fn();
+const encodePublicationAttestationCursorSpy = vi.fn();
+
+vi.mock("@/lib/service-tokens", () => ({ authenticateServiceToken: authenticateServiceTokenSpy }));
+vi.mock("@/lib/tenant-context", () => ({ runWithTenantContext: runWithTenantContextSpy }));
+vi.mock("@/lib/repositories/publication-attestations", () => ({
+  MAX_PUBLICATION_CONTENT_ARTIFACT_BYTES: 10 * 1024 * 1024,
+  publicationContentHash: (bytes: Uint8Array) =>
+    `sha256:${createHash("sha256").update(bytes).digest("hex")}`,
+  retainPublicationContentArtifact: retainPublicationContentArtifactSpy,
+  publicationArtifactExists: publicationArtifactExistsSpy,
+  insertPublicationAttestation: insertPublicationAttestationSpy,
+  decodePublicationAttestationCursor: decodePublicationAttestationCursorSpy,
+  encodePublicationAttestationCursor: encodePublicationAttestationCursorSpy,
+  resolvePublicationPolicyContext: resolvePublicationPolicyContextSpy,
+  findTrustedPublicationSigningKey: findTrustedPublicationSigningKeySpy,
+  listPublicationAttestations: listPublicationAttestationsSpy,
+}));
+
+const artifactRoute = await import("../app/api/v1/evidence/publication-artifacts/route");
+const publicationRoute = await import("../app/api/v1/evidence/publications/route");
+const hash = `sha256:${"a".repeat(64)}`;
+const provenance = {
+  class: "attested",
+  source: "review-1",
+  recordedAt: "2026-08-13T18:00:00.000Z",
+};
+const fact = <T,>(value: T) => ({ value, provenance });
+const auth = {
+  ok: true as const,
+  auth: { tenantId: "tenant-1", workspaceId: "workspace-1", principalId: "principal-1" },
+};
+const payload = {
+  idempotencyKey: "publication:article-1:v1:reviewed",
+  attestation: {
+    schema: "spctre.publication-attestation.v1",
+    attestationId: "9d98fb1a-aeb8-49e9-9b56-b11f3d1c505b",
+    content: { hash, artifactRef: hash, version: "v1", identity: "article-1", modality: "text" },
+    generation: { class: fact("generated") },
+    editorial: { control: fact("reviewed") },
+    publisher: { entityRef: fact("entity:spctre"), role: fact("publisher") },
+    disclosure: { decision: fact("not_required") },
+    timestamps: { attestedAt: fact("2026-08-13T18:00:00.000Z") },
+  },
+};
+
+describe("publication attestation routes", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    authenticateServiceTokenSpy.mockResolvedValue(auth);
+    publicationArtifactExistsSpy.mockResolvedValue(true);
+    resolvePublicationPolicyContextSpy.mockResolvedValue({ revisionId: "revision-1" });
+    findTrustedPublicationSigningKeySpy.mockResolvedValue(true);
+    insertPublicationAttestationSpy.mockResolvedValue({
+      id: payload.attestation.attestationId,
+      deduplicated: false,
+    });
+    listPublicationAttestationsSpy.mockResolvedValue([]);
+    decodePublicationAttestationCursorSpy.mockReturnValue(undefined);
+    encodePublicationAttestationCursorSpy.mockReturnValue("next-cursor");
+  });
+
+  it("rejects mismatched artifact bytes before retention", async () => {
+    // Raw content bytes and their media type are the artifact route contract.
+    const response = await artifactRoute.POST(
+      new Request("http://localhost:3000/api/v1/evidence/publication-artifacts", {
+        method: "POST",
+        headers: {
+          authorization: "Bearer token",
+          "content-type": "text/markdown",
+          "x-spctre-content-hash": hash,
+        },
+        body: "# different bytes\n",
+      }),
+    );
+    expect(response.status).toBe(400);
+    expect(retainPublicationContentArtifactSpy).not.toHaveBeenCalled();
+  });
+
+  it("does not validate an unauthenticated attestation body", async () => {
+    authenticateServiceTokenSpy.mockResolvedValue({ ok: false, error: "Unauthorized" });
+
+    const response = await publicationRoute.POST(
+      createRouteRequest({ path: "/api/v1/evidence/publications", body: {} }),
+    );
+
+    expect(response.status).toBe(401);
+    expect(insertPublicationAttestationSpy).not.toHaveBeenCalled();
+  });
+
+  it("returns a retryable generic error for artifact retention configuration failures", async () => {
+    const bytes = new TextEncoder().encode("publication bytes");
+    const contentHash = `sha256:${createHash("sha256").update(bytes).digest("hex")}`;
+    retainPublicationContentArtifactSpy.mockRejectedValue(
+      new Error("SPCTRE_CREDENTIAL_ENCRYPTION_KEY is not set."),
+    );
+
+    const response = await artifactRoute.POST(
+      new Request("http://localhost:3000/api/v1/evidence/publication-artifacts", {
+        method: "POST",
+        headers: {
+          authorization: "Bearer token",
+          "content-type": "application/octet-stream",
+          "x-spctre-content-hash": contentHash,
+        },
+        body: bytes,
+      }),
+    );
+
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toMatchObject({
+      error: "Artifact retention temporarily unavailable.",
+    });
+  });
+
+  it("rejects an attestation whose artifact was not retained", async () => {
+    publicationArtifactExistsSpy.mockResolvedValue(false);
+    const response = await publicationRoute.POST(
+      createRouteRequest({ path: "/api/v1/evidence/publications", body: payload }),
+    );
+    expect(response.status).toBe(400);
+    expect(insertPublicationAttestationSpy).not.toHaveBeenCalled();
+  });
+
+  it("binds an attestation to the authenticated tenant and policy context", async () => {
+    const response = await publicationRoute.POST(
+      createRouteRequest({ path: "/api/v1/evidence/publications", body: payload }),
+    );
+    expect(response.status).toBe(201);
+    expect(insertPublicationAttestationSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tenantId: "tenant-1",
+        workspaceId: "workspace-1",
+        policyContext: { revisionId: "revision-1" },
+      }),
+    );
+  });
+
+  it("accepts a receipt over the unnormalized signed facts", async () => {
+    const { privateKey } = generateKeyPairSync("ed25519");
+    const receipt = signPublicationAttestation({
+      privateKey: privateKey.export({ type: "pkcs8", format: "pem" }).toString(),
+      keyId: "editorial-key-2026",
+      // `classification` is intentionally absent: parsing supplies {}, but it
+      // was not part of the publisher's signed payload.
+      payload: payload.attestation,
+    });
+
+    const response = await publicationRoute.POST(
+      createRouteRequest({ path: "/api/v1/evidence/publications", body: { ...payload, receipt } }),
+    );
+
+    expect(response.status).toBe(201);
+    expect(insertPublicationAttestationSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ attestation: payload.attestation }),
+    );
+  });
+
+  it("lists publication facts only for the authenticated workspace", async () => {
+    const response = await publicationRoute.GET(
+      createRouteRequest({
+        path: "/api/v1/evidence/publications?contentIdentity=article-1",
+        method: "GET",
+      }),
+    );
+    expect(response.status).toBe(200);
+    expect(listPublicationAttestationsSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tenantId: "tenant-1",
+        workspaceId: "workspace-1",
+        contentIdentity: "article-1",
+      }),
+    );
+  });
+});

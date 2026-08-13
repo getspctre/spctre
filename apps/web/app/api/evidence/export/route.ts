@@ -10,6 +10,8 @@ import { extractTraceId, makeMeta, withTraceId } from "@spctre/api-contracts";
 import { incrementCounter, recordDuration } from "@spctre/platform/metrics";
 import { withSpan } from "@spctre/platform/tracing";
 import { swallow } from "@/lib/platform/swallow";
+import { listPublicationAttestationsForExport } from "@/lib/repositories/publication-attestations";
+import { runWithTenantContext } from "@/lib/tenant-context";
 
 export const dynamic = "force-dynamic";
 
@@ -114,6 +116,7 @@ async function handleGetApiEvidenceExport(request: Request) {
       }
 
       let evidence;
+      let publicationAttestations;
       try {
         evidence = bearer
           ? await listEvidenceForTokenExport({
@@ -128,6 +131,13 @@ async function handleGetApiEvidenceExport(request: Request) {
               limit: 5000,
               offset: 0,
             });
+        publicationAttestations = await runWithTenantContext(workspaceContext.tenantId, () =>
+          listPublicationAttestationsForExport({
+            workspaceId: workspaceContext.workspaceId,
+            tenantId: workspaceContext.tenantId,
+            ...(bearer ? { grants: evidenceToken!.evidenceExportGrants } : {}),
+          }),
+        );
       } catch (err) {
         incrementCounter("spctre.api.errors", 1, {
           "http.route": "/api/evidence/export",
@@ -154,6 +164,7 @@ async function handleGetApiEvidenceExport(request: Request) {
             workspaceId: workspaceContext.workspaceId,
             count: evidence.length,
             decisions: evidence,
+            publicationAttestations,
             // This is a server-derived statement of the caller's authorization,
             // not a caller-selected connector filter. Agent runtimes can use it
             // to cross-check their loaded policy references without claiming a

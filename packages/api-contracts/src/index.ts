@@ -12,6 +12,7 @@ export * from "./validate";
 export * from "./schemas/evidence";
 export * from "./schemas/generic-evidence";
 export * from "./schemas/git-checkpoint";
+export * from "./schemas/publication-attestation";
 export * from "./schemas/gateway";
 export * from "./schemas/token";
 export * from "./schemas/sanitization";

@@ -720,6 +720,272 @@
           }
         }
       },
+      "PublicationAttestationIngestRequest": {
+        "type": "object",
+        "required": [
+          "idempotencyKey",
+          "attestation"
+        ],
+        "description": "Framework-agnostic publication facts. Clients submit normalized facts bound to a previously retained byte-exact artifact; the server never fetches a URL, renders a page, or adjudicates compliance.",
+        "properties": {
+          "idempotencyKey": {
+            "type": "string",
+            "minLength": 1
+          },
+          "attestation": {
+            "type": "object",
+            "required": [
+              "schema",
+              "attestationId",
+              "content",
+              "generation",
+              "editorial",
+              "publisher",
+              "disclosure",
+              "timestamps"
+            ],
+            "additionalProperties": true,
+            "properties": {
+              "schema": {
+                "type": "string",
+                "enum": [
+                  "spctre.publication-attestation.v1"
+                ]
+              },
+              "attestationId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "supersedes": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "content": {
+                "type": "object",
+                "required": [
+                  "hash",
+                  "artifactRef",
+                  "version",
+                  "identity",
+                  "modality"
+                ],
+                "properties": {
+                  "hash": {
+                    "type": "string",
+                    "pattern": "^sha256:[0-9a-f]{64}$"
+                  },
+                  "artifactRef": {
+                    "type": "string",
+                    "pattern": "^sha256:[0-9a-f]{64}$"
+                  },
+                  "version": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "identity": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "modality": {
+                    "type": "string",
+                    "enum": [
+                      "text",
+                      "image",
+                      "audio",
+                      "video",
+                      "other"
+                    ]
+                  }
+                }
+              },
+              "generation": {
+                "type": "object",
+                "additionalProperties": true
+              },
+              "editorial": {
+                "type": "object",
+                "additionalProperties": true
+              },
+              "publisher": {
+                "type": "object",
+                "additionalProperties": true
+              },
+              "classification": {
+                "type": "object",
+                "additionalProperties": true
+              },
+              "disclosure": {
+                "type": "object",
+                "additionalProperties": true
+              },
+              "timestamps": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          },
+          "receipt": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      },
+      "PublicationContentArtifactRetainResponse": {
+        "type": "object",
+        "required": [
+          "contentHash",
+          "retained",
+          "meta"
+        ],
+        "properties": {
+          "contentHash": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          },
+          "retained": {
+            "type": "boolean"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ApiMeta"
+          }
+        }
+      },
+      "PublicationAttestationIngestResponse": {
+        "type": "object",
+        "required": [
+          "attestationId",
+          "deduplicated",
+          "receiptVerified",
+          "meta"
+        ],
+        "properties": {
+          "attestationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "deduplicated": {
+            "type": "boolean"
+          },
+          "receiptVerified": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ApiMeta"
+          }
+        }
+      },
+      "PublicationAttestationRecord": {
+        "type": "object",
+        "required": [
+          "id",
+          "contentHash",
+          "contentIdentity",
+          "contentVersion",
+          "payloadHash",
+          "policyContext",
+          "receiptVerified",
+          "attestedAt",
+          "createdAt",
+          "payload"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "contentHash": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          },
+          "contentIdentity": {
+            "type": "string"
+          },
+          "contentVersion": {
+            "type": "string"
+          },
+          "supersedesId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "payloadHash": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          },
+          "policyContext": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "receiptVerified": {
+            "type": "boolean"
+          },
+          "attestedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "payload": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      },
+      "PublicationSigningKeyChallengeRequest": {
+        "type": "object",
+        "required": [
+          "entityRef",
+          "keyId",
+          "publicKey"
+        ],
+        "properties": {
+          "entityRef": {
+            "type": "string",
+            "pattern": "^entity:[A-Za-z0-9._:-]+$"
+          },
+          "keyId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "publicKey": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "PublicationSigningKeyEnrollRequest": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/PublicationSigningKeyChallengeRequest"
+          },
+          {
+            "type": "object",
+            "required": [
+              "challengeId",
+              "proof"
+            ],
+            "properties": {
+              "challengeId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "replacesKeyId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "proof": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        ]
+      },
       "GatewayDecisionRequest": {
         "type": "object",
         "required": [
@@ -2514,6 +2780,454 @@
           },
           "503": {
             "$ref": "#/components/responses/ServiceUnavailable"
+          }
+        }
+      }
+    },
+    "/evidence/publication-artifacts": {
+      "post": {
+        "operationId": "retainPublicationContentArtifact",
+        "summary": "Retain a byte-exact publication content artifact",
+        "description": "Stores exact publication bytes addressed by X-Spctre-Content-Hash. The artifact must be retained before a publication attestation can reference it.",
+        "x-spctre-plan": "oss",
+        "tags": [
+          "Evidence"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Spctre-Content-Hash",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^sha256:[0-9a-f]{64}$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/octet-stream": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Publication artifact retained.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicationContentArtifactRetainResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "413": {
+            "description": "Artifact body exceeds the 10 MiB maximum."
+          }
+        }
+      }
+    },
+    "/evidence/publication-artifacts/{hash}": {
+      "get": {
+        "operationId": "exportPublicationContentArtifact",
+        "summary": "Export a retained publication artifact",
+        "description": "Returns retained exact bytes. Requires an evidence:export service token.",
+        "x-spctre-plan": "oss",
+        "tags": [
+          "Evidence"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "hash",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^sha256:[0-9a-f]{64}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Byte-exact artifact.",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/evidence/publications": {
+      "get": {
+        "operationId": "listPublicationAttestations",
+        "summary": "List immutable publication attestations",
+        "description": "Returns publication fact metadata. Requires an evidence:read service token.",
+        "x-spctre-plan": "oss",
+        "tags": [
+          "Evidence"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "contentIdentity",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "description": "Opaque cursor returned by the preceding response.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Publication attestations.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "attestations",
+                    "nextCursor",
+                    "meta"
+                  ],
+                  "properties": {
+                    "attestations": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/PublicationAttestationRecord"
+                      }
+                    },
+                    "nextCursor": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/ApiMeta"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      },
+      "post": {
+        "operationId": "ingestPublicationAttestation",
+        "summary": "Ingest immutable publication facts",
+        "description": "Accepts normalized publication facts bound to a retained artifact. The server validates shape, artifact binding, authorization, idempotency, and optional receipt signatures; it does not adjudicate legal compliance.",
+        "x-spctre-plan": "oss",
+        "tags": [
+          "Evidence"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublicationAttestationIngestRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Duplicate submission suppressed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicationAttestationIngestResponse"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Publication attestation ingested.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicationAttestationIngestResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/evidence/publications/{id}": {
+      "get": {
+        "operationId": "getPublicationAttestation",
+        "summary": "Get an immutable publication attestation",
+        "x-spctre-plan": "oss",
+        "tags": [
+          "Evidence"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Publication attestation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "attestation",
+                    "meta"
+                  ],
+                  "properties": {
+                    "attestation": {
+                      "$ref": "#/components/schemas/PublicationAttestationRecord"
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/ApiMeta"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/evidence/publication-signing-keys/challenges": {
+      "post": {
+        "operationId": "createPublicationSigningKeyChallenge",
+        "summary": "Create a signing-key possession challenge",
+        "x-spctre-plan": "oss",
+        "tags": [
+          "Evidence"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublicationSigningKeyChallengeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Challenge created."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/evidence/publication-signing-keys": {
+      "get": {
+        "operationId": "listPublicationSigningKeys",
+        "summary": "List trusted publication signing keys",
+        "x-spctre-plan": "oss",
+        "tags": [
+          "Evidence"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "entityRef",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^entity:[A-Za-z0-9._:-]+$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Signing keys."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      },
+      "post": {
+        "operationId": "enrollPublicationSigningKey",
+        "summary": "Enroll or rotate an ownership-verified signing key",
+        "x-spctre-plan": "oss",
+        "tags": [
+          "Evidence"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublicationSigningKeyEnrollRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Signing key enrolled."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/evidence/publication-signing-keys/{id}": {
+      "delete": {
+        "operationId": "revokePublicationSigningKey",
+        "summary": "Revoke an enrolled publication signing key",
+        "x-spctre-plan": "oss",
+        "tags": [
+          "Evidence"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Signing key revoked."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           }
         }
       }

@@ -2,6 +2,15 @@ import { describe, expect, it, vi } from "vitest";
 import { createRouteRequest } from "./route-test-helper";
 
 const authenticateServiceTokenSpy = vi.fn();
+const listPublicationAttestationsForExportSpy = vi.fn().mockResolvedValue([]);
+
+vi.mock("@/lib/repositories/publication-attestations", () => ({
+  listPublicationAttestationsForExport: listPublicationAttestationsForExportSpy,
+}));
+
+vi.mock("@/lib/tenant-context", () => ({
+  runWithTenantContext: vi.fn(async (_tenantId: string, operation: () => unknown) => operation()),
+}));
 
 vi.mock("@/lib/repositories/gateway", () => ({
   getGatewayOutcomesForDecisions: vi.fn().mockResolvedValue(new Map()),
@@ -106,6 +115,15 @@ describe("evidence export route", () => {
           },
         ],
       },
+    });
+    expect(listPublicationAttestationsForExportSpy).toHaveBeenCalledWith({
+      workspaceId: "workspace-1",
+      tenantId: "tenant-1",
+      grants: evidenceExportAuth.auth.evidenceExportGrants.concat({
+        revisionId: "revision-2",
+        notBefore: "2026-02-01T00:00:00.000Z",
+        notAfter: "2026-03-01T00:00:00.000Z",
+      }),
     });
   });
 

@@ -18,6 +18,7 @@ import {
   PublishReadiness,
   PublishBlocker,
   PolicyComplianceEvidenceExport,
+  PublicationAttestationEvidence,
   GrcEvidenceBridgeDelivery,
   RuntimeDecisionEvidenceRecord,
   EvidenceRetentionPlan,
@@ -94,6 +95,7 @@ export function buildComplianceEvidenceExport(params: {
   simulationRun?: SimulationRun;
   generatedAt: string;
   retentionDays: number;
+  publicationAttestations?: PublicationAttestationEvidence[];
 }): PolicyComplianceEvidenceExport {
   const evidence = params.evidence;
   const timeline = params.timeline;
@@ -114,6 +116,8 @@ export function buildComplianceEvidenceExport(params: {
     deniedDecisionCount: evidence.filter((r) => r.status === "DENY").length,
     warnedDecisionCount: evidence.filter((r) => r.status === "WARN").length,
     controlMappings: buildRuleControlMappingIndex(params.artifact.rules),
+    publicationAttestations: params.publicationAttestations ?? [],
+    publicationAttestationCount: params.publicationAttestations?.length ?? 0,
   };
 }
 

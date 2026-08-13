@@ -1,0 +1,58 @@
+---
+title: Publication attestations
+description: Retain content and submit immutable, signed-or-attested publication facts.
+---
+
+Publication attestations are generic evidence records for a version of published
+content. They record facts; Spctre does not fetch the content URL, render a
+page, or determine legal compliance.
+
+First retain the exact bytes with an `evidence:write` service token:
+
+```http
+POST /api/v1/evidence/publication-artifacts
+X-Spctre-Content-Hash: sha256:<digest-of-exact-bytes>
+Content-Type: application/octet-stream
+```
+
+Then submit `POST /api/v1/evidence/publications` with a stable
+`idempotencyKey`. `content.hash` and `content.artifactRef` must name that
+retained artifact. Each material fact carries its own `observed` or `attested`
+provenance; use `unknown` or `not_assessed`, never an implied negative.
+When `disclosure.decision` is `shown`, provide `disclosure.shownAt`; when both
+it and `firstExposureAt` are known, disclosure must precede first exposure.
+
+Attestations are immutable snapshots. Submit a new snapshot with `supersedes`
+after review, disclosure availability, or first public exposure; never mutate a
+previous record. Optional Ed25519 receipts use the
+`spctre.publication-attestation.v1` payload directly.
+
+`publisher.entityRef` is a stable entity reference in the form
+`entity:<identifier>`, not a display name. A superseding snapshot must refer to
+an earlier snapshot for the same content identity in the same workspace.
+
+The retained bytes and snapshots are held in a dedicated durable evidence store
+that is not subject to runtime-event pruning. Immutability is enforced by the
+database: the API provides no update or delete operation. A verified receipt
+proves that its embedded Ed25519 key signed the submitted bytes; it does not by
+itself establish that the key belongs to a particular legal person or entity.
+
+## Read and export
+
+Use an `evidence:read` service token to list `GET /api/v1/evidence/publications`
+or retrieve one snapshot at `GET /api/v1/evidence/publications/{id}`. These
+responses contain facts and hashes, not retained source bytes. Export the exact
+source bytes with `GET /api/v1/evidence/publication-artifacts/{hash}` and an
+`evidence:export` token.
+
+## Trusted signing keys
+
+An optional receipt becomes trusted evidence only when its key has been
+ownership-verified for the accountable publisher in that workspace. A separate
+`evidence:manage` token creates a challenge, the key signs that challenge, and
+the client submits the resulting proof to enroll the key. To rotate a key,
+enroll the replacement with `replacesKeyId`; the previous key is atomically
+revoked. Revoke an active key with `DELETE /api/v1/evidence/publication-signing-keys/{id}`.
+
+The TypeScript SDK exports helpers to hash and retain exact bytes, canonicalize
+and sign facts through a caller-provided key provider, and submit a snapshot.
