@@ -11,7 +11,12 @@ import {
   discoverMcpTools,
   authorizeMcpToolCall,
 } from "../src/handlers/tools.js";
-import { getEvidenceResource, getApprovalsResource } from "../src/handlers/resources.js";
+import {
+  getAgentAuditResource,
+  getApprovalsQueueResource,
+  getApprovalsResource,
+  getEvidenceResource,
+} from "../src/handlers/resources.js";
 
 const baseConfig: SpctreConfig = {
   apiBaseUrl: "http://localhost:3000",
@@ -55,6 +60,27 @@ function parseToolText(result: { content: Array<{ type: string; text: string }> 
 function parseResourceText(result: { contents: Array<{ text: string }> }) {
   return JSON.parse(result.contents[0].text);
 }
+
+describe("agent audit resource", () => {
+  it("uses the agent ID from the resource path, not the URI authority", async () => {
+    const getWithAuth = vi.fn(async () =>
+      axiosResponse({
+        decisions: [],
+        summary: { decisionsAllowed: 1, complianceStatus: "COMPLIANT" },
+      }),
+    );
+
+    const result = await getAgentAuditResource(
+      makeContext({ getWithAuth }),
+      "spctre://agents/scout/audit",
+    );
+
+    expect(getWithAuth).toHaveBeenCalledWith("/api/agents/scout/audit", {
+      workspace_id: "ws-test",
+    });
+    expect(parseResourceText(result).agent_id).toBe("scout");
+  });
+});
 
 const evalArgs = {
   connector: "slack",
@@ -483,5 +509,15 @@ describe("resource handlers", () => {
     const parsed = parseResourceText(await getApprovalsResource(ctx, "spctre://approvals/a1"));
     expect(parsed.error).toContain("Approval lookup failed");
     expect(parsed.approval_id).toBe("a1");
+  });
+
+  it("getApprovalsQueueResource reads the queue endpoint", async () => {
+    const getWithAuth = vi.fn(async () => axiosResponse({ queue: [] }));
+    const ctx = makeContext({ getWithAuth });
+    const parsed = parseResourceText(
+      await getApprovalsQueueResource(ctx, "spctre://approvals/queue"),
+    );
+    expect(parsed.queue).toEqual([]);
+    expect(getWithAuth).toHaveBeenCalledWith("/api/approvals/queue");
   });
 });

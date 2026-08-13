@@ -102,6 +102,12 @@ export function createHttpApp(
   config: SpctreConfig,
   deps: HttpTransportDeps = {},
 ): HttpTransportApp {
+  if (!config.requireBearerAuth) {
+    throw new Error(
+      "HTTP transport requires bearer authentication; SPCTRE_MCP_REQUIRE_BEARER_AUTH=false is unsupported.",
+    );
+  }
+
   const app = express();
   const allowedSourceIps = deps.allowedSourceIps ?? parseAllowedSourceIps();
   const createServer =
@@ -202,9 +208,14 @@ export function createHttpApp(
       }
     }
 
+    // HTTP MCP is a caller-authenticated boundary. Never let the service's
+    // process credential stand in for a missing caller credential: it would
+    // make a scope failure appear to belong to the caller and could cross the
+    // workspace boundary carried by that caller's bearer token.
     const requestConfig: SpctreConfig = {
       ...config,
-      apiToken: bearer || config.apiToken,
+      apiToken: bearer,
+      apiRefreshToken: undefined,
       workspaceId: req.header("x-spctre-workspace-id") || config.workspaceId,
       agentId: req.header("x-spctre-agent-id") || config.agentId,
     };

@@ -144,6 +144,13 @@ describe("stateless HTTP transport", () => {
     ]);
   });
 
+  it("refuses to create an HTTP transport without caller bearer authentication", () => {
+    const permissiveConfig = { ...baseConfig, requireBearerAuth: false };
+    expect(() => makeApp(permissiveConfig)).toThrow(
+      "HTTP transport requires bearer authentication",
+    );
+  });
+
   it("does not expose the legacy SSE or session-message endpoints", async () => {
     const { app } = makeApp();
     const baseUrl = await listen(app);

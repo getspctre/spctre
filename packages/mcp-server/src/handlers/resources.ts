@@ -85,7 +85,10 @@ export async function getAgentAuditResource(
   ctx: McpServerContext,
   uri: string,
 ): Promise<{ contents: Array<{ uri: string; mimeType: string; text: string }> }> {
-  const agentId = uri.split("/")[2];
+  // `spctre://agents/<agent-id>/audit` has the authority (`agents`) in the
+  // URI host, so split("/")[2] is always "agents", not the requested ID.
+  const agentId = new URL(uri).pathname.split("/").filter(Boolean)[0];
+  if (!agentId) throw new Error(`Agent audit resource is missing an agent ID: ${uri}`);
   const response = await ctx.getWithAuth(`/api/agents/${agentId}/audit`, {
     workspace_id: ctx.config.workspaceId,
   });
