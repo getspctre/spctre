@@ -53,6 +53,11 @@ export const SERVICE_API_PATHS = new Set([
   "/api/v1/token/revoke",
   "/api/search",
   "/api/workspace/mcp-policy",
+  "/api/approvals/queue",
+  "/api/compliance/status",
+  "/api/members",
+  "/api/workflow/config",
+  "/api/workspaces",
 ]);
 
 export const SERVICE_API_PATH_PREFIXES = [
@@ -63,6 +68,60 @@ export const SERVICE_API_PATH_PREFIXES = [
   "/api/agents/",
   "/api/onboarding/cli/",
 ];
+
+// The machine API: endpoints that verify a credential of their own on every
+// request AND are meant to be reached from wherever an agent, SDK, or MCP
+// server happens to run. The source-IP allowlist exists to keep the operator
+// console on operator networks; it was never what protected these, and
+// applying it to them makes the control plane unable to serve its own clients.
+//
+// This is deliberately NOT `SERVICE_API_PATHS`. That set answers a different
+// question — "may this proceed without a session cookie?" — and its members
+// include pre-auth bootstrap paths (`/api/onboarding/cli/start` accepts an
+// unauthenticated body) and the e2e policy routes, whose only guard is the
+// SPCTRE_E2E_API_ENABLED flag. Reusing it here would put both on the open
+// internet and reduce the e2e routes to a single boolean's worth of
+// protection. The two sets overlap; they are not the same judgement.
+//
+// Enumerated exactly, with no prefix matching, so the set fails closed: a
+// route added under some future `/api/agents/...` path is IP-restricted until
+// someone deliberately lists it here.
+export const MACHINE_API_PATHS = new Set([
+  "/api/evidence",
+  "/api/v1/evidence",
+  "/api/bundle/latest",
+  "/api/v1/bundle/latest",
+  "/api/gateway/decide",
+  "/api/v1/gateway/decide",
+  "/api/gateway/escalations",
+  "/api/v1/gateway/escalations",
+  "/api/gateway/escalations/status",
+  "/api/v1/gateway/escalations/status",
+  "/api/gateway-ingest/mcp",
+  "/api/verification",
+  "/api/v1/verification",
+  "/api/agent-blueprints/runtime",
+  "/api/workspace/mcp-policy",
+  "/api/approvals/queue",
+  "/api/compliance/status",
+  "/api/members",
+  "/api/workflow/config",
+  "/api/workspaces",
+  // Long-lived clients rotate their own credential; without these a governed
+  // agent runs only until its access token expires.
+  "/api/token/refresh",
+  "/api/v1/token/refresh",
+  "/api/token/revoke",
+  "/api/v1/token/revoke",
+]);
+
+// Pre-auth bootstrap: reachable without a session because no credential exists
+// yet, which is exactly why they must never join the machine API. Named here so
+// the invariant test can assert the two sets stay disjoint.
+export const PRE_AUTH_BOOTSTRAP_PATHS = new Set([
+  "/api/onboarding/cli/start",
+  "/api/onboarding/cli/exchange",
+]);
 
 // Callers whose source address is not an operator address and never will be:
 // a payment provider's fleet, or another of our own services reaching this one

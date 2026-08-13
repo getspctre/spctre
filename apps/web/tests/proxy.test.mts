@@ -190,6 +190,50 @@ describe("proxy rate limiting", () => {
     expect(response.status).toBe(200);
   });
 
+  it("lets the MCP server reach the machine API from its own egress address", async () => {
+    // A Cloud Run service egresses from whatever address Google hands it, so it
+    // can never appear in the operator allowlist. Holding the machine API
+    // behind that allowlist meant every MCP call answered 403 before any
+    // credential was read.
+    process.env.DATABASE_URL = "postgres://spctre.test/app";
+    process.env.SPCTRE_ALLOWED_SOURCE_IPS = "198.51.100.7";
+
+    const { proxy } = await import("../proxy");
+
+    for (const pathname of [
+      "/api/workspace/mcp-policy",
+      "/api/workspaces",
+      "/api/members",
+      "/api/approvals/queue",
+      "/api/workflow/config",
+      "/api/compliance/status",
+      "/api/token/refresh",
+    ]) {
+      const response = await proxy(
+        makeRequest(pathname, "203.0.113.10", { headers: { authorization: "Bearer mcp-token" } }),
+      );
+
+      expect(response.status, pathname).toBe(200);
+    }
+  });
+
+  it("keeps the allowlist in front of pre-auth and e2e routes", async () => {
+    // Both are reachable past the session gate, and neither verifies a
+    // credential the way the machine API does: onboarding start accepts an
+    // unauthenticated body, and the e2e routes are guarded only by a flag.
+    process.env.DATABASE_URL = "postgres://spctre.test/app";
+    process.env.SPCTRE_ALLOWED_SOURCE_IPS = "198.51.100.7";
+
+    const { proxy } = await import("../proxy");
+
+    for (const pathname of ["/api/onboarding/cli/start", "/api/e2e/policy/publish"]) {
+      const response = await proxy(makeRequest(pathname, "203.0.113.10", { method: "POST" }));
+
+      expect(response.status, pathname).toBe(403);
+      await expect(response.json()).resolves.toEqual({ error: "Forbidden." });
+    }
+  });
+
   it("rejects cookie-authenticated mutations from a mismatched origin", async () => {
     process.env.DATABASE_URL = "postgres://spctre.test/app";
 
