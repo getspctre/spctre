@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resourceTypeForUri, SpctreMcpServer } from "../src/server.js";
+import { isApprovalsQueueUri, resourceTypeForUri, SpctreMcpServer } from "../src/server.js";
 import { TOOL_SCHEMAS } from "../src/tools/schemas.js";
 import type { SpctreConfig } from "../src/config.js";
 
@@ -39,5 +39,12 @@ describe("resource telemetry types", () => {
     expect(resourceTypeForUri("spctre://approvals/approval-7f4a9c30")).toBe("approvals");
     expect(resourceTypeForUri("spctre://agents/scout/audit")).toBe("agents");
     expect(resourceTypeForUri("spctre://unknown/unique-value")).toBe("unknown");
+  });
+});
+
+describe("resource route matching", () => {
+  it("recognizes the approvals queue before the generic approval-ID route", () => {
+    expect(isApprovalsQueueUri("spctre://approvals/queue")).toBe(true);
+    expect(isApprovalsQueueUri("spctre://approvals/approval-7f4a9c30")).toBe(false);
   });
 });

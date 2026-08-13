@@ -13,6 +13,7 @@ import {
 } from "../src/handlers/tools.js";
 import {
   getAgentAuditResource,
+  getApprovalsQueueResource,
   getApprovalsResource,
   getEvidenceResource,
 } from "../src/handlers/resources.js";
@@ -508,5 +509,13 @@ describe("resource handlers", () => {
     const parsed = parseResourceText(await getApprovalsResource(ctx, "spctre://approvals/a1"));
     expect(parsed.error).toContain("Approval lookup failed");
     expect(parsed.approval_id).toBe("a1");
+  });
+
+  it("getApprovalsQueueResource reads the queue endpoint", async () => {
+    const getWithAuth = vi.fn(async () => axiosResponse({ queue: [] }));
+    const ctx = makeContext({ getWithAuth });
+    const parsed = parseResourceText(await getApprovalsQueueResource(ctx, "spctre://approvals/queue"));
+    expect(parsed.queue).toEqual([]);
+    expect(getWithAuth).toHaveBeenCalledWith("/api/approvals/queue");
   });
 });

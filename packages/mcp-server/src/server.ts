@@ -65,6 +65,10 @@ export function resourceTypeForUri(uri: string): string {
   return "unknown";
 }
 
+export function isApprovalsQueueUri(uri: string): boolean {
+  return uri === "spctre://approvals/queue";
+}
+
 export class SpctreMcpServer {
   private readonly server: Server;
   private readonly config: SpctreConfig;
@@ -331,6 +335,11 @@ export class SpctreMcpServer {
           if (uri.startsWith("spctre://evidence/")) {
             return await getEvidenceResource(this.context, uri);
           }
+          // This literal must precede the approval-ID route: otherwise "queue"
+          // is treated as an approval ID and the queue handler is unreachable.
+          if (isApprovalsQueueUri(uri)) {
+            return await getApprovalsQueueResource(this.context, uri);
+          }
           if (uri.startsWith("spctre://approvals/")) {
             return await getApprovalsResource(this.context, uri);
           }
@@ -348,9 +357,6 @@ export class SpctreMcpServer {
           }
           if (uri === "spctre://workspaces/list") {
             return await getWorkspacesListResource(this.context, uri);
-          }
-          if (uri === "spctre://approvals/queue") {
-            return await getApprovalsQueueResource(this.context, uri);
           }
           if (uri.startsWith("spctre://workflows/")) {
             return await getWorkflowConfigResource(this.context, uri);
