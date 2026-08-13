@@ -1,5 +1,11 @@
 # @spctre/policy-schema
 
+## 0.7.0
+
+### Minor Changes
+
+- 9e581ec: Add a generic, signable publication-attestation contract and evidence-ingest API for immutable, content-addressed publication facts.
+
 ## 0.6.0
 
 ### Minor Changes
