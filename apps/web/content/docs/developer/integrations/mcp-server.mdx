@@ -29,7 +29,6 @@ The server reads from stdin and writes to stdout. Your harness manages the proce
 ```bash
 SPCTRE_MCP_TRANSPORT=http \
 SPCTRE_MCP_HTTP_PORT=8090 \
-SPCTRE_API_TOKEN=<your-access-token> \
 npx @spctre/mcp-server
 ```
 
@@ -37,13 +36,10 @@ The server listens on `SPCTRE_MCP_HTTP_PORT` (default: `8090`) and serves the st
 
 ## Authentication
 
-The MCP server authenticates to the control plane using `SPCTRE_API_TOKEN`. Set this to a service token with the scopes required by the tools your harness will call. For long-running processes, set `SPCTRE_API_REFRESH_TOKEN` instead and the server will rotate the access token automatically.
+In STDIO mode, the MCP server authenticates to the control plane using `SPCTRE_API_TOKEN`. Set this to a service token with the scopes required by the tools your harness will call. For long-running processes, set `SPCTRE_API_REFRESH_TOKEN` instead and the server will rotate the access token automatically.
 
-Bearer auth on the MCP HTTP endpoint is **enabled by default** — unauthenticated requests are rejected with 401. To disable it (e.g. in a trusted private network):
+HTTP mode requires an `Authorization: Bearer <token>` header on every MCP request and forwards that caller token to the control plane. `SPCTRE_API_TOKEN` and `SPCTRE_API_REFRESH_TOKEN` are unused in HTTP mode. `SPCTRE_MCP_REQUIRE_BEARER_AUTH` must remain `true`; setting it to `false` prevents the HTTP transport from starting.
 
-```bash
-SPCTRE_MCP_REQUIRE_BEARER_AUTH=false
-```
 
 ## Installing for Claude Code
 
@@ -89,12 +85,12 @@ This is useful when a harness is directly orchestrating LLM calls and you want t
 | `SPCTRE_MCP_TRANSPORT` | `stdio` | Transport type: `stdio` or `http` |
 | `SPCTRE_MCP_HTTP_PORT` | `8090` | HTTP server port (HTTP transport only) |
 | `SPCTRE_MCP_HTTP_PATH` | `/mcp` | Stateless MCP HTTP endpoint path |
-| `SPCTRE_MCP_REQUIRE_BEARER_AUTH` | `true` | Require bearer token on the MCP HTTP endpoint (set to `false` to disable) |
+| `SPCTRE_MCP_REQUIRE_BEARER_AUTH` | `true` | Must remain `true`; HTTP transport refuses to start otherwise |
 | `SPCTRE_MCP_HTTP_RATE_LIMIT_PER_SECOND` | `25` | Per-bearer-token request rate; `0` disables the in-process limiter |
 | `SPCTRE_MCP_HTTP_RATE_LIMIT_BURST` | `50` | Per-caller burst allowance for the HTTP rate limiter |
 | `SPCTRE_MCP_AUDIT_SEAL_SECRET` | — | Signing secret for MCP audit seals |
-| `SPCTRE_API_TOKEN` | — | Access token for control plane authentication |
-| `SPCTRE_API_REFRESH_TOKEN` | — | Refresh token; enables automatic access token rotation |
+| `SPCTRE_API_TOKEN` | — | STDIO access token for control plane authentication |
+| `SPCTRE_API_REFRESH_TOKEN` | — | STDIO refresh token; enables automatic access token rotation |
 
 ## Resources
 

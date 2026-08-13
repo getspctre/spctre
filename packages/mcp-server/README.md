@@ -48,13 +48,6 @@ export SPCTRE_MCP_OAUTH_ISSUER=https://app.spctre.dev
 export SPCTRE_MCP_OAUTH_RESOURCE=https://mcp.example.com/mcp
 export SPCTRE_MCP_OAUTH_SCOPES=mcp:read,mcp:write
 
-# OAuth-compatible auth options:
-# Option A: static bearer token
-export SPCTRE_API_TOKEN=your-access-token
-
-# Option B: refresh-token flow (recommended)
-export SPCTRE_API_REFRESH_TOKEN=your-refresh-token
-
 node dist/index.js
 ```
 
@@ -66,16 +59,21 @@ HTTP endpoints:
 - `GET /metricsz` - rolling tool latency/error metrics
 - `GET /.well-known/oauth-protected-resource` - OAuth 2.1 protected-resource metadata
 
-Optional request headers:
+Required request headers:
 
 - `Authorization: Bearer <token>`
+
+Optional request headers:
+
 - `x-spctre-workspace-id: <workspace-id>`
 - `x-spctre-agent-id: <agent-id>`
 
 HTTP mode enforces bearer auth by default and returns `WWW-Authenticate`
 challenges with protected-resource metadata. The MCP 2026-07-28 handler is
 stateless: each request can be routed to any server replica without a session
-map or sticky load-balancer affinity.
+map or sticky load-balancer affinity. The process does not use
+`SPCTRE_API_TOKEN` or `SPCTRE_API_REFRESH_TOKEN` in HTTP mode; the caller's
+bearer token is forwarded to the control plane for every request.
 
 ### Using with a Client
 
@@ -411,7 +409,8 @@ All errors follow the MCP specification with standard JSON-RPC error codes:
 | Variable              | Required | Description                                                  |
 | --------------------- | -------- | ------------------------------------------------------------ |
 | `SPCTRE_API_URL`      | No       | Base URL for Spctre backend (default: http://localhost:3000) |
-| `SPCTRE_API_TOKEN`    | Yes      | Bearer token for authentication                              |
+| `SPCTRE_API_TOKEN`    | STDIO    | Bearer token for control-plane authentication                |
+| `SPCTRE_API_REFRESH_TOKEN` | STDIO | Refresh token for automatic access-token rotation             |
 | `SPCTRE_WORKSPACE_ID` | No       | Default workspace ID (default: ws-dev)                       |
 | `SPCTRE_AGENT_ID`     | No       | Default agent ID (default: mcp-client-default)               |
 

@@ -102,6 +102,12 @@ export function createHttpApp(
   config: SpctreConfig,
   deps: HttpTransportDeps = {},
 ): HttpTransportApp {
+  if (!config.requireBearerAuth) {
+    throw new Error(
+      "HTTP transport requires bearer authentication; SPCTRE_MCP_REQUIRE_BEARER_AUTH=false is unsupported.",
+    );
+  }
+
   const app = express();
   const allowedSourceIps = deps.allowedSourceIps ?? parseAllowedSourceIps();
   const createServer =

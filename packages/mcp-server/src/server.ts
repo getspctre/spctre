@@ -49,6 +49,22 @@ interface McpPolicyData {
   registry?: { source?: string };
 }
 
+// Resource identifiers may contain unbounded decision, approval, or agent IDs.
+// Keep telemetry dimensions to this fixed route vocabulary.
+export function resourceTypeForUri(uri: string): string {
+  if (uri.startsWith("spctre://policies/")) return "policies";
+  if (uri.startsWith("spctre://evidence/")) return "evidence";
+  if (uri.startsWith("spctre://approvals/")) return "approvals";
+  if (uri.startsWith("spctre://agents/")) return "agents";
+  if (uri.startsWith("spctre://trust/")) return "trust";
+  if (uri.startsWith("spctre://identity/")) return "identity";
+  if (uri.startsWith("spctre://verification/")) return "verification";
+  if (uri === "spctre://workspaces/list") return "workspaces";
+  if (uri.startsWith("spctre://workflows/")) return "workflows";
+  if (uri === "spctre://members/list") return "members";
+  return "unknown";
+}
+
 export class SpctreMcpServer {
   private readonly server: Server;
   private readonly config: SpctreConfig;
@@ -300,7 +316,7 @@ export class SpctreMcpServer {
 
     this.server.setRequestHandler("resources/read", async (request) => {
       const { uri } = request.params;
-      const resourceType = uri.split("/").slice(2, 4).join("/") || "unknown";
+      const resourceType = resourceTypeForUri(uri);
       return await withSpan(
         "mcp.resource.read",
         {
