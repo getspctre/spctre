@@ -63,6 +63,10 @@ const listApprovalTimelineEventsMock = vi.fn(async () => []);
 const listResolvedEscalationsForRevisionMock = vi.fn(async () => []);
 const listActionReceiptsMock = vi.fn(async () => []);
 
+vi.mock("@/lib/repositories/publication-attestations", () => ({
+  listPublicationAttestations: vi.fn().mockResolvedValue([]),
+}));
+
 vi.mock("@/lib/tenant-context", () => ({
   runWithTenantContext: (_tenantId: string, work: () => Promise<unknown>) => work(),
 }));
