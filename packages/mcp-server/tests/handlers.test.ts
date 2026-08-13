@@ -514,7 +514,9 @@ describe("resource handlers", () => {
   it("getApprovalsQueueResource reads the queue endpoint", async () => {
     const getWithAuth = vi.fn(async () => axiosResponse({ queue: [] }));
     const ctx = makeContext({ getWithAuth });
-    const parsed = parseResourceText(await getApprovalsQueueResource(ctx, "spctre://approvals/queue"));
+    const parsed = parseResourceText(
+      await getApprovalsQueueResource(ctx, "spctre://approvals/queue"),
+    );
     expect(parsed.queue).toEqual([]);
     expect(getWithAuth).toHaveBeenCalledWith("/api/approvals/queue");
   });

@@ -33,9 +33,7 @@ describe("SpctreMcpServer tool catalog", () => {
 
 describe("resource telemetry types", () => {
   it("uses a bounded route label instead of resource identifiers", () => {
-    expect(resourceTypeForUri("spctre://evidence/decision-9b1deb4d-3b7d-4bad")).toBe(
-      "evidence",
-    );
+    expect(resourceTypeForUri("spctre://evidence/decision-9b1deb4d-3b7d-4bad")).toBe("evidence");
     expect(resourceTypeForUri("spctre://approvals/approval-7f4a9c30")).toBe("approvals");
     expect(resourceTypeForUri("spctre://agents/scout/audit")).toBe("agents");
     expect(resourceTypeForUri("spctre://unknown/unique-value")).toBe("unknown");

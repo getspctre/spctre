@@ -243,19 +243,19 @@ into your IdP (Okta, Azure AD, PingOne, etc.) to complete the trust setup.
 
 ### MCP server
 
-| Variable                         | Required     | Description                                                           |
-| -------------------------------- | ------------ | --------------------------------------------------------------------- |
-| `SPCTRE_MCP_TRANSPORT`           | No           | Transport mode: `stdio` (default) or `http`                           |
-| `SPCTRE_MCP_HTTP_PORT`           | If `http`    | HTTP port for the MCP server (default: `3100`)                        |
-| `SPCTRE_MCP_HTTP_PATH`           | No           | Stateless Streamable HTTP endpoint path (default: `/mcp`)             |
-| `SPCTRE_MCP_REQUIRE_BEARER_AUTH` | No           | Must remain `true`; HTTP transport refuses to start otherwise         |
-| `SPCTRE_API_URL`                 | Yes          | Control plane URL the MCP server calls (e.g. `http://localhost:3000`) |
-| `SPCTRE_WORKSPACE_ID`            | Yes          | Workspace to scope all MCP tool calls                                 |
-| `SPCTRE_AGENT_ID`                | No           | Agent identity reported to the control plane (default: `mcp-server`)  |
-| `SPCTRE_API_TOKEN`               | STDIO        | Short-lived access token for MCP server auth                          |
-| `SPCTRE_API_REFRESH_TOKEN`       | STDIO        | Long-lived refresh token; auto-rotates the access token               |
-| `SPCTRE_ALLOWED_TOOLS`           | No           | Comma-separated allowlist of MCP tool names. Empty = allow all.       |
-| `SPCTRE_ALLOWED_CONNECTORS`      | No           | Comma-separated allowlist of connector names. Empty = allow all.      |
+| Variable                         | Required  | Description                                                           |
+| -------------------------------- | --------- | --------------------------------------------------------------------- |
+| `SPCTRE_MCP_TRANSPORT`           | No        | Transport mode: `stdio` (default) or `http`                           |
+| `SPCTRE_MCP_HTTP_PORT`           | If `http` | HTTP port for the MCP server (default: `3100`)                        |
+| `SPCTRE_MCP_HTTP_PATH`           | No        | Stateless Streamable HTTP endpoint path (default: `/mcp`)             |
+| `SPCTRE_MCP_REQUIRE_BEARER_AUTH` | No        | Must remain `true`; HTTP transport refuses to start otherwise         |
+| `SPCTRE_API_URL`                 | Yes       | Control plane URL the MCP server calls (e.g. `http://localhost:3000`) |
+| `SPCTRE_WORKSPACE_ID`            | Yes       | Workspace to scope all MCP tool calls                                 |
+| `SPCTRE_AGENT_ID`                | No        | Agent identity reported to the control plane (default: `mcp-server`)  |
+| `SPCTRE_API_TOKEN`               | STDIO     | Short-lived access token for MCP server auth                          |
+| `SPCTRE_API_REFRESH_TOKEN`       | STDIO     | Long-lived refresh token; auto-rotates the access token               |
+| `SPCTRE_ALLOWED_TOOLS`           | No        | Comma-separated allowlist of MCP tool names. Empty = allow all.       |
+| `SPCTRE_ALLOWED_CONNECTORS`      | No        | Comma-separated allowlist of connector names. Empty = allow all.      |
 
 ### CLI agent overrides
 

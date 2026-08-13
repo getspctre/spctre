@@ -406,13 +406,13 @@ All errors follow the MCP specification with standard JSON-RPC error codes:
 
 ### Environment Variables
 
-| Variable              | Required | Description                                                  |
-| --------------------- | -------- | ------------------------------------------------------------ |
-| `SPCTRE_API_URL`      | No       | Base URL for Spctre backend (default: http://localhost:3000) |
-| `SPCTRE_API_TOKEN`    | STDIO    | Bearer token for control-plane authentication                |
-| `SPCTRE_API_REFRESH_TOKEN` | STDIO | Refresh token for automatic access-token rotation             |
-| `SPCTRE_WORKSPACE_ID` | No       | Default workspace ID (default: ws-dev)                       |
-| `SPCTRE_AGENT_ID`     | No       | Default agent ID (default: mcp-client-default)               |
+| Variable                   | Required | Description                                                  |
+| -------------------------- | -------- | ------------------------------------------------------------ |
+| `SPCTRE_API_URL`           | No       | Base URL for Spctre backend (default: http://localhost:3000) |
+| `SPCTRE_API_TOKEN`         | STDIO    | Bearer token for control-plane authentication                |
+| `SPCTRE_API_REFRESH_TOKEN` | STDIO    | Refresh token for automatic access-token rotation            |
+| `SPCTRE_WORKSPACE_ID`      | No       | Default workspace ID (default: ws-dev)                       |
+| `SPCTRE_AGENT_ID`          | No       | Default agent ID (default: mcp-client-default)               |
 
 ### Token Configuration
 
