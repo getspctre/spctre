@@ -178,6 +178,31 @@ describe("evidence export route", () => {
     });
   });
 
+  it("serializes an exact full publication page without a trailing separator", async () => {
+    const firstPage = Array.from({ length: 500 }, (_, index) =>
+      publicationRecord(`page-1-${index}`),
+    );
+    listPublicationAttestationsSpy.mockClear();
+    listPublicationAttestationsSpy.mockResolvedValueOnce(firstPage).mockResolvedValueOnce([]);
+    authenticateServiceTokenSpy.mockResolvedValue(evidenceExportAuth);
+
+    const response = await route.GET(
+      createRouteRequest({
+        path: "/api/evidence/export?format=json",
+        method: "GET",
+        token: "token",
+      }),
+    );
+
+    await expect(response.json()).resolves.toMatchObject({
+      complete: true,
+      publicationAttestations: expect.arrayContaining([
+        expect.objectContaining({ id: "page-1-499" }),
+      ]),
+    });
+    expect(listPublicationAttestationsSpy).toHaveBeenCalledTimes(2);
+  });
+
   it("does not query publication attestations for CSV", async () => {
     listPublicationAttestationsSpy.mockClear();
     authenticateServiceTokenSpy.mockResolvedValue(evidenceExportAuth);

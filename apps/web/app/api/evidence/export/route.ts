@@ -295,20 +295,24 @@ function streamJsonEvidenceExport(params: {
           emittedPrefix = true;
           return;
         }
-        const next = await iterator.next();
-        if (!next.done) {
+        for (;;) {
+          const next = await iterator.next();
+          if (next.done) {
+            controller.enqueue(
+              encoder.encode(
+                `]${params.authorization ? `,"authorization":${JSON.stringify(params.authorization)}` : ""},"complete":true}`,
+              ),
+            );
+            params.onComplete();
+            controller.close();
+            return;
+          }
+          if (next.value.length === 0) continue;
           const records = next.value.map((attestation) => JSON.stringify(attestation)).join(",");
           controller.enqueue(encoder.encode(`${firstAttestation ? "" : ","}${records}`));
-          firstAttestation = firstAttestation && next.value.length === 0;
+          firstAttestation = false;
           return;
         }
-        controller.enqueue(
-          encoder.encode(
-            `]${params.authorization ? `,"authorization":${JSON.stringify(params.authorization)}` : ""},"complete":true}`,
-          ),
-        );
-        params.onComplete();
-        controller.close();
       } catch (error) {
         reportSwallowedError("evidenceExport.stream", error);
         controller.error(error);
