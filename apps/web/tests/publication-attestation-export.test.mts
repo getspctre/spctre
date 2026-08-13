@@ -6,7 +6,9 @@ import {
   type PublicationAttestationRecord,
 } from "../lib/repositories/publication-attestations";
 
-function attestation(overrides: Partial<PublicationAttestationRecord>): PublicationAttestationRecord {
+function attestation(
+  overrides: Partial<PublicationAttestationRecord>,
+): PublicationAttestationRecord {
   return {
     id: "attestation-1",
     contentHash: "sha256:content",
@@ -45,7 +47,10 @@ describe("publication attestation token export", () => {
   });
 
   it("round-trips an opaque composite pagination cursor", () => {
-    const cursor = { attestedAt: "2026-08-13T18:00:00.000Z", id: "9d98fb1a-aeb8-49e9-9b56-b11f3d1c505b" };
+    const cursor = {
+      attestedAt: "2026-08-13T18:00:00.000Z",
+      id: "9d98fb1a-aeb8-49e9-9b56-b11f3d1c505b",
+    };
     expect(decodePublicationAttestationCursor(encodePublicationAttestationCursor(cursor))).toEqual(
       cursor,
     );

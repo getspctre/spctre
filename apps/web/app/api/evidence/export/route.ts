@@ -134,12 +134,14 @@ async function handleGetApiEvidenceExport(request: Request) {
               limit: 5000,
               offset: 0,
             });
-        const workspacePublicationAttestations = await runWithTenantContext(workspaceContext.tenantId, () =>
-          listPublicationAttestations({
-            workspaceId: workspaceContext.workspaceId,
-            tenantId: workspaceContext.tenantId,
-            limit: 500,
-          }),
+        const workspacePublicationAttestations = await runWithTenantContext(
+          workspaceContext.tenantId,
+          () =>
+            listPublicationAttestations({
+              workspaceId: workspaceContext.workspaceId,
+              tenantId: workspaceContext.tenantId,
+              limit: 500,
+            }),
         );
         publicationAttestations = bearer
           ? filterPublicationAttestationsForExport(

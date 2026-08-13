@@ -196,11 +196,6 @@ function publicationRecord(row: {
   };
 }
 
-const publicationSelect = `
-  id, content_hash, content_identity, content_version, supersedes_id, payload_hash,
-  policy_context, receipt_verified, attested_at, created_at, payload
-`;
-
 export async function listPublicationAttestations(params: {
   tenantId: string;
   workspaceId: string | null;
@@ -210,7 +205,9 @@ export async function listPublicationAttestations(params: {
 }): Promise<PublicationAttestationRecord[]> {
   if (!sql) return [];
   const rows = await sql<Parameters<typeof publicationRecord>[0][]>`
-    SELECT ${sql.unsafe(publicationSelect)} FROM publication_attestation
+    SELECT id, content_hash, content_identity, content_version, supersedes_id, payload_hash,
+      policy_context, receipt_verified, attested_at, created_at, payload
+    FROM publication_attestation
     WHERE tenant_id = ${params.tenantId}
       AND (${params.workspaceId}::uuid IS NULL OR workspace_id = ${params.workspaceId}::uuid)
       AND (${params.contentIdentity ?? null}::text IS NULL OR content_identity = ${params.contentIdentity ?? null})
@@ -233,9 +230,7 @@ export interface PublicationAttestationCursor {
   id: string;
 }
 
-export function encodePublicationAttestationCursor(
-  cursor: PublicationAttestationCursor,
-): string {
+export function encodePublicationAttestationCursor(cursor: PublicationAttestationCursor): string {
   return Buffer.from(JSON.stringify(cursor)).toString("base64url");
 }
 
@@ -285,7 +280,9 @@ export async function getPublicationAttestation(params: {
 }): Promise<PublicationAttestationRecord | null> {
   if (!sql) return null;
   const rows = await sql<Parameters<typeof publicationRecord>[0][]>`
-    SELECT ${sql.unsafe(publicationSelect)} FROM publication_attestation
+    SELECT id, content_hash, content_identity, content_version, supersedes_id, payload_hash,
+      policy_context, receipt_verified, attested_at, created_at, payload
+    FROM publication_attestation
     WHERE tenant_id = ${params.tenantId} AND workspace_id = ${params.workspaceId} AND id = ${params.id}
     LIMIT 1
   `;

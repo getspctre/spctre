@@ -26,7 +26,10 @@ function fact<T>(value: T) {
 }
 
 async function createFixture() {
-  const tenantId = await testTenants.create({ slugPrefix: "test-publication", name: "Publication test" });
+  const tenantId = await testTenants.create({
+    slugPrefix: "test-publication",
+    name: "Publication test",
+  });
   const workspaceId = randomUUID();
   await rawSql!`
     INSERT INTO workspace (id, tenant_id, slug, name)
@@ -53,7 +56,13 @@ async function insertFixtureAttestation(
       attestation: {
         schema: "spctre.publication-attestation.v1",
         attestationId,
-        content: { hash, artifactRef: hash, version: "v1", identity: "article-1", modality: "text" },
+        content: {
+          hash,
+          artifactRef: hash,
+          version: "v1",
+          identity: "article-1",
+          modality: "text",
+        },
         generation: { class: fact("generated") },
         editorial: { control: fact("reviewed") },
         publisher: { entityRef: fact("entity:test"), role: fact("publisher") },
@@ -134,6 +143,8 @@ describe.skipIf(!databaseAvailable)("publication attestation repository contract
       }),
     );
 
-    expect(new Set([...firstPage, ...secondPage, ...thirdPage].map((record) => record.id)).size).toBe(3);
+    expect(
+      new Set([...firstPage, ...secondPage, ...thirdPage].map((record) => record.id)).size,
+    ).toBe(3);
   });
 });

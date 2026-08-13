@@ -162,10 +162,7 @@ describe("publication attestation routes", () => {
     });
 
     const response = await publicationRoute.POST(
-      createRouteRequest({
-        path: "/api/v1/evidence/publications",
-        body: { ...payload, receipt },
-      }),
+      createRouteRequest({ path: "/api/v1/evidence/publications", body: { ...payload, receipt } }),
     );
 
     expect(response.status).toBe(201);

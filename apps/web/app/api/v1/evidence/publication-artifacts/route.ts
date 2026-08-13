@@ -51,8 +51,7 @@ async function handlePostPublicationArtifact(request: Request) {
       error instanceof Error &&
       (error.message === "Unsupported publication artifact media type." ||
         error.message === "Publication artifact content hash mismatch.");
-    if (!clientError)
-      console.error("[evidence/publication-artifacts] retention failed", error);
+    if (!clientError) console.error("[evidence/publication-artifacts] retention failed", error);
     return withTraceId(
       Response.json(
         {
