@@ -11,8 +11,8 @@ import { incrementCounter, recordDuration } from "@spctre/platform/metrics";
 import { withSpan } from "@spctre/platform/tracing";
 import { swallow } from "@/lib/platform/swallow";
 import {
-  filterPublicationAttestationsForExport,
   listPublicationAttestations,
+  listPublicationAttestationsForTokenExport,
 } from "@/lib/repositories/publication-attestations";
 import { runWithTenantContext } from "@/lib/tenant-context";
 
@@ -134,21 +134,19 @@ async function handleGetApiEvidenceExport(request: Request) {
               limit: 5000,
               offset: 0,
             });
-        const workspacePublicationAttestations = await runWithTenantContext(
-          workspaceContext.tenantId,
-          () =>
-            listPublicationAttestations({
-              workspaceId: workspaceContext.workspaceId,
-              tenantId: workspaceContext.tenantId,
-              limit: 500,
-            }),
+        publicationAttestations = await runWithTenantContext(workspaceContext.tenantId, () =>
+          bearer
+            ? listPublicationAttestationsForTokenExport({
+                workspaceId: workspaceContext.workspaceId,
+                tenantId: workspaceContext.tenantId,
+                grants: evidenceToken!.evidenceExportGrants,
+              })
+            : listPublicationAttestations({
+                workspaceId: workspaceContext.workspaceId,
+                tenantId: workspaceContext.tenantId,
+                limit: 500,
+              }),
         );
-        publicationAttestations = bearer
-          ? filterPublicationAttestationsForExport(
-              workspacePublicationAttestations,
-              evidenceToken!.evidenceExportGrants,
-            )
-          : workspacePublicationAttestations;
       } catch (err) {
         incrementCounter("spctre.api.errors", 1, {
           "http.route": "/api/evidence/export",

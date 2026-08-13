@@ -8,6 +8,7 @@ const {
   createPublicationSigningChallenge,
   insertPublicationAttestation,
   listPublicationAttestations,
+  listPublicationAttestationsForTokenExport,
 } = await import("../lib/repositories/publication-attestations");
 
 const testTenants = createTestTenantFixture();
@@ -45,7 +46,7 @@ async function createFixture() {
 
 async function insertFixtureAttestation(
   fixture: { tenantId: string; workspaceId: string },
-  options: { attestedAt?: string } = {},
+  options: { attestedAt?: string; policyContext?: Record<string, string> } = {},
 ) {
   const attestationId = randomUUID();
   const result = await runWithTenantContext(fixture.tenantId, () =>
@@ -71,7 +72,7 @@ async function insertFixtureAttestation(
         timestamps: { attestedAt: fact(options.attestedAt ?? attestedAt) },
       },
       receiptVerified: false,
-      policyContext: {},
+      policyContext: options.policyContext ?? {},
     }),
   );
   return { recordId: result.id, attestationId };
@@ -146,5 +147,38 @@ describe.skipIf(!databaseAvailable)("publication attestation repository contract
     expect(
       new Set([...firstPage, ...secondPage, ...thirdPage].map((record) => record.id)).size,
     ).toBe(3);
+  });
+
+  it("filters token exports in SQL by the granted revision and time window", async () => {
+    const fixture = await createFixture();
+    await insertFixtureAttestation(fixture, {
+      policyContext: { revisionId: "allowed" },
+      attestedAt: "2026-08-13T18:00:00.000Z",
+    });
+    await insertFixtureAttestation(fixture, {
+      policyContext: { revisionId: "other" },
+      attestedAt: "2026-08-13T18:00:00.000Z",
+    });
+    await insertFixtureAttestation(fixture, {
+      policyContext: { revisionId: "allowed" },
+      attestedAt: "2026-07-13T18:00:00.000Z",
+    });
+
+    const exported = await runWithTenantContext(fixture.tenantId, () =>
+      listPublicationAttestationsForTokenExport({
+        ...fixture,
+        grants: [
+          {
+            revisionId: "allowed",
+            notBefore: "2026-08-01T00:00:00.000Z",
+            notAfter: "2026-09-01T00:00:00.000Z",
+          },
+        ],
+      }),
+    );
+
+    expect(exported).toHaveLength(1);
+    expect(exported[0]!.policyContext.revisionId).toBe("allowed");
+    expect(exported[0]!.attestedAt).toBe("2026-08-13T18:00:00.000Z");
   });
 });

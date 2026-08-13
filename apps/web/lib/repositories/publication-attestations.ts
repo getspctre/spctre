@@ -202,6 +202,7 @@ export async function listPublicationAttestations(params: {
   contentIdentity?: string;
   limit: number;
   before?: PublicationAttestationCursor;
+  exportGrants?: PublicationExportGrant[];
 }): Promise<PublicationAttestationRecord[]> {
   if (!sql) return [];
   const rows = await sql<Parameters<typeof publicationRecord>[0][]>`
@@ -211,6 +212,17 @@ export async function listPublicationAttestations(params: {
     WHERE tenant_id = ${params.tenantId}
       AND (${params.workspaceId}::uuid IS NULL OR workspace_id = ${params.workspaceId}::uuid)
       AND (${params.contentIdentity ?? null}::text IS NULL OR content_identity = ${params.contentIdentity ?? null})
+      AND (
+        ${params.exportGrants === undefined}
+        OR EXISTS (
+          SELECT 1
+          FROM jsonb_to_recordset(${sql.json((params.exportGrants ?? []) as unknown as JSONValue)}::jsonb)
+            AS grant("revisionId" text, "notBefore" timestamptz, "notAfter" timestamptz)
+          WHERE policy_context->>'revisionId' = grant."revisionId"
+            AND attested_at >= grant."notBefore"
+            AND (grant."notAfter" IS NULL OR attested_at < grant."notAfter")
+        )
+      )
       AND (
         ${params.before?.attestedAt ?? null}::timestamptz IS NULL
         OR attested_at < ${params.before?.attestedAt ?? null}::timestamptz
@@ -228,6 +240,35 @@ export async function listPublicationAttestations(params: {
 export interface PublicationAttestationCursor {
   attestedAt: string;
   id: string;
+}
+
+export interface PublicationExportGrant {
+  revisionId: string;
+  notBefore: string;
+  notAfter?: string;
+}
+
+/** Exhaustively reads grant-authorized facts for an audit export. */
+export async function listPublicationAttestationsForTokenExport(params: {
+  tenantId: string;
+  workspaceId: string;
+  grants: PublicationExportGrant[];
+}): Promise<PublicationAttestationRecord[]> {
+  const attestations: PublicationAttestationRecord[] = [];
+  let before: PublicationAttestationCursor | undefined;
+  for (;;) {
+    const page = await listPublicationAttestations({
+      tenantId: params.tenantId,
+      workspaceId: params.workspaceId,
+      exportGrants: params.grants,
+      before,
+      limit: 500,
+    });
+    attestations.push(...page);
+    if (page.length < 500) return attestations;
+    const last = page.at(-1)!;
+    before = { attestedAt: last.attestedAt, id: last.id };
+  }
 }
 
 export function encodePublicationAttestationCursor(cursor: PublicationAttestationCursor): string {
@@ -255,22 +296,6 @@ export function decodePublicationAttestationCursor(
   } catch {
     throw new Error("Invalid publication-attestation cursor.");
   }
-}
-
-export function filterPublicationAttestationsForExport(
-  attestations: PublicationAttestationRecord[],
-  grants: Array<{ revisionId: string; notBefore: string; notAfter?: string }>,
-): PublicationAttestationRecord[] {
-  return attestations.filter((attestation) =>
-    grants.some((grant) => {
-      const attestedAt = new Date(attestation.attestedAt).getTime();
-      return (
-        attestation.policyContext.revisionId === grant.revisionId &&
-        attestedAt >= new Date(grant.notBefore).getTime() &&
-        (!grant.notAfter || attestedAt < new Date(grant.notAfter).getTime())
-      );
-    }),
-  );
 }
 
 export async function getPublicationAttestation(params: {
