@@ -217,10 +217,10 @@ export async function listPublicationAttestations(params: {
         OR EXISTS (
           SELECT 1
           FROM jsonb_to_recordset(${sql.json((params.exportGrants ?? []) as unknown as JSONValue)}::jsonb)
-            AS grant("revisionId" text, "notBefore" timestamptz, "notAfter" timestamptz)
-          WHERE policy_context->>'revisionId' = grant."revisionId"
-            AND attested_at >= grant."notBefore"
-            AND (grant."notAfter" IS NULL OR attested_at < grant."notAfter")
+            AS revision_grant("revisionId" text, "notBefore" timestamptz, "notAfter" timestamptz)
+          WHERE policy_context->>'revisionId' = revision_grant."revisionId"
+            AND attested_at >= revision_grant."notBefore"
+            AND (revision_grant."notAfter" IS NULL OR attested_at < revision_grant."notAfter")
         )
       )
       AND (
