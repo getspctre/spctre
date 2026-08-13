@@ -2,10 +2,10 @@ import { describe, expect, it, vi } from "vitest";
 import { createRouteRequest } from "./route-test-helper";
 
 const authenticateServiceTokenSpy = vi.fn();
-const listPublicationAttestationsForExportSpy = vi.fn().mockResolvedValue([]);
+const listPublicationAttestationsSpy = vi.fn().mockResolvedValue([]);
 
 vi.mock("@/lib/repositories/publication-attestations", () => ({
-  listPublicationAttestationsForExport: listPublicationAttestationsForExportSpy,
+  listPublicationAttestations: listPublicationAttestationsSpy,
 }));
 
 vi.mock("@/lib/tenant-context", () => ({
@@ -29,6 +29,22 @@ vi.mock("@/lib/service-tokens", () => ({
 }));
 
 const route = await import("../app/api/evidence/export/route");
+
+function publicationRecord(id: string) {
+  return {
+    id,
+    contentHash: "sha256:content",
+    contentIdentity: "article-1",
+    contentVersion: "v1",
+    supersedesId: null,
+    payloadHash: "sha256:payload",
+    policyContext: {},
+    receiptVerified: true,
+    attestedAt: "2026-08-13T18:00:00.000Z",
+    createdAt: "2026-08-13T18:00:00.000Z",
+    payload: {},
+  };
+}
 
 describe("evidence export route", () => {
   const evidenceExportAuth = {
@@ -116,14 +132,47 @@ describe("evidence export route", () => {
         ],
       },
     });
-    expect(listPublicationAttestationsForExportSpy).toHaveBeenCalledWith({
-      workspaceId: "workspace-1",
-      tenantId: "tenant-1",
-      grants: evidenceExportAuth.auth.evidenceExportGrants.concat({
-        revisionId: "revision-2",
-        notBefore: "2026-02-01T00:00:00.000Z",
-        notAfter: "2026-03-01T00:00:00.000Z",
+    expect(listPublicationAttestationsSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        workspaceId: "workspace-1",
+        tenantId: "tenant-1",
+        exportGrants: evidenceExportAuth.auth.evidenceExportGrants.concat({
+          revisionId: "revision-2",
+          notBefore: "2026-02-01T00:00:00.000Z",
+          notAfter: "2026-03-01T00:00:00.000Z",
+        }),
       }),
+    );
+  });
+
+  it("streams publication pages instead of retaining the complete ledger", async () => {
+    const firstPage = Array.from({ length: 500 }, (_, index) =>
+      publicationRecord(`page-1-${index}`),
+    );
+    listPublicationAttestationsSpy.mockClear();
+    listPublicationAttestationsSpy
+      .mockResolvedValueOnce(firstPage)
+      .mockResolvedValueOnce([publicationRecord("page-2-0")]);
+    authenticateServiceTokenSpy.mockResolvedValue(evidenceExportAuth);
+
+    const response = await route.GET(
+      createRouteRequest({
+        path: "/api/evidence/export?format=json",
+        method: "GET",
+        token: "token",
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      publicationAttestations: expect.arrayContaining([
+        expect.objectContaining({ id: "page-1-0" }),
+        expect.objectContaining({ id: "page-2-0" }),
+      ]),
+    });
+    expect(listPublicationAttestationsSpy).toHaveBeenCalledTimes(2);
+    expect(listPublicationAttestationsSpy.mock.calls[1]?.[0]).toMatchObject({
+      before: { attestedAt: "2026-08-13T18:00:00.000Z", id: "page-1-499" },
     });
   });
 

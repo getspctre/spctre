@@ -9,8 +9,13 @@ import { getActiveScope } from "@/lib/workspace";
 import { extractTraceId, makeMeta, withTraceId } from "@spctre/api-contracts";
 import { incrementCounter, recordDuration } from "@spctre/platform/metrics";
 import { withSpan } from "@spctre/platform/tracing";
-import { swallow } from "@/lib/platform/swallow";
-import { listPublicationAttestationsForExport } from "@/lib/repositories/publication-attestations";
+import { reportSwallowedError, swallow } from "@/lib/platform/swallow";
+import {
+  listPublicationAttestations,
+  type PublicationAttestationCursor,
+  type PublicationAttestationRecord,
+  type PublicationExportGrant,
+} from "@/lib/repositories/publication-attestations";
 import { runWithTenantContext } from "@/lib/tenant-context";
 
 export const dynamic = "force-dynamic";
@@ -116,7 +121,7 @@ async function handleGetApiEvidenceExport(request: Request) {
       }
 
       let evidence;
-      let publicationAttestations;
+      let firstPublicationPage: PublicationAttestationRecord[] = [];
       try {
         evidence = bearer
           ? await listEvidenceForTokenExport({
@@ -131,13 +136,16 @@ async function handleGetApiEvidenceExport(request: Request) {
               limit: 5000,
               offset: 0,
             });
-        publicationAttestations = await runWithTenantContext(workspaceContext.tenantId, () =>
-          listPublicationAttestationsForExport({
-            workspaceId: workspaceContext.workspaceId,
-            tenantId: workspaceContext.tenantId,
-            ...(bearer ? { grants: evidenceToken!.evidenceExportGrants } : {}),
-          }),
-        );
+        if (format === "json") {
+          firstPublicationPage = await runWithTenantContext(workspaceContext.tenantId, () =>
+            listPublicationAttestations({
+              tenantId: workspaceContext.tenantId,
+              workspaceId: workspaceContext.workspaceId,
+              ...(bearer ? { exportGrants: evidenceToken!.evidenceExportGrants } : {}),
+              limit: 500,
+            }),
+          );
+        }
       } catch (err) {
         incrementCounter("spctre.api.errors", 1, {
           "http.route": "/api/evidence/export",
@@ -157,35 +165,32 @@ async function handleGetApiEvidenceExport(request: Request) {
       const date = new Date().toISOString().slice(0, 10);
 
       if (format === "json") {
-        const body = JSON.stringify(
+        const publicationPages = publicationExportPages(
           {
-            schemaVersion: "spctre/v1",
-            exportedAt: new Date().toISOString(),
+            tenantId: workspaceContext.tenantId,
             workspaceId: workspaceContext.workspaceId,
-            count: evidence.length,
-            decisions: evidence,
-            publicationAttestations,
-            // This is a server-derived statement of the caller's authorization,
-            // not a caller-selected connector filter. Agent runtimes can use it
-            // to cross-check their loaded policy references without claiming a
-            // live AGT deployment.
-            ...(evidenceToken
-              ? {
-                  authorization: {
-                    connector: evidenceToken.connector,
-                    revisionGrants: evidenceToken.evidenceExportGrants.map((grant) => ({
-                      revisionId: grant.revisionId,
-                      notBefore: grant.notBefore,
-                      ...(grant.notAfter ? { notAfter: grant.notAfter } : {}),
-                    })),
-                  },
-                }
-              : {}),
+            ...(bearer ? { grants: evidenceToken!.evidenceExportGrants } : {}),
           },
-          null,
-          2,
+          firstPublicationPage,
         );
-        recordDuration("spctre.evidence.export.duration", Date.now() - started, { format });
+        const body = streamJsonEvidenceExport({
+          evidence,
+          workspaceId: workspaceContext.workspaceId,
+          publicationPages,
+          authorization: evidenceToken
+            ? {
+                connector: evidenceToken.connector!,
+                revisionGrants: evidenceToken.evidenceExportGrants.map((grant) => ({
+                  revisionId: grant.revisionId,
+                  notBefore: grant.notBefore,
+                  ...(grant.notAfter ? { notAfter: grant.notAfter } : {}),
+                })),
+              }
+            : undefined,
+          onComplete: () =>
+            recordDuration("spctre.evidence.export.duration", Date.now() - started, { format }),
+          onError: (error) => console.error("[evidence/export] stream failed", error),
+        });
         return withTraceId(
           new Response(body, {
             headers: {
@@ -239,6 +244,70 @@ async function handleGetApiEvidenceExport(request: Request) {
       );
     },
   );
+}
+
+async function* publicationExportPages(
+  params: { tenantId: string; workspaceId: string; grants?: PublicationExportGrant[] },
+  initialPage: PublicationAttestationRecord[],
+): AsyncGenerator<PublicationAttestationRecord> {
+  let page = initialPage;
+  let before: PublicationAttestationCursor | undefined;
+  for (;;) {
+    yield* page;
+    if (page.length < 500) return;
+    const last = page.at(-1)!;
+    before = { attestedAt: last.attestedAt, id: last.id };
+    page = await runWithTenantContext(params.tenantId, () =>
+      listPublicationAttestations({
+        tenantId: params.tenantId,
+        workspaceId: params.workspaceId,
+        exportGrants: params.grants,
+        before,
+        limit: 500,
+      }),
+    );
+  }
+}
+
+function streamJsonEvidenceExport(params: {
+  evidence: unknown[];
+  workspaceId: string;
+  publicationPages: AsyncGenerator<PublicationAttestationRecord>;
+  authorization?: { connector: string; revisionGrants: unknown[] };
+  onComplete: () => void;
+  onError: (error: unknown) => void;
+}): ReadableStream<Uint8Array> {
+  const encoder = new TextEncoder();
+  return new ReadableStream({
+    async start(controller) {
+      try {
+        const prefix = JSON.stringify({
+          schemaVersion: "spctre/v1",
+          exportedAt: new Date().toISOString(),
+          workspaceId: params.workspaceId,
+          count: params.evidence.length,
+          decisions: params.evidence,
+        });
+        controller.enqueue(encoder.encode(`${prefix.slice(0, -1)},"publicationAttestations":[`));
+        let first = true;
+        for await (const attestation of params.publicationPages) {
+          controller.enqueue(encoder.encode(`${first ? "" : ","}${JSON.stringify(attestation)}`));
+          first = false;
+        }
+        controller.enqueue(
+          encoder.encode(
+            `]${params.authorization ? `,"authorization":${JSON.stringify(params.authorization)}` : ""}}`,
+          ),
+        );
+        params.onComplete();
+        controller.close();
+      } catch (error) {
+        reportSwallowedError("evidenceExport.stream", error);
+        params.onError(error);
+        controller.error(error);
+      }
+    },
+  });
 }
 
 function csvCell(value: string | number | null | undefined): string {
