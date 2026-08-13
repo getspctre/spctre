@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   BILLING_WEBHOOK_PATH,
+  MACHINE_API_PATHS,
+  PRE_AUTH_BOOTSTRAP_PATHS,
   PUBLIC_PATH_PREFIXES,
   PUBLIC_PATHS,
   SELF_AUTHENTICATING_PATHS,
@@ -73,6 +75,44 @@ describe("proxy path invariants", () => {
     ]) {
       expect(BILLING_WEBHOOK_PATH.test(pathname), pathname).toBe(false);
     }
+  });
+
+  // The machine API is excused from the source-IP allowlist. That is the same
+  // shape of exemption as the two above, so it carries the same obligation --
+  // and two more, because this set is what decides that a path is safe on the
+  // open internet.
+  it("keeps every machine API path reachable past the session gate", () => {
+    const stranded = [...MACHINE_API_PATHS].filter(
+      (pathname) => !reachablePastSessionGate(pathname),
+    );
+
+    expect(stranded).toEqual([]);
+  });
+
+  it("never puts a pre-auth bootstrap path on the machine API", () => {
+    // These are reachable without a session because no credential exists yet.
+    // Excusing them from the allowlist too would expose an unauthenticated
+    // write to anyone: /api/onboarding/cli/start takes a body and inserts a row.
+    const overlap = [...PRE_AUTH_BOOTSTRAP_PATHS].filter((pathname) =>
+      MACHINE_API_PATHS.has(pathname),
+    );
+
+    expect(overlap).toEqual([]);
+  });
+
+  it("keeps the e2e policy routes off the machine API", () => {
+    // Their only guard is SPCTRE_E2E_API_ENABLED. The allowlist is the second
+    // layer that keeps a misconfigured flag from becoming anonymous policy
+    // publish, so it has to stay in front of them.
+    const exposed = [...MACHINE_API_PATHS].filter((pathname) => pathname.startsWith("/api/e2e/"));
+
+    expect(exposed).toEqual([]);
+  });
+
+  it("only admits API paths to the machine API", () => {
+    const nonApi = [...MACHINE_API_PATHS].filter((pathname) => !pathname.startsWith("/api/"));
+
+    expect(nonApi).toEqual([]);
   });
 
   it("does not exempt a path that a browser session would also reach", () => {
