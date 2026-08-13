@@ -8,7 +8,7 @@ const {
   createPublicationSigningChallenge,
   insertPublicationAttestation,
   listPublicationAttestations,
-  listPublicationAttestationsForTokenExport,
+  listPublicationAttestationsForExport,
 } = await import("../lib/repositories/publication-attestations");
 
 const testTenants = createTestTenantFixture();
@@ -165,7 +165,7 @@ describe.skipIf(!databaseAvailable)("publication attestation repository contract
     });
 
     const exported = await runWithTenantContext(fixture.tenantId, () =>
-      listPublicationAttestationsForTokenExport({
+      listPublicationAttestationsForExport({
         ...fixture,
         grants: [
           {
@@ -180,5 +180,10 @@ describe.skipIf(!databaseAvailable)("publication attestation repository contract
     expect(exported).toHaveLength(1);
     expect(exported[0]!.policyContext.revisionId).toBe("allowed");
     expect(exported[0]!.attestedAt).toBe("2026-08-13T18:00:00.000Z");
+
+    const fullExport = await runWithTenantContext(fixture.tenantId, () =>
+      listPublicationAttestationsForExport(fixture),
+    );
+    expect(fullExport).toHaveLength(3);
   });
 });

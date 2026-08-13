@@ -2,12 +2,10 @@ import { describe, expect, it, vi } from "vitest";
 import { createRouteRequest } from "./route-test-helper";
 
 const authenticateServiceTokenSpy = vi.fn();
-const listPublicationAttestationsSpy = vi.fn().mockResolvedValue([]);
-const listPublicationAttestationsForTokenExportSpy = vi.fn().mockResolvedValue([]);
+const listPublicationAttestationsForExportSpy = vi.fn().mockResolvedValue([]);
 
 vi.mock("@/lib/repositories/publication-attestations", () => ({
-  listPublicationAttestations: listPublicationAttestationsSpy,
-  listPublicationAttestationsForTokenExport: listPublicationAttestationsForTokenExportSpy,
+  listPublicationAttestationsForExport: listPublicationAttestationsForExportSpy,
 }));
 
 vi.mock("@/lib/tenant-context", () => ({
@@ -118,7 +116,7 @@ describe("evidence export route", () => {
         ],
       },
     });
-    expect(listPublicationAttestationsForTokenExportSpy).toHaveBeenCalledWith({
+    expect(listPublicationAttestationsForExportSpy).toHaveBeenCalledWith({
       workspaceId: "workspace-1",
       tenantId: "tenant-1",
       grants: evidenceExportAuth.auth.evidenceExportGrants.concat({

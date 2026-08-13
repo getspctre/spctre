@@ -10,10 +10,7 @@ import { extractTraceId, makeMeta, withTraceId } from "@spctre/api-contracts";
 import { incrementCounter, recordDuration } from "@spctre/platform/metrics";
 import { withSpan } from "@spctre/platform/tracing";
 import { swallow } from "@/lib/platform/swallow";
-import {
-  listPublicationAttestations,
-  listPublicationAttestationsForTokenExport,
-} from "@/lib/repositories/publication-attestations";
+import { listPublicationAttestationsForExport } from "@/lib/repositories/publication-attestations";
 import { runWithTenantContext } from "@/lib/tenant-context";
 
 export const dynamic = "force-dynamic";
@@ -135,17 +132,11 @@ async function handleGetApiEvidenceExport(request: Request) {
               offset: 0,
             });
         publicationAttestations = await runWithTenantContext(workspaceContext.tenantId, () =>
-          bearer
-            ? listPublicationAttestationsForTokenExport({
-                workspaceId: workspaceContext.workspaceId,
-                tenantId: workspaceContext.tenantId,
-                grants: evidenceToken!.evidenceExportGrants,
-              })
-            : listPublicationAttestations({
-                workspaceId: workspaceContext.workspaceId,
-                tenantId: workspaceContext.tenantId,
-                limit: 500,
-              }),
+          listPublicationAttestationsForExport({
+            workspaceId: workspaceContext.workspaceId,
+            tenantId: workspaceContext.tenantId,
+            ...(bearer ? { grants: evidenceToken!.evidenceExportGrants } : {}),
+          }),
         );
       } catch (err) {
         incrementCounter("spctre.api.errors", 1, {

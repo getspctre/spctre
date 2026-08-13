@@ -248,11 +248,11 @@ export interface PublicationExportGrant {
   notAfter?: string;
 }
 
-/** Exhaustively reads grant-authorized facts for an audit export. */
-export async function listPublicationAttestationsForTokenExport(params: {
+/** Exhaustively reads facts for an audit export, optionally constrained by grants. */
+export async function listPublicationAttestationsForExport(params: {
   tenantId: string;
   workspaceId: string;
-  grants: PublicationExportGrant[];
+  grants?: PublicationExportGrant[];
 }): Promise<PublicationAttestationRecord[]> {
   const attestations: PublicationAttestationRecord[] = [];
   let before: PublicationAttestationCursor | undefined;
