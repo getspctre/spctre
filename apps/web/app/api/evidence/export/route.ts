@@ -189,7 +189,6 @@ async function handleGetApiEvidenceExport(request: Request) {
             : undefined,
           onComplete: () =>
             recordDuration("spctre.evidence.export.duration", Date.now() - started, { format }),
-          onError: (error) => console.error("[evidence/export] stream failed", error),
         });
         return withTraceId(
           new Response(body, {
@@ -275,35 +274,44 @@ function streamJsonEvidenceExport(params: {
   publicationPages: AsyncGenerator<PublicationAttestationRecord>;
   authorization?: { connector: string; revisionGrants: unknown[] };
   onComplete: () => void;
-  onError: (error: unknown) => void;
 }): ReadableStream<Uint8Array> {
   const encoder = new TextEncoder();
+  const iterator = params.publicationPages[Symbol.asyncIterator]();
+  let emittedPrefix = false;
+  let firstAttestation = true;
   return new ReadableStream({
-    async start(controller) {
+    async pull(controller) {
       try {
-        const prefix = JSON.stringify({
-          schemaVersion: "spctre/v1",
-          exportedAt: new Date().toISOString(),
-          workspaceId: params.workspaceId,
-          count: params.evidence.length,
-          decisions: params.evidence,
-        });
-        controller.enqueue(encoder.encode(`${prefix.slice(0, -1)},"publicationAttestations":[`));
-        let first = true;
-        for await (const attestation of params.publicationPages) {
-          controller.enqueue(encoder.encode(`${first ? "" : ","}${JSON.stringify(attestation)}`));
-          first = false;
+        if (!emittedPrefix) {
+          const prefix = [
+            `"schemaVersion":${JSON.stringify("spctre/v1")}`,
+            `"exportedAt":${JSON.stringify(new Date().toISOString())}`,
+            `"workspaceId":${JSON.stringify(params.workspaceId)}`,
+            `"count":${params.evidence.length}`,
+            `"decisions":${JSON.stringify(params.evidence)}`,
+            '"publicationAttestations":[',
+          ].join(",");
+          controller.enqueue(encoder.encode(`{${prefix}`));
+          emittedPrefix = true;
+          return;
+        }
+        const next = await iterator.next();
+        if (!next.done) {
+          controller.enqueue(
+            encoder.encode(`${firstAttestation ? "" : ","}${JSON.stringify(next.value)}`),
+          );
+          firstAttestation = false;
+          return;
         }
         controller.enqueue(
           encoder.encode(
-            `]${params.authorization ? `,"authorization":${JSON.stringify(params.authorization)}` : ""}}`,
+            `]${params.authorization ? `,"authorization":${JSON.stringify(params.authorization)}` : ""},"complete":true}`,
           ),
         );
         params.onComplete();
         controller.close();
       } catch (error) {
         reportSwallowedError("evidenceExport.stream", error);
-        params.onError(error);
         controller.error(error);
       }
     },

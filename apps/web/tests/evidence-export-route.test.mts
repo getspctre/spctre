@@ -120,6 +120,7 @@ describe("evidence export route", () => {
 
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toMatchObject({
+      complete: true,
       authorization: {
         connector: "acquisition-scout",
         revisionGrants: [
@@ -165,6 +166,7 @@ describe("evidence export route", () => {
 
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toMatchObject({
+      complete: true,
       publicationAttestations: expect.arrayContaining([
         expect.objectContaining({ id: "page-1-0" }),
         expect.objectContaining({ id: "page-2-0" }),
@@ -174,6 +176,41 @@ describe("evidence export route", () => {
     expect(listPublicationAttestationsSpy.mock.calls[1]?.[0]).toMatchObject({
       before: { attestedAt: "2026-08-13T18:00:00.000Z", id: "page-1-499" },
     });
+  });
+
+  it("does not query publication attestations for CSV", async () => {
+    listPublicationAttestationsSpy.mockClear();
+    authenticateServiceTokenSpy.mockResolvedValue(evidenceExportAuth);
+
+    const response = await route.GET(
+      createRouteRequest({ path: "/api/evidence/export", method: "GET", token: "token" }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(listPublicationAttestationsSpy).not.toHaveBeenCalled();
+  });
+
+  it("fails the body instead of claiming a completed export when a later page fails", async () => {
+    const firstPage = Array.from({ length: 500 }, (_, index) =>
+      publicationRecord(`page-1-${index}`),
+    );
+    listPublicationAttestationsSpy.mockClear();
+    listPublicationAttestationsSpy
+      .mockResolvedValueOnce(firstPage)
+      .mockRejectedValueOnce(new Error("database unavailable"));
+    authenticateServiceTokenSpy.mockResolvedValue(evidenceExportAuth);
+
+    const response = await route.GET(
+      createRouteRequest({
+        path: "/api/evidence/export?format=json",
+        method: "GET",
+        token: "token",
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.text()).rejects.toThrow("database unavailable");
+    expect(listPublicationAttestationsSpy).toHaveBeenCalledTimes(2);
   });
 
   it("does not mint an AGT verification packet for a session either", async () => {
