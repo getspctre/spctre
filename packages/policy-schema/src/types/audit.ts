@@ -112,6 +112,24 @@ export interface PolicyComplianceEvidenceExport {
     PolicyControlMapping & { stableRuleId: string; effect: RuntimeDecisionStatus }
   >;
   escalationDecisionCount?: number;
+  /** Immutable publication snapshots linked into this audit packet. */
+  publicationAttestations?: PublicationAttestationEvidence[];
+  publicationAttestationCount?: number;
+}
+
+/** Framework-neutral publication evidence; legal conclusions remain in control mappings. */
+export interface PublicationAttestationEvidence {
+  id: string;
+  contentHash: string;
+  contentIdentity: string;
+  contentVersion: string;
+  supersedesId: string | null;
+  payloadHash: string;
+  policyContext: Record<string, string>;
+  receiptVerified: boolean;
+  attestedAt: string;
+  createdAt: string;
+  payload: Record<string, unknown>;
 }
 
 /** Bounded, destination-neutral hand-off request for an external GRC consumer. */

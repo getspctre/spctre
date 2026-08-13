@@ -3,6 +3,10 @@ import { createRouteRequest } from "./route-test-helper";
 
 const authenticateServiceTokenSpy = vi.fn();
 
+vi.mock("@/lib/tenant-context", () => ({
+  runWithTenantContext: vi.fn(async (_tenantId: string, operation: () => unknown) => operation()),
+}));
+
 vi.mock("@/lib/repositories/gateway", () => ({
   getGatewayOutcomesForDecisions: vi.fn().mockResolvedValue(new Map()),
 }));

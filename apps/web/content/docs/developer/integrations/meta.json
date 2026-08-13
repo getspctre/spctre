@@ -10,6 +10,7 @@
     "notion",
     "siem-streaming",
     "git-checkpoints",
+    "publication-attestations",
     "python-sdk",
     "typescript-sdk",
     "bedrock-agentcore",

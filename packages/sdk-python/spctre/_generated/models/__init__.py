@@ -117,6 +117,9 @@ from .gateway_resolve_request_resolution_outcome import (
 from .gateway_resolve_response_200 import GatewayResolveResponse200
 from .gateway_webhook_request import GatewayWebhookRequest
 from .get_open_api_spec_response_200 import GetOpenApiSpecResponse200
+from .get_publication_attestation_response_200 import (
+    GetPublicationAttestationResponse200,
+)
 from .git_checkpoint_ingest_request import GitCheckpointIngestRequest
 from .git_checkpoint_ingest_request_agent import GitCheckpointIngestRequestAgent
 from .git_checkpoint_ingest_request_checkpoint import (
@@ -146,6 +149,9 @@ from .ingest_generic_json_evidence_body import IngestGenericJsonEvidenceBody
 from .ingest_otlp_logs_body import IngestOtlpLogsBody
 from .ingest_trust_score_response_201 import IngestTrustScoreResponse201
 from .list_escalations_response_200 import ListEscalationsResponse200
+from .list_publication_attestations_response_200 import (
+    ListPublicationAttestationsResponse200,
+)
 from .list_verifications_response_200 import ListVerificationsResponse200
 from .list_verifications_response_200_results_item import (
     ListVerificationsResponse200ResultsItem,
@@ -155,10 +161,63 @@ from .policy_content_artifact_retain_response import PolicyContentArtifactRetain
 from .policy_import_request import PolicyImportRequest
 from .policy_import_request_scope import PolicyImportRequestScope
 from .policy_import_response import PolicyImportResponse
+from .publication_attestation_ingest_request import PublicationAttestationIngestRequest
+from .publication_attestation_ingest_request_attestation import (
+    PublicationAttestationIngestRequestAttestation,
+)
+from .publication_attestation_ingest_request_attestation_classification import (
+    PublicationAttestationIngestRequestAttestationClassification,
+)
+from .publication_attestation_ingest_request_attestation_content import (
+    PublicationAttestationIngestRequestAttestationContent,
+)
+from .publication_attestation_ingest_request_attestation_content_modality import (
+    PublicationAttestationIngestRequestAttestationContentModality,
+)
+from .publication_attestation_ingest_request_attestation_disclosure import (
+    PublicationAttestationIngestRequestAttestationDisclosure,
+)
+from .publication_attestation_ingest_request_attestation_editorial import (
+    PublicationAttestationIngestRequestAttestationEditorial,
+)
+from .publication_attestation_ingest_request_attestation_generation import (
+    PublicationAttestationIngestRequestAttestationGeneration,
+)
+from .publication_attestation_ingest_request_attestation_publisher import (
+    PublicationAttestationIngestRequestAttestationPublisher,
+)
+from .publication_attestation_ingest_request_attestation_schema import (
+    PublicationAttestationIngestRequestAttestationSchema,
+)
+from .publication_attestation_ingest_request_attestation_timestamps import (
+    PublicationAttestationIngestRequestAttestationTimestamps,
+)
+from .publication_attestation_ingest_request_receipt import (
+    PublicationAttestationIngestRequestReceipt,
+)
+from .publication_attestation_ingest_response import (
+    PublicationAttestationIngestResponse,
+)
+from .publication_attestation_record import PublicationAttestationRecord
+from .publication_attestation_record_payload import PublicationAttestationRecordPayload
+from .publication_attestation_record_policy_context import (
+    PublicationAttestationRecordPolicyContext,
+)
+from .publication_content_artifact_retain_response import (
+    PublicationContentArtifactRetainResponse,
+)
+from .publication_signing_key_challenge_request import (
+    PublicationSigningKeyChallengeRequest,
+)
+from .publication_signing_key_enroll_request import PublicationSigningKeyEnrollRequest
+from .publication_signing_key_enroll_request_proof import (
+    PublicationSigningKeyEnrollRequestProof,
+)
 from .register_agt_escalation_request_body import RegisterAgtEscalationRequestBody
 from .retain_latest_published_bundle_response_201 import (
     RetainLatestPublishedBundleResponse201,
 )
+from .revoke_publication_signing_key_body import RevokePublicationSigningKeyBody
 from .runtime_decision_status import RuntimeDecisionStatus
 from .runtime_policy_context import RuntimePolicyContext
 from .runtime_policy_context_scope import RuntimePolicyContextScope
@@ -269,6 +328,7 @@ __all__ = (
     "GatewayResolveResponse200",
     "GatewayWebhookRequest",
     "GetOpenApiSpecResponse200",
+    "GetPublicationAttestationResponse200",
     "GitCheckpointIngestRequest",
     "GitCheckpointIngestRequestAgent",
     "GitCheckpointIngestRequestCheckpoint",
@@ -284,6 +344,7 @@ __all__ = (
     "IngestOtlpLogsBody",
     "IngestTrustScoreResponse201",
     "ListEscalationsResponse200",
+    "ListPublicationAttestationsResponse200",
     "ListVerificationsResponse200",
     "ListVerificationsResponse200ResultsItem",
     "Pagination",
@@ -291,8 +352,29 @@ __all__ = (
     "PolicyImportRequest",
     "PolicyImportRequestScope",
     "PolicyImportResponse",
+    "PublicationAttestationIngestRequest",
+    "PublicationAttestationIngestRequestAttestation",
+    "PublicationAttestationIngestRequestAttestationClassification",
+    "PublicationAttestationIngestRequestAttestationContent",
+    "PublicationAttestationIngestRequestAttestationContentModality",
+    "PublicationAttestationIngestRequestAttestationDisclosure",
+    "PublicationAttestationIngestRequestAttestationEditorial",
+    "PublicationAttestationIngestRequestAttestationGeneration",
+    "PublicationAttestationIngestRequestAttestationPublisher",
+    "PublicationAttestationIngestRequestAttestationSchema",
+    "PublicationAttestationIngestRequestAttestationTimestamps",
+    "PublicationAttestationIngestRequestReceipt",
+    "PublicationAttestationIngestResponse",
+    "PublicationAttestationRecord",
+    "PublicationAttestationRecordPayload",
+    "PublicationAttestationRecordPolicyContext",
+    "PublicationContentArtifactRetainResponse",
+    "PublicationSigningKeyChallengeRequest",
+    "PublicationSigningKeyEnrollRequest",
+    "PublicationSigningKeyEnrollRequestProof",
     "RegisterAgtEscalationRequestBody",
     "RetainLatestPublishedBundleResponse201",
+    "RevokePublicationSigningKeyBody",
     "RuntimeDecisionStatus",
     "RuntimePolicyContext",
     "RuntimePolicyContextScope",

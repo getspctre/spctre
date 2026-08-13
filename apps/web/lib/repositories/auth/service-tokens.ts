@@ -16,7 +16,9 @@ export type ServiceTokenScope =
   | "members:read"
   | "workspaces:read"
   | "e2e:write"
-  | "evidence:export";
+  | "evidence:export"
+  | "evidence:read"
+  | "evidence:manage";
 
 // Runtime agent tokens (issued by `spctre init`) get only these scopes. They
 // deliberately exclude policy:import and blueprint:import so a runtime agent can
@@ -41,6 +43,8 @@ export const ALL_API_KEY_SCOPES: ServiceTokenScope[] = [
   "workspaces:read",
   "e2e:write",
   "evidence:export",
+  "evidence:read",
+  "evidence:manage",
 ];
 export const ADMIN_ISSUABLE_API_KEY_SCOPES: ServiceTokenScope[] = ALL_API_KEY_SCOPES.filter(
   (scope) => scope !== "e2e:write",

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/oapi-codegen/runtime"
+	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
 // Defines values for BundleExportFormat.
@@ -416,6 +417,48 @@ func (e PolicyImportRequestScope) Valid() bool {
 	case PolicyImportRequestScopeORGANIZATION:
 		return true
 	case PolicyImportRequestScopeWORKSPACE:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PublicationAttestationIngestRequestAttestationContentModality.
+const (
+	Audio PublicationAttestationIngestRequestAttestationContentModality = "audio"
+	Image PublicationAttestationIngestRequestAttestationContentModality = "image"
+	Other PublicationAttestationIngestRequestAttestationContentModality = "other"
+	Text  PublicationAttestationIngestRequestAttestationContentModality = "text"
+	Video PublicationAttestationIngestRequestAttestationContentModality = "video"
+)
+
+// Valid indicates whether the value is a known member of the PublicationAttestationIngestRequestAttestationContentModality enum.
+func (e PublicationAttestationIngestRequestAttestationContentModality) Valid() bool {
+	switch e {
+	case Audio:
+		return true
+	case Image:
+		return true
+	case Other:
+		return true
+	case Text:
+		return true
+	case Video:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PublicationAttestationIngestRequestAttestationSchema.
+const (
+	SpctrePublicationAttestationV1 PublicationAttestationIngestRequestAttestationSchema = "spctre.publication-attestation.v1"
+)
+
+// Valid indicates whether the value is a known member of the PublicationAttestationIngestRequestAttestationSchema enum.
+func (e PublicationAttestationIngestRequestAttestationSchema) Valid() bool {
+	switch e {
+	case SpctrePublicationAttestationV1:
 		return true
 	default:
 		return false
@@ -1427,6 +1470,16 @@ type Pagination struct {
 	Total  int `json:"total"`
 }
 
+// PolicyContentArtifactRetainResponse defines model for PolicyContentArtifactRetainResponse.
+type PolicyContentArtifactRetainResponse struct {
+	// ContentHash SHA-256 identity of the exact retained bytes.
+	ContentHash string  `json:"contentHash"`
+	Meta        APIMeta `json:"meta"`
+
+	// Retained True when the byte-exact artifact is durably retained (including idempotent repeats).
+	Retained bool `json:"retained"`
+}
+
 // PolicyImportRequest defines model for PolicyImportRequest.
 type PolicyImportRequest struct {
 	// BranchName Target branch name. Lowercase letters, digits, hyphens, and slashes; cannot start or end with a hyphen or slash.
@@ -1468,6 +1521,87 @@ type PolicyImportResponse struct {
 
 	// SourceHash SHA-256 (truncated) of the imported source.
 	SourceHash string `json:"sourceHash"`
+}
+
+// PublicationAttestationIngestRequest Framework-agnostic publication facts. Clients submit normalized facts bound to a previously retained byte-exact artifact; the server never fetches a URL, renders a page, or adjudicates compliance.
+type PublicationAttestationIngestRequest struct {
+	Attestation    PublicationAttestationIngestRequest_Attestation `json:"attestation"`
+	IdempotencyKey string                                          `json:"idempotencyKey"`
+	Receipt        *map[string]interface{}                         `json:"receipt,omitempty"`
+}
+
+// PublicationAttestationIngestRequestAttestationContentModality defines model for PublicationAttestationIngestRequest.Attestation.Content.Modality.
+type PublicationAttestationIngestRequestAttestationContentModality string
+
+// PublicationAttestationIngestRequestAttestationSchema defines model for PublicationAttestationIngestRequest.Attestation.Schema.
+type PublicationAttestationIngestRequestAttestationSchema string
+
+// PublicationAttestationIngestRequest_Attestation defines model for PublicationAttestationIngestRequest.Attestation.
+type PublicationAttestationIngestRequest_Attestation struct {
+	AttestationID  openapi_types.UUID      `json:"attestationId"`
+	Classification *map[string]interface{} `json:"classification,omitempty"`
+	Content        struct {
+		ArtifactRef string                                                        `json:"artifactRef"`
+		Hash        string                                                        `json:"hash"`
+		Identity    string                                                        `json:"identity"`
+		Modality    PublicationAttestationIngestRequestAttestationContentModality `json:"modality"`
+		Version     string                                                        `json:"version"`
+	} `json:"content"`
+	Disclosure           map[string]interface{}                               `json:"disclosure"`
+	Editorial            map[string]interface{}                               `json:"editorial"`
+	Generation           map[string]interface{}                               `json:"generation"`
+	Publisher            map[string]interface{}                               `json:"publisher"`
+	Schema               PublicationAttestationIngestRequestAttestationSchema `json:"schema"`
+	Supersedes           *openapi_types.UUID                                  `json:"supersedes,omitempty"`
+	Timestamps           map[string]interface{}                               `json:"timestamps"`
+	AdditionalProperties map[string]interface{}                               `json:"-"`
+}
+
+// PublicationAttestationIngestResponse defines model for PublicationAttestationIngestResponse.
+type PublicationAttestationIngestResponse struct {
+	AttestationID   openapi_types.UUID `json:"attestationId"`
+	Deduplicated    bool               `json:"deduplicated"`
+	Meta            APIMeta            `json:"meta"`
+	ReceiptVerified bool               `json:"receiptVerified"`
+}
+
+// PublicationAttestationRecord defines model for PublicationAttestationRecord.
+type PublicationAttestationRecord struct {
+	AttestedAt      time.Time              `json:"attestedAt"`
+	ContentHash     string                 `json:"contentHash"`
+	ContentIdentity string                 `json:"contentIdentity"`
+	ContentVersion  string                 `json:"contentVersion"`
+	CreatedAt       time.Time              `json:"createdAt"`
+	ID              openapi_types.UUID     `json:"id"`
+	Payload         map[string]interface{} `json:"payload"`
+	PayloadHash     string                 `json:"payloadHash"`
+	PolicyContext   map[string]string      `json:"policyContext"`
+	ReceiptVerified bool                   `json:"receiptVerified"`
+	SupersedesID    *openapi_types.UUID    `json:"supersedesId,omitempty"`
+}
+
+// PublicationContentArtifactRetainResponse defines model for PublicationContentArtifactRetainResponse.
+type PublicationContentArtifactRetainResponse struct {
+	ContentHash string  `json:"contentHash"`
+	Meta        APIMeta `json:"meta"`
+	Retained    bool    `json:"retained"`
+}
+
+// PublicationSigningKeyChallengeRequest defines model for PublicationSigningKeyChallengeRequest.
+type PublicationSigningKeyChallengeRequest struct {
+	EntityRef string `json:"entityRef"`
+	KeyID     string `json:"keyId"`
+	PublicKey string `json:"publicKey"`
+}
+
+// PublicationSigningKeyEnrollRequest defines model for PublicationSigningKeyEnrollRequest.
+type PublicationSigningKeyEnrollRequest struct {
+	ChallengeID   openapi_types.UUID     `json:"challengeId"`
+	EntityRef     string                 `json:"entityRef"`
+	KeyID         string                 `json:"keyId"`
+	Proof         map[string]interface{} `json:"proof"`
+	PublicKey     string                 `json:"publicKey"`
+	ReplacesKeyID *openapi_types.UUID    `json:"replacesKeyId,omitempty"`
 }
 
 // RuntimeDecisionStatus defines model for RuntimeDecisionStatus.
@@ -1579,6 +1713,12 @@ type VerificationIngestRequest struct {
 	// Summary Arbitrary verification summary payload.
 	Summary          *map[string]interface{}                   `json:"summary,omitempty"`
 	VerificationType VerificationIngestRequestVerificationType `json:"verificationType"`
+
+	// VerifierDigest Immutable verifier build or configuration digest.
+	VerifierDigest *string `json:"verifierDigest,omitempty"`
+
+	// VerifierID Verifier implementation identity.
+	VerifierID *string `json:"verifierId,omitempty"`
 }
 
 // VerificationIngestRequestCompatibilityCheckOutcome defines model for VerificationIngestRequest.CompatibilityCheckOutcome.
@@ -1683,16 +1823,85 @@ type ForensicEvidenceQueryParams struct {
 // ForensicEvidenceQuery402JSONResponseBodyPlan defines parameters for ForensicEvidenceQuery.
 type ForensicEvidenceQuery402JSONResponseBodyPlan string
 
+// RetainPolicyContentArtifactJSONBody defines parameters for RetainPolicyContentArtifact.
+type RetainPolicyContentArtifactJSONBody = openapi_types.File
+
+// RetainPolicyContentArtifactTextBody defines parameters for RetainPolicyContentArtifact.
+type RetainPolicyContentArtifactTextBody = openapi_types.File
+
+// RetainPolicyContentArtifactParams defines parameters for RetainPolicyContentArtifact.
+type RetainPolicyContentArtifactParams struct {
+	// XSpctreContentHash SHA-256 identity (`sha256:<hex>`) of the request body bytes.
+	XSpctreContentHash string `json:"X-Spctre-Content-Hash"`
+}
+
+// RetainPublicationContentArtifactParams defines parameters for RetainPublicationContentArtifact.
+type RetainPublicationContentArtifactParams struct {
+	XSpctreContentHash string `json:"X-Spctre-Content-Hash"`
+}
+
+// ListPublicationSigningKeysParams defines parameters for ListPublicationSigningKeys.
+type ListPublicationSigningKeysParams struct {
+	EntityRef *string `form:"entityRef,omitempty" json:"entityRef,omitempty"`
+}
+
+// RevokePublicationSigningKeyJSONBody defines parameters for RevokePublicationSigningKey.
+type RevokePublicationSigningKeyJSONBody struct {
+	Reason *string `json:"reason,omitempty"`
+}
+
+// ListPublicationAttestationsParams defines parameters for ListPublicationAttestations.
+type ListPublicationAttestationsParams struct {
+	ContentIdentity *string             `form:"contentIdentity,omitempty" json:"contentIdentity,omitempty"`
+	Before          *openapi_types.UUID `form:"before,omitempty" json:"before,omitempty"`
+	Limit           *int                `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
 // ListEscalationsParams defines parameters for ListEscalations.
 type ListEscalationsParams struct {
 	// Limit Maximum number of items to return.
 	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
+// RegisterAgtEscalationRequestJSONBody defines parameters for RegisterAgtEscalationRequest.
+type RegisterAgtEscalationRequestJSONBody struct {
+	AgtRequestID string `json:"agtRequestId"`
+	DecisionID   string `json:"decisionId"`
+}
+
 // GetEscalationStatusParams defines parameters for GetEscalationStatus.
 type GetEscalationStatusParams struct {
 	// DecisionID The unique gateway decision ID.
 	DecisionID string `form:"decisionId" json:"decisionId"`
+}
+
+// IngestCloudEventEvidenceJSONBody defines parameters for IngestCloudEventEvidence.
+type IngestCloudEventEvidenceJSONBody map[string]interface{}
+
+// IngestCloudEventEvidenceParams defines parameters for IngestCloudEventEvidence.
+type IngestCloudEventEvidenceParams struct {
+	XSpctreIntegrationID openapi_types.UUID `json:"x-spctre-integration-id"`
+}
+
+// IngestGenericJSONEvidenceJSONBody defines parameters for IngestGenericJSONEvidence.
+type IngestGenericJSONEvidenceJSONBody map[string]interface{}
+
+// IngestGenericJSONEvidenceParams defines parameters for IngestGenericJSONEvidence.
+type IngestGenericJSONEvidenceParams struct {
+	XSpctreIntegrationID openapi_types.UUID `json:"x-spctre-integration-id"`
+}
+
+// IngestGenericNdjsonEvidenceParams defines parameters for IngestGenericNdjsonEvidence.
+type IngestGenericNdjsonEvidenceParams struct {
+	XSpctreIntegrationID openapi_types.UUID `json:"x-spctre-integration-id"`
+}
+
+// IngestOtlpLogsJSONBody defines parameters for IngestOtlpLogs.
+type IngestOtlpLogsJSONBody map[string]interface{}
+
+// IngestOtlpLogsParams defines parameters for IngestOtlpLogs.
+type IngestOtlpLogsParams struct {
+	XSpctreIntegrationID openapi_types.UUID `json:"x-spctre-integration-id"`
 }
 
 // ScimListUsersParams defines parameters for ScimListUsers.
@@ -1736,6 +1945,24 @@ type IngestEvidenceJSONRequestBody = EvidenceIngestRequest
 // IngestGitCheckpointJSONRequestBody defines body for IngestGitCheckpoint for application/json ContentType.
 type IngestGitCheckpointJSONRequestBody = GitCheckpointIngestRequest
 
+// RetainPolicyContentArtifactJSONRequestBody defines body for RetainPolicyContentArtifact for application/json ContentType.
+type RetainPolicyContentArtifactJSONRequestBody = RetainPolicyContentArtifactJSONBody
+
+// RetainPolicyContentArtifactTextRequestBody defines body for RetainPolicyContentArtifact for text/plain ContentType.
+type RetainPolicyContentArtifactTextRequestBody = RetainPolicyContentArtifactTextBody
+
+// EnrollPublicationSigningKeyJSONRequestBody defines body for EnrollPublicationSigningKey for application/json ContentType.
+type EnrollPublicationSigningKeyJSONRequestBody = PublicationSigningKeyEnrollRequest
+
+// CreatePublicationSigningKeyChallengeJSONRequestBody defines body for CreatePublicationSigningKeyChallenge for application/json ContentType.
+type CreatePublicationSigningKeyChallengeJSONRequestBody = PublicationSigningKeyChallengeRequest
+
+// RevokePublicationSigningKeyJSONRequestBody defines body for RevokePublicationSigningKey for application/json ContentType.
+type RevokePublicationSigningKeyJSONRequestBody RevokePublicationSigningKeyJSONBody
+
+// IngestPublicationAttestationJSONRequestBody defines body for IngestPublicationAttestation for application/json ContentType.
+type IngestPublicationAttestationJSONRequestBody = PublicationAttestationIngestRequest
+
 // IngestHeliconeGatewayEventJSONRequestBody defines body for IngestHeliconeGatewayEvent for application/json ContentType.
 type IngestHeliconeGatewayEventJSONRequestBody = GatewayWebhookRequest
 
@@ -1751,8 +1978,20 @@ type IngestPortkeyGatewayEventJSONRequestBody = GatewayWebhookRequest
 // GatewayDecideJSONRequestBody defines body for GatewayDecide for application/json ContentType.
 type GatewayDecideJSONRequestBody = GatewayDecisionRequest
 
+// RegisterAgtEscalationRequestJSONRequestBody defines body for RegisterAgtEscalationRequest for application/json ContentType.
+type RegisterAgtEscalationRequestJSONRequestBody RegisterAgtEscalationRequestJSONBody
+
 // GatewayResolveJSONRequestBody defines body for GatewayResolve for application/json ContentType.
 type GatewayResolveJSONRequestBody = GatewayResolveRequest
+
+// IngestCloudEventEvidenceJSONRequestBody defines body for IngestCloudEventEvidence for application/json ContentType.
+type IngestCloudEventEvidenceJSONRequestBody IngestCloudEventEvidenceJSONBody
+
+// IngestGenericJSONEvidenceJSONRequestBody defines body for IngestGenericJSONEvidence for application/json ContentType.
+type IngestGenericJSONEvidenceJSONRequestBody IngestGenericJSONEvidenceJSONBody
+
+// IngestOtlpLogsJSONRequestBody defines body for IngestOtlpLogs for application/json ContentType.
+type IngestOtlpLogsJSONRequestBody IngestOtlpLogsJSONBody
 
 // ImportPolicyJSONRequestBody defines body for ImportPolicy for application/json ContentType.
 type ImportPolicyJSONRequestBody = PolicyImportRequest
@@ -2130,6 +2369,203 @@ func (a EvidenceIngestRequest_SkillContext) MarshalJSON() ([]byte, error) {
 		object["promptSurface"], err = json.Marshal(a.PromptSurface)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'promptSurface': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for PublicationAttestationIngestRequest_Attestation. Returns the specified
+// element and whether it was found
+func (a PublicationAttestationIngestRequest_Attestation) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for PublicationAttestationIngestRequest_Attestation
+func (a *PublicationAttestationIngestRequest_Attestation) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for PublicationAttestationIngestRequest_Attestation to handle AdditionalProperties
+func (a *PublicationAttestationIngestRequest_Attestation) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["attestationId"]; found {
+		err = json.Unmarshal(raw, &a.AttestationID)
+		if err != nil {
+			return fmt.Errorf("error reading 'attestationId': %w", err)
+		}
+		delete(object, "attestationId")
+	}
+
+	if raw, found := object["classification"]; found {
+		err = json.Unmarshal(raw, &a.Classification)
+		if err != nil {
+			return fmt.Errorf("error reading 'classification': %w", err)
+		}
+		delete(object, "classification")
+	}
+
+	if raw, found := object["content"]; found {
+		err = json.Unmarshal(raw, &a.Content)
+		if err != nil {
+			return fmt.Errorf("error reading 'content': %w", err)
+		}
+		delete(object, "content")
+	}
+
+	if raw, found := object["disclosure"]; found {
+		err = json.Unmarshal(raw, &a.Disclosure)
+		if err != nil {
+			return fmt.Errorf("error reading 'disclosure': %w", err)
+		}
+		delete(object, "disclosure")
+	}
+
+	if raw, found := object["editorial"]; found {
+		err = json.Unmarshal(raw, &a.Editorial)
+		if err != nil {
+			return fmt.Errorf("error reading 'editorial': %w", err)
+		}
+		delete(object, "editorial")
+	}
+
+	if raw, found := object["generation"]; found {
+		err = json.Unmarshal(raw, &a.Generation)
+		if err != nil {
+			return fmt.Errorf("error reading 'generation': %w", err)
+		}
+		delete(object, "generation")
+	}
+
+	if raw, found := object["publisher"]; found {
+		err = json.Unmarshal(raw, &a.Publisher)
+		if err != nil {
+			return fmt.Errorf("error reading 'publisher': %w", err)
+		}
+		delete(object, "publisher")
+	}
+
+	if raw, found := object["schema"]; found {
+		err = json.Unmarshal(raw, &a.Schema)
+		if err != nil {
+			return fmt.Errorf("error reading 'schema': %w", err)
+		}
+		delete(object, "schema")
+	}
+
+	if raw, found := object["supersedes"]; found {
+		err = json.Unmarshal(raw, &a.Supersedes)
+		if err != nil {
+			return fmt.Errorf("error reading 'supersedes': %w", err)
+		}
+		delete(object, "supersedes")
+	}
+
+	if raw, found := object["timestamps"]; found {
+		err = json.Unmarshal(raw, &a.Timestamps)
+		if err != nil {
+			return fmt.Errorf("error reading 'timestamps': %w", err)
+		}
+		delete(object, "timestamps")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for PublicationAttestationIngestRequest_Attestation to handle AdditionalProperties
+func (a PublicationAttestationIngestRequest_Attestation) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["attestationId"], err = json.Marshal(a.AttestationID)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'attestationId': %w", err)
+	}
+
+	if a.Classification != nil {
+		object["classification"], err = json.Marshal(a.Classification)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'classification': %w", err)
+		}
+	}
+
+	object["content"], err = json.Marshal(a.Content)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'content': %w", err)
+	}
+
+	if a.Disclosure != nil {
+		object["disclosure"], err = json.Marshal(a.Disclosure)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'disclosure': %w", err)
+		}
+	}
+
+	if a.Editorial != nil {
+		object["editorial"], err = json.Marshal(a.Editorial)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'editorial': %w", err)
+		}
+	}
+
+	if a.Generation != nil {
+		object["generation"], err = json.Marshal(a.Generation)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'generation': %w", err)
+		}
+	}
+
+	if a.Publisher != nil {
+		object["publisher"], err = json.Marshal(a.Publisher)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'publisher': %w", err)
+		}
+	}
+
+	object["schema"], err = json.Marshal(a.Schema)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'schema': %w", err)
+	}
+
+	if a.Supersedes != nil {
+		object["supersedes"], err = json.Marshal(a.Supersedes)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'supersedes': %w", err)
+		}
+	}
+
+	if a.Timestamps != nil {
+		object["timestamps"], err = json.Marshal(a.Timestamps)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'timestamps': %w", err)
 		}
 	}
 

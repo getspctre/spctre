@@ -345,7 +345,7 @@ describe("SPCTRE_OPENAPI_SPEC", () => {
     const schemas = SPCTRE_OPENAPI_SPEC.components.schemas as Record<
       string,
       {
-        properties?: Record<string, { additionalProperties?: boolean }>;
+        properties?: Record<string, { additionalProperties?: boolean | Record<string, unknown> }>;
         additionalProperties?: boolean;
       }
     >;

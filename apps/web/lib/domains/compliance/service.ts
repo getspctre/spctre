@@ -57,6 +57,7 @@ import { listRulesForRevision } from "@/lib/repositories/shared/rules";
 import { listRuntimeEvidence } from "@/lib/repositories/evidence/runtime";
 import { recordConversionTelemetry } from "@/lib/repositories/onboarding/telemetry";
 import { listActionReceipts } from "@/lib/repositories/action-receipts";
+import { listPublicationAttestations } from "@/lib/repositories/publication-attestations";
 import { listGrcDeliveryAttempts } from "@/lib/repositories/grc-delivery-attempts";
 import {
   listGrcDeliveryDestinations,
@@ -97,6 +98,7 @@ async function getCompliancePacketInTenant(
     resolvedEscalations,
     approvalWorkflow,
     actionReceipts,
+    publicationAttestations,
   ] = await Promise.all([
     listRulesForRevision(published.revision_id, tenantId),
     getApprovals(published.revision_id, tenantId),
@@ -106,6 +108,9 @@ async function getCompliancePacketInTenant(
     getApprovalWorkflowForContext({ tenantId, workspaceId, environment: "production" }),
     listActionReceipts({ tenantId, workspaceId, revisionId: published.revision_id }).catch(
       swallow("listActionReceipts", []),
+    ),
+    listPublicationAttestations({ tenantId, workspaceId, limit: 500 }).catch(
+      swallow("listPublicationAttestations", []),
     ),
   ]);
   const generatedAt = new Date().toISOString();
@@ -232,6 +237,7 @@ async function getCompliancePacketInTenant(
       evidence,
       generatedAt,
       retentionDays: DEFAULT_COMPLIANCE_RETENTION_DAYS,
+      publicationAttestations,
     }),
   };
 }

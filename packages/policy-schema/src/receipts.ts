@@ -35,27 +35,27 @@ export interface SignedActionReceipt {
   };
 }
 
+export interface SignedPayloadReceipt<T extends { schema: string }> {
+  payload: T;
+  signature: SignedActionReceipt["signature"];
+}
+
 type JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue };
 
-export function canonicalizeActionReceiptPayload(payload: ActionReceiptPayload): string {
+export function canonicalizeReceiptPayload<T extends { schema: string }>(payload: T): string {
   return stableJsonStringify(payload as unknown as JsonValue);
 }
 
-export function signActionReceipt(params: {
-  payload: Omit<ActionReceiptPayload, "schema" | "receiptId"> & { receiptId?: string };
+export function signPayloadReceipt<T extends { schema: string }>(params: {
+  payload: T;
   privateKey: string;
   keyId: string;
-}): SignedActionReceipt {
-  const payload: ActionReceiptPayload = {
-    schema: "spctre.action-receipt.v1",
-    receiptId: params.payload.receiptId ?? randomUUID(),
-    ...params.payload,
-  };
-  const canonical = canonicalizeActionReceiptPayload(payload);
+}): SignedPayloadReceipt<T> {
+  const canonical = canonicalizeReceiptPayload(params.payload);
   const privateKey = createPrivateKey(params.privateKey);
   const publicKey = createPublicKey(privateKey.export({ type: "pkcs8", format: "pem" }));
   return {
-    payload,
+    payload: params.payload,
     signature: {
       algorithm: "Ed25519",
       keyId: params.keyId,
@@ -66,16 +66,13 @@ export function signActionReceipt(params: {
   };
 }
 
-export function verifyActionReceipt(receipt: SignedActionReceipt): {
-  verified: boolean;
-  reason?: string;
-} {
-  if (receipt.payload.schema !== "spctre.action-receipt.v1")
-    return { verified: false, reason: "Unsupported receipt schema." };
+export function verifyPayloadReceipt<T extends { schema: string }>(
+  receipt: SignedPayloadReceipt<T>,
+): { verified: boolean; reason?: string } {
   if (receipt.signature.algorithm !== "Ed25519")
     return { verified: false, reason: "Unsupported signature algorithm." };
   try {
-    const canonical = canonicalizeActionReceiptPayload(receipt.payload);
+    const canonical = canonicalizeReceiptPayload(receipt.payload);
     const payloadHash = `sha256:${createHash("sha256").update(canonical).digest("hex")}`;
     if (payloadHash !== receipt.signature.payloadHash)
       return { verified: false, reason: "Payload hash mismatch." };
@@ -95,6 +92,32 @@ export function verifyActionReceipt(receipt: SignedActionReceipt): {
   } catch {
     return { verified: false, reason: "Invalid receipt encoding." };
   }
+}
+
+export function canonicalizeActionReceiptPayload(payload: ActionReceiptPayload): string {
+  return canonicalizeReceiptPayload(payload);
+}
+
+export function signActionReceipt(params: {
+  payload: Omit<ActionReceiptPayload, "schema" | "receiptId"> & { receiptId?: string };
+  privateKey: string;
+  keyId: string;
+}): SignedActionReceipt {
+  const payload: ActionReceiptPayload = {
+    schema: "spctre.action-receipt.v1",
+    receiptId: params.payload.receiptId ?? randomUUID(),
+    ...params.payload,
+  };
+  return signPayloadReceipt({ payload, privateKey: params.privateKey, keyId: params.keyId });
+}
+
+export function verifyActionReceipt(receipt: SignedActionReceipt): {
+  verified: boolean;
+  reason?: string;
+} {
+  if (receipt.payload.schema !== "spctre.action-receipt.v1")
+    return { verified: false, reason: "Unsupported receipt schema." };
+  return verifyPayloadReceipt(receipt);
 }
 
 function stableJsonStringify(value: JsonValue): string {
