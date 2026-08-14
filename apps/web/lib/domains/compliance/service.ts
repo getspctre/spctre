@@ -272,7 +272,9 @@ export async function getComplianceVerificationStatus(params: {
 }
 
 export async function recordComplianceExportConversion(tenantId: string): Promise<void> {
-  await recordConversionTelemetry(tenantId, "FIRST_COMPLIANCE_EXPORT");
+  await runWithTenantContext(tenantId, () =>
+    recordConversionTelemetry(tenantId, "FIRST_COMPLIANCE_EXPORT"),
+  );
 }
 
 export async function recordComplianceOperation(params: Parameters<typeof appendOperationsLog>[0]) {
@@ -305,7 +307,9 @@ export async function getEvidenceRetentionPlan(
   workspaceId: string | null,
   tenantId: string,
 ): Promise<EvidenceRetentionPlan | null> {
-  const evidence = await listRuntimeEvidence(workspaceId, tenantId);
+  const evidence = await runWithTenantContext(tenantId, () =>
+    listRuntimeEvidence(workspaceId, tenantId),
+  );
   if (!evidence.length) return null;
 
   const profile = await getCommercialProfile(tenantId).catch(swallow("getCommercialProfile", null));

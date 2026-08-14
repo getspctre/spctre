@@ -28,11 +28,13 @@ export async function listIdentityEvents(params: {
   eventType?: IdentityLifecycleEventType;
   limit: number;
 }) {
-  return listIdentityLifecycleEvents(params.tenantId, {
-    principalId: params.principalId,
-    eventType: params.eventType,
-    limit: params.limit,
-  });
+  return runWithTenantContext(params.tenantId, () =>
+    listIdentityLifecycleEvents(params.tenantId, {
+      principalId: params.principalId,
+      eventType: params.eventType,
+      limit: params.limit,
+    }),
+  );
 }
 
 export async function recordIdentityOperation(params: Parameters<typeof appendOperationsLog>[0]) {
