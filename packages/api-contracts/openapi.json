@@ -2481,6 +2481,266 @@
         }
       }
     },
+    "/workspaces": {
+      "get": {
+        "operationId": "listWorkspaces",
+        "summary": "List the workspaces a credential can reach",
+        "x-spctre-plan": "oss",
+        "tags": [
+          "Operations"
+        ],
+        "responses": {
+          "200": {
+            "description": "Workspaces visible to the caller."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/members": {
+      "get": {
+        "operationId": "listMembers",
+        "summary": "List the members of the active workspace",
+        "x-spctre-plan": "oss",
+        "tags": [
+          "Operations"
+        ],
+        "responses": {
+          "200": {
+            "description": "Members of the active workspace."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/approvals/queue": {
+      "get": {
+        "operationId": "listApprovalQueue",
+        "summary": "List approvals awaiting a decision",
+        "x-spctre-plan": "oss",
+        "tags": [
+          "Review"
+        ],
+        "responses": {
+          "200": {
+            "description": "Approvals awaiting a reviewer."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/compliance/status": {
+      "get": {
+        "operationId": "getComplianceStatus",
+        "summary": "Report the published compliance packet's status",
+        "description": "Answers 200 with `available: false` when no policy revision has been published, rather than 404: the absence of a packet is a reportable state, not a missing resource.",
+        "x-spctre-plan": "oss",
+        "tags": [
+          "Compliance"
+        ],
+        "responses": {
+          "200": {
+            "description": "Compliance status, which may report no published packet."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/agents/{id}/audit": {
+      "get": {
+        "operationId": "getAgentAudit",
+        "summary": "Summarise one agent's governed decisions",
+        "x-spctre-plan": "oss",
+        "tags": [
+          "Operations"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Agent identifier. Free-form, as issued by the runtime.",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Decisions and a summary carrying allowed/blocked/warned/escalated counts and a compliance status."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/trust/history": {
+      "get": {
+        "operationId": "getTrustHistory",
+        "summary": "List an agent's trust-score history",
+        "x-spctre-plan": "oss",
+        "tags": [
+          "Trust"
+        ],
+        "parameters": [
+          {
+            "name": "agentId",
+            "in": "query",
+            "required": true,
+            "description": "Required; the endpoint answers 400 without it.",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Trust events for the agent, most recent first."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/identity/events": {
+      "get": {
+        "operationId": "listIdentityEvents",
+        "summary": "List identity lifecycle events",
+        "x-spctre-plan": "oss",
+        "tags": [
+          "Operations"
+        ],
+        "parameters": [
+          {
+            "name": "principalId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "eventType",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Identity lifecycle events."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/workflow/config": {
+      "get": {
+        "operationId": "getWorkflowConfig",
+        "summary": "Read the workspace's review workflow configuration",
+        "x-spctre-plan": "oss",
+        "tags": [
+          "Review"
+        ],
+        "parameters": [
+          {
+            "name": "environment",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Workflow configuration for the workspace."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/gateway-ingest/mcp": {
+      "post": {
+        "operationId": "ingestMcpGatewayEvent",
+        "summary": "Ingest an MCP gateway event",
+        "description": "The MCP member of the gateway-ingest family, alongside the Helicone, LiteLLM, Notion, and Portkey receivers.",
+        "x-spctre-plan": "oss",
+        "tags": [
+          "Gateway"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Event accepted."
+          },
+          "201": {
+            "description": "Event accepted and evidence recorded."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
     "/ingest/providers/docker_ai_governance": {
       "post": {
         "operationId": "ingestDockerAiGovernanceEvidence",
