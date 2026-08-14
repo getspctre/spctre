@@ -76,7 +76,9 @@ export async function getApprovalDetail(params: {
   workspaceId: string | null;
   tenantId: string;
 }) {
-  return getApprovalById(params.approvalId, params.workspaceId, params.tenantId);
+  return runWithTenantContext(params.tenantId, () =>
+    getApprovalById(params.approvalId, params.workspaceId, params.tenantId),
+  );
 }
 
 export async function listPendingApprovals(params: { workspaceId: string; tenantId: string }) {

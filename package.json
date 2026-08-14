@@ -21,7 +21,7 @@
     "silent:catch": "node scripts/check-silent-catch.mjs",
     "jsonb:check": "node scripts/check-jsonb-serialization.mjs",
     "licenses:check": "node scripts/check-package-licenses.mjs",
-    "oss:check": "node scripts/check-oss-boundary.mjs && node scripts/check-package-licenses.mjs && node scripts/check-raw-sql-imports.mjs && node scripts/check-blueprint-revision-writes.mjs && node scripts/check-pre-session-tenant-binding.mjs && node scripts/check-demo-fallbacks.mjs && node scripts/check-silent-catch.mjs && node scripts/check-jsonb-serialization.mjs && node scripts/check-python-distributions.mjs && node scripts/check-migration-ordering.mjs && node scripts/check-entitlement-claims.mjs",
+    "oss:check": "node scripts/check-oss-boundary.mjs && node scripts/check-package-licenses.mjs && node scripts/check-raw-sql-imports.mjs && node scripts/check-blueprint-revision-writes.mjs && node scripts/check-pre-session-tenant-binding.mjs && node scripts/check-bearer-tenant-binding.mjs && node scripts/check-demo-fallbacks.mjs && node scripts/check-silent-catch.mjs && node scripts/check-jsonb-serialization.mjs && node scripts/check-python-distributions.mjs && node scripts/check-migration-ordering.mjs && node scripts/check-entitlement-claims.mjs",
     "test": "pnpm -r --if-present test && pnpm --filter @spctre/web test:integration",
     "test:coverage": "vitest run --config vitest.coverage.config.ts --coverage",
     "test:coverage:web": "pnpm --filter @spctre/web exec vitest run --coverage",

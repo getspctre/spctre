@@ -357,7 +357,9 @@ export async function listAdapterDeclarationsForWorkspace(params: {
   tenantId: string;
   environment?: string;
 }) {
-  return listAdapterDeclarations(params.workspaceId, params.tenantId, params.environment);
+  return runWithTenantContext(params.tenantId, () =>
+    listAdapterDeclarations(params.workspaceId, params.tenantId, params.environment),
+  );
 }
 
 export async function upsertAdapterDeclarationForWorkspace(

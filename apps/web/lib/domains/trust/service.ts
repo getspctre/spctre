@@ -98,7 +98,9 @@ export async function listTrustHistory(params: {
   tenantId: string;
   limit: number;
 }) {
-  return listTrustScoreHistory(params.agentId, params.workspaceId, params.tenantId, params.limit);
+  return runWithTenantContext(params.tenantId, () =>
+    listTrustScoreHistory(params.agentId, params.workspaceId, params.tenantId, params.limit),
+  );
 }
 
 export async function recordTrustOperation(params: Parameters<typeof appendOperationsLog>[0]) {
