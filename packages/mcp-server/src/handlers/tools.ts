@@ -327,8 +327,17 @@ export async function getPolicyStatus(
       }),
     ]);
 
-    const connectors =
-      adaptersResponse.status === "fulfilled" ? adaptersResponse.value.data || [] : [];
+    // /api/adapters answers `{ adapters, meta }`, so the body is not the list.
+    // Assigning it whole put an object in `connectors`, where callers expect an
+    // array, and made `policies_count` undefined — `.length` of an object.
+    // Accept either shape: a bare array, or the wrapper the API returns.
+    const adaptersBody: unknown =
+      adaptersResponse.status === "fulfilled" ? adaptersResponse.value.data : undefined;
+    const connectors: unknown[] = Array.isArray(adaptersBody)
+      ? adaptersBody
+      : Array.isArray((adaptersBody as { adapters?: unknown })?.adapters)
+        ? ((adaptersBody as { adapters: unknown[] }).adapters ?? [])
+        : [];
     const bundleHeaders = bundleResponse.status === "fulfilled" ? bundleResponse.value.headers : {};
     const revisionId = bundleHeaders["x-spctre-revision-id"] ?? null;
     const artifactHash = bundleHeaders["x-spctre-artifact-hash"] ?? null;
