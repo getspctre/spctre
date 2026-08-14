@@ -72,7 +72,7 @@ def _build_response(
 
 def sync_detailed(
     *,
-    client: AuthenticatedClient | Client,
+    client: AuthenticatedClient,
     body: GatewayResolveRequest,
 ) -> Response[ApiError | GatewayResolveResponse200]:
     """Resolve an escalation queue item
@@ -104,7 +104,7 @@ def sync_detailed(
 
 def sync(
     *,
-    client: AuthenticatedClient | Client,
+    client: AuthenticatedClient,
     body: GatewayResolveRequest,
 ) -> ApiError | GatewayResolveResponse200 | None:
     """Resolve an escalation queue item
@@ -131,7 +131,7 @@ def sync(
 
 async def asyncio_detailed(
     *,
-    client: AuthenticatedClient | Client,
+    client: AuthenticatedClient,
     body: GatewayResolveRequest,
 ) -> Response[ApiError | GatewayResolveResponse200]:
     """Resolve an escalation queue item
@@ -161,7 +161,7 @@ async def asyncio_detailed(
 
 async def asyncio(
     *,
-    client: AuthenticatedClient | Client,
+    client: AuthenticatedClient,
     body: GatewayResolveRequest,
 ) -> ApiError | GatewayResolveResponse200 | None:
     """Resolve an escalation queue item

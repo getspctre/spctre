@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+  AGENT_SUBRESOURCE_PATH,
+  APPROVAL_BY_ID_PATH,
   BILLING_WEBHOOK_PATH,
+  MACHINE_API_PATH_PATTERNS,
   MACHINE_API_PATHS,
   PRE_AUTH_BOOTSTRAP_PATHS,
   PUBLIC_PATH_PREFIXES,
@@ -113,6 +116,44 @@ describe("proxy path invariants", () => {
     const nonApi = [...MACHINE_API_PATHS].filter((pathname) => !pathname.startsWith("/api/"));
 
     expect(nonApi).toEqual([]);
+  });
+
+  // The id-carrying members are patterns, so the reachability obligation is
+  // asserted on paths that exercise them rather than on a list.
+  it("keeps pattern-matched machine API paths reachable past the session gate", () => {
+    for (const pathname of [
+      "/api/agents/scout/audit",
+      "/api/agents/outreach/trust-history",
+      "/api/agents/author/identity-history",
+      "/api/agents/scout/surfaces",
+      "/api/approvals/01J8Z6C2Q9",
+    ]) {
+      expect(
+        MACHINE_API_PATH_PATTERNS.some((pattern) => pattern.test(pathname)),
+        pathname,
+      ).toBe(true);
+      expect(reachablePastSessionGate(pathname), pathname).toBe(true);
+    }
+  });
+
+  it("confines the agent pattern to the named subresources", () => {
+    // A prefix would have granted these too. Writes and future subresources
+    // stay behind the allowlist until someone names them.
+    for (const pathname of [
+      "/api/agents/scout",
+      "/api/agents/scout/audit/export",
+      "/api/agents/scout/delete",
+      "/api/agents//audit",
+      "/api/agents/scout/surfaces/surface-1",
+    ]) {
+      expect(AGENT_SUBRESOURCE_PATH.test(pathname), pathname).toBe(false);
+    }
+  });
+
+  it("confines the approval pattern to a single id segment", () => {
+    for (const pathname of ["/api/approvals", "/api/approvals/abc/decide", "/api/approvals//"]) {
+      expect(APPROVAL_BY_ID_PATH.test(pathname), pathname).toBe(false);
+    }
   });
 
   it("does not exempt a path that a browser session would also reach", () => {

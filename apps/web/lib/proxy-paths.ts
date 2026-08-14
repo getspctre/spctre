@@ -74,6 +74,9 @@ export const SERVICE_API_PATHS = new Set([
   "/api/members",
   "/api/workflow/config",
   "/api/workspaces",
+  "/api/adapters",
+  "/api/identity/events",
+  "/api/trust/history",
 ]);
 
 export const SERVICE_API_PATH_PREFIXES = [
@@ -101,9 +104,13 @@ export const SERVICE_API_PATH_PREFIXES = [
 // internet and reduce the e2e routes to a single boolean's worth of
 // protection. The two sets overlap; they are not the same judgement.
 //
-// Enumerated exactly, with no prefix matching, so the set fails closed: a
-// route added under some future `/api/agents/...` path is IP-restricted until
-// someone deliberately lists it here.
+// Enumerated exactly, so the set fails closed: a route added under some future
+// `/api/agents/...` path is IP-restricted until someone deliberately lists it.
+//
+// Two companions relax that, each with its own justification rather than for
+// convenience: MACHINE_API_PATH_PATTERNS, for paths carrying an id, whose
+// subresources are still named individually; and MACHINE_API_PATH_PREFIXES,
+// which holds only the published API, where CI enforces reviewed membership.
 export const MACHINE_API_PATHS = new Set([
   "/api/evidence",
   "/api/v1/evidence",
@@ -131,7 +138,33 @@ export const MACHINE_API_PATHS = new Set([
   "/api/v1/token/refresh",
   "/api/token/revoke",
   "/api/v1/token/revoke",
+  "/api/adapters",
+  "/api/identity/events",
+  "/api/trust/history",
 ]);
+
+/**
+ * `/api/agents/<id>/<subresource>` — the per-agent reads a governed client makes
+ * about the agents it runs. Each already requires `operations:read`.
+ *
+ * A pattern rather than a prefix: `/api/agents/` alone would also cover writes
+ * and any subresource added later, which is the open-ended grant MACHINE_API_PATHS
+ * exists to avoid. The subresources are named, so adding one is a decision.
+ */
+export const AGENT_SUBRESOURCE_PATH =
+  /^\/api\/agents\/[A-Za-z0-9._-]{1,128}\/(audit|identity-history|surfaces|trust-history)$/;
+
+/**
+ * `/api/approvals/<id>` — the single-approval read, documented as `getApproval`.
+ *
+ * This also matches `/api/approvals/queue`, which is already an exact member;
+ * the overlap changes no behaviour and is preferable to a lookahead that would
+ * have to be kept in step with the queue entry.
+ */
+export const APPROVAL_BY_ID_PATH = /^\/api\/approvals\/[A-Za-z0-9._-]{1,128}$/;
+
+/** Path families excused from the source-IP allowlist, matched by pattern. */
+export const MACHINE_API_PATH_PATTERNS = [AGENT_SUBRESOURCE_PATH, APPROVAL_BY_ID_PATH];
 
 /**
  * Path families excused from the source-IP allowlist by prefix.
@@ -171,7 +204,7 @@ export const SELF_AUTHENTICATING_PATHS = new Set(["/api/internal/provisioning/te
 export const BILLING_WEBHOOK_PATH = /^\/api\/billing\/[a-z0-9-]{1,32}\/webhook$/;
 
 /** Path families reachable past the session gate, matched by pattern. */
-export const SERVICE_API_PATH_PATTERNS = [BILLING_WEBHOOK_PATH];
+export const SERVICE_API_PATH_PATTERNS = [BILLING_WEBHOOK_PATH, APPROVAL_BY_ID_PATH];
 
 /** Path families excused from the source-IP allowlist, matched by pattern. */
 export const SELF_AUTHENTICATING_PATH_PATTERNS = [BILLING_WEBHOOK_PATH];

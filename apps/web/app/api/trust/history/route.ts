@@ -1,33 +1,19 @@
 import { listTrustHistory } from "@/lib/domains/trust/service";
 
-import { getAuthSession } from "@/lib/auth-session";
-import { getActiveScope } from "@/lib/workspace";
 import { extractTraceId, makeMeta, withTraceId } from "@spctre/api-contracts";
-import { swallow } from "@/lib/platform/swallow";
+import { resolveRouteScope } from "../../_route-scope";
 
 export const dynamic = "force-dynamic";
 
 async function handleGetApiTrustHistory(request: Request) {
   const traceId = extractTraceId(request);
-  const session = await getAuthSession().catch(swallow("getAuthSession", null));
-  if (!session)
-    return withTraceId(
-      Response.json(
-        { error: "Authentication required.", meta: makeMeta(traceId) },
-        { status: 401 },
-      ),
-      traceId,
-    );
-
-  const ctx = await getActiveScope().catch(swallow("getActiveScope", null));
-  if (!ctx)
-    return withTraceId(
-      Response.json(
-        { error: "Workspace context unavailable.", meta: makeMeta(traceId) },
-        { status: 400 },
-      ),
-      traceId,
-    );
+  // The MCP server reads trust history for the agents it governs.
+  const scope = await resolveRouteScope(request, {
+    serviceTokenScope: "operations:read",
+    traceId,
+  });
+  if (scope instanceof Response) return scope;
+  const ctx = scope;
 
   const url = new URL(request.url);
   const agentId = url.searchParams.get("agentId")?.trim();

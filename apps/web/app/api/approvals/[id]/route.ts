@@ -1,9 +1,8 @@
 import { getApprovalDetail } from "@/lib/domains/review/service";
 
-import { getAuthSession } from "@/lib/auth-session";
-import { getActiveScope } from "@/lib/workspace";
 import { extractTraceId, makeMeta, withTraceId } from "@spctre/api-contracts";
 import { swallow } from "@/lib/platform/swallow";
+import { resolveRouteScope } from "../../_route-scope";
 
 export const dynamic = "force-dynamic";
 
@@ -12,26 +11,16 @@ async function handleGetApiApprovalsByid(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const traceId = extractTraceId(request);
-  const session = await getAuthSession().catch(swallow("getAuthSession", null));
-  if (!session)
-    return withTraceId(
-      Response.json(
-        { error: "Authentication required.", meta: makeMeta(traceId) },
-        { status: 401 },
-      ),
-      traceId,
-    );
+  // Documented as a bearer endpoint, and read by the MCP server's
+  // spctre://approvals/<id> resource, alongside the queue listing.
+  const scope = await resolveRouteScope(request, {
+    serviceTokenScope: "approvals:read",
+    traceId,
+  });
+  if (scope instanceof Response) return scope;
+  const ctx = scope;
 
   const { id } = await params;
-  const ctx = await getActiveScope().catch(swallow("getActiveScope", null));
-  if (!ctx)
-    return withTraceId(
-      Response.json(
-        { error: "Workspace context unavailable.", meta: makeMeta(traceId) },
-        { status: 400 },
-      ),
-      traceId,
-    );
 
   const approval = await getApprovalDetail({
     approvalId: id,
