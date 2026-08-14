@@ -2475,6 +2475,81 @@
         }
       }
     },
+    "/ingest/providers/docker_ai_governance": {
+      "post": {
+        "operationId": "ingestDockerAiGovernanceEvidence",
+        "summary": "Ingest a Docker AI Governance audit file or single audit event",
+        "description": "Concrete managed-provider route for Docker AI Governance. It deliberately shadows the generic managed-provider route so a shipper can send a sealed JSONL audit file as one bounded request; a JSON body remains compatible with the one-record managed-provider contract.",
+        "x-spctre-plan": "oss",
+        "tags": [
+          "Evidence"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "x-spctre-integration-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            },
+            "application/x-ndjson": {
+              "schema": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "All records duplicated."
+          },
+          "201": {
+            "description": "All records accepted."
+          },
+          "207": {
+            "description": "Record-level outcomes include accepted and rejected records."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "413": {
+            "description": "Request exceeds the receiver limit."
+          },
+          "415": {
+            "description": "Compressed evidence payloads are not supported."
+          },
+          "429": {
+            "description": "Evidence ingest rate limit exceeded."
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceUnavailable"
+          }
+        }
+      }
+    },
     "/ingest/cloudevents": {
       "post": {
         "operationId": "ingestCloudEventEvidence",

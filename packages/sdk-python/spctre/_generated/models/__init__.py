@@ -145,6 +145,9 @@ from .ingest_cloud_event_evidence_body import IngestCloudEventEvidenceBody
 from .ingest_context_budget_event_response_201 import (
     IngestContextBudgetEventResponse201,
 )
+from .ingest_docker_ai_governance_evidence_json_body import (
+    IngestDockerAiGovernanceEvidenceJsonBody,
+)
 from .ingest_generic_json_evidence_body import IngestGenericJsonEvidenceBody
 from .ingest_otlp_logs_body import IngestOtlpLogsBody
 from .ingest_trust_score_response_201 import IngestTrustScoreResponse201
@@ -340,6 +343,7 @@ __all__ = (
     "GitCheckpointIngestRequestMetadata",
     "IngestCloudEventEvidenceBody",
     "IngestContextBudgetEventResponse201",
+    "IngestDockerAiGovernanceEvidenceJsonBody",
     "IngestGenericJsonEvidenceBody",
     "IngestOtlpLogsBody",
     "IngestTrustScoreResponse201",
