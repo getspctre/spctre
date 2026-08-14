@@ -38,6 +38,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/ingest/providers/docker_ai_governance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ingest a Docker AI Governance audit file or single audit event
+         * @description Concrete managed-provider route for Docker AI Governance. It deliberately shadows the generic managed-provider route so a shipper can send a sealed JSONL audit file as one bounded request; a JSON body remains compatible with the one-record managed-provider contract.
+         */
+        post: operations["ingestDockerAiGovernanceEvidence"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/ingest/cloudevents": {
         parameters: {
             query?: never;
@@ -1664,6 +1684,72 @@ export interface operations {
         };
         requestBody: {
             content: {
+                "application/x-ndjson": string;
+            };
+        };
+        responses: {
+            /** @description All records duplicated. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description All records accepted. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Record-level outcomes include accepted and rejected records. */
+            207: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description Request exceeds the receiver limit. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Compressed evidence payloads are not supported. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Evidence ingest rate limit exceeded. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            503: components["responses"]["ServiceUnavailable"];
+        };
+    };
+    ingestDockerAiGovernanceEvidence: {
+        parameters: {
+            query?: never;
+            header: {
+                "x-spctre-integration-id": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    [key: string]: unknown;
+                };
                 "application/x-ndjson": string;
             };
         };

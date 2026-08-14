@@ -22,6 +22,22 @@ export const PUBLIC_PATHS = new Set([
 
 export const PUBLIC_PATH_PREFIXES = ["/login/", "/signup/"];
 
+/**
+ * The published API surface. `packages/api-contracts` declares
+ * `servers: [{ url: "/api/v1" }]` with a global `security: [{ bearerAuth: [] }]`,
+ * so every path under this prefix is, by its own contract, a bearer-authenticated
+ * endpoint that customers and generated SDKs call from their own networks.
+ *
+ * It is therefore excused from both proxy gates, and it is the one place a
+ * prefix is used for that rather than an exact path. What makes a prefix safe
+ * here is that nothing can reach this surface unreviewed:
+ * `public-api-contract.test.mts` asserts the spec and `app/api/v1` agree in
+ * both directions, so adding a route under `/api/v1` without documenting it
+ * fails CI. Elsewhere — see MACHINE_API_PATHS — exact paths are used precisely
+ * because no such guard exists.
+ */
+export const PUBLIC_API_PREFIX = "/api/v1/";
+
 // Endpoints that authenticate every request themselves — bearer token, shared
 // secret, or signature — rather than relying on a browser session.
 export const SERVICE_API_PATHS = new Set([
@@ -67,6 +83,8 @@ export const SERVICE_API_PATH_PREFIXES = [
   "/api/gateway-ingest/",
   "/api/agents/",
   "/api/onboarding/cli/",
+  // The published API. See PUBLIC_API_PREFIX.
+  PUBLIC_API_PREFIX,
 ];
 
 // The machine API: endpoints that verify a credential of their own on every
@@ -114,6 +132,15 @@ export const MACHINE_API_PATHS = new Set([
   "/api/token/revoke",
   "/api/v1/token/revoke",
 ]);
+
+/**
+ * Path families excused from the source-IP allowlist by prefix.
+ *
+ * Only the published API qualifies, for the reason given on PUBLIC_API_PREFIX:
+ * it is contract-bound to accept a bearer credential and CI enforces that its
+ * membership is reviewed. Do not add a prefix here without an equivalent guard.
+ */
+export const MACHINE_API_PATH_PREFIXES = [PUBLIC_API_PREFIX];
 
 // Pre-auth bootstrap: reachable without a session because no credential exists
 // yet, which is exactly why they must never join the machine API. Named here so
