@@ -1,5 +1,16 @@
 # @spctre/mcp-server
 
+## 0.2.1
+
+### Patch Changes
+
+- 6614935: Percent-encode decision, approval, and agent ids when building control-plane
+  paths. These are free-form strings by contract, so an id containing `/`, `?`, or
+  `#` was changing the shape of the request rather than its id.
+- 3521c62: Stop double-encoding ids read from resource URIs. The id arrives percent-encoded
+  and must leave percent-encoded, so encoding it as read escaped the escapes:
+  `%2F` travelled as `%252F` and matched no record. Decode once, then encode once.
+
 ## 0.2.0
 
 ### Minor Changes
