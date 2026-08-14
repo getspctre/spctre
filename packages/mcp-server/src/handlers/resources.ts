@@ -51,13 +51,19 @@ export async function getPoliciesResource(
  * reason to throw: it is an id that happens to contain a `%`, so it is encoded
  * as the literal it is.
  */
-export function resourceIdToPathSegment(segment: string | undefined): string {
+export function resourceIdValue(segment: string | undefined): string {
   if (!segment) return "";
   try {
-    return encodeURIComponent(decodeURIComponent(segment));
+    return decodeURIComponent(segment);
   } catch {
-    return encodeURIComponent(segment);
+    // Malformed escapes are not decodable; the segment is an id that contains
+    // a percent sign, so it is already its own value.
+    return segment;
   }
+}
+
+export function resourceIdToPathSegment(segment: string | undefined): string {
+  return encodeURIComponent(resourceIdValue(segment));
 }
 
 export async function getEvidenceResource(
@@ -149,7 +155,7 @@ export async function getTrustHistoryResource(
 
   try {
     const response = await ctx.getWithAuth("/api/trust/history", {
-      agentId,
+      agentId: resourceIdValue(agentId),
       workspace_id: ctx.config.workspaceId,
     });
     return {
@@ -181,7 +187,7 @@ export async function getIdentityEventsResource(
 
   try {
     const response = await ctx.getWithAuth("/api/identity/events", {
-      principalId,
+      principalId: resourceIdValue(principalId),
       workspace_id: ctx.config.workspaceId,
     });
     return {

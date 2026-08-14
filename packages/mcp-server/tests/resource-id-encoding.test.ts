@@ -6,7 +6,10 @@ import {
   getAgentAuditResource,
   getApprovalsResource,
   getEvidenceResource,
+  getIdentityEventsResource,
+  getTrustHistoryResource,
   resourceIdToPathSegment,
+  resourceIdValue,
 } from "../src/handlers/resources.js";
 
 // Ids reach these handlers percent-encoded, because that is how they were
@@ -27,9 +30,13 @@ const config: SpctreConfig = {
   httpRateLimitBurst: 50,
 };
 
-function contextRecording(paths: string[]): McpServerContext {
-  const respond = async (path: string): Promise<AxiosResponse> => {
+function contextRecording(
+  paths: string[],
+  params: Array<Record<string, unknown> | undefined> = [],
+): McpServerContext {
+  const respond = async (path: string, sent?: Record<string, unknown>): Promise<AxiosResponse> => {
     paths.push(path);
+    params.push(sent);
     return {
       data: { decisions: [], approval: {}, summary: {} },
       headers: {},
@@ -40,7 +47,7 @@ function contextRecording(paths: string[]): McpServerContext {
   };
   return {
     config,
-    getWithAuth: (path: string) => respond(path),
+    getWithAuth: (path: string, sent?: Record<string, unknown>) => respond(path, sent),
     postWithAuth: (path: string) => respond(path),
     assertConnectorAllowed: () => {},
     fetchPublishedBundleRefs: async () => ({ branchId: "b", revisionId: "r", artifactHash: "h" }),
@@ -115,5 +122,43 @@ describe("resource handlers preserve the id they were given", () => {
     await getAgentAuditResource(contextRecording(paths), "spctre://agents/scout%2Fone/audit");
 
     expect(paths).toEqual(["/api/agents/scout%2Fone/audit"]);
+  });
+
+  // Ids passed as query parameters have the same fault in a second form: the
+  // HTTP client percent-encodes parameters, so a still-encoded id is encoded
+  // again and the filter matches nothing. These take the decoded value.
+  it("passes the decoded id as a query parameter", async () => {
+    const paths: string[] = [];
+    const params: Array<Record<string, unknown> | undefined> = [];
+    await getTrustHistoryResource(
+      contextRecording(paths, params),
+      "spctre://trust/scout%2Fone/history",
+    );
+
+    expect(paths).toEqual(["/api/trust/history"]);
+    expect(params[0]?.agentId).toBe("scout/one");
+  });
+
+  it("passes the decoded principal id as a query parameter", async () => {
+    const paths: string[] = [];
+    const params: Array<Record<string, unknown> | undefined> = [];
+    await getIdentityEventsResource(
+      contextRecording(paths, params),
+      "spctre://identity/user%3Aalice/events",
+    );
+
+    expect(params[0]?.principalId).toBe("user:alice");
+  });
+});
+
+describe("resourceIdValue", () => {
+  it("decodes exactly once", () => {
+    expect(resourceIdValue("scout%2Fone")).toBe("scout/one");
+    expect(resourceIdValue("user%3Aalice")).toBe("user:alice");
+    expect(resourceIdValue("plain")).toBe("plain");
+  });
+
+  it("leaves a malformed escape alone", () => {
+    expect(resourceIdValue("100%ZZ")).toBe("100%ZZ");
   });
 });
