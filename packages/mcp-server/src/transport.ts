@@ -98,6 +98,9 @@ export async function startHttp(config: SpctreConfig): Promise<void> {
   process.on("SIGTERM", shutdown);
 }
 
+/** Exempt from the control plane's source-IP allowlist, and free of database work. */
+export const UPSTREAM_HEALTH_PATH = "/api/health";
+
 export function createHttpApp(
   config: SpctreConfig,
   deps: HttpTransportDeps = {},
@@ -157,8 +160,19 @@ export function createHttpApp(
   });
 
   app.get("/readyz", async (_req: Request, res: Response) => {
+    // Probe the control plane's health endpoint, not its root. The root is an
+    // application page behind both proxy gates, so where an operator source-IP
+    // allowlist is configured it answers 403 to this service — which egresses
+    // from a platform address that is not, and cannot be, an operator address.
+    // Readiness then reported the control plane unreachable while it was
+    // serving this server's requests normally.
+    //
+    // /api/health is exempt from the allowlist by design and does not touch the
+    // database, so this reports reachability without making this server's
+    // readiness follow the control plane's storage.
+    const probeUrl = `${config.apiBaseUrl.replace(/\/+$/, "")}${UPSTREAM_HEALTH_PATH}`;
     try {
-      await axios.head(config.apiBaseUrl, { timeout: 3_000 });
+      await axios.get(probeUrl, { timeout: 3_000 });
       res.json({
         ok: true,
         unit: "mcp-server",
@@ -172,7 +186,7 @@ export function createHttpApp(
           ok: false,
           unit: "mcp-server",
           stateless: true,
-          checks: { upstream: { ok: false, reason: `Upstream ${config.apiBaseUrl} unreachable` } },
+          checks: { upstream: { ok: false, reason: `Upstream ${probeUrl} unreachable` } },
         });
     }
   });
