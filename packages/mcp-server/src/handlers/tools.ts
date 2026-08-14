@@ -327,17 +327,42 @@ export async function getPolicyStatus(
       }),
     ]);
 
-    // /api/adapters answers `{ adapters, meta }`, so the body is not the list.
-    // Assigning it whole put an object in `connectors`, where callers expect an
-    // array, and made `policies_count` undefined — `.length` of an object.
-    // Accept either shape: a bare array, or the wrapper the API returns.
+    // policies_count and connectors describe the published policy, so both are
+    // read from the bundle. They were previously derived from /api/adapters,
+    // which counts adapter declarations — a different thing that happens to be
+    // a list, so the number looked plausible while measuring the wrong subject.
+    const bundleBody: unknown =
+      bundleResponse.status === "fulfilled" ? bundleResponse.value.data : undefined;
+    const rules: Array<Record<string, unknown>> = Array.isArray(
+      (bundleBody as { rules?: unknown })?.rules,
+    )
+      ? ((bundleBody as { rules: Array<Record<string, unknown>> }).rules ?? [])
+      : [];
+
+    // A rule names the connectors it governs, and "*" means every connector.
+    // The wildcard is kept rather than expanded: dropping it would hide that a
+    // rule applies universally, and there is no connector list to expand into.
+    const connectors = [
+      ...new Set(
+        rules.flatMap((rule) =>
+          Array.isArray(rule.connectors)
+            ? rule.connectors.filter((name): name is string => typeof name === "string")
+            : [],
+        ),
+      ),
+    ].sort();
+
+    // The adapter declarations keep their own field, under the name they
+    // actually carry. /api/adapters answers `{ adapters, meta }`, so the body
+    // is not the list; accept either that envelope or a bare array.
     const adaptersBody: unknown =
       adaptersResponse.status === "fulfilled" ? adaptersResponse.value.data : undefined;
-    const connectors: unknown[] = Array.isArray(adaptersBody)
+    const adapters: unknown[] = Array.isArray(adaptersBody)
       ? adaptersBody
       : Array.isArray((adaptersBody as { adapters?: unknown })?.adapters)
         ? ((adaptersBody as { adapters: unknown[] }).adapters ?? [])
         : [];
+
     const bundleHeaders = bundleResponse.status === "fulfilled" ? bundleResponse.value.headers : {};
     const revisionId = bundleHeaders["x-spctre-revision-id"] ?? null;
     const artifactHash = bundleHeaders["x-spctre-artifact-hash"] ?? null;
@@ -350,8 +375,9 @@ export async function getPolicyStatus(
           text: JSON.stringify({
             version: revisionId,
             approval_status: revisionId ? "PUBLISHED" : "UNAVAILABLE",
-            policies_count: connectors.length,
+            policies_count: rules.length,
             connectors,
+            adapters,
             artifact_hash: artifactHash,
             last_updated_at: publishedAt ?? new Date().toISOString(),
             last_updated_by: "system",

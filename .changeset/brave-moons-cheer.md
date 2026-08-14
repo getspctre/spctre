@@ -1,7 +1,9 @@
 ---
-"@spctre/mcp-server": patch
+"@spctre/mcp-server": minor
 ---
 
-Return `connectors` from `get_policy_status` as an array. `/api/adapters`
-answers `{ adapters, meta }`, and the whole body was being assigned, so callers
-received an object and `policies_count` was undefined.
+Derive `policies_count` and `connectors` in `get_policy_status` from the
+published bundle rather than from `/api/adapters`. The count measured adapter
+declarations, not policies, and `connectors` carried the whole `{ adapters,
+meta }` response body instead of a list. Adapter declarations now report under
+`adapters`, the name they actually carry.

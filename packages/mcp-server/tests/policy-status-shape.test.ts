@@ -4,15 +4,15 @@ import type { SpctreConfig } from "../src/config.js";
 import type { McpServerContext } from "../src/handlers/context.js";
 import { getPolicyStatus } from "../src/handlers/tools.js";
 
-// get_policy_status promises callers an array of connectors and a numeric
-// count. /api/adapters answers `{ adapters, meta }`, so the response body is not
-// that array.
+// get_policy_status describes the published policy, so policies_count and
+// connectors are read from the bundle.
 //
-// This went unnoticed because the call used to fail: the control plane refused
-// it at the proxy, Promise.allSettled rejected, and the fallback produced an
-// empty array — the right shape for the wrong reason. Fixing the transport is
-// what surfaced it, so the fallback is asserted here too, to keep an empty
-// array from standing in for a real answer again.
+// They used to come from /api/adapters, which lists adapter declarations — a
+// different subject that also happens to be a list, so the count looked
+// plausible while measuring the wrong thing. It was additionally the whole
+// response envelope rather than its array, which only showed once the endpoint
+// became reachable: before that the call was refused, the fallback produced an
+// empty array, and the shape looked right for the wrong reason.
 
 const config: SpctreConfig = {
   apiBaseUrl: "http://control-plane.test",
@@ -37,15 +37,23 @@ const BUNDLE_HEADERS = {
   "x-spctre-published-at": "2026-08-14T00:00:00.000Z",
 };
 
-function context(adapters: unknown, options: { failAdapters?: boolean } = {}): McpServerContext {
+interface Options {
+  bundle?: unknown;
+  adapters?: unknown;
+  failAdapters?: boolean;
+  failBundle?: boolean;
+}
+
+function context(options: Options): McpServerContext {
   return {
     config,
     getWithAuth: async (path: string) => {
       if (path === "/api/adapters") {
         if (options.failAdapters) throw new Error("Request failed with status code 403");
-        return response(adapters);
+        return response(options.adapters ?? { adapters: [], meta: {} });
       }
-      return response({}, BUNDLE_HEADERS);
+      if (options.failBundle) throw new Error("Request failed with status code 404");
+      return response(options.bundle ?? {}, BUNDLE_HEADERS);
     },
     postWithAuth: async () => response({}),
     assertConnectorAllowed: () => {},
@@ -56,59 +64,87 @@ function context(adapters: unknown, options: { failAdapters?: boolean } = {}): M
   };
 }
 
-async function statusFor(
-  adapters: unknown,
-  options: { failAdapters?: boolean } = {},
-): Promise<Record<string, unknown>> {
-  const result = await getPolicyStatus(context(adapters, options), { workspace_id: "ws-test" });
+async function statusFor(options: Options): Promise<Record<string, unknown>> {
+  const result = await getPolicyStatus(context(options), { workspace_id: "ws-test" });
   return JSON.parse(result.content[0].text) as Record<string, unknown>;
 }
 
-describe("get_policy_status connector shape", () => {
-  it("unwraps the adapters array from the API's envelope", async () => {
+const BUNDLE = {
+  rules: [
+    { id: "r1", connectors: ["notion", "mcp"] },
+    { id: "r2", connectors: ["mcp"] },
+    { id: "r3", connectors: [] },
+  ],
+};
+
+describe("get_policy_status", () => {
+  it("counts the published policy's rules, not adapter declarations", async () => {
     const status = await statusFor({
-      adapters: [{ connector: "notion" }, { connector: "slack" }],
-      meta: { traceId: "t1" },
+      bundle: BUNDLE,
+      // Deliberately a different length, so a count taken from the wrong
+      // source cannot coincide with the right answer.
+      adapters: { adapters: [{ connector: "slack" }], meta: {} },
     });
 
-    expect(status.connectors).toEqual([{ connector: "notion" }, { connector: "slack" }]);
-    expect(status.policies_count).toBe(2);
+    expect(status.policies_count).toBe(3);
   });
 
-  it("never answers with the envelope itself", async () => {
-    // The defect: `connectors` was `{ adapters, meta }`, and `policies_count`
-    // was `undefined` because an object has no length.
-    const status = await statusFor({ adapters: [], meta: { traceId: "t1" } });
+  it("lists the connectors the published rules govern", async () => {
+    const status = await statusFor({ bundle: BUNDLE });
 
-    expect(Array.isArray(status.connectors)).toBe(true);
-    expect(status.connectors).not.toHaveProperty("meta");
-    expect(typeof status.policies_count).toBe("number");
+    // Distinct and ordered, so the value is stable between calls.
+    expect(status.connectors).toEqual(["mcp", "notion"]);
   });
 
-  it("accepts a bare array, should the endpoint ever return one", async () => {
-    const status = await statusFor([{ connector: "notion" }]);
+  it("keeps a wildcard rule visible rather than dropping it", async () => {
+    // "*" means every connector. Removing it would report a narrower policy
+    // than the one actually published.
+    const status = await statusFor({ bundle: { rules: [{ id: "r1", connectors: ["*"] }] } });
 
-    expect(status.connectors).toEqual([{ connector: "notion" }]);
-    expect(status.policies_count).toBe(1);
+    expect(status.connectors).toEqual(["*"]);
   });
 
-  it("still reports an empty array when the call fails", async () => {
-    // The shape callers depend on must hold even when the control plane
-    // refuses the request, which is how this defect stayed hidden.
-    const status = await statusFor(undefined, { failAdapters: true });
+  it("reports adapter declarations under their own name", async () => {
+    const status = await statusFor({
+      bundle: BUNDLE,
+      adapters: { adapters: [{ connector: "slack" }], meta: { traceId: "t1" } },
+    });
 
-    expect(status.connectors).toEqual([]);
+    expect(status.adapters).toEqual([{ connector: "slack" }]);
+    // The envelope is never passed through: it is not the list.
+    expect(status.adapters).not.toHaveProperty("meta");
+  });
+
+  it("accepts a bare adapters array, should the endpoint ever return one", async () => {
+    const status = await statusFor({ bundle: BUNDLE, adapters: [{ connector: "slack" }] });
+
+    expect(status.adapters).toEqual([{ connector: "slack" }]);
+  });
+
+  it("still answers with the promised types when a call fails", async () => {
+    // Where the defect hid: an empty array standing in for a real answer.
+    const status = await statusFor({ bundle: BUNDLE, failAdapters: true });
+
+    expect(status.adapters).toEqual([]);
+    expect(status.policies_count).toBe(3);
+    expect(status.connectors).toEqual(["mcp", "notion"]);
+  });
+
+  it("reports an unpublished workspace as empty, not broken", async () => {
+    const status = await statusFor({ failBundle: true });
+
     expect(status.policies_count).toBe(0);
-    // The bundle read is independent, so the published revision still reports.
-    expect(status.version).toBe("rev-1");
+    expect(status.connectors).toEqual([]);
+    expect(status.approval_status).toBe("UNAVAILABLE");
   });
 
-  it("tolerates an unexpected body without breaking the contract", async () => {
-    for (const body of [null, "not-json", { adapters: "not-an-array" }, 42]) {
-      const status = await statusFor(body);
+  it("tolerates unexpected bodies without breaking the contract", async () => {
+    for (const bundle of [null, "not-json", { rules: "not-an-array" }, 42]) {
+      const status = await statusFor({ bundle, adapters: bundle });
 
-      expect(Array.isArray(status.connectors), JSON.stringify(body)).toBe(true);
-      expect(typeof status.policies_count, JSON.stringify(body)).toBe("number");
+      expect(Array.isArray(status.connectors), JSON.stringify(bundle)).toBe(true);
+      expect(Array.isArray(status.adapters), JSON.stringify(bundle)).toBe(true);
+      expect(typeof status.policies_count, JSON.stringify(bundle)).toBe("number");
     }
   });
 });
