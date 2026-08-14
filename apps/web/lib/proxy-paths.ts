@@ -150,9 +150,14 @@ export const MACHINE_API_PATHS = new Set([
  * A pattern rather than a prefix: `/api/agents/` alone would also cover writes
  * and any subresource added later, which is the open-ended grant MACHINE_API_PATHS
  * exists to avoid. The subresources are named, so adding one is a decision.
+ *
+ * The id segment matches anything, because `agentId` is `z.string().min(1)` and
+ * `agent_id` is text. A narrower character class here would not validate the id
+ * — it would 403 a caller holding a legitimate one, before any handler saw it.
+ * These gates route; handlers validate.
  */
 export const AGENT_SUBRESOURCE_PATH =
-  /^\/api\/agents\/[A-Za-z0-9._-]{1,128}\/(audit|identity-history|surfaces|trust-history)$/;
+  /^\/api\/agents\/[^/]+\/(audit|identity-history|surfaces|trust-history)$/;
 
 /**
  * `/api/approvals/<id>` — the single-approval read, documented as `getApproval`.
@@ -160,19 +165,30 @@ export const AGENT_SUBRESOURCE_PATH =
  * This also matches `/api/approvals/queue`, which is already an exact member;
  * the overlap changes no behaviour and is preferable to a lookahead that would
  * have to be kept in step with the queue entry.
+ *
+ * Matches any segment, as the sibling patterns do. Approval ids happen to be
+ * uuids today, but constraining a gate to that shape would couple routing to a
+ * column type and fail closed on a caller with a valid id the day it changes.
  */
-export const APPROVAL_BY_ID_PATH = /^\/api\/approvals\/[A-Za-z0-9._-]{1,128}$/;
+export const APPROVAL_BY_ID_PATH = /^\/api\/approvals\/[^/]+$/;
 
 /**
  * `/api/evidence/<decisionId>` — one decision's evidence record.
  *
- * `decision_id` is text rather than a uuid, so the id cannot be constrained by
- * shape; the static siblings under /api/evidence are excluded by name instead.
+ * The id segment matches anything but a slash. `decisionId` is
+ * `z.string().min(1)` in the ingest contract and `decision_id` is text, so ids
+ * legitimately contain characters like `:` and may be longer than any bound
+ * worth writing here. An earlier version of this pattern allowed only
+ * `[A-Za-z0-9._-]{1,128}` and silently narrowed the published contract: a
+ * caller holding a valid id outside that class was refused by the proxy, as a
+ * 403, before the route could answer.
+ *
+ * The static siblings under /api/evidence are excluded by name.
  * `proxy-path-invariants.test.mts` reads that directory and fails if a sibling
  * is added without being excluded here, so the list cannot fall behind.
  */
 export const EVIDENCE_BY_DECISION_PATH =
-  /^\/api\/evidence\/(?!erase$|export$|forensic$|prune$|policy-artifacts$)[A-Za-z0-9._-]{1,128}$/;
+  /^\/api\/evidence\/(?!erase$|export$|forensic$|prune$|policy-artifacts$)[^/]+$/;
 
 /** Path families excused from the source-IP allowlist, matched by pattern. */
 export const MACHINE_API_PATH_PATTERNS = [
