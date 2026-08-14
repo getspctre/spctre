@@ -163,8 +163,23 @@ export const AGENT_SUBRESOURCE_PATH =
  */
 export const APPROVAL_BY_ID_PATH = /^\/api\/approvals\/[A-Za-z0-9._-]{1,128}$/;
 
+/**
+ * `/api/evidence/<decisionId>` — one decision's evidence record.
+ *
+ * `decision_id` is text rather than a uuid, so the id cannot be constrained by
+ * shape; the static siblings under /api/evidence are excluded by name instead.
+ * `proxy-path-invariants.test.mts` reads that directory and fails if a sibling
+ * is added without being excluded here, so the list cannot fall behind.
+ */
+export const EVIDENCE_BY_DECISION_PATH =
+  /^\/api\/evidence\/(?!erase$|export$|forensic$|prune$|policy-artifacts$)[A-Za-z0-9._-]{1,128}$/;
+
 /** Path families excused from the source-IP allowlist, matched by pattern. */
-export const MACHINE_API_PATH_PATTERNS = [AGENT_SUBRESOURCE_PATH, APPROVAL_BY_ID_PATH];
+export const MACHINE_API_PATH_PATTERNS = [
+  AGENT_SUBRESOURCE_PATH,
+  APPROVAL_BY_ID_PATH,
+  EVIDENCE_BY_DECISION_PATH,
+];
 
 /**
  * Path families excused from the source-IP allowlist by prefix.
@@ -204,7 +219,11 @@ export const SELF_AUTHENTICATING_PATHS = new Set(["/api/internal/provisioning/te
 export const BILLING_WEBHOOK_PATH = /^\/api\/billing\/[a-z0-9-]{1,32}\/webhook$/;
 
 /** Path families reachable past the session gate, matched by pattern. */
-export const SERVICE_API_PATH_PATTERNS = [BILLING_WEBHOOK_PATH, APPROVAL_BY_ID_PATH];
+export const SERVICE_API_PATH_PATTERNS = [
+  BILLING_WEBHOOK_PATH,
+  APPROVAL_BY_ID_PATH,
+  EVIDENCE_BY_DECISION_PATH,
+];
 
 /** Path families excused from the source-IP allowlist, matched by pattern. */
 export const SELF_AUTHENTICATING_PATH_PATTERNS = [BILLING_WEBHOOK_PATH];

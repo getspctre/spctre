@@ -5,6 +5,7 @@ import { appendOperationsLog } from "@/lib/repositories/operations-log";
 import {
   countRuntimeEvidence,
   getEvidenceSimulationRun,
+  getRuntimeEvidenceByDecisionId,
   getSimulationRunReview,
   listRuntimeEvidence,
   listRuntimeEvidenceForConnector,
@@ -54,6 +55,22 @@ import { swallow } from "@/lib/platform/swallow";
 
 export type { SimulationRunSummary } from "@/lib/repositories/evidence";
 export type { RuleHeatEntry, UnusedRule } from "@/lib/repositories/policy";
+
+/**
+ * One decision's evidence record, bound to the caller's tenant.
+ *
+ * The MCP server's spctre://evidence/<id> resource reads this; it had been
+ * fetching a route that existed at no version.
+ */
+export async function getEvidenceByDecisionId(params: {
+  decisionId: string;
+  workspaceId: string;
+  tenantId: string;
+}) {
+  return runWithTenantContext(params.tenantId, () =>
+    getRuntimeEvidenceByDecisionId(params.decisionId, params.workspaceId, params.tenantId),
+  );
+}
 
 export async function queryForensicEvidence(
   params: Parameters<typeof queryForensicEvidenceInTenant>[0],
