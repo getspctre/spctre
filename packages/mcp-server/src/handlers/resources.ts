@@ -38,14 +38,40 @@ export async function getPoliciesResource(
   };
 }
 
+/**
+ * Turns an id read from a resource URI into one path segment.
+ *
+ * The segment arrives percent-encoded, because that is how it was written into
+ * the URI, and the control-plane path needs it percent-encoded too — so
+ * encoding what was read would encode the escapes themselves and `%2F` would
+ * travel as `%252F`, a different id that matches no record. Decode once, then
+ * encode once.
+ *
+ * A segment whose escapes are malformed cannot be decoded at all. That is not a
+ * reason to throw: it is an id that happens to contain a `%`, so it is encoded
+ * as the literal it is.
+ */
+export function resourceIdValue(segment: string | undefined): string {
+  if (!segment) return "";
+  try {
+    return decodeURIComponent(segment);
+  } catch {
+    // Malformed escapes are not decodable; the segment is an id that contains
+    // a percent sign, so it is already its own value.
+    return segment;
+  }
+}
+
+export function resourceIdToPathSegment(segment: string | undefined): string {
+  return encodeURIComponent(resourceIdValue(segment));
+}
+
 export async function getEvidenceResource(
   ctx: McpServerContext,
   uri: string,
 ): Promise<{ contents: Array<{ uri: string; mimeType: string; text: string }> }> {
   const decisionId = uri.split("/").pop();
-  // Decision ids are free-form strings, so a raw interpolation would let one
-  // containing `/`, `?` or `#` change the request's shape rather than its id.
-  const response = await ctx.getWithAuth(`/api/evidence/${encodeURIComponent(decisionId ?? "")}`);
+  const response = await ctx.getWithAuth(`/api/evidence/${resourceIdToPathSegment(decisionId)}`);
 
   return { contents: [{ uri, mimeType: "application/json", text: JSON.stringify(response.data) }] };
 }
@@ -57,9 +83,7 @@ export async function getApprovalsResource(
   const approvalId = uri.split("/").pop();
 
   try {
-    const response = await ctx.getWithAuth(
-      `/api/approvals/${encodeURIComponent(approvalId ?? "")}`,
-    );
+    const response = await ctx.getWithAuth(`/api/approvals/${resourceIdToPathSegment(approvalId)}`);
     return {
       contents: [
         {
@@ -93,7 +117,7 @@ export async function getAgentAuditResource(
   // URI host, so split("/")[2] is always "agents", not the requested ID.
   const agentId = new URL(uri).pathname.split("/").filter(Boolean)[0];
   if (!agentId) throw new Error(`Agent audit resource is missing an agent ID: ${uri}`);
-  const response = await ctx.getWithAuth(`/api/agents/${encodeURIComponent(agentId ?? "")}/audit`, {
+  const response = await ctx.getWithAuth(`/api/agents/${resourceIdToPathSegment(agentId)}/audit`, {
     workspace_id: ctx.config.workspaceId,
   });
 
@@ -131,7 +155,7 @@ export async function getTrustHistoryResource(
 
   try {
     const response = await ctx.getWithAuth("/api/trust/history", {
-      agentId,
+      agentId: resourceIdValue(agentId),
       workspace_id: ctx.config.workspaceId,
     });
     return {
@@ -163,7 +187,7 @@ export async function getIdentityEventsResource(
 
   try {
     const response = await ctx.getWithAuth("/api/identity/events", {
-      principalId,
+      principalId: resourceIdValue(principalId),
       workspace_id: ctx.config.workspaceId,
     });
     return {
