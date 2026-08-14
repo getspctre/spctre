@@ -110,6 +110,41 @@ export async function listRuntimeEvidence(
 }
 
 /**
+ * One decision's evidence record.
+ *
+ * Scoped by tenant and workspace like every other read here, so an id from
+ * another tenant reads as absent rather than forbidden — the caller learns
+ * nothing about whether it exists elsewhere.
+ */
+export async function getRuntimeEvidenceByDecisionId(
+  decisionId: string,
+  workspaceId: string,
+  tenantId: string,
+): Promise<RuntimeDecisionEvidenceRecord | null> {
+  if (!sql) return null;
+  const rows = await sql<RuntimeEvidenceRow[]>`
+    SELECT
+      decision_id, tenant_id, workspace_id, environment,
+      runtime_stack, runtime_adapter, agent_id, connector, action,
+      status, reason, policy_refs, artifact_hash, policy_context,
+      raw_evidence, latency_ms, created_at
+    FROM runtime_evidence_event
+    WHERE tenant_id = ${tenantId}
+      AND workspace_id = ${workspaceId}
+      AND decision_id = ${decisionId}
+    LIMIT 1
+  `;
+  const row = rows[0];
+  if (!row) return null;
+
+  const packByRevisionId = await loadRevisionPackMetadata(
+    tenantId,
+    revisionIdsFromEvidenceRows(rows),
+  );
+  return mapRuntimeEvidenceRow(row, packByRevisionId);
+}
+
+/**
  * Connector-scoped evidence retrieval for a service-token principal. Revision
  * and time grants are applied by the evidence domain after the persisted token
  * identity has been resolved; callers never provide a connector selector.

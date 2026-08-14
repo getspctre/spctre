@@ -169,7 +169,8 @@ describe("MCP dependency contract", () => {
 
   it("holds the unimplemented list to exactly what is known", () => {
     // Excusing a dependency from the assertions above is a decision, so the
-    // excuse list is pinned. A new one cannot be added without changing this.
-    expect([...UNIMPLEMENTED]).toEqual(["/api/evidence/{id}"]);
+    // excuse list is pinned. It is empty now that GET /api/evidence/{id}
+    // exists; a new excuse cannot be added without changing this line.
+    expect([...UNIMPLEMENTED]).toEqual([]);
   });
 });

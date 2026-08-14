@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
+import { readdirSync, statSync } from "node:fs";
+import { join } from "node:path";
 import {
   AGENT_SUBRESOURCE_PATH,
+  EVIDENCE_BY_DECISION_PATH,
   APPROVAL_BY_ID_PATH,
   BILLING_WEBHOOK_PATH,
   MACHINE_API_PATH_PATTERNS,
@@ -153,6 +156,30 @@ describe("proxy path invariants", () => {
   it("confines the approval pattern to a single id segment", () => {
     for (const pathname of ["/api/approvals", "/api/approvals/abc/decide", "/api/approvals//"]) {
       expect(APPROVAL_BY_ID_PATH.test(pathname), pathname).toBe(false);
+    }
+  });
+
+  // decision_id is text, so the evidence id cannot be constrained by shape and
+  // the static siblings are excluded by name. A name list falls behind the
+  // directory it describes, so read the directory.
+  it("never lets the evidence id pattern swallow a sibling route", () => {
+    const evidenceDir = join(process.cwd(), "app", "api", "evidence");
+    const siblings = readdirSync(evidenceDir).filter((entry) =>
+      statSync(join(evidenceDir, entry)).isDirectory(),
+    );
+
+    const swallowed = siblings
+      .filter((entry) => !entry.startsWith("["))
+      .filter((entry) => EVIDENCE_BY_DECISION_PATH.test(`/api/evidence/${entry}`));
+
+    expect(swallowed).toEqual([]);
+  });
+
+  it("matches an actual decision id", () => {
+    // The exclusions must not be so broad that the route they guard stops
+    // matching. decision_id is free-form text, not a uuid.
+    for (const id of ["dec-1", "01J8Z6C2Q9", "3f8a1c22-0b7e-4d19-9a3c-7c1f2e5d6b40"]) {
+      expect(EVIDENCE_BY_DECISION_PATH.test(`/api/evidence/${id}`), id).toBe(true);
     }
   });
 
