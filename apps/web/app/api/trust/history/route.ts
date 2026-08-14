@@ -8,10 +8,7 @@ export const dynamic = "force-dynamic";
 async function handleGetApiTrustHistory(request: Request) {
   const traceId = extractTraceId(request);
   // The MCP server reads trust history for the agents it governs.
-  const scope = await resolveRouteScope(request, {
-    serviceTokenScope: "operations:read",
-    traceId,
-  });
+  const scope = await resolveRouteScope(request, { serviceTokenScope: "operations:read", traceId });
   if (scope instanceof Response) return scope;
   const ctx = scope;
 

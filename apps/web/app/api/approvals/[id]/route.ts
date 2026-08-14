@@ -13,10 +13,7 @@ async function handleGetApiApprovalsByid(
   const traceId = extractTraceId(request);
   // Documented as a bearer endpoint, and read by the MCP server's
   // spctre://approvals/<id> resource, alongside the queue listing.
-  const scope = await resolveRouteScope(request, {
-    serviceTokenScope: "approvals:read",
-    traceId,
-  });
+  const scope = await resolveRouteScope(request, { serviceTokenScope: "approvals:read", traceId });
   if (scope instanceof Response) return scope;
   const ctx = scope;
 

@@ -10,10 +10,7 @@ async function handleGetApiIdentityEvents(request: Request) {
   const traceId = extractTraceId(request);
   // The MCP server reads identity history for the agents it governs, so this
   // accepts a service token as well as a session.
-  const scope = await resolveRouteScope(request, {
-    serviceTokenScope: "operations:read",
-    traceId,
-  });
+  const scope = await resolveRouteScope(request, { serviceTokenScope: "operations:read", traceId });
   if (scope instanceof Response) return scope;
   const ctx = scope;
 
