@@ -149,6 +149,7 @@ from .ingest_docker_ai_governance_evidence_json_body import (
     IngestDockerAiGovernanceEvidenceJsonBody,
 )
 from .ingest_generic_json_evidence_body import IngestGenericJsonEvidenceBody
+from .ingest_mcp_gateway_event_body import IngestMcpGatewayEventBody
 from .ingest_otlp_logs_body import IngestOtlpLogsBody
 from .ingest_trust_score_response_201 import IngestTrustScoreResponse201
 from .list_escalations_response_200 import ListEscalationsResponse200
@@ -345,6 +346,7 @@ __all__ = (
     "IngestContextBudgetEventResponse201",
     "IngestDockerAiGovernanceEvidenceJsonBody",
     "IngestGenericJsonEvidenceBody",
+    "IngestMcpGatewayEventBody",
     "IngestOtlpLogsBody",
     "IngestTrustScoreResponse201",
     "ListEscalationsResponse200",
