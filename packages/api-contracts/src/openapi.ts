@@ -40,6 +40,13 @@ export const SPCTRE_OPENAPI_SPEC = {
         description:
           "Service account API key. Generate one from the Spctre web UI under Settings → API Keys, then pass it as `Authorization: Bearer <key>`. Keys carry declared permission scopes such as `decision:evaluate`, `evidence:write`, `bundle:read`, `policy:import`, `compliance:read`, `approvals:read`, `operations:read`, `workflow:read`, `members:read`, and `workspaces:read` that are enforced at the API layer. `policy:import` is admin-issuable only and is never granted to runtime agent tokens, so a governed agent cannot import its own policy.",
       },
+      sessionCookie: {
+        type: "apiKey",
+        in: "cookie",
+        name: "spctre_session_id",
+        description:
+          "Browser session established by signing in to the control plane. Used only by operations that represent a human decision and therefore cannot be delegated to a service account; every other endpoint takes a bearer key.",
+      },
       gatewayWebhookSecret: {
         type: "apiKey",
         in: "header",
@@ -2006,6 +2013,11 @@ export const SPCTRE_OPENAPI_SPEC = {
           "Closes an open escalation queue item with a resolution outcome (`PROCEED`, `ESCALATE`, or `ABORT`). Requires web session authentication — this operation represents a human-in-the-loop decision.",
         "x-spctre-plan": "oss",
         tags: ["Gateway"],
+        // The description has always said this needs a session. Until now the
+        // operation still inherited the global bearer requirement, so the
+        // machine-readable contract promised a delegation the handler refuses —
+        // and generated clients advertised it.
+        security: [{ sessionCookie: [] }],
         requestBody: {
           required: true,
           content: {

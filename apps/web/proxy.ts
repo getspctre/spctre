@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { SESSION_GUARD_COOKIE, verifySessionGuardToken } from "@/lib/session-guard";
 import {
   HEALTH_PATHS,
+  MACHINE_API_PATH_PATTERNS,
   MACHINE_API_PATH_PREFIXES,
   MACHINE_API_PATHS,
   PUBLIC_PATH_PREFIXES,
@@ -131,7 +132,11 @@ function isHealthPath(pathname: string): boolean {
 // Google hands it. Holding these behind the operator allowlist made the control
 // plane unreachable to the clients it exists to serve.
 function isMachineApiPath(pathname: string): boolean {
-  return MACHINE_API_PATHS.has(pathname) || hasAnyPrefix(pathname, MACHINE_API_PATH_PREFIXES);
+  return (
+    MACHINE_API_PATHS.has(pathname) ||
+    hasAnyPrefix(pathname, MACHINE_API_PATH_PREFIXES) ||
+    MACHINE_API_PATH_PATTERNS.some((pattern) => pattern.test(pathname))
+  );
 }
 
 // A payment provider's fleet and our own checkout surface both reach this

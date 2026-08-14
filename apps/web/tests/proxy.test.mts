@@ -234,6 +234,44 @@ describe("proxy rate limiting", () => {
     }
   });
 
+  it("lets a governed client reach per-agent and single-approval reads", async () => {
+    // These carry an id, so they are matched by pattern. Before that they were
+    // the last MCP dependencies still refused at the allowlist.
+    process.env.DATABASE_URL = "postgres://spctre.test/app";
+    process.env.SPCTRE_ALLOWED_SOURCE_IPS = "198.51.100.7";
+
+    const { proxy } = await import("../proxy");
+
+    for (const pathname of [
+      "/api/agents/scout/audit",
+      "/api/agents/outreach/trust-history",
+      "/api/approvals/01J8Z6C2Q9",
+      "/api/adapters",
+      "/api/identity/events",
+      "/api/trust/history",
+    ]) {
+      const response = await proxy(
+        makeRequest(pathname, "203.0.113.10", { headers: { authorization: "Bearer mcp-token" } }),
+      );
+
+      expect(response.status, pathname).toBe(200);
+    }
+  });
+
+  it("keeps the allowlist in front of agent paths the pattern does not name", async () => {
+    process.env.DATABASE_URL = "postgres://spctre.test/app";
+    process.env.SPCTRE_ALLOWED_SOURCE_IPS = "198.51.100.7";
+
+    const { proxy } = await import("../proxy");
+    const response = await proxy(
+      makeRequest("/api/agents/scout/surfaces/surface-1", "203.0.113.10", {
+        headers: { authorization: "Bearer mcp-token" },
+      }),
+    );
+
+    expect(response.status).toBe(403);
+  });
+
   it("rejects cookie-authenticated mutations from a mismatched origin", async () => {
     process.env.DATABASE_URL = "postgres://spctre.test/app";
 

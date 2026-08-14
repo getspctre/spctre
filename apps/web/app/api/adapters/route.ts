@@ -13,40 +13,26 @@ import {
   withTraceId,
 } from "@spctre/api-contracts";
 import { swallow } from "@/lib/platform/swallow";
+import { resolveRouteScope } from "../_route-scope";
 
 export const dynamic = "force-dynamic";
 
 async function handleGetApiAdapters(request: Request) {
   const traceId = extractTraceId(request);
-  const session = await getAuthSession().catch(swallow("getAuthSession", null));
-  if (!session) {
-    return withTraceId(
-      Response.json(
-        { error: "Authentication required.", meta: makeMeta(traceId) },
-        { status: 401 },
-      ),
-      traceId,
-    );
-  }
+  // Reading the adapter declarations is how the MCP server learns which
+  // gateway adapters govern a workspace, so this accepts a service token as
+  // well as a session. The POST below stays session-only: declaring an adapter
+  // is an operator action.
+  const scope = await resolveRouteScope(request, {
+    serviceTokenScope: "bundle:read",
+    traceId,
+    contextUnavailableStatus: 403,
+  });
+  if (scope instanceof Response) return scope;
+  const { workspaceId, tenantId } = scope;
 
   const url = new URL(request.url);
   const environment = url.searchParams.get("environment") ?? undefined;
-
-  let workspaceId = "";
-  let tenantId = session.tenantId;
-  try {
-    const ctx = await getActiveScope();
-    workspaceId = ctx.workspaceId;
-    tenantId = ctx.tenantId;
-  } catch {
-    return withTraceId(
-      Response.json(
-        { error: "Unable to resolve workspace context.", meta: makeMeta(traceId) },
-        { status: 403 },
-      ),
-      traceId,
-    );
-  }
 
   try {
     const adapters = await listAdapterDeclarationsForWorkspace({
