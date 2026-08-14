@@ -1,5 +1,35 @@
 # @spctre/sdk
 
+## 0.7.0
+
+### Minor Changes
+
+- e47527e: Add bindings for nine governed reads that the API already served but never
+  described: workspaces, members, the approval queue, compliance status, an
+  agent's audit summary, trust history, identity events, workflow configuration,
+  and the MCP gateway-ingest receiver.
+
+  Each is now served at `/api/v1` alongside its unversioned route, so a client
+  can reach them at the versioned base like every other documented endpoint.
+
+- af40835: Add the Docker AI Governance ingest endpoint to the generated bindings, and
+  correct four documented paths that the API did not actually serve at their
+  published URL.
+
+  `/bundle/latest/custody`, `/evidence/policy-artifacts`,
+  `/evidence/policy-artifacts/{contentHash}`, and `/gateway/escalations/agt` were
+  described in the spec, and so present in the SDK, while only existing on the
+  unversioned routes — calling them through the client hit a URL with nothing
+  behind it. They are now served at `/api/v1` like every other documented path.
+
+### Patch Changes
+
+- 9032831: Declare that `gatewayResolve` authenticates with a browser session rather than a
+  bearer key. Its description has always said so — resolving an escalation is a
+  human-in-the-loop decision the handler will not delegate to a service account —
+  but the operation inherited the global bearer requirement, so the generated
+  bindings advertised a delegation the API refuses.
+
 ## 0.6.0
 
 ### Minor Changes
