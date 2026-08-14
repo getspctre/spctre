@@ -43,7 +43,9 @@ export async function getEvidenceResource(
   uri: string,
 ): Promise<{ contents: Array<{ uri: string; mimeType: string; text: string }> }> {
   const decisionId = uri.split("/").pop();
-  const response = await ctx.getWithAuth(`/api/evidence/${decisionId}`);
+  // Decision ids are free-form strings, so a raw interpolation would let one
+  // containing `/`, `?` or `#` change the request's shape rather than its id.
+  const response = await ctx.getWithAuth(`/api/evidence/${encodeURIComponent(decisionId ?? "")}`);
 
   return { contents: [{ uri, mimeType: "application/json", text: JSON.stringify(response.data) }] };
 }
@@ -55,7 +57,9 @@ export async function getApprovalsResource(
   const approvalId = uri.split("/").pop();
 
   try {
-    const response = await ctx.getWithAuth(`/api/approvals/${approvalId}`);
+    const response = await ctx.getWithAuth(
+      `/api/approvals/${encodeURIComponent(approvalId ?? "")}`,
+    );
     return {
       contents: [
         {
@@ -89,7 +93,7 @@ export async function getAgentAuditResource(
   // URI host, so split("/")[2] is always "agents", not the requested ID.
   const agentId = new URL(uri).pathname.split("/").filter(Boolean)[0];
   if (!agentId) throw new Error(`Agent audit resource is missing an agent ID: ${uri}`);
-  const response = await ctx.getWithAuth(`/api/agents/${agentId}/audit`, {
+  const response = await ctx.getWithAuth(`/api/agents/${encodeURIComponent(agentId ?? "")}/audit`, {
     workspace_id: ctx.config.workspaceId,
   });
 

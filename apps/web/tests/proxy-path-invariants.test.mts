@@ -183,6 +183,35 @@ describe("proxy path invariants", () => {
     }
   });
 
+  // The ingest contract types these ids as `z.string().min(1)`. A gate that
+  // accepts less than the contract publishes refuses a caller holding a valid
+  // id, as a 403, before any handler can answer — so assert the awkward ones.
+  it("admits ids across the whole published domain", () => {
+    const awkward = [
+      "urn:spctre:decision:8f2a",
+      "decision%2Fwith%2Fslashes",
+      "a".repeat(300),
+      "id.with.dots",
+      "id+plus",
+      "ID_With_Mixed-Case.123",
+      "τεκμήριο",
+    ];
+
+    for (const id of awkward) {
+      expect(EVIDENCE_BY_DECISION_PATH.test(`/api/evidence/${id}`), id).toBe(true);
+      expect(APPROVAL_BY_ID_PATH.test(`/api/approvals/${id}`), id).toBe(true);
+      expect(AGENT_SUBRESOURCE_PATH.test(`/api/agents/${id}/audit`), id).toBe(true);
+    }
+  });
+
+  it("still stops at a path separator", () => {
+    // Widening the id segment must not turn these into prefixes.
+    expect(EVIDENCE_BY_DECISION_PATH.test("/api/evidence/dec-1/raw")).toBe(false);
+    expect(APPROVAL_BY_ID_PATH.test("/api/approvals/apr-1/decide")).toBe(false);
+    expect(AGENT_SUBRESOURCE_PATH.test("/api/agents/scout/audit/export")).toBe(false);
+    expect(AGENT_SUBRESOURCE_PATH.test("/api/agents/scout/delete")).toBe(false);
+  });
+
   it("does not exempt a path that a browser session would also reach", () => {
     // A self-authenticating endpoint answers to a credential, never to a
     // cookie. Overlap with the public set would mean it is reachable for a
