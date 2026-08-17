@@ -45,7 +45,13 @@ vi.mock("@/lib/service-tokens", () => ({
     (request.headers.get("authorization") ?? "").startsWith("Bearer "),
 }));
 
-vi.mock("@/lib/platform/config", () => ({ isGatewayEnabled: () => false }));
+// Spread the real module rather than listing exports: this file transitively
+// loads lib/config/runtime.ts, so a factory that names only isGatewayEnabled
+// breaks whenever an unrelated export is added to platform/config.
+vi.mock("@/lib/platform/config", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/platform/config")>()),
+  isGatewayEnabled: () => false,
+}));
 
 vi.mock("@/lib/repositories/gateway", () => ({
   persistGatewayDecision: persistGatewayDecisionSpy,
