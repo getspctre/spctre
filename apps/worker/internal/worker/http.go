@@ -208,7 +208,12 @@ func (s *Server) runJobEndpoint(w http.ResponseWriter, r *http.Request, name str
 	}
 	defer release()
 	started := time.Now()
-	if err := fn(jobCtx); err != nil {
+	// Opened after the advisory lock, so a call that was skipped as already
+	// running does not record a run it never performed.
+	runID := beginJobRun(jobCtx, s.db, s.logger, name, TriggerHTTP)
+	err = fn(jobCtx)
+	finishJobRun(jobCtx, s.db, s.logger, runID, started, err)
+	if err != nil {
 		s.logger.Error("job http trigger failed", "job", name, "error", err)
 		writeError(w, http.StatusInternalServerError, "Job execution failed.", tid, nil)
 		return

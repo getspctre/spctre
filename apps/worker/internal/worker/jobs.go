@@ -60,13 +60,13 @@ func Jobs(db *pgxpool.Pool, logger *slog.Logger, intervals JobIntervals, notific
 
 // StartJobs launches each job's ticker loop in its own goroutine and returns
 // a WaitGroup that unblocks once all loops have exited (i.e. ctx is done).
-func StartJobs(ctx context.Context, jobs []Job, logger *slog.Logger) *sync.WaitGroup {
+func StartJobs(ctx context.Context, db *pgxpool.Pool, jobs []Job, logger *slog.Logger) *sync.WaitGroup {
 	var wg sync.WaitGroup
 	for _, job := range jobs {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			runJob(ctx, job, logger)
+			runJob(ctx, db, job, logger)
 			ticker := time.NewTicker(job.Every)
 			defer ticker.Stop()
 			for {
@@ -74,7 +74,7 @@ func StartJobs(ctx context.Context, jobs []Job, logger *slog.Logger) *sync.WaitG
 				case <-ctx.Done():
 					return
 				case <-ticker.C:
-					runJob(ctx, job, logger)
+					runJob(ctx, db, job, logger)
 				}
 			}
 		}()
@@ -82,9 +82,12 @@ func StartJobs(ctx context.Context, jobs []Job, logger *slog.Logger) *sync.WaitG
 	return &wg
 }
 
-func runJob(ctx context.Context, job Job, logger *slog.Logger) {
+func runJob(ctx context.Context, db *pgxpool.Pool, job Job, logger *slog.Logger) {
 	started := time.Now()
-	if err := job.Run(ctx); err != nil {
+	runID := beginJobRun(ctx, db, logger, job.Name, TriggerTicker)
+	err := job.Run(ctx)
+	finishJobRun(ctx, db, logger, runID, started, err)
+	if err != nil {
 		logger.Error("worker job failed", "worker.job.name", job.Name, "error", err, "duration_ms", time.Since(started).Milliseconds())
 		return
 	}

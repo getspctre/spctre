@@ -56,6 +56,15 @@ func runRetention(ctx context.Context, db *pgxpool.Pool, logger *slog.Logger) er
 		return err
 	}
 
+	// 0. Prune sweep history. Deliberately non-fatal: the ledger observes this
+	// job, so failing to trim it must not stop the evidence pruning below,
+	// which is the part with a compliance window attached.
+	if prunedRuns, err := pruneJobRuns(ctx, db); err != nil {
+		logger.Warn("failed to prune job run ledger", "error", err)
+	} else if prunedRuns > 0 {
+		logger.Info("pruned expired job run records", "count", prunedRuns)
+	}
+
 	// 1. Prune staging evidence unconditionally after 2 days, in bounded batches.
 	prunedStaging, err := batchedPruneEvidence(ctx, db, logger,
 		`environment = 'staging' AND created_at < now() - interval '2 days'`)
