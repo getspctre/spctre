@@ -1761,7 +1761,9 @@
       "remove_failed": "SIEM-Stream konnte nicht entfernt werden",
       "paused_status": "Stream pausiert.",
       "resumed_status": "Stream fortgesetzt.",
-      "toggle_failed": "SIEM-Stream konnte nicht umgeschaltet werden"
+      "toggle_failed": "SIEM-Stream konnte nicht umgeschaltet werden",
+      "suspended": "Ausgesetzt",
+      "suspended_reason": "Zustellung nach wiederholten Fehlern gestoppt. Nach Erreichbarkeit des Ziels wieder aktivieren; es gehen keine Ereignisse verloren."
     }
   }
 }

@@ -13,6 +13,11 @@ export interface SiemStream {
   hasCredentials: boolean;
   lastForwardedAt: Date | null;
   lastForwardedId: string | null;
+  consecutiveFailures: number;
+  lastError: string | null;
+  lastFailureAt: Date | null;
+  /** Set only when the forwarder disabled the stream, never by an operator. */
+  suspendedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -35,6 +40,10 @@ export async function listSiemStreams(
       (credentials_encrypted IS NOT NULL) AS "hasCredentials",
       last_forwarded_at AS "lastForwardedAt",
       last_forwarded_id AS "lastForwardedId",
+      consecutive_failures AS "consecutiveFailures",
+      last_error        AS "lastError",
+      last_failure_at   AS "lastFailureAt",
+      suspended_at      AS "suspendedAt",
       created_at       AS "createdAt",
       updated_at       AS "updatedAt"
     FROM workspace_siem_stream
@@ -107,10 +116,18 @@ export async function toggleSiemStream(
   enabled: boolean,
 ): Promise<boolean> {
   if (!sql) return false;
+  // Re-enabling is the operator's resume: the forwarder suspends a stream by
+  // disabling it, so clearing the failure state here is what lets delivery
+  // start again. The cursor is deliberately untouched, so it resumes from the
+  // last acknowledged event and no evidence is skipped.
   const result = await sql`
     UPDATE workspace_siem_stream
-    SET enabled    = ${enabled},
-        updated_at = now()
+    SET enabled              = ${enabled},
+        consecutive_failures = ${enabled ? 0 : sql`consecutive_failures`},
+        last_error           = ${enabled ? null : sql`last_error`},
+        last_failure_at      = ${enabled ? null : sql`last_failure_at`},
+        suspended_at         = ${enabled ? null : sql`suspended_at`},
+        updated_at           = now()
     WHERE tenant_id    = ${tenantId}
       AND workspace_id = ${workspaceId}
       AND id           = ${id}

@@ -1765,7 +1765,9 @@
       "remove_failed": "Échec de la suppression du flux SIEM",
       "paused_status": "Flux mis en pause.",
       "resumed_status": "Flux repris.",
-      "toggle_failed": "Échec de la bascule du flux SIEM"
+      "toggle_failed": "Échec de la bascule du flux SIEM",
+      "suspended": "Suspendu",
+      "suspended_reason": "Livraison arrêtée après des échecs répétés. Réactivez lorsque la destination est joignable ; aucun événement n'est perdu."
     }
   }
 }

@@ -1741,7 +1741,9 @@
       "remove_failed": "Failed to remove SIEM stream",
       "paused_status": "Stream paused.",
       "resumed_status": "Stream resumed.",
-      "toggle_failed": "Failed to toggle SIEM stream"
+      "toggle_failed": "Failed to toggle SIEM stream",
+      "suspended": "Suspended",
+      "suspended_reason": "Delivery stopped after repeated failures. Re-enable once the destination is reachable; no events are lost."
     }
   }
 }
