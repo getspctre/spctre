@@ -100,20 +100,25 @@ func TestJobLedgerRecordsAFailureWithItsError(t *testing.T) {
 	}
 }
 
-// The orphan case: a process that dies mid-sweep leaves an open row, and the
-// next run of the same job is what closes it. This is the whole reason there is
-// no reaper.
-func TestJobLedgerClosesAnOrphanedRunOnTheNextStart(t *testing.T) {
+// Regression: starting a run must never close another open run of the same job.
+//
+// Only the HTTP job endpoints take the per-job advisory lock; the in-process
+// ticker takes none. Two runs of one job can therefore overlap — between
+// replicas, or between the ticker and an external scheduler — and closing on
+// start would stamp a live run as ABANDONED, corrupting the signal this table
+// exists to provide. An interrupted run stays open instead.
+func TestJobLedgerStartDoesNotCloseAConcurrentRun(t *testing.T) {
 	pool := testGatewayDB(t)
 	ctx := context.Background()
 	name := uniqueJobName(t)
 
-	orphan := beginJobRun(ctx, pool, slog.Default(), name, TriggerHTTP)
-	if orphan == "" {
+	// Still running: the ticker holds no lock, so this genuinely can be live.
+	inFlight := beginJobRun(ctx, pool, slog.Default(), name, TriggerTicker)
+	if inFlight == "" {
 		t.Fatal("expected a run id")
 	}
-	// No finishJobRun: simulates the process dying mid-sweep.
 
+	// A second trigger arrives while the first is working.
 	second := beginJobRun(ctx, pool, slog.Default(), name, TriggerHTTP)
 	finishJobRun(ctx, pool, slog.Default(), second, time.Now(), nil)
 
@@ -121,19 +126,42 @@ func TestJobLedgerClosesAnOrphanedRunOnTheNextStart(t *testing.T) {
 	if len(runs) != 2 {
 		t.Fatalf("expected 2 runs, got %d", len(runs))
 	}
-	if runs[0].outcome == nil || *runs[0].outcome != outcomeAbandoned {
-		t.Fatalf("orphan outcome = %v, want ABANDONED", runs[0].outcome)
+	if runs[0].finished {
+		t.Fatal("a live run must not be closed by a concurrent start")
 	}
-	if !runs[0].finished {
-		t.Fatal("expected the orphan to be closed")
+	if runs[0].outcome != nil {
+		t.Fatalf("live run outcome = %q, want none", *runs[0].outcome)
 	}
-	// ABANDONED stays distinct from FAILED: "we do not know how it ended" is
-	// not the same claim as "it returned an error".
 	if runs[1].outcome == nil || *runs[1].outcome != outcomeSuccess {
 		t.Fatalf("second outcome = %v, want SUCCESS", runs[1].outcome)
 	}
-	if runs[1].errText != nil {
-		t.Fatalf("abandoning an earlier run must not attach an error to the new one, got %q", *runs[1].errText)
+
+	// The first run finishing afterwards still records its own outcome.
+	finishJobRun(ctx, pool, slog.Default(), inFlight, time.Now(), nil)
+	runs = ledgerRunsFor(t, pool, name)
+	if runs[0].outcome == nil || *runs[0].outcome != outcomeSuccess {
+		t.Fatalf("first run outcome = %v after finishing, want SUCCESS", runs[0].outcome)
+	}
+}
+
+// A process that dies mid-sweep leaves its row open, and nothing closes it.
+// That is deliberate: "started, never finished" is the truth, where guessing
+// would risk mislabelling a run that is merely slow.
+func TestJobLedgerLeavesAnInterruptedRunOpen(t *testing.T) {
+	pool := testGatewayDB(t)
+	ctx := context.Background()
+	name := uniqueJobName(t)
+
+	beginJobRun(ctx, pool, slog.Default(), name, TriggerHTTP) // never finished
+	next := beginJobRun(ctx, pool, slog.Default(), name, TriggerHTTP)
+	finishJobRun(ctx, pool, slog.Default(), next, time.Now(), nil)
+
+	runs := ledgerRunsFor(t, pool, name)
+	if len(runs) != 2 {
+		t.Fatalf("expected 2 runs, got %d", len(runs))
+	}
+	if runs[0].finished {
+		t.Fatal("an interrupted run stays open until a liveness-based sweep closes it")
 	}
 }
 
