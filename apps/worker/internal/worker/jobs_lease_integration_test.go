@@ -22,14 +22,14 @@ func expireLease(t *testing.T, pool *pgxpool.Pool, name string) {
 	}
 }
 
-func leaseHolderOf(t *testing.T, pool *pgxpool.Pool, name string) string {
+func leaseTokenOf(t *testing.T, pool *pgxpool.Pool, name string) string {
 	t.Helper()
-	var holder string
+	var token string
 	if err := pool.QueryRow(context.Background(),
-		`SELECT holder FROM job_lease WHERE job_name = $1`, name).Scan(&holder); err != nil {
+		`SELECT token FROM job_lease WHERE job_name = $1`, name).Scan(&token); err != nil {
 		t.Fatal(err)
 	}
-	return holder
+	return token
 }
 
 func cleanupLease(t *testing.T, pool *pgxpool.Pool, name string) {
@@ -44,14 +44,15 @@ func TestJobLeaseIsHeldExclusively(t *testing.T) {
 	name := uniqueJobName(t)
 	cleanupLease(t, pool, name)
 
-	acquired, _, err := acquireJobLease(ctx, pool, name, nil)
+	first := newLeaseToken()
+	acquired, _, err := acquireJobLease(ctx, pool, name, first, nil)
 	if err != nil || !acquired {
 		t.Fatalf("first acquire: acquired=%v err=%v", acquired, err)
 	}
 
 	// A second attempt against a live lease must fail, even from this same
 	// process — the guard is the expiry, not the holder.
-	again, _, err := acquireJobLease(ctx, pool, name, nil)
+	again, _, err := acquireJobLease(ctx, pool, name, newLeaseToken(), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -66,22 +67,22 @@ func TestJobLeaseIsStealableOnlyOnceExpired(t *testing.T) {
 	name := uniqueJobName(t)
 	cleanupLease(t, pool, name)
 
-	if acquired, _, err := acquireJobLease(ctx, pool, name, nil); err != nil || !acquired {
+	if acquired, _, err := acquireJobLease(ctx, pool, name, newLeaseToken(), nil); err != nil || !acquired {
 		t.Fatalf("setup acquire: %v %v", acquired, err)
 	}
-	original := leaseHolderOf(t, pool, name)
+	original := leaseTokenOf(t, pool, name)
 
 	expireLease(t, pool, name)
 
-	acquired, _, err := acquireJobLease(ctx, pool, name, nil)
+	acquired, _, err := acquireJobLease(ctx, pool, name, newLeaseToken(), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if !acquired {
 		t.Fatal("an expired lease must be stealable, otherwise a crashed holder blocks the job forever")
 	}
-	if leaseHolderOf(t, pool, name) != original {
-		t.Fatal("holder should be this process after stealing")
+	if leaseTokenOf(t, pool, name) == original {
+		t.Fatal("stealing must install a new token, or the displaced holder could still renew")
 	}
 }
 
@@ -91,7 +92,8 @@ func TestJobLeaseRenewalExtendsAndIsHolderScoped(t *testing.T) {
 	name := uniqueJobName(t)
 	cleanupLease(t, pool, name)
 
-	if acquired, _, err := acquireJobLease(ctx, pool, name, nil); err != nil || !acquired {
+	token := newLeaseToken()
+	if acquired, _, err := acquireJobLease(ctx, pool, name, token, nil); err != nil || !acquired {
 		t.Fatalf("setup acquire: %v %v", acquired, err)
 	}
 
@@ -101,7 +103,7 @@ func TestJobLeaseRenewalExtendsAndIsHolderScoped(t *testing.T) {
 	}
 	expireLease(t, pool, name)
 
-	held, err := renewJobLease(ctx, pool, name)
+	held, err := renewJobLease(ctx, pool, name, token)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -117,10 +119,10 @@ func TestJobLeaseRenewalExtendsAndIsHolderScoped(t *testing.T) {
 	}
 
 	// Simulate the lease having been taken by another process.
-	if _, err := pool.Exec(ctx, `UPDATE job_lease SET holder = 'someone-else' WHERE job_name = $1`, name); err != nil {
+	if _, err := pool.Exec(ctx, `UPDATE job_lease SET token = 'someone-else' WHERE job_name = $1`, name); err != nil {
 		t.Fatal(err)
 	}
-	held, err = renewJobLease(ctx, pool, name)
+	held, err = renewJobLease(ctx, pool, name, token)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -135,14 +137,15 @@ func TestJobLeaseReleaseIsHolderScoped(t *testing.T) {
 	name := uniqueJobName(t)
 	cleanupLease(t, pool, name)
 
-	if acquired, _, err := acquireJobLease(ctx, pool, name, nil); err != nil || !acquired {
+	stale := newLeaseToken()
+	if acquired, _, err := acquireJobLease(ctx, pool, name, stale, nil); err != nil || !acquired {
 		t.Fatalf("setup acquire: %v %v", acquired, err)
 	}
-	if _, err := pool.Exec(ctx, `UPDATE job_lease SET holder = 'someone-else' WHERE job_name = $1`, name); err != nil {
+	if _, err := pool.Exec(ctx, `UPDATE job_lease SET token = 'someone-else' WHERE job_name = $1`, name); err != nil {
 		t.Fatal(err)
 	}
 
-	if err := releaseJobLease(ctx, pool, name); err != nil {
+	if err := releaseJobLease(ctx, pool, name, stale); err != nil {
 		t.Fatal(err)
 	}
 
@@ -165,12 +168,12 @@ func TestStealingAnExpiredLeaseClosesItsAbandonedRun(t *testing.T) {
 
 	// A holder that opened a run and died.
 	deadRun := beginJobRun(ctx, pool, slog.Default(), name, TriggerTicker)
-	if acquired, _, err := acquireJobLease(ctx, pool, name, &deadRun); err != nil || !acquired {
+	if acquired, _, err := acquireJobLease(ctx, pool, name, newLeaseToken(), &deadRun); err != nil || !acquired {
 		t.Fatalf("setup acquire: %v %v", acquired, err)
 	}
 	expireLease(t, pool, name)
 
-	_, previous, err := acquireJobLease(ctx, pool, name, nil)
+	_, previous, err := acquireJobLease(ctx, pool, name, newLeaseToken(), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -300,5 +303,63 @@ func TestRunWithJobLeaseReleasesAfterFailure(t *testing.T) {
 	runs := ledgerRunsFor(t, pool, name)
 	if runs[0].outcome == nil || *runs[0].outcome != outcomeFailed {
 		t.Fatalf("outcome = %v, want FAILED", runs[0].outcome)
+	}
+}
+
+// Regression: the guard must fence one *acquisition*, not one process.
+//
+// A process identity cannot do it. If a lease expires while its run is still
+// alive and the same process reacquires through another trigger — the ticker
+// and an external scheduler both hitting one worker — both runs carry the same
+// process id. The stale run's renewal would then succeed, so it never learns it
+// was displaced and never cancels, and its release would delete the successor's
+// lease, admitting a third concurrent run.
+func TestADisplacedHolderCannotTouchTheLeaseThatReplacedIt(t *testing.T) {
+	pool := testGatewayDB(t)
+	ctx := context.Background()
+	name := uniqueJobName(t)
+	cleanupLease(t, pool, name)
+
+	// First acquisition, still running when its lease lapses.
+	stale := newLeaseToken()
+	if acquired, _, err := acquireJobLease(ctx, pool, name, stale, nil); err != nil || !acquired {
+		t.Fatalf("first acquire: %v %v", acquired, err)
+	}
+	expireLease(t, pool, name)
+
+	// The *same process* reacquires through another trigger.
+	successor := newLeaseToken()
+	if acquired, _, err := acquireJobLease(ctx, pool, name, successor, nil); err != nil || !acquired {
+		t.Fatalf("resteal: %v %v", acquired, err)
+	}
+
+	// The displaced run must learn it was displaced, or it never cancels.
+	held, err := renewJobLease(ctx, pool, name, stale)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if held {
+		t.Fatal("a displaced holder must not be able to renew; it would run on alongside its successor")
+	}
+
+	// And it must not be able to drop the successor's lease.
+	if err := releaseJobLease(ctx, pool, name, stale); err != nil {
+		t.Fatal(err)
+	}
+	if leaseTokenOf(t, pool, name) != successor {
+		t.Fatal("a displaced holder released its successor's lease, admitting a third run")
+	}
+
+	// Nor silently repoint the successor's ledger row.
+	other := beginJobRun(ctx, pool, slog.Default(), name, TriggerTicker)
+	if err := setJobLeaseRun(ctx, pool, name, stale, other); err != nil {
+		t.Fatal(err)
+	}
+	var runID *string
+	if err := pool.QueryRow(ctx, `SELECT run_id::text FROM job_lease WHERE job_name = $1`, name).Scan(&runID); err != nil {
+		t.Fatal(err)
+	}
+	if runID != nil && *runID == other {
+		t.Fatal("a displaced holder overwrote the successor's run id")
 	}
 }

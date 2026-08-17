@@ -22,9 +22,12 @@ const (
 	leaseRenewInterval = 30 * time.Second
 )
 
-// leaseHolder identifies this process. Generated once at startup: a restarted
-// process is a different holder, which is correct, because it cannot renew the
-// lease its predecessor was holding.
+// leaseHolder names this process. Diagnostic only — never a guard.
+//
+// It cannot fence: if a lease expires while its run is still alive and the same
+// process reacquires through another trigger, both runs share this value, so
+// the stale run would renew successfully, never learn it was displaced, and
+// release the successor's lease. newLeaseToken is the identity that guards.
 var leaseHolder = func() string {
 	buf := make([]byte, 8)
 	if _, err := rand.Read(buf); err != nil {
@@ -35,6 +38,19 @@ var leaseHolder = func() string {
 	return fmt.Sprintf("%s-%d", hex.EncodeToString(buf), os.Getpid())
 }()
 
+// newLeaseToken mints the fencing identity for one acquisition. Unique per
+// acquisition, so a displaced holder can neither renew nor release the lease
+// that replaced it.
+func newLeaseToken() string {
+	buf := make([]byte, 16)
+	if _, err := rand.Read(buf); err != nil {
+		// Fall back to something still unique per acquisition rather than
+		// reusing a process-wide value, which is the failure this guards.
+		return fmt.Sprintf("t-%d-%d", os.Getpid(), time.Now().UnixNano())
+	}
+	return hex.EncodeToString(buf)
+}
+
 // acquireJobLease takes the lease for a job, or reports that someone else holds
 // it. The second return is the run_id recorded by an expired holder, if this
 // call stole one — the ledger row that holder left open.
@@ -42,7 +58,7 @@ var leaseHolder = func() string {
 // One statement, so two callers cannot both win. The WHERE on the conflict
 // clause is the safety property: a live lease is not stolen, the update is
 // skipped, and zero rows come back.
-func acquireJobLease(ctx context.Context, db *pgxpool.Pool, name string, runID *string) (bool, *string, error) {
+func acquireJobLease(ctx context.Context, db *pgxpool.Pool, name, token string, runID *string) (bool, *string, error) {
 	if db == nil {
 		// No database means no coordination is possible. Callers run anyway:
 		// refusing would make an unconfigured worker silently do nothing, and
@@ -62,10 +78,11 @@ func acquireJobLease(ctx context.Context, db *pgxpool.Pool, name string, runID *
 			SELECT run_id FROM job_lease WHERE job_name = $1
 		),
 		upserted AS (
-			INSERT INTO job_lease (job_name, holder, expires_at, run_id)
-			VALUES ($1, $2, now() + $3::interval, $4::uuid)
+			INSERT INTO job_lease (job_name, token, holder, expires_at, run_id)
+			VALUES ($1, $2, $5, now() + $3::interval, $4::uuid)
 			ON CONFLICT (job_name) DO UPDATE
-			   SET holder      = EXCLUDED.holder,
+			   SET token       = EXCLUDED.token,
+			       holder      = EXCLUDED.holder,
 			       acquired_at = now(),
 			       renewed_at  = now(),
 			       expires_at  = EXCLUDED.expires_at,
@@ -75,7 +92,7 @@ func acquireJobLease(ctx context.Context, db *pgxpool.Pool, name string, runID *
 		)
 		SELECT EXISTS (SELECT 1 FROM upserted),
 		       (SELECT run_id::text FROM prev)
-	`, name, leaseHolder, leaseTTL.String(), runID).Scan(&acquired, &previous); err != nil {
+	`, name, token, leaseTTL.String(), runID, leaseHolder).Scan(&acquired, &previous); err != nil {
 		return false, nil, err
 	}
 	if !acquired {
@@ -87,27 +104,27 @@ func acquireJobLease(ctx context.Context, db *pgxpool.Pool, name string, runID *
 // setJobLeaseRun records which ledger row this lease covers. Separate from
 // acquisition because re-running the upsert would meet its own guard: the lease
 // is live by then, so the WHERE would skip the update and report a loss.
-func setJobLeaseRun(ctx context.Context, db *pgxpool.Pool, name, runID string) error {
+func setJobLeaseRun(ctx context.Context, db *pgxpool.Pool, name, token, runID string) error {
 	if db == nil {
 		return nil
 	}
 	_, err := db.Exec(ctx,
-		`UPDATE job_lease SET run_id = $3::uuid WHERE job_name = $1 AND holder = $2`,
-		name, leaseHolder, runID)
+		`UPDATE job_lease SET run_id = $3::uuid WHERE job_name = $1 AND token = $2`,
+		name, token, runID)
 	return err
 }
 
 // renewJobLease extends the lease. Reports false when this process is no longer
 // the holder — the lease expired and another worker took it.
-func renewJobLease(ctx context.Context, db *pgxpool.Pool, name string) (bool, error) {
+func renewJobLease(ctx context.Context, db *pgxpool.Pool, name, token string) (bool, error) {
 	if db == nil {
 		return true, nil
 	}
 	tag, err := db.Exec(ctx, `
 		UPDATE job_lease
 		   SET renewed_at = now(), expires_at = now() + $3::interval
-		 WHERE job_name = $1 AND holder = $2
-	`, name, leaseHolder, leaseTTL.String())
+		 WHERE job_name = $1 AND token = $2
+	`, name, token, leaseTTL.String())
 	if err != nil {
 		return false, err
 	}
@@ -116,12 +133,12 @@ func renewJobLease(ctx context.Context, db *pgxpool.Pool, name string) (bool, er
 
 // releaseJobLease drops the lease. Scoped to the holder so a slow run that
 // already lost its lease cannot delete its successor's.
-func releaseJobLease(ctx context.Context, db *pgxpool.Pool, name string) error {
+func releaseJobLease(ctx context.Context, db *pgxpool.Pool, name, token string) error {
 	if db == nil {
 		return nil
 	}
 	_, err := db.Exec(ctx,
-		`DELETE FROM job_lease WHERE job_name = $1 AND holder = $2`, name, leaseHolder)
+		`DELETE FROM job_lease WHERE job_name = $1 AND token = $2`, name, token)
 	return err
 }
 
@@ -158,7 +175,7 @@ type leaseKeeper struct {
 // It does not fence: a write already in flight when the lease is lost still
 // lands. Full fencing would thread a lease generation through every write,
 // which is disproportionate when the worst case here is a duplicate message.
-func startLeaseKeeper(ctx context.Context, db *pgxpool.Pool, logger *slog.Logger, name string, cancel context.CancelFunc) *leaseKeeper {
+func startLeaseKeeper(ctx context.Context, db *pgxpool.Pool, logger *slog.Logger, name, token string, cancel context.CancelFunc) *leaseKeeper {
 	k := &leaseKeeper{cancel: cancel, done: make(chan struct{})}
 	go func() {
 		ticker := time.NewTicker(leaseRenewInterval)
@@ -170,7 +187,7 @@ func startLeaseKeeper(ctx context.Context, db *pgxpool.Pool, logger *slog.Logger
 			case <-ctx.Done():
 				return
 			case <-ticker.C:
-				held, err := renewJobLease(ctx, db, name)
+				held, err := renewJobLease(ctx, db, name, token)
 				if err != nil {
 					// Transient: the TTL allows three consecutive failures
 					// before the lease lapses, so keep working.
@@ -205,7 +222,8 @@ func (k *leaseKeeper) Stop() {
 //
 // Reports false when the lease was held elsewhere and the sweep did not run.
 func runWithJobLease(ctx context.Context, db *pgxpool.Pool, logger *slog.Logger, name, trigger string, fn func(context.Context) error) (bool, error) {
-	acquired, previousRun, err := acquireJobLease(ctx, db, name, nil)
+	token := newLeaseToken()
+	acquired, previousRun, err := acquireJobLease(ctx, db, name, token, nil)
 	if err != nil {
 		// Without coordination, running risks the duplicate side effects this
 		// exists to prevent — and a sweep that cannot reach the database has
@@ -227,20 +245,20 @@ func runWithJobLease(ctx context.Context, db *pgxpool.Pool, logger *slog.Logger,
 	started := time.Now()
 	runID := beginJobRun(ctx, db, logger, name, trigger)
 	if runID != "" {
-		if err := setJobLeaseRun(ctx, db, name, runID); err != nil {
+		if err := setJobLeaseRun(ctx, db, name, token, runID); err != nil {
 			logger.Warn("job lease: failed to record run id", "worker.job.name", name, "error", err)
 		}
 	}
 
 	runCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	keeper := startLeaseKeeper(runCtx, db, logger, name, cancel)
+	keeper := startLeaseKeeper(runCtx, db, logger, name, token, cancel)
 
 	runErr := fn(runCtx)
 
 	keeper.Stop()
 	finishJobRun(ctx, db, logger, runID, started, runErr)
-	if err := releaseJobLease(ctx, db, name); err != nil {
+	if err := releaseJobLease(ctx, db, name, token); err != nil {
 		logger.Warn("job lease: release failed", "worker.job.name", name, "error", err)
 	}
 	return true, runErr
