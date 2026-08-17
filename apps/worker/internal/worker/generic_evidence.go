@@ -81,7 +81,7 @@ func (s *Server) handleGenericEvidence(w http.ResponseWriter, r *http.Request) {
 	// The web command carries both immutable source_payload and canonical
 	// source_attributes. A 1 MiB external batch can therefore expand to roughly
 	// twice that size on this private hop.
-	decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, 3<<20))
+	decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, bodyLimits.Generic))
 	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(&batch); err != nil {
 		writeError(w, http.StatusBadRequest, "Internal generic evidence batch must be JSON.", tid, nil)

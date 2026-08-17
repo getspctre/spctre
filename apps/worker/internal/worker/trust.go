@@ -451,7 +451,7 @@ func policyMatches(policy trustPolicy, input trustEvaluateRequest) bool {
 }
 
 func decodeJSONRequest(w http.ResponseWriter, r *http.Request, out any) error {
-	decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, 2<<20))
+	decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, bodyLimits.Runtime))
 	decoder.UseNumber()
 	if err := decoder.Decode(out); err != nil {
 		return errors.New("Request body must be JSON.")

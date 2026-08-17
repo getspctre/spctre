@@ -41,7 +41,7 @@ func (s *Server) handleGatewayClaim(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var payload gatewayClaimRequest
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<20)).Decode(&payload); err != nil {
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, bodyLimits.Control)).Decode(&payload); err != nil {
 		writeError(w, http.StatusBadRequest, "Request body must be JSON.", traceID, nil)
 		return
 	}
@@ -80,7 +80,7 @@ func (s *Server) handleGatewayDecide(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var payload GatewayDecisionRequest
-	decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, 2<<20))
+	decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, bodyLimits.Runtime))
 	decoder.UseNumber()
 	if err := decoder.Decode(&payload); err != nil {
 		writeError(w, http.StatusBadRequest, "Request body must be JSON.", traceID, nil)
@@ -228,7 +228,7 @@ func (s *Server) handleGatewayResolve(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var payload GatewayResolveRequest
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<20)).Decode(&payload); err != nil {
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, bodyLimits.Control)).Decode(&payload); err != nil {
 		writeError(w, http.StatusBadRequest, "Request body must be JSON.", traceID, nil)
 		return
 	}
