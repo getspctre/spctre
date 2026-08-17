@@ -135,34 +135,6 @@ func authenticateJobTriggerRequest(w http.ResponseWriter, r *http.Request, trace
 	return true
 }
 
-// tryAdvisoryLock attempts to acquire a PostgreSQL session-level advisory lock.
-// Returns (true, releaseFn, nil) when acquired. The caller must call releaseFn when done.
-// Returns (false, nil, nil) when the lock is already held by another session.
-func (s *Server) tryAdvisoryLock(ctx context.Context, lockID int64) (bool, func(), error) {
-	lockCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
-	defer cancel()
-	conn, err := s.db.Acquire(lockCtx)
-	if err != nil {
-		return false, nil, err
-	}
-	var acquired bool
-	if err := conn.QueryRow(ctx, "SELECT pg_try_advisory_lock($1)", lockID).Scan(&acquired); err != nil {
-		conn.Release()
-		return false, nil, err
-	}
-	if !acquired {
-		conn.Release()
-		return false, nil, nil
-	}
-	release := func() {
-		if _, err := conn.Exec(context.Background(), "SELECT pg_advisory_unlock($1)", lockID); err != nil {
-			s.logger.Warn("advisory unlock failed", "error", err, "lock_id", lockID)
-		}
-		conn.Release()
-	}
-	return true, release, nil
-}
-
 // beginTenantTx starts a transaction scoped to a specific tenant for RLS
 // enforcement. It sets the PostgreSQL role to spctre_app and configures
 // app.current_tenant_id so that row-level security policies restrict all
@@ -189,30 +161,28 @@ func (s *Server) beginTenantTx(ctx context.Context, tenantID string) (pgx.Tx, er
 	return tx, nil
 }
 
-// runJobEndpoint handles the advisory lock, context detachment, timing, and response
-// for a triggered job. Callers must perform method and auth checks before calling.
-func (s *Server) runJobEndpoint(w http.ResponseWriter, r *http.Request, name string, lockID int64, fn func(context.Context) error) {
+// runJobEndpoint handles lease acquisition, context detachment, timing, and the
+// response for a triggered job. Callers must perform method and auth checks
+// before calling.
+func (s *Server) runJobEndpoint(w http.ResponseWriter, r *http.Request, name string, fn func(context.Context) error) {
 	tid := traceID(r)
 	// Detach from the HTTP request context so the job continues even if the
 	// external scheduler closes the connection before the job finishes.
 	jobCtx := context.WithoutCancel(r.Context())
-	acquired, release, err := s.tryAdvisoryLock(jobCtx, lockID)
-	if err != nil {
-		s.logger.Error("advisory lock error", "job", name, "error", err)
-		writeError(w, http.StatusInternalServerError, "Job execution failed.", tid, nil)
-		return
-	}
-	if !acquired {
+	started := time.Now()
+	ran, err := runWithJobLease(jobCtx, s.db, s.logger, name, TriggerHTTP, fn)
+	if !ran {
+		if err != nil {
+			s.logger.Error("job lease error", "job", name, "error", err)
+			writeError(w, http.StatusInternalServerError, "Job execution failed.", tid, nil)
+			return
+		}
+		// 200 rather than a conflict: an external scheduler retrying into a
+		// running sweep is correct behaviour, and a failure response here would
+		// report it as a failed job.
 		writeJSON(w, http.StatusOK, map[string]any{"ok": true, "job": name, "skipped": true, "reason": "already running"})
 		return
 	}
-	defer release()
-	started := time.Now()
-	// Opened after the advisory lock, so a call that was skipped as already
-	// running does not record a run it never performed.
-	runID := beginJobRun(jobCtx, s.db, s.logger, name, TriggerHTTP)
-	err = fn(jobCtx)
-	finishJobRun(jobCtx, s.db, s.logger, runID, started, err)
 	if err != nil {
 		s.logger.Error("job http trigger failed", "job", name, "error", err)
 		writeError(w, http.StatusInternalServerError, "Job execution failed.", tid, nil)
@@ -229,7 +199,7 @@ func (s *Server) handleJobRetentionSweep(w http.ResponseWriter, r *http.Request)
 	if !authenticateJobTriggerRequest(w, r, traceID(r)) {
 		return
 	}
-	s.runJobEndpoint(w, r, "retention-sweep", LockIDRetentionSweep, func(ctx context.Context) error {
+	s.runJobEndpoint(w, r, "retention-sweep", func(ctx context.Context) error {
 		return runRetention(ctx, s.db, s.logger)
 	})
 }
@@ -242,7 +212,7 @@ func (s *Server) handleJobVerificationSweep(w http.ResponseWriter, r *http.Reque
 	if !authenticateJobTriggerRequest(w, r, traceID(r)) {
 		return
 	}
-	s.runJobEndpoint(w, r, "verification-sweep", LockIDVerificationSweep, func(ctx context.Context) error {
+	s.runJobEndpoint(w, r, "verification-sweep", func(ctx context.Context) error {
 		return runVerificationSweep(ctx, s.db, s.logger)
 	})
 }
@@ -255,7 +225,7 @@ func (s *Server) handleJobMetricsSweep(w http.ResponseWriter, r *http.Request) {
 	if !authenticateJobTriggerRequest(w, r, traceID(r)) {
 		return
 	}
-	s.runJobEndpoint(w, r, "metrics-sweep", LockIDMetricsSweep, func(ctx context.Context) error {
+	s.runJobEndpoint(w, r, "metrics-sweep", func(ctx context.Context) error {
 		return runMetricsSweep(ctx, s.db, s.logger)
 	})
 }
@@ -268,7 +238,7 @@ func (s *Server) handleJobEscalationSLA(w http.ResponseWriter, r *http.Request) 
 	if !authenticateJobTriggerRequest(w, r, traceID(r)) {
 		return
 	}
-	s.runJobEndpoint(w, r, "escalation-sla", LockIDEscalationSLA, func(ctx context.Context) error {
+	s.runJobEndpoint(w, r, "escalation-sla", func(ctx context.Context) error {
 		return runEscalationSLAMonitor(ctx, s.db, s.logger)
 	})
 }
@@ -281,7 +251,7 @@ func (s *Server) handleJobNotificationSender(w http.ResponseWriter, r *http.Requ
 	if !authenticateJobTriggerRequest(w, r, traceID(r)) {
 		return
 	}
-	s.runJobEndpoint(w, r, "notification-sender", LockIDNotificationSender, func(ctx context.Context) error {
+	s.runJobEndpoint(w, r, "notification-sender", func(ctx context.Context) error {
 		return runNotificationSender(ctx, s.db, s.logger, s.notification, safeHTTPClient)
 	})
 }
@@ -294,7 +264,7 @@ func (s *Server) handleJobSiemForwarder(w http.ResponseWriter, r *http.Request) 
 	if !authenticateJobTriggerRequest(w, r, traceID(r)) {
 		return
 	}
-	s.runJobEndpoint(w, r, "siem-forwarder", LockIDSiemForwarder, func(ctx context.Context) error {
+	s.runJobEndpoint(w, r, "siem-forwarder", func(ctx context.Context) error {
 		return runSiemForwarder(ctx, s.db, s.logger, safeHTTPClient)
 	})
 }
@@ -307,7 +277,7 @@ func (s *Server) handleJobUsageReconcile(w http.ResponseWriter, r *http.Request)
 	if !authenticateJobTriggerRequest(w, r, traceID(r)) {
 		return
 	}
-	s.runJobEndpoint(w, r, "usage-reconcile", LockIDUsageReconcile, func(ctx context.Context) error {
+	s.runJobEndpoint(w, r, "usage-reconcile", func(ctx context.Context) error {
 		return runUsageReconciliation(ctx, s.db, s.logger)
 	})
 }
@@ -320,7 +290,7 @@ func (s *Server) handleJobUsageReport(w http.ResponseWriter, r *http.Request) {
 	if !authenticateJobTriggerRequest(w, r, traceID(r)) {
 		return
 	}
-	s.runJobEndpoint(w, r, "usage-report", LockIDUsageReport, func(ctx context.Context) error {
+	s.runJobEndpoint(w, r, "usage-report", func(ctx context.Context) error {
 		return runUsageReporting(ctx, s.db, s.logger)
 	})
 }
