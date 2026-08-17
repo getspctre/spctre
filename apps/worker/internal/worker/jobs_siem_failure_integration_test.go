@@ -136,6 +136,52 @@ func TestSiemSuccessClearsTheFailureStreak(t *testing.T) {
 	}
 }
 
+// Regression: a delivery that succeeds concurrently with the failure that
+// crossed the ceiling must not half-clear the suspension.
+//
+// Two forwarders can run at once (the ticker takes no cross-process lock). If
+// one suspends the stream while the other's in-flight send succeeds, an
+// unguarded clear would null suspended_at and last_error but leave enabled
+// false — a stopped stream that looks like an ordinary operator pause and
+// carries no reason for it. Forwarding stays off with nothing to explain why,
+// which is worse than the unbounded retry the ceiling replaced.
+func TestSiemSuccessDoesNotHalfClearAConcurrentSuspension(t *testing.T) {
+	pool := testGatewayDB(t)
+	f := newGatewayFixture(t, pool)
+	id := f.insertSiemStream(t, "concurrent-suspend")
+	ctx := context.Background()
+
+	// Worker A: the failure that crosses the ceiling and suspends.
+	for i := 0; i < 3; i++ {
+		if _, _, err := recordSiemFailure(ctx, pool, id, "connection refused", 3); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if state := f.siemState(t, id); !state.suspended || state.enabled {
+		t.Fatalf("precondition: expected a suspended, disabled stream, got %+v", state)
+	}
+
+	// Worker B: an already-in-flight delivery lands afterwards.
+	if err := clearSiemFailures(ctx, pool, id); err != nil {
+		t.Fatal(err)
+	}
+
+	state := f.siemState(t, id)
+	// The invariant that matters: never stopped-without-a-reason.
+	if !state.enabled && !state.suspended {
+		t.Fatal("stream is disabled with no suspension marker: indistinguishable from an operator pause")
+	}
+	if !state.suspended {
+		t.Fatal("a concurrent success must not clear another worker's suspension")
+	}
+	if state.lastError == nil {
+		t.Fatal("suspension reason must survive a concurrent success")
+	}
+	if state.enabled {
+		t.Fatal("a concurrent success must not silently re-enable a suspended stream")
+	}
+}
+
 // A suspended stream is excluded from the sweep because the forwarder selects
 // only enabled rows — that is what stops the infinite replay.
 func TestSuspendedStreamIsNotSelectedForForwarding(t *testing.T) {

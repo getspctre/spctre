@@ -303,17 +303,34 @@ func recordSiemFailure(ctx context.Context, db *pgxpool.Pool, streamID, errText 
 	return failures, suspended, err
 }
 
-// clearSiemFailures resets the counter after a successful send. Guarded so a
-// healthy stream does not take a write on every sweep.
+// clearSiemFailures resets the counter after a successful send.
+//
+// `consecutive_failures > 0` keeps a healthy stream from taking a write on
+// every sweep. `suspended_at IS NULL` is the important one: it must not clear
+// the state of a stream another worker has already suspended.
+//
+// Without that guard, a delivery that succeeds concurrently with the failure
+// that crossed the ceiling would null out suspended_at and last_error while
+// leaving enabled false — a stopped stream that looks like an ordinary operator
+// pause and carries no reason. Forwarding would stay off with nothing to
+// explain it, which is worse than the unbounded retry this ceiling replaced.
+//
+// Staying suspended is the safe resolution rather than re-enabling. The two
+// outcomes raced, so neither is authoritative, and resurrecting a stream that
+// another worker just suspended would oscillate if the endpoint really is
+// broken. Nothing is lost by waiting for an operator: updateSiemStreamCursor
+// has already advanced past the delivered batch, so re-enabling resumes from
+// the right place.
 func clearSiemFailures(ctx context.Context, db *pgxpool.Pool, streamID string) error {
 	_, err := db.Exec(ctx, `
 		UPDATE workspace_siem_stream
 		   SET consecutive_failures = 0,
 		       last_error           = NULL,
 		       last_failure_at      = NULL,
-		       suspended_at         = NULL,
 		       updated_at           = now()
-		 WHERE id = $1::uuid AND consecutive_failures > 0
+		 WHERE id = $1::uuid
+		   AND consecutive_failures > 0
+		   AND suspended_at IS NULL
 	`, streamID)
 	return err
 }
