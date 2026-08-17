@@ -1,0 +1,304 @@
+package worker
+
+import (
+	"context"
+	"errors"
+	"log/slog"
+	"testing"
+	"time"
+
+	"github.com/jackc/pgx/v5/pgxpool"
+)
+
+// expireLease backdates a lease so a test can exercise the stolen-lease path
+// without waiting out leaseTTL. Uses the database's clock, as the lease itself
+// does.
+func expireLease(t *testing.T, pool *pgxpool.Pool, name string) {
+	t.Helper()
+	if _, err := pool.Exec(context.Background(),
+		`UPDATE job_lease SET expires_at = now() - interval '1 second' WHERE job_name = $1`, name,
+	); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func leaseHolderOf(t *testing.T, pool *pgxpool.Pool, name string) string {
+	t.Helper()
+	var holder string
+	if err := pool.QueryRow(context.Background(),
+		`SELECT holder FROM job_lease WHERE job_name = $1`, name).Scan(&holder); err != nil {
+		t.Fatal(err)
+	}
+	return holder
+}
+
+func cleanupLease(t *testing.T, pool *pgxpool.Pool, name string) {
+	t.Cleanup(func() {
+		_, _ = pool.Exec(context.Background(), `DELETE FROM job_lease WHERE job_name = $1`, name)
+	})
+}
+
+func TestJobLeaseIsHeldExclusively(t *testing.T) {
+	pool := testGatewayDB(t)
+	ctx := context.Background()
+	name := uniqueJobName(t)
+	cleanupLease(t, pool, name)
+
+	acquired, _, err := acquireJobLease(ctx, pool, name, nil)
+	if err != nil || !acquired {
+		t.Fatalf("first acquire: acquired=%v err=%v", acquired, err)
+	}
+
+	// A second attempt against a live lease must fail, even from this same
+	// process — the guard is the expiry, not the holder.
+	again, _, err := acquireJobLease(ctx, pool, name, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if again {
+		t.Fatal("a live lease must not be re-acquirable")
+	}
+}
+
+func TestJobLeaseIsStealableOnlyOnceExpired(t *testing.T) {
+	pool := testGatewayDB(t)
+	ctx := context.Background()
+	name := uniqueJobName(t)
+	cleanupLease(t, pool, name)
+
+	if acquired, _, err := acquireJobLease(ctx, pool, name, nil); err != nil || !acquired {
+		t.Fatalf("setup acquire: %v %v", acquired, err)
+	}
+	original := leaseHolderOf(t, pool, name)
+
+	expireLease(t, pool, name)
+
+	acquired, _, err := acquireJobLease(ctx, pool, name, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !acquired {
+		t.Fatal("an expired lease must be stealable, otherwise a crashed holder blocks the job forever")
+	}
+	if leaseHolderOf(t, pool, name) != original {
+		t.Fatal("holder should be this process after stealing")
+	}
+}
+
+func TestJobLeaseRenewalExtendsAndIsHolderScoped(t *testing.T) {
+	pool := testGatewayDB(t)
+	ctx := context.Background()
+	name := uniqueJobName(t)
+	cleanupLease(t, pool, name)
+
+	if acquired, _, err := acquireJobLease(ctx, pool, name, nil); err != nil || !acquired {
+		t.Fatalf("setup acquire: %v %v", acquired, err)
+	}
+
+	var before time.Time
+	if err := pool.QueryRow(ctx, `SELECT expires_at FROM job_lease WHERE job_name = $1`, name).Scan(&before); err != nil {
+		t.Fatal(err)
+	}
+	expireLease(t, pool, name)
+
+	held, err := renewJobLease(ctx, pool, name)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !held {
+		t.Fatal("the holder must be able to renew")
+	}
+	var after time.Time
+	if err := pool.QueryRow(ctx, `SELECT expires_at FROM job_lease WHERE job_name = $1`, name).Scan(&after); err != nil {
+		t.Fatal(err)
+	}
+	if !after.After(before.Add(-time.Second)) {
+		t.Fatalf("renewal did not extend the lease: %v -> %v", before, after)
+	}
+
+	// Simulate the lease having been taken by another process.
+	if _, err := pool.Exec(ctx, `UPDATE job_lease SET holder = 'someone-else' WHERE job_name = $1`, name); err != nil {
+		t.Fatal(err)
+	}
+	held, err = renewJobLease(ctx, pool, name)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if held {
+		t.Fatal("renewal must report a loss once another process holds the lease")
+	}
+}
+
+func TestJobLeaseReleaseIsHolderScoped(t *testing.T) {
+	pool := testGatewayDB(t)
+	ctx := context.Background()
+	name := uniqueJobName(t)
+	cleanupLease(t, pool, name)
+
+	if acquired, _, err := acquireJobLease(ctx, pool, name, nil); err != nil || !acquired {
+		t.Fatalf("setup acquire: %v %v", acquired, err)
+	}
+	if _, err := pool.Exec(ctx, `UPDATE job_lease SET holder = 'someone-else' WHERE job_name = $1`, name); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := releaseJobLease(ctx, pool, name); err != nil {
+		t.Fatal(err)
+	}
+
+	var count int
+	if err := pool.QueryRow(ctx, `SELECT count(*) FROM job_lease WHERE job_name = $1`, name).Scan(&count); err != nil {
+		t.Fatal(err)
+	}
+	if count != 1 {
+		t.Fatal("a stale holder must not delete its successor's lease")
+	}
+}
+
+// The liveness payoff: stealing an expired lease closes the ledger row its dead
+// holder left open. This is what job_run could not do on its own.
+func TestStealingAnExpiredLeaseClosesItsAbandonedRun(t *testing.T) {
+	pool := testGatewayDB(t)
+	ctx := context.Background()
+	name := uniqueJobName(t)
+	cleanupLease(t, pool, name)
+
+	// A holder that opened a run and died.
+	deadRun := beginJobRun(ctx, pool, slog.Default(), name, TriggerTicker)
+	if acquired, _, err := acquireJobLease(ctx, pool, name, &deadRun); err != nil || !acquired {
+		t.Fatalf("setup acquire: %v %v", acquired, err)
+	}
+	expireLease(t, pool, name)
+
+	_, previous, err := acquireJobLease(ctx, pool, name, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if previous == nil || *previous != deadRun {
+		t.Fatalf("expected the dead holder's run id back, got %v", previous)
+	}
+	if err := markRunAbandoned(ctx, pool, *previous); err != nil {
+		t.Fatal(err)
+	}
+
+	runs := ledgerRunsFor(t, pool, name)
+	if len(runs) != 1 {
+		t.Fatalf("expected 1 run, got %d", len(runs))
+	}
+	if runs[0].outcome == nil || *runs[0].outcome != outcomeAbandoned {
+		t.Fatalf("outcome = %v, want ABANDONED", runs[0].outcome)
+	}
+}
+
+// A holder that crashed *after* closing its row must not have that row
+// rewritten — its recorded outcome is the truth.
+func TestMarkRunAbandonedLeavesAClosedRunAlone(t *testing.T) {
+	pool := testGatewayDB(t)
+	ctx := context.Background()
+	name := uniqueJobName(t)
+
+	runID := beginJobRun(ctx, pool, slog.Default(), name, TriggerHTTP)
+	finishJobRun(ctx, pool, slog.Default(), runID, time.Now(), errors.New("real failure"))
+
+	if err := markRunAbandoned(ctx, pool, runID); err != nil {
+		t.Fatal(err)
+	}
+
+	runs := ledgerRunsFor(t, pool, name)
+	if runs[0].outcome == nil || *runs[0].outcome != outcomeFailed {
+		t.Fatalf("outcome = %v, want FAILED preserved", runs[0].outcome)
+	}
+}
+
+// End to end: the second caller must not run the sweep at all, and must not
+// leave a ledger row for a run that never happened.
+func TestRunWithJobLeaseSkipsWhenHeldElsewhere(t *testing.T) {
+	pool := testGatewayDB(t)
+	ctx := context.Background()
+	name := uniqueJobName(t)
+	cleanupLease(t, pool, name)
+
+	release := make(chan struct{})
+	firstRunning := make(chan struct{})
+	firstDone := make(chan struct{})
+
+	go func() {
+		defer close(firstDone)
+		_, _ = runWithJobLease(ctx, pool, slog.Default(), name, TriggerTicker, func(context.Context) error {
+			close(firstRunning)
+			<-release
+			return nil
+		})
+	}()
+	<-firstRunning
+
+	executed := false
+	ran, err := runWithJobLease(ctx, pool, slog.Default(), name, TriggerHTTP, func(context.Context) error {
+		executed = true
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if ran {
+		t.Fatal("the second caller must not run while the lease is held")
+	}
+	if executed {
+		t.Fatal("the sweep body must not execute without the lease")
+	}
+
+	close(release)
+	<-firstDone
+
+	runs := ledgerRunsFor(t, pool, name)
+	if len(runs) != 1 {
+		t.Fatalf("expected exactly one ledger row, got %d — a skipped run must not be recorded", len(runs))
+	}
+	if runs[0].outcome == nil || *runs[0].outcome != outcomeSuccess {
+		t.Fatalf("outcome = %v, want SUCCESS", runs[0].outcome)
+	}
+}
+
+// The lease is released on completion, so the next tick can take it.
+func TestRunWithJobLeaseReleasesOnCompletion(t *testing.T) {
+	pool := testGatewayDB(t)
+	ctx := context.Background()
+	name := uniqueJobName(t)
+	cleanupLease(t, pool, name)
+
+	if ran, err := runWithJobLease(ctx, pool, slog.Default(), name, TriggerTicker, func(context.Context) error { return nil }); err != nil || !ran {
+		t.Fatalf("first run: ran=%v err=%v", ran, err)
+	}
+	if ran, err := runWithJobLease(ctx, pool, slog.Default(), name, TriggerTicker, func(context.Context) error { return nil }); err != nil || !ran {
+		t.Fatalf("second run must acquire after release: ran=%v err=%v", ran, err)
+	}
+}
+
+// A failing sweep still releases its lease and records the failure; a job that
+// errors must not lock itself out.
+func TestRunWithJobLeaseReleasesAfterFailure(t *testing.T) {
+	pool := testGatewayDB(t)
+	ctx := context.Background()
+	name := uniqueJobName(t)
+	cleanupLease(t, pool, name)
+
+	ran, err := runWithJobLease(ctx, pool, slog.Default(), name, TriggerHTTP, func(context.Context) error {
+		return errors.New("sweep failed")
+	})
+	if !ran || err == nil {
+		t.Fatalf("expected the run to happen and report failure: ran=%v err=%v", ran, err)
+	}
+
+	var count int
+	if err := pool.QueryRow(ctx, `SELECT count(*) FROM job_lease WHERE job_name = $1`, name).Scan(&count); err != nil {
+		t.Fatal(err)
+	}
+	if count != 0 {
+		t.Fatal("a failed sweep must still release its lease")
+	}
+
+	runs := ledgerRunsFor(t, pool, name)
+	if runs[0].outcome == nil || *runs[0].outcome != outcomeFailed {
+		t.Fatalf("outcome = %v, want FAILED", runs[0].outcome)
+	}
+}
