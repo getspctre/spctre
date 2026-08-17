@@ -17,11 +17,13 @@ CREATE TABLE IF NOT EXISTS public.job_run (
   -- which one is driving its sweeps, and notice if both are.
   trigger text NOT NULL CHECK (trigger IN ('TICKER', 'HTTP')),
   started_at timestamptz NOT NULL DEFAULT now(),
-  -- NULL while a sweep is in flight. An open row whose process died is closed
-  -- as ABANDONED by the next run of the same job: the per-job advisory lock
-  -- releases when its session ends, so a new run starting is proof the
-  -- previous one is no longer alive. That needs no reaper and no timeout
-  -- heuristic.
+  -- NULL while a sweep is in flight, and left NULL if the process dies. It is
+  -- not closed by the next run of the same job: only the HTTP job endpoints
+  -- take the per-job advisory lock, so two runs can overlap and closing on
+  -- start would mark a live run as finished. An interrupted run therefore
+  -- stays open and reads as "started, never finished", which is the truth.
+  -- ABANDONED is reserved for a liveness-based sweep (heartbeat) that can tell
+  -- a dead run from a slow one.
   finished_at timestamptz,
   outcome text CHECK (outcome IN ('SUCCESS', 'FAILED', 'ABANDONED')),
   error text,

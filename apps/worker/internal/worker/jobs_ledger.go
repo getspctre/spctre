@@ -17,10 +17,17 @@ const (
 )
 
 const (
-	outcomeSuccess   = "SUCCESS"
-	outcomeFailed    = "FAILED"
+	outcomeSuccess = "SUCCESS"
+	outcomeFailed  = "FAILED"
+	// outcomeAbandoned is intentionally unwritten today. Marking a run
+	// abandoned requires knowing it is dead rather than slow, and nothing here
+	// carries that liveness yet — see beginJobRun. It stays declared alongside
+	// the migration's CHECK constraint so the heartbeat sweep that will write
+	// it does not have to reintroduce the value.
 	outcomeAbandoned = "ABANDONED"
 )
+
+var _ = outcomeAbandoned
 
 // jobRunRetention bounds how long sweep history is kept. Long enough to answer
 // "when did this start failing" across a holiday, short enough that the table
@@ -30,12 +37,20 @@ const jobRunRetention = 30 * 24 * time.Hour
 
 // beginJobRun opens a ledger row and returns its id.
 //
-// It first closes any run of the same job left open by a process that died.
-// The per-job advisory lock permits one run at a time and releases when its
-// session ends, so a new run starting is proof the previous one is gone. That
-// makes orphan closure exact without a reaper or a staleness timeout — and a
-// job that never runs again keeps its open row, which is harmless because the
-// signal that matters there is the absence of a recent success.
+// It deliberately does not close other open rows for the same job. Doing that
+// would need "a new run starting proves the previous one is dead", and that is
+// not true here: only the HTTP job endpoints take the per-job advisory lock
+// (runJobEndpoint), while the in-process ticker takes no lock at all. Two runs
+// of one job can therefore overlap — across replicas, or between the ticker and
+// an external scheduler — and closing on start would stamp a live run as
+// ABANDONED, corrupting exactly the signal this table exists to provide.
+//
+// So an interrupted run stays open, and "started, never finished" is recorded
+// truthfully rather than guessed at. Distinguishing a dead run from a slow one
+// needs liveness this row does not carry; the intended follow-up is a heartbeat
+// refreshed during the run, which is safe under concurrency because it proves
+// liveness directly instead of inferring it. ABANDONED remains a valid outcome
+// for that sweep to write.
 //
 // Returns an empty id if the ledger write fails. Callers treat that as
 // "unrecorded" and carry on: the ledger observes sweeps, it must not become a
@@ -43,15 +58,6 @@ const jobRunRetention = 30 * 24 * time.Hour
 func beginJobRun(ctx context.Context, db *pgxpool.Pool, logger *slog.Logger, name, trigger string) string {
 	if db == nil {
 		return ""
-	}
-
-	if _, err := db.Exec(ctx, `
-		UPDATE job_run
-		   SET finished_at = now(), outcome = $2
-		 WHERE job_name = $1 AND finished_at IS NULL
-	`, name, outcomeAbandoned); err != nil {
-		// Not fatal: a stale open row is worth less than the sweep itself.
-		logger.Warn("job ledger: failed to close abandoned runs", "worker.job.name", name, "error", err)
 	}
 
 	var id string
