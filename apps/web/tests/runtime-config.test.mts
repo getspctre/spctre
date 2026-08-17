@@ -16,6 +16,7 @@ const originalEnvironment = {
   runtimeMode: process.env.SPCTRE_RUNTIME_MODE,
   plan: process.env.SPCTRE_PLAN,
   sessionGuardSecret: process.env.SPCTRE_SESSION_GUARD_SECRET,
+  e2eApiEnabled: process.env.SPCTRE_E2E_API_ENABLED,
 };
 
 function restore(name: string, value: string | undefined) {
@@ -29,6 +30,7 @@ afterEach(() => {
   restore("SPCTRE_RUNTIME_MODE", originalEnvironment.runtimeMode);
   restore("SPCTRE_PLAN", originalEnvironment.plan);
   restore("SPCTRE_SESSION_GUARD_SECRET", originalEnvironment.sessionGuardSecret);
+  restore("SPCTRE_E2E_API_ENABLED", originalEnvironment.e2eApiEnabled);
 });
 
 describe("runtime configuration", () => {
@@ -42,6 +44,28 @@ describe("runtime configuration", () => {
     expect(() => getRuntimeConfig({ ...productionEnvironment, SPCTRE_PLAN: "ent" })).toThrow(
       "SPCTRE_PLAN must be",
     );
+  });
+
+  it("refuses to start a production runtime with the E2E support API enabled", () => {
+    expect(() =>
+      getRuntimeConfig({ ...productionEnvironment, SPCTRE_E2E_API_ENABLED: "true" }),
+    ).toThrow("SPCTRE_E2E_API_ENABLED cannot be set in a production runtime.");
+  });
+
+  it("rejects the E2E support API in production however the flag is spelled", () => {
+    for (const raw of ["1", "yes", "on", "TRUE"]) {
+      expect(() =>
+        getRuntimeConfig({ ...productionEnvironment, SPCTRE_E2E_API_ENABLED: raw }),
+      ).toThrow("SPCTRE_E2E_API_ENABLED cannot be set in a production runtime.");
+    }
+  });
+
+  it("allows the E2E support API in a development runtime", () => {
+    expect(getRuntimeConfig({ SPCTRE_E2E_API_ENABLED: "true" }).e2eApiEnabled).toBe(true);
+  });
+
+  it("leaves the E2E support API off by default", () => {
+    expect(getRuntimeConfig(productionEnvironment).e2eApiEnabled).toBe(false);
   });
 
   it("rejects a production runtime without a session guard secret", () => {
