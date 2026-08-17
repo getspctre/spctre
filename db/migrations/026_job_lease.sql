@@ -16,8 +16,18 @@
 -- Cross-tenant infrastructure: no tenant_id, no RLS, as with job_run.
 CREATE TABLE IF NOT EXISTS public.job_lease (
   job_name text PRIMARY KEY,
-  -- Instance identity plus pid. Diagnostic, and the guard that stops a
-  -- non-holder renewing or releasing a lease it does not own.
+  -- The fencing identity: unique per *acquisition*, not per process. Renewal,
+  -- release and run-id recording all match on it.
+  --
+  -- A process identity would not do. If a lease expires while its run is still
+  -- alive and the same process reacquires it through another trigger, both runs
+  -- carry the same process id — so the stale run's renewal succeeds, it never
+  -- learns it was displaced, and its release deletes the successor's lease,
+  -- admitting a third run. The token makes a displaced holder unable to touch
+  -- the lease at all.
+  token text NOT NULL,
+  -- Which process holds it. Diagnostic only: never used as a guard, precisely
+  -- because it cannot distinguish two acquisitions by the same process.
   holder text NOT NULL,
   acquired_at timestamptz NOT NULL DEFAULT now(),
   renewed_at timestamptz NOT NULL DEFAULT now(),
