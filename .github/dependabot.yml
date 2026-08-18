@@ -14,3 +14,15 @@ updates:
     open-pull-requests-limit: 5
     commit-message:
       prefix: ci
+    ignore:
+      # A changesets/action major is coupled to the Changesets CLI major: the
+      # action refuses to run against the previous CLI and renames the inputs
+      # release.yml passes. Unknown `with:` keys are only a warning, so a missed
+      # rename does not fail the step — it runs with no version script at all.
+      #
+      # None of that is catchable by PR CI, because release.yml runs on push to
+      # main rather than on pull_request: the bump merges green and then fails
+      # every release afterwards, which is exactly what v2 did here. Take these
+      # deliberately, with the CLI bump in the same change.
+      - dependency-name: changesets/action
+        update-types: ["version-update:semver-major"]
