@@ -24,7 +24,12 @@ pnpm test                    # package tests + web integration tests
 pnpm generate                # regenerate OpenAPI JSON + SDK types after spec edits
 pnpm migrate                 # run DB migrations
 
-cd apps/worker && go test ./...                          # Go tests
+# Go tests. The worker links the Rust policy kernel behind a build tag, and the
+# stub for builds without it fails closed by design — so a plain `go test ./...`
+# reports the policy-kernel tests as failures rather than skips. Build the kernel
+# first and pass the tag, as CI does:
+cd packages/policy-schema/native && cargo build --release --no-default-features
+cd apps/worker && go test -tags spctre_policy_kernel ./...
 cd packages/policy-schema/native && cargo test           # Rust tests
 ```
 
