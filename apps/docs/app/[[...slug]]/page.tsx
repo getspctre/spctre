@@ -22,6 +22,10 @@ function Home() {
         Define, review, publish, simulate, and prove the policies that govern production agent
         actions.
       </p>
+      <p className="home-note">
+        This site documents the open-source distribution. Hosted customers can find plan-specific
+        product documentation in the Spctre control plane.
+      </p>
       <div className="quick-start" aria-label="Quick start command">
         <code>npm install -g @spctre/cli</code>
         <Link href="/developer/getting-started/quick-start">
