@@ -9,7 +9,7 @@ describe("native policy source translation", () => {
     });
 
     expect(result.sourceFormat).toBe("CEDAR");
-    expect(result.translation).toMatchObject({ status: "EXACT", translatorVersion: "1" });
+    expect(result.translation).toMatchObject({ status: "LOSSY", translatorVersion: "1" });
     expect(result.rules).toMatchObject([
       { effect: "DENY", connectors: ["github"], actions: ["repo.delete"], sourceFormat: "CEDAR" },
     ]);
@@ -51,7 +51,7 @@ describe("native policy source translation", () => {
       sourcePath: "policies/github.rego",
       document: 'package spctre.github\ndeny if {\n input.connector == "github"\n input.action == "repo.delete"\n}',
     });
-    expect(supported.translation?.status).toBe("EXACT");
+    expect(supported.translation?.status).toBe("LOSSY");
     expect(supported.rules[0]).toMatchObject({
       effect: "DENY",
       connectors: ["github"],
@@ -71,5 +71,26 @@ describe("native policy source translation", () => {
     expect(detectPolicySourceFormat({ document: "rules: []", sourcePath: "policy.yaml" })).toBe("AGT_YAML");
     expect(detectPolicySourceFormat({ document: "", sourcePath: "policy.rego" })).toBe("OPA_REGO");
     expect(detectPolicySourceFormat({ document: 'permit(principal, action == Action::"a.b", resource);' })).toBe("CEDAR");
+  });
+
+  it("accepts canonical Rego module declarations and preserves comment markers in strings", () => {
+    const result = parsePolicySourceDocument({
+      sourceFormat: "OPA_REGO",
+      document:
+        'package spctre.github\nimport rego.v1\ndefault deny := false\n# a comment\ndeny if { input.connector == "github"; input.action == "a#b//c" }',
+    });
+
+    expect(result.translation?.status).toBe("LOSSY");
+    expect(result.rules[0]?.actions).toEqual(["a#b//c"]);
+  });
+
+  it("preserves Cedar comment markers inside action identifiers", () => {
+    const result = parsePolicySourceDocument({
+      sourceFormat: "CEDAR",
+      document: 'forbid(principal, action == Action::"github.a//b", resource); // comment',
+    });
+
+    expect(result.translation?.status).toBe("LOSSY");
+    expect(result.rules[0]?.actions).toEqual(["a//b"]);
   });
 });

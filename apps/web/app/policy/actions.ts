@@ -61,6 +61,7 @@ export async function importPolicy(_prev: ImportState, formData: FormData): Prom
     requestedFormat === "AGT_YAML" || requestedFormat === "OPA_REGO" || requestedFormat === "CEDAR"
       ? requestedFormat
       : undefined;
+  const acceptLossy = formData.get("acceptLossy") === "on";
 
   const result = await importPolicyDecision({
     source,
@@ -71,6 +72,7 @@ export async function importPolicy(_prev: ImportState, formData: FormData): Prom
     requestedWorkspaceId,
     sourcePath,
     sourceFormat,
+    acceptLossy,
     targetStacks,
   });
   if ("error" in result) {

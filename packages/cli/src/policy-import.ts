@@ -15,6 +15,7 @@ export interface PolicyImportOptions {
   format?: string;
   sourceFormat?: "AGT_YAML" | "OPA_REGO" | "CEDAR";
   dryRun?: boolean;
+  acceptLossy?: boolean;
   offline?: boolean;
   output?: string;
   report?: string;
@@ -112,6 +113,7 @@ function resolveImport(file: string, options: PolicyImportOptions): ResolvedImpo
       sourcePath,
       sourceFormat,
       dryRun: options.dryRun || undefined,
+      acceptLossy: options.acceptLossy || undefined,
     },
   };
 }

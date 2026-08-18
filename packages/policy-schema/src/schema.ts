@@ -1673,7 +1673,7 @@ export function parsePolicySourceDocument(params: {
   const translation: PolicySourceTranslationReport = {
     sourceFormat,
     translatorVersion: NATIVE_TRANSLATOR_VERSION,
-    status: translated.unsupported ? "UNSUPPORTED" : "EXACT",
+    status: translated.unsupported ? "UNSUPPORTED" : translated.lossy ? "LOSSY" : "EXACT",
     mappings: translated.mappings,
     diagnostics: translated.diagnostics,
   };
@@ -1715,6 +1715,7 @@ type NativeTranslation = {
   mappings: PolicySourceTranslationMapping[];
   diagnostics: PolicyRuleDiagnostic[];
   unsupported: boolean;
+  lossy: boolean;
 };
 
 function unsupportedNativeSource(message: string): NativeTranslation {
@@ -1723,11 +1724,42 @@ function unsupportedNativeSource(message: string): NativeTranslation {
     mappings: [],
     diagnostics: [{ severity: "ERROR", message }],
     unsupported: true,
+    lossy: false,
   };
 }
 
+/** Remove line comments without interpreting comment markers inside strings. */
+function stripLineComments(source: string, markers: string[]): string {
+  let result = "";
+  let quote = false;
+  let escaped = false;
+  for (let index = 0; index < source.length; index += 1) {
+    const char = source[index];
+    if (quote) {
+      result += char;
+      if (escaped) escaped = false;
+      else if (char === "\\") escaped = true;
+      else if (char === '"') quote = false;
+      continue;
+    }
+    if (char === '"') {
+      quote = true;
+      result += char;
+      continue;
+    }
+    const marker = markers.find((candidate) => source.startsWith(candidate, index));
+    if (marker) {
+      while (index < source.length && source[index] !== "\n") index += 1;
+      if (index < source.length) result += "\n";
+      continue;
+    }
+    result += char;
+  }
+  return result;
+}
+
 function translateCedarSource(source: string): NativeTranslation {
-  const withoutComments = source.replace(/\/\/.*$/gm, "").trim();
+  const withoutComments = stripLineComments(source, ["//"]).trim();
   // Cedar defaults to deny whereas the current AGT evaluator defaults to
   // allow. A Cedar `permit` statement therefore cannot be represented exactly
   // without a branch-level default-effect feature; accept only forbids.
@@ -1760,7 +1792,12 @@ function translateCedarSource(source: string): NativeTranslation {
       connectors: [connector],
       actions: [actionParts.join(".")],
     });
-    mappings.push({ sourceId: `cedar:${rules.length}`, stableRuleId, outcome: "EXACT" });
+    mappings.push({
+      sourceId: `cedar:${rules.length}`,
+      stableRuleId,
+      outcome: "LOSSY",
+      message: "Spctre action matching is prefix-based; Cedar action equality may match additional action names.",
+    });
     last = statement.lastIndex;
   }
   if (!rules.length || withoutComments.slice(last).trim()) {
@@ -1768,17 +1805,32 @@ function translateCedarSource(source: string): NativeTranslation {
       "Unsupported Cedar syntax. No supported standalone forbid statements were found.",
     );
   }
-  return { rules, mappings, diagnostics: [], unsupported: false };
+  return {
+    rules,
+    mappings,
+    diagnostics: [
+      {
+        severity: "WARNING",
+        message: "Cedar action equality is translated to Spctre's prefix action matching and is therefore lossy.",
+      },
+    ],
+    unsupported: false,
+    lossy: true,
+  };
 }
 
 function translateRegoSource(source: string): NativeTranslation {
-  const withoutComments = source.replace(/#.*/g, "").trim();
+  const withoutComments = stripLineComments(source, ["#", "//"]).trim();
   const packageMatch = /^\s*package\s+([\w./-]+)\s*$/m.exec(withoutComments);
   if (!packageMatch) return unsupportedNativeSource("Rego source must declare a package.");
   // Rego `allow` rules commonly rely on OPA's default-deny decision contract,
   // which Spctre cannot reproduce without a branch-level default effect. The
   // exact initial subset is deny-only and uses Spctre's deny-override model.
-  const body = withoutComments.replace(/^\s*package\s+[\w./-]+\s*$/m, "").trim();
+  const body = withoutComments
+    .replace(/^\s*package\s+[\w./-]+\s*$/m, "")
+    .replace(/^\s*import\s+rego\.v1\s*$/gm, "")
+    .replace(/^\s*default\s+deny\s*:?=\s*false\s*$/gm, "")
+    .trim();
   const rulePattern = /\b(deny)\s+if\s*\{([^{}]*)\}/g;
   const rules: Record<string, unknown>[] = [];
   const mappings: PolicySourceTranslationMapping[] = [];
@@ -1788,7 +1840,7 @@ function translateRegoSource(source: string): NativeTranslation {
     const gap = body.slice(last, match.index).trim();
     if (gap) {
       return unsupportedNativeSource(
-        "Unsupported Rego syntax. The initial importer accepts only a package declaration and deny if blocks with input selector comparisons; allow/default decision contracts are not yet representable.",
+        "Unsupported Rego syntax. The initial importer accepts a package declaration, optional import rego.v1/default deny := false, and deny if blocks with input selector comparisons; allow/default decision contracts are not yet representable.",
       );
     }
     const selectors: Record<string, string> = {};
@@ -1813,7 +1865,12 @@ function translateRegoSource(source: string): NativeTranslation {
       actions: selectors.action ? [selectors.action] : [],
       domains: selectors.domain ? [selectors.domain] : [],
     });
-    mappings.push({ sourceId: `rego:${match[1]}:${rules.length}`, stableRuleId, outcome: "EXACT" });
+    mappings.push({
+      sourceId: `rego:${match[1]}:${rules.length}`,
+      stableRuleId,
+      outcome: "LOSSY",
+      message: "Spctre action matching is prefix-based; Rego action equality may match additional action names.",
+    });
     last = rulePattern.lastIndex;
   }
   if (!rules.length || body.slice(last).trim()) {
@@ -1821,7 +1878,18 @@ function translateRegoSource(source: string): NativeTranslation {
       "Unsupported Rego syntax. No supported deny if blocks were found.",
     );
   }
-  return { rules, mappings, diagnostics: [], unsupported: false };
+  return {
+    rules,
+    mappings,
+    diagnostics: [
+      {
+        severity: "WARNING",
+        message: "Rego action equality is translated to Spctre's prefix action matching and is therefore lossy.",
+      },
+    ],
+    unsupported: false,
+    lossy: true,
+  };
 }
 
 function stringArray(value: unknown): string[] {

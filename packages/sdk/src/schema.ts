@@ -1648,6 +1648,8 @@ export interface components {
             sourceFormat?: "AGT_YAML" | "OPA_REGO" | "CEDAR";
             /** @description Validate and translate without creating a branch or revision. */
             dryRun?: boolean;
+            /** @description Required to persist a conversion that reports semantic loss. Dry runs always report loss without persisting. */
+            acceptLossy?: boolean;
             /** @description Target branch name. Lowercase letters, digits, hyphens, and slashes; cannot start or end with a hyphen or slash. */
             branchName: string;
             /**

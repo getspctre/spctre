@@ -62,6 +62,7 @@ async function handlePostApiV1PolicyImports(request: Request) {
   const sourcePath = asString(rec.sourcePath) || `imports/${branchName || "policy"}.yaml`;
   const targetStacks = asStringArray(rec.targetStacks);
   const sourceFormat = asSourceFormat(rec.sourceFormat);
+  const acceptLossy = rec.acceptLossy === true;
   if (rec.sourceFormat !== undefined && !sourceFormat) {
     return withTraceId(
       Response.json({ error: "sourceFormat must be AGT_YAML, OPA_REGO, or CEDAR.", meta: makeMeta(traceId) }, { status: 400 }),
@@ -78,6 +79,7 @@ async function handlePostApiV1PolicyImports(request: Request) {
       environment,
       sourcePath,
       sourceFormat,
+      acceptLossy,
     });
     if ("error" in preview) {
       return withTraceId(Response.json({ error: preview.error, meta: makeMeta(traceId) }, { status: 400 }), traceId);
@@ -102,6 +104,7 @@ async function handlePostApiV1PolicyImports(request: Request) {
     environment,
     sourcePath,
     sourceFormat,
+    acceptLossy,
     targetStacks,
   });
 

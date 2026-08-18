@@ -1164,6 +1164,10 @@ export const SPCTRE_OPENAPI_SPEC = {
             type: "boolean",
             description: "Validate and translate without creating a branch or revision.",
           },
+          acceptLossy: {
+            type: "boolean",
+            description: "Required to persist a conversion that reports semantic loss. Dry runs always report loss without persisting.",
+          },
           branchName: {
             type: "string",
             description:

@@ -27,7 +27,7 @@ describe("spctre policy convert", () => {
   it("writes a local AGT document and conversion report without a network request", async () => {
     const output = path.join(tmpDir, "policy.json");
     const report = path.join(tmpDir, "report.json");
-    await policyConvert(sourcePath, { output, report });
+    await policyConvert(sourcePath, { output, report, acceptLossy: true });
 
     expect(JSON.parse(fs.readFileSync(output, "utf8"))).toMatchObject({
       rules: [{ effect: "DENY", connectors: ["github"], actions: ["repo.delete"] }],
@@ -35,14 +35,14 @@ describe("spctre policy convert", () => {
     expect(JSON.parse(fs.readFileSync(report, "utf8"))).toMatchObject({
       ok: true,
       sourceFormat: "CEDAR",
-      translation: { status: "EXACT" },
+      translation: { status: "LOSSY" },
     });
   });
 
   it("makes --offline import an alias for local conversion", async () => {
     const output = path.join(tmpDir, "offline.json");
     vi.stubGlobal("fetch", vi.fn());
-    await policyImport(sourcePath, { offline: true, output });
+    await policyImport(sourcePath, { offline: true, output, acceptLossy: true });
     expect(fs.existsSync(output)).toBe(true);
     expect(fetch).not.toHaveBeenCalled();
   });

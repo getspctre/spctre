@@ -449,6 +449,7 @@ spctre policy import policies/payments.yaml \
 | `--source-path` | Provenance path recorded with the revision |
 | `--source-format` | Override dialect detection: `AGT_YAML`, `OPA_REGO`, or `CEDAR` |
 | `--dry-run` | Convert and validate without creating a draft revision |
+| `--accept-lossy` | Required to create a draft or offline artifact when conversion reports semantic loss |
 | `--offline` | Convert locally without a key, network request, or remote revision |
 | `-o`, `--output` | In offline mode, write the generated AGT-compatible JSON document |
 | `--report` | In offline mode, write the conversion report JSON |

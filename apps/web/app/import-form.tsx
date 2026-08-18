@@ -213,6 +213,11 @@ function ImportSourceFields() {
         <option value="CEDAR">Cedar (supported subset)</option>
       </select>
 
+      <label className="checkboxLabel">
+        <input type="checkbox" name="acceptLossy" />
+        I accept any reported lossy conversion for this draft.
+      </label>
+
       <label className="meta" htmlFor="source">
         Or paste policy source
       </label>

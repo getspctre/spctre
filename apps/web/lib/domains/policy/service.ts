@@ -53,7 +53,8 @@ function validateAndParseImport(input: {
   connector: string;
   sourcePath: string;
   sourceFormat?: "AGT_YAML" | "OPA_REGO" | "CEDAR";
-}): { error: string } | { parsed: ParsedPolicyDocument } {
+  acceptLossy?: boolean;
+}, options?: { allowUnacceptedLossy?: boolean }): { error: string } | { parsed: ParsedPolicyDocument } {
   if (!input.source.trim()) return { error: "Policy source is required." };
   if (!input.branchName) return { error: "Branch name is required." };
   if (!/^[a-z0-9][a-z0-9/-]*[a-z0-9]$|^[a-z0-9]$/.test(input.branchName)) {
@@ -92,6 +93,16 @@ function validateAndParseImport(input: {
         .join("; ")}`,
     };
   }
+  if (
+    parsed.translation?.status === "LOSSY" &&
+    !input.acceptLossy &&
+    !options?.allowUnacceptedLossy
+  ) {
+    return {
+      error:
+        "Policy translation is lossy. Review the conversion preview and retry with explicit lossy-conversion acceptance.",
+    };
+  }
 
   // Enforceability is the kernel's call, not a second opinion here: duplicate
   // rule IDs, unsupported constraint operators, mistyped comparison values and
@@ -123,8 +134,9 @@ export function previewPolicyImport(input: {
   connector: string;
   sourcePath: string;
   sourceFormat?: "AGT_YAML" | "OPA_REGO" | "CEDAR";
+  acceptLossy?: boolean;
 }): ImportPolicyResult {
-  const validation = validateAndParseImport(input);
+  const validation = validateAndParseImport(input, { allowUnacceptedLossy: true });
   if ("error" in validation) return validation;
   const parsed = validation.parsed;
   return {
@@ -173,6 +185,7 @@ export async function importPolicyDecision(input: {
   requestedWorkspaceId: string;
   sourcePath: string;
   sourceFormat?: "AGT_YAML" | "OPA_REGO" | "CEDAR";
+  acceptLossy?: boolean;
   targetStacks: string[];
 }): Promise<ImportPolicyResult> {
   const validation = validateAndParseImport(input);
@@ -293,6 +306,7 @@ export async function importPolicyForToken(input: {
   connector: string;
   sourcePath: string;
   sourceFormat?: "AGT_YAML" | "OPA_REGO" | "CEDAR";
+  acceptLossy?: boolean;
   targetStacks: string[];
 }): Promise<ImportPolicyForTokenResult> {
   // Service tokens are workspace-bound (service_token.workspace_id is NOT NULL).

@@ -9,6 +9,7 @@ export interface PolicyConvertOptions {
   report?: string;
   sourceFormat?: "AGT_YAML" | "OPA_REGO" | "CEDAR";
   format?: string;
+  acceptLossy?: boolean;
 }
 
 function fail(message: string): never {
@@ -38,7 +39,9 @@ export async function policyConvert(
   });
   const format: OutputFormat = getOutputFormat(options.format);
   const result = {
-    ok: !parsed.diagnostics.some((diagnostic) => diagnostic.severity === "ERROR"),
+    ok:
+      !parsed.diagnostics.some((diagnostic) => diagnostic.severity === "ERROR") &&
+      (parsed.translation?.status !== "LOSSY" || options.acceptLossy === true),
     sourceFormat: parsed.sourceFormat ?? "AGT_YAML",
     sourceHash: `sha256:${createHash("sha256").update(source).digest("hex")}`,
     sourceDocument: parsed.sourceDocument,
