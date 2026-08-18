@@ -173,15 +173,12 @@ func TestStealingAnExpiredLeaseClosesItsAbandonedRun(t *testing.T) {
 	}
 	expireLease(t, pool, name)
 
-	_, previous, err := acquireJobLease(ctx, pool, name, newLeaseToken(), nil)
+	_, abandoned, err := acquireJobLease(ctx, pool, name, newLeaseToken(), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if previous == nil || *previous != deadRun {
-		t.Fatalf("expected the dead holder's run id back, got %v", previous)
-	}
-	if err := markRunAbandoned(ctx, pool, *previous); err != nil {
-		t.Fatal(err)
+	if abandoned == nil || *abandoned != deadRun {
+		t.Fatalf("expected the dead holder's run to be closed by the takeover, got %v", abandoned)
 	}
 
 	runs := ledgerRunsFor(t, pool, name)
@@ -194,17 +191,30 @@ func TestStealingAnExpiredLeaseClosesItsAbandonedRun(t *testing.T) {
 }
 
 // A holder that crashed *after* closing its row must not have that row
-// rewritten — its recorded outcome is the truth.
-func TestMarkRunAbandonedLeavesAClosedRunAlone(t *testing.T) {
+// rewritten by the takeover — its recorded outcome is the truth.
+func TestTakeoverLeavesAClosedRunAlone(t *testing.T) {
 	pool := testGatewayDB(t)
 	ctx := context.Background()
 	name := uniqueJobName(t)
+	cleanupLease(t, pool, name)
 
-	runID := beginJobRun(ctx, pool, slog.Default(), name, TriggerHTTP)
-	finishJobRun(ctx, pool, slog.Default(), runID, time.Now(), errors.New("real failure"))
-
-	if err := markRunAbandoned(ctx, pool, runID); err != nil {
+	token := newLeaseToken()
+	if acquired, _, err := acquireJobLease(ctx, pool, name, token, nil); err != nil || !acquired {
+		t.Fatalf("acquire: %v %v", acquired, err)
+	}
+	runID, _, err := openRunUnderLease(ctx, pool, name, TriggerHTTP, token)
+	if err != nil {
 		t.Fatal(err)
+	}
+	finishJobRun(ctx, pool, slog.Default(), runID, time.Now(), errors.New("real failure"))
+	expireLease(t, pool, name)
+
+	_, abandoned, err := acquireJobLease(ctx, pool, name, newLeaseToken(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if abandoned != nil {
+		t.Fatal("an already-closed run must not be reported as abandoned")
 	}
 
 	runs := ledgerRunsFor(t, pool, name)
@@ -408,18 +418,70 @@ func TestOpeningARunAndLinkingItAreAtomic(t *testing.T) {
 
 	// And the recovery path works end to end from that link.
 	expireLease(t, pool, name)
-	_, previous, err := acquireJobLease(ctx, pool, name, newLeaseToken(), nil)
+	_, abandoned, err := acquireJobLease(ctx, pool, name, newLeaseToken(), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if previous == nil || *previous != runID {
-		t.Fatalf("successor got %v, want the interrupted run %s", previous, runID)
-	}
-	if err := markRunAbandoned(ctx, pool, *previous); err != nil {
-		t.Fatal(err)
+	if abandoned == nil || *abandoned != runID {
+		t.Fatalf("successor closed %v, want the interrupted run %s", abandoned, runID)
 	}
 	runs := ledgerRunsFor(t, pool, name)
 	if runs[0].outcome == nil || *runs[0].outcome != outcomeAbandoned {
 		t.Fatalf("outcome = %v, want ABANDONED", runs[0].outcome)
+	}
+}
+
+// Regression: takeover must close the predecessor's run in the same statement
+// that displaces it.
+//
+// Split, the upsert overwrites the expired row's run_id with NULL and hands the
+// old id to application code to close separately. A new holder that crashes in
+// between leaves that job_run open with nothing referencing it — job_lease no
+// longer carries the id, so no later holder can ever close it. This walks that
+// exact sequence: steal, do nothing further (the crash), then steal again.
+func TestTakeoverClosesThePredecessorEvenIfTheNewHolderCrashes(t *testing.T) {
+	pool := testGatewayDB(t)
+	ctx := context.Background()
+	name := uniqueJobName(t)
+	cleanupLease(t, pool, name)
+
+	// Holder A opens a run and dies mid-sweep.
+	tokenA := newLeaseToken()
+	if acquired, _, err := acquireJobLease(ctx, pool, name, tokenA, nil); err != nil || !acquired {
+		t.Fatalf("acquire A: %v %v", acquired, err)
+	}
+	if _, _, err := openRunUnderLease(ctx, pool, name, TriggerTicker, tokenA); err != nil {
+		t.Fatal(err)
+	}
+	expireLease(t, pool, name)
+
+	// Holder B steals the lease and then crashes immediately — nothing else
+	// runs on its behalf.
+	if acquired, _, err := acquireJobLease(ctx, pool, name, newLeaseToken(), nil); err != nil || !acquired {
+		t.Fatalf("acquire B: %v %v", acquired, err)
+	}
+
+	// A's run must already be closed. Anything later is too late: B holds the
+	// lease now, and B's row carries no reference to A's run.
+	runs := ledgerRunsFor(t, pool, name)
+	if len(runs) != 1 {
+		t.Fatalf("expected 1 run, got %d", len(runs))
+	}
+	if runs[0].outcome == nil || *runs[0].outcome != outcomeAbandoned {
+		t.Fatalf("run A outcome = %v, want ABANDONED closed during takeover — "+
+			"after this point no holder references it and it is orphaned forever", runs[0].outcome)
+	}
+
+	// A third holder steals from crashed B. B opened no run, so there is
+	// nothing to close and no spurious abandonment.
+	expireLease(t, pool, name)
+	if acquired, abandoned, err := acquireJobLease(ctx, pool, name, newLeaseToken(), nil); err != nil || !acquired {
+		t.Fatalf("acquire C: %v %v", acquired, err)
+	} else if abandoned != nil {
+		t.Fatalf("nothing to abandon from a holder that opened no run, got %v", abandoned)
+	}
+
+	if runs := ledgerRunsFor(t, pool, name); len(runs) != 1 {
+		t.Fatalf("expected still 1 run, got %d", len(runs))
 	}
 }
