@@ -223,6 +223,20 @@ describe("CLI Gateway Integration", () => {
       expect(resolution.status).toBe("EXPIRED");
     });
 
+    // Mirrors real fetch: a request that never responds stays pending until its
+    // signal aborts, then rejects. A mock that ignores the signal would hide a
+    // regression in how the attempt deadline is applied.
+    function stallingFetch() {
+      return vi.fn().mockImplementation(
+        (_url: string, init?: RequestInit) =>
+          new Promise<Response>((_resolve, reject) => {
+            init?.signal?.addEventListener("abort", () =>
+              reject(new DOMException("The operation was aborted.", "TimeoutError")),
+            );
+          }),
+      );
+    }
+
     it("does not outlive its deadline when a status request stalls", async () => {
       const gwConfig = {
         gatewayUrl: "https://gw.test",
@@ -230,7 +244,7 @@ describe("CLI Gateway Integration", () => {
         timeoutMs: 10,
         pollIntervalMs: 60_000,
       };
-      const fetchSpy = vi.fn().mockImplementation(() => new Promise<Response>(() => {}));
+      const fetchSpy = stallingFetch();
       vi.stubGlobal("fetch", fetchSpy);
       vi.spyOn(process.stderr, "write").mockImplementation(() => true);
 
@@ -241,6 +255,57 @@ describe("CLI Gateway Integration", () => {
         expect.any(String),
         expect.objectContaining({ signal: expect.any(AbortSignal) }),
       );
+    });
+
+    it("keeps retrying on its poll cadence while requests stall", async () => {
+      // A stalled attempt must cost one poll interval, not the whole budget —
+      // otherwise the first dead connection burns the entire escalation window
+      // and a reviewer's approval is never seen.
+      const gwConfig = {
+        gatewayUrl: "https://gw.test",
+        token: "token-123",
+        timeoutMs: 200,
+        pollIntervalMs: 20,
+      };
+      const fetchSpy = stallingFetch();
+      vi.stubGlobal("fetch", fetchSpy);
+      vi.spyOn(process.stderr, "write").mockImplementation(() => true);
+
+      const resolution = await pollEscalationResolution(gwConfig, "dec-1");
+
+      expect(resolution.status).toBe("EXPIRED");
+      expect(fetchSpy.mock.calls.length).toBeGreaterThan(1);
+    });
+
+    it("sees a resolution that arrives after an earlier request stalled", async () => {
+      const gwConfig = {
+        gatewayUrl: "https://gw.test",
+        token: "token-123",
+        timeoutMs: 500,
+        pollIntervalMs: 20,
+      };
+      let attempt = 0;
+      const fetchSpy = vi.fn().mockImplementation((_url: string, init?: RequestInit) => {
+        attempt += 1;
+        // First attempt stalls until aborted; the reviewer resolves afterwards.
+        if (attempt === 1) {
+          return new Promise<Response>((_resolve, reject) => {
+            init?.signal?.addEventListener("abort", () =>
+              reject(new DOMException("The operation was aborted.", "TimeoutError")),
+            );
+          });
+        }
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ decisionId: "dec-1", status: "RESOLVED" }),
+        } as Response);
+      });
+      vi.stubGlobal("fetch", fetchSpy);
+      vi.spyOn(process.stderr, "write").mockImplementation(() => true);
+
+      const resolution = await pollEscalationResolution(gwConfig, "dec-1");
+
+      expect(resolution.status).toBe("RESOLVED");
     });
   });
 });

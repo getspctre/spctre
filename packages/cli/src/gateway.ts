@@ -138,33 +138,26 @@ export async function pollEscalationResolution(
       return { decisionId, status: "EXPIRED" };
     }
 
-    try {
-      const controller = new AbortController();
-      let deadlineId: ReturnType<typeof setTimeout> | undefined;
-      const deadline = new Promise<undefined>((resolve) => {
-        deadlineId = setTimeout(() => {
-          controller.abort();
-          resolve(undefined);
-        }, remainingMs);
-      });
-      try {
-        const response = await Promise.race([
-          fetch(url, {
-            method: "GET",
-            headers: { Authorization: `Bearer ${gwConfig.token}` },
-            signal: controller.signal,
-          }),
-          deadline,
-        ]);
+    // Bound each attempt to a single poll interval rather than to the whole
+    // remaining window. A connection that stalls without erroring must not
+    // consume the entire escalation budget: that would poll once and then
+    // report EXPIRED, so a reviewer who approves in the meantime is never
+    // observed. An aborted request rejects into the catch below and the loop
+    // retries on its normal cadence.
+    const attemptMs = Math.min(remainingMs, gwConfig.pollIntervalMs);
 
-        if (response?.ok) {
-          const data = (await response.json()) as EscalationStatusResponse;
-          if (data.status === "RESOLVED" || data.status === "EXPIRED") {
-            return data;
-          }
+    try {
+      const response = await fetch(url, {
+        method: "GET",
+        headers: { Authorization: `Bearer ${gwConfig.token}` },
+        signal: AbortSignal.timeout(attemptMs),
+      });
+
+      if (response.ok) {
+        const data = (await response.json()) as EscalationStatusResponse;
+        if (data.status === "RESOLVED" || data.status === "EXPIRED") {
+          return data;
         }
-      } finally {
-        if (deadlineId) clearTimeout(deadlineId);
       }
     } catch {
       // Ignored: retry until timeout
