@@ -37,6 +37,8 @@ Run before opening a PR: `pnpm oss:check && pnpm typecheck && pnpm lint`.
 
 ## Conventions that matter
 
+- **Next.js changes:** Consult the installed Next.js 16 documentation before
+  changing Next-specific behavior, APIs, conventions, or file structure.
 - **Respect the web app layering.** Routes/actions are thin → domain services
   (`apps/web/lib/domains/<domain>/service.ts`) hold logic → repositories
   (`apps/web/lib/repositories/`) hold SQL. **Only repositories import
