@@ -1,9 +1,9 @@
 import { authenticateServiceToken } from "@/lib/service-tokens";
-import { getBooleanEnv } from "@/lib/platform/config";
 import { upsertApprovalForRevision, getRevisionWorkspaceScope } from "@/lib/repositories/policy";
 import { findActorById, canActorReviewRole } from "@/lib/actors";
 import { runWithTenantContext } from "@/lib/tenant-context";
 import { extractTraceId, makeMeta, withTraceId } from "@spctre/api-contracts";
+import { e2eApiDisabledResponse } from "../../_shared";
 import { swallow } from "@/lib/platform/swallow";
 
 export const dynamic = "force-dynamic";
@@ -51,15 +51,8 @@ function parseApproveRequest(body: unknown): ApproveRequestFields | { error: str
 
 async function handlePostApiE2ePolicyApprove(request: Request) {
   const traceId = extractTraceId(request);
-  if (!getBooleanEnv("SPCTRE_E2E_API_ENABLED", false)) {
-    return withTraceId(
-      Response.json(
-        { error: "E2E support API is disabled.", meta: makeMeta(traceId) },
-        { status: 404 },
-      ),
-      traceId,
-    );
-  }
+  const disabled = e2eApiDisabledResponse(traceId);
+  if (disabled) return disabled;
 
   const tokenAuth = await authenticateServiceToken(request, "e2e:write");
   if (!tokenAuth.ok) {

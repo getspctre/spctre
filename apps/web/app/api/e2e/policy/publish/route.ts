@@ -17,6 +17,7 @@ import { getOpenEscalationSummaryForRevision } from "@/lib/repositories/gateway"
 import { getLatestVerificationStatus } from "@/lib/repositories/verification";
 import { findActorById, getBranchPermissions } from "@/lib/actors";
 import { extractTraceId, makeMeta, withTraceId } from "@spctre/api-contracts";
+import { e2eApiDisabledResponse } from "../../_shared";
 import { swallow } from "@/lib/platform/swallow";
 import { runWithTenantContext } from "@/lib/tenant-context";
 
@@ -142,15 +143,8 @@ async function checkE2ePublishReadiness(params: {
 
 async function handlePostApiE2ePolicyPublish(request: Request) {
   const traceId = extractTraceId(request);
-  if (!getBooleanEnv("SPCTRE_E2E_API_ENABLED", false)) {
-    return withTraceId(
-      Response.json(
-        { error: "E2E support API is disabled.", meta: makeMeta(traceId) },
-        { status: 404 },
-      ),
-      traceId,
-    );
-  }
+  const disabled = e2eApiDisabledResponse(traceId);
+  if (disabled) return disabled;
 
   const tokenAuth = await authenticateServiceToken(request, "e2e:write");
   if (!tokenAuth.ok) {

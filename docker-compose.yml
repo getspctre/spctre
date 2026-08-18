@@ -42,7 +42,6 @@ services:
       SPCTRE_SESSION_GUARD_SECRET: local-dev-session-guard-secret
       SPCTRE_EVIDENCE_INGEST_URL: http://worker:18080
       SPCTRE_WORKER_INTERNAL_SECRET: local-dev-worker-internal-secret
-      SPCTRE_E2E_API_ENABLED: "true"
       GATEWAY_ENABLED: "true"
       GATEWAY_MODE: HYBRID
       SPCTRE_RATE_LIMIT_MAX_REQUESTS: "1000"
@@ -77,7 +76,6 @@ services:
       GATEWAY_MODE: ${GATEWAY_MODE:-HYBRID}
       SPCTRE_WORKER_INTERNAL_SECRET: local-dev-worker-internal-secret
       SPCTRE_DEMO_TENANT_ID: "00000000-0000-0000-0000-000000000001"
-      SPCTRE_E2E_API_ENABLED: "true"
     depends_on:
       db:
         condition: service_healthy
