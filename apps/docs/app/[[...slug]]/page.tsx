@@ -105,16 +105,21 @@ function Home() {
 
 export default async function Page({ params }: { params: Promise<{ slug?: string[] }> }) {
   const { slug } = await params;
+  const page = source.getPage(slug) as Page | undefined;
+  if (!page) notFound();
+  const { body: MDX, toc } = page.data;
+
   if (!slug?.length)
     return (
       <SpctreDocsLayout>
         <Home />
+        <DocsPage toc={toc}>
+          <DocsBody>
+            <MDX components={mdxComponents} />
+          </DocsBody>
+        </DocsPage>
       </SpctreDocsLayout>
     );
-
-  const page = source.getPage(slug) as Page | undefined;
-  if (!page) notFound();
-  const { body: MDX, toc } = page.data;
 
   return (
     <SpctreDocsLayout>
