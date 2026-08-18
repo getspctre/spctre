@@ -1,5 +1,27 @@
 # @spctre/mcp-server
 
+## 0.3.0
+
+### Minor Changes
+
+- f77ecad: Derive `policies_count` and `connectors` in `get_policy_status` from the
+  published bundle rather than from `/api/adapters`. The count measured adapter
+  declarations, not policies, and `connectors` carried the whole `{ adapters,
+meta }` response body instead of a list. Adapter declarations now report under
+  `adapters`, the name they actually carry.
+
+### Patch Changes
+
+- 41d172b: Probe the control plane's health endpoint for readiness rather than its root.
+  The root is an application page behind the proxy's source-IP allowlist, so where
+  one is configured it answers 403 to this service — which egresses from a
+  platform address no operator allowlist can contain — and readiness reported the
+  upstream unreachable while it was serving requests normally.
+- 9ad5614: Update `@opentelemetry/exporter-trace-otlp-http` to `^0.221.0`. It is a runtime
+  dependency, and under 0.x semantics the published range `^0.220.0` resolves
+  below 0.221.0 — so consumers of the released package would not otherwise pick
+  this up.
+
 ## 0.2.1
 
 ### Patch Changes
