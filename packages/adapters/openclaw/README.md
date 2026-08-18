@@ -16,7 +16,7 @@ import { SpctreOpenClawAdapter } from "@spctre/openclaw";
 
 const adapter = new SpctreOpenClawAdapter({
   apiKey: process.env.SPCTRE_API_KEY!,
-  baseUrl: "https://app.spctre.ai/api/v1",
+  baseUrl: "https://app.spctre.dev/api/v1",
   agentId: "openclaw-agent-1",
   tenantId: "tenant-1",
   workspaceId: "workspace-1",

@@ -1,13 +1,13 @@
 ---
 title: Python SDK
-description: How Python agents integrate with Spctre today — framework adapters and direct REST calls.
+description: Install and use the supported Python SDK, framework adapters, or direct REST calls.
 ---
 
-<Callout type="warn">
-  A published `spctre` Python package is not yet available on PyPI. The content below reflects how Python agents integrate with Spctre today.
+<Callout type="info">
+  Install the supported Python SDK with `pip install spctre-sdk`. It requires Python 3.11 or later.
 </Callout>
 
-Python agents have two integration paths: the **framework adapter** (zero-code, recommended) or **direct REST calls** via `httpx` or `requests`.
+Python agents have three integration paths: the **framework adapter** (zero-code, recommended for supported frameworks), the supported **Python SDK**, or **direct REST calls** via `httpx` or `requests`.
 
 ## Framework adapter (recommended)
 
@@ -25,6 +25,34 @@ Run your agent through the Spctre wrapper to activate the adapter:
 ```
 
 See [Framework adapters](/help-docs/ai-agents/adapters/framework-adapters) for the full list of supported frameworks and how the adapter works.
+
+## Python SDK
+
+Install the supported client:
+
+```bash
+pip install spctre-sdk
+```
+
+Create a client with your control-plane origin and service token. The client
+adds `/api/v1` automatically; passing a URL that already ends in `/api/v1` is
+also supported.
+
+```python
+import os
+
+from spctre import SpctreClient
+
+client = SpctreClient(
+    base_url=os.environ["SPCTRE_API_URL"],
+    token=os.environ["SPCTRE_API_TOKEN"],
+)
+```
+
+Use the domain facades such as `client.gateway`, `client.evidence`, and
+`client.trust`; request and response models are available from `spctre.models`.
+See the [SDK README](https://github.com/getspctre/spctre/tree/main/packages/sdk-python)
+for the supported operations and complete examples.
 
 ## Direct REST — submitting evidence
 
@@ -75,12 +103,15 @@ def load_token() -> str:
 
 Or set `SPCTRE_API_TOKEN` to a long-lived service token issued from the control plane.
 
-## Generating the SDK
+## Maintaining the SDK
 
-A Python SDK can be generated locally from the OpenAPI spec for use in your own projects:
+The SDK's private generated client is checked into the repository. Only SDK
+maintainers need to regenerate it after changing the OpenAPI specification:
 
 ```bash
-pnpm generate:python-sdk   # outputs to target/sdk-python/
+pnpm generate:python-sdk
 ```
 
-This runs `openapi-generator-cli` against the Spctre OpenAPI spec and produces a raw generated Python client. The generated package is not published to PyPI and the class/method names are derived from the spec operationIds, not the names shown in older versions of this page.
+This runs the pinned `openapi-python-client` generator and updates
+`packages/sdk-python/spctre/_generated`. The public `spctre-sdk` distribution
+wraps that generated layer with the supported `SpctreClient` facade.

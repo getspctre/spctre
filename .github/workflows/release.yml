@@ -18,9 +18,9 @@ name: Release
 #
 # FIRST PUBLISH OF A NEW PACKAGE NEEDS A ONE-TIME TOKEN BOOTSTRAP.
 # npm trusted publishing is configured per package and only AFTER the package
-# already exists on the registry (there is no "pending publisher" flow). All
-# four packages are currently unpublished, so the initial release cannot use
-# OIDC. To bootstrap:
+# already exists on the registry (there is no "pending publisher" flow). The
+# existing Spctre packages use OIDC; follow this procedure only when adding a
+# new package to the release workflow:
 #   1. Add a repo secret NODE_AUTH_TOKEN (npm automation or granular token with
 #      write on the @spctre scope). setup-node's registry-url wires it into
 #      .npmrc and the publish step below passes it through, so `pnpm publish`

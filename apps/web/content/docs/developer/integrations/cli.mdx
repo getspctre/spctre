@@ -145,7 +145,7 @@ spctre watch [options]
 
 | Flag | Description |
 |---|---|
-| `--framework` | Framework adapter: `crewai`, `langchain`, `openai-agents`, `autogen`, `google-adk`, `strands`, `notion-worker`, `antigravity-sdk`, `omnigent` |
+| `--framework` | Framework adapter: `crewai`, `langchain`, `langgraph`, `openai-agents`, `autogen`, `google-adk`, `bedrock`, `azure-ai`, `gemini`, `strands`, `notion-worker`, `antigravity-sdk`, `claude-agent-sdk`, `omnigent`, or `local-custom` |
 | `-w`, `--workspace` | Workspace ID |
 | `-k`, `--key` | Control plane API key |
 | `-o`, `--output` | Bundle output path |
@@ -170,7 +170,7 @@ spctre verify-env --framework <name> [options]
 
 | Flag | Required | Description |
 |---|---|---|
-| `--framework` | Yes | Adapter to verify: `crewai`, `langchain`, `openai-agents`, `autogen`, `google-adk`, `strands`, `notion-worker`, `antigravity-sdk`, `omnigent` |
+| `--framework` | Yes | Adapter to verify: `crewai`, `langchain`, `langgraph`, `openai-agents`, `autogen`, `google-adk`, `strands`, `notion-worker`, `antigravity-sdk`, `claude-agent-sdk`, or `omnigent` |
 | `--python` | No | Python executable to use (default: `python`) |
 
 ---

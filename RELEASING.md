@@ -39,16 +39,14 @@ timestamps with `datetime.fromisoformat`, which did not accept a trailing `Z`
 until 3.11, and every response carries a required `meta.ts`.
 
 Authentication is PyPI Trusted Publishing (OIDC), with no API token at any
-point — PyPI supports _pending_ publishers, so each project was registered
-before it existed and is created by its first publish. This is why the Python
-release path has no equivalent of the npm token bootstrap below.
+point. PyPI supports _pending_ publishers, so a new project can be registered
+before it exists and is created by its first OIDC publish; the Python release
+path therefore has no npm-style token bootstrap.
 
-PyPI requires a pending publisher to be unique on
-(owner, repo, workflow, environment), so each distribution currently publishes
-from its own GitHub Environment: `pypi`/`testpypi` for `spctre-sdk`, and
-`pypi-<name>`/`testpypi-<name>` for the adapters. That constraint disappears
-once a project exists, so after all three have published to a registry the
-per-package environments can be collapsed into one and deleted.
+The release workflow retains a distinct GitHub Environment for each
+distribution and registry: `pypi`/`testpypi` for `spctre-sdk`, and
+`pypi-<name>`/`testpypi-<name>` for the adapters. This setup also supports a
+new pending publisher if a distribution is added later.
 
 Always dispatch against `testpypi` first. TestPyPI burns version numbers
 permanently just like PyPI, so test runs publish a `.dev<run-number>` suffix
