@@ -4,7 +4,7 @@ import Link from "next/link";
 import { ChevronDown, FilePlus2, FileText, UploadCloud } from "lucide-react";
 import { useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createPolicyBranch, importPolicy } from "./policy/actions";
+import { createPolicyBranch, importPolicy, previewPolicy } from "./policy/actions";
 import type { CreatePolicyBranchState, ImportState } from "./policy/actions";
 import { ENVIRONMENT_DECLARATIONS } from "@/lib/policy-targets";
 import { buildWorkspacePath } from "@/lib/workspace/path";
@@ -213,11 +213,6 @@ function ImportSourceFields() {
         <option value="CEDAR">Cedar (supported subset)</option>
       </select>
 
-      <label className="checkboxLabel">
-        <input type="checkbox" name="acceptLossy" />I accept any reported lossy conversion for this
-        draft.
-      </label>
-
       <label className="meta" htmlFor="source">
         Or paste policy source
       </label>
@@ -240,6 +235,10 @@ export function ImportForm({
 }: ImportFormProps) {
   const router = useRouter();
   const [state, formAction, pending] = useActionState<ImportState, FormData>(importPolicy, null);
+  const [previewState, previewAction, previewing] = useActionState<ImportState, FormData>(
+    previewPolicy,
+    null,
+  );
   const [createState, createAction, creating] = useActionState<CreatePolicyBranchState, FormData>(
     createPolicyBranch,
     null,
@@ -247,6 +246,8 @@ export function ImportForm({
   const [scope, setScope] = useState(initialScope);
   const [creationMode, setCreationMode] = useState<CreationMode>("guided");
   const [showAdvanced, setShowAdvanced] = useState(initialScope !== "WORKSPACE");
+  const preview = previewState?.result;
+  const previewRequiresAcceptance = preview?.translation?.status === "LOSSY";
 
   useEffect(() => {
     if (createState?.branchId) {
@@ -352,10 +353,26 @@ export function ImportForm({
         </div>
 
         <div className="importFormFooter">
+          {creationMode === "import" ? (
+            <button
+              className="button"
+              type="submit"
+              formAction={previewAction}
+              disabled={previewing}
+            >
+              {previewing ? "Previewing…" : "Preview conversion"}
+            </button>
+          ) : null}
+          {previewRequiresAcceptance ? (
+            <label className="checkboxLabel">
+              <input type="checkbox" name="acceptLossy" />I reviewed this lossy conversion and
+              accept it for this draft.
+            </label>
+          ) : null}
           <button
             className="button buttonPrimary"
             type="submit"
-            disabled={creationMode === "guided" ? creating : pending}
+            disabled={creationMode === "guided" ? creating : pending || previewing}
           >
             {creationMode === "guided" ? <FilePlus2 size={16} /> : <UploadCloud size={16} />}
             {creationMode === "guided"
@@ -383,6 +400,32 @@ export function ImportForm({
 
       {state?.result && creationMode === "import" ? (
         <ImportResultView result={state.result} workspaceSlug={workspaceSlug} />
+      ) : null}
+
+      {previewState?.error && creationMode === "import" ? (
+        <div className="importError">
+          <p className="meta">{previewState.error}</p>
+        </div>
+      ) : null}
+
+      {preview && creationMode === "import" ? (
+        <div className="importLayout">
+          <div className="importMeta">
+            <p className="meta">Preview only — no draft has been created.</p>
+            <p className="meta">
+              {preview.translation?.status === "LOSSY"
+                ? "Review the converted rules below, then explicitly accept the lossy conversion to import."
+                : "The source is ready to import as a draft."}
+            </p>
+          </div>
+          <div className="exportRules">
+            {preview.rules.map((rule) => (
+              <span className="ruleRef" key={rule.stableRuleId}>
+                {rule.stableRuleId}
+              </span>
+            ))}
+          </div>
+        </div>
       ) : null}
     </>
   );
