@@ -18,7 +18,8 @@ describe("native policy source translation", () => {
   it("rejects Cedar conditions rather than weakening them", () => {
     const result = parsePolicySourceDocument({
       sourceFormat: "CEDAR",
-      document: 'forbid(principal, action == Action::"github.repo.delete", resource) when { context.risk > 5 };',
+      document:
+        'forbid(principal, action == Action::"github.repo.delete", resource) when { context.risk > 5 };',
     });
 
     expect(result.translation?.status).toBe("UNSUPPORTED");
@@ -49,7 +50,8 @@ describe("native policy source translation", () => {
   it("translates declarative Rego input selectors and blocks arbitrary expressions", () => {
     const supported = parsePolicySourceDocument({
       sourcePath: "policies/github.rego",
-      document: 'package spctre.github\ndeny if {\n input.connector == "github"\n input.action == "repo.delete"\n}',
+      document:
+        'package spctre.github\ndeny if {\n input.connector == "github"\n input.action == "repo.delete"\n}',
     });
     expect(supported.translation?.status).toBe("LOSSY");
     expect(supported.rules[0]).toMatchObject({
@@ -68,9 +70,15 @@ describe("native policy source translation", () => {
   });
 
   it("detects native source only from native extensions or recognizable syntax", () => {
-    expect(detectPolicySourceFormat({ document: "rules: []", sourcePath: "policy.yaml" })).toBe("AGT_YAML");
+    expect(detectPolicySourceFormat({ document: "rules: []", sourcePath: "policy.yaml" })).toBe(
+      "AGT_YAML",
+    );
     expect(detectPolicySourceFormat({ document: "", sourcePath: "policy.rego" })).toBe("OPA_REGO");
-    expect(detectPolicySourceFormat({ document: 'permit(principal, action == Action::"a.b", resource);' })).toBe("CEDAR");
+    expect(
+      detectPolicySourceFormat({
+        document: 'permit(principal, action == Action::"a.b", resource);',
+      }),
+    ).toBe("CEDAR");
   });
 
   it("accepts canonical Rego module declarations and preserves comment markers in strings", () => {

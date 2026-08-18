@@ -69,13 +69,20 @@ export async function policyConvert(
         console.error(`${diagnostic.severity}: ${diagnostic.message}`);
       }
     } else {
-      for (const diagnostic of parsed.diagnostics) console.error(`${diagnostic.severity}: ${diagnostic.message}`);
+      for (const diagnostic of parsed.diagnostics)
+        console.error(`${diagnostic.severity}: ${diagnostic.message}`);
     }
     process.exit(1);
   }
   const artifact = `${JSON.stringify(parsed.sourceDocument, null, 2)}\n`;
-  if (options.output) fs.writeFileSync(path.resolve(process.cwd(), options.output), artifact, "utf8");
-  if (options.report) fs.writeFileSync(path.resolve(process.cwd(), options.report), `${JSON.stringify(result, null, 2)}\n`, "utf8");
+  if (options.output)
+    fs.writeFileSync(path.resolve(process.cwd(), options.output), artifact, "utf8");
+  if (options.report)
+    fs.writeFileSync(
+      path.resolve(process.cwd(), options.report),
+      `${JSON.stringify(result, null, 2)}\n`,
+      "utf8",
+    );
   if (format === "json") {
     printJson(result);
   } else {

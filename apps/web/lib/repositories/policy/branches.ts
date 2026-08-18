@@ -524,7 +524,7 @@ export async function persistImportedBranch(params: {
           metadata: params.metadata,
           spctre_agt_compatibility: params.compatibility,
           spctre_native_source:
-            params.sourceFormat === 'AGT_YAML'
+            params.sourceFormat === "AGT_YAML"
               ? undefined
               : { text: params.source, translation: params.translation },
         } as JSONValue)},

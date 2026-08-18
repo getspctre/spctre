@@ -45,16 +45,19 @@ type ParsedPolicyDocument = ReturnType<typeof parsePolicySourceDocument>;
  * (importPolicyDecision) and the token-authenticated automation import
  * (importPolicyForToken). Returns a parse-error string or the parsed document.
  */
-function validateAndParseImport(input: {
-  source: string;
-  branchName: string;
-  scope: string;
-  environment: string;
-  connector: string;
-  sourcePath: string;
-  sourceFormat?: "AGT_YAML" | "OPA_REGO" | "CEDAR";
-  acceptLossy?: boolean;
-}, options?: { allowUnacceptedLossy?: boolean }): { error: string } | { parsed: ParsedPolicyDocument } {
+function validateAndParseImport(
+  input: {
+    source: string;
+    branchName: string;
+    scope: string;
+    environment: string;
+    connector: string;
+    sourcePath: string;
+    sourceFormat?: "AGT_YAML" | "OPA_REGO" | "CEDAR";
+    acceptLossy?: boolean;
+  },
+  options?: { allowUnacceptedLossy?: boolean },
+): { error: string } | { parsed: ParsedPolicyDocument } {
   if (!input.source.trim()) return { error: "Policy source is required." };
   if (!input.branchName) return { error: "Branch name is required." };
   if (!/^[a-z0-9][a-z0-9/-]*[a-z0-9]$|^[a-z0-9]$/.test(input.branchName)) {

@@ -6,6 +6,7 @@ import httpx
 from ... import errors
 from ...client import AuthenticatedClient, Client
 from ...models.api_error import ApiError
+from ...models.policy_import_preview_response import PolicyImportPreviewResponse
 from ...models.policy_import_request import PolicyImportRequest
 from ...models.policy_import_response import PolicyImportResponse
 from ...types import Response
@@ -32,9 +33,27 @@ def _get_kwargs(
 
 def _parse_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
-) -> ApiError | PolicyImportResponse | None:
+) -> ApiError | PolicyImportPreviewResponse | PolicyImportResponse | None:
     if response.status_code == 200:
-        response_200 = PolicyImportResponse.from_dict(response.json())
+
+        def _parse_response_200(
+            data: object,
+        ) -> PolicyImportPreviewResponse | PolicyImportResponse:
+            try:
+                if not isinstance(data, dict):
+                    raise TypeError()
+                response_200_type_0 = PolicyImportResponse.from_dict(data)
+
+                return response_200_type_0
+            except (TypeError, ValueError, AttributeError, KeyError):
+                pass
+            if not isinstance(data, dict):
+                raise TypeError()
+            response_200_type_1 = PolicyImportPreviewResponse.from_dict(data)
+
+            return response_200_type_1
+
+        response_200 = _parse_response_200(response.json())
 
         return response_200
 
@@ -66,7 +85,7 @@ def _parse_response(
 
 def _build_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
-) -> Response[ApiError | PolicyImportResponse]:
+) -> Response[ApiError | PolicyImportPreviewResponse | PolicyImportResponse]:
     return Response(
         status_code=HTTPStatus(response.status_code),
         content=response.content,
@@ -79,15 +98,14 @@ def sync_detailed(
     *,
     client: AuthenticatedClient,
     body: PolicyImportRequest,
-) -> Response[ApiError | PolicyImportResponse]:
+) -> Response[ApiError | PolicyImportPreviewResponse | PolicyImportResponse]:
     """Import a local policy source (idempotent)
 
-     Imports a local AGT-compatible policy document into the control plane as an unapproved draft
-    branch/revision, for automation/CI. Requires the `policy:import` scope, which is admin-issuable only
-    and never granted to runtime agent tokens. Idempotent on the branch identity `(workspace, scope,
-    environment, connector, branchName)` and the source hash: a new branch returns 201; an unchanged re-
-    import returns 200 with `alreadyCurrent: true` and writes nothing; changed source appends a new
-    draft revision. Never approves or publishes — review and publication remain manual.
+     Imports a local policy source into the control plane as an unapproved draft branch/revision, for
+    automation/CI. AGT YAML/JSON is accepted directly; the documented Rego and Cedar subsets are
+    translated to AGT-compatible rules before validation. Requires the `policy:import` scope, which is
+    admin-issuable only and never granted to runtime agent tokens. `dryRun: true` returns conversion
+    diagnostics without writing. Never approves or publishes — review and publication remain manual.
 
     Args:
         body (PolicyImportRequest):
@@ -97,7 +115,7 @@ def sync_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[ApiError | PolicyImportResponse]
+        Response[ApiError | PolicyImportPreviewResponse | PolicyImportResponse | PolicyImportResponse]
     """
 
     kwargs = _get_kwargs(
@@ -115,15 +133,14 @@ def sync(
     *,
     client: AuthenticatedClient,
     body: PolicyImportRequest,
-) -> ApiError | PolicyImportResponse | None:
+) -> ApiError | PolicyImportPreviewResponse | PolicyImportResponse | None:
     """Import a local policy source (idempotent)
 
-     Imports a local AGT-compatible policy document into the control plane as an unapproved draft
-    branch/revision, for automation/CI. Requires the `policy:import` scope, which is admin-issuable only
-    and never granted to runtime agent tokens. Idempotent on the branch identity `(workspace, scope,
-    environment, connector, branchName)` and the source hash: a new branch returns 201; an unchanged re-
-    import returns 200 with `alreadyCurrent: true` and writes nothing; changed source appends a new
-    draft revision. Never approves or publishes — review and publication remain manual.
+     Imports a local policy source into the control plane as an unapproved draft branch/revision, for
+    automation/CI. AGT YAML/JSON is accepted directly; the documented Rego and Cedar subsets are
+    translated to AGT-compatible rules before validation. Requires the `policy:import` scope, which is
+    admin-issuable only and never granted to runtime agent tokens. `dryRun: true` returns conversion
+    diagnostics without writing. Never approves or publishes — review and publication remain manual.
 
     Args:
         body (PolicyImportRequest):
@@ -133,7 +150,7 @@ def sync(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        ApiError | PolicyImportResponse
+        ApiError | PolicyImportPreviewResponse | PolicyImportResponse | PolicyImportResponse
     """
 
     return sync_detailed(
@@ -146,15 +163,14 @@ async def asyncio_detailed(
     *,
     client: AuthenticatedClient,
     body: PolicyImportRequest,
-) -> Response[ApiError | PolicyImportResponse]:
+) -> Response[ApiError | PolicyImportPreviewResponse | PolicyImportResponse]:
     """Import a local policy source (idempotent)
 
-     Imports a local AGT-compatible policy document into the control plane as an unapproved draft
-    branch/revision, for automation/CI. Requires the `policy:import` scope, which is admin-issuable only
-    and never granted to runtime agent tokens. Idempotent on the branch identity `(workspace, scope,
-    environment, connector, branchName)` and the source hash: a new branch returns 201; an unchanged re-
-    import returns 200 with `alreadyCurrent: true` and writes nothing; changed source appends a new
-    draft revision. Never approves or publishes — review and publication remain manual.
+     Imports a local policy source into the control plane as an unapproved draft branch/revision, for
+    automation/CI. AGT YAML/JSON is accepted directly; the documented Rego and Cedar subsets are
+    translated to AGT-compatible rules before validation. Requires the `policy:import` scope, which is
+    admin-issuable only and never granted to runtime agent tokens. `dryRun: true` returns conversion
+    diagnostics without writing. Never approves or publishes — review and publication remain manual.
 
     Args:
         body (PolicyImportRequest):
@@ -164,7 +180,7 @@ async def asyncio_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[ApiError | PolicyImportResponse]
+        Response[ApiError | PolicyImportPreviewResponse | PolicyImportResponse | PolicyImportResponse]
     """
 
     kwargs = _get_kwargs(
@@ -180,15 +196,14 @@ async def asyncio(
     *,
     client: AuthenticatedClient,
     body: PolicyImportRequest,
-) -> ApiError | PolicyImportResponse | None:
+) -> ApiError | PolicyImportPreviewResponse | PolicyImportResponse | None:
     """Import a local policy source (idempotent)
 
-     Imports a local AGT-compatible policy document into the control plane as an unapproved draft
-    branch/revision, for automation/CI. Requires the `policy:import` scope, which is admin-issuable only
-    and never granted to runtime agent tokens. Idempotent on the branch identity `(workspace, scope,
-    environment, connector, branchName)` and the source hash: a new branch returns 201; an unchanged re-
-    import returns 200 with `alreadyCurrent: true` and writes nothing; changed source appends a new
-    draft revision. Never approves or publishes — review and publication remain manual.
+     Imports a local policy source into the control plane as an unapproved draft branch/revision, for
+    automation/CI. AGT YAML/JSON is accepted directly; the documented Rego and Cedar subsets are
+    translated to AGT-compatible rules before validation. Requires the `policy:import` scope, which is
+    admin-issuable only and never granted to runtime agent tokens. `dryRun: true` returns conversion
+    diagnostics without writing. Never approves or publishes — review and publication remain manual.
 
     Args:
         body (PolicyImportRequest):
@@ -198,7 +213,7 @@ async def asyncio(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        ApiError | PolicyImportResponse
+        ApiError | PolicyImportPreviewResponse | PolicyImportResponse | PolicyImportResponse
     """
 
     return (

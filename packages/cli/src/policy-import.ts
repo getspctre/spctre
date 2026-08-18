@@ -188,7 +188,8 @@ export async function policyImport(
 
   if (options.dryRun) {
     if (payload.dryRun !== true) {
-      const message = "The control plane did not acknowledge the dry-run; no conversion preview can be trusted.";
+      const message =
+        "The control plane did not acknowledge the dry-run; no conversion preview can be trusted.";
       if (format === "json") {
         printJson({ ok: false, error: message });
         process.exit(1);
@@ -199,7 +200,9 @@ export async function policyImport(
       printJson({ ok: true, ...payload });
     } else {
       console.log(`Conversion preview: ${payload.ruleCount ?? 0} rule(s).`);
-      for (const diagnostic of (payload as { diagnostics?: Array<{ severity: string; message: string }> }).diagnostics ?? []) {
+      for (const diagnostic of (
+        payload as { diagnostics?: Array<{ severity: string; message: string }> }
+      ).diagnostics ?? []) {
         console.log(`  ${diagnostic.severity}: ${diagnostic.message}`);
       }
     }

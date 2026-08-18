@@ -1658,7 +1658,9 @@ export function parsePolicySourceDocument(params: {
     return {
       sourceHash: "pending",
       rules: [],
-      diagnostics: [{ severity: "ERROR", message: "sourceFormat must be AGT_YAML, OPA_REGO, or CEDAR." }],
+      diagnostics: [
+        { severity: "ERROR", message: "sourceFormat must be AGT_YAML, OPA_REGO, or CEDAR." },
+      ],
       warnings: [],
       metadata: {},
     };
@@ -1770,7 +1772,8 @@ function translateCedarSource(source: string): NativeTranslation {
   // Cedar defaults to deny whereas the current AGT evaluator defaults to
   // allow. A Cedar `permit` statement therefore cannot be represented exactly
   // without a branch-level default-effect feature; accept only forbids.
-  const statement = /\b(forbid)\s*\(\s*principal\s*,\s*action\s*==\s*Action::"([^"\\]+)"\s*,\s*resource\s*\)\s*;/g;
+  const statement =
+    /\b(forbid)\s*\(\s*principal\s*,\s*action\s*==\s*Action::"([^"\\]+)"\s*,\s*resource\s*\)\s*;/g;
   const rules: Record<string, unknown>[] = [];
   const mappings: PolicySourceTranslationMapping[] = [];
   const registeredConnectors = new Set(POLICY_PACKS.map((pack) => pack.connector));
@@ -1779,12 +1782,14 @@ function translateCedarSource(source: string): NativeTranslation {
   while ((match = statement.exec(withoutComments))) {
     if (withoutComments.slice(last, match.index).trim()) {
       return unsupportedNativeSource(
-        "Unsupported Cedar syntax. The initial importer accepts standalone forbid statements with an Action::\"connector.action\" selector only; permit relies on Cedar's default-deny semantics.",
+        'Unsupported Cedar syntax. The initial importer accepts standalone forbid statements with an Action::"connector.action" selector only; permit relies on Cedar\'s default-deny semantics.',
       );
     }
     const [connector, ...actionParts] = match[2].split(".");
     if (!connector || !actionParts.length) {
-      return unsupportedNativeSource(`Cedar action "${match[2]}" must use Action::\"connector.action\".`);
+      return unsupportedNativeSource(
+        `Cedar action "${match[2]}" must use Action::\"connector.action\".`,
+      );
     }
     if (!registeredConnectors.has(connector)) {
       return unsupportedNativeSource(
@@ -1803,7 +1808,8 @@ function translateCedarSource(source: string): NativeTranslation {
       sourceId: `cedar:${rules.length}`,
       stableRuleId,
       outcome: "LOSSY",
-      message: "Spctre action matching is prefix-based; Cedar action equality may match additional action names.",
+      message:
+        "Spctre action matching is prefix-based; Cedar action equality may match additional action names.",
     });
     last = statement.lastIndex;
   }
@@ -1818,7 +1824,8 @@ function translateCedarSource(source: string): NativeTranslation {
     diagnostics: [
       {
         severity: "WARNING",
-        message: "Cedar action equality is translated to Spctre's prefix action matching and is therefore lossy.",
+        message:
+          "Cedar action equality is translated to Spctre's prefix action matching and is therefore lossy.",
       },
     ],
     unsupported: false,
@@ -1851,8 +1858,12 @@ function translateRegoSource(source: string): NativeTranslation {
       );
     }
     const selectors: Record<string, string> = {};
-    for (const expression of match[2].split(/[;\n]/).map((value) => value.trim()).filter(Boolean)) {
-      const comparison = /^input\.(connector|action|domain)\s*==\s*(?:"([^"\\]+)"|`([^`\r\n]*)`)$/.exec(expression);
+    for (const expression of match[2]
+      .split(/[;\n]/)
+      .map((value) => value.trim())
+      .filter(Boolean)) {
+      const comparison =
+        /^input\.(connector|action|domain)\s*==\s*(?:"([^"\\]+)"|`([^`\r\n]*)`)$/.exec(expression);
       if (!comparison || selectors[comparison[1]]) {
         return unsupportedNativeSource(
           `Unsupported Rego expression "${expression}". Use conjunctions of input.connector, input.action, and input.domain equality checks.`,
@@ -1861,7 +1872,9 @@ function translateRegoSource(source: string): NativeTranslation {
       selectors[comparison[1]] = comparison[2] ?? comparison[3];
     }
     if (!selectors.connector && !selectors.action && !selectors.domain) {
-      return unsupportedNativeSource("Rego rules must include at least one supported input selector.");
+      return unsupportedNativeSource(
+        "Rego rules must include at least one supported input selector.",
+      );
     }
     const stableRuleId = `rego.${packageMatch[1].replace(/[^a-zA-Z0-9]+/g, ".")}.${match[1]}.${rules.length + 1}`;
     rules.push({
@@ -1876,7 +1889,8 @@ function translateRegoSource(source: string): NativeTranslation {
       sourceId: `rego:${match[1]}:${rules.length}`,
       stableRuleId,
       outcome: "LOSSY",
-      message: "Spctre action matching is prefix-based; Rego action equality may match additional action names.",
+      message:
+        "Spctre action matching is prefix-based; Rego action equality may match additional action names.",
     });
     last = rulePattern.lastIndex;
   }
@@ -1891,7 +1905,8 @@ function translateRegoSource(source: string): NativeTranslation {
     diagnostics: [
       {
         severity: "WARNING",
-        message: "Rego action equality is translated to Spctre's prefix action matching and is therefore lossy.",
+        message:
+          "Rego action equality is translated to Spctre's prefix action matching and is therefore lossy.",
       },
     ],
     unsupported: false,

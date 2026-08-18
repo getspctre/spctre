@@ -214,8 +214,8 @@ function ImportSourceFields() {
       </select>
 
       <label className="checkboxLabel">
-        <input type="checkbox" name="acceptLossy" />
-        I accept any reported lossy conversion for this draft.
+        <input type="checkbox" name="acceptLossy" />I accept any reported lossy conversion for this
+        draft.
       </label>
 
       <label className="meta" htmlFor="source">

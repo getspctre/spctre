@@ -162,8 +162,25 @@ from .list_verifications_response_200_results_item import (
 )
 from .pagination import Pagination
 from .policy_content_artifact_retain_response import PolicyContentArtifactRetainResponse
+from .policy_import_preview_response import PolicyImportPreviewResponse
+from .policy_import_preview_response_diagnostics_item import (
+    PolicyImportPreviewResponseDiagnosticsItem,
+)
+from .policy_import_preview_response_rules_item import (
+    PolicyImportPreviewResponseRulesItem,
+)
+from .policy_import_preview_response_source_document import (
+    PolicyImportPreviewResponseSourceDocument,
+)
+from .policy_import_preview_response_source_format import (
+    PolicyImportPreviewResponseSourceFormat,
+)
+from .policy_import_preview_response_translation import (
+    PolicyImportPreviewResponseTranslation,
+)
 from .policy_import_request import PolicyImportRequest
 from .policy_import_request_scope import PolicyImportRequestScope
+from .policy_import_request_source_format import PolicyImportRequestSourceFormat
 from .policy_import_response import PolicyImportResponse
 from .publication_attestation_ingest_request import PublicationAttestationIngestRequest
 from .publication_attestation_ingest_request_attestation import (
@@ -355,8 +372,15 @@ __all__ = (
     "ListVerificationsResponse200ResultsItem",
     "Pagination",
     "PolicyContentArtifactRetainResponse",
+    "PolicyImportPreviewResponse",
+    "PolicyImportPreviewResponseDiagnosticsItem",
+    "PolicyImportPreviewResponseRulesItem",
+    "PolicyImportPreviewResponseSourceDocument",
+    "PolicyImportPreviewResponseSourceFormat",
+    "PolicyImportPreviewResponseTranslation",
     "PolicyImportRequest",
     "PolicyImportRequestScope",
+    "PolicyImportRequestSourceFormat",
     "PolicyImportResponse",
     "PublicationAttestationIngestRequest",
     "PublicationAttestationIngestRequestAttestation",

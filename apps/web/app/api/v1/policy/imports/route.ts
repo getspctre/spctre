@@ -65,7 +65,10 @@ async function handlePostApiV1PolicyImports(request: Request) {
   const acceptLossy = rec.acceptLossy === true;
   if (rec.sourceFormat !== undefined && !sourceFormat) {
     return withTraceId(
-      Response.json({ error: "sourceFormat must be AGT_YAML, OPA_REGO, or CEDAR.", meta: makeMeta(traceId) }, { status: 400 }),
+      Response.json(
+        { error: "sourceFormat must be AGT_YAML, OPA_REGO, or CEDAR.", meta: makeMeta(traceId) },
+        { status: 400 },
+      ),
       traceId,
     );
   }
@@ -82,11 +85,19 @@ async function handlePostApiV1PolicyImports(request: Request) {
       acceptLossy,
     });
     if ("error" in preview) {
-      return withTraceId(Response.json({ error: preview.error, meta: makeMeta(traceId) }, { status: 400 }), traceId);
+      return withTraceId(
+        Response.json({ error: preview.error, meta: makeMeta(traceId) }, { status: 400 }),
+        traceId,
+      );
     }
     return withTraceId(
       Response.json(
-        { dryRun: true, ruleCount: preview.result.rules.length, ...preview.result, meta: makeMeta(traceId) },
+        {
+          dryRun: true,
+          ruleCount: preview.result.rules.length,
+          ...preview.result,
+          meta: makeMeta(traceId),
+        },
         { headers: { "cache-control": "no-store" } },
       ),
       traceId,

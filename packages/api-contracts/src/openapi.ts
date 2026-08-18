@@ -1158,7 +1158,8 @@ export const SPCTRE_OPENAPI_SPEC = {
           sourceFormat: {
             type: "string",
             enum: ["AGT_YAML", "OPA_REGO", "CEDAR"],
-            description: "Optional source dialect. The server otherwise detects .rego/.cedar paths and recognizable native syntax.",
+            description:
+              "Optional source dialect. The server otherwise detects .rego/.cedar paths and recognizable native syntax.",
           },
           dryRun: {
             type: "boolean",
@@ -1166,7 +1167,8 @@ export const SPCTRE_OPENAPI_SPEC = {
           },
           acceptLossy: {
             type: "boolean",
-            description: "Required to persist a conversion that reports semantic loss. Dry runs always report loss without persisting.",
+            description:
+              "Required to persist a conversion that reports semantic loss. Dry runs always report loss without persisting.",
           },
           branchName: {
             type: "string",
@@ -1235,7 +1237,16 @@ export const SPCTRE_OPENAPI_SPEC = {
 
       PolicyImportPreviewResponse: {
         type: "object",
-        required: ["dryRun", "sourceFormat", "sourceHash", "ruleCount", "rules", "diagnostics", "warnings", "meta"],
+        required: [
+          "dryRun",
+          "sourceFormat",
+          "sourceHash",
+          "ruleCount",
+          "rules",
+          "diagnostics",
+          "warnings",
+          "meta",
+        ],
         properties: {
           dryRun: { type: "boolean", const: true },
           sourceFormat: { type: "string", enum: ["AGT_YAML", "OPA_REGO", "CEDAR"] },
@@ -2817,7 +2828,8 @@ export const SPCTRE_OPENAPI_SPEC = {
         },
         responses: {
           "200": {
-            description: "Existing branch updated, already current, or a non-persisting dry-run conversion preview.",
+            description:
+              "Existing branch updated, already current, or a non-persisting dry-run conversion preview.",
             content: {
               "application/json": {
                 schema: {
