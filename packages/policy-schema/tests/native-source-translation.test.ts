@@ -1,0 +1,55 @@
+import { describe, expect, it } from "vitest";
+import { detectPolicySourceFormat, parsePolicySourceDocument } from "../src";
+
+describe("native policy source translation", () => {
+  it("translates the strict Cedar forbid subset with native provenance", () => {
+    const result = parsePolicySourceDocument({
+      sourcePath: "policies/github.cedar",
+      document: 'forbid(principal, action == Action::"github.repo.delete", resource);',
+    });
+
+    expect(result.sourceFormat).toBe("CEDAR");
+    expect(result.translation).toMatchObject({ status: "EXACT", translatorVersion: "1" });
+    expect(result.rules).toMatchObject([
+      { effect: "DENY", connectors: ["github"], actions: ["repo.delete"], sourceFormat: "CEDAR" },
+    ]);
+  });
+
+  it("rejects Cedar conditions rather than weakening them", () => {
+    const result = parsePolicySourceDocument({
+      sourceFormat: "CEDAR",
+      document: 'forbid(principal, action == Action::"github.repo.delete", resource) when { context.risk > 5 };',
+    });
+
+    expect(result.translation?.status).toBe("UNSUPPORTED");
+    expect(result.rules).toEqual([]);
+    expect(result.diagnostics[0]).toMatchObject({ severity: "ERROR" });
+  });
+
+  it("translates declarative Rego input selectors and blocks arbitrary expressions", () => {
+    const supported = parsePolicySourceDocument({
+      sourcePath: "policies/github.rego",
+      document: 'package spctre.github\ndeny if {\n input.connector == "github"\n input.action == "repo.delete"\n}',
+    });
+    expect(supported.translation?.status).toBe("EXACT");
+    expect(supported.rules[0]).toMatchObject({
+      effect: "DENY",
+      connectors: ["github"],
+      actions: ["repo.delete"],
+      sourceFormat: "OPA_REGO",
+    });
+
+    const unsupported = parsePolicySourceDocument({
+      sourceFormat: "OPA_REGO",
+      document: 'package spctre.github\ndeny if { data.roles[input.user] == "admin" }',
+    });
+    expect(unsupported.translation?.status).toBe("UNSUPPORTED");
+    expect(unsupported.rules).toEqual([]);
+  });
+
+  it("detects native source only from native extensions or recognizable syntax", () => {
+    expect(detectPolicySourceFormat({ document: "rules: []", sourcePath: "policy.yaml" })).toBe("AGT_YAML");
+    expect(detectPolicySourceFormat({ document: "", sourcePath: "policy.rego" })).toBe("OPA_REGO");
+    expect(detectPolicySourceFormat({ document: 'permit(principal, action == Action::"a.b", resource);' })).toBe("CEDAR");
+  });
+});

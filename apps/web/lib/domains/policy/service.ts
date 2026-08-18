@@ -3,7 +3,7 @@ import { logger } from "@spctre/platform/logging";
 import {
   buildPolicyImportResult,
   describeBlockingIssues,
-  parseAgtPolicyDocument,
+  parsePolicySourceDocument,
   validatePolicyRules,
 } from "@spctre/policy-schema";
 import type { PolicyImportResult } from "@spctre/policy-schema";
@@ -38,7 +38,7 @@ import { swallow } from "@/lib/platform/swallow";
 
 const VALID_SCOPES = new Set(["ORGANIZATION", "WORKSPACE", "ENVIRONMENT", "CONNECTOR"]);
 
-type ParsedPolicyDocument = ReturnType<typeof parseAgtPolicyDocument>;
+type ParsedPolicyDocument = ReturnType<typeof parsePolicySourceDocument>;
 
 /**
  * Shared input validation + parse for both the browser-session import
@@ -52,6 +52,7 @@ function validateAndParseImport(input: {
   environment: string;
   connector: string;
   sourcePath: string;
+  sourceFormat?: "AGT_YAML" | "OPA_REGO" | "CEDAR";
 }): { error: string } | { parsed: ParsedPolicyDocument } {
   if (!input.source.trim()) return { error: "Policy source is required." };
   if (!input.branchName) return { error: "Branch name is required." };
@@ -78,7 +79,11 @@ function validateAndParseImport(input: {
     return { error: "Environment is only valid for ENVIRONMENT-scoped branches." };
   }
 
-  const parsed = parseAgtPolicyDocument({ document: input.source, sourcePath: input.sourcePath });
+  const parsed = parsePolicySourceDocument({
+    document: input.source,
+    sourcePath: input.sourcePath,
+    sourceFormat: input.sourceFormat,
+  });
   if (parsed.diagnostics.some((d) => d.severity === "ERROR")) {
     return {
       error: `Parse error: ${parsed.diagnostics
@@ -109,6 +114,35 @@ function validateAndParseImport(input: {
 
 export type ImportPolicyResult = { result: PolicyImportResult } | { error: string };
 
+/** Converts and validates a source without creating a branch or revision. */
+export function previewPolicyImport(input: {
+  source: string;
+  branchName: string;
+  scope: string;
+  environment: string;
+  connector: string;
+  sourcePath: string;
+  sourceFormat?: "AGT_YAML" | "OPA_REGO" | "CEDAR";
+}): ImportPolicyResult {
+  const validation = validateAndParseImport(input);
+  if ("error" in validation) return validation;
+  const parsed = validation.parsed;
+  return {
+    result: buildPolicyImportResult({
+      sourceFormat: parsed.sourceFormat ?? "AGT_YAML",
+      sourcePath: input.sourcePath,
+      sourceHash: `sha256:${createHash("sha256").update(input.source).digest("hex").slice(0, 16)}`,
+      rules: parsed.rules,
+      warnings: parsed.warnings,
+      diagnostics: parsed.diagnostics,
+      metadata: parsed.metadata,
+      sourceDocument: parsed.sourceDocument,
+      compatibility: parsed.compatibility,
+      translation: parsed.translation,
+    }),
+  };
+}
+
 export type CreatePolicyBranchResult = { branchId: string; revisionId: string } | { error: string };
 
 export async function listPolicyRules(params: {
@@ -138,6 +172,7 @@ export async function importPolicyDecision(input: {
   connector: string;
   requestedWorkspaceId: string;
   sourcePath: string;
+  sourceFormat?: "AGT_YAML" | "OPA_REGO" | "CEDAR";
   targetStacks: string[];
 }): Promise<ImportPolicyResult> {
   const validation = validateAndParseImport(input);
@@ -150,7 +185,7 @@ export async function importPolicyDecision(input: {
         id: crypto.randomUUID(),
         branchId: `br-${input.branchName}`,
         revisionId: crypto.randomUUID(),
-        sourceFormat: "AGT_YAML",
+        sourceFormat: parsed.sourceFormat ?? "AGT_YAML",
         sourcePath: input.sourcePath,
         sourceHash: `sha256:${createHash("sha256").update(input.source).digest("hex").slice(0, 16)}`,
         author: "system",
@@ -159,6 +194,7 @@ export async function importPolicyDecision(input: {
         warnings: parsed.warnings,
         diagnostics: parsed.diagnostics,
         metadata: parsed.metadata,
+        translation: parsed.translation,
       }),
     };
   }
@@ -197,11 +233,13 @@ export async function importPolicyDecision(input: {
       environment: input.environment || undefined,
       connector: input.connector || undefined,
       sourcePath: input.sourcePath,
+      sourceFormat: parsed.sourceFormat ?? "AGT_YAML",
       source: input.source,
       rules: parsed.rules,
       metadata: parsed.metadata,
       sourceDocument: parsed.sourceDocument,
       compatibility: parsed.compatibility,
+      translation: parsed.translation,
       message: "Import via Spctre control plane",
       targetStacks: input.targetStacks,
     });
@@ -211,7 +249,7 @@ export async function importPolicyDecision(input: {
         id: crypto.randomUUID(),
         branchId: persisted.branchId,
         revisionId: persisted.revisionId,
-        sourceFormat: "AGT_YAML",
+        sourceFormat: parsed.sourceFormat ?? "AGT_YAML",
         sourcePath: input.sourcePath,
         sourceHash: persisted.sourceHash,
         author: actor.name,
@@ -220,6 +258,7 @@ export async function importPolicyDecision(input: {
         warnings: parsed.warnings,
         diagnostics: parsed.diagnostics,
         metadata: parsed.metadata,
+        translation: parsed.translation,
       }),
     };
   } catch (error) {
@@ -253,6 +292,7 @@ export async function importPolicyForToken(input: {
   environment: string;
   connector: string;
   sourcePath: string;
+  sourceFormat?: "AGT_YAML" | "OPA_REGO" | "CEDAR";
   targetStacks: string[];
 }): Promise<ImportPolicyForTokenResult> {
   // Service tokens are workspace-bound (service_token.workspace_id is NOT NULL).
@@ -306,11 +346,13 @@ export async function importPolicyForToken(input: {
         environment: input.environment || undefined,
         connector: input.connector || undefined,
         sourcePath: input.sourcePath,
+        sourceFormat: parsed.sourceFormat ?? "AGT_YAML",
         source: input.source,
         rules: parsed.rules,
         metadata: parsed.metadata,
         sourceDocument: parsed.sourceDocument,
         compatibility: parsed.compatibility,
+        translation: parsed.translation,
         message: "Import via policy:import token",
         targetStacks: input.targetStacks,
       }),
@@ -395,6 +437,7 @@ export async function createPolicyBranchDecision(input: {
       environment: input.environment || undefined,
       connector: input.connector || undefined,
       sourcePath: "ui/policy-branch-create",
+      sourceFormat: "AGT_YAML",
       source: JSON.stringify(sourceDocument),
       rules: [],
       metadata: sourceDocument.metadata,

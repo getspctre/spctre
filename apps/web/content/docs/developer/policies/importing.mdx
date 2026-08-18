@@ -3,19 +3,21 @@ title: Importing policies
 description: Import AGT_YAML policies via the control plane UI or the branch API.
 ---
 
-Spctre's native policy format is **AGT_YAML**. Import is done through the control plane UI (**Policies → Import**) or by creating a branch via the API.
+Spctre's runtime policy format is **AGT_YAML**. Import is done through the control plane UI (**Policies → Import**), CLI, or branch API.
 
 In the control plane, use **Create policy**, then choose **Upload or paste existing** to upload a file or paste its contents. Spctre records the uploaded filename or a system-generated UI source for provenance.
 
 ## Source format
 
-The `source_format` field is a provenance label — it records what format the policy was originally authored in for AGT runtime compatibility. Spctre does not translate Rego or Cedar syntax: all rules must be expressed in the AGT_YAML rule structure regardless of which `source_format` label is set.
+AGT YAML/JSON is imported directly. The import flow also translates a strict, documented subset of Rego and Cedar into AGT rules before normal validation and review. It does not execute Rego or Cedar as a Spctre PDP, and it rejects unsupported or ambiguous native syntax rather than guessing.
 
 | `source_format` value | When to use |
 |---|---|
 | `AGT_YAML` | Native Spctre rules (default) |
-| `OPA_REGO` | Policies migrated from OPA — rules must already be rewritten in AGT_YAML; this label preserves the origin for audit purposes |
-| `CEDAR` | Policies migrated from AWS Cedar — same caveat; label only |
+| `OPA_REGO` | Supported deny-only Rego selector rules are converted at import; allow/default decision contracts, unsupported expressions, data lookups, recursion, and custom functions are rejected |
+| `CEDAR` | Supported standalone `forbid` statements are converted at import; `permit` relies on Cedar default-deny semantics and is rejected until an equivalent AGT baseline is available |
+
+Native imports retain the original text, hash, source dialect, translator version, and source-to-rule mapping with the resulting draft. A native import is not a promise of lossless Rego/Cedar round-tripping after AGT edits. Use `spctre policy import --dry-run` or `spctre policy convert` to preview a conversion without creating a draft.
 
 ## Required top-level fields
 

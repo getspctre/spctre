@@ -1,5 +1,5 @@
 import { authenticateServiceToken } from "@/lib/service-tokens";
-import { importPolicyForToken } from "@/lib/domains/policy/service";
+import { importPolicyForToken, previewPolicyImport } from "@/lib/domains/policy/service";
 import { extractTraceId, makeMeta, withTraceId } from "@spctre/api-contracts";
 
 export const dynamic = "force-dynamic";
@@ -10,6 +10,11 @@ function asString(value: unknown): string {
 
 function asStringArray(value: unknown): string[] {
   return Array.isArray(value) ? value.map((v) => asString(v)).filter(Boolean) : [];
+}
+
+function asSourceFormat(value: unknown): "AGT_YAML" | "OPA_REGO" | "CEDAR" | undefined {
+  const format = asString(value);
+  return format === "AGT_YAML" || format === "OPA_REGO" || format === "CEDAR" ? format : undefined;
 }
 
 /**
@@ -56,6 +61,35 @@ async function handlePostApiV1PolicyImports(request: Request) {
   const environment = asString(rec.environment);
   const sourcePath = asString(rec.sourcePath) || `imports/${branchName || "policy"}.yaml`;
   const targetStacks = asStringArray(rec.targetStacks);
+  const sourceFormat = asSourceFormat(rec.sourceFormat);
+  if (rec.sourceFormat !== undefined && !sourceFormat) {
+    return withTraceId(
+      Response.json({ error: "sourceFormat must be AGT_YAML, OPA_REGO, or CEDAR.", meta: makeMeta(traceId) }, { status: 400 }),
+      traceId,
+    );
+  }
+
+  if (rec.dryRun === true) {
+    const preview = previewPolicyImport({
+      source,
+      branchName,
+      scope,
+      connector,
+      environment,
+      sourcePath,
+      sourceFormat,
+    });
+    if ("error" in preview) {
+      return withTraceId(Response.json({ error: preview.error, meta: makeMeta(traceId) }, { status: 400 }), traceId);
+    }
+    return withTraceId(
+      Response.json(
+        { dryRun: true, ruleCount: preview.result.rules.length, ...preview.result, meta: makeMeta(traceId) },
+        { headers: { "cache-control": "no-store" } },
+      ),
+      traceId,
+    );
+  }
 
   const outcome = await importPolicyForToken({
     tenantId: tokenAuth.auth.tenantId,
@@ -67,6 +101,7 @@ async function handlePostApiV1PolicyImports(request: Request) {
     connector,
     environment,
     sourcePath,
+    sourceFormat,
     targetStacks,
   });
 

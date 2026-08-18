@@ -832,7 +832,7 @@ export interface paths {
         put?: never;
         /**
          * Import a local policy source (idempotent)
-         * @description Imports a local AGT-compatible policy document into the control plane as an unapproved draft branch/revision, for automation/CI. Requires the `policy:import` scope, which is admin-issuable only and never granted to runtime agent tokens. Idempotent on the branch identity `(workspace, scope, environment, connector, branchName)` and the source hash: a new branch returns 201; an unchanged re-import returns 200 with `alreadyCurrent: true` and writes nothing; changed source appends a new draft revision. Never approves or publishes — review and publication remain manual.
+         * @description Imports a local policy source into the control plane as an unapproved draft branch/revision, for automation/CI. AGT YAML/JSON is accepted directly; the documented Rego and Cedar subsets are translated to AGT-compatible rules before validation. Requires the `policy:import` scope, which is admin-issuable only and never granted to runtime agent tokens. `dryRun: true` returns conversion diagnostics without writing. Never approves or publishes — review and publication remain manual.
          */
         post: operations["importPolicy"];
         delete?: never;
@@ -1639,8 +1639,15 @@ export interface components {
             meta: components["schemas"]["ApiMeta"];
         };
         PolicyImportRequest: {
-            /** @description The raw AGT-compatible policy document (YAML or JSON). */
+            /** @description Policy source. AGT YAML/JSON is accepted directly; the documented Rego and Cedar subsets are translated into AGT-compatible rules before review. */
             source: string;
+            /**
+             * @description Optional source dialect. The server otherwise detects .rego/.cedar paths and recognizable native syntax.
+             * @enum {string}
+             */
+            sourceFormat?: "AGT_YAML" | "OPA_REGO" | "CEDAR";
+            /** @description Validate and translate without creating a branch or revision. */
+            dryRun?: boolean;
             /** @description Target branch name. Lowercase letters, digits, hyphens, and slashes; cannot start or end with a hyphen or slash. */
             branchName: string;
             /**
@@ -1667,6 +1674,28 @@ export interface components {
             /** @description True when the branch head already carried this exact source; no write was performed. */
             alreadyCurrent: boolean;
             ruleCount: number;
+            meta: components["schemas"]["ApiMeta"];
+        };
+        PolicyImportPreviewResponse: {
+            /** @constant */
+            dryRun: true;
+            /** @enum {string} */
+            sourceFormat: "AGT_YAML" | "OPA_REGO" | "CEDAR";
+            sourceHash: string;
+            ruleCount: number;
+            rules: {
+                [key: string]: unknown;
+            }[];
+            diagnostics: {
+                [key: string]: unknown;
+            }[];
+            warnings: string[];
+            sourceDocument?: {
+                [key: string]: unknown;
+            };
+            translation?: {
+                [key: string]: unknown;
+            };
             meta: components["schemas"]["ApiMeta"];
         };
         BlueprintImportRequest: {
@@ -3261,13 +3290,13 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Existing branch updated, or already current (no write). */
+            /** @description Existing branch updated, already current, or a non-persisting dry-run conversion preview. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PolicyImportResponse"];
+                    "application/json": components["schemas"]["PolicyImportResponse"] | components["schemas"]["PolicyImportPreviewResponse"];
                 };
             };
             /** @description New draft branch created. */

@@ -10,6 +10,7 @@ import { sql } from "@/lib/db";
 import { ensureDemoTenant } from "@/lib/repositories/seed/local-dev";
 import type {
   AgtCompatibilityReport,
+  PolicySourceTranslationReport,
   PolicyBranch,
   PolicyRuleSummary,
 } from "@spctre/policy-schema";
@@ -449,11 +450,13 @@ export async function persistImportedBranch(params: {
   environment?: string;
   connector?: string;
   sourcePath: string;
+  sourceFormat: string;
   source: string;
   rules: PolicyRuleSummary[];
   metadata: Record<string, unknown>;
   sourceDocument?: Record<string, unknown>;
   compatibility?: AgtCompatibilityReport;
+  translation?: PolicySourceTranslationReport;
   message: string;
   targetStacks?: string[];
 }): Promise<{ branchId: string; revisionId: string; sourceHash: string; importedAt: string }> {
@@ -496,11 +499,15 @@ export async function persistImportedBranch(params: {
         author_id, message, target_stacks
       ) VALUES (
         ${revisionId}, ${params.tenantId}, ${workspaceId}, ${branchId},
-        'AGT_YAML', ${params.sourcePath},
+        ${params.sourceFormat}, ${params.sourcePath},
         ${tx.json({
           ...(params.sourceDocument ?? { rules: params.rules, metadata: params.metadata }),
           metadata: params.metadata,
           spctre_agt_compatibility: params.compatibility,
+          spctre_native_source:
+            params.sourceFormat === 'AGT_YAML'
+              ? undefined
+              : { text: params.source, translation: params.translation },
         } as JSONValue)},
         ${sourceHash}, ${params.authorId}, ${params.message},
         ${tx.json(targetStacks as JSONValue)}::jsonb
@@ -569,11 +576,13 @@ export async function importPolicyBranchIdempotent(params: {
   environment?: string;
   connector?: string;
   sourcePath: string;
+  sourceFormat: string;
   source: string;
   rules: PolicyRuleSummary[];
   metadata: Record<string, unknown>;
   sourceDocument?: Record<string, unknown>;
   compatibility?: AgtCompatibilityReport;
+  translation?: PolicySourceTranslationReport;
   message: string;
   targetStacks?: string[];
 }): Promise<ImportPolicyBranchResult> {
@@ -588,6 +597,10 @@ export async function importPolicyBranchIdempotent(params: {
     ...(params.sourceDocument ?? { rules: params.rules, metadata: params.metadata }),
     metadata: params.metadata,
     spctre_agt_compatibility: params.compatibility,
+    spctre_native_source:
+      params.sourceFormat === "AGT_YAML"
+        ? undefined
+        : { text: params.source, translation: params.translation },
   };
   // Stable identity string matching the branch uniqueness columns; used to key
   // the advisory lock (0x1f unit separator keeps components unambiguous).
@@ -650,7 +663,7 @@ export async function importPolicyBranchIdempotent(params: {
             author_id, message, target_stacks
           ) VALUES (
             ${revisionId}, ${params.tenantId}, ${workspaceId}, ${branchId}, ${parentRevisionId},
-            'AGT_YAML', ${params.sourcePath}, ${tx.json(sourceDocument as JSONValue)},
+            ${params.sourceFormat}, ${params.sourcePath}, ${tx.json(sourceDocument as JSONValue)},
             ${sourceHash}, ${params.authorId}, ${params.message}, ${tx.json(targetStacks as JSONValue)}::jsonb
           )
         `;

@@ -56,6 +56,11 @@ export async function importPolicy(_prev: ImportState, formData: FormData): Prom
     (!pastedSource.trim() ? sourceFile?.name : undefined) ||
     `spctre-ui/${branchName || "policy"}.yaml`;
   const targetStacks = formData.getAll("targetStack").map(String).filter(Boolean);
+  const requestedFormat = (formData.get("sourceFormat") as string | null) ?? "";
+  const sourceFormat =
+    requestedFormat === "AGT_YAML" || requestedFormat === "OPA_REGO" || requestedFormat === "CEDAR"
+      ? requestedFormat
+      : undefined;
 
   const result = await importPolicyDecision({
     source,
@@ -65,6 +70,7 @@ export async function importPolicy(_prev: ImportState, formData: FormData): Prom
     connector,
     requestedWorkspaceId,
     sourcePath,
+    sourceFormat,
     targetStacks,
   });
   if ("error" in result) {

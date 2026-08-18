@@ -447,12 +447,26 @@ spctre policy import policies/payments.yaml \
 | `-e`, `--environment` | Environment; required for `ENVIRONMENT` scope |
 | `-w`, `--workspace` | Advisory workspace assertion; the token workspace is authoritative |
 | `--source-path` | Provenance path recorded with the revision |
+| `--source-format` | Override dialect detection: `AGT_YAML`, `OPA_REGO`, or `CEDAR` |
+| `--dry-run` | Convert and validate without creating a draft revision |
+| `--offline` | Convert locally without a key, network request, or remote revision |
+| `-o`, `--output` | In offline mode, write the generated AGT-compatible JSON document |
+| `--report` | In offline mode, write the conversion report JSON |
 | `-k`, `--key` | Service key with the admin-issued `policy:import` scope |
 | `-u`, `--url` | Control plane URL |
 | `--format` | Output format: `text` (default) or `json` |
 
 See [Importing policies](/help-docs/developer/policies/importing) for the
 source format and idempotency behavior.
+
+For an explicitly local-only conversion, use:
+
+```bash
+spctre policy convert policies/github.cedar --output policy.json --report conversion.json
+```
+
+This runs the same supported-subset translator but cannot perform
+control-plane authorization, review, publication, or runtime-context checks.
 
 ---
 

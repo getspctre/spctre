@@ -64,5 +64,5 @@ Rules are evaluated in descending priority order. When two rules match with diff
 ## Source formats
 
 - **AGT_YAML** — Spctre's native YAML rule language with built-in connector, action, and condition fields
-- **OPA_REGO** — Open Policy Agent Rego; stored as-is with `source_format: OPA_REGO` for provenance; evaluated via the Rego runtime
-- **Cedar** — AWS Cedar policy language; supported for organisations already using Cedar
+- **OPA_REGO** — Open Policy Agent Rego. Spctre imports a strict deny-selector subset into AGT rules and retains native provenance; it does not execute Rego locally.
+- **Cedar** — AWS Cedar policy language. Spctre imports supported `forbid` statements into AGT rules and retains native provenance. `permit` remains unsupported because Cedar is default-deny while the current AGT evaluator is deny-override.

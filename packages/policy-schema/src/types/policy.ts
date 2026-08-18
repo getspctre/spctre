@@ -36,6 +36,24 @@ export type PluginSource =
 
 export type PolicySourceDialect = "AGT_YAML" | "OPA_REGO" | "CEDAR" | "SPCTRE_MANAGED";
 
+/** The outcome of translating a native policy source into Spctre rules. */
+export type PolicySourceTranslationStatus = "EXACT" | "LOSSY" | "UNSUPPORTED";
+
+export interface PolicySourceTranslationMapping {
+  sourceId: string;
+  stableRuleId?: string;
+  outcome: PolicySourceTranslationStatus;
+  message?: string;
+}
+
+export interface PolicySourceTranslationReport {
+  sourceFormat: Extract<PolicySourceDialect, "OPA_REGO" | "CEDAR">;
+  translatorVersion: string;
+  status: PolicySourceTranslationStatus;
+  mappings: PolicySourceTranslationMapping[];
+  diagnostics: PolicyRuleDiagnostic[];
+}
+
 export interface SemanticCheck {
   id: string;
   prompt: string;
@@ -519,6 +537,7 @@ export interface PolicyImportResult {
   metadata: Record<string, unknown>;
   sourceDocument?: Record<string, unknown>;
   compatibility?: AgtCompatibilityReport;
+  translation?: PolicySourceTranslationReport;
 }
 
 export interface PolicyPack {

@@ -154,6 +154,12 @@ function ImportResultView({
             {result.sourceFormat} / {result.author} /{" "}
             {(result.importedAt ?? "pending").slice(0, 10)}
           </p>
+          {result.translation ? (
+            <p className="meta">
+              Native conversion: {result.translation.status.toLowerCase()} (translator v
+              {result.translation.translatorVersion})
+            </p>
+          ) : null}
           <p className="meta">
             Branch <code>{result.branchId}</code> now points at <code>{result.revisionId}</code>
           </p>
@@ -194,11 +200,21 @@ function ImportSourceFields() {
         id="sourceFile"
         name="sourceFile"
         type="file"
-        accept=".yaml,.yml,.json,application/json,application/yaml,text/yaml,text/plain"
+        accept=".yaml,.yml,.json,.rego,.cedar,application/json,application/yaml,text/yaml,text/plain"
       />
 
+      <label className="meta" htmlFor="sourceFormat">
+        Source format
+      </label>
+      <select className="input" id="sourceFormat" name="sourceFormat" defaultValue="">
+        <option value="">Auto-detect from file or content</option>
+        <option value="AGT_YAML">AGT YAML / JSON</option>
+        <option value="OPA_REGO">OPA Rego (supported subset)</option>
+        <option value="CEDAR">Cedar (supported subset)</option>
+      </select>
+
       <label className="meta" htmlFor="source">
-        Or paste policy YAML / JSON
+        Or paste policy source
       </label>
       <textarea
         className="input codearea"

@@ -2111,7 +2111,20 @@
           "source": {
             "type": "string",
             "minLength": 1,
-            "description": "The raw AGT-compatible policy document (YAML or JSON)."
+            "description": "Policy source. AGT YAML/JSON is accepted directly; the documented Rego and Cedar subsets are translated into AGT-compatible rules before review."
+          },
+          "sourceFormat": {
+            "type": "string",
+            "enum": [
+              "AGT_YAML",
+              "OPA_REGO",
+              "CEDAR"
+            ],
+            "description": "Optional source dialect. The server otherwise detects .rego/.cedar paths and recognizable native syntax."
+          },
+          "dryRun": {
+            "type": "boolean",
+            "description": "Validate and translate without creating a branch or revision."
           },
           "branchName": {
             "type": "string",
@@ -2180,6 +2193,70 @@
           },
           "ruleCount": {
             "type": "integer"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ApiMeta"
+          }
+        }
+      },
+      "PolicyImportPreviewResponse": {
+        "type": "object",
+        "required": [
+          "dryRun",
+          "sourceFormat",
+          "sourceHash",
+          "ruleCount",
+          "rules",
+          "diagnostics",
+          "warnings",
+          "meta"
+        ],
+        "properties": {
+          "dryRun": {
+            "type": "boolean",
+            "const": true
+          },
+          "sourceFormat": {
+            "type": "string",
+            "enum": [
+              "AGT_YAML",
+              "OPA_REGO",
+              "CEDAR"
+            ]
+          },
+          "sourceHash": {
+            "type": "string"
+          },
+          "ruleCount": {
+            "type": "integer"
+          },
+          "rules": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "diagnostics": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "sourceDocument": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "translation": {
+            "type": "object",
+            "additionalProperties": true
           },
           "meta": {
             "$ref": "#/components/schemas/ApiMeta"
@@ -4717,7 +4794,7 @@
       "post": {
         "operationId": "importPolicy",
         "summary": "Import a local policy source (idempotent)",
-        "description": "Imports a local AGT-compatible policy document into the control plane as an unapproved draft branch/revision, for automation/CI. Requires the `policy:import` scope, which is admin-issuable only and never granted to runtime agent tokens. Idempotent on the branch identity `(workspace, scope, environment, connector, branchName)` and the source hash: a new branch returns 201; an unchanged re-import returns 200 with `alreadyCurrent: true` and writes nothing; changed source appends a new draft revision. Never approves or publishes — review and publication remain manual.",
+        "description": "Imports a local policy source into the control plane as an unapproved draft branch/revision, for automation/CI. AGT YAML/JSON is accepted directly; the documented Rego and Cedar subsets are translated to AGT-compatible rules before validation. Requires the `policy:import` scope, which is admin-issuable only and never granted to runtime agent tokens. `dryRun: true` returns conversion diagnostics without writing. Never approves or publishes — review and publication remain manual.",
         "x-spctre-plan": "oss",
         "tags": [
           "Policy"
@@ -4739,11 +4816,18 @@
         },
         "responses": {
           "200": {
-            "description": "Existing branch updated, or already current (no write).",
+            "description": "Existing branch updated, already current, or a non-persisting dry-run conversion preview.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PolicyImportResponse"
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/PolicyImportResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/PolicyImportPreviewResponse"
+                    }
+                  ]
                 }
               }
             }
