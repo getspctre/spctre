@@ -6,6 +6,7 @@ on:
     paths:
       - apps/docs/**
       - apps/web/content/docs/**
+      - apps/docs/lib/public-docs-policy.mjs
       - pnpm-lock.yaml
       - pnpm-workspace.yaml
       - .github/workflows/docs-pages.yml

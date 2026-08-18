@@ -5,9 +5,10 @@
   "license": "Apache-2.0",
   "type": "module",
   "scripts": {
-    "dev": "next dev",
-    "build": "fumadocs-mdx && next build",
-    "typecheck": "fumadocs-mdx && tsc --noEmit"
+    "prepare:public-docs": "node ./scripts/prepare-public-docs.mjs",
+    "dev": "pnpm prepare:public-docs && fumadocs-mdx && next dev",
+    "build": "pnpm prepare:public-docs && fumadocs-mdx && next build",
+    "typecheck": "pnpm prepare:public-docs && fumadocs-mdx && tsc --noEmit"
   },
   "dependencies": {
     "fumadocs-core": "16.10.5",
