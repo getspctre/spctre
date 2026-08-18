@@ -52,7 +52,7 @@
     "@openapitools/openapi-generator-cli": "^2.40.1",
     "@vitest/coverage-v8": "^4.1.8",
     "eslint": "^10.6.0",
-    "jscpd": "^5.0.14",
+    "jscpd": "^5.0.15",
     "knip": "^6.29.0",
     "postgres": "^3.4.9",
     "prettier": "^3.9.6",
