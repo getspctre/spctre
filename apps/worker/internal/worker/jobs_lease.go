@@ -4,12 +4,14 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
 	"sync"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -101,17 +103,63 @@ func acquireJobLease(ctx context.Context, db *pgxpool.Pool, name, token string, 
 	return true, previous, nil
 }
 
-// setJobLeaseRun records which ledger row this lease covers. Separate from
-// acquisition because re-running the upsert would meet its own guard: the lease
-// is live by then, so the WHERE would skip the update and report a loss.
-func setJobLeaseRun(ctx context.Context, db *pgxpool.Pool, name, token, runID string) error {
+// openRunUnderLease opens the ledger row and attaches it to the lease in one
+// transaction, and reports whether this token still holds the lease.
+//
+// The two must be atomic. Inserting the run and then linking it as separate
+// statements leaves a window where a crash produces an open job_run with
+// job_lease.run_id still NULL — so the successor that steals the expired lease
+// gets no run id back and can never close that row. The orphan the lease exists
+// to clean up is created by the very act of recording it.
+//
+// SELECT ... FOR UPDATE locks the lease row for the duration, so the token check
+// and the writes cannot be separated by a concurrent acquisition. Holding a
+// connection for two short statements is unlike holding one for a whole sweep,
+// which is what ruled out advisory locks.
+func openRunUnderLease(ctx context.Context, db *pgxpool.Pool, name, trigger, token string) (string, bool, error) {
 	if db == nil {
-		return nil
+		return "", true, nil
 	}
-	_, err := db.Exec(ctx,
-		`UPDATE job_lease SET run_id = $3::uuid WHERE job_name = $1 AND token = $2`,
-		name, token, runID)
-	return err
+
+	tx, err := db.Begin(ctx)
+	if err != nil {
+		// Cannot tell whether the lease is still held. Report it as held: the
+		// keeper discovers a real loss within a renewal interval, and refusing
+		// to run on a transient database error would be a worse trade.
+		return "", true, err
+	}
+	defer rollbackAfterFailure(slog.Default(), ctx, tx, "open_run_under_lease")
+
+	var current string
+	var expired bool
+	err = tx.QueryRow(ctx,
+		`SELECT token, expires_at <= now() FROM job_lease WHERE job_name = $1 FOR UPDATE`, name).
+		Scan(&current, &expired)
+	if errors.Is(err, pgx.ErrNoRows) {
+		// Released or deleted from under us.
+		return "", false, nil
+	}
+	if err != nil {
+		return "", true, err
+	}
+	if current != token || expired {
+		return "", false, nil
+	}
+
+	var runID string
+	if err := tx.QueryRow(ctx,
+		`INSERT INTO job_run (job_name, trigger) VALUES ($1, $2) RETURNING id::text`,
+		name, trigger).Scan(&runID); err != nil {
+		return "", true, err
+	}
+	if _, err := tx.Exec(ctx,
+		`UPDATE job_lease SET run_id = $2::uuid WHERE job_name = $1`, name, runID); err != nil {
+		return "", true, err
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return "", true, err
+	}
+	return runID, true, nil
 }
 
 // renewJobLease extends the lease. Reports false when this process is no longer
@@ -243,11 +291,17 @@ func runWithJobLease(ctx context.Context, db *pgxpool.Pool, logger *slog.Logger,
 	}
 
 	started := time.Now()
-	runID := beginJobRun(ctx, db, logger, name, trigger)
-	if runID != "" {
-		if err := setJobLeaseRun(ctx, db, name, token, runID); err != nil {
-			logger.Warn("job lease: failed to record run id", "worker.job.name", name, "error", err)
-		}
+	runID, stillHeld, err := openRunUnderLease(ctx, db, name, trigger, token)
+	if !stillHeld {
+		// Displaced between acquiring and opening the run. Do not sweep: the
+		// holder that replaced us is already doing it.
+		logger.Warn("job lease: lost before the sweep started", "worker.job.name", name)
+		return false, nil
+	}
+	if err != nil {
+		// The run row and its link roll back together, so proceeding leaves no
+		// orphan. The ledger observes sweeps; it must not be why one does not run.
+		logger.Warn("job lease: failed to open ledger run", "worker.job.name", name, "error", err)
 	}
 
 	runCtx, cancel := context.WithCancel(ctx)
