@@ -37,6 +37,11 @@ function importedSourceHash(params: {
   sourceFormat: string;
   translation?: PolicySourceTranslationReport;
 }): string {
+  // Preserve the historic hash material for native AGT documents, so an
+  // unchanged pre-translation revision remains idempotent after deployment.
+  if (params.sourceFormat === "AGT_YAML") {
+    return `sha256:${createHash("sha256").update(params.source).digest("hex").slice(0, 16)}`;
+  }
   const material = [
     params.sourceFormat,
     params.translation?.translatorVersion ?? "",

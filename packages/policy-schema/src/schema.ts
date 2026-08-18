@@ -1706,6 +1706,13 @@ export function parsePolicySourceDocument(params: {
     sourceFormat,
     rules: parsed.rules.map((rule) => ({ ...rule, sourceFormat })),
     sourceDocument,
+    diagnostics: [...translated.diagnostics, ...parsed.diagnostics],
+    warnings: [
+      ...translated.diagnostics
+        .filter((diagnostic) => diagnostic.severity === "WARNING")
+        .map((diagnostic) => diagnostic.message),
+      ...parsed.warnings,
+    ],
     translation,
   };
 }

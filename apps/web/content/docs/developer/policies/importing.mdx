@@ -17,6 +17,8 @@ AGT YAML/JSON is imported directly. The import flow also translates a strict, do
 | `OPA_REGO` | Supported deny-only Rego selector rules are converted at import; allow/default decision contracts, unsupported expressions, data lookups, recursion, and custom functions are rejected |
 | `CEDAR` | Supported standalone `forbid` statements are converted at import; `permit` relies on Cedar default-deny semantics and is rejected until an equivalent AGT baseline is available |
 
+Cedar action IDs must begin with a connector registered in Spctre's built-in pack catalog (for example, `Action::"github.repo.delete"`). Custom connectors remain available through direct AGT_YAML authoring until native-source connector mapping is configured.
+
 Native imports retain the original text, hash, source dialect, translator version, and source-to-rule mapping with the resulting draft. Action equality maps to Spctre's prefix action matching and is currently marked `LOSSY`; review the preview and explicitly accept it before creating a draft. A native import is not a promise of lossless Rego/Cedar round-tripping after AGT edits. Use `spctre policy import --dry-run` or `spctre policy convert` to preview a conversion without creating a draft.
 
 ## Required top-level fields

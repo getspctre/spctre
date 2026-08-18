@@ -55,8 +55,22 @@ export async function policyConvert(
     ],
   };
   if (!result.ok) {
-    if (format === "json") printJson(result);
-    else for (const diagnostic of parsed.diagnostics) console.error(`${diagnostic.severity}: ${diagnostic.message}`);
+    const lossyNotAccepted = parsed.translation?.status === "LOSSY" && !options.acceptLossy;
+    if (format === "json") {
+      printJson({
+        ...result,
+        error: lossyNotAccepted
+          ? "Conversion is lossy; re-run with --accept-lossy to write an artifact."
+          : undefined,
+      });
+    } else if (lossyNotAccepted) {
+      console.error("Conversion is lossy; re-run with --accept-lossy to write an artifact.");
+      for (const diagnostic of parsed.translation?.diagnostics ?? []) {
+        console.error(`${diagnostic.severity}: ${diagnostic.message}`);
+      }
+    } else {
+      for (const diagnostic of parsed.diagnostics) console.error(`${diagnostic.severity}: ${diagnostic.message}`);
+    }
     process.exit(1);
   }
   const artifact = `${JSON.stringify(parsed.sourceDocument, null, 2)}\n`;

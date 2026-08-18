@@ -55,4 +55,15 @@ describe("spctre policy convert", () => {
       "exit:1",
     );
   });
+
+  it("explains how to accept a lossy conversion in default text output", async () => {
+    const errors: string[] = [];
+    vi.spyOn(console, "error").mockImplementation((...args) => errors.push(args.join(" ")));
+    vi.spyOn(process, "exit").mockImplementation(((code?: number) => {
+      throw new Error(`exit:${code}`);
+    }) as never);
+
+    await expect(policyConvert(sourcePath, {})).rejects.toThrow("exit:1");
+    expect(errors.join("\n")).toContain("re-run with --accept-lossy");
+  });
 });
