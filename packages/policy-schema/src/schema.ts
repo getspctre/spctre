@@ -1876,6 +1876,14 @@ function translateRegoSource(source: string): NativeTranslation {
         "Rego rules must include at least one supported input selector.",
       );
     }
+    // The kernel treats absent evidence.domains as a domain match. A domain-only
+    // rule would therefore deny every connector/action whose evidence omits a
+    // domain; require a connector or action selector to retain a hard target.
+    if (selectors.domain && !selectors.connector && !selectors.action) {
+      return unsupportedNativeSource(
+        "Rego domain selectors must be paired with input.connector or input.action; domain-only rules can match evidence with no domains.",
+      );
+    }
     const stableRuleId = `rego.${packageMatch[1].replace(/[^a-zA-Z0-9]+/g, ".")}.${match[1]}.${rules.length + 1}`;
     rules.push({
       stable_rule_id: stableRuleId,

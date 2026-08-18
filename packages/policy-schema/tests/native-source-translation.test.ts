@@ -69,6 +69,17 @@ describe("native policy source translation", () => {
     expect(unsupported.rules).toEqual([]);
   });
 
+  it("rejects domain-only Rego selectors that would match evidence without domains", () => {
+    const result = parsePolicySourceDocument({
+      sourceFormat: "OPA_REGO",
+      document: 'package spctre.billing\ndeny if { input.domain == "billing" }',
+    });
+
+    expect(result.translation?.status).toBe("UNSUPPORTED");
+    expect(result.rules).toEqual([]);
+    expect(result.diagnostics[0]?.message).toContain("domain selectors must be paired");
+  });
+
   it("detects native source only from native extensions or recognizable syntax", () => {
     expect(detectPolicySourceFormat({ document: "rules: []", sourcePath: "policy.yaml" })).toBe(
       "AGT_YAML",
