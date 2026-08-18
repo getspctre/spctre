@@ -1678,28 +1678,6 @@ export interface components {
             ruleCount: number;
             meta: components["schemas"]["ApiMeta"];
         };
-        PolicyImportPreviewResponse: {
-            /** @constant */
-            dryRun: true;
-            /** @enum {string} */
-            sourceFormat: "AGT_YAML" | "OPA_REGO" | "CEDAR";
-            sourceHash: string;
-            ruleCount: number;
-            rules: {
-                [key: string]: unknown;
-            }[];
-            diagnostics: {
-                [key: string]: unknown;
-            }[];
-            warnings: string[];
-            sourceDocument?: {
-                [key: string]: unknown;
-            };
-            translation?: {
-                [key: string]: unknown;
-            };
-            meta: components["schemas"]["ApiMeta"];
-        };
         BlueprintImportRequest: {
             /** @description The raw declarative Blueprint source document (YAML or JSON): an envelope of name, agentId, message, and definition. The definition names its governing policy branch via policyBranchId (a branch name) and must not pin policyRevisionId. */
             source: string;
@@ -3292,13 +3270,13 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Existing branch updated, already current, or a non-persisting dry-run conversion preview. */
+            /** @description Existing branch updated, or already current (no write). */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PolicyImportResponse"] | components["schemas"]["PolicyImportPreviewResponse"];
+                    "application/json": components["schemas"]["PolicyImportResponse"];
                 };
             };
             /** @description New draft branch created. */

@@ -6,7 +6,6 @@ import httpx
 from ... import errors
 from ...client import AuthenticatedClient, Client
 from ...models.api_error import ApiError
-from ...models.policy_import_preview_response import PolicyImportPreviewResponse
 from ...models.policy_import_request import PolicyImportRequest
 from ...models.policy_import_response import PolicyImportResponse
 from ...types import Response
@@ -33,27 +32,9 @@ def _get_kwargs(
 
 def _parse_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
-) -> ApiError | PolicyImportPreviewResponse | PolicyImportResponse | None:
+) -> ApiError | PolicyImportResponse | None:
     if response.status_code == 200:
-
-        def _parse_response_200(
-            data: object,
-        ) -> PolicyImportPreviewResponse | PolicyImportResponse:
-            try:
-                if not isinstance(data, dict):
-                    raise TypeError()
-                response_200_type_0 = PolicyImportResponse.from_dict(data)
-
-                return response_200_type_0
-            except (TypeError, ValueError, AttributeError, KeyError):
-                pass
-            if not isinstance(data, dict):
-                raise TypeError()
-            response_200_type_1 = PolicyImportPreviewResponse.from_dict(data)
-
-            return response_200_type_1
-
-        response_200 = _parse_response_200(response.json())
+        response_200 = PolicyImportResponse.from_dict(response.json())
 
         return response_200
 
@@ -85,7 +66,7 @@ def _parse_response(
 
 def _build_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
-) -> Response[ApiError | PolicyImportPreviewResponse | PolicyImportResponse]:
+) -> Response[ApiError | PolicyImportResponse]:
     return Response(
         status_code=HTTPStatus(response.status_code),
         content=response.content,
@@ -98,7 +79,7 @@ def sync_detailed(
     *,
     client: AuthenticatedClient,
     body: PolicyImportRequest,
-) -> Response[ApiError | PolicyImportPreviewResponse | PolicyImportResponse]:
+) -> Response[ApiError | PolicyImportResponse]:
     """Import a local policy source (idempotent)
 
      Imports a local policy source into the control plane as an unapproved draft branch/revision, for
@@ -115,7 +96,7 @@ def sync_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[ApiError | PolicyImportPreviewResponse | PolicyImportResponse | PolicyImportResponse]
+        Response[ApiError | PolicyImportResponse]
     """
 
     kwargs = _get_kwargs(
@@ -133,7 +114,7 @@ def sync(
     *,
     client: AuthenticatedClient,
     body: PolicyImportRequest,
-) -> ApiError | PolicyImportPreviewResponse | PolicyImportResponse | None:
+) -> ApiError | PolicyImportResponse | None:
     """Import a local policy source (idempotent)
 
      Imports a local policy source into the control plane as an unapproved draft branch/revision, for
@@ -150,7 +131,7 @@ def sync(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        ApiError | PolicyImportPreviewResponse | PolicyImportResponse | PolicyImportResponse
+        ApiError | PolicyImportResponse
     """
 
     return sync_detailed(
@@ -163,7 +144,7 @@ async def asyncio_detailed(
     *,
     client: AuthenticatedClient,
     body: PolicyImportRequest,
-) -> Response[ApiError | PolicyImportPreviewResponse | PolicyImportResponse]:
+) -> Response[ApiError | PolicyImportResponse]:
     """Import a local policy source (idempotent)
 
      Imports a local policy source into the control plane as an unapproved draft branch/revision, for
@@ -180,7 +161,7 @@ async def asyncio_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[ApiError | PolicyImportPreviewResponse | PolicyImportResponse | PolicyImportResponse]
+        Response[ApiError | PolicyImportResponse]
     """
 
     kwargs = _get_kwargs(
@@ -196,7 +177,7 @@ async def asyncio(
     *,
     client: AuthenticatedClient,
     body: PolicyImportRequest,
-) -> ApiError | PolicyImportPreviewResponse | PolicyImportResponse | None:
+) -> ApiError | PolicyImportResponse | None:
     """Import a local policy source (idempotent)
 
      Imports a local policy source into the control plane as an unapproved draft branch/revision, for
@@ -213,7 +194,7 @@ async def asyncio(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        ApiError | PolicyImportPreviewResponse | PolicyImportResponse | PolicyImportResponse
+        ApiError | PolicyImportResponse
     """
 
     return (

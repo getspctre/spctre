@@ -37,6 +37,16 @@ describe("native policy source translation", () => {
     expect(result.diagnostics[0]?.message).toContain("no registered Spctre connector prefix");
   });
 
+  it("rejects Cedar action ids with empty path segments", () => {
+    const result = parsePolicySourceDocument({
+      sourceFormat: "CEDAR",
+      document: 'forbid(principal, action == Action::"github..delete", resource);',
+    });
+
+    expect(result.translation?.status).toBe("UNSUPPORTED");
+    expect(result.rules).toEqual([]);
+  });
+
   it("rejects invalid source-format labels instead of selecting a translator", () => {
     const result = parsePolicySourceDocument({
       document: 'forbid(principal, action == Action::"github.repo.delete", resource);',

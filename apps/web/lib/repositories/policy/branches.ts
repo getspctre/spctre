@@ -35,6 +35,7 @@ export interface BranchRevision {
 function importedSourceHash(params: {
   source: string;
   sourceFormat: string;
+  rules: PolicyRuleSummary[];
   translation?: PolicySourceTranslationReport;
 }): string {
   // Preserve the historic hash material for native AGT documents, so an
@@ -44,7 +45,9 @@ function importedSourceHash(params: {
   }
   const material = [
     params.sourceFormat,
-    params.translation?.translatorVersion ?? "",
+    // Hash the actual translated rules so any translator behavior change that
+    // affects enforcement creates a new revision without a hand-bumped token.
+    JSON.stringify(params.rules),
     params.source,
   ].join("\u001f");
   return `sha256:${createHash("sha256").update(material).digest("hex").slice(0, 16)}`;

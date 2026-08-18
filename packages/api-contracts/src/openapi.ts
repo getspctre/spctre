@@ -1235,32 +1235,6 @@ export const SPCTRE_OPENAPI_SPEC = {
         },
       },
 
-      PolicyImportPreviewResponse: {
-        type: "object",
-        required: [
-          "dryRun",
-          "sourceFormat",
-          "sourceHash",
-          "ruleCount",
-          "rules",
-          "diagnostics",
-          "warnings",
-          "meta",
-        ],
-        properties: {
-          dryRun: { type: "boolean", const: true },
-          sourceFormat: { type: "string", enum: ["AGT_YAML", "OPA_REGO", "CEDAR"] },
-          sourceHash: { type: "string" },
-          ruleCount: { type: "integer" },
-          rules: { type: "array", items: { type: "object", additionalProperties: true } },
-          diagnostics: { type: "array", items: { type: "object", additionalProperties: true } },
-          warnings: { type: "array", items: { type: "string" } },
-          sourceDocument: { type: "object", additionalProperties: true },
-          translation: { type: "object", additionalProperties: true },
-          meta: { $ref: "#/components/schemas/ApiMeta" },
-        },
-      },
-
       BlueprintImportRequest: {
         type: "object",
         required: ["source"],
@@ -2828,17 +2802,9 @@ export const SPCTRE_OPENAPI_SPEC = {
         },
         responses: {
           "200": {
-            description:
-              "Existing branch updated, already current, or a non-persisting dry-run conversion preview.",
+            description: "Existing branch updated, or already current (no write).",
             content: {
-              "application/json": {
-                schema: {
-                  oneOf: [
-                    { $ref: "#/components/schemas/PolicyImportResponse" },
-                    { $ref: "#/components/schemas/PolicyImportPreviewResponse" },
-                  ],
-                },
-              },
+              "application/json": { schema: { $ref: "#/components/schemas/PolicyImportResponse" } },
             },
           },
           "201": {

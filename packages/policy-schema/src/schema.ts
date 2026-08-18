@@ -1,6 +1,6 @@
 import yaml from "js-yaml";
 import { createHash } from "node:crypto";
-import { POLICY_PACKS } from "./packs";
+import { CANONICAL_PACK_CONNECTORS } from "./packs";
 import {
   jsComposePolicyLayers,
   jsEvaluateGatewayDecision,
@@ -1623,6 +1623,7 @@ export function parseAgtPolicyDocument(params: {
 }
 
 const NATIVE_TRANSLATOR_VERSION = "1";
+const REGISTERED_CEDAR_CONNECTORS = new Set<string>(CANONICAL_PACK_CONNECTORS);
 
 /** Infer a policy dialect without treating an arbitrary YAML document as native source. */
 export function detectPolicySourceFormat(params: {
@@ -1776,7 +1777,6 @@ function translateCedarSource(source: string): NativeTranslation {
     /\b(forbid)\s*\(\s*principal\s*,\s*action\s*==\s*Action::"([^"\\]+)"\s*,\s*resource\s*\)\s*;/g;
   const rules: Record<string, unknown>[] = [];
   const mappings: PolicySourceTranslationMapping[] = [];
-  const registeredConnectors = new Set(POLICY_PACKS.map((pack) => pack.connector));
   let match: RegExpExecArray | null;
   let last = 0;
   while ((match = statement.exec(withoutComments))) {
@@ -1786,12 +1786,12 @@ function translateCedarSource(source: string): NativeTranslation {
       );
     }
     const [connector, ...actionParts] = match[2].split(".");
-    if (!connector || !actionParts.length) {
+    if (!connector || !actionParts.length || actionParts.some((part) => !part)) {
       return unsupportedNativeSource(
         `Cedar action "${match[2]}" must use Action::\"connector.action\".`,
       );
     }
-    if (!registeredConnectors.has(connector)) {
+    if (!REGISTERED_CEDAR_CONNECTORS.has(connector)) {
       return unsupportedNativeSource(
         `Cedar action "${match[2]}" has no registered Spctre connector prefix. Use Action::\"<registered-connector>.<action>\" or author this rule in AGT_YAML.`,
       );
