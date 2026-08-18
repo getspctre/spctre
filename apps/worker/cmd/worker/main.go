@@ -46,7 +46,7 @@ func main() {
 	server := worker.NewServer(db, logger, cfg.Notification)
 	var jobsDone *sync.WaitGroup
 	if !cfg.DisableInternalScheduler {
-		jobsDone = worker.StartJobs(ctx, worker.Jobs(db, logger, cfg.JobInterval, cfg.Notification), logger)
+		jobsDone = worker.StartJobs(ctx, db, worker.Jobs(db, logger, cfg.JobInterval, cfg.Notification), logger)
 	} else {
 		logger.Info("internal scheduler disabled; job endpoints available for external triggers")
 	}
