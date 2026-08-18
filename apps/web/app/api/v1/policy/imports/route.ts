@@ -74,6 +74,19 @@ async function handlePostApiV1PolicyImports(request: Request) {
   }
 
   if (rec.dryRun === true) {
+    if (scope === "ORGANIZATION") {
+      return withTraceId(
+        Response.json(
+          {
+            error:
+              "Service tokens are workspace-bound; ORGANIZATION-scoped import is not supported.",
+            meta: makeMeta(traceId),
+          },
+          { status: 400 },
+        ),
+        traceId,
+      );
+    }
     const preview = previewPolicyImport({
       source,
       branchName,

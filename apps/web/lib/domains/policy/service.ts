@@ -142,11 +142,30 @@ export function previewPolicyImport(input: {
   const validation = validateAndParseImport(input, { allowUnacceptedLossy: true });
   if ("error" in validation) return validation;
   const parsed = validation.parsed;
+  if (parsed.rules.length === 0) {
+    return { error: "Policy document contains no rules; refusing to preview an empty policy." };
+  }
+  const untargeted = parsed.rules.find(
+    (rule) =>
+      (rule.connectors?.length ?? 0) === 0 &&
+      (rule.actions?.length ?? 0) === 0 &&
+      (rule.domains?.length ?? 0) === 0,
+  );
+  if (untargeted) {
+    return {
+      error: `Rule "${untargeted.stableRuleId}" has no connector, action, or domain target; refusing to preview a match-all rule.`,
+    };
+  }
+  const sourceFormat = parsed.sourceFormat ?? "AGT_YAML";
+  const sourceHashMaterial =
+    sourceFormat === "AGT_YAML"
+      ? input.source
+      : [sourceFormat, JSON.stringify(parsed.rules), input.source].join("\u001f");
   return {
     result: buildPolicyImportResult({
-      sourceFormat: parsed.sourceFormat ?? "AGT_YAML",
+      sourceFormat,
       sourcePath: input.sourcePath,
-      sourceHash: `sha256:${createHash("sha256").update(input.source).digest("hex").slice(0, 16)}`,
+      sourceHash: `sha256:${createHash("sha256").update(sourceHashMaterial).digest("hex").slice(0, 16)}`,
       rules: parsed.rules,
       warnings: parsed.warnings,
       diagnostics: parsed.diagnostics,

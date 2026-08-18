@@ -1,7 +1,11 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { createHash } from "node:crypto";
-import { parsePolicySourceDocument } from "@spctre/policy-schema";
+import {
+  describeBlockingIssues,
+  parsePolicySourceDocument,
+  validatePolicyRules,
+} from "@spctre/policy-schema";
 import { getOutputFormat, printJson, type OutputFormat } from "./output";
 
 export interface PolicyConvertOptions {
@@ -38,9 +42,11 @@ export async function policyConvert(
     sourceFormat: validateSourceFormat(options.sourceFormat),
   });
   const format: OutputFormat = getOutputFormat(options.format);
+  const enforceability = validatePolicyRules(parsed.rules);
   const result = {
     ok:
       !parsed.diagnostics.some((diagnostic) => diagnostic.severity === "ERROR") &&
+      enforceability.valid &&
       (parsed.translation?.status !== "LOSSY" || options.acceptLossy === true),
     sourceFormat: parsed.sourceFormat ?? "AGT_YAML",
     sourceHash: `sha256:${createHash("sha256").update(source).digest("hex")}`,
@@ -49,6 +55,7 @@ export async function policyConvert(
     diagnostics: parsed.diagnostics,
     warnings: parsed.warnings,
     translation: parsed.translation,
+    enforceability,
     deferredChecks: [
       "Control-plane authorization, persistence, review, approval, and publication.",
       "Workspace/runtime context and external data-provider validation.",
@@ -71,6 +78,17 @@ export async function policyConvert(
     } else {
       for (const diagnostic of parsed.diagnostics)
         console.error(`${diagnostic.severity}: ${diagnostic.message}`);
+    }
+    if (options.report)
+      fs.writeFileSync(
+        path.resolve(process.cwd(), options.report),
+        `${JSON.stringify(result, null, 2)}\n`,
+        "utf8",
+      );
+    if (!lossyNotAccepted && !enforceability.valid) {
+      console.error(
+        `Policy cannot be enforced as written: ${describeBlockingIssues(enforceability)}`,
+      );
     }
     process.exit(1);
   }
