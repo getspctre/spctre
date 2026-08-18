@@ -16,6 +16,16 @@ const nextConfig = {
   // it isn't defined. Marking it as a server external lets Node's native module
   // loader handle it, where require() is always available.
   serverExternalPackages: ["js-yaml"],
+  // Next 16.3.1's standalone tracer copies @swc/helpers/cjs but not esm/, while
+  // its own require-hook loads esm/_interop_require_default.js at startup. The
+  // built image therefore dies with MODULE_NOT_FOUND before serving anything.
+  //
+  // Nothing in CI catches this: `next build` succeeds, the image builds, and the
+  // failure only appears when the container runs. Force the directory into the
+  // trace until the tracer resolves the package's exports map correctly.
+  outputFileTracingIncludes: {
+    "**": ["../../node_modules/.pnpm/@swc+helpers@*/node_modules/@swc/helpers/esm/**"],
+  },
   env: {
     // Absolute path to the native Rust addon directory. next.config.mjs runs on
     // the real filesystem (not bundled), so __dirname is the true path. Turbopack
