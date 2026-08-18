@@ -120,6 +120,26 @@ describe("spctre policy import", () => {
     expect(logs.join("\n")).not.toContain("unapproved draft");
   });
 
+  it("fails dry-run when an older control plane does not acknowledge it", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        okResponse({
+          branchId: "b1",
+          revisionId: "r1",
+          sourceHash: "sha256:abc",
+          created: true,
+          alreadyCurrent: false,
+          ruleCount: 1,
+        }),
+      ),
+    );
+
+    await expect(policyImport(policyFile, { key: "k", url: "https://control.test", dryRun: true })).rejects.toThrow(
+      "exit:1",
+    );
+  });
+
   it("exits non-zero when the API returns an error", async () => {
     vi.stubGlobal(
       "fetch",

@@ -27,6 +27,13 @@ interface ImportResponse {
   created: boolean;
   alreadyCurrent: boolean;
   ruleCount: number;
+  dryRun?: boolean;
+}
+
+function validateSourceFormat(value: unknown): "AGT_YAML" | "OPA_REGO" | "CEDAR" | undefined {
+  if (value === undefined) return undefined;
+  if (value === "AGT_YAML" || value === "OPA_REGO" || value === "CEDAR") return value;
+  return fail("Error: --source-format must be AGT_YAML, OPA_REGO, or CEDAR.");
 }
 
 /** Derives a branch name from an explicit flag, the connector, or the filename. */
@@ -82,9 +89,10 @@ function resolveImport(file: string, options: PolicyImportOptions): ResolvedImpo
   const assertedWorkspace = (options.workspace ?? "").trim();
   const sourcePath =
     options.sourcePath ?? (path.relative(process.cwd(), filePath) || path.basename(filePath));
-  const sourceFormat =
+  const inferredSourceFormat =
     options.sourceFormat ??
     (filePath.endsWith(".rego") ? "OPA_REGO" : filePath.endsWith(".cedar") ? "CEDAR" : undefined);
+  const sourceFormat = validateSourceFormat(inferredSourceFormat);
 
   const summary =
     `Importing ${path.basename(filePath)} → branch "${branchName}" ` +
@@ -177,6 +185,14 @@ export async function policyImport(
   }
 
   if (options.dryRun) {
+    if (payload.dryRun !== true) {
+      const message = "The control plane did not acknowledge the dry-run; no conversion preview can be trusted.";
+      if (format === "json") {
+        printJson({ ok: false, error: message });
+        process.exit(1);
+      }
+      return fail(`Import failed: ${message}`);
+    }
     if (format === "json") {
       printJson({ ok: true, ...payload });
     } else {

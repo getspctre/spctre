@@ -46,4 +46,13 @@ describe("spctre policy convert", () => {
     expect(fs.existsSync(output)).toBe(true);
     expect(fetch).not.toHaveBeenCalled();
   });
+
+  it("rejects an invalid source format before conversion", async () => {
+    vi.spyOn(process, "exit").mockImplementation(((code?: number) => {
+      throw new Error(`exit:${code}`);
+    }) as never);
+    await expect(policyConvert(sourcePath, { sourceFormat: "cedar" as "CEDAR" })).rejects.toThrow(
+      "exit:1",
+    );
+  });
 });

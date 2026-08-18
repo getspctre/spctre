@@ -31,6 +31,20 @@ export interface BranchRevision {
   createdAt: string;
 }
 
+/** Keep native-import idempotency sensitive to dialect and translator behavior. */
+function importedSourceHash(params: {
+  source: string;
+  sourceFormat: string;
+  translation?: PolicySourceTranslationReport;
+}): string {
+  const material = [
+    params.sourceFormat,
+    params.translation?.translatorVersion ?? "",
+    params.source,
+  ].join("\u001f");
+  return `sha256:${createHash("sha256").update(material).digest("hex").slice(0, 16)}`;
+}
+
 /**
  * Row shape accepted by createCommittedRevision. Aliased to the shared
  * PolicyRuleRow so a column added there cannot be forgotten here.
@@ -463,7 +477,7 @@ export async function persistImportedBranch(params: {
   if (!sql) throw new Error("Database not configured.");
   assertCustomerRulesDoNotUseReservedIds(params.rules);
 
-  const sourceHash = `sha256:${createHash("sha256").update(params.source).digest("hex").slice(0, 16)}`;
+  const sourceHash = importedSourceHash(params);
   const branchId = crypto.randomUUID();
   const revisionId = crypto.randomUUID();
   const importedAt = new Date().toISOString();
@@ -590,7 +604,7 @@ export async function importPolicyBranchIdempotent(params: {
   const db = sql;
   assertCustomerRulesDoNotUseReservedIds(params.rules);
 
-  const sourceHash = `sha256:${createHash("sha256").update(params.source).digest("hex").slice(0, 16)}`;
+  const sourceHash = importedSourceHash(params);
   const workspaceId = params.scope === "ORGANIZATION" ? null : params.workspaceId;
   const targetStacks = (params.targetStacks ?? []).map((stack) => ({ stack }));
   const sourceDocument = {

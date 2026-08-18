@@ -26,6 +26,26 @@ describe("native policy source translation", () => {
     expect(result.diagnostics[0]).toMatchObject({ severity: "ERROR" });
   });
 
+  it("rejects Cedar action ids without a registered Spctre connector prefix", () => {
+    const result = parsePolicySourceDocument({
+      sourceFormat: "CEDAR",
+      document: 'forbid(principal, action == Action::"repo.delete", resource);',
+    });
+
+    expect(result.translation?.status).toBe("UNSUPPORTED");
+    expect(result.diagnostics[0]?.message).toContain("no registered Spctre connector prefix");
+  });
+
+  it("rejects invalid source-format labels instead of selecting a translator", () => {
+    const result = parsePolicySourceDocument({
+      document: 'forbid(principal, action == Action::"github.repo.delete", resource);',
+      sourceFormat: "cedar" as "CEDAR",
+    });
+
+    expect(result.rules).toEqual([]);
+    expect(result.diagnostics[0]?.message).toContain("sourceFormat must be");
+  });
+
   it("translates declarative Rego input selectors and blocks arbitrary expressions", () => {
     const supported = parsePolicySourceDocument({
       sourcePath: "policies/github.rego",

@@ -1,5 +1,6 @@
 import yaml from "js-yaml";
 import { createHash } from "node:crypto";
+import { POLICY_PACKS } from "./packs";
 import {
   jsComposePolicyLayers,
   jsEvaluateGatewayDecision,
@@ -1647,7 +1648,22 @@ export function parsePolicySourceDocument(params: {
   sourcePath?: string;
   sourceFormat?: Extract<PolicySourceDialect, "AGT_YAML" | "OPA_REGO" | "CEDAR">;
 }): PolicyImportResult {
-  const sourceFormat = params.sourceFormat ?? detectPolicySourceFormat(params);
+  const requestedFormat = params.sourceFormat;
+  if (
+    requestedFormat !== undefined &&
+    requestedFormat !== "AGT_YAML" &&
+    requestedFormat !== "OPA_REGO" &&
+    requestedFormat !== "CEDAR"
+  ) {
+    return {
+      sourceHash: "pending",
+      rules: [],
+      diagnostics: [{ severity: "ERROR", message: "sourceFormat must be AGT_YAML, OPA_REGO, or CEDAR." }],
+      warnings: [],
+      metadata: {},
+    };
+  }
+  const sourceFormat = requestedFormat ?? detectPolicySourceFormat(params);
   if (sourceFormat === "AGT_YAML") return parseAgtPolicyDocument(params);
 
   const translated =
@@ -1718,6 +1734,7 @@ function translateCedarSource(source: string): NativeTranslation {
   const statement = /\b(forbid)\s*\(\s*principal\s*,\s*action\s*==\s*Action::"([^"\\]+)"\s*,\s*resource\s*\)\s*;/g;
   const rules: Record<string, unknown>[] = [];
   const mappings: PolicySourceTranslationMapping[] = [];
+  const registeredConnectors = new Set(POLICY_PACKS.map((pack) => pack.connector));
   let match: RegExpExecArray | null;
   let last = 0;
   while ((match = statement.exec(withoutComments))) {
@@ -1729,6 +1746,11 @@ function translateCedarSource(source: string): NativeTranslation {
     const [connector, ...actionParts] = match[2].split(".");
     if (!connector || !actionParts.length) {
       return unsupportedNativeSource(`Cedar action "${match[2]}" must use Action::\"connector.action\".`);
+    }
+    if (!registeredConnectors.has(connector)) {
+      return unsupportedNativeSource(
+        `Cedar action "${match[2]}" has no registered Spctre connector prefix. Use Action::\"<registered-connector>.<action>\" or author this rule in AGT_YAML.`,
+      );
     }
     const stableRuleId = `cedar.${connector}.${actionParts.join(".")}.${rules.length + 1}`;
     rules.push({

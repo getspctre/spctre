@@ -16,6 +16,12 @@ function fail(message: string): never {
   process.exit(1);
 }
 
+function validateSourceFormat(value: unknown): "AGT_YAML" | "OPA_REGO" | "CEDAR" | undefined {
+  if (value === undefined) return undefined;
+  if (value === "AGT_YAML" || value === "OPA_REGO" || value === "CEDAR") return value;
+  return fail("Error: --source-format must be AGT_YAML, OPA_REGO, or CEDAR.");
+}
+
 /** Convert locally only; it never contacts or creates a control-plane revision. */
 export async function policyConvert(
   file: string | undefined,
@@ -28,7 +34,7 @@ export async function policyConvert(
   const parsed = parsePolicySourceDocument({
     document: source,
     sourcePath: path.relative(process.cwd(), inputPath) || path.basename(inputPath),
-    sourceFormat: options.sourceFormat,
+    sourceFormat: validateSourceFormat(options.sourceFormat),
   });
   const format: OutputFormat = getOutputFormat(options.format);
   const result = {

@@ -323,8 +323,13 @@ export async function createDraftRuleRevisionDecision(input: {
   // fields from the draft before the reviewer ever edits it.
   const rulesForDocument = baseRules.map((rule) => ({ ...rule }));
 
+  // A rule edit creates AGT-authored derivative policy. Do not carry native
+  // source text or an exact native-to-rule mapping into a revision whose rules
+  // no longer necessarily describe that source.
+  const { spctre_native_source: _nativeSource, ...baseDocumentWithoutNativeSource } =
+    baseSourceDocument;
   const draftSourceDocument = {
-    ...baseSourceDocument,
+    ...baseDocumentWithoutNativeSource,
     rules: rulesForDocument,
     metadata: {
       ...(baseSourceDocument.metadata && typeof baseSourceDocument.metadata === "object"
@@ -348,7 +353,7 @@ export async function createDraftRuleRevisionDecision(input: {
       branchId: input.branchId,
       baseRevisionId: input.baseRevisionId,
       baseWorkspaceId: baseRevision.workspace_id,
-      sourceFormat: baseRevision.source_format,
+      sourceFormat: "AGT_YAML",
       sourcePath: baseRevision.source_path ?? "ui/review-rule-editor",
       sourceDocument: draftSourceDocument,
       sourceHash,
