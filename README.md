@@ -7,8 +7,8 @@ publish, simulate, and prove the policies that govern production agent actions.
 Its Rust policy kernel applies the same validation, composition, constraint, and
 decision semantics across Node, Go, and WebAssembly delivery adapters. Spctre
 works with cloud, framework, MCP, local, and custom runtimes—including AWS
-Bedrock, Google ADK, Azure AI, LangChain, CrewAI, AutoGen, OpenAI Agents, and
-Antigravity CLI.
+Bedrock, Google ADK, Azure AI, LangChain, CrewAI, AutoGen, OpenAI Agents,
+Antigravity CLI, and Kimi Code CLI.
 
 Spctre can import and export policies compatible with the
 [Microsoft Agent Governance Toolkit](https://github.com/microsoft/agent-governance-toolkit).
@@ -123,6 +123,12 @@ and operations data.
   and MCP server for local end-to-end development.
 
 ## Developer Resources
+
+Public documentation is published at
+[getspctre.github.io/spctre](https://getspctre.github.io/spctre). It is a
+static, English-language reading surface built from the same MDX source as the
+in-app help docs. Product and buyer information lives at
+[spctre.dev](https://spctre.dev).
 
 | Resource         | Where                          | Notes                                                                            |
 | ---------------- | ------------------------------ | -------------------------------------------------------------------------------- |
@@ -334,6 +340,7 @@ pnpm exec spctre install-hook --claude --mode observe
 pnpm exec spctre install-hook --codex --mode observe
 pnpm exec spctre install-hook --gemini --mode observe
 pnpm exec spctre install-hook --antigravity --mode observe
+pnpm exec spctre install-hook --kimi --mode observe
 
 # Optional local blocking adapter mode for development harnesses.
 pnpm exec spctre install-hook --claude --enforce
@@ -344,6 +351,7 @@ pnpm exec spctre install-skill --claude
 pnpm exec spctre install-skill --codex
 pnpm exec spctre install-skill --gemini
 pnpm exec spctre install-skill --antigravity
+pnpm exec spctre install-skill --kimi
 
 # Revoke tokens and disconnect (re-run init to reconnect).
 pnpm exec spctre revoke
@@ -362,21 +370,28 @@ optional harness-specific helpers that sit alongside that connection:
   `.claude/skills/spctre/`; `spctre install-skill --codex` copies it into
   `.codex/skills/spctre/`; `spctre install-skill --gemini` copies it into
   `.gemini/skills/spctre/`; `spctre install-skill --antigravity` copies it into
-  `.agents/skills/spctre/` (auto-read by the Antigravity IDE and agy CLI).
+  `.agents/skills/spctre/` (auto-read by the Antigravity IDE and agy CLI);
+  `spctre install-skill --kimi` copies it into `.kimi-code/skills/spctre/`.
   Skills give agents policy-aware operating instructions.
 - **Hooks:** `spctre install-hook --claude` writes the Claude Code PreToolUse hook
   to `.claude/settings.json`; `spctre install-hook --codex` writes the Codex
   PreToolUse hook to `.codex/hooks.json`; `spctre install-hook --gemini` writes
   the Gemini CLI BeforeTool hook to `.gemini/settings.json`; `spctre install-hook
 --antigravity` writes the Antigravity (IDE + `agy` CLI) PreToolUse hook to
-  `.agents/hooks.json`.
+  `.agents/hooks.json`; `spctre install-hook --kimi` adds the Kimi Code CLI
+  PreToolUse hook as a `[[hooks]]` entry in `~/.kimi-code/config.toml`.
   Hooks are local developer harness adapters: by default they evaluate governed tool calls,
   send heartbeats, register evidence, and warn without blocking. Use
   `spctre install-hook --enforce` to opt into local blocking on `DENY`. Production
   enforcement belongs to the configured runtime adapter.
 
 Use `--global` with either install command to write to the user's global harness
-configuration instead of the current project.
+configuration instead of the current project. Kimi Code has no project-scoped
+`config.toml`, so `install-hook --kimi` always writes the user-level file; the
+managed entry is delimited by comment markers and spliced in without reformatting
+the rest of the file. Kimi is also fail-open — it allows the tool call when a hook
+errors or times out — so treat `--enforce` there as a developer guardrail and put
+real enforcement in the runtime gateway.
 
 Example evidence ingest:
 

@@ -223,10 +223,12 @@ Surface these commands when prompting the human to set up or debug Spctre.
 | `npx @spctre/cli install-skill --codex`                     | Drop this SKILL.md into `.codex/skills/spctre/`                                              |
 | `npx @spctre/cli install-skill --gemini`                    | Drop this SKILL.md into `.gemini/skills/spctre/`                                             |
 | `npx @spctre/cli install-skill --antigravity`               | Install the Antigravity skill at `.agents/skills/spctre/` (auto-read by the IDE and agy CLI) |
+| `npx @spctre/cli install-skill --kimi`                      | Drop this SKILL.md into `.kimi-code/skills/spctre/`                                          |
 | `npx @spctre/cli install-hook --claude --mode observe`      | Install the Claude Code local evidence adapter                                               |
 | `npx @spctre/cli install-hook --codex --mode observe`       | Install the Codex local evidence adapter                                                     |
 | `npx @spctre/cli install-hook --gemini --mode observe`      | Install the Gemini CLI local evidence adapter                                                |
 | `npx @spctre/cli install-hook --antigravity --mode observe` | Install the Antigravity CLI (agy) local evidence adapter                                     |
+| `npx @spctre/cli install-hook --kimi --mode observe`        | Install the Kimi Code CLI local evidence adapter (user-level `config.toml`)                  |
 | `npx @spctre/cli install-hook --claude --enforce`           | Opt into local blocking on DENY for Claude Code                                              |
 | `npx @spctre/cli install-hook --antigravity --enforce`      | Opt into local blocking on DENY for Antigravity CLI (agy)                                    |
 

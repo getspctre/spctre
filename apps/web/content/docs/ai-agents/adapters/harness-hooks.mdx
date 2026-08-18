@@ -1,6 +1,6 @@
 ---
 title: Harness hooks
-description: Governing Claude Code, Codex, Gemini, and Antigravity agents via pre-tool-use hooks.
+description: Governing Claude Code, Codex, Gemini, Antigravity, and Kimi Code agents via pre-tool-use hooks.
 ---
 
 Harness hooks wire Spctre governance into AI coding agents and CLI-based runtimes that support hook extensibility. Unlike Python framework adapters, harness hooks operate at the shell level and don't require `sitecustomize.py`.
@@ -13,6 +13,7 @@ Harness hooks wire Spctre governance into AI coding agents and CLI-based runtime
 | Codex | `LOCAL` | `spctre-dev-hook:codex` | `PreToolUse` hook |
 | Gemini CLI | `LOCAL` | `spctre-dev-hook:gemini` | `BeforeTool` hook |
 | Antigravity (IDE + `agy` CLI) | `LOCAL` | `spctre-dev-hook:antigravity` | `PreToolUse` plugin hook |
+| Kimi Code CLI | `LOCAL` | `spctre-dev-hook:kimi` | `PreToolUse` hook |
 
 The runtime stack remains one of the public `RuntimeStack` enum values. The
 specific harness is captured in `runtimeTarget.adapter`.
@@ -20,7 +21,8 @@ specific harness is captured in `runtimeTarget.adapter`.
 The hook classifies governed actions by each harness's native tool names:
 `Bash`/`WebFetch`/`WebSearch` (Claude Code, and Codex — which canonicalizes its
 shell tool to `Bash`), `run_shell_command`/`web_fetch`/`google_web_search`
-(Gemini CLI), `run_command`/`read_url_content`/`search_web` (Antigravity), and
+(Gemini CLI), `run_command`/`read_url_content`/`search_web` (Antigravity),
+`Bash`/`FetchURL`/`WebSearch` (Kimi Code), and
 `mcp__*` tools on every harness. File edits and other internal tools exit
 immediately without network calls.
 
@@ -31,6 +33,7 @@ spctre install-skill --claude
 spctre install-skill --codex
 spctre install-skill --gemini
 spctre install-skill --antigravity
+spctre install-skill --kimi
 ```
 
 Then install the governance hook in observe mode (default):
@@ -40,6 +43,7 @@ spctre install-hook --claude --mode observe
 spctre install-hook --codex --mode observe
 spctre install-hook --gemini --mode observe
 spctre install-hook --antigravity --mode observe
+spctre install-hook --kimi --mode observe
 ```
 
 <Callout type="warn">
@@ -58,6 +62,7 @@ spctre install-hook --antigravity --mode observe
 | Codex | `.codex/skills/spctre/` | `.codex/hooks.json` |
 | Gemini | `.gemini/skills/spctre/` | `.gemini/settings.json` |
 | Antigravity | `.agents/skills/spctre/` | `.agents/hooks.json` |
+| Kimi Code | `.kimi-code/skills/spctre/` | `~/.kimi-code/config.toml` (user-level only) |
 
 Antigravity workspace customizations in `.agents/` (`skills/spctre/SKILL.md`
 and `hooks.json`) are auto-read by both the Antigravity IDE and the agy CLI —
@@ -65,6 +70,13 @@ no plugin staging is required. With `--global`, the hook is written to the
 shared global customization file `~/.gemini/config/hooks.json`, and the skill
 to agy's staged plugin directory `~/.gemini/antigravity-cli/plugins/spctre/`
 (the IDE's global skills directory is `~/.gemini/antigravity/skills/`).
+
+Kimi Code is the one harness with no project-scoped hook configuration: every
+hook rule lives in the single user-level `config.toml` under its data root
+(`$KIMI_CODE_HOME`, default `~/.kimi-code/`). `install-hook --kimi` therefore
+always writes that file and `--global` is a no-op. Skills are scoped normally —
+`.kimi-code/skills/spctre/` for the project, `$KIMI_CODE_HOME/skills/spctre/`
+with `--global`.
 
 ## Switching to enforce mode
 
@@ -103,6 +115,46 @@ on stdin as `toolCall.name` / `toolCall.args` (tool names such as
 by writing a JSON decision to stdout (`{"decision": "allow" | "deny",
 "reason": …}`) instead of signalling with exit code 2. The Spctre hook handles
 both contracts based on `--harness`.
+
+## Kimi Code CLI
+
+Use `install-skill --kimi` and `install-hook --kimi` for the
+[Kimi Code CLI](https://github.com/MoonshotAI/kimi-code).
+
+Kimi's `PreToolUse` payload and block contract match Claude Code's, so the hook
+reuses that path: input arrives on stdin as snake_case `tool_name` /
+`tool_input`, and the hook blocks by exiting `2` with the reason on stderr.
+Governed Kimi tool names are `Bash` (with `command`), `FetchURL` (with `url`),
+`WebSearch` (with `query`), and `mcp__*`.
+
+Three Kimi-specific behaviours shape how the adapter treats it:
+
+- **Hooks are declared in TOML, not JSON.** The Spctre rule is a `[[hooks]]`
+  array-of-tables entry in `config.toml` — a file that is hand-edited and holds
+  provider API keys. `install-hook --kimi` splices its entry in between comment
+  markers rather than parsing and re-serializing the file, so every unrelated
+  key, comment, and formatting choice survives an install, a mode change, and
+  an `--uninstall` unchanged. A hand-written Spctre hook outside those markers
+  is reported rather than silently duplicated.
+- **Kimi cannot rewrite tool input from a hook.** It ignores hook stdout as an
+  input source, so just-in-time credential grants cannot be delivered through
+  it. Actions requiring a JIT credential fail closed on Kimi rather than
+  executing without the ephemeral credential — the same posture as Antigravity.
+- **Kimi is fail-open on hook timeout.** It kills a hook at its declared
+  timeout (600s ceiling) and treats the kill as `ALLOW`. `install-hook --kimi`
+  claims the full 600s, and the hook clamps its own gateway wait below that so
+  a decision awaiting human escalation returns a real answer instead of being
+  killed into a silent allow.
+
+<Callout type="warn">
+  Because Kimi allows the tool call whenever a hook errors or times out,
+  `--enforce` on Kimi is a developer guardrail rather than a security barrier.
+  Production enforcement belongs to the configured runtime adapter, as it does
+  for every harness hook.
+</Callout>
+
+Restart or `/reload` a running Kimi Code session after installing — hook rules
+are read at session start.
 
 ## Google Antigravity Python SDK
 

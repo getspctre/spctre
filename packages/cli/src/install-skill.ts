@@ -2,7 +2,7 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 
-type SkillHarness = "claude" | "codex" | "gemini" | "antigravity";
+type SkillHarness = "claude" | "codex" | "gemini" | "antigravity" | "kimi";
 
 interface SkillHarnessConfig {
   displayName: string;
@@ -48,6 +48,18 @@ const HARNESS_CONFIG: Record<SkillHarness, SkillHarnessConfig> = {
     activationFile: null,
     activationNeedle: "",
   },
+  kimi: {
+    // Kimi Code scans <data root>/skills/ for user skills and .kimi-code/skills/
+    // for project skills, and reads AGENTS.md from the same directory as its
+    // instruction file at both scopes.
+    displayName: "Kimi Code CLI",
+    baseDir: (global) =>
+      global
+        ? (process.env.KIMI_CODE_HOME ?? path.join(os.homedir(), ".kimi-code"))
+        : path.join(process.cwd(), ".kimi-code"),
+    activationFile: "AGENTS.md",
+    activationNeedle: ".kimi-code/skills/spctre",
+  },
 };
 
 interface InstallSkillOptions {
@@ -55,6 +67,7 @@ interface InstallSkillOptions {
   codex?: boolean;
   gemini?: boolean;
   antigravity?: boolean;
+  kimi?: boolean;
   global?: boolean;
   harness?: SkillHarness | "agy";
   force?: boolean;
@@ -153,12 +166,16 @@ function ensureAntigravityPlugin(pluginDir: string) {
 }
 
 function parseHarness(options: InstallSkillOptions): SkillHarness {
-  const selectedFlags = [options.claude, options.codex, options.gemini, options.antigravity].filter(
-    Boolean,
-  ).length;
+  const selectedFlags = [
+    options.claude,
+    options.codex,
+    options.gemini,
+    options.antigravity,
+    options.kimi,
+  ].filter(Boolean).length;
   if (selectedFlags > 1) {
     console.error(
-      'Error: choose only one harness flag: "--claude", "--codex", "--gemini", or "--antigravity".',
+      'Error: choose only one harness flag: "--claude", "--codex", "--gemini", "--antigravity", or "--kimi".',
     );
     process.exit(1);
   }
@@ -166,6 +183,7 @@ function parseHarness(options: InstallSkillOptions): SkillHarness {
   if (options.codex) return "codex";
   if (options.gemini) return "gemini";
   if (options.antigravity) return "antigravity";
+  if (options.kimi) return "kimi";
 
   const harness = options.harness;
   if (!harness) return "claude";
@@ -173,12 +191,13 @@ function parseHarness(options: InstallSkillOptions): SkillHarness {
     harness === "claude" ||
     harness === "codex" ||
     harness === "gemini" ||
-    harness === "antigravity"
+    harness === "antigravity" ||
+    harness === "kimi"
   )
     return harness;
   if (harness === "agy") return "antigravity";
   console.error(
-    `Error: unsupported harness "${harness}". Expected "claude", "codex", "gemini", or "antigravity".`,
+    `Error: unsupported harness "${harness}". Expected "claude", "codex", "gemini", "antigravity", or "kimi".`,
   );
   process.exit(1);
 }

@@ -326,11 +326,12 @@ spctre install-skill [options]
 
 | Flag | Description |
 |---|---|
-| `--harness` | Harness type: `claude`, `codex`, `gemini`, `antigravity` (agy) |
+| `--harness` | Harness type: `claude`, `codex`, `gemini`, `antigravity` (agy), `kimi` |
 | `--claude` | Install for Claude Code |
 | `--codex` | Install for Codex |
 | `--gemini` | Install for Gemini CLI |
 | `--antigravity` | Install for Antigravity CLI (agy) |
+| `--kimi` | Install for Kimi Code CLI |
 | `-g`, `--global` | Install to the harness global skills directory |
 | `-f`, `--force` | Overwrite existing installation |
 
@@ -346,12 +347,13 @@ spctre install-hook [options]
 
 | Flag | Description |
 |---|---|
-| `--harness` | Harness type: `claude`, `codex`, `gemini`, `antigravity` (agy) |
+| `--harness` | Harness type: `claude`, `codex`, `gemini`, `antigravity` (agy), `kimi` |
 | `--claude` | Install for Claude Code |
 | `--codex` | Install for Codex |
 | `--gemini` | Install for Gemini CLI |
 | `--antigravity` | Install for Antigravity CLI (agy) |
-| `-g`, `--global` | Install to the harness global config |
+| `--kimi` | Install for Kimi Code CLI |
+| `-g`, `--global` | Install to the harness global config (no-op for `--kimi`: Kimi Code has no project-scoped `config.toml`) |
 | `--mode` | Hook mode: `observe` (default) or `enforce` |
 | `--enforce` | Shorthand for `--mode enforce` |
 | `--uninstall` | Remove the hook instead of installing it |
@@ -368,7 +370,7 @@ spctre pretooluse [options]
 
 | Flag | Description |
 |---|---|
-| `--harness` | Harness that invoked the hook: `claude`, `codex`, `gemini`, `antigravity` (agy) (default: `claude`) |
+| `--harness` | Harness that invoked the hook: `claude`, `codex`, `gemini`, `antigravity` (agy), `kimi` (default: `claude`) |
 | `--mode` | Hook mode: `observe` (default) or `enforce` |
 | `--enforce` | Run in enforce mode, blocking locally on DENY |
 
