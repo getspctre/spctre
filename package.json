@@ -44,7 +44,7 @@
     "lint:all": "pnpm lint && pnpm lint:deadcode && pnpm lint:security"
   },
   "engines": {
-    "node": ">=25.0.0"
+    "node": ">=26.0.0"
   },
   "packageManager": "pnpm@11.18.0",
   "devDependencies": {
