@@ -133,14 +133,24 @@ export async function pollEscalationResolution(
 
   while (true) {
     const elapsed = Date.now() - startTime;
-    if (elapsed >= gwConfig.timeoutMs) {
+    const remainingMs = gwConfig.timeoutMs - elapsed;
+    if (remainingMs <= 0) {
       return { decisionId, status: "EXPIRED" };
     }
+
+    // Bound each attempt to a single poll interval rather than to the whole
+    // remaining window. A connection that stalls without erroring must not
+    // consume the entire escalation budget: that would poll once and then
+    // report EXPIRED, so a reviewer who approves in the meantime is never
+    // observed. An aborted request rejects into the catch below and the loop
+    // retries on its normal cadence.
+    const attemptMs = Math.min(remainingMs, gwConfig.pollIntervalMs);
 
     try {
       const response = await fetch(url, {
         method: "GET",
         headers: { Authorization: `Bearer ${gwConfig.token}` },
+        signal: AbortSignal.timeout(attemptMs),
       });
 
       if (response.ok) {
@@ -154,6 +164,10 @@ export async function pollEscalationResolution(
     }
 
     process.stderr.write(".");
-    await new Promise((r) => setTimeout(r, gwConfig.pollIntervalMs));
+    const sleepMs = Math.min(
+      gwConfig.pollIntervalMs,
+      Math.max(0, gwConfig.timeoutMs - (Date.now() - startTime)),
+    );
+    await new Promise((r) => setTimeout(r, sleepMs));
   }
 }

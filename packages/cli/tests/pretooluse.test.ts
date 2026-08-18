@@ -339,3 +339,109 @@ describe("pretooluse Antigravity hook contract", () => {
     expect(exitSpy).toHaveBeenCalledWith(0);
   });
 });
+
+describe("pretooluse Kimi Code hook contract", () => {
+  beforeEach(() => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true }));
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  function stubStdin(payload: unknown) {
+    vi.spyOn(process.stdin, "on").mockImplementation((event, callback: any) => {
+      if (event === "data") callback(JSON.stringify(payload));
+      if (event === "end") callback();
+      return process.stdin;
+    });
+  }
+
+  it("stays silent on stdout for ungoverned tools — Kimi treats stdout as structured output", async () => {
+    stubStdin({
+      hook_event_name: "PreToolUse",
+      session_id: "session_abc",
+      cwd: "/workspace",
+      tool_name: "Read",
+      tool_input: { path: "/tmp/file.ts" },
+    });
+    const stdoutSpy = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+
+    await pretooluse({ harness: "kimi" });
+
+    expect(stdoutSpy).not.toHaveBeenCalled();
+  });
+
+  it("governs Kimi's FetchURL tool and blocks with exit 2 on gateway ABORT", async () => {
+    stubStdin({
+      hook_event_name: "PreToolUse",
+      session_id: "session_abc",
+      cwd: "/workspace",
+      tool_name: "FetchURL",
+      tool_input: { url: "https://api.stripe.com/v1/charges" },
+    });
+    vi.mocked(requestGatewayDecision).mockResolvedValue({
+      gatewayEnabled: true,
+      mode: "enforce",
+      persisted: true,
+      queued: false,
+      decision: {
+        outcome: "ABORT",
+        reason: "blocked by workspace policy",
+        riskLevel: "HIGH",
+        shouldQueue: false,
+      },
+    });
+
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(((code?: number) => {
+      throw new Error(`exit:${code}`);
+    }) as any);
+
+    await expect(pretooluse({ harness: "kimi", enforce: true })).rejects.toThrow("exit:2");
+    // Kimi reads the block reason from stderr on exit 2.
+    expect(errorSpy.mock.calls.flat().join(" ")).toContain("blocked by workspace policy");
+    expect(exitSpy).toHaveBeenCalledWith(2);
+  });
+
+  it("fails closed on a JIT credential grant, which Kimi's hook contract cannot deliver", async () => {
+    stubStdin({
+      hook_event_name: "PreToolUse",
+      session_id: "session_abc",
+      cwd: "/workspace",
+      tool_name: "Bash",
+      tool_input: { command: "stripe charges create" },
+    });
+    vi.mocked(requestGatewayDecision).mockResolvedValue({
+      gatewayEnabled: true,
+      mode: "enforce",
+      persisted: true,
+      queued: false,
+      decision: {
+        outcome: "PROCEED",
+        reason: "allowed with JIT credential",
+        riskLevel: "LOW",
+        shouldQueue: false,
+        credentialGrant: {
+          credentialType: "MOCK",
+          injectedParameter: "api_key",
+          credentialValue: "sk-ephemeral",
+          expiresAt: "2026-06-04T12:00:00Z",
+        },
+      },
+    });
+
+    const stdoutSpy = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(((code?: number) => {
+      throw new Error(`exit:${code}`);
+    }) as any);
+
+    await expect(pretooluse({ harness: "kimi", enforce: true })).rejects.toThrow("exit:2");
+    expect(errorSpy.mock.calls.flat().join(" ")).toContain("Kimi Code");
+    // The credential must never reach stdout: Kimi ignores it as tool input and
+    // would only surface it as context text.
+    expect(stdoutSpy.mock.calls.flat().join(" ")).not.toContain("sk-ephemeral");
+    expect(exitSpy).toHaveBeenCalledWith(2);
+  });
+});

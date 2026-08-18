@@ -2,7 +2,7 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 
-type HookHarness = "claude" | "codex" | "gemini" | "antigravity";
+type HookHarness = "claude" | "codex" | "gemini" | "antigravity" | "kimi";
 export type HookMode = "observe" | "enforce";
 type HarnessConfig = (typeof HARNESS_CONFIG)[HookHarness];
 
@@ -14,6 +14,9 @@ const HARNESS_CONFIG: Record<
     hookEvent: "PreToolUse" | "BeforeTool";
     settingsKey: "hooks" | "spctre";
     governedTools: string;
+    // Kimi Code declares hooks as a TOML array-of-tables in config.toml rather
+    // than as JSON, so it takes a separate read/write path below.
+    format?: "json" | "toml";
   }
 > = {
   claude: {
@@ -58,13 +61,29 @@ const HARNESS_CONFIG: Record<
     settingsKey: "spctre",
     governedTools: "tool calls",
   },
+  kimi: {
+    // Kimi Code CLI keeps every hook rule in the single user-level
+    // `config.toml` under its data root ($KIMI_CODE_HOME, default ~/.kimi-code).
+    // There is no project-scoped config.toml, so `--global` is a no-op here.
+    displayName: "Kimi Code CLI",
+    settingsPath: () => path.join(kimiHome(), "config.toml"),
+    hookEvent: "PreToolUse",
+    settingsKey: "hooks",
+    governedTools: "FetchURL, WebSearch, Bash, MCP",
+    format: "toml",
+  },
 };
+
+function kimiHome(): string {
+  return process.env.KIMI_CODE_HOME ?? path.join(os.homedir(), ".kimi-code");
+}
 
 interface InstallHookOptions {
   claude?: boolean;
   codex?: boolean;
   gemini?: boolean;
   antigravity?: boolean;
+  kimi?: boolean;
   global?: boolean;
   harness?: HookHarness | "agy";
   mode?: HookMode;
@@ -78,6 +97,16 @@ export function installHook(options: InstallHookOptions) {
   const config = HARNESS_CONFIG[harness];
   const settingsPath = config.settingsPath(options.global);
   const command = buildHookCommand(harness, mode);
+
+  if (config.format === "toml") {
+    if (options.uninstall) {
+      removeTomlHook(settingsPath);
+      return;
+    }
+    if (!writeTomlHook(settingsPath, command)) return;
+    printInstallSummary(harness, config, settingsPath, mode);
+    return;
+  }
 
   if (options.uninstall) {
     removeHook(settingsPath, config);
@@ -119,6 +148,15 @@ export function installHook(options: InstallHookOptions) {
   fs.mkdirSync(path.dirname(settingsPath), { recursive: true });
   fs.writeFileSync(settingsPath, `${JSON.stringify(settings, null, 2)}\n`);
 
+  printInstallSummary(harness, config, settingsPath, mode);
+}
+
+function printInstallSummary(
+  harness: HookHarness,
+  config: HarnessConfig,
+  settingsPath: string,
+  mode: HookMode,
+) {
   console.log(`Spctre hook installed → ${settingsPath}`);
   console.log("");
   console.log(`Mode: ${mode}`);
@@ -146,15 +184,117 @@ export function installHook(options: InstallHookOptions) {
       "(Trust is recorded against the hook definition's hash, so re-installing with different flags requires re-trusting.)",
     );
   }
+  if (harness === "kimi") {
+    console.log("");
+    console.log(
+      "Kimi Code reads hooks only from this user-level config.toml — it has no project-scoped config, so this install applies to every project.",
+    );
+    console.log("Restart or /reload any running Kimi Code session to pick the hook up.");
+    if (mode === "enforce") {
+      console.log("");
+      console.log(
+        `Note: Kimi Code is fail-open — if this hook errors or exceeds its ${KIMI_HOOK_TIMEOUT_SECONDS}s timeout, the tool call is allowed.`,
+      );
+      console.log(
+        "Local enforce mode is therefore a developer guardrail, not a security barrier; enforce in the runtime gateway for that.",
+      );
+    }
+  }
+}
+
+// Kimi Code caps hook timeouts at 600s and treats a timeout as "allow". Claim
+// the whole budget so a governed decision — including a human escalation the
+// gateway is still waiting on — has room to come back with a real answer
+// before Kimi kills the hook and falls open. `pretooluse` clamps its own gateway
+// wait below this so it always answers first.
+const KIMI_HOOK_TIMEOUT_SECONDS = 600;
+
+const TOML_BLOCK_START = "# >>> spctre managed hook (spctre install-hook --kimi) >>>";
+const TOML_BLOCK_END = "# <<< spctre managed hook <<<";
+
+function buildTomlBlock(command: string): string {
+  return [
+    TOML_BLOCK_START,
+    "[[hooks]]",
+    'event = "PreToolUse"',
+    'matcher = ".*"',
+    `command = ${JSON.stringify(command)}`,
+    `timeout = ${KIMI_HOOK_TIMEOUT_SECONDS}`,
+    TOML_BLOCK_END,
+  ].join("\n");
+}
+
+// Kimi's config.toml is hand-edited and holds provider API keys, so the block is
+// spliced in textually between markers rather than parsed and re-serialized —
+// that keeps every unrelated key, comment, and formatting choice byte-identical.
+// Appending at end-of-file is always valid TOML: an array-of-tables header ends
+// whatever table scope preceded it.
+function writeTomlHook(settingsPath: string, command: string): boolean {
+  const block = buildTomlBlock(command);
+  const existing = fs.existsSync(settingsPath) ? fs.readFileSync(settingsPath, "utf8") : "";
+  const bounds = findTomlBlock(existing);
+
+  if (bounds) {
+    if (existing.slice(bounds.start, bounds.end) === block) {
+      console.log(`Hook already installed in ${settingsPath}`);
+      return false;
+    }
+    const updated = existing.slice(0, bounds.start) + block + existing.slice(bounds.end);
+    fs.mkdirSync(path.dirname(settingsPath), { recursive: true });
+    fs.writeFileSync(settingsPath, updated);
+    return true;
+  }
+
+  if (existing.includes("@spctre/cli pretooluse")) {
+    console.error(
+      `Error: ${settingsPath} already declares an unmanaged Spctre hook. Remove it by hand, then re-run this command.`,
+    );
+    process.exit(1);
+  }
+
+  const separator =
+    existing === "" || existing.endsWith("\n\n") ? "" : existing.endsWith("\n") ? "\n" : "\n\n";
+  fs.mkdirSync(path.dirname(settingsPath), { recursive: true });
+  fs.writeFileSync(settingsPath, `${existing}${separator}${block}\n`);
+  return true;
+}
+
+function removeTomlHook(settingsPath: string) {
+  if (!fs.existsSync(settingsPath)) {
+    console.log("Hook not installed (config file not found).");
+    return;
+  }
+  const existing = fs.readFileSync(settingsPath, "utf8");
+  const bounds = findTomlBlock(existing);
+  if (!bounds) {
+    console.log(`Spctre hook not found in ${settingsPath} — nothing to remove.`);
+    return;
+  }
+  const trailingNewline = existing.slice(bounds.end).startsWith("\n") ? 1 : 0;
+  const updated = existing.slice(0, bounds.start) + existing.slice(bounds.end + trailingNewline);
+  fs.writeFileSync(settingsPath, updated.replace(/\n{3,}$/, "\n"));
+  console.log(`Spctre hook removed from ${settingsPath}`);
+}
+
+function findTomlBlock(contents: string): { start: number; end: number } | null {
+  const start = contents.indexOf(TOML_BLOCK_START);
+  if (start === -1) return null;
+  const endMarker = contents.indexOf(TOML_BLOCK_END, start);
+  if (endMarker === -1) return null;
+  return { start, end: endMarker + TOML_BLOCK_END.length };
 }
 
 function parseHarness(options: InstallHookOptions): HookHarness {
-  const selectedFlags = [options.claude, options.codex, options.gemini, options.antigravity].filter(
-    Boolean,
-  ).length;
+  const selectedFlags = [
+    options.claude,
+    options.codex,
+    options.gemini,
+    options.antigravity,
+    options.kimi,
+  ].filter(Boolean).length;
   if (selectedFlags > 1) {
     console.error(
-      'Error: choose only one harness flag: "--claude", "--codex", "--gemini", or "--antigravity".',
+      'Error: choose only one harness flag: "--claude", "--codex", "--gemini", "--antigravity", or "--kimi".',
     );
     process.exit(1);
   }
@@ -162,6 +302,7 @@ function parseHarness(options: InstallHookOptions): HookHarness {
   if (options.codex) return "codex";
   if (options.gemini) return "gemini";
   if (options.antigravity) return "antigravity";
+  if (options.kimi) return "kimi";
 
   const harness = options.harness;
   if (!harness) return "claude";
@@ -169,12 +310,13 @@ function parseHarness(options: InstallHookOptions): HookHarness {
     harness === "claude" ||
     harness === "codex" ||
     harness === "gemini" ||
-    harness === "antigravity"
+    harness === "antigravity" ||
+    harness === "kimi"
   )
     return harness;
   if (harness === "agy") return "antigravity";
   console.error(
-    `Error: unsupported harness "${harness}". Expected "claude", "codex", "gemini", or "antigravity".`,
+    `Error: unsupported harness "${harness}". Expected "claude", "codex", "gemini", "antigravity", or "kimi".`,
   );
   process.exit(1);
 }
@@ -197,7 +339,7 @@ function buildHookEntry(command: string) {
 
 function commandMatches(command: string | undefined, config: HarnessConfig) {
   if (!command) return false;
-  const harnesses: HookHarness[] = ["claude", "codex", "gemini", "antigravity"];
+  const harnesses: HookHarness[] = ["claude", "codex", "gemini", "antigravity", "kimi"];
   const modeCommands = harnesses.flatMap((harness) => [
     buildHookCommand(harness, "observe"),
     buildHookCommand(harness, "enforce"),
@@ -214,11 +356,13 @@ function commandMatches(command: string | undefined, config: HarnessConfig) {
     command === "npx @spctre/cli pretooluse --harness codex" ||
     command === "npx @spctre/cli pretooluse --harness gemini" ||
     command === "npx @spctre/cli pretooluse --harness antigravity" ||
+    command === "npx @spctre/cli pretooluse --harness kimi" ||
     command === "npx @spctre/cli pretooluse --harness agy" ||
     command === "SPCTRE_HARNESS=claude npx @spctre/cli pretooluse" ||
     command === "SPCTRE_HARNESS=codex npx @spctre/cli pretooluse" ||
     command === "SPCTRE_HARNESS=gemini npx @spctre/cli pretooluse" ||
     command === "SPCTRE_HARNESS=antigravity npx @spctre/cli pretooluse" ||
+    command === "SPCTRE_HARNESS=kimi npx @spctre/cli pretooluse" ||
     command === "SPCTRE_HARNESS=agy npx @spctre/cli pretooluse"
   );
 }

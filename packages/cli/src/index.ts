@@ -193,17 +193,18 @@ configCommand
 program
   .command("install-skill")
   .description(
-    "Install the Spctre SKILL.md for Claude Code, Codex, Gemini, or Antigravity CLI agents",
+    "Install the Spctre SKILL.md for Claude Code, Codex, Gemini, Antigravity CLI, or Kimi Code agents",
   )
   .option(
     "--harness <harness>",
-    "agent harness to install for: claude, codex, gemini, or antigravity (agy)",
+    "agent harness to install for: claude, codex, gemini, antigravity (agy), or kimi",
     "claude",
   )
   .option("--claude", "install for Claude Code")
   .option("--codex", "install for Codex")
   .option("--gemini", "install for Gemini CLI")
   .option("--antigravity", "install for Antigravity CLI (agy)")
+  .option("--kimi", "install for Kimi Code CLI")
   .option(
     "-g, --global",
     "install to the harness global skills directory instead of the current project",
@@ -221,13 +222,14 @@ program
   )
   .option(
     "--harness <harness>",
-    "agent harness to install for: claude, codex, gemini, or antigravity (agy)",
+    "agent harness to install for: claude, codex, gemini, antigravity (agy), or kimi",
     "claude",
   )
   .option("--claude", "install for Claude Code")
   .option("--codex", "install for Codex")
   .option("--gemini", "install for Gemini CLI")
   .option("--antigravity", "install for Antigravity CLI (agy)")
+  .option("--kimi", "install for Kimi Code CLI")
   .option("-g, --global", "install to the harness global config instead of the current project")
   .option("--mode <mode>", "hook adapter mode: observe or enforce", "observe")
   .option("--enforce", "install in enforce mode, blocking locally on DENY")
@@ -242,7 +244,7 @@ program
   .description("Local harness hook handler for observe/enforce adapter modes")
   .option(
     "--harness <harness>",
-    "agent harness that invoked the hook: claude, codex, gemini, or antigravity (agy)",
+    "agent harness that invoked the hook: claude, codex, gemini, antigravity (agy), or kimi",
     "claude",
   )
   .option("--mode <mode>", "hook adapter mode: observe or enforce", "observe")

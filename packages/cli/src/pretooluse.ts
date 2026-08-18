@@ -14,11 +14,13 @@ import { resolveGatewayConfig, requestGatewayDecision, pollEscalationResolution 
 import type { CredentialGrant, GatewayConfig, GatewayDecisionResponse } from "./gateway";
 import { pushToBuffer, flushBuffer } from "./buffer.js";
 
-type HookHarness = "claude" | "codex" | "gemini" | "antigravity";
+type HookHarness = "claude" | "codex" | "gemini" | "antigravity" | "kimi";
 type HookMode = "observe" | "enforce";
 
 interface PreToolUseHookPayload {
-  // Claude Code / Codex / Gemini CLI hook payload shape
+  // Claude Code / Codex / Gemini CLI / Kimi Code hook payload shape. Kimi emits
+  // the same snake_case `tool_name` / `tool_input` pair (its runner snake-cases
+  // the top-level keys of every hook payload).
   tool_name?: string;
   tool_input?: Record<string, unknown>;
   // Antigravity (IDE + agy CLI) hook payload shape — camelCase per
@@ -96,6 +98,7 @@ function resolveGovernedAction(
   switch (toolName) {
     case "WebFetch":
     case "WebSearch":
+    case "FetchURL":
     case "search_web":
     case "read_url_content":
     case "web_fetch":
@@ -164,6 +167,38 @@ function adapterForHarness(harness: HookHarness): string {
 // Claude Code, Codex, and Gemini CLI. Set once per invocation in pretooluse().
 let activeHarness: HookHarness = "claude";
 
+// Kimi Code and Antigravity both ignore hook stdout as a source of rewritten
+// tool input, so a JIT credential grant cannot be delivered through them.
+const HARNESS_SUPPORTS_INPUT_REWRITE: Record<HookHarness, boolean> = {
+  claude: true,
+  codex: true,
+  gemini: true,
+  antigravity: false,
+  kimi: false,
+};
+
+const HARNESS_DISPLAY_NAME: Record<HookHarness, string> = {
+  claude: "Claude Code",
+  codex: "Codex",
+  gemini: "Gemini CLI",
+  antigravity: "Antigravity",
+  kimi: "Kimi Code",
+};
+
+// Kimi Code kills a PreToolUse hook at its declared timeout (600s ceiling, the
+// value `install-hook --kimi` writes) and treats the kill as ALLOW. A gateway
+// wait that outlives the hook would therefore fail open silently, so cap the
+// wait short of the kill and let the normal outage path decide instead.
+const KIMI_MAX_GATEWAY_WAIT_MS = 540_000;
+
+function clampGatewayConfigForHarness(
+  config: GatewayConfig | null,
+  harness: HookHarness,
+): GatewayConfig | null {
+  if (!config || harness !== "kimi" || config.timeoutMs <= KIMI_MAX_GATEWAY_WAIT_MS) return config;
+  return { ...config, timeoutMs: KIMI_MAX_GATEWAY_WAIT_MS };
+}
+
 function emitAllowDecision(): void {
   if (activeHarness !== "antigravity") return;
   process.stdout.write(`${JSON.stringify({ decision: "allow" })}\n`);
@@ -183,10 +218,12 @@ function currentHarness(options: PreToolUseOptions): HookHarness {
   if (options.harness === "gemini") return "gemini";
   if (options.harness === "claude") return "claude";
   if (options.harness === "antigravity" || options.harness === "agy") return "antigravity";
+  if (options.harness === "kimi") return "kimi";
   if (process.env.SPCTRE_HARNESS === "codex") return "codex";
   if (process.env.SPCTRE_HARNESS === "gemini") return "gemini";
   if (process.env.SPCTRE_HARNESS === "antigravity" || process.env.SPCTRE_HARNESS === "agy")
     return "antigravity";
+  if (process.env.SPCTRE_HARNESS === "kimi") return "kimi";
   return "claude";
 }
 
@@ -384,11 +421,11 @@ async function applyCredentialGrantAndExit(
   grant: CredentialGrant,
   ctx: GatewayFlowContext,
 ): Promise<never> {
-  if (activeHarness === "antigravity") {
-    // Antigravity's hook contract cannot rewrite tool input, so JIT-required
-    // actions fail closed rather than executing without the ephemeral credential.
-    const reason =
-      "JIT credential injection is not supported by the Antigravity hook contract — blocked (fail-closed).";
+  if (!HARNESS_SUPPORTS_INPUT_REWRITE[activeHarness]) {
+    // Neither Antigravity nor Kimi Code lets a PreToolUse hook rewrite the tool
+    // input — both ignore stdout for that purpose — so JIT-required actions fail
+    // closed rather than executing without the ephemeral credential.
+    const reason = `JIT credential injection is not supported by the ${HARNESS_DISPLAY_NAME[activeHarness]} hook contract — blocked (fail-closed).`;
     await withTimeout(Promise.all([ctx.heartbeat, ctx.evidence]), 2000);
     blockAndExit(`Spctre policy DENY: ${reason}`, reason);
   }
@@ -682,7 +719,7 @@ export async function pretooluse(options: PreToolUseOptions = {}): Promise<void>
   const evidence = postEvidence(refreshed, evidencePayload).catch(() => {});
 
   // Gateway integration: if configured, evaluate governed actions via cloud gateway
-  const gwConfig = resolveGatewayConfig(refreshed, mode);
+  const gwConfig = clampGatewayConfigForHarness(resolveGatewayConfig(refreshed, mode), harness);
   if (gwConfig && !shadowMode) {
     const flow = await runGatewayFlow(gwConfig, {
       refreshed,
