@@ -3,9 +3,13 @@ import { RootProvider } from "fumadocs-ui/provider/next";
 import type { ReactNode } from "react";
 import { source } from "@/lib/source";
 
+const docsBasePath = process.env.GITHUB_ACTIONS === "true" ? "/spctre" : "";
+
 export function SpctreDocsLayout({ children }: { children: ReactNode }) {
   return (
-    <RootProvider>
+    <RootProvider
+      search={{ options: { type: "static", api: `${docsBasePath}/api/search` } }}
+    >
       <DocsLayout
         tree={source.pageTree}
         githubUrl="https://github.com/getspctre/spctre"
