@@ -124,6 +124,12 @@ and operations data.
 
 ## Developer Resources
 
+Public documentation is published at
+[getspctre.github.io/spctre](https://getspctre.github.io/spctre). It is a
+static, English-language reading surface built from the same MDX source as the
+in-app help docs. Product and buyer information lives at
+[spctre.dev](https://spctre.dev).
+
 | Resource         | Where                          | Notes                                                                            |
 | ---------------- | ------------------------------ | -------------------------------------------------------------------------------- |
 | API reference UI | `GET /api-docs`                | Interactive Scalar docs, try-it-now playground                                   |

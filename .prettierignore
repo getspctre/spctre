@@ -28,3 +28,5 @@ conformance/
 # block Markdown to inline and can change what the docs site renders. Unlike
 # code, there is no test or typecheck that would catch such a change.
 **/*.mdx
+**/.source/
+**/out/
