@@ -168,6 +168,12 @@ jobs:
           # Unknown `with:` keys are only a warning, so a missed rename here does
           # not fail the step — it runs the action with no version script at all.
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          # v2 pushes through the GitHub API by default, and that API cannot
+          # represent a file with the executable bit — it fails the run with
+          # "Unexpected executable file". This repo tracks several by design:
+          # the portable policy kernel (spctre_policy_core.wasm) and the
+          # scripts/*.sh helpers. Push with the git CLI instead, as v1 did.
+          push-with-git-cli: true
           version-script: pnpm version-packages
           publish-script: pnpm release
           # The Version Packages commit is authored by github-actions[bot]; sign
