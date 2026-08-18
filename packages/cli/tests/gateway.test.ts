@@ -230,18 +230,13 @@ describe("CLI Gateway Integration", () => {
         timeoutMs: 10,
         pollIntervalMs: 60_000,
       };
-      const fetchSpy = vi.fn().mockImplementation(
-        () => new Promise<Response>(() => {}),
-      );
+      const fetchSpy = vi.fn().mockImplementation(() => new Promise<Response>(() => {}));
       vi.stubGlobal("fetch", fetchSpy);
       vi.spyOn(process.stderr, "write").mockImplementation(() => true);
 
       const resolutionPromise = pollEscalationResolution(gwConfig, "dec-1");
 
-      await expect(resolutionPromise).resolves.toEqual({
-        decisionId: "dec-1",
-        status: "EXPIRED",
-      });
+      await expect(resolutionPromise).resolves.toEqual({ decisionId: "dec-1", status: "EXPIRED" });
       expect(fetchSpy).toHaveBeenCalledWith(
         expect.any(String),
         expect.objectContaining({ signal: expect.any(AbortSignal) }),
