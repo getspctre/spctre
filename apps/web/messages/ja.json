@@ -1737,7 +1737,9 @@
       "remove_failed": "SIEM ストリームの削除に失敗しました",
       "paused_status": "ストリームを一時停止しました。",
       "resumed_status": "ストリームを再開しました。",
-      "toggle_failed": "SIEM ストリームの切り替えに失敗しました"
+      "toggle_failed": "SIEM ストリームの切り替えに失敗しました",
+      "suspended": "停止中",
+      "suspended_reason": "繰り返し失敗したため配信を停止しました。宛先に到達できるようになったら再度有効にしてください。イベントは失われません。"
     }
   }
 }

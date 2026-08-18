@@ -202,6 +202,13 @@ export function SiemStreamsSection({
                     <span className="pill pillAllow" style={{ fontSize: 9, padding: "1px 4px" }}>
                       {t("siem.active")}
                     </span>
+                  ) : stream.suspendedAt ? (
+                    // Distinct from "paused": the forwarder stopped this
+                    // stream, an operator did not. Both leave enabled=false, so
+                    // without this they would look identical.
+                    <span className="pill pillDeny" style={{ fontSize: 9, padding: "1px 4px" }}>
+                      {t("siem.suspended")}
+                    </span>
                   ) : (
                     <span className="pill" style={{ fontSize: 9, padding: "1px 4px" }}>
                       {t("siem.paused")}
@@ -220,6 +227,12 @@ export function SiemStreamsSection({
                     <span style={{ marginLeft: 8 }}>{t("siem.not_forwarded")}</span>
                   )}
                 </div>
+                {stream.suspendedAt ? (
+                  <div className="itemMeta">
+                    {t("siem.suspended_reason")}
+                    {stream.lastError ? ` — ${stream.lastError}` : null}
+                  </div>
+                ) : null}
               </div>
               <div className="itemActions">
                 <button

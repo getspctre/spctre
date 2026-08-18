@@ -26,6 +26,9 @@ type siemStream struct {
 	LastForwardedAt *time.Time
 	LastForwardedID *string
 	CreatedAt       time.Time
+	// ConsecutiveFailures counts sends that failed since the last success.
+	// Reaching the ceiling suspends the stream.
+	ConsecutiveFailures int
 }
 
 func listSiemStreams(ctx context.Context, db *pgxpool.Pool, credentialKey string) ([]siemStream, error) {
@@ -45,7 +48,8 @@ func listSiemStreams(ctx context.Context, db *pgxpool.Pool, credentialKey string
 			END AS credentials_json,
 			last_forwarded_at,
 			last_forwarded_id,
-			created_at
+			created_at,
+			consecutive_failures
 		FROM workspace_siem_stream
 		WHERE enabled = true
 		ORDER BY created_at ASC
@@ -60,6 +64,7 @@ func listSiemStreams(ctx context.Context, db *pgxpool.Pool, credentialKey string
 		if err := rows.Scan(
 			&s.ID, &s.TenantID, &s.WorkspaceID, &s.Name, &s.Type,
 			&s.URL, &s.Config, &s.CredentialsJSON, &s.LastForwardedAt, &s.LastForwardedID, &s.CreatedAt,
+			&s.ConsecutiveFailures,
 		); err != nil {
 			return nil, err
 		}
@@ -258,8 +263,81 @@ func sendSiemBatch(ctx context.Context, client notificationHTTPClient, stream si
 	}
 }
 
+// defaultSiemMaxAttempts mirrors defaultNotificationMaxAttempts: both bound how
+// long a broken destination is retried before an operator has to look at it.
+const defaultSiemMaxAttempts = 5
+
+// siemErrorTextLimit keeps a pathological upstream error from growing the row
+// without bound. Enough to identify the failure; not a log replacement.
+const siemErrorTextLimit = 1000
+
+// recordSiemFailure counts a failed send and suspends the stream once it
+// reaches maxAttempts, returning the new count and whether this call suspended
+// it.
+//
+// Suspension disables the stream rather than skipping the batch. The cursor is
+// untouched, so re-enabling resumes exactly where delivery stopped and loses
+// no events — which is the point: SIEM export carries compliance evidence, and
+// advancing past a batch to keep the queue moving would turn a loud, fixable
+// failure into a silent, permanent gap.
+//
+// Counting and suspension happen in one statement so two workers racing on the
+// same stream cannot both read a stale count.
+func recordSiemFailure(ctx context.Context, db *pgxpool.Pool, streamID, errText string, maxAttempts int) (int, bool, error) {
+	if len(errText) > siemErrorTextLimit {
+		errText = errText[:siemErrorTextLimit]
+	}
+	var failures int
+	var suspended bool
+	err := db.QueryRow(ctx, `
+		UPDATE workspace_siem_stream
+		   SET consecutive_failures = consecutive_failures + 1,
+		       last_error           = $2,
+		       last_failure_at      = now(),
+		       enabled      = CASE WHEN consecutive_failures + 1 >= $3 THEN false ELSE enabled END,
+		       suspended_at = CASE WHEN consecutive_failures + 1 >= $3 THEN now() ELSE suspended_at END,
+		       updated_at           = now()
+		 WHERE id = $1::uuid
+		RETURNING consecutive_failures, (consecutive_failures >= $3)
+	`, streamID, errText, maxAttempts).Scan(&failures, &suspended)
+	return failures, suspended, err
+}
+
+// clearSiemFailures resets the counter after a successful send.
+//
+// `consecutive_failures > 0` keeps a healthy stream from taking a write on
+// every sweep. `suspended_at IS NULL` is the important one: it must not clear
+// the state of a stream another worker has already suspended.
+//
+// Without that guard, a delivery that succeeds concurrently with the failure
+// that crossed the ceiling would null out suspended_at and last_error while
+// leaving enabled false — a stopped stream that looks like an ordinary operator
+// pause and carries no reason. Forwarding would stay off with nothing to
+// explain it, which is worse than the unbounded retry this ceiling replaced.
+//
+// Staying suspended is the safe resolution rather than re-enabling. The two
+// outcomes raced, so neither is authoritative, and resurrecting a stream that
+// another worker just suspended would oscillate if the endpoint really is
+// broken. Nothing is lost by waiting for an operator: updateSiemStreamCursor
+// has already advanced past the delivered batch, so re-enabling resumes from
+// the right place.
+func clearSiemFailures(ctx context.Context, db *pgxpool.Pool, streamID string) error {
+	_, err := db.Exec(ctx, `
+		UPDATE workspace_siem_stream
+		   SET consecutive_failures = 0,
+		       last_error           = NULL,
+		       last_failure_at      = NULL,
+		       updated_at           = now()
+		 WHERE id = $1::uuid
+		   AND consecutive_failures > 0
+		   AND suspended_at IS NULL
+	`, streamID)
+	return err
+}
+
 func runSiemForwarder(ctx context.Context, db *pgxpool.Pool, logger *slog.Logger, client notificationHTTPClient) error {
 	credentialKey := os.Getenv("SPCTRE_CREDENTIAL_ENCRYPTION_KEY")
+	maxAttempts := envInt("WORKER_SIEM_MAX_ATTEMPTS", defaultSiemMaxAttempts)
 	streams, err := listSiemStreams(ctx, db, credentialKey)
 	if err != nil {
 		return err
@@ -271,6 +349,7 @@ func runSiemForwarder(ctx context.Context, db *pgxpool.Pool, logger *slog.Logger
 	sent := 0
 	failed := 0
 	skipped := 0
+	suspended := 0
 
 	for _, stream := range streams {
 		sinceAt := stream.CreatedAt
@@ -296,6 +375,9 @@ func runSiemForwarder(ctx context.Context, db *pgxpool.Pool, logger *slog.Logger
 		err = deliverWithResilience(ctx, outboundBreakers, stream.URL, func(sendCtx context.Context) error {
 			return sendSiemBatch(sendCtx, client, stream, events)
 		})
+		// Breaker-open is not an attempt: nothing was sent, so counting it
+		// would suspend a stream for being rate-limited by our own breaker
+		// rather than for being broken.
 		if errors.Is(err, errBreakerOpen) {
 			skipped++
 			continue
@@ -303,6 +385,16 @@ func runSiemForwarder(ctx context.Context, db *pgxpool.Pool, logger *slog.Logger
 		if err != nil {
 			logger.Warn("siem forwarder: batch send failed", "stream_id", stream.ID, "type", stream.Type, "error", err)
 			failed++
+			failures, suspendedNow, recordErr := recordSiemFailure(ctx, db, stream.ID, err.Error(), maxAttempts)
+			if recordErr != nil {
+				logger.Error("siem forwarder: failed to record send failure", "stream_id", stream.ID, "error", recordErr)
+			} else if suspendedNow {
+				suspended++
+				logger.Error("siem stream suspended after max consecutive failures",
+					"stream_id", stream.ID, "type", stream.Type, "attempts", failures,
+					"max_attempts", maxAttempts, "last_error", err.Error(),
+					"remedy", "re-enable the stream once the destination is reachable; the cursor is unchanged so no events are lost")
+			}
 			continue
 		}
 		last := events[len(events)-1]
@@ -310,10 +402,18 @@ func runSiemForwarder(ctx context.Context, db *pgxpool.Pool, logger *slog.Logger
 			logger.Error("siem forwarder: cursor update failed", "stream_id", stream.ID, "error", err)
 			return err
 		}
+		// A delivered batch clears the streak: the ceiling counts consecutive
+		// failures, so an endpoint that recovers gets its full budget back
+		// rather than being suspended by unrelated failures weeks apart.
+		if stream.ConsecutiveFailures > 0 {
+			if err := clearSiemFailures(ctx, db, stream.ID); err != nil {
+				logger.Error("siem forwarder: failed to clear failure state", "stream_id", stream.ID, "error", err)
+			}
+		}
 		sent += len(events)
 		logger.Info("siem forwarder: batch forwarded", "stream_id", stream.ID, "type", stream.Type, "count", len(events))
 	}
 
-	logger.Info("siem-forwarder complete", "events.sent", sent, "streams.failed", failed, "streams.skipped_breaker_open", skipped)
+	logger.Info("siem-forwarder complete", "events.sent", sent, "streams.failed", failed, "streams.skipped_breaker_open", skipped, "streams.suspended", suspended)
 	return nil
 }
