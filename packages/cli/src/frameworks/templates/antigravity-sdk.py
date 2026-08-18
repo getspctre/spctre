@@ -251,9 +251,7 @@ def _spctre_gateway_decide(tool_call):
 
 def _spctre_wait_for_resolution(decision_id):
     deadline = time.monotonic() + _SPCTRE_GATEWAY_TIMEOUT
-    url = (
-        f"{_SPCTRE_GATEWAY_URL}/api/v1/gateway/escalations/status?decisionId={quote(str(decision_id))}"
-    )
+    url = f"{_SPCTRE_GATEWAY_URL}/api/v1/gateway/escalations/status?decisionId={quote(str(decision_id))}"
     while time.monotonic() < deadline:
         request = urllib.request.Request(
             url, headers={"Authorization": f"Bearer {_SPCTRE_KEY}"}, method="GET"
