@@ -57,7 +57,7 @@ func (s *Server) handleTokenRefresh(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var payload tokenRefreshRequest
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<20)).Decode(&payload); err != nil {
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, bodyLimits.Control)).Decode(&payload); err != nil {
 		writeError(w, http.StatusBadRequest, "Request body must be JSON.", traceID, nil)
 		return
 	}

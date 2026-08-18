@@ -111,7 +111,7 @@ func (s *Server) handleGatewayIngest(w http.ResponseWriter, r *http.Request, pro
 	}
 
 	var payload gatewayIngestRequest
-	decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, 2<<20))
+	decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, bodyLimits.Runtime))
 	decoder.UseNumber()
 	if err := decoder.Decode(&payload); err != nil {
 		writeError(w, http.StatusBadRequest, "Request body must be JSON.", traceID, nil)

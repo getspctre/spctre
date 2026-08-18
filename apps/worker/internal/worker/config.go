@@ -115,3 +115,48 @@ func envInt(name string, fallback int) int {
 	}
 	return value
 }
+
+// Request body ceilings for the worker's HTTP surface. Every handler bounds the
+// body before decoding JSON or touching the database, so these are the first
+// limit on decode-and-store amplification: a large body is decoded, stored as
+// JSONB, and fans out into secondary writes, which makes payload size both an
+// attack and a cost vector at burst rates.
+//
+// They were previously eight magic numbers spread across five files with no
+// stated rationale and no way to change them without a code deploy. The right
+// ceiling is deployment-specific — it depends on what a tenant's agents
+// actually send — so these are tunable, and the defaults deliberately preserve
+// the existing behaviour. Lowering them is a separate, data-led change: pick
+// the number from observed payload sizes, not from a guess, because a limit set
+// below real traffic rejects legitimate evidence.
+const (
+	// Control-plane messages with a small fixed shape: gateway claim and
+	// resolve, token refresh.
+	defaultControlBodyBytes = 1 << 20
+	// The runtime hot path the amplification finding is about: evidence
+	// ingest, gateway decide, gateway ingest, trust context budget.
+	defaultRuntimeBodyBytes = 2 << 20
+	// The generic evidence adapter accepts arbitrary customer JSON/NDJSON and
+	// is intentionally the most permissive.
+	defaultGenericBodyBytes = 3 << 20
+)
+
+// BodyLimits holds the resolved per-tier ceilings in bytes.
+type BodyLimits struct {
+	Control int64
+	Runtime int64
+	Generic int64
+}
+
+// loadBodyLimits resolves the ceilings from the environment once at startup.
+// Exposed as a function rather than inlined into the package var so tests can
+// exercise the override parsing.
+func loadBodyLimits() BodyLimits {
+	return BodyLimits{
+		Control: int64(envInt("WORKER_MAX_CONTROL_BODY_BYTES", defaultControlBodyBytes)),
+		Runtime: int64(envInt("WORKER_MAX_RUNTIME_BODY_BYTES", defaultRuntimeBodyBytes)),
+		Generic: int64(envInt("WORKER_MAX_GENERIC_BODY_BYTES", defaultGenericBodyBytes)),
+	}
+}
+
+var bodyLimits = loadBodyLimits()
