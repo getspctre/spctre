@@ -84,6 +84,17 @@ describe("native policy source translation", () => {
     expect(result.rules[0]?.actions).toEqual(["a#b//c"]);
   });
 
+  it("accepts raw Rego backtick selector strings without stripping comment markers", () => {
+    const result = parsePolicySourceDocument({
+      sourceFormat: "OPA_REGO",
+      document:
+        "package spctre.github\nimport rego.v1\ndefault deny := false\ndeny if { input.connector == `github`; input.action == `a#b//c` } # trailing comment",
+    });
+
+    expect(result.translation?.status).toBe("LOSSY");
+    expect(result.rules[0]?.actions).toEqual(["a#b//c"]);
+  });
+
   it("preserves Cedar comment markers inside action identifiers", () => {
     const result = parsePolicySourceDocument({
       sourceFormat: "CEDAR",

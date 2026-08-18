@@ -1738,19 +1738,19 @@ function unsupportedNativeSource(message: string): NativeTranslation {
 /** Remove line comments without interpreting comment markers inside strings. */
 function stripLineComments(source: string, markers: string[]): string {
   let result = "";
-  let quote = false;
+  let quote: '"' | "`" | undefined;
   let escaped = false;
   for (let index = 0; index < source.length; index += 1) {
     const char = source[index];
     if (quote) {
       result += char;
-      if (escaped) escaped = false;
-      else if (char === "\\") escaped = true;
-      else if (char === '"') quote = false;
+      if (quote === '"' && escaped) escaped = false;
+      else if (quote === '"' && char === "\\") escaped = true;
+      else if (char === quote) quote = undefined;
       continue;
     }
-    if (char === '"') {
-      quote = true;
+    if (char === '"' || char === "`") {
+      quote = char;
       result += char;
       continue;
     }
@@ -1852,13 +1852,13 @@ function translateRegoSource(source: string): NativeTranslation {
     }
     const selectors: Record<string, string> = {};
     for (const expression of match[2].split(/[;\n]/).map((value) => value.trim()).filter(Boolean)) {
-      const comparison = /^input\.(connector|action|domain)\s*==\s*"([^"\\]+)"$/.exec(expression);
+      const comparison = /^input\.(connector|action|domain)\s*==\s*(?:"([^"\\]+)"|`([^`\r\n]*)`)$/.exec(expression);
       if (!comparison || selectors[comparison[1]]) {
         return unsupportedNativeSource(
           `Unsupported Rego expression "${expression}". Use conjunctions of input.connector, input.action, and input.domain equality checks.`,
         );
       }
-      selectors[comparison[1]] = comparison[2];
+      selectors[comparison[1]] = comparison[2] ?? comparison[3];
     }
     if (!selectors.connector && !selectors.action && !selectors.domain) {
       return unsupportedNativeSource("Rego rules must include at least one supported input selector.");
