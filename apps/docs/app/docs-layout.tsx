@@ -7,9 +7,7 @@ const docsBasePath = process.env.GITHUB_ACTIONS === "true" ? "/spctre" : "";
 
 export function SpctreDocsLayout({ children }: { children: ReactNode }) {
   return (
-    <RootProvider
-      search={{ options: { type: "static", api: `${docsBasePath}/api/search` } }}
-    >
+    <RootProvider search={{ options: { type: "static", api: `${docsBasePath}/api/search` } }}>
       <DocsLayout
         tree={source.pageTree}
         githubUrl="https://github.com/getspctre/spctre"
