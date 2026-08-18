@@ -46,19 +46,18 @@ func main() {
 	server := worker.NewServer(db, logger, cfg.Notification)
 	var jobsDone *sync.WaitGroup
 	if !cfg.DisableInternalScheduler {
-		// The in-process ticker takes no advisory lock — only the /internal/jobs
-		// endpoints do (runJobEndpoint). Nothing coordinates tickers across
-		// processes, so every replica runs every sweep on its own schedule.
-		// For the convergent sweeps that is wasted work; for the ones with
-		// external side effects it is duplicated delivery.
+		// The ticker now takes the same per-job lease as the /internal/jobs
+		// endpoints, so running it across replicas is safe — this is an
+		// informational note, not the multi-replica warning it replaces.
 		//
-		// A single replica is unaffected, which is why this is a warning rather
-		// than a refusal to start: it is the correct configuration for a
-		// single-instance or local deployment, and the wrong one the moment the
-		// worker is scaled.
-		logger.Warn("internal scheduler enabled; safe for a single worker replica only",
-			"detail", "the in-process ticker holds no cross-process lock, so each replica runs every job independently",
-			"remedy", "when running more than one replica, set SPCTRE_DISABLE_INTERNAL_SCHEDULER=1 and drive POST /internal/jobs/* from an external scheduler, which does take a per-job advisory lock")
+		// What remains true is that a ticker only fires while an instance is
+		// alive. On a scale-to-zero deployment nothing keeps one alive, so the
+		// sweeps run when something else happens to wake the container, or not at
+		// all — and retention not running is a compliance gap that reports itself
+		// as silence.
+		logger.Info("internal scheduler enabled; sweeps are lease-coordinated across replicas",
+			"caveat", "a ticker only fires while an instance is running, so a scale-to-zero deployment may not run its sweeps at all",
+			"remedy", "on scale-to-zero, set SPCTRE_DISABLE_INTERNAL_SCHEDULER=1 and drive POST /internal/jobs/* from an external scheduler")
 		jobsDone = worker.StartJobs(ctx, db, worker.Jobs(db, logger, cfg.JobInterval, cfg.Notification), logger)
 	} else {
 		logger.Info("internal scheduler disabled; job endpoints available for external triggers")
