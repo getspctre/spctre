@@ -30,3 +30,4 @@ conformance/
 **/*.mdx
 **/.source/
 **/out/
+**/.generated-public-docs/

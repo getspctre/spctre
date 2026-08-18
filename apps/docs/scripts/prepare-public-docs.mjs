@@ -6,7 +6,8 @@ import { hostedOnlyDocuments, mixedAudienceDocuments } from "../lib/public-docs-
 const appDir = join(dirname(fileURLToPath(import.meta.url)), "..");
 const sourceDir = join(appDir, "..", "web", "content", "docs");
 const outputDir = join(appDir, ".generated-public-docs");
-const hostedOnlyTerms = /\b(SPCTRE_PLAN|SIEM event streaming|SCIM provisioning|Cross-surface agent identity|Bulk production simulation|SLA-tracked HITL|Managed workflow enforcement|Compliance PDF export|Multi-tenant workspace isolation|Custom roles and granular grants)\b/i;
+const hostedOnlyTerms =
+  /\b(SPCTRE_PLAN|SIEM event streaming|SCIM provisioning|Cross-surface agent identity|Bulk production simulation|SLA-tracked HITL|Managed workflow enforcement|Compliance PDF export|Multi-tenant workspace isolation|Custom roles and granular grants)\b/i;
 
 async function removeFromNavigation(documentPath) {
   const { dir, name } = parse(documentPath);
@@ -54,8 +55,12 @@ for (const documentPath of mixedAudienceDocuments) {
 await assertOssOnly(outputDir);
 
 const manifest = {
-  hostedOnly: hostedOnlyDocuments.map((documentPath) => relative(outputDir, join(sourceDir, documentPath))),
-  mixed: mixedAudienceDocuments.map((documentPath) => relative(outputDir, join(sourceDir, documentPath))),
+  hostedOnly: hostedOnlyDocuments.map((documentPath) =>
+    relative(outputDir, join(sourceDir, documentPath)),
+  ),
+  mixed: mixedAudienceDocuments.map((documentPath) =>
+    relative(outputDir, join(sourceDir, documentPath)),
+  ),
 };
 await writeFile(
   join(outputDir, ".publication-manifest.json"),
