@@ -1,0 +1,40 @@
+# Docker has no .gitignore equivalent, so `COPY . .` copies the developer's
+# working tree as-is. Without this file a local build silently differs from CI's,
+# and the difference is not always visible: stale native binaries here replaced
+# the ones the Rust stage cross-builds for the container, and the image failed at
+# runtime rather than at build time.
+
+# Version control and CI config — never needed by a build.
+.git
+.github
+
+# Every Dockerfile runs its own `pnpm install`; a host node_modules is both
+# useless and the wrong platform.
+node_modules
+**/node_modules
+
+# The Rust stage cross-compiles the addon from source. Host-built binaries are
+# for the developer's platform and overwrite the container's — the failure this
+# file exists to prevent. The tracked .wasm is deliberately *not* excluded.
+**/*.node
+packages/policy-schema/native/target
+
+# Build output, all regenerated inside the image.
+**/.next
+**/dist
+**/.turbo
+target
+
+# Secrets. `COPY . .` would otherwise bake a developer's .env into an image
+# layer, where it survives even if a later step deletes the file.
+.env
+.env.*
+!.env.example
+
+# Local noise.
+**/*.log
+**/coverage
+**/.DS_Store
+**/*.tsbuildinfo
+.vscode
+.idea
