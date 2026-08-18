@@ -350,16 +350,76 @@ func TestADisplacedHolderCannotTouchTheLeaseThatReplacedIt(t *testing.T) {
 		t.Fatal("a displaced holder released its successor's lease, admitting a third run")
 	}
 
-	// Nor silently repoint the successor's ledger row.
-	other := beginJobRun(ctx, pool, slog.Default(), name, TriggerTicker)
-	if err := setJobLeaseRun(ctx, pool, name, stale, other); err != nil {
+	// Nor open a run under the successor's lease and repoint it.
+	runID, held, err := openRunUnderLease(ctx, pool, name, TriggerTicker, stale)
+	if err != nil {
 		t.Fatal(err)
 	}
-	var runID *string
-	if err := pool.QueryRow(ctx, `SELECT run_id::text FROM job_lease WHERE job_name = $1`, name).Scan(&runID); err != nil {
+	if held {
+		t.Fatal("a displaced holder must be told it no longer holds the lease")
+	}
+	if runID != "" {
+		t.Fatal("a displaced holder must not open a ledger run")
+	}
+	var linked *string
+	if err := pool.QueryRow(ctx, `SELECT run_id::text FROM job_lease WHERE job_name = $1`, name).Scan(&linked); err != nil {
 		t.Fatal(err)
 	}
-	if runID != nil && *runID == other {
+	if linked != nil {
 		t.Fatal("a displaced holder overwrote the successor's run id")
+	}
+}
+
+// Regression: opening the ledger row and linking it to the lease must be one
+// transaction.
+//
+// As two statements, a crash between them leaves an open job_run whose id was
+// never written to job_lease — so the successor that steals the expired lease
+// gets nothing back and can never close it. The orphan the lease exists to
+// clean up would be created by the act of recording it.
+func TestOpeningARunAndLinkingItAreAtomic(t *testing.T) {
+	pool := testGatewayDB(t)
+	ctx := context.Background()
+	name := uniqueJobName(t)
+	cleanupLease(t, pool, name)
+
+	token := newLeaseToken()
+	if acquired, _, err := acquireJobLease(ctx, pool, name, token, nil); err != nil || !acquired {
+		t.Fatalf("acquire: %v %v", acquired, err)
+	}
+
+	runID, held, err := openRunUnderLease(ctx, pool, name, TriggerHTTP, token)
+	if err != nil || !held {
+		t.Fatalf("open: held=%v err=%v", held, err)
+	}
+	if runID == "" {
+		t.Fatal("expected a run id")
+	}
+
+	// The link must be visible the instant the run exists — never one without
+	// the other.
+	var linked *string
+	if err := pool.QueryRow(ctx, `SELECT run_id::text FROM job_lease WHERE job_name = $1`, name).Scan(&linked); err != nil {
+		t.Fatal(err)
+	}
+	if linked == nil || *linked != runID {
+		t.Fatalf("lease run_id = %v, want %s recorded atomically with the run", linked, runID)
+	}
+
+	// And the recovery path works end to end from that link.
+	expireLease(t, pool, name)
+	_, previous, err := acquireJobLease(ctx, pool, name, newLeaseToken(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if previous == nil || *previous != runID {
+		t.Fatalf("successor got %v, want the interrupted run %s", previous, runID)
+	}
+	if err := markRunAbandoned(ctx, pool, *previous); err != nil {
+		t.Fatal(err)
+	}
+	runs := ledgerRunsFor(t, pool, name)
+	if runs[0].outcome == nil || *runs[0].outcome != outcomeAbandoned {
+		t.Fatalf("outcome = %v, want ABANDONED", runs[0].outcome)
 	}
 }
