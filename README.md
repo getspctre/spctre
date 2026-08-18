@@ -130,14 +130,14 @@ static, English-language reading surface built from the same MDX source as the
 in-app help docs. Product and buyer information lives at
 [spctre.dev](https://spctre.dev).
 
-| Resource         | Where                          | Notes                                                                            |
-| ---------------- | ------------------------------ | -------------------------------------------------------------------------------- |
-| API reference UI | `GET /api-docs`                | Interactive Scalar docs, try-it-now playground                                   |
-| OpenAPI 3.1 spec | `GET /api/v1/openapi.json`     | Machine-readable; source lives in `packages/api-contracts/src/openapi.ts`        |
-| TypeScript SDK   | `packages/sdk` (`@spctre/sdk`) | Typed `openapi-fetch` client generated from the spec                             |
-| Python SDK       | `pnpm generate:python-sdk`     | Generates `target/sdk-python/` via `openapi-generator-cli`                       |
-| CLI              | `packages/cli` (`@spctre/cli`) | `spctre init`, `watch`, `status`, `install-skill`, `install-hook`                |
-| MCP server       | `packages/mcp-server`          | Modern STDIO + stateless Streamable HTTP governance server for AI agent runtimes |
+| Resource         | Where                                | Notes                                                                            |
+| ---------------- | ------------------------------------ | -------------------------------------------------------------------------------- |
+| API reference UI | `GET /api-docs`                      | Interactive Scalar docs, try-it-now playground                                   |
+| OpenAPI 3.1 spec | `GET /api/v1/openapi.json`           | Machine-readable; source lives in `packages/api-contracts/src/openapi.ts`        |
+| TypeScript SDK   | `packages/sdk` (`@spctre/sdk`)       | Typed `openapi-fetch` client generated from the spec                             |
+| Python SDK       | `packages/sdk-python` (`spctre-sdk`) | Supported Python client; install with `pip install spctre-sdk`                   |
+| CLI              | `packages/cli` (`@spctre/cli`)       | `spctre init`, `watch`, `status`, `install-skill`, `install-hook`                |
+| MCP server       | `packages/mcp-server`                | Modern STDIO + stateless Streamable HTTP governance server for AI agent runtimes |
 
 See the CLI, SDK, and MCP package documentation for integration guidance.
 
