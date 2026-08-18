@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # ── Stage 1: base ─────────────────────────────────────────────────────────────
-FROM node:25-alpine AS base
+FROM node:26-alpine AS base
 RUN if command -v corepack >/dev/null 2>&1; then \
       corepack enable && corepack prepare pnpm@11.1.1 --activate; \
     else \
@@ -28,7 +28,7 @@ COPY packages/mcp-server ./packages/mcp-server
 RUN cd packages/mcp-server && rm -rf dist && node_modules/.bin/tsc
 
 # ── Stage 4: runner ───────────────────────────────────────────────────────────
-FROM node:25-alpine AS runner
+FROM node:26-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production

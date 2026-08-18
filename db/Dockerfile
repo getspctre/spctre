@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # ── Stage 1: base ─────────────────────────────────────────────────────────────
-FROM node:25-alpine AS base
+FROM node:26-alpine AS base
 RUN if command -v corepack >/dev/null 2>&1; then \
 			corepack enable && corepack prepare pnpm@11.1.1 --activate; \
 		else \
@@ -29,7 +29,7 @@ COPY packages/ui/package.json             ./packages/ui/
 RUN pnpm install --frozen-lockfile --ignore-scripts --filter spctre
 
 # ── Stage 3: runner ───────────────────────────────────────────────────────────
-FROM node:25-alpine
+FROM node:26-alpine
 WORKDIR /app
 
 COPY --from=deps /app/node_modules ./node_modules

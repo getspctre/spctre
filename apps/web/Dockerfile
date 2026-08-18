@@ -15,7 +15,7 @@ RUN case "$TARGETARCH" in \
     esac
 
 # ── Stage 1: base ─────────────────────────────────────────────────────────────
-FROM node:25-slim AS base
+FROM node:26-slim AS base
 RUN if command -v corepack >/dev/null 2>&1; then \
             corepack enable && corepack prepare pnpm@11.1.1 --activate; \
         else \
