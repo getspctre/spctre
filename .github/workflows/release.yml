@@ -164,21 +164,24 @@ jobs:
       - name: Create Version PR or publish
         uses: changesets/action@v2
         with:
-          version: pnpm version-packages
-          publish: pnpm release
+          # v2 renamed every input and moved the token out of the environment.
+          # Unknown `with:` keys are only a warning, so a missed rename here does
+          # not fail the step — it runs the action with no version script at all.
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          version-script: pnpm version-packages
+          publish-script: pnpm release
           # The Version Packages commit is authored by github-actions[bot]; sign
           # it off with the same identity so the required DCO check passes. NOTE:
           # this only makes DCO *pass when it runs* — a GITHUB_TOKEN-created PR
           # still does not trigger CI, so the required checks must be kicked off
           # by a non-GITHUB_TOKEN event (App/PAT token here, or manually reopening
           # the PR) before it can merge.
-          commit: |
+          commit-message: |
             chore: version packages
 
             Signed-off-by: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
-          title: "chore: version packages"
+          pr-title: "chore: version packages"
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # One-time bootstrap only: set the NODE_AUTH_TOKEN secret to token-auth
           # the first publish of a not-yet-existing package (trusted publishing
           # can't be configured until the package exists). Empty in steady state,
