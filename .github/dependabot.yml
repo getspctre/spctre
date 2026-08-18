@@ -14,3 +14,11 @@ updates:
     open-pull-requests-limit: 5
     commit-message:
       prefix: ci
+    ignore:
+      # changesets/action major versions are coupled to the Changesets CLI major:
+      # v2 requires CLI v3, refuses to run against v2, and renames every input
+      # release.yml passes. A major bump here is a migration, and it cannot be
+      # caught by PR CI because release.yml only runs on push to main — the bump
+      # merges green and then fails every release afterwards.
+      - dependency-name: changesets/action
+        update-types: ["version-update:semver-major"]

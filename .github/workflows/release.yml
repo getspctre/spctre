@@ -162,7 +162,13 @@ jobs:
       # Opens/updates the Version Packages PR when changesets are pending;
       # runs `pnpm release` (changeset publish) once versions are ahead of npm.
       - name: Create Version PR or publish
-        uses: changesets/action@v2
+        # Pinned to v1 deliberately. v2 requires Changesets CLI v3 and refuses
+        # to run against the v2 CLI this repo pins, and it renames every input
+        # used below (version -> version-script, publish -> publish-script,
+        # commit -> commit-message, title -> pr-title) while dropping GITHUB_TOKEN
+        # in favour of a github-token input. Moving to v2 is a coordinated change
+        # with the CLI major bump, not a version nudge — see the Dependabot ignore.
+        uses: changesets/action@v1
         with:
           version: pnpm version-packages
           publish: pnpm release
