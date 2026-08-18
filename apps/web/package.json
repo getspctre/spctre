@@ -20,7 +20,7 @@
     "@spctre/policy-schema": "workspace:*",
     "@spctre/ui": "workspace:*",
     "@upstash/ratelimit": "^2.0.8",
-    "@upstash/redis": "^1.38.0",
+    "@upstash/redis": "^1.38.2",
     "firebase": "^12.17.1",
     "fumadocs-core": "^16.10.5",
     "fumadocs-ui": "^16.10.5",
