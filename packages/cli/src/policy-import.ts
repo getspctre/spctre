@@ -140,7 +140,7 @@ export async function policyImport(
   options: PolicyImportOptions,
 ): Promise<void> {
   if (options.offline) {
-    const { policyConvert } = await import("./policy-convert");
+    const { policyConvert } = await import("./policy-convert.js");
     return policyConvert(file, options);
   }
   const format = getOutputFormat(options.format);
