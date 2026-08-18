@@ -222,5 +222,30 @@ describe("CLI Gateway Integration", () => {
       const resolution = await pollEscalationResolution(gwConfig, "dec-1");
       expect(resolution.status).toBe("EXPIRED");
     });
+
+    it("does not outlive its deadline when a status request stalls", async () => {
+      const gwConfig = {
+        gatewayUrl: "https://gw.test",
+        token: "token-123",
+        timeoutMs: 10,
+        pollIntervalMs: 60_000,
+      };
+      const fetchSpy = vi.fn().mockImplementation(
+        () => new Promise<Response>(() => {}),
+      );
+      vi.stubGlobal("fetch", fetchSpy);
+      vi.spyOn(process.stderr, "write").mockImplementation(() => true);
+
+      const resolutionPromise = pollEscalationResolution(gwConfig, "dec-1");
+
+      await expect(resolutionPromise).resolves.toEqual({
+        decisionId: "dec-1",
+        status: "EXPIRED",
+      });
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({ signal: expect.any(AbortSignal) }),
+      );
+    });
   });
 });

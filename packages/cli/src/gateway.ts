@@ -133,27 +133,48 @@ export async function pollEscalationResolution(
 
   while (true) {
     const elapsed = Date.now() - startTime;
-    if (elapsed >= gwConfig.timeoutMs) {
+    const remainingMs = gwConfig.timeoutMs - elapsed;
+    if (remainingMs <= 0) {
       return { decisionId, status: "EXPIRED" };
     }
 
     try {
-      const response = await fetch(url, {
-        method: "GET",
-        headers: { Authorization: `Bearer ${gwConfig.token}` },
+      const controller = new AbortController();
+      let deadlineId: ReturnType<typeof setTimeout> | undefined;
+      const deadline = new Promise<undefined>((resolve) => {
+        deadlineId = setTimeout(() => {
+          controller.abort();
+          resolve(undefined);
+        }, remainingMs);
       });
+      try {
+        const response = await Promise.race([
+          fetch(url, {
+            method: "GET",
+            headers: { Authorization: `Bearer ${gwConfig.token}` },
+            signal: controller.signal,
+          }),
+          deadline,
+        ]);
 
-      if (response.ok) {
-        const data = (await response.json()) as EscalationStatusResponse;
-        if (data.status === "RESOLVED" || data.status === "EXPIRED") {
-          return data;
+        if (response?.ok) {
+          const data = (await response.json()) as EscalationStatusResponse;
+          if (data.status === "RESOLVED" || data.status === "EXPIRED") {
+            return data;
+          }
         }
+      } finally {
+        if (deadlineId) clearTimeout(deadlineId);
       }
     } catch {
       // Ignored: retry until timeout
     }
 
     process.stderr.write(".");
-    await new Promise((r) => setTimeout(r, gwConfig.pollIntervalMs));
+    const sleepMs = Math.min(
+      gwConfig.pollIntervalMs,
+      Math.max(0, gwConfig.timeoutMs - (Date.now() - startTime)),
+    );
+    await new Promise((r) => setTimeout(r, sleepMs));
   }
 }
