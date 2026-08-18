@@ -54,8 +54,9 @@ func newLeaseToken() string {
 }
 
 // acquireJobLease takes the lease for a job, or reports that someone else holds
-// it. The second return is the run_id recorded by an expired holder, if this
-// call stole one — the ledger row that holder left open.
+// it. The second return is the ledger row this call closed as ABANDONED, if it
+// stole the lease from a holder that died mid-run — reported for logging, since
+// the close has already happened.
 //
 // One statement, so two callers cannot both win. The WHERE on the conflict
 // clause is the safety property: a live lease is not stolen, the update is
@@ -68,13 +69,21 @@ func acquireJobLease(ctx context.Context, db *pgxpool.Pool, name, token string, 
 		return true, nil, nil
 	}
 
-	// A CTE rather than RETURNING: RETURNING sees the row after the upsert, so
-	// it would hand back the run_id being written rather than the dead holder's.
-	// The prev branch reads the pre-statement snapshot, which is the value
-	// wanted — and it is only trusted when acquired is true, so a racing writer
-	// making it stale does not matter.
+	// Takeover and closure of the predecessor's run are one statement.
+	//
+	// Split, the upsert overwrites the expired row's run_id with NULL and hands
+	// the old id to application code to close separately. A crash in between
+	// leaves that job_run open with nothing referencing it: job_lease no longer
+	// carries the id, so no later holder can ever mark it ABANDONED. Folding the
+	// close in means the only row that loses its reference is one already
+	// closed.
+	//
+	// prev reads the pre-statement snapshot, which is the dead holder's id —
+	// RETURNING would see the row after the upsert and hand back the id being
+	// written. It is only acted on when the upsert actually won, so a racing
+	// writer making it stale cannot cause a spurious close.
 	var acquired bool
-	var previous *string
+	var abandoned *string
 	if err := db.QueryRow(ctx, `
 		WITH prev AS (
 			SELECT run_id FROM job_lease WHERE job_name = $1
@@ -91,16 +100,24 @@ func acquireJobLease(ctx context.Context, db *pgxpool.Pool, name, token string, 
 			       run_id      = EXCLUDED.run_id
 			 WHERE job_lease.expires_at < now()
 			RETURNING job_name
+		),
+		closed AS (
+			UPDATE job_run
+			   SET finished_at = now(), outcome = $6
+			 WHERE id = (SELECT run_id FROM prev)
+			   AND finished_at IS NULL
+			   AND EXISTS (SELECT 1 FROM upserted)
+			RETURNING id
 		)
 		SELECT EXISTS (SELECT 1 FROM upserted),
-		       (SELECT run_id::text FROM prev)
-	`, name, token, leaseTTL.String(), runID, leaseHolder).Scan(&acquired, &previous); err != nil {
+		       (SELECT id::text FROM closed)
+	`, name, token, leaseTTL.String(), runID, leaseHolder, outcomeAbandoned).Scan(&acquired, &abandoned); err != nil {
 		return false, nil, err
 	}
 	if !acquired {
 		return false, nil, nil
 	}
-	return true, previous, nil
+	return true, abandoned, nil
 }
 
 // openRunUnderLease opens the ledger row and attaches it to the lease in one
@@ -190,20 +207,6 @@ func releaseJobLease(ctx context.Context, db *pgxpool.Pool, name, token string) 
 	return err
 }
 
-// markRunAbandoned closes a ledger row left open by a dead holder.
-//
-// Safe only because the caller holds the lease, so there is no competing
-// writer. Guarded on finished_at IS NULL so a holder that crashed after closing
-// its row is not rewritten.
-func markRunAbandoned(ctx context.Context, db *pgxpool.Pool, runID string) error {
-	_, err := db.Exec(ctx, `
-		UPDATE job_run
-		   SET finished_at = now(), outcome = $2
-		 WHERE id = $1::uuid AND finished_at IS NULL
-	`, runID, outcomeAbandoned)
-	return err
-}
-
 // leaseKeeper renews a held lease until the run finishes, and cancels the run
 // if the lease is lost.
 type leaseKeeper struct {
@@ -271,7 +274,7 @@ func (k *leaseKeeper) Stop() {
 // Reports false when the lease was held elsewhere and the sweep did not run.
 func runWithJobLease(ctx context.Context, db *pgxpool.Pool, logger *slog.Logger, name, trigger string, fn func(context.Context) error) (bool, error) {
 	token := newLeaseToken()
-	acquired, previousRun, err := acquireJobLease(ctx, db, name, token, nil)
+	acquired, abandonedRun, err := acquireJobLease(ctx, db, name, token, nil)
 	if err != nil {
 		// Without coordination, running risks the duplicate side effects this
 		// exists to prevent — and a sweep that cannot reach the database has
@@ -282,12 +285,11 @@ func runWithJobLease(ctx context.Context, db *pgxpool.Pool, logger *slog.Logger,
 		return false, nil
 	}
 
-	// Close whatever the dead holder left open. Best-effort: failing to tidy
-	// history must not stop the sweep.
-	if previousRun != nil && *previousRun != "" {
-		if err := markRunAbandoned(ctx, db, *previousRun); err != nil {
-			logger.Warn("job lease: failed to close abandoned run", "worker.job.name", name, "worker.job.run_id", *previousRun, "error", err)
-		}
+	// The predecessor's open run was closed as part of the takeover, not after
+	// it, so there is no window in which it can lose its only reference.
+	if abandonedRun != nil && *abandonedRun != "" {
+		logger.Warn("closed a job run abandoned by a dead holder",
+			"worker.job.name", name, "worker.job.run_id", *abandonedRun)
 	}
 
 	started := time.Now()
