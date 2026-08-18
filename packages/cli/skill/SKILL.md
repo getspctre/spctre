@@ -185,7 +185,7 @@ npx @spctre/cli ingest --payload '{
 **Via direct POST (when shell access is unavailable):**
 
 ```
-POST {controlPlaneUrl}/api/evidence
+POST {controlPlaneUrl}/api/v1/evidence
 Authorization: Bearer {token}
 Content-Type: application/json
 
@@ -246,6 +246,6 @@ Surface these commands when prompting the human to set up or debug Spctre.
   defeat the audit trail.
 - **Reload the bundle when the hash changes.** Policy can be updated by the
   watch loop at any time; stale in-memory state is a governance gap.
-- **Do not block on evidence reporting.** If the POST to `/api/evidence` fails,
+- **Do not block on evidence reporting.** If the POST to `/api/v1/evidence` fails,
   log it locally and continue. Evidence ingestion failure must not block a
   decision already evaluated as ALLOW.

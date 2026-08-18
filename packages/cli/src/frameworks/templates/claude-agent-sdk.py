@@ -71,7 +71,7 @@ def _spctre_emit(action, status, reason, latency_ms=0):
     }
     try:
         request = urllib.request.Request(
-            f"{_SPCTRE_URL}/api/evidence",
+            f"{_SPCTRE_URL}/api/v1/evidence",
             data=json.dumps(payload).encode(),
             headers={
                 "Content-Type": "application/json",
@@ -104,7 +104,7 @@ def _spctre_gateway_decide(tool_name, tool_input, tool_use_id, context=None):
         "toolParameters": tool_input if isinstance(tool_input, dict) else {},
     }
     request = urllib.request.Request(
-        f"{_SPCTRE_GATEWAY_URL}/api/gateway/decide",
+        f"{_SPCTRE_GATEWAY_URL}/api/v1/gateway/decide",
         data=json.dumps(payload).encode(),
         headers={"Content-Type": "application/json", "Authorization": f"Bearer {_SPCTRE_KEY}"},
         method="POST",

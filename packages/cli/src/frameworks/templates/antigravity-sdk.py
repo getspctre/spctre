@@ -97,7 +97,7 @@ def _spctre_emit(
         payload["rawEvidence"]["totalTokens"] = prompt_tokens + completion_tokens
     try:
         request = urllib.request.Request(
-            f"{_SPCTRE_URL}/api/evidence",
+            f"{_SPCTRE_URL}/api/v1/evidence",
             data=json.dumps(payload).encode(),
             headers={
                 "Content-Type": "application/json",
@@ -233,7 +233,7 @@ def _spctre_gateway_decide(tool_call):
         "toolParameters": tool_input,
     }
     request = urllib.request.Request(
-        f"{_SPCTRE_GATEWAY_URL}/api/gateway/decide",
+        f"{_SPCTRE_GATEWAY_URL}/api/v1/gateway/decide",
         data=json.dumps(payload).encode(),
         headers={"Content-Type": "application/json", "Authorization": f"Bearer {_SPCTRE_KEY}"},
         method="POST",
@@ -251,9 +251,7 @@ def _spctre_gateway_decide(tool_call):
 
 def _spctre_wait_for_resolution(decision_id):
     deadline = time.monotonic() + _SPCTRE_GATEWAY_TIMEOUT
-    url = (
-        f"{_SPCTRE_GATEWAY_URL}/api/gateway/escalations/status?decisionId={quote(str(decision_id))}"
-    )
+    url = f"{_SPCTRE_GATEWAY_URL}/api/v1/gateway/escalations/status?decisionId={quote(str(decision_id))}"
     while time.monotonic() < deadline:
         request = urllib.request.Request(
             url, headers={"Authorization": f"Bearer {_SPCTRE_KEY}"}, method="GET"

@@ -181,7 +181,7 @@ export async function flushBuffer(config: SpctreCliConfig): Promise<void> {
     const timeoutId = setTimeout(() => controller.abort(), 3000);
 
     try {
-      const response = await fetch(`${url}/api/evidence`, {
+      const response = await fetch(`${url}/api/v1/evidence`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

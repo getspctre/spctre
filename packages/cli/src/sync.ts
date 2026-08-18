@@ -134,7 +134,7 @@ export async function sync(options: {
 }): Promise<SyncResult | undefined> {
   const { workspace, key, output, url, resolved } = await resolveSyncSettings(options);
 
-  const targetUrl = `${url}/api/bundle/latest?workspace=${encodeURIComponent(workspace)}`;
+  const targetUrl = `${url}/api/v1/bundle/latest?workspace=${encodeURIComponent(workspace)}`;
   const previousHash = resolved?.artifactHash ?? null;
 
   try {

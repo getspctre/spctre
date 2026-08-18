@@ -12,7 +12,7 @@ const SPCTRE_DIR = ".spctre";
  * Generates .spctre/notion-worker.js — a Notion Worker template that wraps
  * each agent tool call with a Spctre governance pre-check (evaluate_policy).
  * On ESCALATE the review is surfaced via Notion's built-in approval loop.
- * After execution, evidence is posted via the /api/gateway-ingest/notion endpoint.
+ * After execution, evidence is posted via the /api/v1/gateway-ingest/notion endpoint.
  *
  * Deploy with: notion worker deploy .spctre/notion-worker.js
  */
@@ -87,7 +87,7 @@ function buildManifest(config: SpctreCliConfig, workerSource: string) {
       "Deploy the Worker via: notion worker deploy .spctre/notion-worker.js",
       "The Worker wraps tool calls with spctreGoverned(), which calls evaluate_policy before execution.",
       "On ESCALATE, the Worker returns the Notion approval loop URL to defer execution to a human reviewer.",
-      "Evidence is emitted to /api/gateway-ingest/notion after each tool call.",
+      "Evidence is emitted to /api/v1/gateway-ingest/notion after each tool call.",
       "Evidence records carry provenance_gap: true — Notion does not natively emit AGT-compatible evidence.",
       "Replace the placeholder handler logic in notion-worker.js with your actual agent tool calls.",
     ],
@@ -107,12 +107,12 @@ This directory contains the generated Spctre governance layer for Notion Workers
 
 The generated Worker wraps every agent tool call with \`spctreGoverned()\`:
 
-1. **Pre-check** — calls \`/api/evaluate\` (evaluate_policy) before execution.
+1. **Pre-check** — calls \`/api/v1/evaluate\` (evaluate_policy) before execution.
    - ABORT: returns a blocked response; no tool execution.
    - ESCALATE: surfaces the review via Notion's built-in approval loop URL; no tool execution until resolved.
    - PROCEED: continues to step 2.
 2. **Execute** — runs your agent tool fn.
-3. **Evidence** — posts a \`spctre.gateway.event.v1\` payload to \`/api/gateway-ingest/notion\`.
+3. **Evidence** — posts a \`spctre.gateway.event.v1\` payload to \`/api/v1/gateway-ingest/notion\`.
    Evidence carries \`provenance_gap: true\` because Notion does not natively emit AGT-compatible evidence.
 
 ## Customise

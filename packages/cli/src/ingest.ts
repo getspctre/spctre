@@ -48,7 +48,7 @@ export async function ingest(options: IngestOptions) {
   const evidence: AgtRuntimeDecisionInput = parseEvidence(options, resolved ?? undefined);
 
   try {
-    const response = await fetch(`${url}/api/evidence`, {
+    const response = await fetch(`${url}/api/v1/evidence`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
       body: JSON.stringify(evidence),

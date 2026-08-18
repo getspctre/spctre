@@ -66,7 +66,7 @@ describe("bundle export", () => {
 
     expect(result).toEqual({ outputPath: output, manifestPath: manifestOutput, verified: true });
     expect(fetchSpy).toHaveBeenCalledWith(
-      "https://control.test/api/bundle/latest?workspace=workspace-1&format=opa-rego",
+      "https://control.test/api/v1/bundle/latest?workspace=workspace-1&format=opa-rego",
       expect.objectContaining({
         headers: expect.objectContaining({ Authorization: "Bearer token-1" }),
       }),
@@ -97,7 +97,7 @@ describe("bundle export", () => {
     const rows = await bundlePreview({ output: "json" });
 
     expect(fetchSpy).toHaveBeenCalledWith(
-      "https://control.test/api/bundle/latest?workspace=workspace-1&preview=true",
+      "https://control.test/api/v1/bundle/latest?workspace=workspace-1&preview=true",
       expect.objectContaining({
         headers: expect.objectContaining({ Authorization: "Bearer token-1" }),
       }),

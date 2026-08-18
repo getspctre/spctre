@@ -56,7 +56,7 @@ export async function bundlePreview(options: {
   strict?: boolean;
 }): Promise<{ format: string; ok: boolean; blockingWarnings: string[] }[] | undefined> {
   const { workspace, key, url } = await resolveCliAuth(options);
-  const targetUrl = `${url}/api/bundle/latest?workspace=${encodeURIComponent(workspace)}&preview=true`;
+  const targetUrl = `${url}/api/v1/bundle/latest?workspace=${encodeURIComponent(workspace)}&preview=true`;
 
   try {
     const response = await fetch(targetUrl, {
@@ -107,7 +107,7 @@ export async function bundleExport(options: {
 
   const { workspace, key, url } = await resolveCliAuth(options);
 
-  const targetUrl = `${url}/api/bundle/latest?workspace=${encodeURIComponent(workspace)}&format=${encodeURIComponent(options.format)}`;
+  const targetUrl = `${url}/api/v1/bundle/latest?workspace=${encodeURIComponent(workspace)}&format=${encodeURIComponent(options.format)}`;
 
   try {
     const response = await fetch(targetUrl, {

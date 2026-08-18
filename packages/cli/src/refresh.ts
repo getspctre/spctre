@@ -32,7 +32,7 @@ export async function refreshIfNeeded(config: SpctreCliConfig): Promise<SpctreCl
     process.exit(1);
   }
 
-  const url = `${config.controlPlaneUrl.replace(/\/+$/, "")}/api/token/refresh`;
+  const url = `${config.controlPlaneUrl.replace(/\/+$/, "")}/api/v1/token/refresh`;
 
   let response: Response;
   try {

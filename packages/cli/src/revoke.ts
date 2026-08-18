@@ -12,7 +12,7 @@ export async function revoke(options: { output?: string } = {}) {
     process.exit(1);
   }
 
-  const url = `${config.controlPlaneUrl.replace(/\/+$/, "")}/api/token/revoke`;
+  const url = `${config.controlPlaneUrl.replace(/\/+$/, "")}/api/v1/token/revoke`;
 
   try {
     const res = await fetch(url, {
