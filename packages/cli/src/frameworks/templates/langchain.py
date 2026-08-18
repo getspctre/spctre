@@ -75,7 +75,7 @@ def _spctre_emit(
         payload["rawEvidence"]["totalTokens"] = prompt_tokens + completion_tokens
     try:
         req = urllib.request.Request(
-            f"{_SPCTRE_URL}/api/evidence",
+            f"{_SPCTRE_URL}/api/v1/evidence",
             data=json.dumps(payload).encode(),
             headers={
                 "Content-Type": "application/json",

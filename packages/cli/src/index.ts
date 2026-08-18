@@ -127,6 +127,416 @@ program
     await ingest(options);
   });
 
+const apiCommand = program
+  .command("api")
+  .description("Call documented Spctre public REST API v1 operations");
+
+apiCommand
+  .command("request <method> <path>")
+  .description("Call a public v1 endpoint; path is relative to /api/v1")
+  .option("-k, --key <key>", "service account API key")
+  .option("-u, --url <url>", "control plane URL")
+  .option("-d, --data <json>", "request body")
+  .option("-f, --file <path>", "request body file")
+  .option("-o, --output-file <path>", "write the response body to a file")
+  .option("-H, --header <header...>", "additional header (Name: value)")
+  .option("-q, --query <key=value...>", "query parameter; may be repeated")
+  .option("--yes", "confirm a DELETE request")
+  .option("--output <format>", "output format: text (default) or json")
+  .action(async (method: string, path: string, options) => {
+    const { apiRequest } = await import("./api.js");
+    await apiRequest({ method, path, ...options });
+  });
+
+function addApiReadCommand(parent: Command, name: string, path: string, description: string): void {
+  parent
+    .command(name)
+    .description(description)
+    .option("-k, --key <key>", "service account API key")
+    .option("-u, --url <url>", "control plane URL")
+    .option("-q, --query <key=value...>", "query parameter; may be repeated")
+    .option("-o, --output-file <path>", "write the response body to a file")
+    .option("--output <format>", "output format: text (default) or json")
+    .action(async (options) => {
+      const { apiRequest } = await import("./api.js");
+      await apiRequest({ method: "GET", path, ...options });
+    });
+}
+
+function addApiWriteCommand(
+  parent: Command,
+  name: string,
+  path: string,
+  description: string,
+  options: { method?: "POST" | "DELETE"; allowEmptyBody?: boolean; sensitive?: boolean } = {},
+): void {
+  const method = options.method ?? "POST";
+  const command = parent
+    .command(name)
+    .description(description)
+    .option("-k, --key <key>", "service account API key")
+    .option("-u, --url <url>", "control plane URL")
+    .option("-d, --data <json>", "request body")
+    .option("-f, --file <path>", "request body file")
+    .option("-H, --header <header...>", "additional header (Name: value)")
+    .option("--output <format>", "output format: text (default) or json");
+  if (options.sensitive || method === "DELETE") {
+    command.option("--yes", "confirm this sensitive operation");
+  }
+  command.action(async (commandOptions) => {
+    if (
+      !options.allowEmptyBody &&
+      method === "POST" &&
+      !commandOptions.data &&
+      !commandOptions.file
+    ) {
+      console.error("Error: provide the request body with --data or --file.");
+      process.exit(1);
+    }
+    if (options.sensitive && !commandOptions.yes) {
+      console.error("Error: this sensitive operation requires --yes.");
+      process.exit(1);
+    }
+    const { apiRequest } = await import("./api.js");
+    await apiRequest({ method, path, ...commandOptions });
+  });
+}
+
+apiCommand
+  .command("evaluate")
+  .description("Simulate a decision against the published policy bundle")
+  .requiredOption("-d, --data <json>", "EvaluateRequest JSON")
+  .option("-k, --key <key>", "service account API key")
+  .option("-u, --url <url>", "control plane URL")
+  .option("--output <format>", "output format: text (default) or json")
+  .action(async (options) => {
+    const { apiRequest } = await import("./api.js");
+    await apiRequest({ method: "POST", path: "/evaluate", ...options });
+  });
+
+const reviewCommand = apiCommand.command("review").description("Review and escalation operations");
+for (const [name, path] of [
+  ["approvals", "/approvals/queue"],
+  ["escalations", "/gateway/escalations"],
+] as const) {
+  reviewCommand
+    .command(name)
+    .description(`List ${name} visible to the credential`)
+    .option("-k, --key <key>", "service account API key")
+    .option("-u, --url <url>", "control plane URL")
+    .option("-q, --query <key=value...>", "query parameter; may be repeated")
+    .option("--output <format>", "output format: text (default) or json")
+    .action(async (options) => {
+      const { apiRequest } = await import("./api.js");
+      await apiRequest({ method: "GET", path, ...options });
+    });
+}
+
+reviewCommand
+  .command("approval <id>")
+  .description("Get one approval")
+  .option("-k, --key <key>", "service account API key")
+  .option("-u, --url <url>", "control plane URL")
+  .option("--output <format>", "output format: text (default) or json")
+  .action(async (id: string, options) => {
+    const { apiRequest } = await import("./api.js");
+    await apiRequest({ method: "GET", path: `/approvals/${encodeURIComponent(id)}`, ...options });
+  });
+
+reviewCommand
+  .command("resolve")
+  .description("Resolve a gateway escalation")
+  .requiredOption("-d, --data <json>", "Gateway resolution JSON")
+  .option("-k, --key <key>", "service account API key")
+  .option("-u, --url <url>", "control plane URL")
+  .option("--output <format>", "output format: text (default) or json")
+  .action(async (options) => {
+    const { apiRequest } = await import("./api.js");
+    await apiRequest({ method: "POST", path: "/gateway/resolve", ...options });
+  });
+reviewCommand
+  .command("decide")
+  .description("Evaluate a gateway decision")
+  .requiredOption("-d, --data <json>", "Gateway decision JSON")
+  .option("-k, --key <key>", "service account API key")
+  .option("-u, --url <url>", "control plane URL")
+  .option("--output <format>", "output format: text (default) or json")
+  .action(async (options) => {
+    const { apiRequest } = await import("./api.js");
+    await apiRequest({ method: "POST", path: "/gateway/decide", ...options });
+  });
+reviewCommand
+  .command("status <decisionId>")
+  .description("Get an escalation's gateway decision status")
+  .option("-k, --key <key>", "service account API key")
+  .option("-u, --url <url>", "control plane URL")
+  .option("--output <format>", "output format: text (default) or json")
+  .action(async (decisionId: string, options) => {
+    const { apiRequest } = await import("./api.js");
+    await apiRequest({
+      method: "GET",
+      path: `/gateway/escalations/status?decisionId=${encodeURIComponent(decisionId)}`,
+      ...options,
+    });
+  });
+
+const complianceCommand = apiCommand
+  .command("compliance")
+  .description("Compliance reporting operations");
+for (const [name, path, description] of [
+  ["status", "/compliance/status", "Report published compliance packet status"],
+  ["export", "/compliance/export", "Export the current compliance packet"],
+] as const) {
+  complianceCommand
+    .command(name)
+    .description(description)
+    .option("-k, --key <key>", "service account API key")
+    .option("-u, --url <url>", "control plane URL")
+    .option("-q, --query <key=value...>", "query parameter; may be repeated")
+    .option("--output <format>", "output format: text (default) or json")
+    .action(async (options) => {
+      const { apiRequest } = await import("./api.js");
+      await apiRequest({ method: "GET", path, ...options });
+    });
+}
+
+const verificationCommand = apiCommand
+  .command("verification")
+  .description("Record and inspect policy verification results");
+verificationCommand
+  .command("list")
+  .description("List verification results")
+  .option("-k, --key <key>", "service account API key")
+  .option("-u, --url <url>", "control plane URL")
+  .option("-q, --query <key=value...>", "query parameter; may be repeated")
+  .option("--output <format>", "output format: text (default) or json")
+  .action(async (options) => {
+    const { apiRequest } = await import("./api.js");
+    await apiRequest({ method: "GET", path: "/verification", ...options });
+  });
+verificationCommand
+  .command("ingest")
+  .description("Record a verification result")
+  .requiredOption("-d, --data <json>", "VerificationIngestRequest JSON")
+  .option("-k, --key <key>", "service account API key")
+  .option("-u, --url <url>", "control plane URL")
+  .option("--output <format>", "output format: text (default) or json")
+  .action(async (options) => {
+    const { apiRequest } = await import("./api.js");
+    await apiRequest({ method: "POST", path: "/verification", ...options });
+  });
+
+const operationsCommand = apiCommand
+  .command("operations")
+  .description("Inspect workspaces, members, workflow, and governed agents");
+for (const [name, path, description] of [
+  ["workspaces", "/workspaces", "List accessible workspaces"],
+  ["members", "/members", "List active-workspace members"],
+  ["workflow", "/workflow/config", "Read review workflow configuration"],
+] as const) {
+  operationsCommand
+    .command(name)
+    .description(description)
+    .option("-k, --key <key>", "service account API key")
+    .option("-u, --url <url>", "control plane URL")
+    .option("-q, --query <key=value...>", "query parameter; may be repeated")
+    .option("--output <format>", "output format: text (default) or json")
+    .action(async (options) => {
+      const { apiRequest } = await import("./api.js");
+      await apiRequest({ method: "GET", path, ...options });
+    });
+}
+operationsCommand
+  .command("agent-audit <id>")
+  .description("Summarize one agent's governed decisions")
+  .option("-k, --key <key>", "service account API key")
+  .option("-u, --url <url>", "control plane URL")
+  .option("-q, --query <key=value...>", "query parameter; may be repeated")
+  .option("--output <format>", "output format: text (default) or json")
+  .action(async (id: string, options) => {
+    const { apiRequest } = await import("./api.js");
+    await apiRequest({
+      method: "GET",
+      path: `/agents/${encodeURIComponent(id)}/audit`,
+      ...options,
+    });
+  });
+operationsCommand
+  .command("trust-history <agentId>")
+  .description("List an agent's trust-score history")
+  .option("-k, --key <key>", "service account API key")
+  .option("-u, --url <url>", "control plane URL")
+  .option("-q, --query <key=value...>", "query parameter; may be repeated")
+  .option("--output <format>", "output format: text (default) or json")
+  .action(async (agentId: string, options) => {
+    const { apiRequest } = await import("./api.js");
+    await apiRequest({
+      method: "GET",
+      path: `/trust/history?agentId=${encodeURIComponent(agentId)}`,
+      ...options,
+    });
+  });
+operationsCommand
+  .command("identity-events")
+  .description("List identity lifecycle events")
+  .option("-k, --key <key>", "service account API key")
+  .option("-u, --url <url>", "control plane URL")
+  .option("-q, --query <key=value...>", "query parameter; may be repeated")
+  .option("--output <format>", "output format: text (default) or json")
+  .action(async (options) => {
+    const { apiRequest } = await import("./api.js");
+    await apiRequest({ method: "GET", path: "/identity/events", ...options });
+  });
+
+const evidenceCommand = apiCommand
+  .command("evidence")
+  .description("Ingest, retain, export, and attest governance evidence");
+
+for (const [name, path, description] of [
+  ["generic-json", "/ingest/providers/generic_json", "Ingest mapped generic JSON evidence"],
+  ["generic-ndjson", "/ingest/providers/generic_ndjson", "Ingest mapped NDJSON evidence"],
+  [
+    "docker-ai-governance",
+    "/ingest/providers/docker_ai_governance",
+    "Ingest Docker AI Governance evidence",
+  ],
+  ["cloudevent", "/ingest/cloudevents", "Ingest a CloudEvent"],
+  ["otlp-logs", "/logs", "Ingest OTLP/HTTP JSON logs"],
+  ["mcp-event", "/gateway-ingest/mcp", "Ingest an MCP gateway event"],
+  ["agt-escalation", "/gateway/escalations/agt", "Register an AGT escalation request"],
+  ["git-checkpoint", "/evidence/git-checkpoints", "Ingest a Git checkpoint and diff"],
+  ["policy-artifact-retain", "/evidence/policy-artifacts", "Retain exact policy artifact bytes"],
+  [
+    "publication-artifact-retain",
+    "/evidence/publication-artifacts",
+    "Retain exact publication artifact bytes",
+  ],
+  ["publication-attest", "/evidence/publications", "Ingest immutable publication facts"],
+  [
+    "signing-key-challenge",
+    "/evidence/publication-signing-keys/challenges",
+    "Create a signing-key possession challenge",
+  ],
+] as const) {
+  addApiWriteCommand(evidenceCommand, name, path, description);
+}
+
+for (const [name, path, description] of [
+  [
+    "policy-artifact <contentHash>",
+    "/evidence/policy-artifacts",
+    "Read a retained policy artifact",
+  ],
+  [
+    "publication-artifact <hash>",
+    "/evidence/publication-artifacts",
+    "Export a retained publication artifact",
+  ],
+  ["publications", "/evidence/publications", "List immutable publication attestations"],
+  ["signing-keys", "/evidence/publication-signing-keys", "List trusted publication signing keys"],
+  ["forensic", "/evidence/forensic", "Query forensic archival evidence (Cloud)"],
+] as const) {
+  if (name.includes("<")) continue;
+  addApiReadCommand(evidenceCommand, name, path, description);
+}
+
+evidenceCommand
+  .command("policy-artifact <contentHash>")
+  .description("Read a retained policy artifact")
+  .option("-k, --key <key>", "service account API key")
+  .option("-u, --url <url>", "control plane URL")
+  .option("-o, --output-file <path>", "write artifact bytes to a file")
+  .option("--output <format>", "output format: text (default) or json")
+  .action(async (contentHash: string, options) => {
+    const { apiRequest } = await import("./api.js");
+    await apiRequest({
+      method: "GET",
+      path: `/evidence/policy-artifacts/${encodeURIComponent(contentHash)}`,
+      ...options,
+    });
+  });
+evidenceCommand
+  .command("publication-artifact <hash>")
+  .description("Export a retained publication artifact")
+  .option("-k, --key <key>", "service account API key")
+  .option("-u, --url <url>", "control plane URL")
+  .option("-o, --output-file <path>", "write artifact bytes to a file")
+  .option("--output <format>", "output format: text (default) or json")
+  .action(async (hash: string, options) => {
+    const { apiRequest } = await import("./api.js");
+    await apiRequest({
+      method: "GET",
+      path: `/evidence/publication-artifacts/${encodeURIComponent(hash)}`,
+      ...options,
+    });
+  });
+evidenceCommand
+  .command("publication <id>")
+  .description("Get an immutable publication attestation")
+  .option("-k, --key <key>", "service account API key")
+  .option("-u, --url <url>", "control plane URL")
+  .option("--output <format>", "output format: text (default) or json")
+  .action(async (id: string, options) => {
+    const { apiRequest } = await import("./api.js");
+    await apiRequest({
+      method: "GET",
+      path: `/evidence/publications/${encodeURIComponent(id)}`,
+      ...options,
+    });
+  });
+addApiWriteCommand(
+  evidenceCommand,
+  "signing-key-enroll",
+  "/evidence/publication-signing-keys",
+  "Enroll or rotate an ownership-verified publication signing key",
+  { sensitive: true },
+);
+evidenceCommand
+  .command("signing-key-revoke <id>")
+  .description("Revoke an enrolled publication signing key")
+  .option("-k, --key <key>", "service account API key")
+  .option("-u, --url <url>", "control plane URL")
+  .requiredOption("--yes", "confirm signing-key revocation")
+  .option("--output <format>", "output format: text (default) or json")
+  .action(async (id: string, options) => {
+    const { apiRequest } = await import("./api.js");
+    await apiRequest({
+      method: "DELETE",
+      path: `/evidence/publication-signing-keys/${encodeURIComponent(id)}`,
+      ...options,
+    });
+  });
+
+const trustCommand = apiCommand.command("trust").description("Trust and context-budget governance");
+addApiReadCommand(
+  trustCommand,
+  "history",
+  "/trust/history",
+  "List trust-score history; pass agentId with --query",
+);
+for (const [name, path, description] of [
+  ["ingest", "/trust/ingest", "Ingest a trust-score observation"],
+  ["evaluate", "/trust/evaluate", "Evaluate trust governance"],
+  ["context-budget", "/trust/context-budget", "Ingest context-budget telemetry"],
+] as const) {
+  addApiWriteCommand(trustCommand, name, path, description);
+}
+
+const custodyCommand = apiCommand
+  .command("custody")
+  .description("Retain byte-exact published policy bundle custody");
+addApiWriteCommand(
+  custodyCommand,
+  "retain",
+  "/bundle/latest/custody",
+  "Retain exact bytes of the latest published policy bundle",
+  { allowEmptyBody: true },
+);
+
+const scimCommand = apiCommand.command("scim").description("SCIM 2.0 user provisioning (Cloud)");
+addApiReadCommand(scimCommand, "users", "/scim/v2/Users", "List SCIM users");
+addApiWriteCommand(scimCommand, "create-user", "/scim/v2/Users", "Create a SCIM user");
+
 program
   .command("watch")
   .description("Continuously sync the latest approved policy bundle")

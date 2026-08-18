@@ -263,7 +263,7 @@ def _spctre_emit(
         "rawEvidence": raw_evidence,
     }
     try:
-        _http_json("/api/evidence", payload, timeout_seconds)
+        _http_json("/api/v1/evidence", payload, timeout_seconds)
     except Exception as exc:
         if warn_on_failure:
             print(

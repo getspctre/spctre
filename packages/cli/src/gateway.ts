@@ -90,7 +90,7 @@ export async function requestGatewayDecision(
     toolParameters?: Record<string, unknown>;
   },
 ): Promise<GatewayDecisionResponse | null> {
-  const url = `${gwConfig.gatewayUrl}/api/gateway/decide`;
+  const url = `${gwConfig.gatewayUrl}/api/v1/gateway/decide`;
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 3000);
@@ -129,7 +129,7 @@ export async function pollEscalationResolution(
   decisionId: string,
 ): Promise<EscalationStatusResponse> {
   const startTime = Date.now();
-  const url = `${gwConfig.gatewayUrl}/api/gateway/escalations/status?decisionId=${encodeURIComponent(decisionId)}`;
+  const url = `${gwConfig.gatewayUrl}/api/v1/gateway/escalations/status?decisionId=${encodeURIComponent(decisionId)}`;
 
   while (true) {
     const elapsed = Date.now() - startTime;

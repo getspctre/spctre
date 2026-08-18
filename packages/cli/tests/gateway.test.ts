@@ -125,7 +125,7 @@ describe("CLI Gateway Integration", () => {
         toolIntent: "post alert",
       });
 
-      expect(fetchSpy).toHaveBeenCalledWith("https://gw.test/api/gateway/decide", {
+      expect(fetchSpy).toHaveBeenCalledWith("https://gw.test/api/v1/gateway/decide", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: "Bearer token-123" },
         body: JSON.stringify({

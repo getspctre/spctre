@@ -57,7 +57,7 @@ async function checkConnectivity(
 ): Promise<ConnectivityStatus> {
   if (format === "text") process.stderr.write("\nChecking connectivity...");
   try {
-    const url = `${config.controlPlaneUrl.replace(/\/+$/, "")}/api/bundle/latest?workspace=${encodeURIComponent(config.workspaceId)}`;
+    const url = `${config.controlPlaneUrl.replace(/\/+$/, "")}/api/v1/bundle/latest?workspace=${encodeURIComponent(config.workspaceId)}`;
     const start = Date.now();
     const res = await fetch(url, {
       headers: { Authorization: `Bearer ${config.token}` },

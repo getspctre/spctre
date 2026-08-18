@@ -132,7 +132,7 @@ const frameworkAdapters: FrameworkAdapterStrategy[] = [
     details: [
       "The template wraps each tool call with spctreGoverned(), calling evaluate_policy",
       "before execution. On ESCALATE the Notion approval loop URL is returned to defer",
-      "execution to a human reviewer. Evidence is posted to /api/gateway-ingest/notion",
+      "execution to a human reviewer. Evidence is posted to /api/v1/gateway-ingest/notion",
       "after each call. Replace the placeholder handler logic with your agent tool calls.",
     ],
     write: writeNotionWorkerAdapter,

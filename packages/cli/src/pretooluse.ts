@@ -276,7 +276,7 @@ async function postEvidence(
   config: SpctreCliConfig,
   payload: AgtRuntimeDecisionInput,
 ): Promise<void> {
-  const url = `${config.controlPlaneUrl.replace(/\/+$/, "")}/api/evidence`;
+  const url = `${config.controlPlaneUrl.replace(/\/+$/, "")}/api/v1/evidence`;
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 3000);
 

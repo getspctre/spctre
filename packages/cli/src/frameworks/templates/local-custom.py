@@ -53,7 +53,7 @@ def spctre_record_action(
         },
     }
     req = urllib.request.Request(
-        f"{_SPCTRE_URL}/api/evidence",
+        f"{_SPCTRE_URL}/api/v1/evidence",
         data=json.dumps(payload).encode(),
         headers={
             "Content-Type": "application/json",

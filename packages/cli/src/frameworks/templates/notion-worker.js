@@ -18,7 +18,7 @@ const SPCTRE_ARTIFACT_HASH = process.env.SPCTRE_ARTIFACT_HASH || "__SPCTRE_ARTIF
 
 /**
  * Posts a governance evidence record to the Spctre control plane.
- * Uses the /api/gateway/ingest/notion endpoint so the record is stored with
+ * Uses the /api/v1/gateway-ingest/notion endpoint so the record is stored with
  * gateway source badge and provenance_gap indicator in the Evidence ledger.
  */
 async function spctreIngestEvent({
@@ -47,7 +47,7 @@ async function spctreIngestEvent({
     _spctre_reason: reason,
   };
   try {
-    const res = await fetch(`${SPCTRE_URL}/api/gateway-ingest/notion`, {
+    const res = await fetch(`${SPCTRE_URL}/api/v1/gateway-ingest/notion`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -72,7 +72,7 @@ async function spctreIngestEvent({
 async function spctreEvaluatePolicy({ agentId, connector, action, environment }) {
   if (!SPCTRE_KEY) return { decision: "PROCEED" };
   try {
-    const res = await fetch(`${SPCTRE_URL}/api/evaluate`, {
+    const res = await fetch(`${SPCTRE_URL}/api/v1/evaluate`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${SPCTRE_KEY}` },
       body: JSON.stringify({
