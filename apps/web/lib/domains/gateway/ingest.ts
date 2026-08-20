@@ -1,5 +1,6 @@
 import { ingestAgtRuntimeDecision } from "@spctre/policy-schema";
 import type { RuntimePolicyContext } from "@spctre/policy-schema";
+import { GatewayEventV1Schema, z } from "@spctre/api-contracts";
 import { appendOperationsLog } from "@/lib/repositories/operations-log";
 import { resolveRevisionAtTime } from "@/lib/repositories/gateway";
 import { insertGatewayEvidenceEvent } from "@/lib/repositories/evidence";
@@ -9,22 +10,28 @@ import { logger } from "@spctre/platform/logging";
 import { incrementCounter, recordDuration } from "@spctre/platform/metrics";
 import { swallow } from "@/lib/platform/swallow";
 
-export type GatewayProvider = "portkey" | "helicone" | "litellm" | "notion";
+export type GatewayEventV1 = z.infer<typeof GatewayEventV1Schema>;
+export type GatewayProvider = GatewayEventV1["provider"];
 
-export interface GatewayEventV1 {
-  provider: GatewayProvider;
-  gatewayEventId: string;
-  model: string;
-  agentId: string;
-  connector: string;
-  action: string;
-  toolDeclarations: string[];
-  promptTokens: number;
-  completionTokens: number;
-  latencyMs: number;
-  costUsd: number | undefined;
-  eventTimestamp: string;
-  rawEvent: Record<string, unknown>;
+export class GatewayEventValidationError extends Error {
+  readonly code = "INVALID_GATEWAY_EVENT";
+
+  constructor(readonly issues: Array<{ path: string; message: string }>) {
+    super("Normalized gateway event failed spctre.gateway.event.v1 validation.");
+    this.name = "GatewayEventValidationError";
+  }
+}
+
+function validateGatewayEvent(event: unknown): GatewayEventV1 {
+  const parsed = GatewayEventV1Schema.safeParse(event);
+  if (parsed.success) return parsed.data;
+
+  throw new GatewayEventValidationError(
+    parsed.error.issues.map((issue) => ({
+      path: issue.path.join(".") || "(root)",
+      message: issue.message,
+    })),
+  );
 }
 
 /**
@@ -122,7 +129,7 @@ export function normalizePortkeyEvent(raw: Record<string, unknown>): GatewayEven
   const timestamp =
     stringField(raw, "timestamp") ?? stringField(raw, "created_at") ?? new Date().toISOString();
 
-  return {
+  return validateGatewayEvent({
     provider: "portkey",
     gatewayEventId: id,
     model: stringField(raw, "model") ?? "unknown",
@@ -136,7 +143,7 @@ export function normalizePortkeyEvent(raw: Record<string, unknown>): GatewayEven
     costUsd: numberField(raw, "cost") ?? undefined,
     eventTimestamp: timestamp,
     rawEvent: raw,
-  };
+  });
 }
 
 /**
@@ -163,7 +170,7 @@ export function normalizeHeliconeEvent(raw: Record<string, unknown>): GatewayEve
   const timestamp =
     stringField(data, "created_at") ?? stringField(raw, "created_at") ?? new Date().toISOString();
 
-  return {
+  return validateGatewayEvent({
     provider: "helicone",
     gatewayEventId: id,
     model: stringField(data, "model") ?? "unknown",
@@ -180,7 +187,7 @@ export function normalizeHeliconeEvent(raw: Record<string, unknown>): GatewayEve
     costUsd: numberField(cost, "total") ?? undefined,
     eventTimestamp: timestamp,
     rawEvent: raw,
-  };
+  });
 }
 
 /**
@@ -216,7 +223,7 @@ export function normalizeLitellmEvent(raw: Record<string, unknown>): GatewayEven
       ? new Date(startMs * 1000).toISOString()
       : (stringField(raw, "created_at") ?? new Date().toISOString());
 
-  return {
+  return validateGatewayEvent({
     provider: "litellm",
     gatewayEventId: id,
     model: stringField(raw, "model") ?? "unknown",
@@ -233,7 +240,7 @@ export function normalizeLitellmEvent(raw: Record<string, unknown>): GatewayEven
     costUsd: numberField(metadata, "spend") ?? undefined,
     eventTimestamp: timestamp,
     rawEvent: raw,
-  };
+  });
 }
 
 /**
@@ -255,7 +262,7 @@ export function normalizeNotionEvent(raw: Record<string, unknown>): GatewayEvent
   const timestamp =
     stringField(raw, "created_at") ?? stringField(raw, "timestamp") ?? new Date().toISOString();
 
-  return {
+  return validateGatewayEvent({
     provider: "notion",
     gatewayEventId: id,
     model: stringField(raw, "model") ?? "unknown",
@@ -270,7 +277,7 @@ export function normalizeNotionEvent(raw: Record<string, unknown>): GatewayEvent
     costUsd: numberField(raw, "cost_usd") ?? undefined,
     eventTimestamp: timestamp,
     rawEvent: raw,
-  };
+  });
 }
 
 // ─── DB Ingest ───────────────────────────────────────────────────────────────
@@ -295,6 +302,7 @@ export async function ingestNormalizedGatewayEvent(
   principalId: string,
   environment: string,
 ): Promise<GatewayIngestResult> {
+  event = validateGatewayEvent(event);
   const started = Date.now();
 
   const revision = await resolveRevisionAtTime(tenantId, workspaceId, event.eventTimestamp);

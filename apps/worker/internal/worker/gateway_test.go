@@ -2,9 +2,33 @@ package worker
 
 import (
 	"encoding/json"
+	"reflect"
 	"strings"
 	"testing"
 )
+
+func TestGatewayEventMatchesPublicContractFieldSet(t *testing.T) {
+	typeOfEvent := reflect.TypeOf(gatewayEvent{})
+	actual := make(map[string]bool, typeOfEvent.NumField())
+	for i := 0; i < typeOfEvent.NumField(); i++ {
+		field := typeOfEvent.Field(i)
+		jsonName := strings.Split(field.Tag.Get("json"), ",")[0]
+		if jsonName == "" || jsonName == "-" {
+			t.Fatalf("gatewayEvent field %s must have a canonical JSON name", field.Name)
+		}
+		actual[jsonName] = true
+	}
+
+	canonical := map[string]bool{
+		"provider": true, "gatewayEventId": true, "model": true, "agentId": true,
+		"connector": true, "action": true, "toolDeclarations": true, "promptTokens": true,
+		"completionTokens": true, "latencyMs": true, "costUsd": true, "eventTimestamp": true,
+		"rawEvent": true,
+	}
+	if !reflect.DeepEqual(actual, canonical) {
+		t.Fatalf("gatewayEvent fields drifted from spctre.gateway.event.v1: got %#v, want %#v", actual, canonical)
+	}
+}
 
 func validGatewayDecision() GatewayDecisionRequest {
 	return GatewayDecisionRequest{
