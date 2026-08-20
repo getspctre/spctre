@@ -1,7 +1,11 @@
 import { evidenceIngestUrl, workerInternalSecret } from "@/lib/platform/config";
 import { fetchWithRetry } from "@/lib/platform/fetch-retry";
 import { isGatewayDatabaseConfigured, ingestGatewayEvent } from "@/lib/domains/gateway/service";
-import type { GatewayEventV1, GatewayProvider } from "@/lib/domains/gateway/ingest";
+import {
+  GatewayEventValidationError,
+  type GatewayEventV1,
+  type GatewayProvider,
+} from "@/lib/domains/gateway/ingest";
 import { authenticateServiceToken, hasBearerToken } from "@/lib/service-tokens";
 import { extractTraceId, makeMeta, withTraceId } from "@spctre/api-contracts";
 import { incrementCounter } from "@spctre/platform/metrics";
@@ -131,7 +135,15 @@ export async function handleRegisteredGatewayIngest(params: {
     const raw = await readJsonBody(params.request, traceId);
     if (raw instanceof Response) return raw;
 
-    const event = params.normalize(raw);
+    let event: GatewayEventV1 | null;
+    try {
+      event = params.normalize(raw);
+    } catch (err) {
+      if (err instanceof GatewayEventValidationError) {
+        return gatewayValidationError(params.route, traceId, err);
+      }
+      throw err;
+    }
     if (!event) {
       return gatewayJsonError(params.invalidPayloadMessage, 422, traceId);
     }
@@ -180,6 +192,9 @@ export async function handleRegisteredGatewayIngest(params: {
         traceId,
       );
     } catch (err) {
+      if (err instanceof GatewayEventValidationError) {
+        return gatewayValidationError(params.route, traceId, err);
+      }
       incrementCounter("spctre.api.errors", 1, {
         "http.route": params.route,
         "http.response.status_code": 500,
@@ -252,8 +267,32 @@ async function readJsonBody(
   }
 }
 
-export function gatewayJsonError(error: string, status: number, traceId: string): Response {
-  return withTraceId(Response.json({ error, meta: makeMeta(traceId) }, { status }), traceId);
+export function gatewayJsonError(
+  error: string,
+  status: number,
+  traceId: string,
+  issues?: Array<{ path: string; message: string }>,
+): Response {
+  return withTraceId(
+    Response.json({ error, issues, meta: makeMeta(traceId) }, { status }),
+    traceId,
+  );
+}
+
+function gatewayValidationError(
+  route: string,
+  traceId: string,
+  error: GatewayEventValidationError,
+): Response {
+  incrementCounter("spctre.api.errors", 1, {
+    "http.route": route,
+    "http.response.status_code": 422,
+  });
+  console.warn("[gateway-ingest] normalized event validation failed", {
+    route,
+    issues: error.issues,
+  });
+  return gatewayJsonError("Invalid normalized gateway event.", 422, traceId, error.issues);
 }
 
 function revalidateGatewayViews() {

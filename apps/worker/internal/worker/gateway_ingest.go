@@ -26,20 +26,21 @@ type gatewayIngestRequest struct {
 	Raw         map[string]any `json:"raw"`
 }
 
+// JSON tags document spctre.gateway.event.v1 for the drift test; this struct is not serialized.
 type gatewayEvent struct {
-	Provider         gatewayIngestProvider
-	GatewayEventID   string
-	Model            string
-	AgentID          string
-	Connector        string
-	Action           string
-	ToolDeclarations []string
-	PromptTokens     int
-	CompletionTokens int
-	LatencyMS        int
-	CostUSD          *float64
-	EventTimestamp   string
-	RawEvent         map[string]any
+	Provider         gatewayIngestProvider `json:"provider"`
+	GatewayEventID   string                `json:"gatewayEventId"`
+	Model            string                `json:"model"`
+	AgentID          string                `json:"agentId"`
+	Connector        string                `json:"connector"`
+	Action           string                `json:"action"`
+	ToolDeclarations []string              `json:"toolDeclarations"`
+	PromptTokens     int                   `json:"promptTokens"`
+	CompletionTokens int                   `json:"completionTokens"`
+	LatencyMS        int                   `json:"latencyMs"`
+	CostUSD          *float64              `json:"costUsd,omitempty"`
+	EventTimestamp   string                `json:"eventTimestamp"`
+	RawEvent         map[string]any        `json:"rawEvent"`
 }
 
 type revisionAtTime struct {
