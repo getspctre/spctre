@@ -63,9 +63,10 @@
 //   }
 // `pathBase` declares what source `path` values are relative to. Only
 // "repository-root" is supported: paths resolve against the repository root. If
-// the manifest declares any other value the publisher fails rather than guess.
-// If it is absent the manifest predates the pathBase contract and paths are
-// still resolved against the repository root, with a warning.
+// the manifest declares any other value — or a non-string value — the publisher
+// fails rather than guess. If it is absent the manifest predates the pathBase
+// contract and paths are still resolved against the repository root, with a
+// warning.
 // `immutable` is optional per entry; when absent it is inferred from the URL —
 // URLs whose basename is latest.json/current.json/index.json or that contain a
 // latest/current/index segment are mutable, everything else is immutable.
@@ -141,26 +142,41 @@ function parseManifest(source) {
   }
   const manifestUrl =
     typeof data.manifestUrl === "string" ? data.manifestUrl.replace(/\/+$/, "") : "";
-  const pathBase = typeof data.pathBase === "string" ? data.pathBase : "";
-  return { registry, manifestUrl, pathBase, artifacts: data.artifacts };
+  return { registry, manifestUrl, pathBase: data.pathBase, artifacts: data.artifacts };
 }
 
+const describeValue = (value) =>
+  value === null
+    ? "null"
+    : Array.isArray(value)
+      ? "an array"
+      : typeof value === "object"
+        ? "an object"
+        : `a ${typeof value}`;
+
 function checkPathBaseContract(manifest) {
-  if (manifest.pathBase && manifest.pathBase !== "repository-root") {
+  if (manifest.pathBase === undefined) {
+    log(
+      "WARNING: the manifest does not declare a pathBase; it predates the pathBase " +
+        "contract, so source paths are resolved against the repository root as before",
+    );
+    return;
+  }
+  if (typeof manifest.pathBase !== "string") {
+    fail(
+      `the manifest declares a non-string pathBase (${describeValue(manifest.pathBase)}); ` +
+        'only "repository-root" is supported. Refusing to guess how source paths ' +
+        "resolve.",
+    );
+  }
+  if (manifest.pathBase !== "repository-root") {
     fail(
       `the manifest declares pathBase "${manifest.pathBase}", which this publisher does not ` +
         'support; only "repository-root" is supported. Refusing to guess how source ' +
         "paths resolve.",
     );
   }
-  if (manifest.pathBase) {
-    log(`source paths resolve against the repository root (pathBase "${manifest.pathBase}")`);
-  } else {
-    log(
-      "WARNING: the manifest does not declare a pathBase; it predates the pathBase " +
-        "contract, so source paths are resolved against the repository root as before",
-    );
-  }
+  log(`source paths resolve against the repository root (pathBase "${manifest.pathBase}")`);
 }
 
 function normalizeEntry(entry, index) {
