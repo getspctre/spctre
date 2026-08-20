@@ -1,4 +1,4 @@
-name: Deploy documentation to GitHub Pages
+name: Deploy documentation and schema registry to GitHub Pages
 
 on:
   push:
@@ -7,6 +7,14 @@ on:
       - apps/docs/**
       - apps/web/content/docs/**
       - apps/docs/lib/public-docs-policy.mjs
+      # The schema registry artifacts are emitted into packages/api-contracts/
+      # by the @spctre/api-contracts pipeline and are composed into the same
+      # Pages artifact (GitHub Pages allows one site per repository).
+      # packages/policy-schema/schemas/ is published in place by the registry
+      # (policy.schema.json), so changes there must redeploy too.
+      - packages/api-contracts/**
+      - packages/policy-schema/schemas/**
+      - scripts/stage-pages-artifact.mjs
       - pnpm-lock.yaml
       - pnpm-workspace.yaml
       - .github/workflows/docs-pages.yml
@@ -38,8 +46,21 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile --ignore-scripts
       - run: pnpm --filter @spctre/docs build
+      # Compose the schema registry (packages/api-contracts/schemas/manifest.json)
+      # into the same Pages artifact as the docs, then deploy once. GitHub Pages
+      # allows a single site per repository, so the registry's $ids resolve on
+      # its custom domain without a second site. This step fails loudly —
+      # before anything is uploaded — if the manifest or any listed source is
+      # missing or does not match its recorded digest, and refuses to overwrite
+      # an already-published immutable (versioned) path with different bytes.
+      - name: Stage schema registry into the Pages artifact
+        env:
+          SCHEMA_PAGES_DOCS_OUT: apps/docs/out
+          SCHEMA_PAGES_STAGING_DIR: ${{ runner.temp }}/pages-staging
+          SCHEMA_PAGES_GITHUB_REPOSITORY: ${{ github.repository }}
+        run: node scripts/stage-pages-artifact.mjs
       - uses: actions/upload-pages-artifact@v4
         with:
-          path: apps/docs/out
+          path: ${{ runner.temp }}/pages-staging
       - id: deployment
         uses: actions/deploy-pages@v4
