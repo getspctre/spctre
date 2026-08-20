@@ -476,7 +476,7 @@ function numberField(
   return typeof v === "number" && Number.isFinite(v) ? v : undefined;
 }
 
-function normalizeGatewayInteger(
+export function normalizeGatewayInteger(
   value: number | undefined,
   field: "promptTokens" | "completionTokens" | "latencyMs",
   provider: GatewayProvider,
@@ -490,7 +490,7 @@ function normalizeGatewayInteger(
   return normalized;
 }
 
-function normalizeGatewayCost(
+export function normalizeGatewayCost(
   value: number | undefined,
   provider: GatewayProvider,
 ): number | undefined {

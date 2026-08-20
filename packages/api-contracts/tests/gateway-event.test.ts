@@ -45,6 +45,23 @@ describe("GatewayEventV1Schema", () => {
     expect(GatewayEventV1Schema.safeParse(validGatewayEvent).success).toBe(true);
   });
 
+  it("accepts an omitted optional costUsd", () => {
+    const { costUsd: _costUsd, ...withoutCost } = validGatewayEvent;
+    expect(GatewayEventV1Schema.safeParse(withoutCost).success).toBe(true);
+  });
+
+  it("rejects null costUsd", () => {
+    expect(GatewayEventV1Schema.safeParse({ ...validGatewayEvent, costUsd: null }).success).toBe(
+      false,
+    );
+  });
+
+  it("rejects an unknown provider", () => {
+    expect(
+      GatewayEventV1Schema.safeParse({ ...validGatewayEvent, provider: "unknown" }).success,
+    ).toBe(false);
+  });
+
   it.each([
     "provider",
     "gatewayEventId",
