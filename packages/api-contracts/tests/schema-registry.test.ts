@@ -16,39 +16,72 @@ import {
 } from "../scripts/registry/catalog.js";
 
 /**
- * Walks a Zod schema's internal definition looking for the constructs JSON
- * Schema cannot express: value transforms, input preprocessing, and custom
- * refinements. Reaching into `_zod.def` is the only way to ask this question —
- * the public surface exposes no reflection — so this is deliberately narrow:
- * it answers "does anything here need disclosing", nothing more.
+ * Walks a Zod schema's internal definition for the constructs JSON Schema
+ * cannot express, so a disclosure can be demanded for each. Reaching into
+ * `_zod.def` is the only way to ask this question — the public surface
+ * exposes no reflection.
+ *
+ * Two categories, because they fail differently:
+ *
+ *   - `hasLogic` — transforms, preprocessing, and custom refinements. These
+ *     have no JSON Schema rendering at all, so their absence is total.
+ *   - `normalizedStrings` — fields carrying a normalizing string method
+ *     (`.trim()`, `.toLowerCase()`, …, all of which Zod records as an
+ *     `overwrite` check). These are the dangerous ones: the emitted document
+ *     keeps the `minLength` that follows the normalization but drops the
+ *     normalization itself, so it advertises acceptance of values the
+ *     service rejects. Each is returned with its path so the disclosure can
+ *     be checked for naming it.
+ *
+ * Cycle detection is scoped to the current ancestor chain rather than a
+ * single shared visited set. A global set would silently skip a schema
+ * instance reused across two fields — which is exactly how
+ * `GitCommitSchema` (`baseCommit` and `headCommit`) escapes detection.
  */
-function hasUnrepresentableLogic(schema: unknown): boolean {
-  const visited = new Set<unknown>();
+function findUnrepresentable(schema: unknown): { hasLogic: boolean; normalizedStrings: string[] } {
+  let hasLogic = false;
+  const normalizedStrings: string[] = [];
 
-  const walk = (node: unknown): boolean => {
-    if (!node || typeof node !== "object" || visited.has(node)) return false;
+  const walk = (node: unknown, path: string, ancestors: Set<unknown>): void => {
+    if (!node || typeof node !== "object" || ancestors.has(node)) return;
     const def = (node as { _zod?: { def?: Record<string, unknown> } })._zod?.def;
-    if (!def) return false;
-    visited.add(node);
+    if (!def) return;
+    const nested = new Set(ancestors).add(node);
 
-    if (def.type === "transform") return true;
-    for (const check of (def.checks ?? []) as Array<{ _zod?: { def?: { check?: string } } }>) {
-      if (check._zod?.def?.check === "custom") return true;
+    if (def.type === "transform") hasLogic = true;
+    const checks = (def.checks ?? []) as Array<{ _zod?: { def?: { check?: string } } }>;
+    for (const check of checks) {
+      const kind = check._zod?.def?.check;
+      if (kind === "custom") hasLogic = true;
+      if (kind === "overwrite" && def.type === "string") normalizedStrings.push(path);
     }
 
-    for (const key of ["innerType", "in", "out", "element", "valueType", "keyType", "schema"]) {
-      if (walk(def[key])) return true;
+    for (const key of ["innerType", "in", "out", "schema", "keyType"]) {
+      walk(def[key], path, nested);
     }
+    walk(def.element, `${path}[]`, nested);
+    walk(def.valueType, `${path}[*]`, nested);
     for (const key of ["options", "items"]) {
-      for (const child of (def[key] ?? []) as unknown[]) if (walk(child)) return true;
+      for (const [index, child] of ((def[key] ?? []) as unknown[]).entries()) {
+        walk(child, `${path}|${index}`, nested);
+      }
     }
-    for (const child of Object.values((def.shape ?? {}) as Record<string, unknown>)) {
-      if (walk(child)) return true;
+    for (const [key, child] of Object.entries((def.shape ?? {}) as Record<string, unknown>)) {
+      walk(child, path ? `${path}.${key}` : key, nested);
     }
-    return false;
   };
 
-  return walk(schema);
+  walk(schema, "", new Set());
+  return { hasLogic, normalizedStrings };
+}
+
+/** Leaf identifier of a walked path: `checkpoint.diff.files[].path` -> `path`. */
+function leafName(path: string): string {
+  const last = path.split(".").pop() ?? path;
+  return last
+    .replaceAll("[]", "")
+    .replaceAll("[*]", "")
+    .replace(/\|\d+$/, "");
 }
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "../../..");
@@ -100,11 +133,37 @@ describe("schema registry", () => {
   it("discloses every transform and refinement the emitted schema cannot express", () => {
     for (const artifact of REGISTRY_ARTIFACTS) {
       if (artifact.source !== "zod") continue;
-      if (!hasUnrepresentableLogic(artifact.schema)) continue;
+      if (!findUnrepresentable(artifact.schema).hasLogic) continue;
       expect(
         artifact.unrepresentable,
         `${artifactId(artifact)} carries a transform or refinement with no \`unrepresentable\` disclosure`,
       ).toBeTruthy();
+    }
+  });
+
+  // Normalized strings need a stronger check than "some prose exists".
+  // `z.string().trim().min(1)` emits `minLength: 1` and drops the trim, so
+  // the published document accepts `" "` while the service rejects it. A
+  // disclosure that omits the field is exactly as misleading as no
+  // disclosure, so require the field's own name to appear in the text.
+  it("names every normalized string field in its disclosure", () => {
+    for (const artifact of REGISTRY_ARTIFACTS) {
+      if (artifact.source !== "zod") continue;
+      const { normalizedStrings } = findUnrepresentable(artifact.schema);
+      if (normalizedStrings.length === 0) continue;
+
+      const disclosure = artifact.unrepresentable;
+      expect(
+        disclosure,
+        `${artifactId(artifact)} normalizes ${normalizedStrings.length} string field(s) with no \`unrepresentable\` disclosure`,
+      ).toBeTruthy();
+
+      for (const path of new Set(normalizedStrings.map(leafName))) {
+        expect(
+          disclosure,
+          `${artifactId(artifact)} trims or otherwise normalizes \`${path}\` without naming it in the disclosure, so the published $comment understates what the API rejects`,
+        ).toContain(path);
+      }
     }
   });
 

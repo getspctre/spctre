@@ -33,6 +33,14 @@ import {
 const MANIFEST_URL = `${REGISTRY_BASE}/manifest.json`;
 const MANIFEST_PATH = `${EMIT_ROOT}/manifest.json`;
 
+/**
+ * Value of the manifest's `pathBase` field: every `path` it lists is relative
+ * to the repository root. Published as an explicit contract term because the
+ * manifest is consumed by a separate publishing pipeline that has only the
+ * JSON to go on.
+ */
+const PATH_BASE = "repository-root";
+
 interface ManifestEntry {
   id: string;
   kind: string;
@@ -180,6 +188,13 @@ export async function emitRegistry(repoRoot: string, specRevision: string): Prom
     registry: `${REGISTRY_BASE}/`,
     manifestUrl: MANIFEST_URL,
     dialect: JSON_SCHEMA_DIALECT,
+    // Declares how every `path` below is to be resolved, so a consumer
+    // reading only this JSON does not have to guess between the checkout
+    // root, this file's own directory, and its working directory. It matters
+    // because two artifacts publish in place from outside `EMIT_ROOT`
+    // (the OpenAPI document and the policy bundle schema): resolving from
+    // the wrong root silently drops them rather than erroring.
+    pathBase: PATH_BASE,
     specRevision,
     artifacts: entries,
   });

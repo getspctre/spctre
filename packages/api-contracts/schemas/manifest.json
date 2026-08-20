@@ -2,6 +2,7 @@
   "registry": "https://schema.spctre.dev/",
   "manifestUrl": "https://schema.spctre.dev/manifest.json",
   "dialect": "https://json-schema.org/draft/2020-12/schema",
+  "pathBase": "repository-root",
   "specRevision": "2026-01.1",
   "artifacts": [
     {
@@ -11,7 +12,7 @@
       "description": "Self-description an enforcement-runtime adapter presents when registering with the control plane.",
       "url": "https://schema.spctre.dev/adapter/declaration/v1.json",
       "path": "packages/api-contracts/schemas/adapter/declaration/v1.json",
-      "sha256": "f0894d521741ad85dba7ca2634daa2d46d87a595b9dbceaa586120f00e83b48b"
+      "sha256": "b5274158a12fd91053bd90f162d81fbffb9dfadf3cfe0aa4985c3968fb3a0e92"
     },
     {
       "id": "spctre.evidence.enforcement-decision.v1",
@@ -29,7 +30,7 @@
       "description": "Body accepted by the evidence erasure endpoint (right-to-erasure workflows).",
       "url": "https://schema.spctre.dev/evidence/erase-request/v1.json",
       "path": "packages/api-contracts/schemas/evidence/erase-request/v1.json",
-      "sha256": "6fdbf9467f285c33ca0a2ab40aaacdb9dc6d2f526bd896caa74673be24bb52cb"
+      "sha256": "b5a9087257f26c5105de47a37cf2770afe8fb4362edcbb8d37bb96206a4851a0"
     },
     {
       "id": "spctre.evidence.evaluate.v1",
@@ -92,7 +93,7 @@
       "description": "Body accepted when recording a git checkpoint as evidence of an agent's change.",
       "url": "https://schema.spctre.dev/git/checkpoint-ingest/v1.json",
       "path": "packages/api-contracts/schemas/git/checkpoint-ingest/v1.json",
-      "sha256": "6d9f2b1ad5c3f23938edd8e02232159f26989447bafd680fba6db5cf5192a180"
+      "sha256": "e7c557a5eabbaa5b3712b5e281830d836f6779771d63758f0db09da0409d6a18"
     },
     {
       "id": "spctre.openapi.spctre-api.2026-01",
