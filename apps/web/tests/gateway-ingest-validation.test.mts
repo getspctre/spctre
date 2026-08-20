@@ -42,6 +42,10 @@ class TestGatewayEventValidationError extends Error {
 
 vi.mock("@/lib/domains/gateway/ingest", () => ({
   GatewayEventValidationError: TestGatewayEventValidationError,
+  normalizeGatewayInteger: (value: number | undefined) =>
+    Math.min(Number.MAX_SAFE_INTEGER, Math.max(0, Math.round(value ?? 0))),
+  normalizeGatewayCost: (value: number | undefined) =>
+    value === undefined ? undefined : Math.max(0, value),
 }));
 
 const { handleRegisteredGatewayIngest } = await import("../app/api/gateway-ingest/_shared");
@@ -134,7 +138,7 @@ describe("gateway ingest validation boundaries", () => {
 
     expect(response.status).toBe(201);
     expect(state.ingestGatewayEvent).toHaveBeenCalledWith(
-      expect.objectContaining({ event: expect.objectContaining({ latencyMs: 187 }) }),
+      expect.objectContaining({ event: expect.objectContaining({ latencyMs: 188 }) }),
     );
   });
 
