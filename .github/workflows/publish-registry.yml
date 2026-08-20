@@ -24,7 +24,7 @@
 # secret (a fine-grained PAT), which GITHUB_TOKEN cannot grant across
 # repositories. Publishing fails closed with a clear message if it is absent.
 # The target repository is read from the SCHEMA_REGISTRY_REPO repository
-# variable (default getspctre/schema-registry) and the branch from
+# variable (default getspctre/schema) and the branch from
 # SCHEMA_REGISTRY_BRANCH (default main).
 
 name: Publish schema registry to its Pages repository
@@ -67,12 +67,12 @@ jobs:
           SCHEMA_PAGES_STAGING_DIR: ${{ runner.temp }}/registry-staging
           SCHEMA_PAGES_INDEX_PATH: manifest.json
           SCHEMA_PAGES_CNAME: schema.spctre.dev
-          SCHEMA_PAGES_GITHUB_REPOSITORY: ${{ vars.SCHEMA_REGISTRY_REPO || 'getspctre/schema-registry' }}
+          SCHEMA_PAGES_GITHUB_REPOSITORY: ${{ vars.SCHEMA_REGISTRY_REPO || 'getspctre/schema' }}
         run: node scripts/stage-pages-artifact.mjs
 
       - name: Publish to the registry repository
         env:
-          SCHEMA_REGISTRY_REPO: ${{ vars.SCHEMA_REGISTRY_REPO || 'getspctre/schema-registry' }}
+          SCHEMA_REGISTRY_REPO: ${{ vars.SCHEMA_REGISTRY_REPO || 'getspctre/schema' }}
           SCHEMA_REGISTRY_BRANCH: ${{ vars.SCHEMA_REGISTRY_BRANCH || 'main' }}
           SCHEMA_REGISTRY_TOKEN: ${{ secrets.SCHEMA_REGISTRY_TOKEN }}
           SCHEMA_REGISTRY_STAGING_DIR: ${{ runner.temp }}/registry-staging

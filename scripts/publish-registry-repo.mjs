@@ -14,6 +14,11 @@
 // must provision. GITHUB_TOKEN cannot write to a different repository, so this
 // script fails closed with a clear message if the token is absent.
 //
+// The generated tree owns every path except an explicit allowlist
+// (README.md and LICENSE), which are preserved across publishes so the
+// repository keeps its own documentation and licence; they are never deleted,
+// overwritten, or swept into the publish commit.
+//
 // Publishing by pushing the built tree is chosen over repository_dispatch so
 // that every publish is gated by the verification in stage-pages-artifact.mjs
 // (digests, pathBase contract, immutable-overwrite probe) and so the target
@@ -144,17 +149,42 @@ async function main() {
       }
     }
 
+    // Preserve the repository's own documentation and licence. The registry
+    // tree is generated content, so it owns every other path, but a public
+    // repository should keep its README and LICENSE intact across publishes.
+    const preserved = ["README.md", "LICENSE"];
+
     const tracked = runGit(["ls-files"], "list tracked files", work).trim();
-    if (tracked) {
-      runGit(["rm", "-r", "--quiet", "--ignore-unmatch", "."], "clear the registry branch", work);
+    const toRemove = tracked.split("\n").filter((file) => file && !preserved.includes(file));
+    if (toRemove.length > 0) {
+      runGit(
+        ["rm", "-r", "--quiet", "--ignore-unmatch", ...toRemove],
+        "clear the registry branch (preserving README.md and LICENSE)",
+        work,
+      );
     }
 
     for (const name of readdirSync(staging)) {
       await cp(join(staging, name), join(work, name), { recursive: true });
     }
     runGit(["add", "-A"], "stage registry files", work);
+    // Keep preserved files out of the publish commit: they are not generated
+    // by the registry, so operator edits to them must survive a publish
+    // untouched (and must not be swept into the commit).
+    const preservedTracked = runGit(
+      ["ls-files", "--", ...preserved],
+      "list preserved files",
+      work,
+    ).trim();
+    if (preservedTracked) {
+      runGit(
+        ["reset", "--quiet", "--", ...preserved],
+        "exclude preserved files from the publish commit",
+        work,
+      );
+    }
 
-    const pending = runGit(["status", "--porcelain"], "read the working tree status", work).trim();
+    const pending = runGit(["diff", "--cached", "--name-only"], "read staged changes", work).trim();
     if (!pending) {
       log(`registry tree is unchanged; ${repo}#${branch} already matches`);
       return;
