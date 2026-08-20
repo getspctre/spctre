@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const { warnSpy, incrementCounterSpy } = vi.hoisted(() => ({
   warnSpy: vi.fn(),
@@ -18,6 +18,10 @@ const { normalizeHeliconeEvent, normalizeLitellmEvent } =
   await import("../lib/domains/gateway/ingest");
 
 describe("gateway event numeric normalization", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   it("clamps negative LiteLLM latency instead of dropping the event", () => {
     const event = normalizeLitellmEvent({ id: "litellm-1", startTime: 20, endTime: 10 });
 
@@ -29,6 +33,7 @@ describe("gateway event numeric normalization", () => {
     expect(incrementCounterSpy).toHaveBeenCalledWith("spctre.gateway.event.normalized", 1, {
       provider: "litellm",
       field: "latencyMs",
+      reason: "clamped",
     });
   });
 
@@ -41,9 +46,11 @@ describe("gateway event numeric normalization", () => {
     });
 
     expect(event).toMatchObject({ promptTokens: 2, completionTokens: 2 });
-    expect(warnSpy).toHaveBeenCalledWith(
-      "Gateway event numeric field normalized",
-      expect.objectContaining({ provider: "helicone", field: "promptTokens" }),
-    );
+    expect(incrementCounterSpy).toHaveBeenCalledWith("spctre.gateway.event.normalized", 1, {
+      provider: "helicone",
+      field: "promptTokens",
+      reason: "rounded",
+    });
+    expect(warnSpy).not.toHaveBeenCalled();
   });
 });

@@ -192,6 +192,9 @@ export async function handleRegisteredGatewayIngest(params: {
         traceId,
       );
     } catch (err) {
+      if (err instanceof GatewayEventValidationError) {
+        return gatewayValidationError(params.route, traceId, err);
+      }
       incrementCounter("spctre.api.errors", 1, {
         "http.route": params.route,
         "http.response.status_code": 500,
