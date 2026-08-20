@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schema.spctre.dev/gateway/resolve-request/v1.json",
+  "title": "Gateway Resolution Request",
+  "description": "Body accepted when resolving a previously escalated gateway decision.",
+  "type": "object",
+  "properties": {
+    "queueId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "resolutionOutcome": {
+      "type": "string",
+      "enum": [
+        "PROCEED",
+        "ESCALATE",
+        "ABORT"
+      ]
+    },
+    "resolutionNote": {
+      "type": "string"
+    },
+    "agentGuidance": {
+      "type": "string",
+      "maxLength": 2000
+    }
+  },
+  "required": [
+    "queueId",
+    "resolutionOutcome"
+  ]
+}

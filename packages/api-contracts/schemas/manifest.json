@@ -1,0 +1,170 @@
+{
+  "registry": "https://schema.spctre.dev/",
+  "manifestUrl": "https://schema.spctre.dev/manifest.json",
+  "dialect": "https://json-schema.org/draft/2020-12/schema",
+  "specRevision": "2026-01.1",
+  "artifacts": [
+    {
+      "id": "spctre.adapter.declaration.v1",
+      "kind": "json-schema",
+      "title": "Adapter Declaration",
+      "description": "Self-description an enforcement-runtime adapter presents when registering with the control plane.",
+      "url": "https://schema.spctre.dev/adapter/declaration/v1.json",
+      "path": "packages/api-contracts/schemas/adapter/declaration/v1.json",
+      "sha256": "ce1914cbe20c15ef4d96509f7ac99fa995161dea1c09818602c11cecf569fcee"
+    },
+    {
+      "id": "spctre.evidence.enforcement-decision.v1",
+      "kind": "json-schema",
+      "title": "Canonical Enforcement Decision",
+      "description": "Closed vocabulary every adapter normalizes a runtime's native verdict into.",
+      "url": "https://schema.spctre.dev/evidence/enforcement-decision/v1.json",
+      "path": "packages/api-contracts/schemas/evidence/enforcement-decision/v1.json",
+      "sha256": "f7195dc71afa5c47bf386108bb22b23dbde1224aa87799b5d927b51cb7005397"
+    },
+    {
+      "id": "spctre.evidence.erase-request.v1",
+      "kind": "json-schema",
+      "title": "Evidence Erasure Request",
+      "description": "Body accepted by the evidence erasure endpoint (right-to-erasure workflows).",
+      "url": "https://schema.spctre.dev/evidence/erase-request/v1.json",
+      "path": "packages/api-contracts/schemas/evidence/erase-request/v1.json",
+      "sha256": "90d533977a90a215065cb4d216d555830de5845c8a98931e80e1f28376f3fdc6"
+    },
+    {
+      "id": "spctre.evidence.evaluate.v1",
+      "kind": "json-schema",
+      "title": "Decision Evaluation Request",
+      "description": "Body accepted by POST /api/v1/decision/evaluate: a proposed action submitted for a governance decision.",
+      "url": "https://schema.spctre.dev/evidence/evaluate/v1.json",
+      "path": "packages/api-contracts/schemas/evidence/evaluate/v1.json",
+      "sha256": "bb753f22f26960e40691bf849bbf614b71816e2c8b249b67e82bafa5404c969e"
+    },
+    {
+      "id": "spctre.evidence.field-mapping.v1",
+      "kind": "json-schema",
+      "title": "Generic Evidence Field Mapping",
+      "description": "Declarative mapping that projects an arbitrary runtime payload onto the canonical evidence shape.",
+      "url": "https://schema.spctre.dev/evidence/field-mapping/v1.json",
+      "path": "packages/api-contracts/schemas/evidence/field-mapping/v1.json",
+      "sha256": "93c7a8733ba291e09aacca9adfe941a198432a93123fde5000fc90b34609dc19"
+    },
+    {
+      "id": "spctre.evidence.ingest.v1",
+      "kind": "json-schema",
+      "title": "Evidence Ingest Request",
+      "description": "Body accepted by POST /api/v1/evidence: one governed runtime action recorded as evidence.",
+      "url": "https://schema.spctre.dev/evidence/ingest/v1.json",
+      "path": "packages/api-contracts/schemas/evidence/ingest/v1.json",
+      "sha256": "a8a6f88955bf3fc619b148974ff75bd6f9c75d3daeb2e9602ddc3ffdf6639a18"
+    },
+    {
+      "id": "spctre.evidence.runtime-stack.v1",
+      "kind": "json-schema",
+      "title": "Runtime Stack",
+      "description": "Closed vocabulary of enforcement runtimes an evidence record or decision may originate from.",
+      "url": "https://schema.spctre.dev/evidence/runtime-stack/v1.json",
+      "path": "packages/api-contracts/schemas/evidence/runtime-stack/v1.json",
+      "sha256": "9ad8e9fdaa7eb96c56182ab1a0c1140c1fbd9dea60d50d08ecf3992773e319e2"
+    },
+    {
+      "id": "spctre.gateway.decision-request.v1",
+      "kind": "json-schema",
+      "title": "Gateway Decision Request",
+      "description": "Body accepted by POST /api/gateway/decide: the pre-action check a governed agent makes before acting.",
+      "url": "https://schema.spctre.dev/gateway/decision-request/v1.json",
+      "path": "packages/api-contracts/schemas/gateway/decision-request/v1.json",
+      "sha256": "ed8c74946398ab704aaba129eda7cee6b6478aac58026a22b71eb517c68d783a"
+    },
+    {
+      "id": "spctre.gateway.resolve-request.v1",
+      "kind": "json-schema",
+      "title": "Gateway Resolution Request",
+      "description": "Body accepted when resolving a previously escalated gateway decision.",
+      "url": "https://schema.spctre.dev/gateway/resolve-request/v1.json",
+      "path": "packages/api-contracts/schemas/gateway/resolve-request/v1.json",
+      "sha256": "74c88ac18b64dc6f26faf4970ea029148fca20efd65370fdc253b475118eb10b"
+    },
+    {
+      "id": "spctre.git.checkpoint-ingest.v1",
+      "kind": "json-schema",
+      "title": "Git Checkpoint Ingest Request",
+      "description": "Body accepted when recording a git checkpoint as evidence of an agent's change.",
+      "url": "https://schema.spctre.dev/git/checkpoint-ingest/v1.json",
+      "path": "packages/api-contracts/schemas/git/checkpoint-ingest/v1.json",
+      "sha256": "bb4f38f66fec5588b8b350f1355f9c54b1e306c0907bf6ad602fba4c407e5aed"
+    },
+    {
+      "id": "spctre.openapi.spctre-api.2026-01",
+      "kind": "openapi",
+      "title": "Spctre API",
+      "description": "OpenAPI 3.1 description of the public /api/v1/ surface. The version segment is `info.version`, which is frozen; revisions within it are identified by the spec's `x-spctre-spec-revision`.",
+      "url": "https://schema.spctre.dev/openapi/spctre-api/2026-01.json",
+      "path": "packages/api-contracts/openapi.json",
+      "sha256": "52a0abb17243076f8cebebcfe3087d355c63c0420558ad08b1a60ef2a6e9abce"
+    },
+    {
+      "id": "spctre.policy.bundle.v1",
+      "kind": "json-schema",
+      "title": "Spctre Managed Governance Policy Bundle",
+      "description": "Hand-authored JSON Schema for the compiled policy bundle an enforcement runtime loads.",
+      "url": "https://schema.spctre.dev/policy/bundle/v1.json",
+      "path": "packages/policy-schema/schemas/policy.schema.json",
+      "sha256": "7986205b085e96c5707bc1e5be16bfbc745b309e6054ef7fdc3341fb5443c45c"
+    },
+    {
+      "id": "spctre.publication.attestation-ingest.v1",
+      "kind": "json-schema",
+      "title": "Publication Attestation Ingest Request",
+      "description": "Body accepted when submitting a signed publication attestation.",
+      "url": "https://schema.spctre.dev/publication/attestation-ingest/v1.json",
+      "path": "packages/api-contracts/schemas/publication/attestation-ingest/v1.json",
+      "sha256": "c2fa35efb610fd2f80f499e6da7aaa7c19fb9d21c03b213c637fd86b69a47628"
+    },
+    {
+      "id": "spctre.publication.signing-key-challenge.v1",
+      "kind": "json-schema",
+      "title": "Publication Signing Key Challenge Request",
+      "description": "Body accepted when requesting an enrollment challenge for a signing key.",
+      "url": "https://schema.spctre.dev/publication/signing-key-challenge/v1.json",
+      "path": "packages/api-contracts/schemas/publication/signing-key-challenge/v1.json",
+      "sha256": "1aade0454f9a0982fa1fa6999af85c02cecda3cd74db20316d95e910bed2f06f"
+    },
+    {
+      "id": "spctre.publication.signing-key-enroll.v1",
+      "kind": "json-schema",
+      "title": "Publication Signing Key Enrollment Request",
+      "description": "Body accepted when enrolling a signing key against an issued challenge.",
+      "url": "https://schema.spctre.dev/publication/signing-key-enroll/v1.json",
+      "path": "packages/api-contracts/schemas/publication/signing-key-enroll/v1.json",
+      "sha256": "d7d6b5ac6e8744a156d016b188d07ae4615775906ba5d181cadd4a8c7b6c148c"
+    },
+    {
+      "id": "spctre.publication.signing-key-revoke.v1",
+      "kind": "json-schema",
+      "title": "Publication Signing Key Revocation Request",
+      "description": "Body accepted when revoking an enrolled signing key.",
+      "url": "https://schema.spctre.dev/publication/signing-key-revoke/v1.json",
+      "path": "packages/api-contracts/schemas/publication/signing-key-revoke/v1.json",
+      "sha256": "fb9a35f1987bbd83cc392712b80fae4fba3b92c66505c6dab3e40c963264a76c"
+    },
+    {
+      "id": "spctre.token.pair-response.v1",
+      "kind": "json-schema",
+      "title": "Token Pair Response",
+      "description": "Access/refresh token pair returned by the token endpoints.",
+      "url": "https://schema.spctre.dev/token/pair-response/v1.json",
+      "path": "packages/api-contracts/schemas/token/pair-response/v1.json",
+      "sha256": "c6ddd121f46257eb2d54e7fa2b02c6d43634101521c6521d762951d6713c5946"
+    },
+    {
+      "id": "spctre.token.refresh-request.v1",
+      "kind": "json-schema",
+      "title": "Token Refresh Request",
+      "description": "Body accepted when exchanging a refresh token for a new access token pair.",
+      "url": "https://schema.spctre.dev/token/refresh-request/v1.json",
+      "path": "packages/api-contracts/schemas/token/refresh-request/v1.json",
+      "sha256": "b1458aec6ada4be178af430a690fc78c9fd18e074f219c9b5d72a1324e837af8"
+    }
+  ]
+}

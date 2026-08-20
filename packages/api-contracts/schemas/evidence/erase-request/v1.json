@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schema.spctre.dev/evidence/erase-request/v1.json",
+  "title": "Evidence Erasure Request",
+  "description": "Body accepted by the evidence erasure endpoint (right-to-erasure workflows).",
+  "$comment": "The Zod source additionally requires `before` to parse as a real calendar date and normalizes it to an ISO-8601 instant, and coerces empty selectors to absent. This document constrains only the string format.",
+  "type": "object",
+  "properties": {
+    "decisionIds": {
+      "anyOf": [
+        {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "agentId": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "before": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}(?:[T ]\\d{2}:\\d{2}(?::\\d{2}(?:\\.\\d{1,9})?)?(?:Z|[+-]\\d{2}:?\\d{2})?)?$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+}

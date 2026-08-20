@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://spctre.local/schemas/policy-bundle.schema.json",
+  "$id": "https://schema.spctre.dev/policy/bundle/v1.json",
   "title": "Spctre Managed Governance Policy Bundle",
   "type": "object",
   "required": [

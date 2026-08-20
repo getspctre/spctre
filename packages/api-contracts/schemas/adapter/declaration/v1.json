@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schema.spctre.dev/adapter/declaration/v1.json",
+  "title": "Adapter Declaration",
+  "description": "Self-description an enforcement-runtime adapter presents when registering with the control plane.",
+  "$comment": "The Zod source additionally normalizes blank strings to absent, de-duplicates the declared capability list, and defaults the surface to `api`. Those transforms are not expressible in JSON Schema.",
+  "type": "object",
+  "properties": {
+    "stack": {
+      "type": "string",
+      "enum": [
+        "AWS_BEDROCK",
+        "GOOGLE_ADK",
+        "AZURE_AI",
+        "LANGCHAIN",
+        "LANGGRAPH",
+        "CREWAI",
+        "AUTOGEN",
+        "OPENAI_AGENTS",
+        "OMNIGENT",
+        "OPENCODE",
+        "CLAUDE_CODE",
+        "HERMES",
+        "OPENCLAW",
+        "NEMOCLAW",
+        "CLAUDE_COWORK",
+        "ODYSSEUS",
+        "PAPERCLIP",
+        "LOCAL",
+        "CUSTOM"
+      ]
+    },
+    "adapterId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "adapterVersion": {
+      "type": "string"
+    },
+    "environment": {
+      "type": "string"
+    },
+    "supportedConnectors": {
+      "type": "array",
+      "items": {}
+    },
+    "capabilities": {
+      "default": {},
+      "type": "object",
+      "propertyNames": {
+        "type": "string"
+      },
+      "additionalProperties": {}
+    },
+    "registeredBy": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "stack",
+    "adapterId",
+    "supportedConnectors"
+  ]
+}
