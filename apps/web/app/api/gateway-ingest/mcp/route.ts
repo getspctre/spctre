@@ -82,7 +82,7 @@ function parsePayload(body: Record<string, unknown>): GatewayEventV1 | null {
     toolDeclarations: parseStringArray(body.tool_declarations),
     promptTokens: parseNonNegativeNumber(body.prompt_tokens, 0, true),
     completionTokens: parseNonNegativeNumber(body.completion_tokens, 0, true),
-    latencyMs: parseNonNegativeNumber(body.latency_ms, 0, false),
+    latencyMs: parseNonNegativeNumber(body.latency_ms, 0, true),
     costUsd: parseNonNegativeNumber(body.cost_usd, NaN, false) || undefined,
     eventTimestamp: parseString(body.event_timestamp) ?? new Date().toISOString(),
     rawEvent: parseObject(body.raw_event),

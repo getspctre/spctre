@@ -118,6 +118,26 @@ describe("gateway ingest validation boundaries", () => {
     );
   });
 
+  it("rounds fractional MCP latency instead of rejecting the event", async () => {
+    const response = await mcpPost(
+      new Request("https://app.example/api/gateway-ingest/mcp", {
+        method: "POST",
+        headers: { authorization: "Bearer token" },
+        body: JSON.stringify({
+          provider: "portkey",
+          gateway_event_id: "event-latency",
+          agent_id: "agent-1",
+          latency_ms: 187.5,
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(201);
+    expect(state.ingestGatewayEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ event: expect.objectContaining({ latencyMs: 187 }) }),
+    );
+  });
+
   it("returns a 422 rather than a 500 for MCP validation errors", async () => {
     state.ingestGatewayEvent.mockRejectedValueOnce(
       new TestGatewayEventValidationError([{ path: "latencyMs", message: "Invalid input" }]),

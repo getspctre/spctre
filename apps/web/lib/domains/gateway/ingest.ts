@@ -22,7 +22,7 @@ export class GatewayEventValidationError extends Error {
   }
 }
 
-function validateGatewayEvent(event: unknown): GatewayEventV1 {
+export function validateGatewayEvent(event: unknown): GatewayEventV1 {
   const parsed = GatewayEventV1Schema.safeParse(event);
   if (parsed.success) return parsed.data;
 
@@ -482,9 +482,11 @@ function normalizeGatewayInteger(
   provider: GatewayProvider,
 ): number {
   const received = value ?? 0;
-  const normalized = Math.max(0, Math.round(received));
-  if (normalized !== received)
-    recordGatewayNumericNormalization(provider, field, received, normalized);
+  const normalized = Math.min(Number.MAX_SAFE_INTEGER, Math.max(0, Math.round(received)));
+  if (normalized !== received) {
+    const reason = received < 0 || received > Number.MAX_SAFE_INTEGER ? "clamped" : "rounded";
+    recordGatewayNumericNormalization(provider, field, received, normalized, reason);
+  }
   return normalized;
 }
 
@@ -495,7 +497,7 @@ function normalizeGatewayCost(
   if (value === undefined) return undefined;
   const normalized = Math.max(0, value);
   if (normalized !== value)
-    recordGatewayNumericNormalization(provider, "costUsd", value, normalized);
+    recordGatewayNumericNormalization(provider, "costUsd", value, normalized, "clamped");
   return normalized;
 }
 
@@ -504,9 +506,20 @@ function recordGatewayNumericNormalization(
   field: "promptTokens" | "completionTokens" | "latencyMs" | "costUsd",
   received: number,
   normalized: number,
+  reason: "rounded" | "clamped",
 ) {
-  logger.warn("Gateway event numeric field normalized", { provider, field, received, normalized });
-  incrementCounter("spctre.gateway.event.normalized", 1, { provider, field });
+  const precisionDestroyed = reason === "rounded" && received > 0 && normalized === 0;
+  if (reason === "clamped" || precisionDestroyed) {
+    logger.warn("Gateway event numeric field normalized", {
+      provider,
+      field,
+      received,
+      normalized,
+      reason,
+      precisionDestroyed,
+    });
+  }
+  incrementCounter("spctre.gateway.event.normalized", 1, { provider, field, reason });
 }
 
 function objectField(
