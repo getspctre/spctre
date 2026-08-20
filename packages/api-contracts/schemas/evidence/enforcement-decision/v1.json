@@ -4,10 +4,5 @@
   "title": "Canonical Enforcement Decision",
   "description": "Closed vocabulary every adapter normalizes a runtime's native verdict into.",
   "type": "string",
-  "enum": [
-    "allow",
-    "deny",
-    "escalate",
-    "observe"
-  ]
+  "enum": ["allow", "deny", "escalate", "observe"]
 }

@@ -7,10 +7,7 @@
   "properties": {
     "occurred_at": {
       "anyOf": [
-        {
-          "type": "string",
-          "pattern": "^\\$(?:\\.[A-Za-z_][A-Za-z0-9_]*|\\[\\d+\\])*$"
-        },
+        { "type": "string", "pattern": "^\\$(?:\\.[A-Za-z_][A-Za-z0-9_]*|\\[\\d+\\])*$" },
         {
           "type": "object",
           "properties": {
@@ -21,12 +18,7 @@
             "default": {},
             "transform": {
               "type": "string",
-              "enum": [
-                "string",
-                "number",
-                "lowercase",
-                "uppercase"
-              ]
+              "enum": ["string", "number", "lowercase", "uppercase"]
             }
           }
         }
@@ -34,10 +26,7 @@
     },
     "action": {
       "anyOf": [
-        {
-          "type": "string",
-          "pattern": "^\\$(?:\\.[A-Za-z_][A-Za-z0-9_]*|\\[\\d+\\])*$"
-        },
+        { "type": "string", "pattern": "^\\$(?:\\.[A-Za-z_][A-Za-z0-9_]*|\\[\\d+\\])*$" },
         {
           "type": "object",
           "properties": {
@@ -48,12 +37,7 @@
             "default": {},
             "transform": {
               "type": "string",
-              "enum": [
-                "string",
-                "number",
-                "lowercase",
-                "uppercase"
-              ]
+              "enum": ["string", "number", "lowercase", "uppercase"]
             }
           }
         }
@@ -61,10 +45,7 @@
     },
     "source_event_id": {
       "anyOf": [
-        {
-          "type": "string",
-          "pattern": "^\\$(?:\\.[A-Za-z_][A-Za-z0-9_]*|\\[\\d+\\])*$"
-        },
+        { "type": "string", "pattern": "^\\$(?:\\.[A-Za-z_][A-Za-z0-9_]*|\\[\\d+\\])*$" },
         {
           "type": "object",
           "properties": {
@@ -75,12 +56,7 @@
             "default": {},
             "transform": {
               "type": "string",
-              "enum": [
-                "string",
-                "number",
-                "lowercase",
-                "uppercase"
-              ]
+              "enum": ["string", "number", "lowercase", "uppercase"]
             }
           }
         }
@@ -88,10 +64,7 @@
     },
     "principal_id": {
       "anyOf": [
-        {
-          "type": "string",
-          "pattern": "^\\$(?:\\.[A-Za-z_][A-Za-z0-9_]*|\\[\\d+\\])*$"
-        },
+        { "type": "string", "pattern": "^\\$(?:\\.[A-Za-z_][A-Za-z0-9_]*|\\[\\d+\\])*$" },
         {
           "type": "object",
           "properties": {
@@ -102,12 +75,7 @@
             "default": {},
             "transform": {
               "type": "string",
-              "enum": [
-                "string",
-                "number",
-                "lowercase",
-                "uppercase"
-              ]
+              "enum": ["string", "number", "lowercase", "uppercase"]
             }
           }
         }
@@ -115,10 +83,7 @@
     },
     "agent_external_id": {
       "anyOf": [
-        {
-          "type": "string",
-          "pattern": "^\\$(?:\\.[A-Za-z_][A-Za-z0-9_]*|\\[\\d+\\])*$"
-        },
+        { "type": "string", "pattern": "^\\$(?:\\.[A-Za-z_][A-Za-z0-9_]*|\\[\\d+\\])*$" },
         {
           "type": "object",
           "properties": {
@@ -129,12 +94,7 @@
             "default": {},
             "transform": {
               "type": "string",
-              "enum": [
-                "string",
-                "number",
-                "lowercase",
-                "uppercase"
-              ]
+              "enum": ["string", "number", "lowercase", "uppercase"]
             }
           }
         }
@@ -142,10 +102,7 @@
     },
     "target_resource": {
       "anyOf": [
-        {
-          "type": "string",
-          "pattern": "^\\$(?:\\.[A-Za-z_][A-Za-z0-9_]*|\\[\\d+\\])*$"
-        },
+        { "type": "string", "pattern": "^\\$(?:\\.[A-Za-z_][A-Za-z0-9_]*|\\[\\d+\\])*$" },
         {
           "type": "object",
           "properties": {
@@ -156,12 +113,7 @@
             "default": {},
             "transform": {
               "type": "string",
-              "enum": [
-                "string",
-                "number",
-                "lowercase",
-                "uppercase"
-              ]
+              "enum": ["string", "number", "lowercase", "uppercase"]
             }
           }
         }
@@ -169,10 +121,7 @@
     },
     "policy_reference": {
       "anyOf": [
-        {
-          "type": "string",
-          "pattern": "^\\$(?:\\.[A-Za-z_][A-Za-z0-9_]*|\\[\\d+\\])*$"
-        },
+        { "type": "string", "pattern": "^\\$(?:\\.[A-Za-z_][A-Za-z0-9_]*|\\[\\d+\\])*$" },
         {
           "type": "object",
           "properties": {
@@ -183,12 +132,7 @@
             "default": {},
             "transform": {
               "type": "string",
-              "enum": [
-                "string",
-                "number",
-                "lowercase",
-                "uppercase"
-              ]
+              "enum": ["string", "number", "lowercase", "uppercase"]
             }
           }
         }
@@ -196,10 +140,7 @@
     },
     "environment": {
       "anyOf": [
-        {
-          "type": "string",
-          "pattern": "^\\$(?:\\.[A-Za-z_][A-Za-z0-9_]*|\\[\\d+\\])*$"
-        },
+        { "type": "string", "pattern": "^\\$(?:\\.[A-Za-z_][A-Za-z0-9_]*|\\[\\d+\\])*$" },
         {
           "type": "object",
           "properties": {
@@ -210,12 +151,7 @@
             "default": {},
             "transform": {
               "type": "string",
-              "enum": [
-                "string",
-                "number",
-                "lowercase",
-                "uppercase"
-              ]
+              "enum": ["string", "number", "lowercase", "uppercase"]
             }
           }
         }
@@ -223,10 +159,7 @@
     },
     "enforcement_decision": {
       "anyOf": [
-        {
-          "type": "string",
-          "pattern": "^\\$(?:\\.[A-Za-z_][A-Za-z0-9_]*|\\[\\d+\\])*$"
-        },
+        { "type": "string", "pattern": "^\\$(?:\\.[A-Za-z_][A-Za-z0-9_]*|\\[\\d+\\])*$" },
         {
           "type": "object",
           "properties": {
@@ -237,21 +170,13 @@
             "default": {},
             "transform": {
               "type": "string",
-              "enum": [
-                "string",
-                "number",
-                "lowercase",
-                "uppercase"
-              ]
+              "enum": ["string", "number", "lowercase", "uppercase"]
             }
           }
         }
       ]
     }
   },
-  "required": [
-    "occurred_at",
-    "action"
-  ],
+  "required": ["occurred_at", "action"],
   "additionalProperties": false
 }

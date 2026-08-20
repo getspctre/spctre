@@ -3,17 +3,11 @@
   "$id": "https://schema.spctre.dev/gateway/decision-request/v1.json",
   "title": "Gateway Decision Request",
   "description": "Body accepted by POST /api/gateway/decide: the pre-action check a governed agent makes before acting.",
-  "$comment": "The Zod source additionally sanitizes `action`, `resource`, and `parameters`. Those transforms are not expressible in JSON Schema.",
+  "$comment": "This document describes what is accepted, not what is retained. The service then normalizes three fields in ways JSON Schema cannot express: `toolIntent` and `planSummary` are trimmed and, if still longer than 1000 and 2000 characters respectively, truncated to that length with `... [Truncated]` appended — the `maxLength` of 100000 shown here is the accept limit, not the stored length. `toolParameters` is redacted and bounded: values under secret-shaped keys (authorization, token, secret, password, credential, key, cookie, and similar) are replaced with `[REDACTED]`; string values longer than 500 characters are truncated; values that look like credentials are replaced wholesale; and traversal stops after 4 levels of nesting or 100 nodes, replacing the remainder with a truncation marker.",
   "type": "object",
   "properties": {
-    "decisionId": {
-      "type": "string",
-      "minLength": 1
-    },
-    "artifactHash": {
-      "type": "string",
-      "minLength": 1
-    },
+    "decisionId": { "type": "string", "minLength": 1 },
+    "artifactHash": { "type": "string", "minLength": 1 },
     "policyContext": {
       "minItems": 1,
       "type": "array",
@@ -22,114 +16,42 @@
         "properties": {
           "scope": {
             "type": "string",
-            "enum": [
-              "ORGANIZATION",
-              "WORKSPACE",
-              "ENVIRONMENT",
-              "CONNECTOR"
-            ]
+            "enum": ["ORGANIZATION", "WORKSPACE", "ENVIRONMENT", "CONNECTOR"]
           },
-          "branchId": {
-            "type": "string",
-            "minLength": 1
-          },
-          "revisionId": {
-            "type": "string",
-            "minLength": 1
-          },
-          "artifactHash": {
-            "type": "string",
-            "minLength": 1
-          },
-          "packId": {
-            "type": "string"
-          },
-          "packVersion": {
-            "type": "string"
-          },
-          "packOwner": {
-            "type": "string"
-          }
+          "branchId": { "type": "string", "minLength": 1 },
+          "revisionId": { "type": "string", "minLength": 1 },
+          "artifactHash": { "type": "string", "minLength": 1 },
+          "packId": { "type": "string" },
+          "packVersion": { "type": "string" },
+          "packOwner": { "type": "string" }
         },
-        "required": [
-          "scope",
-          "branchId",
-          "revisionId",
-          "artifactHash"
-        ]
+        "required": ["scope", "branchId", "revisionId", "artifactHash"]
       }
     },
-    "reason": {
-      "type": "string"
-    },
-    "consequence": {
-      "type": "string"
-    },
-    "customerTier": {
-      "type": "string"
-    },
-    "confidence": {
-      "type": "number",
-      "minimum": 0,
-      "maximum": 1
-    },
-    "amountUsd": {
-      "type": "number",
-      "minimum": 0
-    },
-    "dataSensitivity": {
-      "type": "string"
-    },
-    "trustScore": {
-      "type": "number"
-    },
+    "reason": { "type": "string" },
+    "consequence": { "type": "string" },
+    "customerTier": { "type": "string" },
+    "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+    "amountUsd": { "type": "number", "minimum": 0 },
+    "dataSensitivity": { "type": "string" },
+    "trustScore": { "type": "number" },
     "contextBudget": {
       "type": "integer",
       "minimum": -9007199254740991,
       "maximum": 9007199254740991
     },
-    "riskLevel": {
-      "type": "string",
-      "enum": [
-        "LOW",
-        "MEDIUM",
-        "HIGH",
-        "CRITICAL"
-      ]
-    },
-    "toolIntent": {
-      "type": "string",
-      "maxLength": 100000
-    },
-    "planSummary": {
-      "type": "string",
-      "maxLength": 100000
-    },
+    "riskLevel": { "type": "string", "enum": ["LOW", "MEDIUM", "HIGH", "CRITICAL"] },
+    "toolIntent": { "type": "string", "maxLength": 100000 },
+    "planSummary": { "type": "string", "maxLength": 100000 },
     "toolParameters": {
       "type": "object",
-      "propertyNames": {
-        "type": "string"
-      },
+      "propertyNames": { "type": "string" },
       "additionalProperties": {}
     },
-    "connector": {
-      "type": "string"
-    },
-    "action": {
-      "type": "string"
-    },
-    "agentId": {
-      "type": "string"
-    },
-    "sessionId": {
-      "type": "string",
-      "minLength": 1,
-      "maxLength": 256
-    }
+    "connector": { "type": "string" },
+    "action": { "type": "string" },
+    "agentId": { "type": "string" },
+    "sessionId": { "type": "string", "minLength": 1, "maxLength": 256 }
   },
-  "required": [
-    "decisionId",
-    "artifactHash",
-    "policyContext"
-  ]
+  "required": ["decisionId", "artifactHash", "policyContext"]
 }

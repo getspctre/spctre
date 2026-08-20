@@ -5,28 +5,10 @@
   "description": "Body accepted when resolving a previously escalated gateway decision.",
   "type": "object",
   "properties": {
-    "queueId": {
-      "type": "string",
-      "minLength": 1
-    },
-    "resolutionOutcome": {
-      "type": "string",
-      "enum": [
-        "PROCEED",
-        "ESCALATE",
-        "ABORT"
-      ]
-    },
-    "resolutionNote": {
-      "type": "string"
-    },
-    "agentGuidance": {
-      "type": "string",
-      "maxLength": 2000
-    }
+    "queueId": { "type": "string", "minLength": 1 },
+    "resolutionOutcome": { "type": "string", "enum": ["PROCEED", "ESCALATE", "ABORT"] },
+    "resolutionNote": { "type": "string" },
+    "agentGuidance": { "type": "string", "maxLength": 2000 }
   },
-  "required": [
-    "queueId",
-    "resolutionOutcome"
-  ]
+  "required": ["queueId", "resolutionOutcome"]
 }

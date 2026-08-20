@@ -19,11 +19,20 @@ import { emitRegistry } from "./registry/emit.js";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(__dirname, "../../..");
 
-const out = join(__dirname, "../openapi.json");
-writeFileSync(out, JSON.stringify(SPCTRE_OPENAPI_SPEC, null, 2) + "\n");
-console.log(`wrote ${out}`);
+// Not a top-level await: tsx compiles this script to CommonJS, which has no
+// top-level await, so the body has to live in an async entry point.
+async function main(): Promise<void> {
+  const out = join(__dirname, "../openapi.json");
+  writeFileSync(out, JSON.stringify(SPCTRE_OPENAPI_SPEC, null, 2) + "\n");
+  console.log(`wrote ${out}`);
 
-// After the spec, so the manifest digests the document this run produced.
-for (const path of emitRegistry(repoRoot, SPCTRE_OPENAPI_SPEC["x-spctre-spec-revision"])) {
-  console.log(`registry ${path}`);
+  // After the spec, so the manifest digests the document this run produced.
+  for (const path of await emitRegistry(repoRoot, SPCTRE_OPENAPI_SPEC["x-spctre-spec-revision"])) {
+    console.log(`registry ${path}`);
+  }
 }
+
+main().catch((error: unknown) => {
+  console.error(error instanceof Error ? error.message : error);
+  process.exitCode = 1;
+});

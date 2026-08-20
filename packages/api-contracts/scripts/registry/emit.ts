@@ -15,6 +15,7 @@
 import { createHash } from "node:crypto";
 import { mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
+import prettier from "prettier";
 import { z } from "zod";
 
 import {
@@ -25,6 +26,7 @@ import {
   artifactId,
   artifactPath,
   artifactUrl,
+  assertCoordinates,
   type RegistryArtifact,
 } from "./catalog.js";
 
@@ -41,9 +43,21 @@ interface ManifestEntry {
   sha256: string;
 }
 
-function writeJson(absolutePath: string, value: unknown): void {
+/**
+ * Writes through Prettier, using the repo's own config, so the emitted bytes
+ * are by construction what `pnpm format:check` expects. Hand-rolling the
+ * layout instead would force the generated tree out of formatting
+ * verification, and the two would then be free to disagree.
+ */
+async function writeJson(absolutePath: string, value: unknown): Promise<void> {
+  const options = await prettier.resolveConfig(absolutePath, { editorconfig: true });
+  const formatted = await prettier.format(JSON.stringify(value, null, 2), {
+    ...options,
+    filepath: absolutePath,
+    parser: "json",
+  });
   mkdirSync(dirname(absolutePath), { recursive: true });
-  writeFileSync(absolutePath, `${JSON.stringify(value, null, 2)}\n`);
+  writeFileSync(absolutePath, formatted);
 }
 
 function sha256(absolutePath: string): string {
@@ -54,7 +68,7 @@ function sha256(absolutePath: string): string {
  * Builds the published document for a catalog entry, or validates the
  * already-published one. Returns nothing; side effects land on disk.
  */
-function materialize(repoRoot: string, artifact: RegistryArtifact): void {
+async function materialize(repoRoot: string, artifact: RegistryArtifact): Promise<void> {
   const absolutePath = join(repoRoot, artifactPath(artifact));
   const id = artifactUrl(artifact);
 
@@ -76,11 +90,15 @@ function materialize(repoRoot: string, artifact: RegistryArtifact): void {
     return;
   }
 
-  // `io: "input"` describes what a client sends. Several sources carry
-  // `.transform()`/`.superRefine()` steps that JSON Schema cannot represent;
-  // output mode therefore throws outright, while input mode yields the
-  // accurate pre-transform wire contract. The constraints lost that way are
-  // named in the catalog and surface here as `$comment`.
+  // `io: "input"` is the only mode that can be emitted at all: several sources
+  // carry `.transform()` steps, and output mode throws outright on those. It
+  // does not follow that the result is an exact description of what the API
+  // accepts. Input mode describes the schema *before* its transforms, which
+  // can be narrower than reality where a source preprocesses its input, and
+  // says nothing about what a transform does to an accepted value. Both gaps,
+  // along with every refinement JSON Schema cannot express, are enumerated in
+  // the catalog and rendered here as `$comment`; the emitted keywords alone
+  // are necessary but not sufficient for a payload to be accepted.
   const generated = z.toJSONSchema(artifact.schema, {
     target: "draft-2020-12",
     io: "input",
@@ -90,7 +108,7 @@ function materialize(repoRoot: string, artifact: RegistryArtifact): void {
   delete generated.title;
   delete generated.description;
 
-  writeJson(absolutePath, {
+  await writeJson(absolutePath, {
     $schema: JSON_SCHEMA_DIALECT,
     $id: id,
     title: artifact.title,
@@ -118,17 +136,25 @@ function prune(repoRoot: string, expected: Set<string>): void {
   walk(root);
 }
 
-export function emitRegistry(repoRoot: string, specRevision: string): string[] {
+export async function emitRegistry(repoRoot: string, specRevision: string): Promise<string[]> {
   const artifacts = [...REGISTRY_ARTIFACTS].sort((a, b) =>
     artifactId(a).localeCompare(artifactId(b)),
   );
 
-  const seen = new Set<string>();
+  // The URL and the dotted identifier are two renderings of the same
+  // coordinates, so a collision in either is a collision in both. Checking
+  // both anyway keeps the guarantee independent of that equivalence holding.
+  const urls = new Set<string>();
+  const ids = new Set<string>();
   for (const artifact of artifacts) {
+    assertCoordinates(artifact);
     const url = artifactUrl(artifact);
-    if (seen.has(url)) throw new Error(`Duplicate registry URL ${url}.`);
-    seen.add(url);
-    materialize(repoRoot, artifact);
+    const id = artifactId(artifact);
+    if (urls.has(url)) throw new Error(`Duplicate registry URL ${url}.`);
+    if (ids.has(id)) throw new Error(`Duplicate registry identifier ${id}.`);
+    urls.add(url);
+    ids.add(id);
+    await materialize(repoRoot, artifact);
   }
 
   const generated = new Set(
@@ -150,7 +176,7 @@ export function emitRegistry(repoRoot: string, specRevision: string): string[] {
     };
   });
 
-  writeJson(join(repoRoot, MANIFEST_PATH), {
+  await writeJson(join(repoRoot, MANIFEST_PATH), {
     registry: `${REGISTRY_BASE}/`,
     manifestUrl: MANIFEST_URL,
     dialect: JSON_SCHEMA_DIALECT,

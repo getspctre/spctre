@@ -4,13 +4,6 @@
   "title": "Token Refresh Request",
   "description": "Body accepted when exchanging a refresh token for a new access token pair.",
   "type": "object",
-  "properties": {
-    "refreshToken": {
-      "type": "string",
-      "minLength": 1
-    }
-  },
-  "required": [
-    "refreshToken"
-  ]
+  "properties": { "refreshToken": { "type": "string", "minLength": 1 } },
+  "required": ["refreshToken"]
 }
