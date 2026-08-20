@@ -9,10 +9,25 @@
  * Extension conventions:
  *   x-spctre-plan: "oss"   — available in OSS and all paid tiers
  *   x-spctre-plan: "cloud" — Cloud-only; returns 402 with structured error for OSS tenants
+ *
+ * Versioning: `info.version` is the API version and is frozen at "2026-01".
+ * It is not a spec-only knob — it is echoed to clients as `meta.version` in
+ * every response envelope (see `API_VERSION` in src/envelope.ts), so changing
+ * it changes observable API behaviour. Revisions of *this document* within
+ * that API version are tracked separately by `x-spctre-spec-revision`.
  */
 
 export const SPCTRE_OPENAPI_SPEC = {
   openapi: "3.1.0",
+
+  // Revision of this document, distinct from the frozen `info.version` API
+  // version below. Format: `<info.version>.<n>`, where `n` is a monotonically
+  // increasing integer bumped once per merged change to the spec. It never
+  // resets and never decreases; a new API version restarts it at `.1`.
+  // Published alongside the artifact digests in the schema-registry manifest,
+  // so a consumer can tell two builds of the same API version apart.
+  "x-spctre-spec-revision": "2026-01.1",
+
   info: {
     title: "Spctre API",
     version: "2026-01",

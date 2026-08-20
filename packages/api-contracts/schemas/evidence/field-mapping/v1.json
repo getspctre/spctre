@@ -1,0 +1,257 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schema.spctre.dev/evidence/field-mapping/v1.json",
+  "title": "Generic Evidence Field Mapping",
+  "description": "Declarative mapping that projects an arbitrary runtime payload onto the canonical evidence shape.",
+  "type": "object",
+  "properties": {
+    "occurred_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^\\$(?:\\.[A-Za-z_][A-Za-z0-9_]*|\\[\\d+\\])*$"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string",
+              "pattern": "^\\$(?:\\.[A-Za-z_][A-Za-z0-9_]*|\\[\\d+\\])*$"
+            },
+            "default": {},
+            "transform": {
+              "type": "string",
+              "enum": [
+                "string",
+                "number",
+                "lowercase",
+                "uppercase"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "action": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^\\$(?:\\.[A-Za-z_][A-Za-z0-9_]*|\\[\\d+\\])*$"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string",
+              "pattern": "^\\$(?:\\.[A-Za-z_][A-Za-z0-9_]*|\\[\\d+\\])*$"
+            },
+            "default": {},
+            "transform": {
+              "type": "string",
+              "enum": [
+                "string",
+                "number",
+                "lowercase",
+                "uppercase"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "source_event_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^\\$(?:\\.[A-Za-z_][A-Za-z0-9_]*|\\[\\d+\\])*$"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string",
+              "pattern": "^\\$(?:\\.[A-Za-z_][A-Za-z0-9_]*|\\[\\d+\\])*$"
+            },
+            "default": {},
+            "transform": {
+              "type": "string",
+              "enum": [
+                "string",
+                "number",
+                "lowercase",
+                "uppercase"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "principal_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^\\$(?:\\.[A-Za-z_][A-Za-z0-9_]*|\\[\\d+\\])*$"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string",
+              "pattern": "^\\$(?:\\.[A-Za-z_][A-Za-z0-9_]*|\\[\\d+\\])*$"
+            },
+            "default": {},
+            "transform": {
+              "type": "string",
+              "enum": [
+                "string",
+                "number",
+                "lowercase",
+                "uppercase"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "agent_external_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^\\$(?:\\.[A-Za-z_][A-Za-z0-9_]*|\\[\\d+\\])*$"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string",
+              "pattern": "^\\$(?:\\.[A-Za-z_][A-Za-z0-9_]*|\\[\\d+\\])*$"
+            },
+            "default": {},
+            "transform": {
+              "type": "string",
+              "enum": [
+                "string",
+                "number",
+                "lowercase",
+                "uppercase"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "target_resource": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^\\$(?:\\.[A-Za-z_][A-Za-z0-9_]*|\\[\\d+\\])*$"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string",
+              "pattern": "^\\$(?:\\.[A-Za-z_][A-Za-z0-9_]*|\\[\\d+\\])*$"
+            },
+            "default": {},
+            "transform": {
+              "type": "string",
+              "enum": [
+                "string",
+                "number",
+                "lowercase",
+                "uppercase"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "policy_reference": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^\\$(?:\\.[A-Za-z_][A-Za-z0-9_]*|\\[\\d+\\])*$"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string",
+              "pattern": "^\\$(?:\\.[A-Za-z_][A-Za-z0-9_]*|\\[\\d+\\])*$"
+            },
+            "default": {},
+            "transform": {
+              "type": "string",
+              "enum": [
+                "string",
+                "number",
+                "lowercase",
+                "uppercase"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "environment": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^\\$(?:\\.[A-Za-z_][A-Za-z0-9_]*|\\[\\d+\\])*$"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string",
+              "pattern": "^\\$(?:\\.[A-Za-z_][A-Za-z0-9_]*|\\[\\d+\\])*$"
+            },
+            "default": {},
+            "transform": {
+              "type": "string",
+              "enum": [
+                "string",
+                "number",
+                "lowercase",
+                "uppercase"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "enforcement_decision": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^\\$(?:\\.[A-Za-z_][A-Za-z0-9_]*|\\[\\d+\\])*$"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string",
+              "pattern": "^\\$(?:\\.[A-Za-z_][A-Za-z0-9_]*|\\[\\d+\\])*$"
+            },
+            "default": {},
+            "transform": {
+              "type": "string",
+              "enum": [
+                "string",
+                "number",
+                "lowercase",
+                "uppercase"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  },
+  "required": [
+    "occurred_at",
+    "action"
+  ],
+  "additionalProperties": false
+}

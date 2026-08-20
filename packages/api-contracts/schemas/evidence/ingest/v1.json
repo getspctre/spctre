@@ -1,0 +1,344 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schema.spctre.dev/evidence/ingest/v1.json",
+  "title": "Evidence Ingest Request",
+  "description": "Body accepted by POST /api/v1/evidence: one governed runtime action recorded as evidence.",
+  "$comment": "The Zod source additionally sanitizes `action`, `resource`, and `parameters` on ingest (bounding length and redacting secret-shaped values). Those transforms are not expressible in JSON Schema, so a payload valid against this document may still be stored in normalized form.",
+  "type": "object",
+  "properties": {
+    "decisionId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "tenantId": {
+      "type": "string"
+    },
+    "workspaceId": {
+      "type": "string"
+    },
+    "environment": {
+      "type": "string",
+      "minLength": 1
+    },
+    "runtimeTarget": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "string",
+          "enum": [
+            "AWS_BEDROCK",
+            "GOOGLE_ADK",
+            "AZURE_AI",
+            "LANGCHAIN",
+            "LANGGRAPH",
+            "CREWAI",
+            "AUTOGEN",
+            "OPENAI_AGENTS",
+            "OMNIGENT",
+            "OPENCODE",
+            "CLAUDE_CODE",
+            "HERMES",
+            "OPENCLAW",
+            "NEMOCLAW",
+            "CLAUDE_COWORK",
+            "ODYSSEUS",
+            "PAPERCLIP",
+            "LOCAL",
+            "CUSTOM"
+          ]
+        },
+        "adapter": {
+          "type": "string"
+        },
+        "environment": {
+          "type": "string"
+        },
+        "sandboxName": {
+          "type": "string"
+        },
+        "inferenceProvider": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "stack"
+      ]
+    },
+    "agentId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "connector": {
+      "type": "string",
+      "minLength": 1
+    },
+    "action": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "ALLOW",
+        "DENY",
+        "WARN",
+        "ESCALATE"
+      ]
+    },
+    "reason": {
+      "type": "string",
+      "minLength": 1
+    },
+    "policyRefs": {
+      "minItems": 1,
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "artifactHash": {
+      "type": "string"
+    },
+    "policyContext": {
+      "minItems": 1,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "scope": {
+            "type": "string",
+            "enum": [
+              "ORGANIZATION",
+              "WORKSPACE",
+              "ENVIRONMENT",
+              "CONNECTOR",
+              "COMPANY"
+            ]
+          },
+          "branchId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "revisionId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "artifactHash": {
+            "type": "string",
+            "minLength": 1
+          },
+          "packId": {
+            "type": "string"
+          },
+          "packVersion": {
+            "type": "string"
+          },
+          "packOwner": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "scope",
+          "branchId",
+          "revisionId",
+          "artifactHash"
+        ]
+      }
+    },
+    "latencyMs": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+    },
+    "rawEvidence": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string"
+      },
+      "additionalProperties": {}
+    },
+    "consequence": {
+      "type": "string"
+    },
+    "customerTier": {
+      "type": "string"
+    },
+    "confidence": {
+      "type": "number"
+    },
+    "amountUsd": {
+      "type": "number"
+    },
+    "dataSensitivity": {
+      "type": "string"
+    },
+    "trustScore": {
+      "type": "number"
+    },
+    "contextBudget": {
+      "type": "integer",
+      "minimum": -9007199254740991,
+      "maximum": 9007199254740991
+    },
+    "sourceType": {
+      "type": "string"
+    },
+    "executionTrace": {},
+    "engineVersion": {
+      "type": "string"
+    },
+    "ingestMode": {
+      "type": "string",
+      "enum": [
+        "standard",
+        "gateway"
+      ]
+    },
+    "toolIntent": {
+      "type": "string",
+      "maxLength": 100000
+    },
+    "planSummary": {
+      "type": "string",
+      "maxLength": 100000
+    },
+    "toolParameters": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string"
+      },
+      "additionalProperties": {}
+    },
+    "triggerKind": {
+      "type": "string",
+      "enum": [
+        "interactive",
+        "scheduled",
+        "mobile_dispatch",
+        "inbound_webhook",
+        "routine",
+        "gateway_message"
+      ]
+    },
+    "layer": {
+      "type": "string",
+      "enum": [
+        "agent",
+        "sandbox"
+      ]
+    },
+    "executionContext": {
+      "type": "object",
+      "properties": {
+        "backend": {
+          "type": "string"
+        },
+        "sessionId": {
+          "type": "string"
+        },
+        "sandboxName": {
+          "type": "string"
+        },
+        "inferenceProvider": {
+          "type": "string"
+        },
+        "sandboxPolicyRef": {
+          "type": "string"
+        },
+        "inferenceRouterRef": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "parentAgentId": {
+      "type": "string"
+    },
+    "traceId": {
+      "type": "string"
+    },
+    "orchestratorRef": {
+      "type": "object",
+      "properties": {
+        "platform": {
+          "type": "string",
+          "minLength": 1
+        },
+        "companyId": {
+          "type": "string"
+        },
+        "issueId": {
+          "type": "string"
+        },
+        "goalId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "platform"
+      ],
+      "additionalProperties": {}
+    },
+    "pluginSource": {
+      "type": "string",
+      "enum": [
+        "public_marketplace",
+        "corporate_marketplace",
+        "corporate_private",
+        "user_built"
+      ]
+    },
+    "skillContext": {
+      "type": "object",
+      "properties": {
+        "activeSkills": {
+          "default": [],
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "instructionFiles": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "promptPolicyRefs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "promptSurface": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "webhookSource": {
+      "type": "string"
+    },
+    "trustLevel": {
+      "type": "string"
+    },
+    "catalogProvider": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "decisionId",
+    "environment",
+    "runtimeTarget",
+    "agentId",
+    "connector",
+    "action",
+    "status",
+    "reason"
+  ]
+}

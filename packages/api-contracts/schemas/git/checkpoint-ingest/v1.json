@@ -1,0 +1,196 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schema.spctre.dev/git/checkpoint-ingest/v1.json",
+  "title": "Git Checkpoint Ingest Request",
+  "description": "Body accepted when recording a git checkpoint as evidence of an agent's change.",
+  "$comment": "The Zod source additionally rejects diffs whose cumulative size exceeds the ingest budget, via a cross-field refinement this document cannot express.",
+  "type": "object",
+  "properties": {
+    "idempotencyKey": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512
+    },
+    "environment": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "ALLOW",
+        "DENY",
+        "WARN",
+        "ESCALATE"
+      ]
+    },
+    "reason": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4000
+    },
+    "checkpoint": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+        },
+        "repository": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512
+            },
+            "remoteUrl": {
+              "type": "string",
+              "maxLength": 4096
+            }
+          },
+          "required": [
+            "id"
+          ]
+        },
+        "ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024
+        },
+        "baseCommit": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "headCommit": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "diff": {
+          "type": "object",
+          "properties": {
+            "format": {
+              "type": "string",
+              "enum": [
+                "unified",
+                "name-status",
+                "none"
+              ]
+            },
+            "content": {
+              "type": "string",
+              "maxLength": 1000000
+            },
+            "sha256": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            },
+            "files": {
+              "maxItems": 10000,
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "path": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 4096
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "added",
+                      "modified",
+                      "deleted",
+                      "renamed",
+                      "copied",
+                      "unmerged"
+                    ]
+                  },
+                  "previousPath": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 4096
+                  }
+                },
+                "required": [
+                  "path"
+                ]
+              }
+            }
+          },
+          "required": [
+            "format"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "createdAt",
+        "repository",
+        "headCommit",
+        "diff"
+      ]
+    },
+    "agent": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "adapter": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        }
+      },
+      "required": [
+        "id"
+      ]
+    },
+    "connector": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512
+    },
+    "action": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512
+    },
+    "policyRefs": {
+      "maxItems": 100,
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 512
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string"
+      },
+      "additionalProperties": {}
+    }
+  },
+  "required": [
+    "idempotencyKey",
+    "environment",
+    "status",
+    "reason",
+    "checkpoint"
+  ]
+}

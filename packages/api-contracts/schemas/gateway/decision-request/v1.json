@@ -1,0 +1,135 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schema.spctre.dev/gateway/decision-request/v1.json",
+  "title": "Gateway Decision Request",
+  "description": "Body accepted by POST /api/gateway/decide: the pre-action check a governed agent makes before acting.",
+  "$comment": "The Zod source additionally sanitizes `action`, `resource`, and `parameters`. Those transforms are not expressible in JSON Schema.",
+  "type": "object",
+  "properties": {
+    "decisionId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "artifactHash": {
+      "type": "string",
+      "minLength": 1
+    },
+    "policyContext": {
+      "minItems": 1,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "scope": {
+            "type": "string",
+            "enum": [
+              "ORGANIZATION",
+              "WORKSPACE",
+              "ENVIRONMENT",
+              "CONNECTOR"
+            ]
+          },
+          "branchId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "revisionId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "artifactHash": {
+            "type": "string",
+            "minLength": 1
+          },
+          "packId": {
+            "type": "string"
+          },
+          "packVersion": {
+            "type": "string"
+          },
+          "packOwner": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "scope",
+          "branchId",
+          "revisionId",
+          "artifactHash"
+        ]
+      }
+    },
+    "reason": {
+      "type": "string"
+    },
+    "consequence": {
+      "type": "string"
+    },
+    "customerTier": {
+      "type": "string"
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "amountUsd": {
+      "type": "number",
+      "minimum": 0
+    },
+    "dataSensitivity": {
+      "type": "string"
+    },
+    "trustScore": {
+      "type": "number"
+    },
+    "contextBudget": {
+      "type": "integer",
+      "minimum": -9007199254740991,
+      "maximum": 9007199254740991
+    },
+    "riskLevel": {
+      "type": "string",
+      "enum": [
+        "LOW",
+        "MEDIUM",
+        "HIGH",
+        "CRITICAL"
+      ]
+    },
+    "toolIntent": {
+      "type": "string",
+      "maxLength": 100000
+    },
+    "planSummary": {
+      "type": "string",
+      "maxLength": 100000
+    },
+    "toolParameters": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string"
+      },
+      "additionalProperties": {}
+    },
+    "connector": {
+      "type": "string"
+    },
+    "action": {
+      "type": "string"
+    },
+    "agentId": {
+      "type": "string"
+    },
+    "sessionId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    }
+  },
+  "required": [
+    "decisionId",
+    "artifactHash",
+    "policyContext"
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schema.spctre.dev/evidence/evaluate/v1.json",
+  "title": "Decision Evaluation Request",
+  "description": "Body accepted by POST /api/v1/decision/evaluate: a proposed action submitted for a governance decision.",
+  "$comment": "The Zod source additionally sanitizes `action`, `resource`, and `parameters`. Those transforms are not expressible in JSON Schema.",
+  "type": "object",
+  "properties": {
+    "connector": {
+      "type": "string",
+      "minLength": 1
+    },
+    "action": {
+      "type": "string",
+      "minLength": 1
+    },
+    "domains": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "toolIntent": {
+      "type": "string",
+      "maxLength": 100000
+    },
+    "planSummary": {
+      "type": "string",
+      "maxLength": 100000
+    },
+    "toolParameters": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string"
+      },
+      "additionalProperties": {}
+    }
+  },
+  "required": [
+    "connector",
+    "action"
+  ]
+}
