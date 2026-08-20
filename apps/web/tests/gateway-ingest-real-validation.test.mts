@@ -27,7 +27,7 @@ vi.mock("@spctre/platform/tracing", () => ({
 }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 
-const { GatewayEventValidationError, normalizePortkeyEvent, validateGatewayEvent } =
+const { normalizePortkeyEvent, validateGatewayEvent } =
   await import("../lib/domains/gateway/ingest");
 const { handleRegisteredGatewayIngest } = await import("../app/api/gateway-ingest/_shared");
 
