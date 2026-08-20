@@ -53,4 +53,30 @@ describe("gateway event numeric normalization", () => {
     });
     expect(warnSpy).not.toHaveBeenCalled();
   });
+
+  it("clamps provider integer fields to the maximum safe integer", () => {
+    const event = normalizeHeliconeEvent({
+      data: {
+        id: "helicone-large-token-count",
+        response: { usage: { prompt_tokens: Number.MAX_SAFE_INTEGER + 1_000 } },
+      },
+    });
+
+    expect(event?.promptTokens).toBe(Number.MAX_SAFE_INTEGER);
+    expect(incrementCounterSpy).toHaveBeenCalledWith("spctre.gateway.event.normalized", 1, {
+      provider: "helicone",
+      field: "promptTokens",
+      reason: "clamped",
+    });
+    expect(warnSpy).toHaveBeenCalledWith(
+      "Gateway event numeric field normalized",
+      expect.objectContaining({
+        provider: "helicone",
+        field: "promptTokens",
+        received: Number.MAX_SAFE_INTEGER + 1_000,
+        normalized: Number.MAX_SAFE_INTEGER,
+        reason: "clamped",
+      }),
+    );
+  });
 });
