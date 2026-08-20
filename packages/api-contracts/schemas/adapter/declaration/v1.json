@@ -3,7 +3,7 @@
   "$id": "https://schema.spctre.dev/adapter/declaration/v1.json",
   "title": "Adapter Declaration",
   "description": "Self-description an enforcement-runtime adapter presents when registering with the control plane.",
-  "$comment": "The Zod source additionally normalizes blank strings to absent, de-duplicates the declared capability list, and defaults the surface to `api`. Those transforms are not expressible in JSON Schema.",
+  "$comment": "This document is both narrower and wider than what the service accepts. Narrower: `capabilities` accepts any JSON value, not only an object — anything that is not an object is replaced with `{}`, so a value the `type` shown here rejects is in fact accepted. Wider: `supportedConnectors` is filtered before it is validated — non-string items are dropped, the remaining strings are trimmed, blanks are dropped, and the result must still be non-empty, so an array that satisfies this document (for example `[42]`, `[\"\"]`, or `[\"  \"]`) is rejected. Also not expressed: `adapterVersion`, `environment`, and `registeredBy` are trimmed and, if blank, treated as absent, with `registeredBy` then defaulting to `api`.",
   "type": "object",
   "properties": {
     "stack": {
@@ -30,35 +30,17 @@
         "CUSTOM"
       ]
     },
-    "adapterId": {
-      "type": "string",
-      "minLength": 1
-    },
-    "adapterVersion": {
-      "type": "string"
-    },
-    "environment": {
-      "type": "string"
-    },
-    "supportedConnectors": {
-      "type": "array",
-      "items": {}
-    },
+    "adapterId": { "type": "string", "minLength": 1 },
+    "adapterVersion": { "type": "string" },
+    "environment": { "type": "string" },
+    "supportedConnectors": { "type": "array", "items": {} },
     "capabilities": {
       "default": {},
       "type": "object",
-      "propertyNames": {
-        "type": "string"
-      },
+      "propertyNames": { "type": "string" },
       "additionalProperties": {}
     },
-    "registeredBy": {
-      "type": "string"
-    }
+    "registeredBy": { "type": "string" }
   },
-  "required": [
-    "stack",
-    "adapterId",
-    "supportedConnectors"
-  ]
+  "required": ["stack", "adapterId", "supportedConnectors"]
 }

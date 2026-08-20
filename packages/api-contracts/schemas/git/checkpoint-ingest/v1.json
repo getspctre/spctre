@@ -3,40 +3,17 @@
   "$id": "https://schema.spctre.dev/git/checkpoint-ingest/v1.json",
   "title": "Git Checkpoint Ingest Request",
   "description": "Body accepted when recording a git checkpoint as evidence of an agent's change.",
-  "$comment": "The Zod source additionally rejects diffs whose cumulative size exceeds the ingest budget, via a cross-field refinement this document cannot express.",
+  "$comment": "Two rules on `checkpoint.diff` are cross-field and are not expressed here. A diff whose `format` is not `none` must carry at least one of `content`, `sha256`, or a non-empty `files`; a diff whose `format` is `none` must carry neither `content` nor a non-empty `files`. A payload valid against this document can therefore still be rejected.",
   "type": "object",
   "properties": {
-    "idempotencyKey": {
-      "type": "string",
-      "minLength": 1,
-      "maxLength": 512
-    },
-    "environment": {
-      "type": "string",
-      "minLength": 1
-    },
-    "status": {
-      "type": "string",
-      "enum": [
-        "ALLOW",
-        "DENY",
-        "WARN",
-        "ESCALATE"
-      ]
-    },
-    "reason": {
-      "type": "string",
-      "minLength": 1,
-      "maxLength": 4000
-    },
+    "idempotencyKey": { "type": "string", "minLength": 1, "maxLength": 512 },
+    "environment": { "type": "string", "minLength": 1 },
+    "status": { "type": "string", "enum": ["ALLOW", "DENY", "WARN", "ESCALATE"] },
+    "reason": { "type": "string", "minLength": 1, "maxLength": 4000 },
     "checkpoint": {
       "type": "object",
       "properties": {
-        "id": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 512
-        },
+        "id": { "type": "string", "minLength": 1, "maxLength": 512 },
         "createdAt": {
           "type": "string",
           "format": "date-time",
@@ -45,152 +22,62 @@
         "repository": {
           "type": "object",
           "properties": {
-            "id": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 512
-            },
-            "remoteUrl": {
-              "type": "string",
-              "maxLength": 4096
-            }
+            "id": { "type": "string", "minLength": 1, "maxLength": 512 },
+            "remoteUrl": { "type": "string", "maxLength": 4096 }
           },
-          "required": [
-            "id"
-          ]
+          "required": ["id"]
         },
-        "ref": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 1024
-        },
-        "baseCommit": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 256
-        },
-        "headCommit": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 256
-        },
+        "ref": { "type": "string", "minLength": 1, "maxLength": 1024 },
+        "baseCommit": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "headCommit": { "type": "string", "minLength": 1, "maxLength": 256 },
         "diff": {
           "type": "object",
           "properties": {
-            "format": {
-              "type": "string",
-              "enum": [
-                "unified",
-                "name-status",
-                "none"
-              ]
-            },
-            "content": {
-              "type": "string",
-              "maxLength": 1000000
-            },
-            "sha256": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 256
-            },
+            "format": { "type": "string", "enum": ["unified", "name-status", "none"] },
+            "content": { "type": "string", "maxLength": 1000000 },
+            "sha256": { "type": "string", "minLength": 1, "maxLength": 256 },
             "files": {
               "maxItems": 10000,
               "type": "array",
               "items": {
                 "type": "object",
                 "properties": {
-                  "path": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 4096
-                  },
+                  "path": { "type": "string", "minLength": 1, "maxLength": 4096 },
                   "status": {
                     "type": "string",
-                    "enum": [
-                      "added",
-                      "modified",
-                      "deleted",
-                      "renamed",
-                      "copied",
-                      "unmerged"
-                    ]
+                    "enum": ["added", "modified", "deleted", "renamed", "copied", "unmerged"]
                   },
-                  "previousPath": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 4096
-                  }
+                  "previousPath": { "type": "string", "minLength": 1, "maxLength": 4096 }
                 },
-                "required": [
-                  "path"
-                ]
+                "required": ["path"]
               }
             }
           },
-          "required": [
-            "format"
-          ]
+          "required": ["format"]
         }
       },
-      "required": [
-        "id",
-        "createdAt",
-        "repository",
-        "headCommit",
-        "diff"
-      ]
+      "required": ["id", "createdAt", "repository", "headCommit", "diff"]
     },
     "agent": {
       "type": "object",
       "properties": {
-        "id": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 512
-        },
-        "adapter": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 512
-        }
+        "id": { "type": "string", "minLength": 1, "maxLength": 512 },
+        "adapter": { "type": "string", "minLength": 1, "maxLength": 512 }
       },
-      "required": [
-        "id"
-      ]
+      "required": ["id"]
     },
-    "connector": {
-      "type": "string",
-      "minLength": 1,
-      "maxLength": 512
-    },
-    "action": {
-      "type": "string",
-      "minLength": 1,
-      "maxLength": 512
-    },
+    "connector": { "type": "string", "minLength": 1, "maxLength": 512 },
+    "action": { "type": "string", "minLength": 1, "maxLength": 512 },
     "policyRefs": {
       "maxItems": 100,
       "type": "array",
-      "items": {
-        "type": "string",
-        "minLength": 1,
-        "maxLength": 512
-      }
+      "items": { "type": "string", "minLength": 1, "maxLength": 512 }
     },
     "metadata": {
       "type": "object",
-      "propertyNames": {
-        "type": "string"
-      },
+      "propertyNames": { "type": "string" },
       "additionalProperties": {}
     }
   },
-  "required": [
-    "idempotencyKey",
-    "environment",
-    "status",
-    "reason",
-    "checkpoint"
-  ]
+  "required": ["idempotencyKey", "environment", "status", "reason", "checkpoint"]
 }

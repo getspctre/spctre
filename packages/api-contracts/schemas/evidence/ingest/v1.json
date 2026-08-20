@@ -3,23 +3,13 @@
   "$id": "https://schema.spctre.dev/evidence/ingest/v1.json",
   "title": "Evidence Ingest Request",
   "description": "Body accepted by POST /api/v1/evidence: one governed runtime action recorded as evidence.",
-  "$comment": "The Zod source additionally sanitizes `action`, `resource`, and `parameters` on ingest (bounding length and redacting secret-shaped values). Those transforms are not expressible in JSON Schema, so a payload valid against this document may still be stored in normalized form.",
+  "$comment": "This document describes what is accepted, not what is retained. The service then normalizes three fields in ways JSON Schema cannot express: `toolIntent` and `planSummary` are trimmed and, if still longer than 1000 and 2000 characters respectively, truncated to that length with `... [Truncated]` appended — the `maxLength` of 100000 shown here is the accept limit, not the stored length. `toolParameters` is redacted and bounded: values under secret-shaped keys (authorization, token, secret, password, credential, key, cookie, and similar) are replaced with `[REDACTED]`; string values longer than 500 characters are truncated; values that look like credentials are replaced wholesale; and traversal stops after 4 levels of nesting or 100 nodes, replacing the remainder with a truncation marker.",
   "type": "object",
   "properties": {
-    "decisionId": {
-      "type": "string",
-      "minLength": 1
-    },
-    "tenantId": {
-      "type": "string"
-    },
-    "workspaceId": {
-      "type": "string"
-    },
-    "environment": {
-      "type": "string",
-      "minLength": 1
-    },
+    "decisionId": { "type": "string", "minLength": 1 },
+    "tenantId": { "type": "string" },
+    "workspaceId": { "type": "string" },
+    "environment": { "type": "string", "minLength": 1 },
     "runtimeTarget": {
       "type": "object",
       "properties": {
@@ -47,58 +37,20 @@
             "CUSTOM"
           ]
         },
-        "adapter": {
-          "type": "string"
-        },
-        "environment": {
-          "type": "string"
-        },
-        "sandboxName": {
-          "type": "string"
-        },
-        "inferenceProvider": {
-          "type": "string"
-        }
+        "adapter": { "type": "string" },
+        "environment": { "type": "string" },
+        "sandboxName": { "type": "string" },
+        "inferenceProvider": { "type": "string" }
       },
-      "required": [
-        "stack"
-      ]
+      "required": ["stack"]
     },
-    "agentId": {
-      "type": "string",
-      "minLength": 1
-    },
-    "connector": {
-      "type": "string",
-      "minLength": 1
-    },
-    "action": {
-      "type": "string",
-      "minLength": 1
-    },
-    "status": {
-      "type": "string",
-      "enum": [
-        "ALLOW",
-        "DENY",
-        "WARN",
-        "ESCALATE"
-      ]
-    },
-    "reason": {
-      "type": "string",
-      "minLength": 1
-    },
-    "policyRefs": {
-      "minItems": 1,
-      "type": "array",
-      "items": {
-        "type": "string"
-      }
-    },
-    "artifactHash": {
-      "type": "string"
-    },
+    "agentId": { "type": "string", "minLength": 1 },
+    "connector": { "type": "string", "minLength": 1 },
+    "action": { "type": "string", "minLength": 1 },
+    "status": { "type": "string", "enum": ["ALLOW", "DENY", "WARN", "ESCALATE"] },
+    "reason": { "type": "string", "minLength": 1 },
+    "policyRefs": { "minItems": 1, "type": "array", "items": { "type": "string" } },
+    "artifactHash": { "type": "string" },
     "policyContext": {
       "minItems": 1,
       "type": "array",
@@ -107,49 +59,19 @@
         "properties": {
           "scope": {
             "type": "string",
-            "enum": [
-              "ORGANIZATION",
-              "WORKSPACE",
-              "ENVIRONMENT",
-              "CONNECTOR",
-              "COMPANY"
-            ]
+            "enum": ["ORGANIZATION", "WORKSPACE", "ENVIRONMENT", "CONNECTOR", "COMPANY"]
           },
-          "branchId": {
-            "type": "string",
-            "minLength": 1
-          },
-          "revisionId": {
-            "type": "string",
-            "minLength": 1
-          },
-          "artifactHash": {
-            "type": "string",
-            "minLength": 1
-          },
-          "packId": {
-            "type": "string"
-          },
-          "packVersion": {
-            "type": "string"
-          },
-          "packOwner": {
-            "type": "string"
-          }
+          "branchId": { "type": "string", "minLength": 1 },
+          "revisionId": { "type": "string", "minLength": 1 },
+          "artifactHash": { "type": "string", "minLength": 1 },
+          "packId": { "type": "string" },
+          "packVersion": { "type": "string" },
+          "packOwner": { "type": "string" }
         },
-        "required": [
-          "scope",
-          "branchId",
-          "revisionId",
-          "artifactHash"
-        ]
+        "required": ["scope", "branchId", "revisionId", "artifactHash"]
       }
     },
-    "latencyMs": {
-      "type": "integer",
-      "minimum": 0,
-      "maximum": 9007199254740991
-    },
+    "latencyMs": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
     "createdAt": {
       "type": "string",
       "format": "date-time",
@@ -157,61 +79,29 @@
     },
     "rawEvidence": {
       "type": "object",
-      "propertyNames": {
-        "type": "string"
-      },
+      "propertyNames": { "type": "string" },
       "additionalProperties": {}
     },
-    "consequence": {
-      "type": "string"
-    },
-    "customerTier": {
-      "type": "string"
-    },
-    "confidence": {
-      "type": "number"
-    },
-    "amountUsd": {
-      "type": "number"
-    },
-    "dataSensitivity": {
-      "type": "string"
-    },
-    "trustScore": {
-      "type": "number"
-    },
+    "consequence": { "type": "string" },
+    "customerTier": { "type": "string" },
+    "confidence": { "type": "number" },
+    "amountUsd": { "type": "number" },
+    "dataSensitivity": { "type": "string" },
+    "trustScore": { "type": "number" },
     "contextBudget": {
       "type": "integer",
       "minimum": -9007199254740991,
       "maximum": 9007199254740991
     },
-    "sourceType": {
-      "type": "string"
-    },
+    "sourceType": { "type": "string" },
     "executionTrace": {},
-    "engineVersion": {
-      "type": "string"
-    },
-    "ingestMode": {
-      "type": "string",
-      "enum": [
-        "standard",
-        "gateway"
-      ]
-    },
-    "toolIntent": {
-      "type": "string",
-      "maxLength": 100000
-    },
-    "planSummary": {
-      "type": "string",
-      "maxLength": 100000
-    },
+    "engineVersion": { "type": "string" },
+    "ingestMode": { "type": "string", "enum": ["standard", "gateway"] },
+    "toolIntent": { "type": "string", "maxLength": 100000 },
+    "planSummary": { "type": "string", "maxLength": 100000 },
     "toolParameters": {
       "type": "object",
-      "propertyNames": {
-        "type": "string"
-      },
+      "propertyNames": { "type": "string" },
       "additionalProperties": {}
     },
     "triggerKind": {
@@ -225,111 +115,49 @@
         "gateway_message"
       ]
     },
-    "layer": {
-      "type": "string",
-      "enum": [
-        "agent",
-        "sandbox"
-      ]
-    },
+    "layer": { "type": "string", "enum": ["agent", "sandbox"] },
     "executionContext": {
       "type": "object",
       "properties": {
-        "backend": {
-          "type": "string"
-        },
-        "sessionId": {
-          "type": "string"
-        },
-        "sandboxName": {
-          "type": "string"
-        },
-        "inferenceProvider": {
-          "type": "string"
-        },
-        "sandboxPolicyRef": {
-          "type": "string"
-        },
-        "inferenceRouterRef": {
-          "type": "string"
-        }
+        "backend": { "type": "string" },
+        "sessionId": { "type": "string" },
+        "sandboxName": { "type": "string" },
+        "inferenceProvider": { "type": "string" },
+        "sandboxPolicyRef": { "type": "string" },
+        "inferenceRouterRef": { "type": "string" }
       },
       "additionalProperties": {}
     },
-    "parentAgentId": {
-      "type": "string"
-    },
-    "traceId": {
-      "type": "string"
-    },
+    "parentAgentId": { "type": "string" },
+    "traceId": { "type": "string" },
     "orchestratorRef": {
       "type": "object",
       "properties": {
-        "platform": {
-          "type": "string",
-          "minLength": 1
-        },
-        "companyId": {
-          "type": "string"
-        },
-        "issueId": {
-          "type": "string"
-        },
-        "goalId": {
-          "type": "string"
-        }
+        "platform": { "type": "string", "minLength": 1 },
+        "companyId": { "type": "string" },
+        "issueId": { "type": "string" },
+        "goalId": { "type": "string" }
       },
-      "required": [
-        "platform"
-      ],
+      "required": ["platform"],
       "additionalProperties": {}
     },
     "pluginSource": {
       "type": "string",
-      "enum": [
-        "public_marketplace",
-        "corporate_marketplace",
-        "corporate_private",
-        "user_built"
-      ]
+      "enum": ["public_marketplace", "corporate_marketplace", "corporate_private", "user_built"]
     },
     "skillContext": {
       "type": "object",
       "properties": {
-        "activeSkills": {
-          "default": [],
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "instructionFiles": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "promptPolicyRefs": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "promptSurface": {
-          "type": "string"
-        }
+        "activeSkills": { "default": [], "type": "array", "items": { "type": "string" } },
+        "instructionFiles": { "type": "array", "items": { "type": "string" } },
+        "promptPolicyRefs": { "type": "array", "items": { "type": "string" } },
+        "promptSurface": { "type": "string" }
       },
       "additionalProperties": {}
     },
-    "webhookSource": {
-      "type": "string"
-    },
-    "trustLevel": {
-      "type": "string"
-    },
-    "catalogProvider": {
-      "type": "string"
-    }
+    "webhookSource": { "type": "string" },
+    "trustLevel": { "type": "string" },
+    "catalogProvider": { "type": "string" }
   },
   "required": [
     "decisionId",

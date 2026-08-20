@@ -14,11 +14,24 @@
  * The three segments are also the artifact identifier, dotted and prefixed:
  * `spctre.<domain>.<name>.<version>` — so `spctre.evidence.ingest.v1` and
  * https://schema.spctre.dev/evidence/ingest/v1.json name the same document.
+ * That correspondence only holds if a segment can never contain a `/` or a
+ * `.`, so segments are restricted to `SEGMENT_GRAMMAR` and validated at emit
+ * time; see `assertCoordinates`.
+ *
  * A published path is immutable by convention: a breaking change to a
  * contract ships as a new `<version>` segment, never as an edit in place.
+ * That makes cataloguing a contract a public compatibility commitment, so a
+ * contract still under design does not belong here yet.
  *
  * Reserved, owned elsewhere — do not claim these here:
  *   - spctre.gateway.event.v1  (gateway runtime event envelope)
+ *
+ * Deliberately withheld — do not re-add without the contract owner's sign-off:
+ *   - the publication-attestation ingest contract and the signing-key
+ *     challenge/enroll/revoke flows. Those schemas are still evolving under
+ *     their own governance change; publishing them at permanent `v1` URLs
+ *     would freeze a compatibility commitment the contract does not yet want
+ *     to make. They will be catalogued by their owner, not by this pipeline.
  */
 
 import type { ZodType } from "zod";
@@ -33,10 +46,6 @@ import {
   GatewayDecisionSchema,
   GatewayResolveSchema,
   GitCheckpointIngestSchema,
-  PublicationAttestationIngestSchema,
-  PublicationSigningKeyChallengeSchema,
-  PublicationSigningKeyEnrollSchema,
-  PublicationSigningKeyRevokeSchema,
   RuntimeStackSchema,
   TokenPairResponseSchema,
   TokenRefreshSchema,
@@ -50,6 +59,15 @@ export const JSON_SCHEMA_DIALECT = "https://json-schema.org/draft/2020-12/schema
 
 /** Directory (repo-relative) the Zod-derived documents are written into. */
 export const EMIT_ROOT = "packages/api-contracts/schemas";
+
+/**
+ * Grammar for a single URL/identifier segment: lowercase alphanumerics with
+ * internal single hyphens. No dots (they would collide with the dotted
+ * identifier form), no slashes (they would collide with the path form), no
+ * uppercase (URL paths are case-sensitive and mixed case invites near-miss
+ * duplicates), and no leading, trailing, or doubled hyphens.
+ */
+export const SEGMENT_GRAMMAR = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 /** Coordinates shared by every registry member. */
 interface ArtifactCoordinates {
@@ -69,9 +87,16 @@ export interface ZodArtifact extends ArtifactCoordinates {
   description: string;
   schema: ZodType;
   /**
-   * Constraints the Zod source enforces that JSON Schema cannot express.
-   * Rendered into the emitted document as `$comment` so a consumer reading
-   * only the published artifact still learns the contract is not exhaustive.
+   * Every validation or normalization rule the Zod source applies that this
+   * document does not express, enumerated. Rendered into the emitted document
+   * as `$comment` so a consumer reading only the published artifact learns
+   * exactly where the contract stops.
+   *
+   * Required for any source carrying a transform, preprocess, or custom
+   * refinement — `tests/schema-registry.test.ts` fails the build if one is
+   * added without a disclosure. Keep the text specific: name the affected
+   * fields and the actual rule. A disclosure that describes a rule the code
+   * does not implement is worse than no disclosure at all.
    */
   unrepresentable?: string;
 }
@@ -93,6 +118,16 @@ export interface FileArtifact extends ArtifactCoordinates {
 
 export type RegistryArtifact = ZodArtifact | FileArtifact;
 
+export function assertCoordinates(coordinates: ArtifactCoordinates): void {
+  for (const field of ["domain", "name", "version"] as const) {
+    if (!SEGMENT_GRAMMAR.test(coordinates[field])) {
+      throw new Error(
+        `Registry ${field} "${coordinates[field]}" is not a valid path segment (${String(SEGMENT_GRAMMAR)}).`,
+      );
+    }
+  }
+}
+
 export function artifactId(coordinates: ArtifactCoordinates): string {
   return `spctre.${coordinates.domain}.${coordinates.name}.${coordinates.version}`;
 }
@@ -106,6 +141,14 @@ export function artifactPath(artifact: RegistryArtifact): string {
     ? artifact.path
     : `${EMIT_ROOT}/${artifact.domain}/${artifact.name}/${artifact.version}.json`;
 }
+
+/**
+ * Shared by the three request bodies that carry pre-flight intent fields. The
+ * accept limit and the retained limit differ by two orders of magnitude, which
+ * is precisely the sort of thing a consumer cannot infer from the document.
+ */
+const INTENT_FIELD_DISCLOSURE =
+  "This document describes what is accepted, not what is retained. The service then normalizes three fields in ways JSON Schema cannot express: `toolIntent` and `planSummary` are trimmed and, if still longer than 1000 and 2000 characters respectively, truncated to that length with `... [Truncated]` appended — the `maxLength` of 100000 shown here is the accept limit, not the stored length. `toolParameters` is redacted and bounded: values under secret-shaped keys (authorization, token, secret, password, credential, key, cookie, and similar) are replaced with `[REDACTED]`; string values longer than 500 characters are truncated; values that look like credentials are replaced wholesale; and traversal stops after 4 levels of nesting or 100 nodes, replacing the remainder with a truncation marker.";
 
 /**
  * The catalog. Ordering here is irrelevant — the emitter sorts by identifier —
@@ -122,8 +165,7 @@ export const REGISTRY_ARTIFACTS: RegistryArtifact[] = [
     description:
       "Body accepted by POST /api/v1/evidence: one governed runtime action recorded as evidence.",
     schema: EvidenceIngestSchema,
-    unrepresentable:
-      "The Zod source additionally sanitizes `action`, `resource`, and `parameters` on ingest (bounding length and redacting secret-shaped values). Those transforms are not expressible in JSON Schema, so a payload valid against this document may still be stored in normalized form.",
+    unrepresentable: INTENT_FIELD_DISCLOSURE,
   },
   {
     kind: "json-schema",
@@ -135,8 +177,7 @@ export const REGISTRY_ARTIFACTS: RegistryArtifact[] = [
     description:
       "Body accepted by POST /api/v1/decision/evaluate: a proposed action submitted for a governance decision.",
     schema: EvaluateSchema,
-    unrepresentable:
-      "The Zod source additionally sanitizes `action`, `resource`, and `parameters`. Those transforms are not expressible in JSON Schema.",
+    unrepresentable: INTENT_FIELD_DISCLOSURE,
   },
   {
     kind: "json-schema",
@@ -148,7 +189,7 @@ export const REGISTRY_ARTIFACTS: RegistryArtifact[] = [
     description: "Body accepted by the evidence erasure endpoint (right-to-erasure workflows).",
     schema: EvidenceEraseRequestSchema,
     unrepresentable:
-      "The Zod source additionally requires `before` to parse as a real calendar date and normalizes it to an ISO-8601 instant, and coerces empty selectors to absent. This document constrains only the string format.",
+      "Rules the service applies that this document does not express: `before` must additionally parse to a real instant, so a syntactically well-formed but non-existent date such as `2026-02-31` matches the `pattern` here and is still rejected; the accepted value is then normalized to a UTC ISO-8601 instant, so what is stored may not be byte-identical to what was sent. All three filters also accept an explicit `null` (treated as absent), and `decisionIds: []` is treated as absent rather than as an empty selector.",
   },
   {
     kind: "json-schema",
@@ -192,8 +233,7 @@ export const REGISTRY_ARTIFACTS: RegistryArtifact[] = [
     description:
       "Body accepted by POST /api/gateway/decide: the pre-action check a governed agent makes before acting.",
     schema: GatewayDecisionSchema,
-    unrepresentable:
-      "The Zod source additionally sanitizes `action`, `resource`, and `parameters`. Those transforms are not expressible in JSON Schema.",
+    unrepresentable: INTENT_FIELD_DISCLOSURE,
   },
   {
     kind: "json-schema",
@@ -215,49 +255,7 @@ export const REGISTRY_ARTIFACTS: RegistryArtifact[] = [
     description: "Body accepted when recording a git checkpoint as evidence of an agent's change.",
     schema: GitCheckpointIngestSchema,
     unrepresentable:
-      "The Zod source additionally rejects diffs whose cumulative size exceeds the ingest budget, via a cross-field refinement this document cannot express.",
-  },
-  {
-    kind: "json-schema",
-    source: "zod",
-    domain: "publication",
-    name: "attestation-ingest",
-    version: "v1",
-    title: "Publication Attestation Ingest Request",
-    description: "Body accepted when submitting a signed publication attestation.",
-    schema: PublicationAttestationIngestSchema,
-    unrepresentable:
-      "The Zod source additionally cross-checks the attestation against the declared signing algorithm and signature encoding. That refinement is not expressible in JSON Schema.",
-  },
-  {
-    kind: "json-schema",
-    source: "zod",
-    domain: "publication",
-    name: "signing-key-challenge",
-    version: "v1",
-    title: "Publication Signing Key Challenge Request",
-    description: "Body accepted when requesting an enrollment challenge for a signing key.",
-    schema: PublicationSigningKeyChallengeSchema,
-  },
-  {
-    kind: "json-schema",
-    source: "zod",
-    domain: "publication",
-    name: "signing-key-enroll",
-    version: "v1",
-    title: "Publication Signing Key Enrollment Request",
-    description: "Body accepted when enrolling a signing key against an issued challenge.",
-    schema: PublicationSigningKeyEnrollSchema,
-  },
-  {
-    kind: "json-schema",
-    source: "zod",
-    domain: "publication",
-    name: "signing-key-revoke",
-    version: "v1",
-    title: "Publication Signing Key Revocation Request",
-    description: "Body accepted when revoking an enrolled signing key.",
-    schema: PublicationSigningKeyRevokeSchema,
+      "Two rules on `checkpoint.diff` are cross-field and are not expressed here. A diff whose `format` is not `none` must carry at least one of `content`, `sha256`, or a non-empty `files`; a diff whose `format` is `none` must carry neither `content` nor a non-empty `files`. A payload valid against this document can therefore still be rejected.",
   },
   {
     kind: "json-schema",
@@ -270,7 +268,7 @@ export const REGISTRY_ARTIFACTS: RegistryArtifact[] = [
       "Self-description an enforcement-runtime adapter presents when registering with the control plane.",
     schema: AdapterDeclarationSchema,
     unrepresentable:
-      "The Zod source additionally normalizes blank strings to absent, de-duplicates the declared capability list, and defaults the surface to `api`. Those transforms are not expressible in JSON Schema.",
+      'This document is both narrower and wider than what the service accepts. Narrower: `capabilities` accepts any JSON value, not only an object — anything that is not an object is replaced with `{}`, so a value the `type` shown here rejects is in fact accepted. Wider: `supportedConnectors` is filtered before it is validated — non-string items are dropped, the remaining strings are trimmed, blanks are dropped, and the result must still be non-empty, so an array that satisfies this document (for example `[42]`, `[""]`, or `["  "]`) is rejected. Also not expressed: `adapterVersion`, `environment`, and `registeredBy` are trimmed and, if blank, treated as absent, with `registeredBy` then defaulting to `api`.',
   },
   {
     kind: "json-schema",

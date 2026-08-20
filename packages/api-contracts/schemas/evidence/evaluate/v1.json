@@ -3,41 +3,19 @@
   "$id": "https://schema.spctre.dev/evidence/evaluate/v1.json",
   "title": "Decision Evaluation Request",
   "description": "Body accepted by POST /api/v1/decision/evaluate: a proposed action submitted for a governance decision.",
-  "$comment": "The Zod source additionally sanitizes `action`, `resource`, and `parameters`. Those transforms are not expressible in JSON Schema.",
+  "$comment": "This document describes what is accepted, not what is retained. The service then normalizes three fields in ways JSON Schema cannot express: `toolIntent` and `planSummary` are trimmed and, if still longer than 1000 and 2000 characters respectively, truncated to that length with `... [Truncated]` appended — the `maxLength` of 100000 shown here is the accept limit, not the stored length. `toolParameters` is redacted and bounded: values under secret-shaped keys (authorization, token, secret, password, credential, key, cookie, and similar) are replaced with `[REDACTED]`; string values longer than 500 characters are truncated; values that look like credentials are replaced wholesale; and traversal stops after 4 levels of nesting or 100 nodes, replacing the remainder with a truncation marker.",
   "type": "object",
   "properties": {
-    "connector": {
-      "type": "string",
-      "minLength": 1
-    },
-    "action": {
-      "type": "string",
-      "minLength": 1
-    },
-    "domains": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      }
-    },
-    "toolIntent": {
-      "type": "string",
-      "maxLength": 100000
-    },
-    "planSummary": {
-      "type": "string",
-      "maxLength": 100000
-    },
+    "connector": { "type": "string", "minLength": 1 },
+    "action": { "type": "string", "minLength": 1 },
+    "domains": { "type": "array", "items": { "type": "string" } },
+    "toolIntent": { "type": "string", "maxLength": 100000 },
+    "planSummary": { "type": "string", "maxLength": 100000 },
     "toolParameters": {
       "type": "object",
-      "propertyNames": {
-        "type": "string"
-      },
+      "propertyNames": { "type": "string" },
       "additionalProperties": {}
     }
   },
-  "required": [
-    "connector",
-    "action"
-  ]
+  "required": ["connector", "action"]
 }
