@@ -14,6 +14,14 @@
 // must provision. GITHUB_TOKEN cannot write to a different repository, so this
 // script fails closed with a clear message if the token is absent.
 //
+// Two guards run before any network or filesystem work, fail-closed and early:
+//   - the target must be exactly "<owner>/<name>" (no protocol, no path, no
+//     ".git" suffix, no whitespace); anything else is refused, and
+//   - the target must not be the repository this workflow runs in
+//     (SCHEMA_REGISTRY_REPO vs SCHEMA_REGISTRY_SOURCE_REPO / GITHUB_REPOSITORY),
+//     so a misconfiguration can never replace-all publish over the source.
+// Local paths are accepted as an explicit testing-only form.
+//
 // The generated tree owns every path except an explicit allowlist
 // (README.md and LICENSE), which are preserved across publishes so the
 // repository keeps its own documentation and licence; they are never deleted,
@@ -71,17 +79,44 @@ function runGit(args, context, cwd) {
 }
 
 async function main() {
-  const repo = (env.SCHEMA_REGISTRY_REPO || "").trim();
+  const rawRepo = env.SCHEMA_REGISTRY_REPO || "";
+  const repo = rawRepo.trim();
   if (!repo) {
     fail(
       "SCHEMA_REGISTRY_REPO is not set. The publishing workflow must resolve it from the " +
-        "SCHEMA_REGISTRY_REPO repository variable; an operator must create the registry " +
-        "repository and set that variable.",
+        "SCHEMA_REGISTRY_REPO repository variable; the registry repository is " +
+        "getspctre/schema. Refusing to guess a target repository.",
     );
   }
 
-  const token = (env.SCHEMA_REGISTRY_TOKEN || "").trim();
   const isLocal = repo.startsWith("/") || repo.startsWith("./") || repo.startsWith("../");
+  const sourceRepo = (
+    env.SCHEMA_REGISTRY_SOURCE_REPO ||
+    env.GITHUB_REPOSITORY ||
+    "getspctre/spctre"
+  ).trim();
+  if (!isLocal) {
+    if (!/^[^\s/]+\/[^\s/]+$/.test(rawRepo)) {
+      fail(
+        `SCHEMA_REGISTRY_REPO must be exactly "<owner>/<name>" (no protocol, no path, no ` +
+          `whitespace), got "${repo}"; refusing to guess a target repository`,
+      );
+    }
+    if (rawRepo.endsWith(".git")) {
+      fail(
+        `SCHEMA_REGISTRY_REPO must not end in ".git", got "${repo}"; refusing to guess a ` +
+          "target repository",
+      );
+    }
+    if (repo.toLowerCase() === sourceRepo.toLowerCase()) {
+      fail(
+        `SCHEMA_REGISTRY_REPO (${repo}) resolves to the repository this workflow runs in ` +
+          `(${sourceRepo}); refusing to replace-all publish over the source repository`,
+      );
+    }
+  }
+
+  const token = (env.SCHEMA_REGISTRY_TOKEN || "").trim();
   if (!isLocal && !token) {
     fail(
       "SCHEMA_REGISTRY_TOKEN is not set. Publishing needs write access to another " +
@@ -104,7 +139,6 @@ async function main() {
     fail(`the staged registry tree at ${staging} is empty; refusing to publish an empty site`);
   }
 
-  const sourceRepo = (env.SCHEMA_REGISTRY_SOURCE_REPO || "getspctre/spctre").trim();
   const sourceSha = (env.SCHEMA_REGISTRY_SOURCE_SHA || "unknown").slice(0, 12);
   const authorName = env.SCHEMA_REGISTRY_AUTHOR_NAME || "spctre-registry-publisher";
   const authorEmail = env.SCHEMA_REGISTRY_AUTHOR_EMAIL || "spctre-registry-publisher@spctre.dev";
