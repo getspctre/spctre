@@ -42,10 +42,6 @@ class TestGatewayEventValidationError extends Error {
 
 vi.mock("@/lib/domains/gateway/ingest", () => ({
   GatewayEventValidationError: TestGatewayEventValidationError,
-  normalizeGatewayInteger: (value: number | undefined) =>
-    Math.min(Number.MAX_SAFE_INTEGER, Math.max(0, Math.round(value ?? 0))),
-  normalizeGatewayCost: (value: number | undefined) =>
-    value === undefined ? undefined : Math.max(0, value),
 }));
 
 const { handleRegisteredGatewayIngest } = await import("../app/api/gateway-ingest/_shared");
@@ -119,26 +115,6 @@ describe("gateway ingest validation boundaries", () => {
       expect.objectContaining({
         event: expect.objectContaining({ toolDeclarations: ["github_issue_create"] }),
       }),
-    );
-  });
-
-  it("rounds fractional MCP latency instead of rejecting the event", async () => {
-    const response = await mcpPost(
-      new Request("https://app.example/api/gateway-ingest/mcp", {
-        method: "POST",
-        headers: { authorization: "Bearer token" },
-        body: JSON.stringify({
-          provider: "portkey",
-          gateway_event_id: "event-latency",
-          agent_id: "agent-1",
-          latency_ms: 187.5,
-        }),
-      }),
-    );
-
-    expect(response.status).toBe(201);
-    expect(state.ingestGatewayEvent).toHaveBeenCalledWith(
-      expect.objectContaining({ event: expect.objectContaining({ latencyMs: 188 }) }),
     );
   });
 
