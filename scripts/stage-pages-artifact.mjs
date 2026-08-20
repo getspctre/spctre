@@ -1,10 +1,10 @@
-// Stage the schema registry and the docs site into a single GitHub Pages artifact.
+// Stage the schema registry into a standalone GitHub Pages artifact tree.
 //
-// GitHub Pages permits exactly one site per repository. The docs site already
-// occupies the repository's Pages artifact (built by apps/docs and deployed by
-// .github/workflows/docs-pages.yml), so this helper composes the schema
-// registry artifacts into that same artifact. The registry's $ids then resolve
-// on its custom domain (schema.spctre.dev) without a second Pages site.
+// The registry is hosted in its own Pages repository (parameterized in
+// .github/workflows/publish-registry.yml) so its custom domain can be attached
+// without disturbing the docs site, which keeps its own Pages deployment in
+// .github/workflows/docs-pages.yml. This helper builds only the registry tree:
+// the artifacts, the mutable manifest index, and the CNAME file.
 //
 // The manifest (packages/api-contracts/schemas/manifest.json, emitted by the
 // @spctre/api-contracts registry pipeline) is the single source of truth. Each
@@ -19,8 +19,10 @@
 //
 // This helper refuses to publish an empty or partial registry:
 //   - if the manifest is absent or unparseable,
-//   - if an entry's source file is absent, or
-//   - if a source file's digest does not match the digest in the manifest,
+//   - if an entry's source file is absent,
+//   - if a source file's digest does not match the digest in the manifest, or
+//   - if two artifacts stage to the same path (or collide with the manifest
+//     index or the CNAME file),
 // the process exits non-zero before anything is uploaded.
 //
 // Immutable (versioned) artifact paths are additionally protected at publish
@@ -35,9 +37,7 @@
 //   SCHEMA_PAGES_MANIFEST         path to the emission manifest, relative to
 //                                 the repo root
 //                                 (default packages/api-contracts/schemas/manifest.json)
-//   SCHEMA_PAGES_DOCS_OUT         built docs export to compose in
-//                                 (default apps/docs/out)
-//   SCHEMA_PAGES_STAGING_DIR      where the composed artifact is written
+//   SCHEMA_PAGES_STAGING_DIR      where the registry tree is written
 //                                 (default a fresh dir under the OS temp dir)
 //   SCHEMA_PAGES_INDEX_PATH       site path for the published manifest index;
 //                                 defaults to the manifest's own manifestUrl
@@ -46,8 +46,10 @@
 //                                 (default schema.spctre.dev)
 //   SCHEMA_PAGES_BASE_URLS        comma-separated base URLs probed for the
 //                                 overwrite check, in order
-//   SCHEMA_PAGES_GITHUB_REPOSITORY "<owner>/<repo>" whose github.io Pages site
-//                                 is appended to the probe list
+//   SCHEMA_PAGES_GITHUB_REPOSITORY "<owner>/<repo>" of the registry's github.io
+//                                 Pages site, appended to the probe list. In the
+//                                 publishing workflow this is the registry
+//                                 repository, not the source repository.
 //   SCHEMA_PAGES_SKIP_LIVE_CHECK  set to "1" to skip the overwrite check
 //                                 (local testing only)
 //
@@ -73,7 +75,7 @@
 
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
-import { cp, copyFile, mkdir, readdir, rm, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, readdir, rm, writeFile } from "node:fs/promises";
 import { isAbsolute, dirname, join, relative, resolve } from "node:path";
 import os from "node:os";
 
@@ -84,7 +86,6 @@ const manifestPath = resolve(
   repoRoot,
   env.SCHEMA_PAGES_MANIFEST || "packages/api-contracts/schemas/manifest.json",
 );
-const docsOut = resolve(repoRoot, env.SCHEMA_PAGES_DOCS_OUT || "apps/docs/out");
 const stagingDir = resolve(
   env.SCHEMA_PAGES_STAGING_DIR || join(os.tmpdir(), "spctre-pages-staging"),
 );
@@ -230,18 +231,12 @@ function registryUrlPath(entry, registry) {
 }
 
 function assertStagingIsSafe() {
-  for (const other of [docsOut, repoRoot]) {
-    if (stagingDir === other) {
-      fail(`SCHEMA_PAGES_STAGING_DIR (${stagingDir}) must not equal a source path (${other})`);
-    }
-    const stagingToOther = relative(stagingDir, other);
-    if (!stagingToOther.startsWith("..") && !isAbsolute(stagingToOther)) {
-      fail(`SCHEMA_PAGES_STAGING_DIR (${stagingDir}) is a parent of source path ${other}`);
-    }
+  if (stagingDir === repoRoot) {
+    fail(`SCHEMA_PAGES_STAGING_DIR (${stagingDir}) must not equal the repository root`);
   }
-  const docsToStaging = relative(docsOut, stagingDir);
-  if (!docsToStaging.startsWith("..") && !isAbsolute(docsToStaging)) {
-    fail(`SCHEMA_PAGES_STAGING_DIR (${stagingDir}) is nested inside docs output ${docsOut}`);
+  const stagingToRoot = relative(stagingDir, repoRoot);
+  if (!stagingToRoot.startsWith("..") && !isAbsolute(stagingToRoot)) {
+    fail(`SCHEMA_PAGES_STAGING_DIR (${stagingDir}) is a parent of the repository root`);
   }
 }
 
@@ -321,74 +316,75 @@ function verifyAndNormalize(manifest) {
     );
   }
 
-  const byPath = new Map();
-  const unique = [];
+  return {
+    registry,
+    manifestUrl,
+    entries: entries.map((entry) => {
+      const source = resolve(repoRoot, entry.path);
+      if (relative(repoRoot, source).startsWith("..") || isAbsolute(relative(repoRoot, source))) {
+        fail(`artifact ${entry.id || entry.path} resolves outside the repository root`);
+      }
+      if (!existsSync(source)) {
+        fail(
+          `artifact ${entry.id || entry.path} is missing at ${source}; refusing to publish a ` +
+            "partial registry",
+        );
+      }
+      const actual = sha256File(source);
+      if (actual !== entry.digest) {
+        fail(
+          `digest mismatch for ${entry.path}: manifest records ${entry.digest} but the source ` +
+            `file is ${actual}; refusing to publish unverified bytes`,
+        );
+      }
+      const urlPath = registryUrlPath(entry, registry);
+      const immutable =
+        typeof entry.immutable === "boolean" ? entry.immutable : inferImmutable(urlPath);
+      return { ...entry, urlPath, immutable };
+    }),
+  };
+}
+
+function assertDistinctStagedPaths(entries, indexPath) {
+  const seen = new Map();
   for (const entry of entries) {
-    const source = resolve(repoRoot, entry.path);
-    if (relative(repoRoot, source).startsWith("..") || isAbsolute(relative(repoRoot, source))) {
-      fail(`artifact ${entry.id || entry.path} resolves outside the repository root`);
+    if (entry.urlPath === "CNAME") {
+      fail(`artifact ${entry.id || entry.path} would overwrite the CNAME file`);
     }
-    if (!existsSync(source)) {
+    if (entry.urlPath === indexPath) {
+      fail(`artifact ${entry.id || entry.path} would overwrite the manifest index at ${indexPath}`);
+    }
+    const prior = seen.get(entry.urlPath);
+    if (prior !== undefined) {
       fail(
-        `artifact ${entry.id || entry.path} is missing at ${source}; refusing to publish a ` +
-          "partial registry",
+        `path collision within the registry tree: artifacts "${prior}" and ` +
+          `${entry.id || entry.path} both stage to ${entry.urlPath}; refusing to publish`,
       );
     }
-    const actual = sha256File(source);
-    if (actual !== entry.digest) {
-      fail(
-        `digest mismatch for ${entry.path}: manifest records ${entry.digest} but the source ` +
-          `file is ${actual}; refusing to publish unverified bytes`,
-      );
-    }
-    const urlPath = registryUrlPath(entry, registry);
-    const immutable =
-      typeof entry.immutable === "boolean" ? entry.immutable : inferImmutable(urlPath);
-    const prior = byPath.get(urlPath);
-    if (prior && prior !== entry.digest) {
-      fail(`manifest lists conflicting digests for ${urlPath}; refusing to publish`);
-    }
-    if (!prior) {
-      byPath.set(urlPath, entry.digest);
-      unique.push({ ...entry, urlPath, immutable });
-    }
+    seen.set(entry.urlPath, entry.id || entry.path);
   }
-  return { registry, manifestUrl, entries: unique };
 }
 
 async function stage(entries, registry, manifestUrl, indexOverride) {
-  if (!existsSync(docsOut)) {
-    fail(`docs export missing at ${docsOut}; refusing to compose the Pages artifact without it`);
-  }
-
   await rm(stagingDir, { recursive: true, force: true });
   await mkdir(stagingDir, { recursive: true });
-  await cp(docsOut, stagingDir, { recursive: true });
-
-  const stagedPaths = new Set(
-    (await walkFiles(stagingDir)).map((file) => relative(stagingDir, file)),
-  );
-
-  for (const entry of entries) {
-    if (stagedPaths.has(entry.urlPath)) {
-      fail(`path collision: registry artifact ${entry.urlPath} conflicts with the docs output`);
-    }
-    const dest = join(stagingDir, entry.urlPath);
-    await mkdir(dirname(dest), { recursive: true });
-    await copyFile(resolve(repoRoot, entry.path), dest);
-    stagedPaths.add(entry.urlPath);
-    log(`staged ${entry.urlPath} (${entry.immutable ? "immutable" : "mutable pointer"})`);
-  }
 
   const indexUrl = indexOverride || manifestUrl || "manifest.json";
   const indexPath = (
     indexUrl.startsWith(registry) ? indexUrl.slice(registry.length) : indexUrl
   ).replace(/^\/+/, "");
-  if (!stagedPaths.has(indexPath)) {
-    await mkdir(dirname(join(stagingDir, indexPath)), { recursive: true });
-    await writeFile(join(stagingDir, indexPath), readFileSync(manifestPath));
-    log(`staged mutable index ${indexPath}`);
+  assertDistinctStagedPaths(entries, indexPath);
+
+  for (const entry of entries) {
+    const dest = join(stagingDir, entry.urlPath);
+    await mkdir(dirname(dest), { recursive: true });
+    await copyFile(resolve(repoRoot, entry.path), dest);
+    log(`staged ${entry.urlPath} (${entry.immutable ? "immutable" : "mutable pointer"})`);
   }
+
+  await mkdir(dirname(join(stagingDir, indexPath)), { recursive: true });
+  await writeFile(join(stagingDir, indexPath), readFileSync(manifestPath));
+  log(`staged mutable index ${indexPath}`);
 
   await writeFile(join(stagingDir, "CNAME"), `${cname}\n`);
   log(`staged CNAME ${cname}`);
@@ -422,10 +418,9 @@ async function main() {
   const stagedFileCount = (await walkFiles(stagingDir)).length;
   log(
     `staged ${entries.length} registry artifacts (${immutableCount} immutable, ` +
-      `${mutableCount} mutable) and the docs site into ${stagingDir} ` +
-      `(${stagedFileCount} files total)`,
+      `${mutableCount} mutable) into ${stagingDir} (${stagedFileCount} files total)`,
   );
-  log("digests verified against the manifest; ready to upload");
+  log("digests verified against the manifest; ready to publish");
 }
 
 main().catch((error) => {

@@ -1,0 +1,81 @@
+# Publish the schema registry to its own Pages repository.
+#
+# The registry is hosted in a dedicated repository (not this one) so that its
+# GitHub Pages site can be bound to the schema.spctre.dev custom domain without
+# disturbing the docs site, which keeps its own Pages deployment in
+# docs-pages.yml. The docs-pages.yml workflow is deliberately docs-only.
+#
+# Publishing is manifest-driven: scripts/stage-pages-artifact.mjs stages the
+# registry tree (artifacts + mutable index + CNAME) from
+# packages/api-contracts/schemas/manifest.json, verifying every SHA-256 digest,
+# enforcing the pathBase contract, and refusing to overwrite published
+# immutable paths with different bytes. scripts/publish-registry-repo.mjs then
+# pushes that tree to the registry repository's Pages-served branch.
+#
+# Triggers:
+#   - push to main touching any published artifact. Path filters are a known
+#     foot-gun (this repo has shipped that bug before), so the weekly schedule
+#     below is a convergence net: even if a future change alters an artifact
+#     without matching a path filter, the registry catches up within a week
+#     instead of silently serving stale bytes.
+#   - workflow_dispatch, for manual republishes.
+#
+# Write access to the registry repository comes from the SCHEMA_REGISTRY_TOKEN
+# secret (a fine-grained PAT), which GITHUB_TOKEN cannot grant across
+# repositories. Publishing fails closed with a clear message if it is absent.
+# The target repository is read from the SCHEMA_REGISTRY_REPO repository
+# variable (default getspctre/schema-registry) and the branch from
+# SCHEMA_REGISTRY_BRANCH (default main).
+
+name: Publish schema registry to its Pages repository
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - packages/api-contracts/schemas/**
+      - packages/api-contracts/openapi.json
+      - packages/policy-schema/schemas/**
+      - scripts/stage-pages-artifact.mjs
+      - scripts/publish-registry-repo.mjs
+      - .github/workflows/publish-registry.yml
+  workflow_dispatch:
+  schedule:
+    - cron: "0 3 * * 0"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-schema-registry
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    if: github.repository == 'getspctre/spctre'
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+
+      - name: Stage the registry tree
+        env:
+          SCHEMA_PAGES_REPO_ROOT: ${{ github.workspace }}
+          SCHEMA_PAGES_MANIFEST: packages/api-contracts/schemas/manifest.json
+          SCHEMA_PAGES_STAGING_DIR: ${{ runner.temp }}/registry-staging
+          SCHEMA_PAGES_INDEX_PATH: manifest.json
+          SCHEMA_PAGES_CNAME: schema.spctre.dev
+          SCHEMA_PAGES_GITHUB_REPOSITORY: ${{ vars.SCHEMA_REGISTRY_REPO || 'getspctre/schema-registry' }}
+        run: node scripts/stage-pages-artifact.mjs
+
+      - name: Publish to the registry repository
+        env:
+          SCHEMA_REGISTRY_REPO: ${{ vars.SCHEMA_REGISTRY_REPO || 'getspctre/schema-registry' }}
+          SCHEMA_REGISTRY_BRANCH: ${{ vars.SCHEMA_REGISTRY_BRANCH || 'main' }}
+          SCHEMA_REGISTRY_TOKEN: ${{ secrets.SCHEMA_REGISTRY_TOKEN }}
+          SCHEMA_REGISTRY_STAGING_DIR: ${{ runner.temp }}/registry-staging
+          SCHEMA_REGISTRY_SOURCE_REPO: ${{ github.repository }}
+          SCHEMA_REGISTRY_SOURCE_SHA: ${{ github.sha }}
+        run: node scripts/publish-registry-repo.mjs
