@@ -8,6 +8,9 @@ export const GATEWAY_EVENT_V1_SCHEMA_ID = "spctre.gateway.event.v1";
  *
  * This is distinct from provider webhook payloads: `rawEvent` retains the
  * provider-specific input while the remaining fields are normalized for Spctre.
+ * The TypeScript gateway ingest path is authoritative for enforcement. The Go
+ * worker currently has a separately normalized path (and does not support
+ * `notion`); aligning its runtime validation is a follow-up to schema emission.
  */
 export const GatewayEventV1Schema = z
   .object({
@@ -20,7 +23,7 @@ export const GatewayEventV1Schema = z
     toolDeclarations: z.array(z.string().min(1)),
     promptTokens: z.number().int().nonnegative(),
     completionTokens: z.number().int().nonnegative(),
-    latencyMs: z.number().nonnegative(),
+    latencyMs: z.number().int().nonnegative(),
     costUsd: z.number().nonnegative().optional(),
     eventTimestamp: z.string().min(1),
     rawEvent: z.record(z.string(), z.unknown()),

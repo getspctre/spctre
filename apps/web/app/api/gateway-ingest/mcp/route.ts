@@ -1,6 +1,10 @@
 import { revalidatePath } from "next/cache";
 import { authenticateServiceToken, hasBearerToken } from "@/lib/service-tokens";
-import { type GatewayEventV1, type GatewayProvider } from "@/lib/domains/gateway/ingest";
+import {
+  GatewayEventValidationError,
+  type GatewayEventV1,
+  type GatewayProvider,
+} from "@/lib/domains/gateway/ingest";
 import {
   isGatewayDatabaseConfigured,
   getTenantIdOrDemo,
@@ -43,7 +47,9 @@ function parseString(value: unknown): string | null {
  * Returns an array of strings, filtering out non-string elements.
  */
 function parseStringArray(value: unknown): string[] {
-  return Array.isArray(value) ? value.filter((v): v is string => typeof v === "string") : [];
+  return Array.isArray(value)
+    ? value.filter((v): v is string => typeof v === "string" && v.trim().length > 0)
+    : [];
 }
 
 /**
@@ -188,6 +194,23 @@ async function handlePostApiGatewayIngestMcp(request: Request) {
           traceId,
         );
       } catch (err) {
+        if (err instanceof GatewayEventValidationError) {
+          incrementCounter("spctre.api.errors", 1, {
+            "http.route": "/api/gateway-ingest/mcp",
+            "http.response.status_code": 422,
+          });
+          return withTraceId(
+            Response.json(
+              {
+                error: "Invalid normalized gateway event.",
+                issues: err.issues,
+                meta: makeMeta(traceId),
+              },
+              { status: 422 },
+            ),
+            traceId,
+          );
+        }
         incrementCounter("spctre.api.errors", 1, {
           "http.route": "/api/gateway-ingest/mcp",
           "http.response.status_code": 500,

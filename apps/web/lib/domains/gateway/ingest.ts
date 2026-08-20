@@ -137,10 +137,18 @@ export function normalizePortkeyEvent(raw: Record<string, unknown>): GatewayEven
     connector,
     action,
     toolDeclarations,
-    promptTokens: numberField(usage, "prompt_tokens") ?? 0,
-    completionTokens: numberField(usage, "completion_tokens") ?? 0,
-    latencyMs: numberField(raw, "latency") ?? 0,
-    costUsd: numberField(raw, "cost") ?? undefined,
+    promptTokens: normalizeGatewayInteger(
+      numberField(usage, "prompt_tokens"),
+      "promptTokens",
+      "portkey",
+    ),
+    completionTokens: normalizeGatewayInteger(
+      numberField(usage, "completion_tokens"),
+      "completionTokens",
+      "portkey",
+    ),
+    latencyMs: normalizeGatewayInteger(numberField(raw, "latency"), "latencyMs", "portkey"),
+    costUsd: normalizeGatewayCost(numberField(raw, "cost"), "portkey"),
     eventTimestamp: timestamp,
     rawEvent: raw,
   });
@@ -181,10 +189,18 @@ export function normalizeHeliconeEvent(raw: Record<string, unknown>): GatewayEve
     connector,
     action,
     toolDeclarations,
-    promptTokens: numberField(usage, "prompt_tokens") ?? 0,
-    completionTokens: numberField(usage, "completion_tokens") ?? 0,
-    latencyMs: numberField(data, "latency") ?? 0,
-    costUsd: numberField(cost, "total") ?? undefined,
+    promptTokens: normalizeGatewayInteger(
+      numberField(usage, "prompt_tokens"),
+      "promptTokens",
+      "helicone",
+    ),
+    completionTokens: normalizeGatewayInteger(
+      numberField(usage, "completion_tokens"),
+      "completionTokens",
+      "helicone",
+    ),
+    latencyMs: normalizeGatewayInteger(numberField(data, "latency"), "latencyMs", "helicone"),
+    costUsd: normalizeGatewayCost(numberField(cost, "total"), "helicone"),
     eventTimestamp: timestamp,
     rawEvent: raw,
   });
@@ -216,7 +232,11 @@ export function normalizeLitellmEvent(raw: Record<string, unknown>): GatewayEven
 
   const startMs = numberField(raw, "startTime");
   const endMs = numberField(raw, "endTime");
-  const latencyMs = startMs != null && endMs != null ? Math.round((endMs - startMs) * 1000) : 0;
+  const latencyMs = normalizeGatewayInteger(
+    startMs != null && endMs != null ? Math.round((endMs - startMs) * 1000) : 0,
+    "latencyMs",
+    "litellm",
+  );
 
   const timestamp =
     typeof startMs === "number"
@@ -234,10 +254,18 @@ export function normalizeLitellmEvent(raw: Record<string, unknown>): GatewayEven
     connector,
     action,
     toolDeclarations,
-    promptTokens: numberField(usage, "prompt_tokens") ?? 0,
-    completionTokens: numberField(usage, "completion_tokens") ?? 0,
+    promptTokens: normalizeGatewayInteger(
+      numberField(usage, "prompt_tokens"),
+      "promptTokens",
+      "litellm",
+    ),
+    completionTokens: normalizeGatewayInteger(
+      numberField(usage, "completion_tokens"),
+      "completionTokens",
+      "litellm",
+    ),
     latencyMs,
-    costUsd: numberField(metadata, "spend") ?? undefined,
+    costUsd: normalizeGatewayCost(numberField(metadata, "spend"), "litellm"),
     eventTimestamp: timestamp,
     rawEvent: raw,
   });
@@ -270,11 +298,18 @@ export function normalizeNotionEvent(raw: Record<string, unknown>): GatewayEvent
     connector: "gateway-notion",
     action: stringField(raw, "action") ?? toolDeclarations[0] ?? "worker.execute",
     toolDeclarations,
-    promptTokens: numberField(usage, "prompt_tokens") ?? numberField(usage, "input_tokens") ?? 0,
-    completionTokens:
-      numberField(usage, "completion_tokens") ?? numberField(usage, "output_tokens") ?? 0,
-    latencyMs: numberField(raw, "latency_ms") ?? 0,
-    costUsd: numberField(raw, "cost_usd") ?? undefined,
+    promptTokens: normalizeGatewayInteger(
+      numberField(usage, "prompt_tokens") ?? numberField(usage, "input_tokens"),
+      "promptTokens",
+      "notion",
+    ),
+    completionTokens: normalizeGatewayInteger(
+      numberField(usage, "completion_tokens") ?? numberField(usage, "output_tokens"),
+      "completionTokens",
+      "notion",
+    ),
+    latencyMs: normalizeGatewayInteger(numberField(raw, "latency_ms"), "latencyMs", "notion"),
+    costUsd: normalizeGatewayCost(numberField(raw, "cost_usd"), "notion"),
     eventTimestamp: timestamp,
     rawEvent: raw,
   });
@@ -439,6 +474,39 @@ function numberField(
   if (!obj) return undefined;
   const v = obj[key];
   return typeof v === "number" && Number.isFinite(v) ? v : undefined;
+}
+
+function normalizeGatewayInteger(
+  value: number | undefined,
+  field: "promptTokens" | "completionTokens" | "latencyMs",
+  provider: GatewayProvider,
+): number {
+  const received = value ?? 0;
+  const normalized = Math.max(0, Math.round(received));
+  if (normalized !== received)
+    recordGatewayNumericNormalization(provider, field, received, normalized);
+  return normalized;
+}
+
+function normalizeGatewayCost(
+  value: number | undefined,
+  provider: GatewayProvider,
+): number | undefined {
+  if (value === undefined) return undefined;
+  const normalized = Math.max(0, value);
+  if (normalized !== value)
+    recordGatewayNumericNormalization(provider, "costUsd", value, normalized);
+  return normalized;
+}
+
+function recordGatewayNumericNormalization(
+  provider: GatewayProvider,
+  field: "promptTokens" | "completionTokens" | "latencyMs" | "costUsd",
+  received: number,
+  normalized: number,
+) {
+  logger.warn("Gateway event numeric field normalized", { provider, field, received, normalized });
+  incrementCounter("spctre.gateway.event.normalized", 1, { provider, field });
 }
 
 function objectField(
