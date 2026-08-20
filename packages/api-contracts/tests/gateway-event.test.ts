@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
-import {
-  GATEWAY_EVENT_V1_SCHEMA_ID,
-  GatewayEventV1Schema,
-} from "../src/schemas/gateway-event.js";
+import { GATEWAY_EVENT_V1_SCHEMA_ID, GatewayEventV1Schema } from "../src/schemas/gateway-event.js";
 
 const validGatewayEvent = {
   provider: "portkey",
@@ -15,13 +12,35 @@ const validGatewayEvent = {
   toolDeclarations: ["github_issue_create"],
   promptTokens: 120,
   completionTokens: 24,
-  latencyMs: 187.5,
+  latencyMs: 188,
   costUsd: 0.0024,
   eventTimestamp: "2026-08-20T12:00:00.000Z",
   rawEvent: { id: "evt-123" },
 };
 
 describe("GatewayEventV1Schema", () => {
+  // Keep this list synchronized with the Go mirror test until emitted schema
+  // artifacts make a cross-language single-source assertion possible.
+  const fieldNames = [
+    "provider",
+    "gatewayEventId",
+    "model",
+    "agentId",
+    "connector",
+    "action",
+    "toolDeclarations",
+    "promptTokens",
+    "completionTokens",
+    "latencyMs",
+    "costUsd",
+    "eventTimestamp",
+    "rawEvent",
+  ];
+
+  it("has the canonical 13-field shape", () => {
+    expect(Object.keys(GatewayEventV1Schema.shape).sort()).toEqual(fieldNames.sort());
+  });
+
   it("accepts a valid normalized gateway event", () => {
     expect(GatewayEventV1Schema.safeParse(validGatewayEvent).success).toBe(true);
   });
@@ -73,6 +92,7 @@ describe("GatewayEventV1Schema", () => {
       "eventTimestamp",
       "rawEvent",
     ]);
+    expect(rendered.properties?.latencyMs).toMatchObject({ minimum: 0, type: "integer" });
     expect(rendered.properties?.costUsd).toMatchObject({ minimum: 0 });
   });
 });

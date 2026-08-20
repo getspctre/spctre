@@ -26,6 +26,7 @@ type gatewayIngestRequest struct {
 	Raw         map[string]any `json:"raw"`
 }
 
+// JSON tags document spctre.gateway.event.v1 for the drift test; this struct is not serialized.
 type gatewayEvent struct {
 	Provider         gatewayIngestProvider `json:"provider"`
 	GatewayEventID   string                `json:"gatewayEventId"`

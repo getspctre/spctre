@@ -8,6 +8,8 @@ import (
 )
 
 func TestGatewayEventMatchesPublicContractFieldSet(t *testing.T) {
+	// Keep this list synchronized with GatewayEventV1Schema.shape until emitted
+	// schema artifacts let this Go test consume the canonical schema directly.
 	typeOfEvent := reflect.TypeOf(gatewayEvent{})
 	actual := make(map[string]bool, typeOfEvent.NumField())
 	for i := 0; i < typeOfEvent.NumField(); i++ {
