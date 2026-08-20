@@ -1,5 +1,6 @@
 import { ingestAgtRuntimeDecision } from "@spctre/policy-schema";
 import type { RuntimePolicyContext } from "@spctre/policy-schema";
+import { GatewayEventV1Schema, z } from "@spctre/api-contracts";
 import { appendOperationsLog } from "@/lib/repositories/operations-log";
 import { resolveRevisionAtTime } from "@/lib/repositories/gateway";
 import { insertGatewayEvidenceEvent } from "@/lib/repositories/evidence";
@@ -9,22 +10,28 @@ import { logger } from "@spctre/platform/logging";
 import { incrementCounter, recordDuration } from "@spctre/platform/metrics";
 import { swallow } from "@/lib/platform/swallow";
 
-export type GatewayProvider = "portkey" | "helicone" | "litellm" | "notion";
+export type GatewayEventV1 = z.infer<typeof GatewayEventV1Schema>;
+export type GatewayProvider = GatewayEventV1["provider"];
 
-export interface GatewayEventV1 {
-  provider: GatewayProvider;
-  gatewayEventId: string;
-  model: string;
-  agentId: string;
-  connector: string;
-  action: string;
-  toolDeclarations: string[];
-  promptTokens: number;
-  completionTokens: number;
-  latencyMs: number;
-  costUsd: number | undefined;
-  eventTimestamp: string;
-  rawEvent: Record<string, unknown>;
+export class GatewayEventValidationError extends Error {
+  readonly code = "INVALID_GATEWAY_EVENT";
+
+  constructor(readonly issues: Array<{ path: string; message: string }>) {
+    super("Normalized gateway event failed spctre.gateway.event.v1 validation.");
+    this.name = "GatewayEventValidationError";
+  }
+}
+
+export function validateGatewayEvent(event: unknown): GatewayEventV1 {
+  const parsed = GatewayEventV1Schema.safeParse(event);
+  if (parsed.success) return parsed.data;
+
+  throw new GatewayEventValidationError(
+    parsed.error.issues.map((issue) => ({
+      path: issue.path.join(".") || "(root)",
+      message: issue.message,
+    })),
+  );
 }
 
 /**
@@ -122,7 +129,7 @@ export function normalizePortkeyEvent(raw: Record<string, unknown>): GatewayEven
   const timestamp =
     stringField(raw, "timestamp") ?? stringField(raw, "created_at") ?? new Date().toISOString();
 
-  return {
+  return validateGatewayEvent({
     provider: "portkey",
     gatewayEventId: id,
     model: stringField(raw, "model") ?? "unknown",
@@ -130,13 +137,21 @@ export function normalizePortkeyEvent(raw: Record<string, unknown>): GatewayEven
     connector,
     action,
     toolDeclarations,
-    promptTokens: numberField(usage, "prompt_tokens") ?? 0,
-    completionTokens: numberField(usage, "completion_tokens") ?? 0,
-    latencyMs: numberField(raw, "latency") ?? 0,
-    costUsd: numberField(raw, "cost") ?? undefined,
+    promptTokens: normalizeGatewayInteger(
+      numberField(usage, "prompt_tokens"),
+      "promptTokens",
+      "portkey",
+    ),
+    completionTokens: normalizeGatewayInteger(
+      numberField(usage, "completion_tokens"),
+      "completionTokens",
+      "portkey",
+    ),
+    latencyMs: normalizeGatewayInteger(numberField(raw, "latency"), "latencyMs", "portkey"),
+    costUsd: normalizeGatewayCost(numberField(raw, "cost"), "portkey"),
     eventTimestamp: timestamp,
     rawEvent: raw,
-  };
+  });
 }
 
 /**
@@ -163,7 +178,7 @@ export function normalizeHeliconeEvent(raw: Record<string, unknown>): GatewayEve
   const timestamp =
     stringField(data, "created_at") ?? stringField(raw, "created_at") ?? new Date().toISOString();
 
-  return {
+  return validateGatewayEvent({
     provider: "helicone",
     gatewayEventId: id,
     model: stringField(data, "model") ?? "unknown",
@@ -174,13 +189,21 @@ export function normalizeHeliconeEvent(raw: Record<string, unknown>): GatewayEve
     connector,
     action,
     toolDeclarations,
-    promptTokens: numberField(usage, "prompt_tokens") ?? 0,
-    completionTokens: numberField(usage, "completion_tokens") ?? 0,
-    latencyMs: numberField(data, "latency") ?? 0,
-    costUsd: numberField(cost, "total") ?? undefined,
+    promptTokens: normalizeGatewayInteger(
+      numberField(usage, "prompt_tokens"),
+      "promptTokens",
+      "helicone",
+    ),
+    completionTokens: normalizeGatewayInteger(
+      numberField(usage, "completion_tokens"),
+      "completionTokens",
+      "helicone",
+    ),
+    latencyMs: normalizeGatewayInteger(numberField(data, "latency"), "latencyMs", "helicone"),
+    costUsd: normalizeGatewayCost(numberField(cost, "total"), "helicone"),
     eventTimestamp: timestamp,
     rawEvent: raw,
-  };
+  });
 }
 
 /**
@@ -209,14 +232,18 @@ export function normalizeLitellmEvent(raw: Record<string, unknown>): GatewayEven
 
   const startMs = numberField(raw, "startTime");
   const endMs = numberField(raw, "endTime");
-  const latencyMs = startMs != null && endMs != null ? Math.round((endMs - startMs) * 1000) : 0;
+  const latencyMs = normalizeGatewayInteger(
+    startMs != null && endMs != null ? Math.round((endMs - startMs) * 1000) : 0,
+    "latencyMs",
+    "litellm",
+  );
 
   const timestamp =
     typeof startMs === "number"
       ? new Date(startMs * 1000).toISOString()
       : (stringField(raw, "created_at") ?? new Date().toISOString());
 
-  return {
+  return validateGatewayEvent({
     provider: "litellm",
     gatewayEventId: id,
     model: stringField(raw, "model") ?? "unknown",
@@ -227,13 +254,21 @@ export function normalizeLitellmEvent(raw: Record<string, unknown>): GatewayEven
     connector,
     action,
     toolDeclarations,
-    promptTokens: numberField(usage, "prompt_tokens") ?? 0,
-    completionTokens: numberField(usage, "completion_tokens") ?? 0,
+    promptTokens: normalizeGatewayInteger(
+      numberField(usage, "prompt_tokens"),
+      "promptTokens",
+      "litellm",
+    ),
+    completionTokens: normalizeGatewayInteger(
+      numberField(usage, "completion_tokens"),
+      "completionTokens",
+      "litellm",
+    ),
     latencyMs,
-    costUsd: numberField(metadata, "spend") ?? undefined,
+    costUsd: normalizeGatewayCost(numberField(metadata, "spend"), "litellm"),
     eventTimestamp: timestamp,
     rawEvent: raw,
-  };
+  });
 }
 
 /**
@@ -255,7 +290,7 @@ export function normalizeNotionEvent(raw: Record<string, unknown>): GatewayEvent
   const timestamp =
     stringField(raw, "created_at") ?? stringField(raw, "timestamp") ?? new Date().toISOString();
 
-  return {
+  return validateGatewayEvent({
     provider: "notion",
     gatewayEventId: id,
     model: stringField(raw, "model") ?? "unknown",
@@ -263,14 +298,21 @@ export function normalizeNotionEvent(raw: Record<string, unknown>): GatewayEvent
     connector: "gateway-notion",
     action: stringField(raw, "action") ?? toolDeclarations[0] ?? "worker.execute",
     toolDeclarations,
-    promptTokens: numberField(usage, "prompt_tokens") ?? numberField(usage, "input_tokens") ?? 0,
-    completionTokens:
-      numberField(usage, "completion_tokens") ?? numberField(usage, "output_tokens") ?? 0,
-    latencyMs: numberField(raw, "latency_ms") ?? 0,
-    costUsd: numberField(raw, "cost_usd") ?? undefined,
+    promptTokens: normalizeGatewayInteger(
+      numberField(usage, "prompt_tokens") ?? numberField(usage, "input_tokens"),
+      "promptTokens",
+      "notion",
+    ),
+    completionTokens: normalizeGatewayInteger(
+      numberField(usage, "completion_tokens") ?? numberField(usage, "output_tokens"),
+      "completionTokens",
+      "notion",
+    ),
+    latencyMs: normalizeGatewayInteger(numberField(raw, "latency_ms"), "latencyMs", "notion"),
+    costUsd: normalizeGatewayCost(numberField(raw, "cost_usd"), "notion"),
     eventTimestamp: timestamp,
     rawEvent: raw,
-  };
+  });
 }
 
 // ─── DB Ingest ───────────────────────────────────────────────────────────────
@@ -295,6 +337,7 @@ export async function ingestNormalizedGatewayEvent(
   principalId: string,
   environment: string,
 ): Promise<GatewayIngestResult> {
+  event = validateGatewayEvent(event);
   const started = Date.now();
 
   const revision = await resolveRevisionAtTime(tenantId, workspaceId, event.eventTimestamp);
@@ -431,6 +474,52 @@ function numberField(
   if (!obj) return undefined;
   const v = obj[key];
   return typeof v === "number" && Number.isFinite(v) ? v : undefined;
+}
+
+export function normalizeGatewayInteger(
+  value: number | undefined,
+  field: "promptTokens" | "completionTokens" | "latencyMs",
+  provider: GatewayProvider,
+): number {
+  const received = value ?? 0;
+  const normalized = Math.min(Number.MAX_SAFE_INTEGER, Math.max(0, Math.round(received)));
+  if (normalized !== received) {
+    const reason = received < 0 || received > Number.MAX_SAFE_INTEGER ? "clamped" : "rounded";
+    recordGatewayNumericNormalization(provider, field, received, normalized, reason);
+  }
+  return normalized;
+}
+
+export function normalizeGatewayCost(
+  value: number | undefined,
+  provider: GatewayProvider,
+): number | undefined {
+  if (value === undefined) return undefined;
+  const normalized = Math.max(0, value);
+  if (normalized !== value)
+    recordGatewayNumericNormalization(provider, "costUsd", value, normalized, "clamped");
+  return normalized;
+}
+
+function recordGatewayNumericNormalization(
+  provider: GatewayProvider,
+  field: "promptTokens" | "completionTokens" | "latencyMs" | "costUsd",
+  received: number,
+  normalized: number,
+  reason: "rounded" | "clamped",
+) {
+  const precisionDestroyed = reason === "rounded" && received > 0 && normalized === 0;
+  if (reason === "clamped" || precisionDestroyed) {
+    logger.warn("Gateway event numeric field normalized", {
+      provider,
+      field,
+      received,
+      normalized,
+      reason,
+      precisionDestroyed,
+    });
+  }
+  incrementCounter("spctre.gateway.event.normalized", 1, { provider, field, reason });
 }
 
 function objectField(

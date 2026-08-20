@@ -1,6 +1,12 @@
 import { revalidatePath } from "next/cache";
 import { authenticateServiceToken, hasBearerToken } from "@/lib/service-tokens";
-import { type GatewayEventV1, type GatewayProvider } from "@/lib/domains/gateway/ingest";
+import {
+  GatewayEventValidationError,
+  normalizeGatewayCost,
+  normalizeGatewayInteger,
+  type GatewayEventV1,
+  type GatewayProvider,
+} from "@/lib/domains/gateway/ingest";
 import {
   isGatewayDatabaseConfigured,
   getTenantIdOrDemo,
@@ -15,19 +21,8 @@ export const dynamic = "force-dynamic";
 
 const VALID_PROVIDERS = new Set<GatewayProvider>(["portkey", "helicone", "litellm"]);
 
-/**
- * Type-safe extraction of a non-negative numeric field with optional floor rounding.
- * Returns the validated number or fallback value if the field is invalid.
- */
-function parseNonNegativeNumber(
-  value: unknown,
-  fallback: number,
-  shouldFloor: boolean = false,
-): number {
-  if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
-    return fallback;
-  }
-  return shouldFloor ? Math.floor(value) : value;
+function finiteNumber(value: unknown): number | undefined {
+  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
 }
 
 /**
@@ -43,7 +38,9 @@ function parseString(value: unknown): string | null {
  * Returns an array of strings, filtering out non-string elements.
  */
 function parseStringArray(value: unknown): string[] {
-  return Array.isArray(value) ? value.filter((v): v is string => typeof v === "string") : [];
+  return Array.isArray(value)
+    ? value.filter((v): v is string => typeof v === "string" && v.trim().length > 0)
+    : [];
 }
 
 /**
@@ -59,6 +56,7 @@ function parseObject(value: unknown): Record<string, unknown> {
 function parsePayload(body: Record<string, unknown>): GatewayEventV1 | null {
   const provider = parseString(body.provider);
   if (!provider || !VALID_PROVIDERS.has(provider as GatewayProvider)) return null;
+  const gatewayProvider = provider as GatewayProvider;
 
   const gatewayEventId = parseString(body.gateway_event_id);
   if (!gatewayEventId) return null;
@@ -67,17 +65,25 @@ function parsePayload(body: Record<string, unknown>): GatewayEventV1 | null {
   if (!agentId) return null;
 
   return {
-    provider: provider as GatewayProvider,
+    provider: gatewayProvider,
     gatewayEventId,
     model: parseString(body.model) ?? "unknown",
     agentId,
     connector: parseString(body.connector) ?? "llm-gateway",
     action: parseString(body.action) ?? "llm_call",
     toolDeclarations: parseStringArray(body.tool_declarations),
-    promptTokens: parseNonNegativeNumber(body.prompt_tokens, 0, true),
-    completionTokens: parseNonNegativeNumber(body.completion_tokens, 0, true),
-    latencyMs: parseNonNegativeNumber(body.latency_ms, 0, false),
-    costUsd: parseNonNegativeNumber(body.cost_usd, NaN, false) || undefined,
+    promptTokens: normalizeGatewayInteger(
+      finiteNumber(body.prompt_tokens),
+      "promptTokens",
+      gatewayProvider,
+    ),
+    completionTokens: normalizeGatewayInteger(
+      finiteNumber(body.completion_tokens),
+      "completionTokens",
+      gatewayProvider,
+    ),
+    latencyMs: normalizeGatewayInteger(finiteNumber(body.latency_ms), "latencyMs", gatewayProvider),
+    costUsd: normalizeGatewayCost(finiteNumber(body.cost_usd), gatewayProvider),
     eventTimestamp: parseString(body.event_timestamp) ?? new Date().toISOString(),
     rawEvent: parseObject(body.raw_event),
   };
@@ -188,6 +194,23 @@ async function handlePostApiGatewayIngestMcp(request: Request) {
           traceId,
         );
       } catch (err) {
+        if (err instanceof GatewayEventValidationError) {
+          incrementCounter("spctre.api.errors", 1, {
+            "http.route": "/api/gateway-ingest/mcp",
+            "http.response.status_code": 422,
+          });
+          return withTraceId(
+            Response.json(
+              {
+                error: "Invalid normalized gateway event.",
+                issues: err.issues,
+                meta: makeMeta(traceId),
+              },
+              { status: 422 },
+            ),
+            traceId,
+          );
+        }
         incrementCounter("spctre.api.errors", 1, {
           "http.route": "/api/gateway-ingest/mcp",
           "http.response.status_code": 500,
