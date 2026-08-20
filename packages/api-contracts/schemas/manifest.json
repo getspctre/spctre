@@ -78,6 +78,15 @@
       "sha256": "556847144eba224bba4ae4e8c6f85adfd9d0f3161cf6b336ca829d555e00f2d8"
     },
     {
+      "id": "spctre.gateway.event.v1",
+      "kind": "json-schema",
+      "title": "Normalized Gateway Event",
+      "description": "Normalized shape a supported LLM gateway's webhook payload is projected onto before it is recorded as evidence.",
+      "url": "https://schema.spctre.dev/gateway/event/v1.json",
+      "path": "packages/api-contracts/schemas/gateway/event/v1.json",
+      "sha256": "ef6d2890834f1a11c5b4f852a113f2dbd525cae0fec2101b665bfa2541a00de7"
+    },
+    {
       "id": "spctre.gateway.resolve-request.v1",
       "kind": "json-schema",
       "title": "Gateway Resolution Request",
