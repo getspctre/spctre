@@ -8,11 +8,11 @@ export const GATEWAY_EVENT_V1_SCHEMA_ID = "spctre.gateway.event.v1";
  *
  * This is distinct from provider webhook payloads: `rawEvent` retains the
  * provider-specific input while the remaining fields are normalized for Spctre.
- * TypeScript validation gates web ingest requests. On delegated requests, the Go
- * worker independently normalizes raw payloads without runtime contract validation:
- * it truncates numeric values instead of rounding and does not clamp negatives.
- * Worker-written records are therefore not guaranteed to conform to this contract;
- * it also does not support `notion`. Schema emission will close this gap.
+ * Web ingest validates this contract before persisting evidence. Delegated requests
+ * are persisted by the Go worker after its independent raw-payload normalization;
+ * that path does not apply this runtime contract, truncates numeric values instead
+ * of rounding, does not clamp negatives, and does not support `notion`. Its
+ * persisted records are therefore not guaranteed to conform to this contract.
  */
 export const GatewayEventV1Schema = z
   .object({
