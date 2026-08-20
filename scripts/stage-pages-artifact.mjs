@@ -55,11 +55,17 @@
 //   {
 //     "registry": "https://schema.spctre.dev",
 //     "manifestUrl": "https://schema.spctre.dev/manifest.json",
+//     "pathBase": "repository-root",
 //     "artifacts": [
 //       { "id": "...", "path": "<repo-relative source>",
 //         "url": "<registry>/<domain>/<name>/<version>.json", "sha256": "<hex>" }
 //     ]
 //   }
+// `pathBase` declares what source `path` values are relative to. Only
+// "repository-root" is supported: paths resolve against the repository root. If
+// the manifest declares any other value the publisher fails rather than guess.
+// If it is absent the manifest predates the pathBase contract and paths are
+// still resolved against the repository root, with a warning.
 // `immutable` is optional per entry; when absent it is inferred from the URL —
 // URLs whose basename is latest.json/current.json/index.json or that contain a
 // latest/current/index segment are mutable, everything else is immutable.
@@ -135,7 +141,26 @@ function parseManifest(source) {
   }
   const manifestUrl =
     typeof data.manifestUrl === "string" ? data.manifestUrl.replace(/\/+$/, "") : "";
-  return { registry, manifestUrl, artifacts: data.artifacts };
+  const pathBase = typeof data.pathBase === "string" ? data.pathBase : "";
+  return { registry, manifestUrl, pathBase, artifacts: data.artifacts };
+}
+
+function checkPathBaseContract(manifest) {
+  if (manifest.pathBase && manifest.pathBase !== "repository-root") {
+    fail(
+      `the manifest declares pathBase "${manifest.pathBase}", which this publisher does not ` +
+        'support; only "repository-root" is supported. Refusing to guess how source ' +
+        "paths resolve.",
+    );
+  }
+  if (manifest.pathBase) {
+    log(`source paths resolve against the repository root (pathBase "${manifest.pathBase}")`);
+  } else {
+    log(
+      "WARNING: the manifest does not declare a pathBase; it predates the pathBase " +
+        "contract, so source paths are resolved against the repository root as before",
+    );
+  }
 }
 
 function normalizeEntry(entry, index) {
@@ -364,6 +389,7 @@ async function main() {
     );
   }
   const manifest = parseManifest(readFileSync(manifestPath, "utf8"));
+  checkPathBaseContract(manifest);
   const { registry, manifestUrl, entries } = verifyAndNormalize(manifest);
 
   const skipLiveCheck = env.SCHEMA_PAGES_SKIP_LIVE_CHECK === "1";
