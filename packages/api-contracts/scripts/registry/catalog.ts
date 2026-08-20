@@ -92,11 +92,18 @@ export interface ZodArtifact extends ArtifactCoordinates {
    * as `$comment` so a consumer reading only the published artifact learns
    * exactly where the contract stops.
    *
-   * Required for any source carrying a transform, preprocess, or custom
-   * refinement — `tests/schema-registry.test.ts` fails the build if one is
-   * added without a disclosure. Keep the text specific: name the affected
-   * fields and the actual rule. A disclosure that describes a rule the code
-   * does not implement is worse than no disclosure at all.
+   * Required for any source carrying a transform, preprocess, custom
+   * refinement, or a normalizing string method such as `.trim()`. The last
+   * of those is the easiest to miss and the most damaging: `z.string()
+   * .trim().min(1)` emits `minLength: 1`, so the published document accepts
+   * `" "` while the service rejects it. `tests/schema-registry.test.ts`
+   * fails the build if any of them is added without a disclosure, and for
+   * normalized string fields it also requires the field's own name to
+   * appear in the text — a disclosure cannot pass by being vague.
+   *
+   * Keep the text specific: name the affected fields and the actual rule. A
+   * disclosure that describes a rule the code does not implement is worse
+   * than no disclosure at all.
    */
   unrepresentable?: string;
 }
@@ -189,7 +196,7 @@ export const REGISTRY_ARTIFACTS: RegistryArtifact[] = [
     description: "Body accepted by the evidence erasure endpoint (right-to-erasure workflows).",
     schema: EvidenceEraseRequestSchema,
     unrepresentable:
-      "Rules the service applies that this document does not express: `before` must additionally parse to a real instant, so a syntactically well-formed but non-existent date such as `2026-02-31` matches the `pattern` here and is still rejected; the accepted value is then normalized to a UTC ISO-8601 instant, so what is stored may not be byte-identical to what was sent. All three filters also accept an explicit `null` (treated as absent), and `decisionIds: []` is treated as absent rather than as an empty selector.",
+      "Rules the service applies that this document does not express. `agentId` and each `decisionIds` member are trimmed before their length is checked, so a whitespace-only value satisfies the `minLength` of 1 shown here and is still rejected, and a value with surrounding whitespace is stored in trimmed form. `before` must additionally parse to a real instant, so a syntactically well-formed but non-existent date such as `2026-02-31` matches the `pattern` here and is still rejected; the accepted value is then normalized to a UTC ISO-8601 instant, so what is stored may not be byte-identical to what was sent. All three filters also accept an explicit `null` (treated as absent), and `decisionIds: []` is treated as absent rather than as an empty selector.",
   },
   {
     kind: "json-schema",
@@ -255,7 +262,7 @@ export const REGISTRY_ARTIFACTS: RegistryArtifact[] = [
     description: "Body accepted when recording a git checkpoint as evidence of an agent's change.",
     schema: GitCheckpointIngestSchema,
     unrepresentable:
-      "Two rules on `checkpoint.diff` are cross-field and are not expressed here. A diff whose `format` is not `none` must carry at least one of `content`, `sha256`, or a non-empty `files`; a diff whose `format` is `none` must carry neither `content` nor a non-empty `files`. A payload valid against this document can therefore still be rejected.",
+      "Many of this document's string fields are trimmed before their length is checked, which JSON Schema cannot express. For `idempotencyKey`, `environment`, `reason`, `connector`, `action`, each `policyRefs` member, `checkpoint.id`, `checkpoint.ref`, `checkpoint.baseCommit`, `checkpoint.headCommit`, `checkpoint.repository.id`, `checkpoint.diff.sha256`, `agent.id`, `agent.adapter`, and the `path` and `previousPath` of each `checkpoint.diff.files` entry, that means a whitespace-only value satisfies the `minLength` of 1 shown here and is still rejected. `checkpoint.repository.remoteUrl` is also trimmed but has no minimum, so there trimming only changes what is stored. The remaining string fields are not trimmed at all: `status`, `checkpoint.createdAt`, `checkpoint.diff.content`, `checkpoint.diff.format`, and the `status` of each `checkpoint.diff.files` entry. Two further rules on `checkpoint.diff` are cross-field: a diff whose `format` is not `none` must carry at least one of `content`, `sha256`, or a non-empty `files`; a diff whose `format` is `none` must carry neither `content` nor a non-empty `files`. A payload valid against this document can therefore still be rejected.",
   },
   {
     kind: "json-schema",
@@ -268,7 +275,7 @@ export const REGISTRY_ARTIFACTS: RegistryArtifact[] = [
       "Self-description an enforcement-runtime adapter presents when registering with the control plane.",
     schema: AdapterDeclarationSchema,
     unrepresentable:
-      'This document is both narrower and wider than what the service accepts. Narrower: `capabilities` accepts any JSON value, not only an object — anything that is not an object is replaced with `{}`, so a value the `type` shown here rejects is in fact accepted. Wider: `supportedConnectors` is filtered before it is validated — non-string items are dropped, the remaining strings are trimmed, blanks are dropped, and the result must still be non-empty, so an array that satisfies this document (for example `[42]`, `[""]`, or `["  "]`) is rejected. Also not expressed: `adapterVersion`, `environment`, and `registeredBy` are trimmed and, if blank, treated as absent, with `registeredBy` then defaulting to `api`.',
+      'This document is both narrower and wider than what the service accepts. Narrower: `capabilities` accepts any JSON value, not only an object — anything that is not an object is replaced with `{}`, so a value the `type` shown here rejects is in fact accepted. Wider: `supportedConnectors` is filtered before it is validated — non-string items are dropped, the remaining strings are trimmed, blanks are dropped, and the result must still be non-empty, so an array that satisfies this document (for example `[42]`, `[""]`, or `["  "]`) is rejected. Also not expressed: `adapterId` is trimmed before its length is checked, so a whitespace-only value satisfies the `minLength` of 1 shown here and is still rejected; and `adapterVersion`, `environment`, and `registeredBy` are trimmed and, if blank, treated as absent, with `registeredBy` then defaulting to `api`.',
   },
   {
     kind: "json-schema",
