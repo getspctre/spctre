@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schema.spctre.dev/evidence/erase-request/v1.json",
+  "title": "Evidence Erasure Request",
+  "description": "Body accepted by the evidence erasure endpoint (right-to-erasure workflows).",
+  "$comment": "Rules the service applies that this document does not express. `agentId` and each `decisionIds` member are trimmed before their length is checked, so a whitespace-only value satisfies the `minLength` of 1 shown here and is still rejected, and a value with surrounding whitespace is stored in trimmed form. `before` must additionally parse to a real instant, so a syntactically well-formed but non-existent date such as `2026-02-31` matches the `pattern` here and is still rejected; the accepted value is then normalized to a UTC ISO-8601 instant, so what is stored may not be byte-identical to what was sent. All three filters also accept an explicit `null` (treated as absent), and `decisionIds: []` is treated as absent rather than as an empty selector.",
+  "type": "object",
+  "properties": {
+    "decisionIds": {
+      "anyOf": [
+        { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        { "type": "null" }
+      ]
+    },
+    "agentId": { "anyOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }] },
+    "before": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}(?:[T ]\\d{2}:\\d{2}(?::\\d{2}(?:\\.\\d{1,9})?)?(?:Z|[+-]\\d{2}:?\\d{2})?)?$"
+        },
+        { "type": "null" }
+      ]
+    }
+  }
+}

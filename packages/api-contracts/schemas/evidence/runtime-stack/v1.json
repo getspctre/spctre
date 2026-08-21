@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schema.spctre.dev/evidence/runtime-stack/v1.json",
+  "title": "Runtime Stack",
+  "description": "Closed vocabulary of enforcement runtimes an evidence record or decision may originate from.",
+  "type": "string",
+  "enum": [
+    "AWS_BEDROCK",
+    "GOOGLE_ADK",
+    "AZURE_AI",
+    "LANGCHAIN",
+    "LANGGRAPH",
+    "CREWAI",
+    "AUTOGEN",
+    "OPENAI_AGENTS",
+    "OMNIGENT",
+    "OPENCODE",
+    "CLAUDE_CODE",
+    "HERMES",
+    "OPENCLAW",
+    "NEMOCLAW",
+    "CLAUDE_COWORK",
+    "ODYSSEUS",
+    "PAPERCLIP",
+    "LOCAL",
+    "CUSTOM"
+  ]
+}

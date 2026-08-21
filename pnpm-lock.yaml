@@ -250,6 +250,9 @@ importers:
       '@types/node':
         specifier: ^26.0.0
         version: 26.0.0
+      prettier:
+        specifier: ^3.9.6
+        version: 3.9.6
       typescript:
         specifier: ^6.0.3
         version: 6.0.3
@@ -12596,7 +12599,7 @@ snapshots:
   '@types/jsonwebtoken@9.0.10':
     dependencies:
       '@types/ms': 2.1.0
-      '@types/node': 26.0.0
+      '@types/node': 26.2.0
     optional: true
 
   '@types/junit-report-builder@3.0.2': {}

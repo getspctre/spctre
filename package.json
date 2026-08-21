@@ -30,6 +30,7 @@
     "check:worker-policy-data": "node --import tsx scripts/generate-worker-policy-data.mjs --check",
     "generate:python-sdk": "bash scripts/generate-python-sdk.sh",
     "check:python-sdk": "bash scripts/check-python-sdk-sync.sh",
+    "check:schema-registry": "bash scripts/check-schema-registry-sync.sh",
     "check:python-distributions": "node scripts/check-python-distributions.mjs",
     "lint:python": "uv tool run ruff@0.16.2 check .",
     "format:python": "uv tool run ruff@0.16.2 format .",

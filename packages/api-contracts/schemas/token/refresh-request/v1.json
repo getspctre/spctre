@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schema.spctre.dev/token/refresh-request/v1.json",
+  "title": "Token Refresh Request",
+  "description": "Body accepted when exchanging a refresh token for a new access token pair.",
+  "type": "object",
+  "properties": { "refreshToken": { "type": "string", "minLength": 1 } },
+  "required": ["refreshToken"]
+}

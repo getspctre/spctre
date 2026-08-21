@@ -1,0 +1,8 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schema.spctre.dev/evidence/enforcement-decision/v1.json",
+  "title": "Canonical Enforcement Decision",
+  "description": "Closed vocabulary every adapter normalizes a runtime's native verdict into.",
+  "type": "string",
+  "enum": ["allow", "deny", "escalate", "observe"]
+}
