@@ -82,12 +82,11 @@ def sync_detailed(
 ) -> Response[ApiError | PolicyImportResponse]:
     """Import a local policy source (idempotent)
 
-     Imports a local AGT-compatible policy document into the control plane as an unapproved draft
-    branch/revision, for automation/CI. Requires the `policy:import` scope, which is admin-issuable only
-    and never granted to runtime agent tokens. Idempotent on the branch identity `(workspace, scope,
-    environment, connector, branchName)` and the source hash: a new branch returns 201; an unchanged re-
-    import returns 200 with `alreadyCurrent: true` and writes nothing; changed source appends a new
-    draft revision. Never approves or publishes — review and publication remain manual.
+     Imports a local policy source into the control plane as an unapproved draft branch/revision, for
+    automation/CI. AGT YAML/JSON is accepted directly; the documented Rego and Cedar subsets are
+    translated to AGT-compatible rules before validation. Requires the `policy:import` scope, which is
+    admin-issuable only and never granted to runtime agent tokens. `dryRun: true` returns conversion
+    diagnostics without writing. Never approves or publishes — review and publication remain manual.
 
     Args:
         body (PolicyImportRequest):
@@ -118,12 +117,11 @@ def sync(
 ) -> ApiError | PolicyImportResponse | None:
     """Import a local policy source (idempotent)
 
-     Imports a local AGT-compatible policy document into the control plane as an unapproved draft
-    branch/revision, for automation/CI. Requires the `policy:import` scope, which is admin-issuable only
-    and never granted to runtime agent tokens. Idempotent on the branch identity `(workspace, scope,
-    environment, connector, branchName)` and the source hash: a new branch returns 201; an unchanged re-
-    import returns 200 with `alreadyCurrent: true` and writes nothing; changed source appends a new
-    draft revision. Never approves or publishes — review and publication remain manual.
+     Imports a local policy source into the control plane as an unapproved draft branch/revision, for
+    automation/CI. AGT YAML/JSON is accepted directly; the documented Rego and Cedar subsets are
+    translated to AGT-compatible rules before validation. Requires the `policy:import` scope, which is
+    admin-issuable only and never granted to runtime agent tokens. `dryRun: true` returns conversion
+    diagnostics without writing. Never approves or publishes — review and publication remain manual.
 
     Args:
         body (PolicyImportRequest):
@@ -149,12 +147,11 @@ async def asyncio_detailed(
 ) -> Response[ApiError | PolicyImportResponse]:
     """Import a local policy source (idempotent)
 
-     Imports a local AGT-compatible policy document into the control plane as an unapproved draft
-    branch/revision, for automation/CI. Requires the `policy:import` scope, which is admin-issuable only
-    and never granted to runtime agent tokens. Idempotent on the branch identity `(workspace, scope,
-    environment, connector, branchName)` and the source hash: a new branch returns 201; an unchanged re-
-    import returns 200 with `alreadyCurrent: true` and writes nothing; changed source appends a new
-    draft revision. Never approves or publishes — review and publication remain manual.
+     Imports a local policy source into the control plane as an unapproved draft branch/revision, for
+    automation/CI. AGT YAML/JSON is accepted directly; the documented Rego and Cedar subsets are
+    translated to AGT-compatible rules before validation. Requires the `policy:import` scope, which is
+    admin-issuable only and never granted to runtime agent tokens. `dryRun: true` returns conversion
+    diagnostics without writing. Never approves or publishes — review and publication remain manual.
 
     Args:
         body (PolicyImportRequest):
@@ -183,12 +180,11 @@ async def asyncio(
 ) -> ApiError | PolicyImportResponse | None:
     """Import a local policy source (idempotent)
 
-     Imports a local AGT-compatible policy document into the control plane as an unapproved draft
-    branch/revision, for automation/CI. Requires the `policy:import` scope, which is admin-issuable only
-    and never granted to runtime agent tokens. Idempotent on the branch identity `(workspace, scope,
-    environment, connector, branchName)` and the source hash: a new branch returns 201; an unchanged re-
-    import returns 200 with `alreadyCurrent: true` and writes nothing; changed source appends a new
-    draft revision. Never approves or publishes — review and publication remain manual.
+     Imports a local policy source into the control plane as an unapproved draft branch/revision, for
+    automation/CI. AGT YAML/JSON is accepted directly; the documented Rego and Cedar subsets are
+    translated to AGT-compatible rules before validation. Requires the `policy:import` scope, which is
+    admin-issuable only and never granted to runtime agent tokens. `dryRun: true` returns conversion
+    diagnostics without writing. Never approves or publishes — review and publication remain manual.
 
     Args:
         body (PolicyImportRequest):

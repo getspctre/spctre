@@ -755,12 +755,36 @@ policyCommand
     "advisory target workspace (the token's workspace is authoritative)",
   )
   .option("--source-path <path>", "provenance source path recorded with the revision")
+  .option("--source-format <format>", "source format: AGT_YAML, OPA_REGO, or CEDAR")
+  .option("--dry-run", "convert and validate without creating a draft revision")
+  .option("--accept-lossy", "allow a conversion that reports semantic loss")
+  .option(
+    "--offline",
+    "convert locally without contacting the control plane or creating a revision",
+  )
+  .option("-o, --output <path>", "offline mode: write the generated AGT-compatible JSON document")
+  .option("--report <path>", "offline mode: write the conversion report JSON")
   .option("-k, --key <key>", "operator/CI service key carrying the policy:import scope")
   .option("-u, --url <url>", "control plane URL")
   .option("--format <format>", "output format: text (default) or json")
   .action(async (file: string | undefined, options) => {
     const { policyImport } = await import("./policy-import.js");
     await policyImport(file, options);
+  });
+
+policyCommand
+  .command("convert [file]")
+  .description(
+    "Convert a supported Rego or Cedar policy locally without contacting the control plane",
+  )
+  .option("-o, --output <path>", "write the generated AGT-compatible JSON document")
+  .option("--report <path>", "write the conversion report JSON")
+  .option("--source-format <format>", "source format: AGT_YAML, OPA_REGO, or CEDAR")
+  .option("--accept-lossy", "write output even when conversion reports semantic loss")
+  .option("--format <format>", "output format: text (default) or json")
+  .action(async (file: string | undefined, options) => {
+    const { policyConvert } = await import("./policy-convert.js");
+    await policyConvert(file, options);
   });
 
 const blueprintCommand = program

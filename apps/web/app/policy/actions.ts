@@ -1,7 +1,11 @@
 "use server";
 
 import type { PolicyImportResult } from "@spctre/policy-schema";
-import { createPolicyBranchDecision, importPolicyDecision } from "@/lib/domains/policy/service";
+import {
+  createPolicyBranchDecision,
+  importPolicyDecision,
+  previewPolicyImport,
+} from "@/lib/domains/policy/service";
 import { revalidatePaths } from "@/lib/platform/cache";
 import { getWorkspaceContext } from "@/lib/workspace";
 import { verifyWriteAccess } from "@/lib/demo-guard";
@@ -36,6 +40,18 @@ export async function createPolicyBranch(
 }
 
 export async function importPolicy(_prev: ImportState, formData: FormData): Promise<ImportState> {
+  const input = await policyImportInput(formData);
+  if ("error" in input) return input;
+  const result = await importPolicyDecision(input);
+  if ("error" in result) return result;
+  revalidatePaths(["/"]);
+  return result;
+}
+
+/** Parses a form once so preview and import always use identical source input. */
+async function policyImportInput(
+  formData: FormData,
+): Promise<Parameters<typeof importPolicyDecision>[0] | { error: string }> {
   const context = await getWorkspaceContext();
   const writeCheck = verifyWriteAccess(context.tenantId);
   if (!writeCheck.allowed) return { error: writeCheck.error || "Write access denied." };
@@ -56,8 +72,14 @@ export async function importPolicy(_prev: ImportState, formData: FormData): Prom
     (!pastedSource.trim() ? sourceFile?.name : undefined) ||
     `spctre-ui/${branchName || "policy"}.yaml`;
   const targetStacks = formData.getAll("targetStack").map(String).filter(Boolean);
+  const requestedFormat = (formData.get("sourceFormat") as string | null) ?? "";
+  const sourceFormat =
+    requestedFormat === "AGT_YAML" || requestedFormat === "OPA_REGO" || requestedFormat === "CEDAR"
+      ? requestedFormat
+      : undefined;
+  const acceptLossy = formData.get("acceptLossy") === "on";
 
-  const result = await importPolicyDecision({
+  return {
     source,
     branchName,
     scope,
@@ -65,12 +87,15 @@ export async function importPolicy(_prev: ImportState, formData: FormData): Prom
     connector,
     requestedWorkspaceId,
     sourcePath,
+    sourceFormat,
+    acceptLossy,
     targetStacks,
-  });
-  if ("error" in result) {
-    return result;
-  }
+  };
+}
 
-  revalidatePaths(["/"]);
-  return result;
+/** Preview native conversion without creating a branch or revision. */
+export async function previewPolicy(_prev: ImportState, formData: FormData): Promise<ImportState> {
+  const input = await policyImportInput(formData);
+  if ("error" in input) return input;
+  return previewPolicyImport(input);
 }

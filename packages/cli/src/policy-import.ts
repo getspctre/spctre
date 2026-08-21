@@ -13,6 +13,12 @@ export interface PolicyImportOptions {
   url?: string;
   sourcePath?: string;
   format?: string;
+  sourceFormat?: "AGT_YAML" | "OPA_REGO" | "CEDAR";
+  dryRun?: boolean;
+  acceptLossy?: boolean;
+  offline?: boolean;
+  output?: string;
+  report?: string;
 }
 
 interface ImportResponse {
@@ -22,6 +28,13 @@ interface ImportResponse {
   created: boolean;
   alreadyCurrent: boolean;
   ruleCount: number;
+  dryRun?: boolean;
+}
+
+function validateSourceFormat(value: unknown): "AGT_YAML" | "OPA_REGO" | "CEDAR" | undefined {
+  if (value === undefined) return undefined;
+  if (value === "AGT_YAML" || value === "OPA_REGO" || value === "CEDAR") return value;
+  return fail("Error: --source-format must be AGT_YAML, OPA_REGO, or CEDAR.");
 }
 
 /** Derives a branch name from an explicit flag, the connector, or the filename. */
@@ -32,7 +45,7 @@ function resolveBranchName(options: PolicyImportOptions, file: string): string {
   if (connector) return connector;
   return path
     .basename(file)
-    .replace(/\.(ya?ml|json)$/i, "")
+    .replace(/\.(ya?ml|json|rego|cedar)$/i, "")
     .replace(/[^a-z0-9/-]+/gi, "-")
     .replace(/^-+|-+$/g, "")
     .toLowerCase();
@@ -77,6 +90,10 @@ function resolveImport(file: string, options: PolicyImportOptions): ResolvedImpo
   const assertedWorkspace = (options.workspace ?? "").trim();
   const sourcePath =
     options.sourcePath ?? (path.relative(process.cwd(), filePath) || path.basename(filePath));
+  const inferredSourceFormat =
+    options.sourceFormat ??
+    (filePath.endsWith(".rego") ? "OPA_REGO" : filePath.endsWith(".cedar") ? "CEDAR" : undefined);
+  const sourceFormat = validateSourceFormat(inferredSourceFormat);
 
   const summary =
     `Importing ${path.basename(filePath)} → branch "${branchName}" ` +
@@ -94,6 +111,9 @@ function resolveImport(file: string, options: PolicyImportOptions): ResolvedImpo
       connector: connector || undefined,
       environment: environment || undefined,
       sourcePath,
+      sourceFormat,
+      dryRun: options.dryRun || undefined,
+      acceptLossy: options.acceptLossy || undefined,
     },
   };
 }
@@ -129,11 +149,15 @@ export async function policyImport(
   file: string | undefined,
   options: PolicyImportOptions,
 ): Promise<void> {
+  if (options.offline) {
+    const { policyConvert } = await import("./policy-convert.js");
+    return policyConvert(file, options);
+  }
   const format = getOutputFormat(options.format);
   if (!file) fail("Error: a policy file path is required. Usage: spctre policy import <file>");
 
   const { url, key, body, summary } = resolveImport(file, options);
-  printProgress(summary);
+  printProgress(options.dryRun ? `${summary} (dry run)` : summary);
 
   let response: Response;
   try {
@@ -160,6 +184,29 @@ export async function policyImport(
       process.exit(1);
     }
     return fail(`Import failed (${response.status}): ${message}`);
+  }
+
+  if (options.dryRun) {
+    if (payload.dryRun !== true) {
+      const message =
+        "The control plane did not acknowledge the dry-run; no conversion preview can be trusted.";
+      if (format === "json") {
+        printJson({ ok: false, error: message });
+        process.exit(1);
+      }
+      return fail(`Import failed: ${message}`);
+    }
+    if (format === "json") {
+      printJson({ ok: true, ...payload });
+    } else {
+      console.log(`Conversion preview: ${payload.ruleCount ?? 0} rule(s).`);
+      for (const diagnostic of (
+        payload as { diagnostics?: Array<{ severity: string; message: string }> }
+      ).diagnostics ?? []) {
+        console.log(`  ${diagnostic.severity}: ${diagnostic.message}`);
+      }
+    }
+    return;
   }
 
   reportSuccess(payload, format);

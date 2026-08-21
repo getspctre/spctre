@@ -95,6 +95,7 @@ async function handlePostApiE2ePolicyDraft(request: Request) {
         branchName,
         scope: "WORKSPACE",
         sourcePath,
+        sourceFormat: "AGT_YAML",
         source,
         rules: parsed.rules,
         metadata: parsed.metadata,

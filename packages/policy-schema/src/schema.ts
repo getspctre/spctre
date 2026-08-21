@@ -1,5 +1,6 @@
 import yaml from "js-yaml";
 import { createHash } from "node:crypto";
+import { CANONICAL_PACK_CONNECTORS } from "./packs";
 import {
   jsComposePolicyLayers,
   jsEvaluateGatewayDecision,
@@ -62,6 +63,9 @@ import {
   PolicyBundleExportManifest,
   PolicyBundleExportResult,
   PolicyBundleExportVerification,
+  PolicySourceDialect,
+  PolicySourceTranslationMapping,
+  PolicySourceTranslationReport,
   AgentBlueprintRevision,
   AgentBlueprintRuntimeArtifact,
   AgentBlueprintRevisionDiff,
@@ -1615,6 +1619,306 @@ export function parseAgtPolicyDocument(params: {
     warnings,
     sourceDocument: doc,
     compatibility,
+  };
+}
+
+const NATIVE_TRANSLATOR_VERSION = "1";
+const REGISTERED_CEDAR_CONNECTORS = new Set<string>(CANONICAL_PACK_CONNECTORS);
+
+/** Infer a policy dialect without treating an arbitrary YAML document as native source. */
+export function detectPolicySourceFormat(params: {
+  document: string;
+  sourcePath?: string;
+}): Extract<PolicySourceDialect, "AGT_YAML" | "OPA_REGO" | "CEDAR"> {
+  const path = params.sourcePath?.toLowerCase() ?? "";
+  if (path.endsWith(".rego")) return "OPA_REGO";
+  if (path.endsWith(".cedar")) return "CEDAR";
+  const source = params.document.trim();
+  if (/^(permit|forbid)\s*\(/m.test(source)) return "CEDAR";
+  if (/^package\s+[\w./-]+/m.test(source) && /\b(?:allow|deny)\b/.test(source)) return "OPA_REGO";
+  return "AGT_YAML";
+}
+
+/**
+ * Parses AGT YAML/JSON directly or translates the intentionally small,
+ * deterministic native-source subset accepted at import time. Unsupported
+ * source is reported rather than guessed or weakened.
+ */
+export function parsePolicySourceDocument(params: {
+  document: string;
+  sourcePath?: string;
+  sourceFormat?: Extract<PolicySourceDialect, "AGT_YAML" | "OPA_REGO" | "CEDAR">;
+}): PolicyImportResult {
+  const requestedFormat = params.sourceFormat;
+  if (
+    requestedFormat !== undefined &&
+    requestedFormat !== "AGT_YAML" &&
+    requestedFormat !== "OPA_REGO" &&
+    requestedFormat !== "CEDAR"
+  ) {
+    return {
+      sourceHash: "pending",
+      rules: [],
+      diagnostics: [
+        { severity: "ERROR", message: "sourceFormat must be AGT_YAML, OPA_REGO, or CEDAR." },
+      ],
+      warnings: [],
+      metadata: {},
+    };
+  }
+  const sourceFormat = requestedFormat ?? detectPolicySourceFormat(params);
+  if (sourceFormat === "AGT_YAML") return parseAgtPolicyDocument(params);
+
+  const translated =
+    sourceFormat === "CEDAR"
+      ? translateCedarSource(params.document)
+      : translateRegoSource(params.document);
+  const translation: PolicySourceTranslationReport = {
+    sourceFormat,
+    translatorVersion: NATIVE_TRANSLATOR_VERSION,
+    status: translated.unsupported ? "UNSUPPORTED" : translated.lossy ? "LOSSY" : "EXACT",
+    mappings: translated.mappings,
+    diagnostics: translated.diagnostics,
+  };
+  if (translated.unsupported) {
+    return {
+      sourceHash: "pending",
+      sourceFormat,
+      rules: [],
+      diagnostics: translated.diagnostics,
+      warnings: [],
+      metadata: {},
+      translation,
+    };
+  }
+
+  const sourceDocument = {
+    metadata: {
+      name: `${sourceFormat.toLowerCase()}-import`,
+      sourceFormat,
+      translatorVersion: NATIVE_TRANSLATOR_VERSION,
+    },
+    rules: translated.rules,
+  };
+  const parsed = parseAgtPolicyDocument({
+    document: JSON.stringify(sourceDocument),
+    sourcePath: params.sourcePath,
+  });
+  return {
+    ...parsed,
+    sourceFormat,
+    rules: parsed.rules.map((rule) => ({ ...rule, sourceFormat })),
+    sourceDocument,
+    diagnostics: [...translated.diagnostics, ...parsed.diagnostics],
+    warnings: [
+      ...translated.diagnostics
+        .filter((diagnostic) => diagnostic.severity === "WARNING")
+        .map((diagnostic) => diagnostic.message),
+      ...parsed.warnings,
+    ],
+    translation,
+  };
+}
+
+type NativeTranslation = {
+  rules: Record<string, unknown>[];
+  mappings: PolicySourceTranslationMapping[];
+  diagnostics: PolicyRuleDiagnostic[];
+  unsupported: boolean;
+  lossy: boolean;
+};
+
+function unsupportedNativeSource(message: string): NativeTranslation {
+  return {
+    rules: [],
+    mappings: [],
+    diagnostics: [{ severity: "ERROR", message }],
+    unsupported: true,
+    lossy: false,
+  };
+}
+
+/** Remove line comments without interpreting comment markers inside strings. */
+function stripLineComments(source: string, markers: string[]): string {
+  let result = "";
+  let quote: '"' | "`" | undefined;
+  let escaped = false;
+  for (let index = 0; index < source.length; index += 1) {
+    const char = source[index];
+    if (quote) {
+      result += char;
+      if (quote === '"' && escaped) escaped = false;
+      else if (quote === '"' && char === "\\") escaped = true;
+      else if (char === quote) quote = undefined;
+      continue;
+    }
+    if (char === '"' || char === "`") {
+      quote = char;
+      result += char;
+      continue;
+    }
+    const marker = markers.find((candidate) => source.startsWith(candidate, index));
+    if (marker) {
+      while (index < source.length && source[index] !== "\n") index += 1;
+      if (index < source.length) result += "\n";
+      continue;
+    }
+    result += char;
+  }
+  return result;
+}
+
+function translateCedarSource(source: string): NativeTranslation {
+  const withoutComments = stripLineComments(source, ["//"]).trim();
+  // Cedar defaults to deny whereas the current AGT evaluator defaults to
+  // allow. A Cedar `permit` statement therefore cannot be represented exactly
+  // without a branch-level default-effect feature; accept only forbids.
+  const statement =
+    /\b(forbid)\s*\(\s*principal\s*,\s*action\s*==\s*Action::"([^"\\]+)"\s*,\s*resource\s*\)\s*;/g;
+  const rules: Record<string, unknown>[] = [];
+  const mappings: PolicySourceTranslationMapping[] = [];
+  let match: RegExpExecArray | null;
+  let last = 0;
+  while ((match = statement.exec(withoutComments))) {
+    if (withoutComments.slice(last, match.index).trim()) {
+      return unsupportedNativeSource(
+        'Unsupported Cedar syntax. The initial importer accepts standalone forbid statements with an Action::"connector.action" selector only; permit relies on Cedar\'s default-deny semantics.',
+      );
+    }
+    const [connector, ...actionParts] = match[2].split(".");
+    if (!connector || !actionParts.length || actionParts.some((part) => !part)) {
+      return unsupportedNativeSource(
+        `Cedar action "${match[2]}" must use Action::\"connector.action\".`,
+      );
+    }
+    if (!REGISTERED_CEDAR_CONNECTORS.has(connector)) {
+      return unsupportedNativeSource(
+        `Cedar action "${match[2]}" has no registered Spctre connector prefix. Use Action::\"<registered-connector>.<action>\" or author this rule in AGT_YAML.`,
+      );
+    }
+    const stableRuleId = `cedar.${connector}.${actionParts.join(".")}.${rules.length + 1}`;
+    rules.push({
+      stable_rule_id: stableRuleId,
+      title: `Deny ${match[2]}`,
+      effect: "DENY",
+      connectors: [connector],
+      actions: [actionParts.join(".")],
+    });
+    mappings.push({
+      sourceId: `cedar:${rules.length}`,
+      stableRuleId,
+      outcome: "LOSSY",
+      message:
+        "Spctre action matching is prefix-based; Cedar action equality may match additional action names.",
+    });
+    last = statement.lastIndex;
+  }
+  if (!rules.length || withoutComments.slice(last).trim()) {
+    return unsupportedNativeSource(
+      "Unsupported Cedar syntax. No supported standalone forbid statements were found.",
+    );
+  }
+  return {
+    rules,
+    mappings,
+    diagnostics: [
+      {
+        severity: "WARNING",
+        message:
+          "Cedar action equality is translated to Spctre's prefix action matching and is therefore lossy.",
+      },
+    ],
+    unsupported: false,
+    lossy: true,
+  };
+}
+
+function translateRegoSource(source: string): NativeTranslation {
+  const withoutComments = stripLineComments(source, ["#", "//"]).trim();
+  const packageMatch = /^\s*package\s+([\w./-]+)\s*$/m.exec(withoutComments);
+  if (!packageMatch) return unsupportedNativeSource("Rego source must declare a package.");
+  // Rego `allow` rules commonly rely on OPA's default-deny decision contract,
+  // which Spctre cannot reproduce without a branch-level default effect. The
+  // exact initial subset is deny-only and uses Spctre's deny-override model.
+  const body = withoutComments
+    .replace(/^\s*package\s+[\w./-]+\s*$/m, "")
+    .replace(/^\s*import\s+rego\.v1\s*$/gm, "")
+    .replace(/^\s*default\s+deny\s*:?=\s*false\s*$/gm, "")
+    .trim();
+  const rulePattern = /\b(deny)\s+if\s*\{([^{}]*)\}/g;
+  const rules: Record<string, unknown>[] = [];
+  const mappings: PolicySourceTranslationMapping[] = [];
+  let match: RegExpExecArray | null;
+  let last = 0;
+  while ((match = rulePattern.exec(body))) {
+    const gap = body.slice(last, match.index).trim();
+    if (gap) {
+      return unsupportedNativeSource(
+        "Unsupported Rego syntax. The initial importer accepts a package declaration, optional import rego.v1/default deny := false, and deny if blocks with input selector comparisons; allow/default decision contracts are not yet representable.",
+      );
+    }
+    const selectors: Record<string, string> = {};
+    for (const expression of match[2]
+      .split(/[;\n]/)
+      .map((value) => value.trim())
+      .filter(Boolean)) {
+      const comparison =
+        /^input\.(connector|action|domain)\s*==\s*(?:"([^"\\]+)"|`([^`\r\n]*)`)$/.exec(expression);
+      if (!comparison || selectors[comparison[1]]) {
+        return unsupportedNativeSource(
+          `Unsupported Rego expression "${expression}". Use conjunctions of input.connector, input.action, and input.domain equality checks.`,
+        );
+      }
+      selectors[comparison[1]] = comparison[2] ?? comparison[3];
+    }
+    if (!selectors.connector && !selectors.action && !selectors.domain) {
+      return unsupportedNativeSource(
+        "Rego rules must include at least one supported input selector.",
+      );
+    }
+    // The kernel treats absent evidence.domains as a domain match. A domain-only
+    // rule would therefore deny every connector/action whose evidence omits a
+    // domain; require a connector or action selector to retain a hard target.
+    if (selectors.domain && !selectors.connector && !selectors.action) {
+      return unsupportedNativeSource(
+        "Rego domain selectors must be paired with input.connector or input.action; domain-only rules can match evidence with no domains.",
+      );
+    }
+    const stableRuleId = `rego.${packageMatch[1].replace(/[^a-zA-Z0-9]+/g, ".")}.${match[1]}.${rules.length + 1}`;
+    rules.push({
+      stable_rule_id: stableRuleId,
+      title: `Deny ${selectors.action ?? selectors.connector ?? selectors.domain}`,
+      effect: "DENY",
+      connectors: selectors.connector ? [selectors.connector] : [],
+      actions: selectors.action ? [selectors.action] : [],
+      domains: selectors.domain ? [selectors.domain] : [],
+    });
+    mappings.push({
+      sourceId: `rego:${match[1]}:${rules.length}`,
+      stableRuleId,
+      outcome: "LOSSY",
+      message:
+        "Spctre action matching is prefix-based; Rego action equality may match additional action names.",
+    });
+    last = rulePattern.lastIndex;
+  }
+  if (!rules.length || body.slice(last).trim()) {
+    return unsupportedNativeSource(
+      "Unsupported Rego syntax. No supported deny if blocks were found.",
+    );
+  }
+  return {
+    rules,
+    mappings,
+    diagnostics: [
+      {
+        severity: "WARNING",
+        message:
+          "Rego action equality is translated to Spctre's prefix action matching and is therefore lossy.",
+      },
+    ],
+    unsupported: false,
+    lossy: true,
   };
 }
 

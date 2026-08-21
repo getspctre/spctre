@@ -832,7 +832,7 @@ export interface paths {
         put?: never;
         /**
          * Import a local policy source (idempotent)
-         * @description Imports a local AGT-compatible policy document into the control plane as an unapproved draft branch/revision, for automation/CI. Requires the `policy:import` scope, which is admin-issuable only and never granted to runtime agent tokens. Idempotent on the branch identity `(workspace, scope, environment, connector, branchName)` and the source hash: a new branch returns 201; an unchanged re-import returns 200 with `alreadyCurrent: true` and writes nothing; changed source appends a new draft revision. Never approves or publishes — review and publication remain manual.
+         * @description Imports a local policy source into the control plane as an unapproved draft branch/revision, for automation/CI. AGT YAML/JSON is accepted directly; the documented Rego and Cedar subsets are translated to AGT-compatible rules before validation. Requires the `policy:import` scope, which is admin-issuable only and never granted to runtime agent tokens. `dryRun: true` returns conversion diagnostics without writing. Never approves or publishes — review and publication remain manual.
          */
         post: operations["importPolicy"];
         delete?: never;
@@ -1639,8 +1639,17 @@ export interface components {
             meta: components["schemas"]["ApiMeta"];
         };
         PolicyImportRequest: {
-            /** @description The raw AGT-compatible policy document (YAML or JSON). */
+            /** @description Policy source. AGT YAML/JSON is accepted directly; the documented Rego and Cedar subsets are translated into AGT-compatible rules before review. */
             source: string;
+            /**
+             * @description Optional source dialect. The server otherwise detects .rego/.cedar paths and recognizable native syntax.
+             * @enum {string}
+             */
+            sourceFormat?: "AGT_YAML" | "OPA_REGO" | "CEDAR";
+            /** @description Validate and translate without creating a branch or revision. */
+            dryRun?: boolean;
+            /** @description Required to persist a conversion that reports semantic loss. Dry runs always report loss without persisting. */
+            acceptLossy?: boolean;
             /** @description Target branch name. Lowercase letters, digits, hyphens, and slashes; cannot start or end with a hyphen or slash. */
             branchName: string;
             /**

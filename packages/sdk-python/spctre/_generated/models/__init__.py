@@ -164,6 +164,7 @@ from .pagination import Pagination
 from .policy_content_artifact_retain_response import PolicyContentArtifactRetainResponse
 from .policy_import_request import PolicyImportRequest
 from .policy_import_request_scope import PolicyImportRequestScope
+from .policy_import_request_source_format import PolicyImportRequestSourceFormat
 from .policy_import_response import PolicyImportResponse
 from .publication_attestation_ingest_request import PublicationAttestationIngestRequest
 from .publication_attestation_ingest_request_attestation import (
@@ -357,6 +358,7 @@ __all__ = (
     "PolicyContentArtifactRetainResponse",
     "PolicyImportRequest",
     "PolicyImportRequestScope",
+    "PolicyImportRequestSourceFormat",
     "PolicyImportResponse",
     "PublicationAttestationIngestRequest",
     "PublicationAttestationIngestRequestAttestation",

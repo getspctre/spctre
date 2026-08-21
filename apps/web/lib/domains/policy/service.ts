@@ -3,7 +3,7 @@ import { logger } from "@spctre/platform/logging";
 import {
   buildPolicyImportResult,
   describeBlockingIssues,
-  parseAgtPolicyDocument,
+  parsePolicySourceDocument,
   validatePolicyRules,
 } from "@spctre/policy-schema";
 import type { PolicyImportResult } from "@spctre/policy-schema";
@@ -38,21 +38,26 @@ import { swallow } from "@/lib/platform/swallow";
 
 const VALID_SCOPES = new Set(["ORGANIZATION", "WORKSPACE", "ENVIRONMENT", "CONNECTOR"]);
 
-type ParsedPolicyDocument = ReturnType<typeof parseAgtPolicyDocument>;
+type ParsedPolicyDocument = ReturnType<typeof parsePolicySourceDocument>;
 
 /**
  * Shared input validation + parse for both the browser-session import
  * (importPolicyDecision) and the token-authenticated automation import
  * (importPolicyForToken). Returns a parse-error string or the parsed document.
  */
-function validateAndParseImport(input: {
-  source: string;
-  branchName: string;
-  scope: string;
-  environment: string;
-  connector: string;
-  sourcePath: string;
-}): { error: string } | { parsed: ParsedPolicyDocument } {
+function validateAndParseImport(
+  input: {
+    source: string;
+    branchName: string;
+    scope: string;
+    environment: string;
+    connector: string;
+    sourcePath: string;
+    sourceFormat?: "AGT_YAML" | "OPA_REGO" | "CEDAR";
+    acceptLossy?: boolean;
+  },
+  options?: { allowUnacceptedLossy?: boolean },
+): { error: string } | { parsed: ParsedPolicyDocument } {
   if (!input.source.trim()) return { error: "Policy source is required." };
   if (!input.branchName) return { error: "Branch name is required." };
   if (!/^[a-z0-9][a-z0-9/-]*[a-z0-9]$|^[a-z0-9]$/.test(input.branchName)) {
@@ -78,13 +83,27 @@ function validateAndParseImport(input: {
     return { error: "Environment is only valid for ENVIRONMENT-scoped branches." };
   }
 
-  const parsed = parseAgtPolicyDocument({ document: input.source, sourcePath: input.sourcePath });
+  const parsed = parsePolicySourceDocument({
+    document: input.source,
+    sourcePath: input.sourcePath,
+    sourceFormat: input.sourceFormat,
+  });
   if (parsed.diagnostics.some((d) => d.severity === "ERROR")) {
     return {
       error: `Parse error: ${parsed.diagnostics
         .filter((d) => d.severity === "ERROR")
         .map((d) => d.message)
         .join("; ")}`,
+    };
+  }
+  if (
+    parsed.translation?.status === "LOSSY" &&
+    !input.acceptLossy &&
+    !options?.allowUnacceptedLossy
+  ) {
+    return {
+      error:
+        "Policy translation is lossy. Review the conversion preview and retry with explicit lossy-conversion acceptance.",
     };
   }
 
@@ -108,6 +127,55 @@ function validateAndParseImport(input: {
 }
 
 export type ImportPolicyResult = { result: PolicyImportResult } | { error: string };
+
+/** Converts and validates a source without creating a branch or revision. */
+export function previewPolicyImport(input: {
+  source: string;
+  branchName: string;
+  scope: string;
+  environment: string;
+  connector: string;
+  sourcePath: string;
+  sourceFormat?: "AGT_YAML" | "OPA_REGO" | "CEDAR";
+  acceptLossy?: boolean;
+}): ImportPolicyResult {
+  const validation = validateAndParseImport(input, { allowUnacceptedLossy: true });
+  if ("error" in validation) return validation;
+  const parsed = validation.parsed;
+  if (parsed.rules.length === 0) {
+    return { error: "Policy document contains no rules; refusing to preview an empty policy." };
+  }
+  const untargeted = parsed.rules.find(
+    (rule) =>
+      (rule.connectors?.length ?? 0) === 0 &&
+      (rule.actions?.length ?? 0) === 0 &&
+      (rule.domains?.length ?? 0) === 0,
+  );
+  if (untargeted) {
+    return {
+      error: `Rule "${untargeted.stableRuleId}" has no connector, action, or domain target; refusing to preview a match-all rule.`,
+    };
+  }
+  const sourceFormat = parsed.sourceFormat ?? "AGT_YAML";
+  const sourceHashMaterial =
+    sourceFormat === "AGT_YAML"
+      ? input.source
+      : [sourceFormat, JSON.stringify(parsed.rules), input.source].join("\u001f");
+  return {
+    result: buildPolicyImportResult({
+      sourceFormat,
+      sourcePath: input.sourcePath,
+      sourceHash: `sha256:${createHash("sha256").update(sourceHashMaterial).digest("hex").slice(0, 16)}`,
+      rules: parsed.rules,
+      warnings: parsed.warnings,
+      diagnostics: parsed.diagnostics,
+      metadata: parsed.metadata,
+      sourceDocument: parsed.sourceDocument,
+      compatibility: parsed.compatibility,
+      translation: parsed.translation,
+    }),
+  };
+}
 
 export type CreatePolicyBranchResult = { branchId: string; revisionId: string } | { error: string };
 
@@ -138,6 +206,8 @@ export async function importPolicyDecision(input: {
   connector: string;
   requestedWorkspaceId: string;
   sourcePath: string;
+  sourceFormat?: "AGT_YAML" | "OPA_REGO" | "CEDAR";
+  acceptLossy?: boolean;
   targetStacks: string[];
 }): Promise<ImportPolicyResult> {
   const validation = validateAndParseImport(input);
@@ -150,7 +220,7 @@ export async function importPolicyDecision(input: {
         id: crypto.randomUUID(),
         branchId: `br-${input.branchName}`,
         revisionId: crypto.randomUUID(),
-        sourceFormat: "AGT_YAML",
+        sourceFormat: parsed.sourceFormat ?? "AGT_YAML",
         sourcePath: input.sourcePath,
         sourceHash: `sha256:${createHash("sha256").update(input.source).digest("hex").slice(0, 16)}`,
         author: "system",
@@ -159,6 +229,7 @@ export async function importPolicyDecision(input: {
         warnings: parsed.warnings,
         diagnostics: parsed.diagnostics,
         metadata: parsed.metadata,
+        translation: parsed.translation,
       }),
     };
   }
@@ -197,11 +268,13 @@ export async function importPolicyDecision(input: {
       environment: input.environment || undefined,
       connector: input.connector || undefined,
       sourcePath: input.sourcePath,
+      sourceFormat: parsed.sourceFormat ?? "AGT_YAML",
       source: input.source,
       rules: parsed.rules,
       metadata: parsed.metadata,
       sourceDocument: parsed.sourceDocument,
       compatibility: parsed.compatibility,
+      translation: parsed.translation,
       message: "Import via Spctre control plane",
       targetStacks: input.targetStacks,
     });
@@ -211,7 +284,7 @@ export async function importPolicyDecision(input: {
         id: crypto.randomUUID(),
         branchId: persisted.branchId,
         revisionId: persisted.revisionId,
-        sourceFormat: "AGT_YAML",
+        sourceFormat: parsed.sourceFormat ?? "AGT_YAML",
         sourcePath: input.sourcePath,
         sourceHash: persisted.sourceHash,
         author: actor.name,
@@ -220,6 +293,7 @@ export async function importPolicyDecision(input: {
         warnings: parsed.warnings,
         diagnostics: parsed.diagnostics,
         metadata: parsed.metadata,
+        translation: parsed.translation,
       }),
     };
   } catch (error) {
@@ -253,6 +327,8 @@ export async function importPolicyForToken(input: {
   environment: string;
   connector: string;
   sourcePath: string;
+  sourceFormat?: "AGT_YAML" | "OPA_REGO" | "CEDAR";
+  acceptLossy?: boolean;
   targetStacks: string[];
 }): Promise<ImportPolicyForTokenResult> {
   // Service tokens are workspace-bound (service_token.workspace_id is NOT NULL).
@@ -306,11 +382,13 @@ export async function importPolicyForToken(input: {
         environment: input.environment || undefined,
         connector: input.connector || undefined,
         sourcePath: input.sourcePath,
+        sourceFormat: parsed.sourceFormat ?? "AGT_YAML",
         source: input.source,
         rules: parsed.rules,
         metadata: parsed.metadata,
         sourceDocument: parsed.sourceDocument,
         compatibility: parsed.compatibility,
+        translation: parsed.translation,
         message: "Import via policy:import token",
         targetStacks: input.targetStacks,
       }),
@@ -395,6 +473,7 @@ export async function createPolicyBranchDecision(input: {
       environment: input.environment || undefined,
       connector: input.connector || undefined,
       sourcePath: "ui/policy-branch-create",
+      sourceFormat: "AGT_YAML",
       source: JSON.stringify(sourceDocument),
       rules: [],
       metadata: sourceDocument.metadata,

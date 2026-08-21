@@ -10,6 +10,7 @@ import { sql } from "@/lib/db";
 import { ensureDemoTenant } from "@/lib/repositories/seed/local-dev";
 import type {
   AgtCompatibilityReport,
+  PolicySourceTranslationReport,
   PolicyBranch,
   PolicyRuleSummary,
 } from "@spctre/policy-schema";
@@ -28,6 +29,28 @@ export interface BranchRevision {
   isActive: boolean;
   publishedAt: string | null;
   createdAt: string;
+}
+
+/** Keep native-import idempotency sensitive to dialect and translator behavior. */
+function importedSourceHash(params: {
+  source: string;
+  sourceFormat: string;
+  rules: PolicyRuleSummary[];
+  translation?: PolicySourceTranslationReport;
+}): string {
+  // Preserve the historic hash material for native AGT documents, so an
+  // unchanged pre-translation revision remains idempotent after deployment.
+  if (params.sourceFormat === "AGT_YAML") {
+    return `sha256:${createHash("sha256").update(params.source).digest("hex").slice(0, 16)}`;
+  }
+  const material = [
+    params.sourceFormat,
+    // Hash the actual translated rules so any translator behavior change that
+    // affects enforcement creates a new revision without a hand-bumped token.
+    JSON.stringify(params.rules),
+    params.source,
+  ].join("\u001f");
+  return `sha256:${createHash("sha256").update(material).digest("hex").slice(0, 16)}`;
 }
 
 /**
@@ -449,18 +472,20 @@ export async function persistImportedBranch(params: {
   environment?: string;
   connector?: string;
   sourcePath: string;
+  sourceFormat: string;
   source: string;
   rules: PolicyRuleSummary[];
   metadata: Record<string, unknown>;
   sourceDocument?: Record<string, unknown>;
   compatibility?: AgtCompatibilityReport;
+  translation?: PolicySourceTranslationReport;
   message: string;
   targetStacks?: string[];
 }): Promise<{ branchId: string; revisionId: string; sourceHash: string; importedAt: string }> {
   if (!sql) throw new Error("Database not configured.");
   assertCustomerRulesDoNotUseReservedIds(params.rules);
 
-  const sourceHash = `sha256:${createHash("sha256").update(params.source).digest("hex").slice(0, 16)}`;
+  const sourceHash = importedSourceHash(params);
   const branchId = crypto.randomUUID();
   const revisionId = crypto.randomUUID();
   const importedAt = new Date().toISOString();
@@ -496,11 +521,15 @@ export async function persistImportedBranch(params: {
         author_id, message, target_stacks
       ) VALUES (
         ${revisionId}, ${params.tenantId}, ${workspaceId}, ${branchId},
-        'AGT_YAML', ${params.sourcePath},
+        ${params.sourceFormat}, ${params.sourcePath},
         ${tx.json({
           ...(params.sourceDocument ?? { rules: params.rules, metadata: params.metadata }),
           metadata: params.metadata,
           spctre_agt_compatibility: params.compatibility,
+          spctre_native_source:
+            params.sourceFormat === "AGT_YAML"
+              ? undefined
+              : { text: params.source, translation: params.translation },
         } as JSONValue)},
         ${sourceHash}, ${params.authorId}, ${params.message},
         ${tx.json(targetStacks as JSONValue)}::jsonb
@@ -569,11 +598,13 @@ export async function importPolicyBranchIdempotent(params: {
   environment?: string;
   connector?: string;
   sourcePath: string;
+  sourceFormat: string;
   source: string;
   rules: PolicyRuleSummary[];
   metadata: Record<string, unknown>;
   sourceDocument?: Record<string, unknown>;
   compatibility?: AgtCompatibilityReport;
+  translation?: PolicySourceTranslationReport;
   message: string;
   targetStacks?: string[];
 }): Promise<ImportPolicyBranchResult> {
@@ -581,13 +612,17 @@ export async function importPolicyBranchIdempotent(params: {
   const db = sql;
   assertCustomerRulesDoNotUseReservedIds(params.rules);
 
-  const sourceHash = `sha256:${createHash("sha256").update(params.source).digest("hex").slice(0, 16)}`;
+  const sourceHash = importedSourceHash(params);
   const workspaceId = params.scope === "ORGANIZATION" ? null : params.workspaceId;
   const targetStacks = (params.targetStacks ?? []).map((stack) => ({ stack }));
   const sourceDocument = {
     ...(params.sourceDocument ?? { rules: params.rules, metadata: params.metadata }),
     metadata: params.metadata,
     spctre_agt_compatibility: params.compatibility,
+    spctre_native_source:
+      params.sourceFormat === "AGT_YAML"
+        ? undefined
+        : { text: params.source, translation: params.translation },
   };
   // Stable identity string matching the branch uniqueness columns; used to key
   // the advisory lock (0x1f unit separator keeps components unambiguous).
@@ -650,7 +685,7 @@ export async function importPolicyBranchIdempotent(params: {
             author_id, message, target_stacks
           ) VALUES (
             ${revisionId}, ${params.tenantId}, ${workspaceId}, ${branchId}, ${parentRevisionId},
-            'AGT_YAML', ${params.sourcePath}, ${tx.json(sourceDocument as JSONValue)},
+            ${params.sourceFormat}, ${params.sourcePath}, ${tx.json(sourceDocument as JSONValue)},
             ${sourceHash}, ${params.authorId}, ${params.message}, ${tx.json(targetStacks as JSONValue)}::jsonb
           )
         `;
