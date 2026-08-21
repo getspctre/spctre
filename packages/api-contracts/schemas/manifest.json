@@ -102,7 +102,7 @@
       "description": "OpenAPI 3.1 description of the public /api/v1/ surface. The version segment is `info.version`, which is frozen; revisions within it are identified by the spec's `x-spctre-spec-revision`.",
       "url": "https://schema.spctre.dev/openapi/spctre-api/2026-01.json",
       "path": "packages/api-contracts/openapi.json",
-      "sha256": "52a0abb17243076f8cebebcfe3087d355c63c0420558ad08b1a60ef2a6e9abce"
+      "sha256": "89925f80b23b6bd206a5de073b32bdb557701b8ba3833d6abee5cf2607e2a0db"
     },
     {
       "id": "spctre.policy.bundle.v1",
