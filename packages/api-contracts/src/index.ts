@@ -14,6 +14,7 @@ export * from "./schemas/generic-evidence";
 export * from "./schemas/git-checkpoint";
 export * from "./schemas/publication-attestation";
 export * from "./schemas/gateway";
+export * from "./schemas/gateway-event";
 export * from "./schemas/token";
 export * from "./schemas/sanitization";
 export * from "./schemas/adapters";
