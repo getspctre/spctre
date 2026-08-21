@@ -23,9 +23,6 @@
  * That makes cataloguing a contract a public compatibility commitment, so a
  * contract still under design does not belong here yet.
  *
- * Reserved, owned elsewhere — do not claim these here:
- *   - spctre.gateway.event.v1  (gateway runtime event envelope)
- *
  * Deliberately withheld — do not re-add without the contract owner's sign-off:
  *   - the publication-attestation ingest contract and the signing-key
  *     challenge/enroll/revoke flows. Those schemas are still evolving under
@@ -44,6 +41,7 @@ import {
   EvidenceFieldMappingSchema,
   EvidenceIngestSchema,
   GatewayDecisionSchema,
+  GatewayEventV1Schema,
   GatewayResolveSchema,
   GitCheckpointIngestSchema,
   RuntimeStackSchema,
@@ -158,6 +156,17 @@ const INTENT_FIELD_DISCLOSURE =
   "This document describes what is accepted, not what is retained. The service then normalizes three fields in ways JSON Schema cannot express: `toolIntent` and `planSummary` are trimmed and, if still longer than 1000 and 2000 characters respectively, truncated to that length with `... [Truncated]` appended — the `maxLength` of 100000 shown here is the accept limit, not the stored length. `toolParameters` is redacted and bounded: values under secret-shaped keys (authorization, token, secret, password, credential, key, cookie, and similar) are replaced with `[REDACTED]`; string values longer than 500 characters are truncated; values that look like credentials are replaced wholesale; and traversal stops after 4 levels of nesting or 100 nodes, replacing the remainder with a truncation marker.";
 
 /**
+ * The gateway event contract is unusual in the registry: it is not a request
+ * body. Nothing posts this shape, and — for three of the four providers — the
+ * record that is finally persisted is normalized by a second implementation
+ * that never applies it. Both gaps are disclosed, because a consumer holding
+ * only the published document would otherwise read it as a promise about
+ * stored evidence.
+ */
+const GATEWAY_EVENT_DISCLOSURE =
+  "This document describes an internal post-normalization shape, not a request body: no endpoint accepts it. Clients post provider-native webhook payloads to /api/gateway-ingest/{portkey,helicone,litellm,notion}, or a snake_case body to /api/gateway-ingest/mcp, and the service projects those onto this shape before validating it. Two things follow that the keywords below cannot show. First, values are derived and coerced before this contract sees them, so its bounds describe what survives validation rather than what a payload must contain: `promptTokens`, `completionTokens`, and `latencyMs` are rounded to the nearest integer and clamped into the range shown, and `costUsd` is clamped at 0 without rounding, so an out-of-range or fractional raw value is silently corrected rather than rejected; a raw payload omitting any of the three integers yields 0, so a zero here does not mean the gateway reported zero. `model` falls back to `unknown`, `action` to the first declared tool name and then to `llm_call` (`worker.execute` for Notion), `connector` to `llm-gateway` on the gateway paths and a fixed `gateway-notion` on the Notion path, `agentId` to `gateway-agent` on the webhook paths, and `eventTimestamp` to the ingest wall-clock time. `eventTimestamp` is only length-checked, never parsed, so it carries no guarantee of being a valid instant. `provider` also overstates reach: the MCP route accepts only `portkey`, `helicone`, and `litellm`, and `notion` arrives only through the Notion-worker webhook. Nor does this contract trim: a whitespace-only `gatewayEventId`, `model`, `agentId`, `connector`, `action`, `eventTimestamp`, or `toolDeclarations` member satisfies the `minLength` of 1 shown here and is accepted, because the trimming lives in the producers rather than in the schema. Second, and more consequentially, this is not a description of persisted records. It gates the direct ingest path only. Where an ingest worker is configured, the raw payload is delegated to the Go worker for the `portkey`, `helicone`, and `litellm` routes, and the worker normalizes and persists it independently without applying this contract: it truncates numeric values toward zero instead of rounding them and does not clamp negatives, so stored `promptTokens`, `completionTokens`, `latencyMs`, and `costUsd` values can fall below the minimum shown here; it trims its string fields, which this contract does not; and it implements no `notion` provider. Only the Notion path and the non-delegated fallback persist a record this document has actually validated.";
+
+/**
  * The catalog. Ordering here is irrelevant — the emitter sorts by identifier —
  * so append new entries wherever they read best.
  */
@@ -251,6 +260,18 @@ export const REGISTRY_ARTIFACTS: RegistryArtifact[] = [
     title: "Gateway Resolution Request",
     description: "Body accepted when resolving a previously escalated gateway decision.",
     schema: GatewayResolveSchema,
+  },
+  {
+    kind: "json-schema",
+    source: "zod",
+    domain: "gateway",
+    name: "event",
+    version: "v1",
+    title: "Normalized Gateway Event",
+    description:
+      "Normalized shape a supported LLM gateway's webhook payload is projected onto before it is recorded as evidence.",
+    schema: GatewayEventV1Schema,
+    unrepresentable: GATEWAY_EVENT_DISCLOSURE,
   },
   {
     kind: "json-schema",

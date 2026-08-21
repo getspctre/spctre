@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schema.spctre.dev/gateway/event/v1.json",
+  "title": "Normalized Gateway Event",
+  "description": "Normalized shape a supported LLM gateway's webhook payload is projected onto before it is recorded as evidence.",
+  "$comment": "This document describes an internal post-normalization shape, not a request body: no endpoint accepts it. Clients post provider-native webhook payloads to /api/gateway-ingest/{portkey,helicone,litellm,notion}, or a snake_case body to /api/gateway-ingest/mcp, and the service projects those onto this shape before validating it. Two things follow that the keywords below cannot show. First, values are derived and coerced before this contract sees them, so its bounds describe what survives validation rather than what a payload must contain: `promptTokens`, `completionTokens`, and `latencyMs` are rounded to the nearest integer and clamped into the range shown, and `costUsd` is clamped at 0 without rounding, so an out-of-range or fractional raw value is silently corrected rather than rejected; a raw payload omitting any of the three integers yields 0, so a zero here does not mean the gateway reported zero. `model` falls back to `unknown`, `action` to the first declared tool name and then to `llm_call` (`worker.execute` for Notion), `connector` to `llm-gateway` on the gateway paths and a fixed `gateway-notion` on the Notion path, `agentId` to `gateway-agent` on the webhook paths, and `eventTimestamp` to the ingest wall-clock time. `eventTimestamp` is only length-checked, never parsed, so it carries no guarantee of being a valid instant. `provider` also overstates reach: the MCP route accepts only `portkey`, `helicone`, and `litellm`, and `notion` arrives only through the Notion-worker webhook. Nor does this contract trim: a whitespace-only `gatewayEventId`, `model`, `agentId`, `connector`, `action`, `eventTimestamp`, or `toolDeclarations` member satisfies the `minLength` of 1 shown here and is accepted, because the trimming lives in the producers rather than in the schema. Second, and more consequentially, this is not a description of persisted records. It gates the direct ingest path only. Where an ingest worker is configured, the raw payload is delegated to the Go worker for the `portkey`, `helicone`, and `litellm` routes, and the worker normalizes and persists it independently without applying this contract: it truncates numeric values toward zero instead of rounding them and does not clamp negatives, so stored `promptTokens`, `completionTokens`, `latencyMs`, and `costUsd` values can fall below the minimum shown here; it trims its string fields, which this contract does not; and it implements no `notion` provider. Only the Notion path and the non-delegated fallback persist a record this document has actually validated.",
+  "type": "object",
+  "properties": {
+    "provider": { "type": "string", "enum": ["portkey", "helicone", "litellm", "notion"] },
+    "gatewayEventId": { "type": "string", "minLength": 1 },
+    "model": { "type": "string", "minLength": 1 },
+    "agentId": { "type": "string", "minLength": 1 },
+    "connector": { "type": "string", "minLength": 1 },
+    "action": { "type": "string", "minLength": 1 },
+    "toolDeclarations": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "promptTokens": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+    "completionTokens": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+    "latencyMs": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+    "costUsd": { "type": "number", "minimum": 0 },
+    "eventTimestamp": { "type": "string", "minLength": 1 },
+    "rawEvent": {
+      "type": "object",
+      "propertyNames": { "type": "string" },
+      "additionalProperties": {}
+    }
+  },
+  "required": [
+    "provider",
+    "gatewayEventId",
+    "model",
+    "agentId",
+    "connector",
+    "action",
+    "toolDeclarations",
+    "promptTokens",
+    "completionTokens",
+    "latencyMs",
+    "eventTimestamp",
+    "rawEvent"
+  ]
+}
