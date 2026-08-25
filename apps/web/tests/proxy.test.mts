@@ -6,10 +6,13 @@ function makeRequest(
   ip: string,
   init?: { method?: string; headers?: Record<string, string>; sessionId?: string },
 ): NextRequest {
+  const nextUrl = new URL(`https://spctre.test${pathname}`);
+  // NextURL exposes clone(); the docs-host rewrite uses it.
+  Object.assign(nextUrl, { clone: () => new URL(nextUrl.toString()) });
   return {
     method: init?.method ?? "GET",
     headers: new Headers({ "x-forwarded-for": ip, ...(init?.headers ?? {}) }),
-    nextUrl: new URL(`https://spctre.test${pathname}`),
+    nextUrl,
     cookies: {
       get: (name: string) =>
         name === "spctre_session_id" && init?.sessionId
@@ -27,6 +30,7 @@ describe("proxy rate limiting", () => {
     delete process.env.SPCTRE_RATE_LIMIT_MAX_REQUESTS;
     delete process.env.SPCTRE_RATE_LIMIT_WINDOW_SECONDS;
     delete process.env.SPCTRE_ALLOWED_SOURCE_IPS;
+    delete process.env.SPCTRE_TRUSTED_PROXY_HOPS;
     delete process.env.UPSTASH_REDIS_REST_URL;
     delete process.env.UPSTASH_REDIS_REST_TOKEN;
   });
@@ -305,5 +309,107 @@ describe("proxy rate limiting", () => {
     );
 
     expect(response.status).not.toBe(403);
+  });
+});
+
+describe("docs host bypass", () => {
+  afterEach(() => {
+    vi.resetModules();
+    delete process.env.DATABASE_URL;
+  });
+
+  const docsHeaders = { "x-forwarded-host": "docs.spctre.dev" };
+
+  it("rewrites documentation paths under /help-docs", async () => {
+    process.env.DATABASE_URL = "postgres://spctre.test/app";
+
+    const { proxy } = await import("../proxy");
+    const response = await proxy(
+      makeRequest("/getting-started", "203.0.113.10", { headers: docsHeaders }),
+    );
+
+    expect(response.headers.get("x-middleware-rewrite")).toContain("/help-docs/getting-started");
+  });
+
+  it("serves the docs search endpoint without a session", async () => {
+    process.env.DATABASE_URL = "postgres://spctre.test/app";
+
+    const { proxy } = await import("../proxy");
+    const response = await proxy(
+      makeRequest("/api/search", "203.0.113.10", { headers: docsHeaders }),
+    );
+
+    expect(response.status).toBe(200);
+  });
+
+  // The host comes from a request header, so anyone can claim it. Before this,
+  // claiming it excused every /api/ path from the session gate.
+  it("does not excuse other API paths claimed by the docs host", async () => {
+    process.env.DATABASE_URL = "postgres://spctre.test/app";
+
+    const { proxy } = await import("../proxy");
+    const response = await proxy(
+      makeRequest("/api/agents", "203.0.113.10", { headers: docsHeaders }),
+    );
+
+    expect(response.status).toBe(401);
+    await expect(response.json()).resolves.toEqual({ error: "Authentication required." });
+  });
+
+  it("rate limits API traffic claimed by the docs host", async () => {
+    process.env.DATABASE_URL = "postgres://spctre.test/app";
+    process.env.SPCTRE_RATE_LIMIT_MAX_REQUESTS = "1";
+
+    const { proxy } = await import("../proxy");
+    const request = makeRequest("/api/search", "203.0.113.44", { headers: docsHeaders });
+
+    await proxy(request);
+    const response = await proxy(request);
+
+    expect(response.status).toBe(429);
+    delete process.env.SPCTRE_RATE_LIMIT_MAX_REQUESTS;
+  });
+});
+
+describe("client IP derivation", () => {
+  afterEach(() => {
+    vi.resetModules();
+    delete process.env.DATABASE_URL;
+    delete process.env.SPCTRE_ALLOWED_SOURCE_IPS;
+    delete process.env.SPCTRE_TRUSTED_PROXY_HOPS;
+  });
+
+  // With one trusted proxy, the rightmost x-forwarded-for entry is the one our
+  // own proxy appended; everything to its left is caller-supplied.
+  it("takes the client address from the declared trusted hop", async () => {
+    process.env.DATABASE_URL = "postgres://spctre.test/app";
+    process.env.SPCTRE_ALLOWED_SOURCE_IPS = "198.51.100.7";
+    process.env.SPCTRE_TRUSTED_PROXY_HOPS = "1";
+
+    const { proxy } = await import("../proxy");
+    const response = await proxy(makeRequest("/login", "203.0.113.10, 198.51.100.7"));
+
+    expect(response.status).toBe(200);
+  });
+
+  it("ignores a forged entry prepended to x-forwarded-for", async () => {
+    process.env.DATABASE_URL = "postgres://spctre.test/app";
+    process.env.SPCTRE_ALLOWED_SOURCE_IPS = "198.51.100.7";
+    process.env.SPCTRE_TRUSTED_PROXY_HOPS = "1";
+
+    const { proxy } = await import("../proxy");
+    const response = await proxy(makeRequest("/login", "198.51.100.7, 203.0.113.10"));
+
+    expect(response.status).toBe(403);
+  });
+
+  it("keeps the leftmost entry when no hop count is declared", async () => {
+    process.env.DATABASE_URL = "postgres://spctre.test/app";
+    process.env.SPCTRE_ALLOWED_SOURCE_IPS = "198.51.100.7";
+
+    const { proxy } = await import("../proxy");
+    const response = await proxy(makeRequest("/login", "198.51.100.7, 203.0.113.10"));
+
+    expect(response.status).toBe(200);
   });
 });

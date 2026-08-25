@@ -89,7 +89,8 @@ description: Full table of SPCTRE_* and platform env vars with types and default
 
 | Variable | Type | Default | Description |
 |---|---|---|---|
-| `SPCTRE_ALLOWED_SOURCE_IPS` | comma-separated | — | IP allowlist for all requests |
+| `SPCTRE_ALLOWED_SOURCE_IPS` | comma-separated | — | IP allowlist for all requests. Evaluated against the client address derived from `x-forwarded-for`; set `SPCTRE_TRUSTED_PROXY_HOPS` alongside it or the allowlist can be bypassed by a forged header. |
+| `SPCTRE_TRUSTED_PROXY_HOPS` | integer | — | Number of proxies in front of this service that append to `x-forwarded-for`. With `N` declared, the client address is the Nth entry from the right and anything to its left is ignored as caller-supplied. Unset trusts the leftmost entry, which the caller controls. |
 | `SPCTRE_ALLOWED_CONNECTORS` | comma-separated | — | Permitted connector IDs |
 | `SPCTRE_ALLOWED_TOOLS` | comma-separated | — | Permitted tool names |
 | `SPCTRE_CREDENTIAL_ENCRYPTION_KEY` | string | — | Passphrase for `pgp_sym_encrypt`/`pgp_sym_decrypt`; encrypts alerting integration credentials and SIEM stream secrets at rest. Required when alerting integrations or SIEM streams are configured. |

@@ -23,6 +23,15 @@ export const PUBLIC_PATHS = new Set([
 export const PUBLIC_PATH_PREFIXES = ["/login/", "/signup/"];
 
 /**
+ * The only API paths the documentation host is allowed to reach without a
+ * session. The docs host serves a public, unauthenticated site, so its bypass
+ * has to name the endpoints that site actually calls: previously it excused
+ * every `/api/` path, which put the whole API surface one `x-forwarded-host`
+ * header away from skipping the session gate.
+ */
+export const DOCS_API_PATHS = new Set(["/api/search"]);
+
+/**
  * The published API surface. `packages/api-contracts` declares
  * `servers: [{ url: "/api/v1" }]` with a global `security: [{ bearerAuth: [] }]`,
  * so every path under this prefix is, by its own contract, a bearer-authenticated
