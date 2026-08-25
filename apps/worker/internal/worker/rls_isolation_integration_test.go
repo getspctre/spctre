@@ -100,3 +100,70 @@ func (s *Server) insertWorkspaceUnderTenant(ctx context.Context, actorTenantID, 
 	)
 	return err
 }
+
+// A query against a partition by name is filtered by that partition's own
+// policies, not by the parent's. runtime_evidence_event had RLS on the parent
+// and none on its partitions, while ALTER DEFAULT PRIVILEGES granted each new
+// partition to spctre_app as it was created — so the same rows were isolated
+// through runtime_evidence_event and not through
+// runtime_evidence_event_YYYY_MM. Migration 028 closes it on the existing
+// partitions and inside spctre_ensure_runtime_evidence_partitions, which would
+// otherwise reopen it every month.
+func TestRLSTenantIsolationOnEvidencePartitions(t *testing.T) {
+	pool := testGatewayDB(t)
+	s := testServer(pool)
+	ctx := context.Background()
+
+	tenantA := newGatewayFixture(t, pool)
+	tenantB := newGatewayFixture(t, pool)
+
+	// insertRuntimeEvidence derives its decision id from the timestamp, so the
+	// two seeds need distinct ones or the "leak" is just one row.
+	now := time.Now().UTC()
+	seedA := tenantA.insertRuntimeEvidence(t, "production", now)
+	seedB := tenantB.insertRuntimeEvidence(t, "production", now.Add(time.Millisecond))
+	partition := fmt.Sprintf("runtime_evidence_event_%s", now.Format("2006_01"))
+
+	var isPartition bool
+	if err := pool.QueryRow(ctx, `
+		SELECT EXISTS (
+			SELECT 1 FROM pg_inherits i
+			JOIN pg_class c ON c.oid = i.inhrelid
+			JOIN pg_class p ON p.oid = i.inhparent
+			WHERE p.relname = 'runtime_evidence_event' AND c.relname = $1
+		)`, partition).Scan(&isPartition); err != nil {
+		t.Fatalf("look up partition %s: %v", partition, err)
+	}
+	if !isPartition {
+		t.Skipf("no partition %s in this database", partition)
+	}
+
+	if !s.evidenceVisibleInPartition(t, tenantA.tenantID, partition, seedA.decisionID) {
+		t.Fatal("tenant A should see its own evidence row through the partition")
+	}
+	if s.evidenceVisibleInPartition(t, tenantA.tenantID, partition, seedB.decisionID) {
+		t.Fatal("RLS leak: tenant A can read tenant B's evidence by naming the partition")
+	}
+}
+
+// evidenceVisibleInPartition is evidenceVisibleUnderTenant against a named
+// partition rather than the partitioned parent. The partition name comes from
+// the catalog, so interpolating it is safe.
+func (s *Server) evidenceVisibleInPartition(
+	t *testing.T,
+	tenantID, partition, decisionID string,
+) bool {
+	t.Helper()
+	ctx := context.Background()
+	tx, err := s.beginTenantTx(ctx, tenantID)
+	if err != nil {
+		t.Fatalf("beginTenantTx: %v", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	var visible bool
+	query := fmt.Sprintf(`SELECT EXISTS (SELECT 1 FROM %s WHERE decision_id = $1)`, partition)
+	if err := tx.QueryRow(ctx, query, decisionID).Scan(&visible); err != nil {
+		t.Fatalf("query partition %s under tenant %s: %v", partition, tenantID, err)
+	}
+	return visible
+}
