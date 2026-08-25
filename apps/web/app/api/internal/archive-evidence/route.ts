@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { workerInternalSecret } from "@/lib/platform/config";
+import { bearerSecretMatches } from "@/lib/platform/internal-auth";
 import { archivalService } from "@/lib/ee-adapters/archival";
 import { getCommercialProfile } from "@/lib/repositories/workspace";
 import { getRawEvidenceForArchival } from "@/lib/repositories/evidence/runtime";
@@ -15,8 +16,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Worker secret not configured." }, { status: 500 });
   }
 
-  const authHeader = req.headers.get("authorization");
-  if (!authHeader || authHeader !== `Bearer ${secret}`) {
+  if (!bearerSecretMatches(req.headers.get("authorization"), secret)) {
     return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   }
 

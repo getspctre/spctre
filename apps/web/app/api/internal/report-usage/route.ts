@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { workerInternalSecret } from "@/lib/platform/config";
+import { bearerSecretMatches } from "@/lib/platform/internal-auth";
 import { reportClosedPeriods } from "@/lib/domains/billing/usage-reporting";
 
 export const dynamic = "force-dynamic";
@@ -20,8 +21,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Worker secret not configured." }, { status: 500 });
   }
 
-  const authHeader = req.headers.get("authorization");
-  if (!authHeader || authHeader !== `Bearer ${secret}`) {
+  if (!bearerSecretMatches(req.headers.get("authorization"), secret)) {
     return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   }
 

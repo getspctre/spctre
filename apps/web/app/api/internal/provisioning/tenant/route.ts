@@ -1,16 +1,9 @@
-import { timingSafeEqual } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { provisioningSecret } from "@/lib/platform/config";
+import { bearerSecretMatches } from "@/lib/platform/internal-auth";
 import { provisionHostedTenant } from "@/lib/domains/provisioning/service";
 
 export const dynamic = "force-dynamic";
-
-function secretMatches(presented: string, expected: string): boolean {
-  const a = Buffer.from(presented);
-  const b = Buffer.from(expected);
-  if (a.length !== b.length) return false;
-  return timingSafeEqual(a, b);
-}
 
 /**
  * Provision the tenant, workspace, owner and baseline policy for a completed
@@ -26,9 +19,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Provisioning secret not configured." }, { status: 500 });
   }
 
-  const authHeader = req.headers.get("authorization") ?? "";
-  const presented = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
-  if (!presented || !secretMatches(presented, secret)) {
+  if (!bearerSecretMatches(req.headers.get("authorization"), secret)) {
     return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   }
 
