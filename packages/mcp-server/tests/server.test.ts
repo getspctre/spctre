@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { isApprovalsQueueUri, resourceTypeForUri, SpctreMcpServer } from "../src/server.js";
 import { TOOL_SCHEMAS } from "../src/tools/schemas.js";
 import type { SpctreConfig } from "../src/config.js";
@@ -51,7 +51,10 @@ type PolicyGateInternals = {
   mergeMcpPolicyData(data: { allowedTools?: string[]; allowedConnectors?: string[] }): void;
   assertToolAllowed(toolName: string): Promise<void>;
   assertConnectorAllowed(connector: string | undefined): void;
+  ensureMcpPolicyLoaded(options?: { agentId?: string; environment?: string }): Promise<void>;
+  getWithAuth(path: string, params?: Record<string, unknown>): Promise<unknown>;
   mcpPolicyLoaded: boolean;
+  mcpPolicyCacheKey: string;
 };
 
 // The gate is advisory (it runs in the agent's own process), but it must not
@@ -60,6 +63,7 @@ type PolicyGateInternals = {
 function gateFor(config: SpctreConfig): PolicyGateInternals {
   const gate = new SpctreMcpServer(config) as unknown as PolicyGateInternals;
   // Skip the control-plane fetch; tests drive mergeMcpPolicyData directly.
+  gate.mcpPolicyCacheKey = `${config.agentId}:production`;
   gate.mcpPolicyLoaded = true;
   return gate;
 }
@@ -95,5 +99,69 @@ describe("MCP tool/connector allowlist gate", () => {
     expect(() => gate.assertConnectorAllowed("mcp")).not.toThrow();
     expect(() => gate.assertConnectorAllowed("bedrock")).toThrow(/not allowed/);
     expect(() => gate.assertConnectorAllowed(undefined)).toThrow(/not allowed/);
+  });
+});
+
+describe("MCP policy load failure handling", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("retries a failed policy fetch only after the backoff window", async () => {
+    vi.useFakeTimers();
+    const gate = new SpctreMcpServer(baseConfig) as unknown as PolicyGateInternals;
+    const fetchPolicy = vi.fn().mockRejectedValue(new Error("control plane unreachable"));
+    gate.getWithAuth = fetchPolicy;
+
+    await gate.ensureMcpPolicyLoaded();
+    await gate.ensureMcpPolicyLoaded();
+    expect(fetchPolicy).toHaveBeenCalledTimes(1);
+
+    vi.advanceTimersByTime(29_000);
+    await gate.ensureMcpPolicyLoaded();
+    expect(fetchPolicy).toHaveBeenCalledTimes(1);
+
+    vi.advanceTimersByTime(1_001);
+    await gate.ensureMcpPolicyLoaded();
+    expect(fetchPolicy).toHaveBeenCalledTimes(2);
+  });
+
+  it("stops fetching once a policy load succeeds", async () => {
+    const gate = new SpctreMcpServer(baseConfig) as unknown as PolicyGateInternals;
+    const fetchPolicy = vi
+      .fn()
+      .mockResolvedValue({ data: { allowedTools: ["get_policy_status"] } });
+    gate.getWithAuth = fetchPolicy;
+
+    await gate.ensureMcpPolicyLoaded();
+    await gate.ensureMcpPolicyLoaded();
+
+    expect(fetchPolicy).toHaveBeenCalledTimes(1);
+    await expect(gate.assertToolAllowed("create_evidence_record")).rejects.toThrow(/not allowed/);
+  });
+
+  it("shares one in-flight fetch across concurrent tool calls", async () => {
+    const gate = new SpctreMcpServer(baseConfig) as unknown as PolicyGateInternals;
+    const fetchPolicy = vi.fn().mockResolvedValue({ data: {} });
+    gate.getWithAuth = fetchPolicy;
+
+    await Promise.all([
+      gate.ensureMcpPolicyLoaded(),
+      gate.ensureMcpPolicyLoaded(),
+      gate.ensureMcpPolicyLoaded(),
+    ]);
+
+    expect(fetchPolicy).toHaveBeenCalledTimes(1);
+  });
+
+  it("refetches when the agent/environment scope changes", async () => {
+    const gate = new SpctreMcpServer(baseConfig) as unknown as PolicyGateInternals;
+    const fetchPolicy = vi.fn().mockResolvedValue({ data: {} });
+    gate.getWithAuth = fetchPolicy;
+
+    await gate.ensureMcpPolicyLoaded({ environment: "production" });
+    await gate.ensureMcpPolicyLoaded({ environment: "staging" });
+
+    expect(fetchPolicy).toHaveBeenCalledTimes(2);
   });
 });

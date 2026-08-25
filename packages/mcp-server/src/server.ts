@@ -507,6 +507,8 @@ export class SpctreMcpServer {
 
   private mcpPolicyLoaded = false;
   private mcpPolicyCacheKey = "";
+  private mcpPolicyRetryAfter = 0;
+  private mcpPolicyInFlight: Promise<void> | null = null;
   private policyAllowedTools: string[] | undefined;
   private policyAllowedConnectors: string[] | undefined;
 
@@ -527,19 +529,52 @@ export class SpctreMcpServer {
     this.mcpRegistrySource = data.registry?.source ?? "api";
   }
 
+  // A failed policy fetch is cached for this long before another call retries.
+  // Without it a control-plane outage either strands the session on env-var
+  // allowlists for its whole lifetime, or puts a failing request in front of
+  // every tool call.
+  private static readonly MCP_POLICY_RETRY_BACKOFF_MS = 30_000;
+
   private async ensureMcpPolicyLoaded(
     options: { agentId?: string; environment?: string } = {},
   ): Promise<void> {
-    const cacheKey = `${options.agentId ?? this.config.agentId}:${options.environment ?? "production"}`;
-    if (this.mcpPolicyLoaded && this.mcpPolicyCacheKey === cacheKey) return;
-    this.mcpPolicyLoaded = true;
-    this.mcpPolicyCacheKey = cacheKey;
+    const agentId = options.agentId ?? this.config.agentId;
+    const environment = options.environment ?? "production";
+    const cacheKey = `${agentId}:${environment}`;
+
+    if (this.mcpPolicyCacheKey !== cacheKey) {
+      this.mcpPolicyCacheKey = cacheKey;
+      this.mcpPolicyLoaded = false;
+      this.mcpPolicyRetryAfter = 0;
+      this.mcpPolicyInFlight = null;
+    }
+    if (this.mcpPolicyLoaded) return;
+    // Concurrent tool calls share one fetch rather than racing.
+    if (this.mcpPolicyInFlight) return await this.mcpPolicyInFlight;
+    if (Date.now() < this.mcpPolicyRetryAfter) return;
+
+    const inFlight = this.loadMcpPolicy(cacheKey, agentId, environment).finally(() => {
+      if (this.mcpPolicyInFlight === inFlight) this.mcpPolicyInFlight = null;
+    });
+    this.mcpPolicyInFlight = inFlight;
+    await inFlight;
+  }
+
+  private async loadMcpPolicy(
+    cacheKey: string,
+    agentId: string | undefined,
+    environment: string,
+  ): Promise<void> {
     try {
       const response = await this.getWithAuth("/api/workspace/mcp-policy", {
-        agentId: options.agentId ?? this.config.agentId,
-        environment: options.environment ?? "production",
+        agentId,
+        environment,
       });
+      // A key change mid-flight means this response is for a stale scope.
+      if (this.mcpPolicyCacheKey !== cacheKey) return;
       this.mergeMcpPolicyData(response.data ?? {});
+      this.mcpPolicyLoaded = true;
+      this.mcpPolicyRetryAfter = 0;
       emitTokenEvent("mcp.policy_loaded", {
         tools: this.policyAllowedTools?.length,
         connectors: this.policyAllowedConnectors?.length,
@@ -547,9 +582,16 @@ export class SpctreMcpServer {
         registry_source: this.mcpRegistrySource,
       });
     } catch {
-      // Policy fetch failed — fall back to env-var allowlists only.
+      if (this.mcpPolicyCacheKey !== cacheKey) return;
+      // Policy fetch failed — fall back to env-var allowlists only, which
+      // constrain at least as tightly as a loaded policy would, and retry
+      // after the backoff window.
       this.mcpRegistrySource = "env_vars_only";
-      emitTokenEvent("mcp.policy_load_failed", { fallback: "env_vars_only" });
+      this.mcpPolicyRetryAfter = Date.now() + SpctreMcpServer.MCP_POLICY_RETRY_BACKOFF_MS;
+      emitTokenEvent("mcp.policy_load_failed", {
+        fallback: "env_vars_only",
+        retry_in_ms: SpctreMcpServer.MCP_POLICY_RETRY_BACKOFF_MS,
+      });
     }
   }
 }
