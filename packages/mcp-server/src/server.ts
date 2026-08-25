@@ -404,22 +404,20 @@ export class SpctreMcpServer {
 
   private async assertToolAllowed(toolName: string): Promise<void> {
     await this.ensureMcpPolicyLoaded();
-    if (!this.config.allowedTools || this.config.allowedTools.length === 0) {
-      return;
-    }
-
-    if (!this.config.allowedTools.includes(toolName)) {
-      throw new Error(`Tool '${toolName}' is not allowed for this MCP session.`);
+    for (const allowlist of [this.config.allowedTools, this.policyAllowedTools]) {
+      if (!allowlist || allowlist.length === 0) continue;
+      if (!allowlist.includes(toolName)) {
+        throw new Error(`Tool '${toolName}' is not allowed for this MCP session.`);
+      }
     }
   }
 
   private assertConnectorAllowed(connector: string | undefined): void {
-    if (!this.config.allowedConnectors || this.config.allowedConnectors.length === 0) {
-      return;
-    }
-
-    if (!connector || !this.config.allowedConnectors.includes(connector)) {
-      throw new Error(`Connector '${connector}' is not allowed for this MCP session.`);
+    for (const allowlist of [this.config.allowedConnectors, this.policyAllowedConnectors]) {
+      if (!allowlist || allowlist.length === 0) continue;
+      if (!connector || !allowlist.includes(connector)) {
+        throw new Error(`Connector '${connector}' is not allowed for this MCP session.`);
+      }
     }
   }
 
@@ -509,19 +507,19 @@ export class SpctreMcpServer {
 
   private mcpPolicyLoaded = false;
   private mcpPolicyCacheKey = "";
+  private policyAllowedTools: string[] | undefined;
+  private policyAllowedConnectors: string[] | undefined;
 
-  // Merge workspace MCP policy into the env-var allowlists (union semantics).
+  // Workspace MCP policy is a second constraint layered on top of the env-var
+  // allowlists, never a widening of them: a call must satisfy both. Merging the
+  // two lists into one would let the workspace list (which currently serves the
+  // full first-party tool surface) erase an operator's narrower env allowlist.
   private mergeMcpPolicyData(data: McpPolicyData): void {
     if (Array.isArray(data.allowedTools) && data.allowedTools.length > 0) {
-      const merged = new Set<string>([...(this.config.allowedTools ?? []), ...data.allowedTools]);
-      this.config.allowedTools = [...merged];
+      this.policyAllowedTools = [...data.allowedTools];
     }
     if (Array.isArray(data.allowedConnectors) && data.allowedConnectors.length > 0) {
-      const merged = new Set<string>([
-        ...(this.config.allowedConnectors ?? []),
-        ...data.allowedConnectors,
-      ]);
-      this.config.allowedConnectors = [...merged];
+      this.policyAllowedConnectors = [...data.allowedConnectors];
     }
     if (Array.isArray(data.capabilities)) {
       this.governedMcpCapabilities = data.capabilities;
@@ -543,8 +541,8 @@ export class SpctreMcpServer {
       });
       this.mergeMcpPolicyData(response.data ?? {});
       emitTokenEvent("mcp.policy_loaded", {
-        tools: this.config.allowedTools?.length,
-        connectors: this.config.allowedConnectors?.length,
+        tools: this.policyAllowedTools?.length,
+        connectors: this.policyAllowedConnectors?.length,
         capabilities: this.governedMcpCapabilities.length,
         registry_source: this.mcpRegistrySource,
       });

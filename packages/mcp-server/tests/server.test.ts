@@ -46,3 +46,54 @@ describe("resource route matching", () => {
     expect(isApprovalsQueueUri("spctre://approvals/approval-7f4a9c30")).toBe(false);
   });
 });
+
+type PolicyGateInternals = {
+  mergeMcpPolicyData(data: { allowedTools?: string[]; allowedConnectors?: string[] }): void;
+  assertToolAllowed(toolName: string): Promise<void>;
+  assertConnectorAllowed(connector: string | undefined): void;
+  mcpPolicyLoaded: boolean;
+};
+
+// The gate is advisory (it runs in the agent's own process), but it must not
+// widen an operator's env allowlist. Workspace policy currently serves the full
+// first-party tool surface, so a union would erase every env restriction.
+function gateFor(config: SpctreConfig): PolicyGateInternals {
+  const gate = new SpctreMcpServer(config) as unknown as PolicyGateInternals;
+  // Skip the control-plane fetch; tests drive mergeMcpPolicyData directly.
+  gate.mcpPolicyLoaded = true;
+  return gate;
+}
+
+describe("MCP tool/connector allowlist gate", () => {
+  it("keeps the env allowlist restrictive after workspace policy loads", async () => {
+    const gate = gateFor({ ...baseConfig, allowedTools: ["get_policy_status"] });
+    gate.mergeMcpPolicyData({ allowedTools: TOOL_SCHEMAS.map((tool) => tool.name) });
+
+    await expect(gate.assertToolAllowed("get_policy_status")).resolves.toBeUndefined();
+    await expect(gate.assertToolAllowed("create_evidence_record")).rejects.toThrow(/not allowed/);
+  });
+
+  it("enforces a restrictive workspace policy when no env allowlist is set", async () => {
+    const gate = gateFor(baseConfig);
+    gate.mergeMcpPolicyData({ allowedTools: ["get_policy_status"] });
+
+    await expect(gate.assertToolAllowed("get_policy_status")).resolves.toBeUndefined();
+    await expect(gate.assertToolAllowed("create_evidence_record")).rejects.toThrow(/not allowed/);
+  });
+
+  it("allows every tool when neither layer sets an allowlist", async () => {
+    const gate = gateFor(baseConfig);
+    gate.mergeMcpPolicyData({});
+
+    await expect(gate.assertToolAllowed("create_evidence_record")).resolves.toBeUndefined();
+  });
+
+  it("applies the same both-layers rule to connectors", () => {
+    const gate = gateFor({ ...baseConfig, allowedConnectors: ["mcp"] });
+    gate.mergeMcpPolicyData({ allowedConnectors: ["mcp", "bedrock"] });
+
+    expect(() => gate.assertConnectorAllowed("mcp")).not.toThrow();
+    expect(() => gate.assertConnectorAllowed("bedrock")).toThrow(/not allowed/);
+    expect(() => gate.assertConnectorAllowed(undefined)).toThrow(/not allowed/);
+  });
+});
