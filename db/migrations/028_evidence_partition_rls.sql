@@ -17,6 +17,11 @@
 -- The backfill and the creation function both have to change:
 -- spctre_ensure_runtime_evidence_partitions runs monthly and would otherwise
 -- reopen the hole with each new partition.
+--
+-- Every identifier below is schema-qualified. 001_launch_schema.sql sets
+-- search_path to '' for the session, and the migration runner applies every
+-- file on that one connection, so an unqualified name resolves in a database
+-- that already has 001 applied and fails on a fresh one.
 
 CREATE OR REPLACE FUNCTION public.spctre_ensure_runtime_evidence_partitions(months_back integer DEFAULT 1, months_forward integer DEFAULT 3) RETURNS void
     LANGUAGE plpgsql
@@ -33,17 +38,18 @@ begin
     partition_end := partition_start + interval '1 month';
     partition_name := format('runtime_evidence_event_%s', to_char(partition_start, 'YYYY_MM'));
     execute format(
-      'create table if not exists %I partition of runtime_evidence_event for values from (%L) to (%L)',
+      'create table if not exists public.%I partition of public.runtime_evidence_event '
+      'for values from (%L) to (%L)',
       partition_name,
       partition_start,
       partition_end
     );
     -- A new partition inherits the parent's grants through ALTER DEFAULT
     -- PRIVILEGES but not its row security, so both are set explicitly here.
-    execute format('alter table %I enable row level security', partition_name);
-    execute format('drop policy if exists tenant_isolation on %I', partition_name);
+    execute format('alter table public.%I enable row level security', partition_name);
+    execute format('drop policy if exists tenant_isolation on public.%I', partition_name);
     execute format(
-      'create policy tenant_isolation on %I to spctre_app '
+      'create policy tenant_isolation on public.%I to spctre_app '
       'using (tenant_id = current_setting(''app.current_tenant_id'', true)::uuid) '
       'with check (tenant_id = current_setting(''app.current_tenant_id'', true)::uuid)',
       partition_name
@@ -64,12 +70,13 @@ begin
     join pg_class c on c.oid = i.inhrelid
     join pg_class p on p.oid = i.inhparent
     where p.relname = 'runtime_evidence_event'
+      and p.relnamespace = 'public'::regnamespace
       and c.relkind in ('r', 'p')
   loop
-    execute format('alter table %I enable row level security', partition_name);
-    execute format('drop policy if exists tenant_isolation on %I', partition_name);
+    execute format('alter table public.%I enable row level security', partition_name);
+    execute format('drop policy if exists tenant_isolation on public.%I', partition_name);
     execute format(
-      'create policy tenant_isolation on %I to spctre_app '
+      'create policy tenant_isolation on public.%I to spctre_app '
       'using (tenant_id = current_setting(''app.current_tenant_id'', true)::uuid) '
       'with check (tenant_id = current_setting(''app.current_tenant_id'', true)::uuid)',
       partition_name
