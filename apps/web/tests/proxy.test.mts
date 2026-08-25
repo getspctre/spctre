@@ -403,6 +403,44 @@ describe("client IP derivation", () => {
     expect(response.status).toBe(403);
   });
 
+  // Reaching the service without traversing the declared chain is exactly the
+  // case the hop count exists for. Falling back to another request header here
+  // would hand the allowlist answer back to the caller.
+  it("refuses traffic that carries no x-forwarded-for, whatever x-real-ip claims", async () => {
+    process.env.DATABASE_URL = "postgres://spctre.test/app";
+    process.env.SPCTRE_ALLOWED_SOURCE_IPS = "198.51.100.7";
+    process.env.SPCTRE_TRUSTED_PROXY_HOPS = "1";
+
+    const { proxy } = await import("../proxy");
+    const response = await proxy(
+      makeRequest("/login", "", { headers: { "x-real-ip": "198.51.100.7" } }),
+    );
+
+    expect(response.status).toBe(403);
+  });
+
+  it("refuses traffic with fewer forwarded entries than the declared hops", async () => {
+    process.env.DATABASE_URL = "postgres://spctre.test/app";
+    process.env.SPCTRE_ALLOWED_SOURCE_IPS = "198.51.100.7";
+    process.env.SPCTRE_TRUSTED_PROXY_HOPS = "2";
+
+    const { proxy } = await import("../proxy");
+    const response = await proxy(makeRequest("/login", "198.51.100.7"));
+
+    expect(response.status).toBe(403);
+  });
+
+  it("accepts a single forwarded entry when one hop is declared", async () => {
+    process.env.DATABASE_URL = "postgres://spctre.test/app";
+    process.env.SPCTRE_ALLOWED_SOURCE_IPS = "198.51.100.7";
+    process.env.SPCTRE_TRUSTED_PROXY_HOPS = "1";
+
+    const { proxy } = await import("../proxy");
+    const response = await proxy(makeRequest("/login", "198.51.100.7"));
+
+    expect(response.status).toBe(200);
+  });
+
   it("keeps the leftmost entry when no hop count is declared", async () => {
     process.env.DATABASE_URL = "postgres://spctre.test/app";
     process.env.SPCTRE_ALLOWED_SOURCE_IPS = "198.51.100.7";

@@ -138,6 +138,10 @@ function trustedProxyHops(): number | null {
   return Number.isFinite(hops) && hops > 0 ? hops : null;
 }
 
+// Stands in for a client address that cannot be attributed. Never an address,
+// so it can never appear in SPCTRE_ALLOWED_SOURCE_IPS and pass the allowlist.
+const UNATTRIBUTABLE_CLIENT_IP = "unattributable";
+
 let warnedAboutUntrustedClientIp = false;
 
 function deriveClientIp(request: NextRequest, allowlistInUse: boolean): string {
@@ -148,11 +152,18 @@ function deriveClientIp(request: NextRequest, allowlistInUse: boolean): string {
   const hops = trustedProxyHops();
 
   if (hops !== null) {
-    // Fewer entries than declared hops means the header did not traverse the
-    // proxies we expect; nothing in it is attributable.
-    const candidate = forwarded[forwarded.length - hops];
-    if (candidate) return candidate;
-    return request.headers.get("x-real-ip") || "127.0.0.1";
+    // Fewer entries than declared hops means the request did not traverse the
+    // proxy chain we declared, so nothing it carries is attributable. Falling
+    // back to another request header here would hand the answer straight back
+    // to the caller: someone reaching the service directly could send no
+    // x-forwarded-for and an x-real-ip of any allowlisted address. x-real-ip is
+    // only trustworthy when the outermost proxy sets it, and a proxy trusted
+    // that far has already appended the x-forwarded-for entry we want.
+    //
+    // The placeholder is deliberately not an address: it matches no allowlist,
+    // and it collapses all unattributable traffic into one rate-limit bucket
+    // rather than handing out a fresh bucket per forged value.
+    return forwarded[forwarded.length - hops] ?? UNATTRIBUTABLE_CLIENT_IP;
   }
 
   if (allowlistInUse && !warnedAboutUntrustedClientIp) {
@@ -165,6 +176,7 @@ function deriveClientIp(request: NextRequest, allowlistInUse: boolean): string {
     );
   }
 
+  // Legacy path: the leftmost entry, then x-real-ip. Both are caller-supplied.
   return forwarded[0] || request.headers.get("x-real-ip") || "127.0.0.1";
 }
 
