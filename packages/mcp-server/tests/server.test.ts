@@ -85,6 +85,32 @@ describe("MCP tool/connector allowlist gate", () => {
     await expect(gate.assertToolAllowed("create_evidence_record")).rejects.toThrow(/not allowed/);
   });
 
+  // An omitted field and an empty array are distinguishable in JSON, so they get
+  // different meanings: omitted leaves the layer unconstrained, empty is the
+  // shape an operator would send to freeze a workspace pending review.
+  it("treats an empty workspace allowlist as deny-all, not as no policy", async () => {
+    const gate = gateFor(baseConfig);
+    gate.mergeMcpPolicyData({ allowedTools: [] });
+
+    await expect(gate.assertToolAllowed("get_policy_status")).rejects.toThrow(
+      /not allowed by the workspace MCP policy/,
+    );
+  });
+
+  it("leaves the layer unconstrained when the policy omits the field", async () => {
+    const gate = gateFor(baseConfig);
+    gate.mergeMcpPolicyData({ allowedConnectors: ["mcp"] });
+
+    await expect(gate.assertToolAllowed("get_policy_status")).resolves.toBeUndefined();
+  });
+
+  it("treats an empty env allowlist as unset, since an empty variable parses to []", async () => {
+    const gate = gateFor({ ...baseConfig, allowedTools: [] });
+    gate.mergeMcpPolicyData({});
+
+    await expect(gate.assertToolAllowed("get_policy_status")).resolves.toBeUndefined();
+  });
+
   it("allows every tool when neither layer sets an allowlist", async () => {
     const gate = gateFor(baseConfig);
     gate.mergeMcpPolicyData({});
@@ -99,6 +125,15 @@ describe("MCP tool/connector allowlist gate", () => {
     expect(() => gate.assertConnectorAllowed("mcp")).not.toThrow();
     expect(() => gate.assertConnectorAllowed("bedrock")).toThrow(/not allowed/);
     expect(() => gate.assertConnectorAllowed(undefined)).toThrow(/not allowed/);
+  });
+
+  it("denies every connector when the policy sends an empty connector list", () => {
+    const gate = gateFor(baseConfig);
+    gate.mergeMcpPolicyData({ allowedConnectors: [] });
+
+    expect(() => gate.assertConnectorAllowed("mcp")).toThrow(
+      /not allowed by the workspace MCP policy/,
+    );
   });
 });
 

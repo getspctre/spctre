@@ -69,6 +69,25 @@ export function isApprovalsQueueUri(uri: string): boolean {
   return uri === "spctre://approvals/queue";
 }
 
+// An env-var allowlist is a filter when it has entries and absent otherwise:
+// SPCTRE_ALLOWED_TOOLS="" and an unset variable both parse to [], so empty
+// cannot mean deny-all without breaking every deployment that sets neither.
+function envAllowlistDenies(allowlist: string[] | undefined, value: string | undefined): boolean {
+  if (!allowlist || allowlist.length === 0) return false;
+  return !value || !allowlist.includes(value);
+}
+
+// A workspace policy allowlist arrives as JSON, where an omitted field and an
+// empty array are distinguishable. Omitted leaves this layer unconstrained;
+// empty is an explicit deny-all.
+function policyAllowlistDenies(
+  allowlist: string[] | undefined,
+  value: string | undefined,
+): boolean {
+  if (!allowlist) return false;
+  return !value || !allowlist.includes(value);
+}
+
 export class SpctreMcpServer {
   private readonly server: Server;
   private readonly config: SpctreConfig;
@@ -404,20 +423,22 @@ export class SpctreMcpServer {
 
   private async assertToolAllowed(toolName: string): Promise<void> {
     await this.ensureMcpPolicyLoaded();
-    for (const allowlist of [this.config.allowedTools, this.policyAllowedTools]) {
-      if (!allowlist || allowlist.length === 0) continue;
-      if (!allowlist.includes(toolName)) {
-        throw new Error(`Tool '${toolName}' is not allowed for this MCP session.`);
-      }
+    // An env allowlist is unconstrained when empty; a workspace policy allowlist
+    // is deny-all when empty. See mergeMcpPolicyData for why the two differ.
+    if (envAllowlistDenies(this.config.allowedTools, toolName)) {
+      throw new Error(`Tool '${toolName}' is not allowed for this MCP session.`);
+    }
+    if (policyAllowlistDenies(this.policyAllowedTools, toolName)) {
+      throw new Error(`Tool '${toolName}' is not allowed by the workspace MCP policy.`);
     }
   }
 
   private assertConnectorAllowed(connector: string | undefined): void {
-    for (const allowlist of [this.config.allowedConnectors, this.policyAllowedConnectors]) {
-      if (!allowlist || allowlist.length === 0) continue;
-      if (!connector || !allowlist.includes(connector)) {
-        throw new Error(`Connector '${connector}' is not allowed for this MCP session.`);
-      }
+    if (envAllowlistDenies(this.config.allowedConnectors, connector)) {
+      throw new Error(`Connector '${connector}' is not allowed for this MCP session.`);
+    }
+    if (policyAllowlistDenies(this.policyAllowedConnectors, connector)) {
+      throw new Error(`Connector '${connector}' is not allowed by the workspace MCP policy.`);
     }
   }
 
@@ -516,11 +537,19 @@ export class SpctreMcpServer {
   // allowlists, never a widening of them: a call must satisfy both. Merging the
   // two lists into one would let the workspace list (which currently serves the
   // full first-party tool surface) erase an operator's narrower env allowlist.
+  //
+  // An absent list and an empty one mean different things here, which is why
+  // the policy lists are kept as `string[] | undefined` rather than defaulting
+  // to []. A field the response omits leaves the layer unconstrained; a field
+  // the response sends as [] is an explicit deny-all — the shape an operator
+  // would use to freeze a workspace pending review. The env-var side cannot
+  // draw that distinction (an unset variable and an empty one both parse to [])
+  // and so keeps treating empty as unconstrained.
   private mergeMcpPolicyData(data: McpPolicyData): void {
-    if (Array.isArray(data.allowedTools) && data.allowedTools.length > 0) {
+    if (Array.isArray(data.allowedTools)) {
       this.policyAllowedTools = [...data.allowedTools];
     }
-    if (Array.isArray(data.allowedConnectors) && data.allowedConnectors.length > 0) {
+    if (Array.isArray(data.allowedConnectors)) {
       this.policyAllowedConnectors = [...data.allowedConnectors];
     }
     if (Array.isArray(data.capabilities)) {
@@ -583,9 +612,13 @@ export class SpctreMcpServer {
       });
     } catch {
       if (this.mcpPolicyCacheKey !== cacheKey) return;
-      // Policy fetch failed — fall back to env-var allowlists only, which
-      // constrain at least as tightly as a loaded policy would, and retry
-      // after the backoff window.
+      // Policy fetch failed — fall back to the env-var allowlists and retry
+      // after the backoff window. This is fail-open, not equivalent: a session
+      // with no env allowlist runs unconstrained at this layer until a fetch
+      // succeeds. That is an availability trade rather than a hole, because the
+      // real boundary is the control plane's own scope enforcement on every
+      // call this server makes; this layer is advisory and runs in the agent's
+      // own process, where a determined caller could bypass it regardless.
       this.mcpRegistrySource = "env_vars_only";
       this.mcpPolicyRetryAfter = Date.now() + SpctreMcpServer.MCP_POLICY_RETRY_BACKOFF_MS;
       emitTokenEvent("mcp.policy_load_failed", {
