@@ -96,7 +96,7 @@
   },
   "devDependencies": {
     "@types/js-yaml": "^4.0.9",
-    "@types/node": "^26.0.0",
+    "@types/node": "^26.2.0",
     "ai": "7.0.66",
     "genkit": "1.39.0",
     "typescript": "^6.0.3",
