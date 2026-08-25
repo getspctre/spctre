@@ -12,8 +12,13 @@ import { join } from "node:path";
 // it to reviewers to notice.
 //
 // A table qualifies if it declares a tenant_id column and is granted to
-// spctre_app. Partitions are exempt: RLS is declared on the partitioned parent
-// and applies to reads through it.
+// spctre_app. Partitions are exempt, but only because the check verifies their
+// parent carries a policy — the exemption is asserted, not assumed. That
+// matters most for the partitions nothing here can see: the monthly evidence
+// partition is built from a plpgsql format() string, so its columns never
+// appear in a CREATE TABLE this script can parse. Dynamic statements are
+// therefore read for what they create, and one that is not a partition is
+// rejected rather than passing unseen.
 
 const MIGRATIONS_DIR = "db/migrations";
 
@@ -43,13 +48,15 @@ const sql = readdirSync(MIGRATIONS_DIR)
   .join("\n");
 
 const tenantTables = new Set();
-const partitions = new Set();
+// partition name -> the parent it belongs to. A partition is exempt only
+// because its parent is checked, so the parent has to be recorded, not assumed.
+const partitions = new Map();
 for (const match of sql.matchAll(
-  /CREATE TABLE (?:IF NOT EXISTS )?(?:public\.)?(\w+)\s*(\(([\s\S]*?)\n\);|PARTITION OF)/g,
+  /CREATE TABLE (?:IF NOT EXISTS )?(?:public\.)?(\w+)\s*(\(([\s\S]*?)\n\);|PARTITION OF (?:public\.)?(\w+))/g,
 )) {
-  const [, table, form, body] = match;
+  const [, table, form, body, partitionParent] = match;
   if (form.startsWith("PARTITION OF")) {
-    partitions.add(table);
+    partitions.set(table, partitionParent);
     continue;
   }
   if (/^\s*tenant_id\b/m.test(body)) tenantTables.add(table);
@@ -57,8 +64,31 @@ for (const match of sql.matchAll(
 
 // The dumped baseline declares partitions as standalone tables and attaches
 // them afterwards, so the CREATE TABLE form above does not identify them.
-for (const match of sql.matchAll(/ATTACH PARTITION (?:public\.)?(\w+)/g)) {
-  partitions.add(match[1]);
+for (const match of sql.matchAll(
+  /ALTER TABLE (?:ONLY )?(?:public\.)?(\w+) ATTACH PARTITION (?:public\.)?(\w+)/g,
+)) {
+  partitions.set(match[2], match[1]);
+}
+
+// Tables created from a plpgsql format() string are invisible to the CREATE
+// TABLE scan above — spctre_ensure_runtime_evidence_partitions builds a new
+// evidence partition every month that way. Partitions are exempt from the RLS
+// requirement because the parent carries it, so a dynamic statement that
+// creates anything *other* than a partition would slip past this check
+// entirely. Collect the dynamic parents, and reject any dynamic CREATE TABLE
+// that is not a partition rather than letting it pass unseen.
+const dynamicPartitionParents = new Set();
+const dynamicCreates = [];
+// Only literals that *open* with the statement, so ordinary quoted values in
+// the dumped baseline ('CUSTOM'::text and friends) are not mistaken for one.
+for (const match of sql.matchAll(/'(\s*create table\b[^']*)'/gi)) {
+  const statement = match[1].replace(/\s+/g, " ");
+  const partitionOf = statement.match(/partition of (?:public\.)?(\w+)/i);
+  if (partitionOf) {
+    dynamicPartitionParents.add(partitionOf[1]);
+  } else {
+    dynamicCreates.push(statement.trim());
+  }
 }
 
 const rlsEnabled = new Set(
@@ -76,6 +106,30 @@ const grantedToApp = new Set(
 );
 
 const violations = [];
+
+// The partition exemption is only sound while every partition hangs off a
+// parent that is itself behind a policy. Assert that rather than assuming it,
+// for the static partitions and for the ones built by format() alike.
+for (const [partition, parent] of partitions) {
+  if (!rlsEnabled.has(parent) || !hasPolicy.has(parent)) {
+    violations.push(
+      `${partition}: exempted as a partition of ${parent}, which has no tenant_isolation policy`,
+    );
+  }
+}
+for (const parent of dynamicPartitionParents) {
+  if (!rlsEnabled.has(parent) || !hasPolicy.has(parent)) {
+    violations.push(
+      `${parent}: partitions are created dynamically for it, but it has no tenant_isolation policy`,
+    );
+  }
+}
+for (const statement of dynamicCreates) {
+  violations.push(
+    `dynamic CREATE TABLE that is not a partition, so this check cannot see its columns: ${statement}`,
+  );
+}
+
 for (const table of [...tenantTables].sort()) {
   if (partitions.has(table) || !grantedToApp.has(table)) continue;
   if (EXCLUSIONS.has(table)) continue;
