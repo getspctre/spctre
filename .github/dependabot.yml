@@ -7,6 +7,18 @@ updates:
     open-pull-requests-limit: 5
     commit-message:
       prefix: deps
+    groups:
+      # fumadocs-core and fumadocs-ui are released in lockstep and must move
+      # together. Bumped apart, the lockfile keeps a copy of each core version:
+      # RootProvider resolves its search client against the copy fumadocs-ui
+      # depends on, while apps/docs imports fumadocs-core/search/server from the
+      # other, and prerendering dies with "staticClient is not a function" on
+      # every page. Dependabot raises one PR per package and cannot see the
+      # coupling, so the group is what keeps them in one PR.
+      fumadocs:
+        patterns:
+          - "fumadocs*"
+          - "@fumadocs/*"
   - package-ecosystem: github-actions
     directory: /
     schedule:
