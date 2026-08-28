@@ -21,7 +21,7 @@
     "@spctre/ui": "workspace:*",
     "@upstash/ratelimit": "^2.0.8",
     "@upstash/redis": "^1.38.2",
-    "firebase": "^12.17.1",
+    "firebase": "^12.18.0",
     "fumadocs-core": "^16.15.0",
     "fumadocs-ui": "^16.15.0",
     "jose": "^6.2.8",
