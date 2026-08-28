@@ -98,7 +98,7 @@
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^26.2.0",
     "ai": "7.0.66",
-    "genkit": "1.39.0",
+    "genkit": "1.41.0",
     "typescript": "^6.0.3",
     "vitest": "^4.1.10"
   }
