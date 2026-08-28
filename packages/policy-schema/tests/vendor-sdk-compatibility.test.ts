@@ -3,7 +3,7 @@ import { VENDOR_SDK_COMPATIBILITY_MATRIX } from "../src/vendor-sdk-matrix";
 
 // Keep Genkit's published surface in the typecheck without initializing its
 // optional OpenTelemetry runtime. This monorepo deliberately overrides OTel
-// core to v2, while Genkit 1.39 currently loads a v1-only tracing dependency.
+// core to v2, while Genkit 1.41 currently loads a v1-only tracing dependency.
 type GenkitModule = typeof import("genkit");
 
 describe("pinned vendor SDK compatibility matrix", () => {
@@ -18,7 +18,7 @@ describe("pinned vendor SDK compatibility matrix", () => {
   it("pins every supported runtime adapter to an exact release", () => {
     expect(VENDOR_SDK_COMPATIBILITY_MATRIX).toEqual([
       expect.objectContaining({ target: "vercel-ai", packageName: "ai", version: "7.0.22" }),
-      expect.objectContaining({ target: "genkit", packageName: "genkit", version: "1.39.0" }),
+      expect.objectContaining({ target: "genkit", packageName: "genkit", version: "1.41.0" }),
     ]);
     for (const target of VENDOR_SDK_COMPATIBILITY_MATRIX)
       expect(target.version).not.toMatch(/[~^*]/);
