@@ -10,7 +10,7 @@ export const VENDOR_SDK_COMPATIBILITY_MATRIX = [
   {
     target: "genkit",
     packageName: "genkit",
-    version: "1.39.0",
+    version: "1.41.0",
     boundary: "defineTool implementation wrapper",
   },
 ] as const;

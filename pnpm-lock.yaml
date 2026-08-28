@@ -399,8 +399,8 @@ importers:
         specifier: 7.0.66
         version: 7.0.66(zod@4.4.3)
       genkit:
-        specifier: 1.39.0
-        version: 1.39.0(@google-cloud/firestore@7.11.6(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(supports-color@10.2.2)
+        specifier: 1.41.0
+        version: 1.41.0(@google-cloud/firestore@7.11.6(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(supports-color@10.2.2)
       typescript:
         specifier: ^6.0.3
         version: 6.0.3
@@ -1282,30 +1282,30 @@ packages:
   '@fumari/image-size@0.1.0':
     resolution: {integrity: sha512-x2o9u6P8uKUK15B8XgEoRhR3PgLoLSbQKK6FUCd14JzumEw+e8FXZPelij/dZ4VQVMp4r61VD3DcvSo3aEhLAA==}
 
-  '@genkit-ai/ai@1.39.0':
-    resolution: {integrity: sha512-e1ZI2ib4Y8ha2Zj/rN7Uioxd16rWMhalPe3krypLw8B4G36X8KZCqj2UhucKbCZJIffU0cxEvag7BP+JVQnsyQ==}
+  '@genkit-ai/ai@1.41.0':
+    resolution: {integrity: sha512-ynwZLqiKqLpQ1RWrdJxyUpSHqj5e7FgY48MKrMvvayjcZeqs/rlzkk1eUgpfMIIQyDtyFQwwfGxlbA+wDKRF2A==}
 
-  '@genkit-ai/core@1.39.0':
-    resolution: {integrity: sha512-MI0cpmwc4K/KPVsXFAcHviOybt3T3IsVSsN37cEcOzo7mmv+s0JSdooxlQgZn68B6e3I8BNLL3Vk1vyc6qIlCw==}
+  '@genkit-ai/core@1.41.0':
+    resolution: {integrity: sha512-dwLnQyKI5sKO4C1+tRWhscQDkHumS0sqsxwoNFtiG0IKIZ/TsqXdX+DPSedql30NCdmTbYlG9666srbv4Crz3Q==}
 
-  '@genkit-ai/firebase@1.39.0':
-    resolution: {integrity: sha512-7mmSILHULw83z9NXJOpDmsQsVrC68ZB4rEew+9SzB9c8z4U7OQ6aL/E1QuhmgXV9irbyMNKGmW8XFnaGyLbnAg==}
+  '@genkit-ai/firebase@1.41.0':
+    resolution: {integrity: sha512-HoixxDf4eX3dHEgVUp1Ziqm8eRQVRobLhNBt9nYlnQ6qbyeLBXMtJpkLVfRbfK0Y5kP+5vYCSmkiYKwMQ+G04w==}
     peerDependencies:
       '@google-cloud/firestore': ^7.11.0
       firebase: '>=11.5.0'
       firebase-admin: '>=12.2'
-      genkit: ^1.39.0
+      genkit: ^1.41.0
     peerDependenciesMeta:
       firebase:
         optional: true
 
-  '@genkit-ai/google-cloud@1.39.0':
-    resolution: {integrity: sha512-RYThRqKuJLPokMRNWF/97YxPylnR5ZvGnzq6gPTcPRM32lo/k6BGDikfyaKoBOSRXETfThTl+yz4CIiUHNe0IA==}
+  '@genkit-ai/google-cloud@1.41.0':
+    resolution: {integrity: sha512-S1rzNi847rRfmZnTmVI3YIUkyuzcL2w9IBI3Ld+34myPcvwpF8yif+PkKXY6uzC05b8J3ReDvME3/VIKHXkUIw==}
     peerDependencies:
-      genkit: ^1.39.0
+      genkit: ^1.41.0
 
-  '@google-cloud/common@6.0.1':
-    resolution: {integrity: sha512-1uvKzbmAWUdchIYRsg0f4rUmezOamWuVBSWAPAhnYoUE5OiPEx6v6JOxFIdr3MsrqV+6fyLV3EI1vMPlHoeRvw==}
+  '@google-cloud/common@6.1.0':
+    resolution: {integrity: sha512-Ohjxjvusr65+SiEVBrilpyn1ir9CM8ZqWjcf7bA8ph1GCunxI6bbwtcl7iGl67A7Lr4Nz7WpNzITNETwggc7pw==}
     engines: {node: '>=18'}
 
   '@google-cloud/firestore@7.11.6':
@@ -1316,14 +1316,18 @@ packages:
     resolution: {integrity: sha512-EvMpZQUXkTRdweSvOu6VL6EEQwHjHAgWz2UYZR+Mj6Ao52S+TWieHbSn15jiNnEw8F8RhbZj7IGXZ1PFB1eA+A==}
     engines: {node: '>=18'}
 
+  '@google-cloud/logging-api@0.2.0':
+    resolution: {integrity: sha512-VQ9YohbLMh4wtWfrXLRfEbAjy8JyC1OSXA6dX/A2hpB/0sqnb/97Hs+Ai2fR8t83V4c3u1l2G7CPVuZN8wlG+A==}
+    engines: {node: '>=18'}
+
   '@google-cloud/logging-winston@6.0.2':
     resolution: {integrity: sha512-rrNs4XXLtk0BAnL6kTjfAH26a/zVGsuZHd6Vve3Ip1fT4/Irz2QJtqI0XiPbT/yfmKqFmYa44GWPXtPPAi56ug==}
     engines: {node: '>=18'}
     peerDependencies:
       winston: '>=3.2.1'
 
-  '@google-cloud/logging@11.3.0':
-    resolution: {integrity: sha512-8Y2lFRpPz6rZUQ+J//+toAZ7H0ZT/5KagS0NMhXWdT+sN3pPtNzgm+N0NJ46cf9XX3etj4yfE7HrjX3wMRLBZw==}
+  '@google-cloud/logging@11.4.0':
+    resolution: {integrity: sha512-UtDwKO+Ux9SEPhDGWfN9OPHHCQ1Kt/xgA1xWO12GsoxV6lhLZarHqL2hgOAzLzOP+qxsLkk2eOcSJDPexTEUSQ==}
     engines: {node: '>=18'}
 
   '@google-cloud/modelarmor@0.4.1':
@@ -1372,6 +1376,10 @@ packages:
   '@google-cloud/promisify@4.0.0':
     resolution: {integrity: sha512-Orxzlfb9c67A15cq2JQEyVc7wEsmFBmHjZWZYQMUyJ1qivXyMwdyNOs9odi79hze+2zqdTtu1E19IM/FtqZ10g==}
     engines: {node: '>=14'}
+
+  '@google-cloud/promisify@4.1.0':
+    resolution: {integrity: sha512-G/FQx5cE/+DqBbOpA5jKsegGwdPniU6PuIEMt+qxWgFxvxuFOzVmp6zYchtYuwAWV5/8Dgs0yAmjvNZv3uXLQg==}
+    engines: {node: '>=18'}
 
   '@google-cloud/storage@7.21.0':
     resolution: {integrity: sha512-l+IFTkd+6Y5LoAuXyYCKNAKtw/Ci+rAMqgdTB1jv4iZiLhw0rtq+0qjIRbBizXkNzEFmXiXUW0H7sZQQvk1ffA==}
@@ -4838,8 +4846,8 @@ packages:
   color-name@1.1.4:
     resolution: {integrity: sha512-dOy+3AuW3a2wNbZHIuMZpTcgjGuLU/uBL/ubcZF9OXbDo8ff4O8yVp5Bf0efS8uEoYo5q4Fx7dY9OgQGXgAsQA==}
 
-  color-name@2.1.0:
-    resolution: {integrity: sha512-1bPaDNFm0axzE4MEAzKPuqKWeRaT43U/hyxKPBdqTfmPF+d6n7FSoTFxLVULUJOmiLp01KjhIPPH+HrXZJN4Rg==}
+  color-name@2.1.1:
+    resolution: {integrity: sha512-p2FdgwVx1a9yWBHP2wI0VgShkDpgN4kZISkxdNipGBJWpa5G6b04OINlVWCyJj0JmfvcPrgqt95E9k8yvaOJFg==}
     engines: {node: '>=12.20'}
 
   color-string@2.1.4:
@@ -5691,6 +5699,10 @@ packages:
     resolution: {integrity: sha512-bTIgTsM2bWn3XklZISBTQX7ZSddGW+IO3bMdGaemHZ3tbqExMENHLx6kKZ/KlejgrMtj8q7wBItt51yegqalrA==}
     engines: {node: '>=18'}
 
+  gaxios@7.3.1:
+    resolution: {integrity: sha512-kB3rzJV7d9juLZh8/56QTXCwQfxyhdOMdyYk1HdQKFtF8TJTDTZQJtixWIwXdE9Jji91mC41DUNpjleo4L4eAQ==}
+    engines: {node: '>=18'}
+
   gcp-metadata@6.1.1:
     resolution: {integrity: sha512-a4tiq7E0/5fTjxPAaH4jpjkSv/uCaU2p5KC6HVGrvl0cDjA8iBZv4vv1gyzlmK0ZUKqwpOyQMKzZQe3lTit77A==}
     engines: {node: '>=14'}
@@ -5703,8 +5715,12 @@ packages:
     resolution: {integrity: sha512-ziTrzUhhpL9Zk5k0HHzgP/KIpWDJT0VMBC/ynt/QIBvTW+UUcSivQRl6VlwTf/EilDxtSWklHoRsKy1c4k+59w==}
     engines: {node: '>=18'}
 
-  genkit@1.39.0:
-    resolution: {integrity: sha512-Qz9ef/LfAEDMzO1+Nd6l6dMYK/V4ZfWDIp79rz/1V6xDM5VuJMkoqOTCDwXAviuAnjoO2noJug2wIK81ilMhWA==}
+  gcp-metadata@8.1.4:
+    resolution: {integrity: sha512-iJ9KMsiu+xKtNRX0PmGLSaIU3bUBAyzWTyqKemKPzNPsmmsBCQYmlNg+brEbES7IHSXtdVwzBPzx1vz3FAaipw==}
+    engines: {node: '>=18'}
+
+  genkit@1.41.0:
+    resolution: {integrity: sha512-myaWTdeFVnXrp1cKSVbM0as6QvBgRPI7t6SfBTKKb130QdVzKNPefgugEMPwpiaK2jmM+ZghfKLpQh/ZRVlAmQ==}
 
   gensync@1.0.0-beta.2:
     resolution: {integrity: sha512-3hN7NaskYvMDLQY55gnW3NQ+mesEAepTqlg+VEbj7zzqEMBVNhzcGYYeqFo/TlYz6eQiFcp1HcsCZO+nGgS8zg==}
@@ -5777,8 +5793,16 @@ packages:
     resolution: {integrity: sha512-gOPiyxcD9dJGCEArAhF4Hd0BAqvAe/JzERP7tYumE4yIkmIedPUVXcJFWbV3/p/ovIIvKjkrTk+f1UVkq7vvbw==}
     engines: {node: '>=0.10.0'}
 
+  google-auth-library@10.5.0:
+    resolution: {integrity: sha512-7ABviyMOlX5hIVD60YOfHw4/CxOfBhyduaYB+wbFWCWoni4N7SLcV46hrVRktuBbZjFC9ONyqamZITN7q3n32w==}
+    engines: {node: '>=18'}
+
   google-auth-library@10.6.2:
     resolution: {integrity: sha512-e27Z6EThmVNNvtYASwQxose/G57rkRuaRbQyxM2bvYLLX/GqWZ5chWq2EBoUchJbCc57eC9ArzO5wMsEmWftCw==}
+    engines: {node: '>=18'}
+
+  google-auth-library@10.9.1:
+    resolution: {integrity: sha512-i1ydyHrqcIxXkWh/uBmVkzCvIuq5yiK2ATndIe5XxKholrG/MTYP9xGYka4sQhrbIAgGjL2B6NOE7rFaiF3fXw==}
     engines: {node: '>=18'}
 
   google-auth-library@9.15.1:
@@ -5793,6 +5817,10 @@ packages:
     resolution: {integrity: sha512-1kGbqVQBZPAAu4+/R1XxPQKP0ydbNYoLAr4l0ZO2bMV0kLyLW4I1gAk++qBLWt7DPORTzmWRMsCZe86gDjShJA==}
     engines: {node: '>=18'}
 
+  google-gax@5.0.8:
+    resolution: {integrity: sha512-M4vpZcXQIC1gqIVGQ7eaU3jXQA6zecStyTXu514TYfThlgSurYJOxHZo9fzU6hAgwPWvuEynAVHWyaIk80VeEA==}
+    engines: {node: '>=18'}
+
   google-logging-utils@0.0.2:
     resolution: {integrity: sha512-NEgUnEcBiP5HrPzufUkBzJOD/Sxsco3rLNo1F1TNf7ieU8ryUzBhqba8r756CjLX7rn3fHl6iLEwPYuqpoKgQQ==}
     engines: {node: '>=14'}
@@ -5800,6 +5828,10 @@ packages:
   google-logging-utils@1.1.3:
     resolution: {integrity: sha512-eAmLkjDjAFCVXg7A1unxHsLf961m6y17QFqXqAXGj/gVkKFrEICfStRfwUlGNfeCEjNRa32JEWOUTlYXPyyKvA==}
     engines: {node: '>=14'}
+
+  google-logging-utils@1.2.0:
+    resolution: {integrity: sha512-WE9av4wKDZgRjBwgVUabocx8T6/7o3Ca1Fat46FXDhXVAFibzNadedcOXrdgd1Kzmk8tsk/9ZH89Wyf/SqeZ3A==}
+    engines: {node: '>=18'}
 
   googleapis-common@7.2.0:
     resolution: {integrity: sha512-/fhDZEJZvOV3X5jmD+fKxMqma5q2Q9nZNSF3kn1F18tpxmA86BcTxAGBQdM0N89Z3bEaIs+HVznSmFJEAmMTjA==}
@@ -5819,6 +5851,10 @@ packages:
   gtoken@7.1.0:
     resolution: {integrity: sha512-pCcEwRi+TKpMlxAQObHDQ56KawURgyAf6jtIY046fJ5tIv3zDe/LEIubckAO8fj6JnAxLdmWkUfNyulQ2iKdEw==}
     engines: {node: '>=14.0.0'}
+
+  gtoken@8.0.0:
+    resolution: {integrity: sha512-+CqsMbHPiSTdtSO14O51eMNlrp9N79gmeqmXeouJOhfucAedHw9noVe/n5uJk3tbKE6a+6ZCQg3RPhVhHByAIw==}
+    engines: {node: '>=18'}
 
   handlebars@4.7.9:
     resolution: {integrity: sha512-4E71E0rpOaQuJR2A3xDZ+GM1HyWYv1clR58tC8emQNeQe3RH7MAzSbat+V0wG78LQBo6m6bzSG/L4pBuCsgnUQ==}
@@ -7381,6 +7417,10 @@ packages:
     resolution: {integrity: sha512-Rzq0KEyX/w/tEybncDgdkZrJgVUsUMk3xjh3t5bv3S1HTAtg+uOYt72+ZfwiQwKdysThkTBdL/rTi6HDmX9Ddw==}
     engines: {node: '>=0.6'}
 
+  qs@6.15.3:
+    resolution: {integrity: sha512-O9gl3zCl5h5blw1KGUzQKhA5oUXSl8rwUIM5o0S3nCXMliSvy5Dzx7/DJcI+SwgICv+IneSZwhBh1oSyEHA71A==}
+    engines: {node: '>=0.6'}
+
   quickjs-wasi@2.2.0:
     resolution: {integrity: sha512-zQxXmQMrEoD3S+jQdYsloq4qAuaxKFHZj6hHqOYGwB2iQZH+q9e/lf5zQPXCKOk0WJuAjzRFbO4KwHIp2D05Iw==}
 
@@ -7583,6 +7623,10 @@ packages:
     resolution: {integrity: sha512-JzFPAfklk1kjR1w76f0QOIhoDkNkSqW8wYKT08n9yysTmZfB+RQ2QoXoTAeOi1HD9ZipTyTAZg3c4pM/jeqgSw==}
     engines: {node: '>=18'}
 
+  retry-request@8.0.4:
+    resolution: {integrity: sha512-pI6/7eabUYkZxamkOq0g0uMxKLLGnjzhefY+vL8bVXag5rto4OU2YBTPytWLuHH7aEKD6fn7kJycQfid0Mwnkw==}
+    engines: {node: '>=18'}
+
   retry@0.13.1:
     resolution: {integrity: sha512-XQBQ3I8W1Cge0Seh+6gjj03LbmRFWuoszgK9ooCpwYIrhhoO80pfq4cUkU5DkknwfOfFteRwlZ56PYOGYyFWdg==}
     engines: {node: '>= 4'}
@@ -7709,6 +7753,10 @@ packages:
 
   side-channel@1.1.0:
     resolution: {integrity: sha512-ZX99e6tRweoUXqR+VBrslhda51Nh5MTQwou5tnUDgbtyM0dBgmhEDtWGP/xbKn6hqfPRHujUNwz5fy/wbbhnpw==}
+    engines: {node: '>= 0.4'}
+
+  side-channel@1.1.1:
+    resolution: {integrity: sha512-6x6dK6zJdpTzF4sQeNYxwtvBzf6Eg4GtlesS94HOvTudUeyK2WXAaIfmDgsyslYrRBeFIlsi54AYsFGUuhmvrQ==}
     engines: {node: '>= 0.4'}
 
   siginfo@2.0.0:
@@ -7941,6 +7989,10 @@ packages:
 
   teeny-request@10.1.2:
     resolution: {integrity: sha512-Xj0ZAQ0CeuQn6UxCDPLbFRlgcSTUEyO3+wiepr2grjIjyL/lMMs1Z4OwXn8kLvn/V1OuaEP0UY7Na6UDNNsYrQ==}
+    engines: {node: '>=18'}
+
+  teeny-request@10.1.4:
+    resolution: {integrity: sha512-R1Cg4Vu0UULeDfHL/kjABLaTW++9yD/B6n2g48y5dJ04hsEaxcfmAqbNDzNsbqAYJyIpZafjklLG9YxRu9uzOg==}
     engines: {node: '>=18'}
 
   teeny-request@9.0.0:
@@ -8424,6 +8476,18 @@ packages:
 
   ws@8.21.0:
     resolution: {integrity: sha512-Vsp28b7DRcimFQvrqu2Wek3z1iYxDCWqHYB8Qsnk/S4RfaCQzPGPyBNuVjJV3cd6UiKtUtp6sNM77gWvzcCH+g==}
+    engines: {node: '>=10.0.0'}
+    peerDependencies:
+      bufferutil: ^4.0.1
+      utf-8-validate: '>=5.0.2'
+    peerDependenciesMeta:
+      bufferutil:
+        optional: true
+      utf-8-validate:
+        optional: true
+
+  ws@8.21.3:
+    resolution: {integrity: sha512-201TZ/kPWxoPr/OKWjquZR1SWKXcvxdH+e1xrx89b3YbmzLMFCLfnaG1HFIgWzJOEWZ7MvpK++odZufgYR50Rw==}
     engines: {node: '>=10.0.0'}
     peerDependencies:
       bufferutil: ^4.0.1
@@ -9467,9 +9531,9 @@ snapshots:
 
   '@fumari/image-size@0.1.0': {}
 
-  '@genkit-ai/ai@1.39.0(@google-cloud/firestore@7.11.6(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(genkit@1.39.0(@google-cloud/firestore@7.11.6(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(supports-color@10.2.2))(supports-color@10.2.2)':
+  '@genkit-ai/ai@1.41.0(@google-cloud/firestore@7.11.6(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(genkit@1.41.0(@google-cloud/firestore@7.11.6(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(supports-color@10.2.2))(supports-color@10.2.2)':
     dependencies:
-      '@genkit-ai/core': 1.39.0(@google-cloud/firestore@7.11.6(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(genkit@1.39.0(@google-cloud/firestore@7.11.6(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(supports-color@10.2.2))(supports-color@10.2.2)
+      '@genkit-ai/core': 1.41.0(@google-cloud/firestore@7.11.6(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(genkit@1.41.0(@google-cloud/firestore@7.11.6(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(supports-color@10.2.2))(supports-color@10.2.2)
       '@opentelemetry/api': 1.9.1
       '@types/node': 20.19.43
       colorette: 2.0.20
@@ -9490,7 +9554,7 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@genkit-ai/core@1.39.0(@google-cloud/firestore@7.11.6(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(genkit@1.39.0(@google-cloud/firestore@7.11.6(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(supports-color@10.2.2))(supports-color@10.2.2)':
+  '@genkit-ai/core@1.41.0(@google-cloud/firestore@7.11.6(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(genkit@1.41.0(@google-cloud/firestore@7.11.6(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(supports-color@10.2.2))(supports-color@10.2.2)':
     dependencies:
       '@opentelemetry/api': 1.9.1
       '@opentelemetry/api-logs': 0.52.1
@@ -9509,12 +9573,12 @@ snapshots:
       express: 4.22.2(supports-color@10.2.2)
       get-port: 5.1.1
       json-schema: 0.4.0
-      ws: 8.21.0
+      ws: 8.21.3
       zod: 3.25.76
       zod-to-json-schema: 3.25.2(zod@3.25.76)
     optionalDependencies:
       '@cfworker/json-schema': 4.1.1
-      '@genkit-ai/firebase': 1.39.0(@google-cloud/firestore@7.11.6(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(genkit@1.39.0(@google-cloud/firestore@7.11.6(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(supports-color@10.2.2))(supports-color@10.2.2)
+      '@genkit-ai/firebase': 1.41.0(@google-cloud/firestore@7.11.6(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(genkit@1.41.0(@google-cloud/firestore@7.11.6(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(supports-color@10.2.2))(supports-color@10.2.2)
     transitivePeerDependencies:
       - '@google-cloud/firestore'
       - bufferutil
@@ -9525,12 +9589,12 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@genkit-ai/firebase@1.39.0(@google-cloud/firestore@7.11.6(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(genkit@1.39.0(@google-cloud/firestore@7.11.6(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(supports-color@10.2.2))(supports-color@10.2.2)':
+  '@genkit-ai/firebase@1.41.0(@google-cloud/firestore@7.11.6(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(genkit@1.41.0(@google-cloud/firestore@7.11.6(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(supports-color@10.2.2))(supports-color@10.2.2)':
     dependencies:
-      '@genkit-ai/google-cloud': 1.39.0(genkit@1.39.0(@google-cloud/firestore@7.11.6(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(supports-color@10.2.2))(supports-color@10.2.2)
+      '@genkit-ai/google-cloud': 1.41.0(genkit@1.41.0(@google-cloud/firestore@7.11.6(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(supports-color@10.2.2))(supports-color@10.2.2)
       '@google-cloud/firestore': 7.11.6(supports-color@10.2.2)
       firebase-admin: 14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2)
-      genkit: 1.39.0(@google-cloud/firestore@7.11.6(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(supports-color@10.2.2)
+      genkit: 1.41.0(@google-cloud/firestore@7.11.6(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(supports-color@10.2.2)
     optionalDependencies:
       firebase: 12.18.0
     transitivePeerDependencies:
@@ -9538,7 +9602,7 @@ snapshots:
       - supports-color
     optional: true
 
-  '@genkit-ai/google-cloud@1.39.0(genkit@1.39.0(@google-cloud/firestore@7.11.6(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(supports-color@10.2.2))(supports-color@10.2.2)':
+  '@genkit-ai/google-cloud@1.41.0(genkit@1.41.0(@google-cloud/firestore@7.11.6(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(supports-color@10.2.2))(supports-color@10.2.2)':
     dependencies:
       '@google-cloud/firestore': 7.11.6(supports-color@10.2.2)
       '@google-cloud/logging-winston': 6.0.2(supports-color@10.2.2)(winston@3.19.0)
@@ -9556,7 +9620,7 @@ snapshots:
       '@opentelemetry/sdk-metrics': 1.25.1(@opentelemetry/api@1.9.1)
       '@opentelemetry/sdk-node': 0.220.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
       '@opentelemetry/sdk-trace-base': 1.25.1(@opentelemetry/api@1.9.1)
-      genkit: 1.39.0(@google-cloud/firestore@7.11.6(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(supports-color@10.2.2)
+      genkit: 1.41.0(@google-cloud/firestore@7.11.6(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(supports-color@10.2.2)
       google-auth-library: 9.15.1(supports-color@10.2.2)
       node-fetch: 3.3.2
       winston: 3.19.0
@@ -9565,17 +9629,17 @@ snapshots:
       - supports-color
     optional: true
 
-  '@google-cloud/common@6.0.1(supports-color@10.2.2)':
+  '@google-cloud/common@6.1.0(supports-color@10.2.2)':
     dependencies:
       '@google-cloud/projectify': 4.0.0
-      '@google-cloud/promisify': 4.0.0
+      '@google-cloud/promisify': 4.1.0
       arrify: 2.0.1
       duplexify: 4.1.3
       extend: 3.0.2
-      google-auth-library: 10.6.2(supports-color@10.2.2)
+      google-auth-library: 10.9.1(supports-color@10.2.2)
       html-entities: 2.6.0
-      retry-request: 8.0.2(supports-color@10.2.2)
-      teeny-request: 10.1.2(supports-color@10.2.2)
+      retry-request: 8.0.4(supports-color@10.2.2)
+      teeny-request: 10.1.4(supports-color@10.2.2)
     transitivePeerDependencies:
       - supports-color
     optional: true
@@ -9603,10 +9667,17 @@ snapshots:
       - supports-color
     optional: true
 
+  '@google-cloud/logging-api@0.2.0(supports-color@10.2.2)':
+    dependencies:
+      google-gax: 5.0.8(supports-color@10.2.2)
+    transitivePeerDependencies:
+      - supports-color
+    optional: true
+
   '@google-cloud/logging-winston@6.0.2(supports-color@10.2.2)(winston@3.19.0)':
     dependencies:
-      '@google-cloud/logging': 11.3.0(supports-color@10.2.2)
-      google-auth-library: 10.6.2(supports-color@10.2.2)
+      '@google-cloud/logging': 11.4.0(supports-color@10.2.2)
+      google-auth-library: 10.9.1(supports-color@10.2.2)
       lodash.mapvalues: 4.6.0
       winston: 3.19.0
       winston-transport: 4.9.0
@@ -9615,9 +9686,10 @@ snapshots:
       - supports-color
     optional: true
 
-  '@google-cloud/logging@11.3.0(supports-color@10.2.2)':
+  '@google-cloud/logging@11.4.0(supports-color@10.2.2)':
     dependencies:
-      '@google-cloud/common': 6.0.1(supports-color@10.2.2)
+      '@google-cloud/common': 6.1.0(supports-color@10.2.2)
+      '@google-cloud/logging-api': 0.2.0(supports-color@10.2.2)
       '@google-cloud/paginator': 5.0.2
       '@google-cloud/projectify': 4.0.0
       '@google-cloud/promisify': 4.0.0
@@ -9627,7 +9699,7 @@ snapshots:
       dot-prop: 6.0.1
       extend: 3.0.2
       gcp-metadata: 6.1.1(supports-color@10.2.2)
-      google-auth-library: 10.6.2(supports-color@10.2.2)
+      google-auth-library: 10.9.1(supports-color@10.2.2)
       google-gax: 4.6.1(supports-color@10.2.2)
       long: 5.3.2
       on-finished: 2.4.1
@@ -9640,7 +9712,7 @@ snapshots:
 
   '@google-cloud/modelarmor@0.4.1(supports-color@10.2.2)':
     dependencies:
-      google-gax: 5.0.6(supports-color@10.2.2)
+      google-gax: 5.0.8(supports-color@10.2.2)
     transitivePeerDependencies:
       - supports-color
     optional: true
@@ -9698,6 +9770,9 @@ snapshots:
     optional: true
 
   '@google-cloud/promisify@4.0.0':
+    optional: true
+
+  '@google-cloud/promisify@4.1.0':
     optional: true
 
   '@google-cloud/storage@7.21.0(supports-color@10.2.2)':
@@ -13197,7 +13272,7 @@ snapshots:
       http-errors: 2.0.1
       iconv-lite: 0.4.24
       on-finished: 2.4.1
-      qs: 6.15.2
+      qs: 6.15.3
       raw-body: 2.5.3
       type-is: 1.6.18
       unpipe: 1.0.0
@@ -13375,19 +13450,19 @@ snapshots:
 
   color-convert@3.1.3:
     dependencies:
-      color-name: 2.1.0
+      color-name: 2.1.1
     optional: true
 
   color-name@1.1.3: {}
 
   color-name@1.1.4: {}
 
-  color-name@2.1.0:
+  color-name@2.1.1:
     optional: true
 
   color-string@2.1.4:
     dependencies:
-      color-name: 2.1.0
+      color-name: 2.1.1
     optional: true
 
   color@5.0.3:
@@ -13907,7 +13982,7 @@ snapshots:
       parseurl: 1.3.3
       path-to-regexp: 0.1.13
       proxy-addr: 2.0.7
-      qs: 6.15.2
+      qs: 6.15.3
       range-parser: 1.2.1
       safe-buffer: 5.2.1
       send: 0.19.2(supports-color@10.2.2)
@@ -14364,6 +14439,15 @@ snapshots:
       - supports-color
     optional: true
 
+  gaxios@7.3.1(supports-color@10.2.2):
+    dependencies:
+      extend: 3.0.2
+      https-proxy-agent: 7.0.6(supports-color@10.2.2)
+      node-fetch: 3.3.2
+    transitivePeerDependencies:
+      - supports-color
+    optional: true
+
   gcp-metadata@6.1.1(supports-color@10.2.2):
     dependencies:
       gaxios: 6.7.1(supports-color@10.2.2)
@@ -14391,10 +14475,19 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  genkit@1.39.0(@google-cloud/firestore@7.11.6(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(supports-color@10.2.2):
+  gcp-metadata@8.1.4(supports-color@10.2.2):
     dependencies:
-      '@genkit-ai/ai': 1.39.0(@google-cloud/firestore@7.11.6(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(genkit@1.39.0(@google-cloud/firestore@7.11.6(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(supports-color@10.2.2))(supports-color@10.2.2)
-      '@genkit-ai/core': 1.39.0(@google-cloud/firestore@7.11.6(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(genkit@1.39.0(@google-cloud/firestore@7.11.6(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(supports-color@10.2.2))(supports-color@10.2.2)
+      gaxios: 7.1.3(supports-color@10.2.2)
+      google-logging-utils: 1.1.3
+      json-bigint: 1.0.0
+    transitivePeerDependencies:
+      - supports-color
+    optional: true
+
+  genkit@1.41.0(@google-cloud/firestore@7.11.6(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(supports-color@10.2.2):
+    dependencies:
+      '@genkit-ai/ai': 1.41.0(@google-cloud/firestore@7.11.6(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(genkit@1.41.0(@google-cloud/firestore@7.11.6(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(supports-color@10.2.2))(supports-color@10.2.2)
+      '@genkit-ai/core': 1.41.0(@google-cloud/firestore@7.11.6(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(genkit@1.41.0(@google-cloud/firestore@7.11.6(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(supports-color@10.2.2))(supports-color@10.2.2)
       uuid: 11.1.1
     transitivePeerDependencies:
       - '@google-cloud/firestore'
@@ -14491,11 +14584,36 @@ snapshots:
       is-windows: 0.2.0
       which: 1.3.1
 
+  google-auth-library@10.5.0(supports-color@10.2.2):
+    dependencies:
+      base64-js: 1.5.1
+      ecdsa-sig-formatter: 1.0.11
+      gaxios: 7.3.1(supports-color@10.2.2)
+      gcp-metadata: 8.1.4(supports-color@10.2.2)
+      google-logging-utils: 1.2.0
+      gtoken: 8.0.0(supports-color@10.2.2)
+      jws: 4.0.1
+    transitivePeerDependencies:
+      - supports-color
+    optional: true
+
   google-auth-library@10.6.2(supports-color@10.2.2):
     dependencies:
       base64-js: 1.5.1
       ecdsa-sig-formatter: 1.0.11
       gaxios: 7.1.4(supports-color@10.2.2)
+      gcp-metadata: 8.1.2(supports-color@10.2.2)
+      google-logging-utils: 1.1.3
+      jws: 4.0.1
+    transitivePeerDependencies:
+      - supports-color
+    optional: true
+
+  google-auth-library@10.9.1(supports-color@10.2.2):
+    dependencies:
+      base64-js: 1.5.1
+      ecdsa-sig-formatter: 1.0.11
+      gaxios: 7.3.1(supports-color@10.2.2)
       gcp-metadata: 8.1.2(supports-color@10.2.2)
       google-logging-utils: 1.1.3
       jws: 4.0.1
@@ -14552,17 +14670,37 @@ snapshots:
       - supports-color
     optional: true
 
+  google-gax@5.0.8(supports-color@10.2.2):
+    dependencies:
+      '@grpc/grpc-js': 1.14.4
+      '@grpc/proto-loader': 0.8.1
+      duplexify: 4.1.3
+      google-auth-library: 10.5.0(supports-color@10.2.2)
+      google-logging-utils: 1.1.3
+      node-fetch: 3.3.2
+      object-hash: 3.0.0
+      proto3-json-serializer: 3.0.4
+      protobufjs: 8.6.6
+      retry-request: 8.0.4(supports-color@10.2.2)
+      rimraf: 5.0.10
+    transitivePeerDependencies:
+      - supports-color
+    optional: true
+
   google-logging-utils@0.0.2:
     optional: true
 
   google-logging-utils@1.1.3: {}
+
+  google-logging-utils@1.2.0:
+    optional: true
 
   googleapis-common@7.2.0(supports-color@10.2.2):
     dependencies:
       extend: 3.0.2
       gaxios: 6.7.1(supports-color@10.2.2)
       google-auth-library: 9.15.1(supports-color@10.2.2)
-      qs: 6.15.2
+      qs: 6.15.3
       url-template: 2.0.8
       uuid: 11.1.1
     transitivePeerDependencies:
@@ -14589,6 +14727,14 @@ snapshots:
       jws: 4.0.1
     transitivePeerDependencies:
       - encoding
+      - supports-color
+    optional: true
+
+  gtoken@8.0.0(supports-color@10.2.2):
+    dependencies:
+      gaxios: 7.3.1(supports-color@10.2.2)
+      jws: 4.0.1
+    transitivePeerDependencies:
       - supports-color
     optional: true
 
@@ -16759,6 +16905,11 @@ snapshots:
     dependencies:
       side-channel: 1.1.0
 
+  qs@6.15.3:
+    dependencies:
+      es-define-property: 1.0.1
+      side-channel: 1.1.1
+
   quickjs-wasi@2.2.0: {}
 
   range-parser@1.2.1: {}
@@ -17035,6 +17186,14 @@ snapshots:
       - supports-color
     optional: true
 
+  retry-request@8.0.4(supports-color@10.2.2):
+    dependencies:
+      extend: 3.0.2
+      teeny-request: 10.1.4(supports-color@10.2.2)
+    transitivePeerDependencies:
+      - supports-color
+    optional: true
+
   retry@0.13.1:
     optional: true
 
@@ -17237,6 +17396,14 @@ snapshots:
       side-channel-map: 1.0.1
 
   side-channel@1.1.0:
+    dependencies:
+      es-errors: 1.3.0
+      object-inspect: 1.13.4
+      side-channel-list: 1.0.1
+      side-channel-map: 1.0.1
+      side-channel-weakmap: 1.0.2
+
+  side-channel@1.1.1:
     dependencies:
       es-errors: 1.3.0
       object-inspect: 1.13.4
@@ -17464,6 +17631,16 @@ snapshots:
   tagged-tag@1.0.0: {}
 
   teeny-request@10.1.2(supports-color@10.2.2):
+    dependencies:
+      http-proxy-agent: 7.0.2(supports-color@10.2.2)
+      https-proxy-agent: 7.0.6(supports-color@10.2.2)
+      node-fetch: 3.3.2
+      stream-events: 1.0.5
+    transitivePeerDependencies:
+      - supports-color
+    optional: true
+
+  teeny-request@10.1.4(supports-color@10.2.2):
     dependencies:
       http-proxy-agent: 7.0.2(supports-color@10.2.2)
       https-proxy-agent: 7.0.6(supports-color@10.2.2)
@@ -17953,6 +18130,8 @@ snapshots:
       signal-exit: 4.1.0
 
   ws@8.21.0: {}
+
+  ws@8.21.3: {}
 
   wsl-utils@0.1.0:
     dependencies:
