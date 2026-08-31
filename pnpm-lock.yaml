@@ -12746,7 +12746,7 @@ snapshots:
   '@types/jsonwebtoken@9.0.10':
     dependencies:
       '@types/ms': 2.1.0
-      '@types/node': 26.2.0
+      '@types/node': 26.4.0
     optional: true
 
   '@types/junit-report-builder@3.0.2': {}
