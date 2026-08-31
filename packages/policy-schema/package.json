@@ -92,7 +92,7 @@
     "test:vendor-sdk-matrix": "vitest run tests/vendor-sdk-compatibility.test.ts"
   },
   "dependencies": {
-    "js-yaml": "^4.3.0"
+    "js-yaml": "^5.4.1"
   },
   "devDependencies": {
     "@types/js-yaml": "^4.0.9",

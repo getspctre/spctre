@@ -1,4 +1,4 @@
-import yaml from "js-yaml";
+import * as yaml from "js-yaml";
 import { createHash } from "node:crypto";
 import { CANONICAL_PACK_CONNECTORS } from "./packs";
 import {
