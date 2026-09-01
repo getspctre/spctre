@@ -1,5 +1,14 @@
 # @spctre/sdk
 
+## 0.8.0
+
+### Minor Changes
+
+- 2fd313a: Add strict, provenance-preserving Rego and Cedar policy-source conversion with
+  loss reporting. The CLI can preview native imports and convert supported source
+  offline; lossy conversions require explicit acceptance before writing an
+  artifact or draft.
+
 ## 0.7.0
 
 ### Minor Changes
