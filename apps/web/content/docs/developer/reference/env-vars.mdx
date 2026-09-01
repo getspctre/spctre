@@ -80,16 +80,17 @@ description: Full table of SPCTRE_* and platform env vars with types and default
 
 | Variable | Type | Default | Description |
 |---|---|---|---|
-| `SPCTRE_RATE_LIMIT_MAX_REQUESTS` | integer | `100` | Max requests per window |
+| `SPCTRE_RATE_LIMIT_MAX_REQUESTS` | integer | `100` | Max requests per window. Counted per client address, derived as described under `SPCTRE_TRUSTED_PROXY_HOPS`; without that variable set, a caller can forge `x-forwarded-for` to get a fresh bucket per request. |
 | `SPCTRE_RATE_LIMIT_WINDOW_SECONDS` | integer | `60` | Rate limit window in seconds |
-| `UPSTASH_REDIS_REST_URL` | string | — | Upstash Redis endpoint (optional; uses in-memory fallback) |
+| `UPSTASH_REDIS_REST_URL` | string | — | Upstash Redis endpoint (optional; uses in-memory fallback). The fallback counts per instance, so a deployment running N instances admits up to N times the configured limit and resets on every scale event. |
 | `UPSTASH_REDIS_REST_TOKEN` | string | — | Upstash Redis auth token |
 
 ## Security
 
 | Variable | Type | Default | Description |
 |---|---|---|---|
-| `SPCTRE_ALLOWED_SOURCE_IPS` | comma-separated | — | IP allowlist for all requests |
+| `SPCTRE_ALLOWED_SOURCE_IPS` | comma-separated | — | IP allowlist for all requests. Evaluated against the client address derived from `x-forwarded-for` (falling back to `x-real-ip`, then `127.0.0.1`). Both headers are caller-supplied unless `SPCTRE_TRUSTED_PROXY_HOPS` is set, so without it the allowlist can be bypassed by a forged header. |
+| `SPCTRE_TRUSTED_PROXY_HOPS` | integer | — | Number of proxies in front of this service that append to `x-forwarded-for`. With `N` declared, the client address is the Nth entry from the right, anything to its left is ignored as caller-supplied, and `x-real-ip` is not consulted at all. A request carrying fewer than `N` entries did not traverse the declared chain: its address is treated as unattributable, which matches no allowlist entry and shares a single rate-limit bucket. Unset trusts the leftmost `x-forwarded-for` entry, which the caller controls. |
 | `SPCTRE_ALLOWED_CONNECTORS` | comma-separated | — | Permitted connector IDs |
 | `SPCTRE_ALLOWED_TOOLS` | comma-separated | — | Permitted tool names |
 | `SPCTRE_CREDENTIAL_ENCRYPTION_KEY` | string | — | Passphrase for `pgp_sym_encrypt`/`pgp_sym_decrypt`; encrypts alerting integration credentials and SIEM stream secrets at rest. Required when alerting integrations or SIEM streams are configured. |

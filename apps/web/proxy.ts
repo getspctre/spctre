@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { SESSION_GUARD_COOKIE, verifySessionGuardToken } from "@/lib/session-guard";
 import {
+  DOCS_API_PATHS,
   HEALTH_PATHS,
   MACHINE_API_PATH_PATTERNS,
   MACHINE_API_PATH_PREFIXES,
@@ -44,6 +45,10 @@ function isAuthApiPath(pathname: string): boolean {
 
 function isApiPath(pathname: string): boolean {
   return pathname === "/api" || pathname.startsWith("/api/");
+}
+
+function isDocsApiPath(pathname: string): boolean {
+  return DOCS_API_PATHS.has(pathname);
 }
 
 function isUnsafeMethod(method: string): boolean {
@@ -114,12 +119,65 @@ function parseAllowedSourceIps(): Set<string> {
   );
 }
 
-function getClientIp(request: NextRequest): string {
-  return (
-    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    request.headers.get("x-real-ip") ||
-    "127.0.0.1"
-  );
+/**
+ * How many proxies in front of this service append to `x-forwarded-for`.
+ *
+ * `x-forwarded-for` is client-supplied until a proxy we control overwrites or
+ * appends to it, so only the entries a known proxy added can be trusted. With
+ * N declared hops the client address is the Nth entry from the right; anything
+ * to the left of it was supplied by the caller and may be forged.
+ *
+ * Unset (the default) keeps the historical leftmost-entry behaviour, which is
+ * spoofable. Deployments that gate on the source-IP allowlist should declare
+ * the real hop count — see the warning in `deriveClientIp`.
+ */
+function trustedProxyHops(): number | null {
+  const raw = process.env.SPCTRE_TRUSTED_PROXY_HOPS?.trim();
+  if (!raw) return null;
+  const hops = Number.parseInt(raw, 10);
+  return Number.isFinite(hops) && hops > 0 ? hops : null;
+}
+
+// Stands in for a client address that cannot be attributed. Never an address,
+// so it can never appear in SPCTRE_ALLOWED_SOURCE_IPS and pass the allowlist.
+const UNATTRIBUTABLE_CLIENT_IP = "unattributable";
+
+let warnedAboutUntrustedClientIp = false;
+
+function deriveClientIp(request: NextRequest, allowlistInUse: boolean): string {
+  const forwarded = (request.headers.get("x-forwarded-for") ?? "")
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+  const hops = trustedProxyHops();
+
+  if (hops !== null) {
+    // Fewer entries than declared hops means the request did not traverse the
+    // proxy chain we declared, so nothing it carries is attributable. Falling
+    // back to another request header here would hand the answer straight back
+    // to the caller: someone reaching the service directly could send no
+    // x-forwarded-for and an x-real-ip of any allowlisted address. x-real-ip is
+    // only trustworthy when the outermost proxy sets it, and a proxy trusted
+    // that far has already appended the x-forwarded-for entry we want.
+    //
+    // The placeholder is deliberately not an address: it matches no allowlist,
+    // and it collapses all unattributable traffic into one rate-limit bucket
+    // rather than handing out a fresh bucket per forged value.
+    return forwarded[forwarded.length - hops] ?? UNATTRIBUTABLE_CLIENT_IP;
+  }
+
+  if (allowlistInUse && !warnedAboutUntrustedClientIp) {
+    warnedAboutUntrustedClientIp = true;
+    console.warn(
+      "[proxy] SPCTRE_ALLOWED_SOURCE_IPS is set but SPCTRE_TRUSTED_PROXY_HOPS is not. " +
+        "The source-IP allowlist is being evaluated against a client-supplied " +
+        "x-forwarded-for value and can be bypassed. Set SPCTRE_TRUSTED_PROXY_HOPS to the " +
+        "number of proxies in front of this service.",
+    );
+  }
+
+  // Legacy path: the leftmost entry, then x-real-ip. Both are caller-supplied.
+  return forwarded[0] || request.headers.get("x-real-ip") || "127.0.0.1";
 }
 
 function isHealthPath(pathname: string): boolean {
@@ -277,8 +335,8 @@ export async function proxy(request: NextRequest) {
   }
 
   const { pathname } = request.nextUrl;
-  const ip = getClientIp(request);
   const allowedSourceIps = parseAllowedSourceIps();
+  const ip = deriveClientIp(request, allowedSourceIps.size > 0);
 
   if (
     allowedSourceIps.size > 0 &&
@@ -299,24 +357,6 @@ export async function proxy(request: NextRequest) {
     return NextResponse.json({ error: "Invalid request origin." }, { status: 403 });
   }
 
-  // docs.spctre.dev — rewrite root-relative paths to /help-docs/* and bypass session auth.
-  // API paths (e.g. /api/search used by Orama) pass through without rewriting.
-  if (isDocsHost(request)) {
-    const { pathname } = request.nextUrl;
-    if (isApiPath(pathname)) {
-      return passThrough(request, nonce);
-    }
-    const url = request.nextUrl.clone();
-    url.pathname = pathname === "/" ? "/help-docs" : "/help-docs" + pathname;
-    const csp = buildCsp(nonce);
-    const requestHeaders = new Headers(request.headers);
-    requestHeaders.set("x-nonce", nonce);
-    requestHeaders.set("content-security-policy", csp);
-    requestHeaders.set("x-is-docs", "true");
-    const response = NextResponse.rewrite(url, { request: { headers: requestHeaders } });
-    return applySecurityHeaders(response, csp);
-  }
-
   // Apply rate limiting to API and Auth routes
   if (isApiPath(pathname) || isAuthApiPath(pathname) || isServiceApiPath(pathname)) {
     if (upstashRatelimit) {
@@ -329,6 +369,30 @@ export async function proxy(request: NextRequest) {
       if (!success) {
         return rateLimitedResponse(reset);
       }
+    }
+  }
+
+  // docs.spctre.dev — rewrite root-relative paths to /help-docs/* and bypass session auth.
+  //
+  // The host is taken from a request header, so this branch is reachable by
+  // anyone who sets one. It therefore excuses only the docs site's own surface:
+  // the search endpoint Orama calls, and paths that rewrite under /help-docs.
+  // Every other API path falls through to the session gate below, and this runs
+  // after rate limiting so docs traffic is limited like anything else.
+  if (isDocsHost(request)) {
+    if (isDocsApiPath(pathname)) {
+      return passThrough(request, nonce);
+    }
+    if (!isApiPath(pathname)) {
+      const url = request.nextUrl.clone();
+      url.pathname = pathname === "/" ? "/help-docs" : "/help-docs" + pathname;
+      const csp = buildCsp(nonce);
+      const requestHeaders = new Headers(request.headers);
+      requestHeaders.set("x-nonce", nonce);
+      requestHeaders.set("content-security-policy", csp);
+      requestHeaders.set("x-is-docs", "true");
+      const response = NextResponse.rewrite(url, { request: { headers: requestHeaders } });
+      return applySecurityHeaders(response, csp);
     }
   }
 
