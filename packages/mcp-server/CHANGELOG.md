@@ -1,5 +1,25 @@
 # @spctre/mcp-server
 
+## 0.3.1
+
+### Patch Changes
+
+- 91a0c1b: Stop workspace MCP policy from widening the operator's env-var allowlists. The
+  fetched policy is now a second constraint that a tool call must satisfy
+  alongside `SPCTRE_ALLOWED_TOOLS`/`SPCTRE_ALLOWED_CONNECTORS`, instead of being
+  unioned into them — previously the workspace list (the full first-party tool
+  surface) silently erased a narrower operator allowlist on the first tool call.
+- 91a0c1b: Treat an empty `allowedTools`/`allowedConnectors` array in the workspace MCP
+  policy as an explicit deny-all rather than as no policy, so a workspace can be
+  frozen pending review. An omitted field still leaves the layer unconstrained.
+- 91a0c1b: Retry a failed workspace MCP policy fetch after a 30s backoff instead of
+  stranding the session on env-var allowlists for its lifetime, and share a single
+  in-flight fetch across concurrent tool calls.
+- c8453d5: Honour `SPCTRE_TRUSTED_PROXY_HOPS` when deriving the client address for the
+  source-IP allowlist and rate-limit key, matching the control plane. Without it
+  the leftmost `x-forwarded-for` entry is caller-supplied and the allowlist can be
+  bypassed.
+
 ## 0.3.0
 
 ### Minor Changes
