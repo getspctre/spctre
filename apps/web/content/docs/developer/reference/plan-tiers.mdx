@@ -5,6 +5,28 @@ description: What each Spctre plan includes — OSS, Cloud, Business, and Enterp
 
 Spctre is open-core. Self-hosted deployments default to the OSS tier. Set `SPCTRE_PLAN` to unlock higher-tier features.
 
+## Two things decide a feature
+
+A feature is available when **both** of these allow it:
+
+1. **`SPCTRE_PLAN` — what the deployment may run.** The open-core boundary:
+   whether the commercial overlay loads at all. It lives in the environment
+   because it describes the install, not a customer.
+2. **The tenant's plan code — what that customer bought.** Stored per tenant and
+   updated by billing. Only meaningful on a multi-tenant (hosted) deployment.
+
+The effective tier is the **lower of the two**. `SPCTRE_PLAN` is a ceiling a
+purchase cannot exceed, and a purchased tier is a grant the deployment must
+already be licensed to honour.
+
+This matters on a hosted deployment, which necessarily runs at the highest plan
+it sells: reading `SPCTRE_PLAN` alone there would give every tenant — trial
+accounts included — the complete matrix below.
+
+A **self-hosted** deployment has no billing relationship with itself and so has
+no tenant plan code on record. There the deployment plan is the whole answer,
+and the matrix below reads exactly as written.
+
 ## Tiers
 
 | Tier | `SPCTRE_PLAN` value | Typical use case |
@@ -42,6 +64,10 @@ SPCTRE_PLAN=cloud   # or: business, enterprise
 
 Set this on the web app and worker processes. The value is read at startup; restart both services after changing it.
 
+On a hosted deployment this sets the ceiling only. Each tenant additionally
+carries a plan code, and the tier that plan code maps to is defined by the
+deployment's entitlement catalog.
+
 Workspace switching within the current tenant is available on every hosted
 plan. The Enterprise-only multi-tenant isolation feature controls switching
 between tenants and its additional attribute-aware access controls.
@@ -52,13 +78,35 @@ between tenants and its additional attribute-aware access controls.
 
 ## Feature flag API
 
-For server-side feature checks in custom integrations:
+For server-side feature checks in custom integrations, ask about a tenant. This
+intersects the deployment plan with that tenant's purchased tier:
 
 ```ts
-import { isFeatureEnabledForPlan, normalizeSpctrePlan } from "@/lib/feature-flags";
+import { isFeatureEntitled } from "@/lib/entitlements/features";
 
-const plan = normalizeSpctrePlan(process.env.SPCTRE_PLAN);
-if (isFeatureEnabledForPlan("siemEventStreaming", plan)) {
-  // SIEM is active
+if (await isFeatureEntitled("siemEventStreaming", tenantId)) {
+  // SIEM is active for this tenant
 }
 ```
+
+Deciding several features at once resolves the plan once rather than per flag:
+
+```ts
+import { getEntitledFeatureFlags } from "@/lib/entitlements/features";
+
+const features = await getEntitledFeatureFlags(tenantId);
+if (features.siemEventStreaming) {
+  // ...
+}
+```
+
+<Callout type="warn">
+  `isFeatureEnabledForPlan` from `@/lib/feature-flags` answers only "does this
+  plan include this feature". It takes no tenant, so on a hosted deployment it
+  reports the operator's plan for every caller. Use it for presentation — naming
+  the plan a feature needs — and never as an access gate.
+</Callout>
+
+An unreadable plan code denies rather than grants. Granting on a transient
+failure cannot be withdrawn once an archive is written or an export is
+delivered; denying is a retry.

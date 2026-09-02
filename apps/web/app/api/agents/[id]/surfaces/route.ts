@@ -1,5 +1,5 @@
 import { linkAgentSurface, listAgentSurfaces } from "@/lib/domains/identity/service";
-import { isFeatureEnabled } from "@/lib/feature-flags-server";
+import { isFeatureEntitled } from "@/lib/entitlements/features";
 import type { AgentSurfaceType } from "@spctre/policy-schema";
 import { extractTraceId, makeMeta, withTraceId } from "@spctre/api-contracts";
 import { asString } from "../../../_shared";
@@ -15,7 +15,7 @@ async function handleGetAgentSurfaces(
   const scope = await resolveRouteScope(request, { serviceTokenScope: "operations:read", traceId });
   if (scope instanceof Response) return scope;
 
-  if (!isFeatureEnabled("crossSurfaceAgentIdentity")) {
+  if (!(await isFeatureEntitled("crossSurfaceAgentIdentity", scope.tenantId))) {
     return withTraceId(
       Response.json(
         { error: "Cross-surface agent identity requires a Cloud plan.", meta: makeMeta(traceId) },
@@ -46,7 +46,7 @@ async function handlePostAgentSurface(
   const scope = await resolveRouteScope(request, { serviceTokenScope: "evidence:write", traceId });
   if (scope instanceof Response) return scope;
 
-  if (!isFeatureEnabled("crossSurfaceAgentIdentity")) {
+  if (!(await isFeatureEntitled("crossSurfaceAgentIdentity", scope.tenantId))) {
     return withTraceId(
       Response.json(
         { error: "Cross-surface agent identity requires a Cloud plan.", meta: makeMeta(traceId) },

@@ -1,7 +1,6 @@
 import { runWithTenantContext } from "@/lib/tenant-context";
-import { getSpctrePlan } from "@/lib/feature-flags-server";
+import { isFeatureEntitled } from "@/lib/entitlements/features";
 import { appendOperationsLog } from "@/lib/repositories/operations-log/log";
-import { getCommercialProfileWithContext } from "@/lib/repositories/workspace/commercial";
 import {
   createScimTokenRegistration,
   listScimTokenRegistrations,
@@ -16,16 +15,17 @@ export type ScimTokenBindingResult =
   | { ok: false; reason: "unknown_token" | "not_entitled" };
 
 /**
- * Whether SCIM provisioning is entitled for this tenant. Self-hosted
- * enterprise deployments are entitled as a whole; hosted deployments require
- * the tenant's commercial plan to be ENTERPRISE.
+ * Whether SCIM provisioning is entitled for this tenant.
+ *
+ * This used to short-circuit to true whenever `SPCTRE_PLAN` was "enterprise",
+ * intending to mean "a self-hosted deployment that bought Enterprise". But a
+ * hosted deployment also runs at "enterprise" — it is the top plan it sells —
+ * so the branch fired there too and every tenant, trial accounts included,
+ * passed before the profile was ever read. The self-hosted case is now decided
+ * by the absence of a commercial relationship rather than by the plan name.
  */
 export async function isScimProvisioningEntitled(tenantId: string): Promise<boolean> {
-  const plan = getSpctrePlan();
-  if (plan === "enterprise") return true;
-  if (plan === "oss") return false;
-  const profile = await getCommercialProfileWithContext(tenantId);
-  return profile.planCode === "ENTERPRISE";
+  return isFeatureEntitled("samlScimProvisioning", tenantId);
 }
 
 /**

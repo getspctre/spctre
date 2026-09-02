@@ -7,8 +7,7 @@ import {
   buildSimulationRun,
   evaluateDecision,
 } from "@spctre/policy-schema";
-import { isFeatureEnabledForPlan } from "@/lib/feature-flags";
-import { getSpctrePlan } from "@/lib/feature-flags-server";
+import { isFeatureEntitled } from "@/lib/entitlements/features";
 import { bulkSimulationService } from "@/lib/ee-adapters/simulation";
 import type {
   PolicyRuleSummary,
@@ -85,8 +84,10 @@ export async function getEvidenceSimulationRun(
     swallow("listRulesForRevision", [] as PolicyRuleSummary[]),
   );
 
-  const plan = getSpctrePlan();
-  if (options.allowBulk && isFeatureEnabledForPlan("bulkProductionSimulation", plan)) {
+  // Re-checked here rather than trusted from `allowBulk`: this is the call that
+  // reads the tenant's full retained production log, and the flag reaching it
+  // has crossed a service boundary.
+  if (options.allowBulk && (await isFeatureEntitled("bulkProductionSimulation", tenantId))) {
     try {
       const bulkResult = await bulkSimulationService.runBulkSimulation({
         tenantId,

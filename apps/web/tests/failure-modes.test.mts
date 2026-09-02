@@ -276,8 +276,12 @@ describe("Publish gating — open gateway escalations", () => {
     expect(result).toHaveProperty("artifactHash");
   });
 
-  it("blocks Cloud publish until a retained-log replay exists for the revision", async () => {
-    process.env.SPCTRE_PLAN = "cloud";
+  // "business", not "cloud": replaying a proposed policy against the full
+  // retained production log is the Business feature the pricing model sells,
+  // and the flag's minimum now says so. A Cloud deployment reaching this gate
+  // would mean Team had been given the Business workflow.
+  it("blocks Business publish until a retained-log replay exists for the revision", async () => {
+    process.env.SPCTRE_PLAN = "business";
     getLatestManagedSimulationRegressionMock.mockResolvedValue(null);
     countRuntimeEvidenceMock.mockResolvedValue(4);
 
@@ -290,7 +294,7 @@ describe("Publish gating — open gateway escalations", () => {
   });
 
   it("waives the managed-simulation gate when there is no evidence to replay", async () => {
-    process.env.SPCTRE_PLAN = "cloud";
+    process.env.SPCTRE_PLAN = "business";
     getLatestManagedSimulationRegressionMock.mockResolvedValue(null);
     countRuntimeEvidenceMock.mockResolvedValue(0);
 
@@ -302,7 +306,7 @@ describe("Publish gating — open gateway escalations", () => {
     expect(result).toHaveProperty("artifactHash");
   });
 
-  it("blocks Cloud publish when retained-log replay reports regressions", async () => {
+  it("blocks Business publish when retained-log replay reports regressions", async () => {
     process.env.SPCTRE_PLAN = "enterprise";
     getLatestManagedSimulationRegressionMock.mockResolvedValue({
       coverage: "RETAINED_LOG",

@@ -4,7 +4,7 @@ import { EvidenceExportDialog } from "./evidence-export-dialog";
 import { PageHeader } from "@spctre/ui";
 import { getAppViewMode } from "@/lib/app-view-mode-server";
 import { isForensicViewMode } from "@/lib/app-view-mode";
-import { isFeatureEnabled } from "@/lib/feature-flags-server";
+import { isFeatureEntitled } from "@/lib/entitlements/features";
 import { getEvidencePageModel } from "@/lib/domains/evidence/service";
 import { getWebOnboardingStatus } from "@/lib/repositories/onboarding/shared";
 import { Play } from "lucide-react";
@@ -45,7 +45,6 @@ export async function EvidencePageContent({
   const highlightId = typeof params.highlight === "string" ? params.highlight : undefined;
   const appViewMode = await getAppViewMode();
   const forensicMode = isForensicViewMode(appViewMode);
-  const crossSurfaceIdentity = isFeatureEnabled("crossSurfaceAgentIdentity");
   const {
     workspaceContext,
     evidence,
@@ -73,6 +72,12 @@ export async function EvidencePageContent({
     pageSize: EVIDENCE_PAGE_SIZE,
     includeOnboardingSamples,
   });
+  // Below the page model, which is where the tenant this entitlement belongs to
+  // first becomes known.
+  const crossSurfaceIdentity = await isFeatureEntitled(
+    "crossSurfaceAgentIdentity",
+    workspaceContext.tenantId,
+  );
   const evidencePath = workspaceSlug ? `/${workspaceSlug}/evidence` : "/evidence";
   const searchInspectorOpen = firstParam(params.inspector) === "search";
   const cursorHref = (targetCursor: string | null) =>

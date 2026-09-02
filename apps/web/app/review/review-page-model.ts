@@ -31,8 +31,7 @@ import {
 } from "@/lib/domains/packs/service";
 import type { EnforcementCoverage } from "@/lib/policy/rule-enforcement";
 import type { SimulationRegressionSummary } from "@spctre/policy-schema";
-import { isFeatureEnabledForPlan } from "@/lib/feature-flags";
-import { getSpctrePlan } from "@/lib/feature-flags-server";
+import { isFeatureEntitled } from "@/lib/entitlements/features";
 import { swallow } from "@/lib/platform/swallow";
 
 /**
@@ -347,7 +346,7 @@ export async function getReviewPageModel({
   const managedSimulationEligible =
     usingRealBranch &&
     Boolean(activeBranch?.activeRevision) &&
-    isFeatureEnabledForPlan("bulkProductionSimulation", getSpctrePlan());
+    (await isFeatureEntitled("bulkProductionSimulation", workspaceContext.tenantId));
   const requiresManagedSimulation =
     managedSimulationEligible &&
     (await countRuntimeEvidence(workspaceContext.workspaceId, workspaceContext.tenantId)) > 0;

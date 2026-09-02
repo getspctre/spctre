@@ -41,8 +41,7 @@ import { runWithTenantContext } from "@/lib/tenant-context";
 import { recordDuration } from "@spctre/platform/metrics";
 import { withSpan } from "@spctre/platform/tracing";
 import { getEvidenceDemoFallbackData } from "@/lib/repositories/demo-fallbacks";
-import { isFeatureEnabledForPlan } from "@/lib/feature-flags";
-import { getSpctrePlan } from "@/lib/feature-flags-server";
+import { isFeatureEntitled } from "@/lib/entitlements/features";
 import {
   buildRuleControlMappingIndex,
   searchRuntimeDecisionEvidence,
@@ -419,7 +418,7 @@ export async function runSimulationDecision(input: {
           workspaceId,
           tenantId,
           actor.id,
-          { allowBulk: isFeatureEnabledForPlan("bulkProductionSimulation", getSpctrePlan()) },
+          { allowBulk: await isFeatureEntitled("bulkProductionSimulation", tenantId) },
         );
         if (!run) {
           recordDuration("spctre.evidence.simulation.duration", Date.now() - started, {

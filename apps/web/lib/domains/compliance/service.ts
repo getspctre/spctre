@@ -10,8 +10,7 @@ import {
   buildPolicyBranchTimeline,
   evaluatePublishReadiness,
 } from "@spctre/policy-schema";
-import { isFeatureEnabledForPlan } from "@/lib/feature-flags";
-import { getSpctrePlan } from "@/lib/feature-flags-server";
+import { isFeatureEntitled } from "@/lib/entitlements/features";
 import { archivalService } from "@/lib/ee-adapters/archival";
 import { getWorkspaceContext } from "@/lib/workspace";
 import { getAppViewMode } from "@/lib/app-view-mode-server";
@@ -203,9 +202,8 @@ async function getCompliancePacketInTenant(
   });
 
   let forensicLedgerResult: { ok: boolean; verifiedCount: number; error?: string } | undefined;
-  const plan = getSpctrePlan();
   if (
-    isFeatureEnabledForPlan("longTermForensicArchival", plan) &&
+    (await isFeatureEntitled("longTermForensicArchival", tenantId)) &&
     archivalService.verifyLedgerChain
   ) {
     try {

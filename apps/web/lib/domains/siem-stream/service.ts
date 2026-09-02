@@ -1,6 +1,6 @@
 import { CodedError } from "@/lib/errors/coded-error";
 import { getAuthSession } from "@/lib/auth-session";
-import { isFeatureEnabled } from "@/lib/feature-flags-server";
+import { isFeatureEntitled } from "@/lib/entitlements/features";
 import { getWorkspaceContext, getRequiredWorkspaceContext } from "@/lib/workspace";
 import { validateWebhookUrl, validateSentinelWorkspaceId } from "@/lib/platform/url-guard";
 import {
@@ -12,8 +12,8 @@ import {
 } from "@/lib/repositories/siem-stream";
 import { swallow } from "@/lib/platform/swallow";
 
-function requireSiemFeature() {
-  if (!isFeatureEnabled("siemEventStreaming")) {
+async function requireSiemFeature(tenantId: string) {
+  if (!(await isFeatureEntitled("siemEventStreaming", tenantId))) {
     throw new CodedError("PLAN_REQUIRED", { plan: "Cloud" });
   }
 }
@@ -44,10 +44,10 @@ export async function addSiemStreamDecision(params: {
   config?: Record<string, unknown>;
   credentials: Record<string, unknown>;
 }) {
-  requireSiemFeature();
-  const credentialKey = requireCredentialKey();
   const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (!session) throw new CodedError("AUTH_REQUIRED");
+  await requireSiemFeature(session.tenantId);
+  const credentialKey = requireCredentialKey();
   const ctx = await getRequiredWorkspaceContext();
   if (ctx.workspaceId !== params.workspaceId) throw new CodedError("INVALID_WORKSPACE");
 
@@ -70,9 +70,9 @@ export async function addSiemStreamDecision(params: {
 }
 
 export async function removeSiemStreamDecision(params: { workspaceId: string; id: string }) {
-  requireSiemFeature();
   const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (!session) throw new CodedError("AUTH_REQUIRED");
+  await requireSiemFeature(session.tenantId);
   const ctx = await getRequiredWorkspaceContext();
   if (ctx.workspaceId !== params.workspaceId) throw new CodedError("INVALID_WORKSPACE");
   return deleteSiemStream(session.tenantId, params.workspaceId, params.id);
@@ -83,9 +83,9 @@ export async function toggleSiemStreamDecision(params: {
   id: string;
   enabled: boolean;
 }) {
-  requireSiemFeature();
   const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (!session) throw new CodedError("AUTH_REQUIRED");
+  await requireSiemFeature(session.tenantId);
   const ctx = await getRequiredWorkspaceContext();
   if (ctx.workspaceId !== params.workspaceId) throw new CodedError("INVALID_WORKSPACE");
   return toggleSiemStream(session.tenantId, params.workspaceId, params.id, params.enabled);
