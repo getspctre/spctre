@@ -1,7 +1,7 @@
-import { LockKeyhole } from "lucide-react";
-import { FEATURE_FLAGS, type FeatureFlag } from "@/lib/feature-flags";
+import { type FeatureFlag } from "@/lib/feature-flags";
 import { getAuthSession } from "@/lib/auth-session";
 import { isFeatureEntitled } from "@/lib/entitlements/features";
+import { UpgradePrompt } from "./upgrade-prompt";
 
 /**
  * Server component. It resolves the viewer's tenant itself rather than taking
@@ -25,27 +25,4 @@ export async function PlanGate({
   if (fallback) return <>{fallback}</>;
   if (prompt === "none") return null;
   return <UpgradePrompt feature={feature} variant={prompt} />;
-}
-
-export function UpgradePrompt({
-  feature,
-  variant = "panel",
-}: {
-  feature: FeatureFlag;
-  variant?: "panel" | "inline";
-}) {
-  const definition = FEATURE_FLAGS[feature];
-  return (
-    <div className={variant === "inline" ? "upgradePrompt upgradePromptInline" : "upgradePrompt"}>
-      <LockKeyhole size={16} />
-      <div>
-        <p className="eyebrow">{definition.minimumPlan} plan</p>
-        <h3>{definition.label}</h3>
-        <p className="meta">{definition.description}</p>
-      </div>
-      <a className="button" href="/usage-billing">
-        View plans
-      </a>
-    </div>
-  );
 }

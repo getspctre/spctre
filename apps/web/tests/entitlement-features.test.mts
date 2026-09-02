@@ -16,9 +16,8 @@ vi.mock("@/lib/ee-adapters/entitlement-catalog", () => ({
   resolvePlanEntitlements: resolvePlanEntitlementsSpy,
 }));
 
-const { isFeatureEntitled, resolveTenantPlan, getEntitledFeatureFlags } = await import(
-  "../lib/entitlements/features"
-);
+const { isFeatureEntitled, resolveTenantPlan, getEntitledFeatureFlags } =
+  await import("../lib/entitlements/features");
 
 function hosted(plan: string) {
   getRuntimeConfigSpy.mockReturnValue({ plan, singleTenantMode: false });

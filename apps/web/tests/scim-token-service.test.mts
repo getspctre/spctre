@@ -23,9 +23,8 @@ vi.mock("@/lib/repositories/operations-log/log", () => ({
   appendOperationsLog: vi.fn().mockResolvedValue(undefined),
 }));
 
-const { isScimProvisioningEntitled, resolveScimTokenBinding } = await import(
-  "../lib/domains/scim-token/service"
-);
+const { isScimProvisioningEntitled, resolveScimTokenBinding } =
+  await import("../lib/domains/scim-token/service");
 
 /** A deployment plan with no single-tenant declaration: the hosted shape. */
 function hosted(plan: "oss" | "cloud" | "business" | "enterprise") {
