@@ -7,7 +7,11 @@ overrides:
   postcss>nanoid: 3.3.18
   '@scalar/types>nanoid': 5.1.16
   '@grpc/grpc-js': '>=1.14.4'
-  axios: 1.18.1
+  # Also a floor. 857b24bc pinned this at 1.18.1 to clear an advisory, but an
+  # exact override outranks a declared range, so when Dependabot #260 raised
+  # packages/mcp-server to `^1.20.0` the lockfile stayed on 1.18.1 — a version
+  # the manifest no longer permits. The bump merged and changed nothing.
+  axios: '>=1.20.0'
   axios>form-data: 4.0.6
   esbuild: 0.28.1
   '@types/request>form-data': 2.5.6
@@ -31,7 +35,19 @@ overrides:
   '@babel/core': ^7.29.6
   brace-expansion: 5.0.9
   browserslist: 4.28.8
-  fast-uri: 3.1.5
+  # A floor, not a pin. This entry was `3.1.5` — correct when 857b24bc added it,
+  # and the reason four later high advisories (host confusion via skipped IDN
+  # and via percent-encoded scheme normalization, plus two SSRF paths) stayed
+  # live: an exact override outranks the `^3.0.1` its only consumer, ajv,
+  # declares, so it held the tree at a version the ecosystem had already moved
+  # off. ajv 8.20.0 is the latest release, so nothing upstream would have
+  # dislodged it either.
+  #
+  # A floor lets the next patch in without another advisory first, and it
+  # composes with the maturity hold below rather than fighting it: pnpm
+  # resolves to the newest version past the hold, so this currently lands on
+  # 3.1.6 while 3.1.7 matures instead of failing the install.
+  fast-uri: '>=3.1.6'
   websocket-driver: 0.7.5
   sharp: 0.35.3
 
