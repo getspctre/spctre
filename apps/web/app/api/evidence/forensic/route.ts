@@ -1,6 +1,5 @@
 import { getAuthSession } from "@/lib/auth-session";
-import { getSpctrePlan } from "@/lib/feature-flags-server";
-import { isFeatureEnabledForPlan } from "@/lib/feature-flags";
+import { isFeatureEntitled } from "@/lib/entitlements/features";
 import { authenticateServiceToken } from "@/lib/service-tokens";
 import { getActiveScope } from "@/lib/workspace";
 import { queryForensicEvidence } from "@/lib/domains/evidence/service";
@@ -13,19 +12,6 @@ const MAX_LIMIT = 10_000;
 
 async function handleGetApiForensicEvidence(request: Request) {
   const traceId = extractTraceId(request);
-  const plan = getSpctrePlan();
-  if (!isFeatureEnabledForPlan("longTermForensicArchival", plan)) {
-    return withTraceId(
-      Response.json(
-        {
-          error: "Forensic evidence query requires a Cloud or Enterprise plan.",
-          meta: makeMeta(traceId),
-        },
-        { status: 402 },
-      ),
-      traceId,
-    );
-  }
 
   let tenantId: string;
   let workspaceId: string;
@@ -57,6 +43,19 @@ async function handleGetApiForensicEvidence(request: Request) {
     const scope = await getActiveScope();
     tenantId = scope.tenantId;
     workspaceId = scope.workspaceId;
+  }
+
+  if (!(await isFeatureEntitled("longTermForensicArchival", tenantId))) {
+    return withTraceId(
+      Response.json(
+        {
+          error: "Forensic evidence query requires a Cloud or Enterprise plan.",
+          meta: makeMeta(traceId),
+        },
+        { status: 402 },
+      ),
+      traceId,
+    );
   }
 
   const url = new URL(request.url);

@@ -12,7 +12,7 @@ import {
 import { getAuthSession, SESSION_COOKIE, sessionTtlHours } from "@/lib/auth-session";
 import { createSessionGuardToken, SESSION_GUARD_COOKIE } from "@/lib/session-guard";
 import { getWorkspaceContext } from "@/lib/workspace";
-import { isFeatureEnabled } from "@/lib/feature-flags-server";
+import { isFeatureEntitled } from "@/lib/entitlements/features";
 import { swallow } from "@/lib/platform/swallow";
 
 export type WorkspaceSwitchState =
@@ -105,16 +105,21 @@ export async function setActiveTenant(
   _prev: TenantSwitchState,
   formData: FormData,
 ): Promise<TenantSwitchState> {
-  if (!isFeatureEnabled("multiTenantWorkspaceIsolation")) {
-    return { error: "Switching tenants requires the Enterprise plan." };
-  }
-
   const tenantId = String(formData.get("tenantId") ?? "").trim();
   if (!tenantId) return { error: "Tenant is required." };
 
   const cookieStore = await cookies();
   const session = await getAuthSession().catch(swallow("getAuthSession", null));
   if (!session) return { error: "Authentication required." };
+
+  // The entitlement belongs to the tenant the session is currently in — the one
+  // being switched away from. Reading it from the requested tenant would let a
+  // caller buy their way into another tenant by naming it in the form, and the
+  // check now needs a tenant at all, so it sits below the session load.
+  if (!(await isFeatureEntitled("multiTenantWorkspaceIsolation", session.tenantId))) {
+    return { error: "Switching tenants requires the Enterprise plan." };
+  }
+
   const principalId = session.principalId;
   const currentTenantId = session.tenantId;
   const sessionId = cookieStore.get(SESSION_COOKIE)?.value ?? session?.sessionId;

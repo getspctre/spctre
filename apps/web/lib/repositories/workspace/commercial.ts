@@ -158,6 +158,40 @@ export async function getCommercialProfile(tenantId: string): Promise<Commercial
   }
 }
 
+/**
+ * The tenant's plan code, or null when the tenant has no commercial profile.
+ *
+ * {@link getCommercialProfile} exists to render a profile and therefore folds
+ * three different states — no row, no database, and a failed query — into one
+ * HOSTED_TRIAL default. That is right for a page and wrong for an entitlement
+ * decision, where the three mean opposite things: no row is a self-hosted
+ * install that never bought a hosted plan and must keep its deployment's
+ * capabilities, while a failed query is an unknown that must not silently
+ * downgrade a paying tenant to the free tier.
+ *
+ * So this separates them. Null means "no commercial relationship on record",
+ * established by a query that ran. A failure throws, leaving the decision to a
+ * caller that knows whether to deny or degrade.
+ */
+export async function getTenantPlanCode(tenantId: string): Promise<CommercialPlanCode | null> {
+  if (!sql) return null;
+  const rows = await sql<{ plan_code: string }[]>`
+    SELECT plan_code
+    FROM tenant_commercial_profile
+    WHERE tenant_id = ${tenantId}
+    LIMIT 1
+  `;
+  const row = rows[0];
+  return row ? normalizeCommercialPlanCode(row.plan_code) : null;
+}
+
+/** {@link getTenantPlanCode}, bound to the tenant it reads. */
+export async function getTenantPlanCodeWithContext(
+  tenantId: string,
+): Promise<CommercialPlanCode | null> {
+  return runWithTenantContext(tenantId, () => getTenantPlanCode(tenantId));
+}
+
 export async function getCommercialProfileWithContext(
   tenantId: string,
 ): Promise<CommercialProfile> {

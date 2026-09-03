@@ -10,7 +10,8 @@ import { WorkspaceCookieNormalizer } from "./workspace-cookie-normalizer";
 import { getAuthSession } from "@/lib/auth-session";
 import { getAppViewMode } from "@/lib/app-view-mode-server";
 import { FeatureFlagProvider } from "./feature-flags";
-import { getServerFeatureFlags, getSpctrePlan } from "@/lib/feature-flags-server";
+import { getFeatureFlagSnapshot } from "@/lib/feature-flags";
+import { resolveTenantPlan } from "@/lib/entitlements/features";
 import { EscalationBanner } from "./escalation-banner";
 import { resolveI18nRequestConfig } from "@/lib/i18n/request-config";
 import { NextIntlClientProvider } from "next-intl";
@@ -34,8 +35,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   }
 
   const session = await getAuthSession();
-  const plan = getSpctrePlan();
-  const featureFlags = getServerFeatureFlags();
+  // The snapshot handed to every client component below is the viewer's, not
+  // the deployment's. Sending the deployment's would advertise — and let the
+  // client act on — features the tenant has not bought, on a hosted deployment
+  // running at the highest plan it sells.
+  const plan = await resolveTenantPlan(session?.tenantId ?? null);
+  const featureFlags = getFeatureFlagSnapshot(plan);
   const hasAppAccess = Boolean(session && (!session.requireMfa || session.mfaVerified));
 
   if (!hasAppAccess || !session) {

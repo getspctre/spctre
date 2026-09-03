@@ -34,8 +34,7 @@ import {
   getLatestManagedSimulationRegression,
   countRuntimeEvidence,
 } from "@/lib/repositories/evidence";
-import { isFeatureEnabledForPlan } from "@/lib/feature-flags";
-import { getSpctrePlan } from "@/lib/feature-flags-server";
+import { isFeatureEntitled } from "@/lib/entitlements/features";
 import { swallow } from "@/lib/platform/swallow";
 
 export interface PublishRevisionInput {
@@ -192,7 +191,7 @@ async function checkPublishReadiness(
     return readiness.blockingReasons.map((b) => b.message).join(" ");
   }
 
-  if (isFeatureEnabledForPlan("bulkProductionSimulation", getSpctrePlan())) {
+  if (await isFeatureEntitled("bulkProductionSimulation", tenantId)) {
     const regression = await getLatestManagedSimulationRegression({
       tenantId,
       workspaceId: branchRow.workspace_id ?? scope.workspaceId,

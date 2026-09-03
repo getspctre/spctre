@@ -20,6 +20,18 @@ export interface FeatureFlagDefinition {
 
 const planRank: Record<SpctrePlan, number> = { oss: 0, cloud: 1, business: 2, enterprise: 3 };
 
+/**
+ * The lower of two plans by capability rank.
+ *
+ * Entitlement is the intersection of what a deployment is licensed to run and
+ * what a tenant bought, and neither alone is the answer: a hosted deployment
+ * runs at the highest plan it sells, so reading its plan as every tenant's
+ * entitlement hands a trial account the whole catalog.
+ */
+export function lowerPlanOf(a: SpctrePlan, b: SpctrePlan): SpctrePlan {
+  return planRank[a] <= planRank[b] ? a : b;
+}
+
 export const FEATURE_FLAGS: Record<FeatureFlag, FeatureFlagDefinition> = {
   multiTenantWorkspaceIsolation: {
     label: "Multi-tenant workspace isolation",
@@ -48,7 +60,12 @@ export const FEATURE_FLAGS: Record<FeatureFlag, FeatureFlagDefinition> = {
   },
   bulkProductionSimulation: {
     label: "Bulk production simulation",
-    minimumPlan: "cloud",
+    // Business, not Cloud. Replaying a proposed policy against the full
+    // retained production log is the compliance workflow the published pricing
+    // model sells as the Team -> Business boundary; Team keeps simulation
+    // against sample events. The minimum said "cloud" for as long as nothing
+    // read it per tenant, so the disagreement cost nothing and stayed.
+    minimumPlan: "business",
     description: "What-if policy analysis across the full retained production event log.",
   },
   enterpriseRbacAudit: {

@@ -1,5 +1,5 @@
 import { listCrossSurfaceTrustHistory } from "@/lib/domains/trust/service";
-import { isFeatureEnabled } from "@/lib/feature-flags-server";
+import { isFeatureEntitled } from "@/lib/entitlements/features";
 import { extractTraceId, makeMeta, withTraceId } from "@spctre/api-contracts";
 import { resolveRouteScope } from "../../../_route-scope";
 
@@ -15,7 +15,7 @@ async function handleGetAgentTrustHistory(
   if (scope instanceof Response) return scope;
   const { workspaceId, tenantId } = scope;
 
-  if (!isFeatureEnabled("crossSurfaceAgentIdentity")) {
+  if (!(await isFeatureEntitled("crossSurfaceAgentIdentity", tenantId))) {
     return withTraceId(
       Response.json(
         { error: "Cross-surface agent identity requires a Cloud plan.", meta: makeMeta(traceId) },

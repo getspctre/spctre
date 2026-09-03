@@ -9,8 +9,7 @@ import type {
   RuntimePolicyContext,
   RuntimeStack,
 } from "@spctre/policy-schema";
-import { isFeatureEnabledForPlan } from "@/lib/feature-flags";
-import { getSpctrePlan } from "@/lib/feature-flags-server";
+import { isFeatureEntitled } from "@/lib/entitlements/features";
 import { archivalService } from "@/lib/ee-adapters/archival";
 import { getCommercialProfile } from "@/lib/repositories/workspace";
 import { resolveRetainUntil } from "@/lib/entitlements/retention";
@@ -640,8 +639,13 @@ export async function insertRuntimeEvidenceWithDedup(params: {
   });
 
   if (inserted.length > 0) {
-    const plan = getSpctrePlan();
-    if (isFeatureEnabledForPlan("longTermForensicArchival", plan)) {
+    // Per tenant, not per deployment. The gate and the retention window below
+    // read the same commercial fact and used to disagree about whose fact it
+    // was: whether to archive came from SPCTRE_PLAN, so on a hosted deployment
+    // every tenant archived, while how long to keep it came from the tenant's
+    // own entitlement. The extra read this costs is negligible beside the
+    // object-storage write it guards.
+    if (await isFeatureEntitled("longTermForensicArchival", params.tenantId)) {
       // Await archival before returning. Previously this was a fire-and-forget
       // .then() chain, but on scale-to-zero runtimes (Cloud Run, §41) CPU is
       // throttled once the response is sent, so a dangling promise may never

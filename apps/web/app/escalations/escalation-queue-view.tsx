@@ -8,7 +8,7 @@ import { ResolveForm } from "./resolve-form";
 import { formatProvenanceId, type AppViewMode } from "@/lib/app-view-mode";
 import { hashToFingerprint } from "@/lib/fingerprint";
 import { redactAndBoundParameters } from "@spctre/api-contracts";
-import { UpgradePrompt } from "../plan-gate";
+import { UpgradePrompt } from "../upgrade-prompt";
 import { useTranslations } from "next-intl";
 
 interface EscalationQueueViewProps {

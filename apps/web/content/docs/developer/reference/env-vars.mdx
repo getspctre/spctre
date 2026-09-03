@@ -15,7 +15,7 @@ description: Full table of SPCTRE_* and platform env vars with types and default
 | `SPCTRE_ENV` | string | `development` | Deployment environment name |
 | `SPCTRE_DEFAULT_TENANT_ID` | string | — | Default tenant for an explicitly declared single-tenant deployment; requires `SPCTRE_SINGLE_TENANT_MODE=true`. |
 | `SPCTRE_SINGLE_TENANT_MODE` | boolean | `false` | Allows `SPCTRE_DEFAULT_TENANT_ID` to bind background work. Do not enable in a multi-tenant deployment. |
-| `SPCTRE_PLAN` | `oss` \| `cloud` \| `business` \| `enterprise` | `oss` | Plan tier; controls feature gating for SAML, SCIM, simulation, HITL, archival, and SIEM features. See [Plan tiers](/help-docs/developer/reference/plan-tiers). |
+| `SPCTRE_PLAN` | `oss` \| `cloud` \| `business` \| `enterprise` | `oss` | The plan this **deployment** may run — the ceiling on SAML, SCIM, simulation, HITL, archival, and SIEM features. On a multi-tenant deployment each tenant's own plan applies underneath it. See [Plan tiers](/help-docs/developer/reference/plan-tiers). |
 
 ## Authentication
 

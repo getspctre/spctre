@@ -37,6 +37,8 @@
  * active catalog is a server concern and lives in the slot adapter.
  */
 
+import type { SpctrePlan } from "@/lib/feature-flags";
+
 export type CommercialPlanCode = "HOSTED_TRIAL" | "TEAM" | "BUSINESS" | "ENTERPRISE";
 
 export const COMMERCIAL_PLAN_CODES: readonly CommercialPlanCode[] = [
@@ -57,6 +59,22 @@ export interface Entitlement<T> {
 
 export interface PlanEntitlements {
   displayName: string;
+  /**
+   * The capability tier this plan grants.
+   *
+   * A plan code is a SKU and a tier is a capability rank, and they are kept
+   * apart on purpose: SKUs churn on a commercial cadence — pricing
+   * experiments, grandfathered terms, annual and monthly variants — while
+   * tiers change only when the product gains or moves a capability. Many SKUs
+   * may share a tier, and adding a SKU must not require touching a feature
+   * gate.
+   *
+   * Unlike the capacities below, a tier carries no `enforced` flag. Enforcement
+   * state distinguishes a published number from a measured one; a tier is not a
+   * measurement, it is the definition of what the SKU includes, and it is
+   * applied the moment it is read.
+   */
+  tier: SpctrePlan;
   /** Maximum workspaces per tenant; `null` is unlimited. */
   workspaces: Entitlement<number | null>;
   /**
@@ -84,16 +102,17 @@ export interface EntitlementCatalog {
   plans: Record<CommercialPlanCode, PlanEntitlements>;
 }
 
-export const OSS_ENTITLEMENT_CATALOG_VERSION = "oss-unmetered.1";
+export const OSS_ENTITLEMENT_CATALOG_VERSION = "oss-unmetered.2";
 
 /** Unlimited, and explicitly not enforced. */
 function unmetered(): Entitlement<number | null> {
   return { value: null, enforced: false };
 }
 
-function unmeteredPlan(displayName: string): PlanEntitlements {
+function unmeteredPlan(displayName: string, tier: SpctrePlan): PlanEntitlements {
   return {
     displayName,
+    tier,
     workspaces: unmetered(),
     retainedEvents: unmetered(),
     retentionWindowDays: unmetered(),
@@ -104,9 +123,11 @@ function unmeteredPlan(displayName: string): PlanEntitlements {
 /**
  * The catalog an OSS deployment runs on.
  *
- * Plan names survive because a self-hosted operator may still be looking at a
- * hosted plan they are considering; the capacities do not, because no part of
- * this deployment is entitled to enforce them. A deployment that never entered
+ * Plan names and their tiers survive because a self-hosted operator may still
+ * be looking at a hosted plan they are considering, and because a tier says
+ * what a SKU includes rather than how much of it — the same statement on every
+ * deployment that recognizes the SKU. The capacities do not survive, because no
+ * part of this deployment is entitled to enforce them. A deployment that never entered
  * a commercial relationship must not have its ingest refused, its workspaces
  * capped, or — most consequentially — its evidence pruned on a schedule set by
  * someone else's free tier.
@@ -114,10 +135,10 @@ function unmeteredPlan(displayName: string): PlanEntitlements {
 export const OSS_ENTITLEMENT_CATALOG: EntitlementCatalog = {
   version: OSS_ENTITLEMENT_CATALOG_VERSION,
   plans: {
-    HOSTED_TRIAL: unmeteredPlan("Hosted Trial"),
-    TEAM: unmeteredPlan("Team"),
-    BUSINESS: unmeteredPlan("Business"),
-    ENTERPRISE: unmeteredPlan("Enterprise"),
+    HOSTED_TRIAL: unmeteredPlan("Hosted Trial", "cloud"),
+    TEAM: unmeteredPlan("Team", "cloud"),
+    BUSINESS: unmeteredPlan("Business", "business"),
+    ENTERPRISE: unmeteredPlan("Enterprise", "enterprise"),
   },
 };
 

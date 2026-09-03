@@ -1,14 +1,13 @@
 import { logger } from "@spctre/platform/logging";
-import { getSpctrePlan } from "@/lib/feature-flags-server";
-import { isFeatureEnabledForPlan } from "@/lib/feature-flags";
+import { isFeatureEntitled } from "@/lib/entitlements/features";
 import { loadCommercialSlot } from "./slot-loader";
 
 export async function handleCompliancePdfExport(
   request: Request,
   exportDoc: unknown,
+  tenantId: string,
 ): Promise<Response> {
-  const plan = getSpctrePlan();
-  if (!isFeatureEnabledForPlan("compliancePdfExport", plan)) {
+  if (!(await isFeatureEntitled("compliancePdfExport", tenantId))) {
     return Response.json(
       { error: "Compliance PDF export requires a Business or Enterprise plan." },
       { status: 402 },
@@ -16,9 +15,9 @@ export async function handleCompliancePdfExport(
   }
 
   try {
-    const module = await loadCommercialSlot<{ handlePdfExport: typeof handleCompliancePdfExport }>(
-      "web/compliance/pdf-export.js",
-    );
+    const module = await loadCommercialSlot<{
+      handlePdfExport: (request: Request, exportDoc: unknown) => Promise<Response>;
+    }>("web/compliance/pdf-export.js");
     return module.handlePdfExport(request, exportDoc);
   } catch (err) {
     logger.warn("Failed to load commercial Compliance PDF export slot implementation.", {

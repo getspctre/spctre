@@ -18,7 +18,7 @@ import {
 import { getLatestPublishedBundle } from "@/lib/repositories/policy/publish";
 import { getRulesForRevision } from "@/lib/repositories/policy/rules";
 import { runWithTenantContext } from "@/lib/tenant-context";
-import { isFeatureEnabled } from "@/lib/feature-flags-server";
+import { isFeatureEntitled } from "@/lib/entitlements/features";
 import type { AgentBlueprintSummary, AgentSurfaceBinding } from "@spctre/policy-schema";
 import { swallow } from "@/lib/platform/swallow";
 
@@ -148,6 +148,11 @@ export async function getAgentsPageModel({
       return swallow(op, value)(error);
     };
 
+  // Resolved before the fan-out: the entitlement read is itself a query, and
+  // inlining it into the array below would issue it inside Promise.all while
+  // the branch it decides is already being constructed.
+  const crossSurfaceIdentity = await isFeatureEntitled("crossSurfaceAgentIdentity", tenantId);
+
   const [
     dbAgents,
     allSurfaces,
@@ -160,7 +165,7 @@ export async function getAgentsPageModel({
     runWithTenantContext(tenantId, () =>
       listAgentSummaries(workspaceId, tenantId).catch(degrade("listAgentSummaries", [])),
     ),
-    isFeatureEnabled("crossSurfaceAgentIdentity")
+    crossSurfaceIdentity
       ? runWithTenantContext(tenantId, () =>
           listAllSurfaceBindingsForWorkspace({ tenantId, workspaceId }).catch(
             degrade("listAllSurfaceBindingsForWorkspace", []),

@@ -5,7 +5,7 @@ import {
 import { getActiveActor } from "@/lib/actors";
 import { getWorkspaceContext } from "@/lib/workspace";
 import { getAppViewMode } from "@/lib/app-view-mode-server";
-import { isFeatureEnabled } from "@/lib/feature-flags-server";
+import { getEntitledFeatureFlags } from "@/lib/entitlements/features";
 import { formatWorkspaceEyebrow } from "@/lib/workspace";
 import { EscalationQueueView } from "./escalation-queue-view";
 import { getWebOnboardingStatus } from "@/lib/repositories/onboarding/shared";
@@ -15,8 +15,11 @@ import { QuickStartBanner } from "../quick-start-banner";
 export async function EscalationsPageContent({ workspaceSlug }: { workspaceSlug?: string } = {}) {
   const workspaceContext = await getWorkspaceContext({ workspaceSlug });
   const appViewMode = await getAppViewMode();
-  const hasManagedHitl = isFeatureEnabled("slaTrackedHitlQueue");
-  const crossSurfaceIdentity = isFeatureEnabled("crossSurfaceAgentIdentity");
+  // One resolution for both flags: the per-flag call reads the plan code each
+  // time, and this page gates on two.
+  const features = await getEntitledFeatureFlags(workspaceContext.tenantId);
+  const hasManagedHitl = features.slaTrackedHitlQueue;
+  const crossSurfaceIdentity = features.crossSurfaceAgentIdentity;
   const eyebrow = formatWorkspaceEyebrow(workspaceContext);
   const onboardingStatus = await getWebOnboardingStatus({
     tenantId: workspaceContext.tenantId,

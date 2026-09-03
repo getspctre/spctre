@@ -274,7 +274,7 @@ async function handleGetApiComplianceExport(request: Request) {
         framework: framework ?? "none",
       });
       if (url.searchParams.get("format")?.toLowerCase() === "pdf") {
-        return withTraceId(await handleCompliancePdfExport(request, exportDoc), traceId);
+        return withTraceId(await handleCompliancePdfExport(request, exportDoc, tenantId), traceId);
       }
       return withTraceId(
         new Response(body, {

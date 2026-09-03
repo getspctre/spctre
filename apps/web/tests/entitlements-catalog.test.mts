@@ -162,4 +162,35 @@ describe("the retention worker reads the provisioned window", () => {
     expect(migration).toMatch(/ALTER COLUMN retained_event_capacity DROP NOT NULL/);
     expect(migration).toMatch(/retained_event_capacity IS NULL OR retained_event_capacity > 0/);
   });
+
+  // The tier is the SKU -> capability map that feature gates read. It is
+  // asserted against the published pricing model rather than left to whatever
+  // the catalog happens to say, because a wrong entry here silently sells a
+  // plan the product does not deliver — or delivers one nobody bought.
+  it("maps each plan code to its published capability tier", () => {
+    const tiers = Object.fromEntries(
+      COMMERCIAL_PLAN_CODES.map((plan) => [plan, OSS_ENTITLEMENT_CATALOG.plans[plan].tier]),
+    );
+    expect(tiers).toEqual({
+      // The hosted trial is a time-boxed Team experience, so it carries Team's
+      // tier. Anything above Cloud must remain a reason to pay.
+      HOSTED_TRIAL: "cloud",
+      TEAM: "cloud",
+      BUSINESS: "business",
+      ENTERPRISE: "enterprise",
+    });
+  });
+
+  it("never grants a paid tier to a plan the pricing model places below it", () => {
+    const rank = { oss: 0, cloud: 1, business: 2, enterprise: 3 } as const;
+    const ordered = ["HOSTED_TRIAL", "TEAM", "BUSINESS", "ENTERPRISE"] as const;
+    for (let i = 1; i < ordered.length; i += 1) {
+      const previous = OSS_ENTITLEMENT_CATALOG.plans[ordered[i - 1]].tier;
+      const current = OSS_ENTITLEMENT_CATALOG.plans[ordered[i]].tier;
+      expect(
+        rank[current] >= rank[previous],
+        `${ordered[i]} (${current}) ranks below ${ordered[i - 1]} (${previous})`,
+      ).toBe(true);
+    }
+  });
 });

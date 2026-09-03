@@ -7,7 +7,7 @@ const {
   getApprovalWorkflowConfigSpy,
   getCompliancePacketSpy,
   getComplianceVerificationStatusSpy,
-  isFeatureEnabledSpy,
+  isFeatureEntitledSpy,
   listAgentSurfacesSpy,
   unlinkAgentSurfaceSpy,
 } = vi.hoisted(() => ({
@@ -16,7 +16,7 @@ const {
   getApprovalWorkflowConfigSpy: vi.fn(),
   getCompliancePacketSpy: vi.fn(),
   getComplianceVerificationStatusSpy: vi.fn(),
-  isFeatureEnabledSpy: vi.fn(),
+  isFeatureEntitledSpy: vi.fn(),
   listAgentSurfacesSpy: vi.fn(),
   unlinkAgentSurfaceSpy: vi.fn(),
 }));
@@ -30,7 +30,7 @@ vi.mock("@/lib/service-tokens", () => ({
   hasBearerToken: () => false,
 }));
 
-vi.mock("@/lib/feature-flags-server", () => ({ isFeatureEnabled: isFeatureEnabledSpy }));
+vi.mock("@/lib/entitlements/features", () => ({ isFeatureEntitled: isFeatureEntitledSpy }));
 
 vi.mock("@/lib/domains/compliance/service", () => ({
   getCompliancePacket: getCompliancePacketSpy,
@@ -71,7 +71,7 @@ describe("shared route scope helper integrations", () => {
     getApprovalWorkflowConfigSpy.mockReset();
     getCompliancePacketSpy.mockReset();
     getComplianceVerificationStatusSpy.mockReset();
-    isFeatureEnabledSpy.mockReset();
+    isFeatureEntitledSpy.mockReset();
     listAgentSurfacesSpy.mockReset();
     unlinkAgentSurfaceSpy.mockReset();
   });
@@ -130,7 +130,7 @@ describe("shared route scope helper integrations", () => {
 
     getAuthSessionSpy.mockResolvedValueOnce(session());
     getActiveScopeSpy.mockResolvedValueOnce(activeScope());
-    isFeatureEnabledSpy.mockReturnValueOnce(true);
+    isFeatureEntitledSpy.mockResolvedValueOnce(true);
     listAgentSurfacesSpy.mockResolvedValueOnce([
       { id: "surface-1", surfaceType: "MCP", surfaceAgentId: "agent-surface-1" },
     ]);
