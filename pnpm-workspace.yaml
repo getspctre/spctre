@@ -48,6 +48,16 @@ overrides:
   # resolves to the newest version past the hold, so this currently lands on
   # 3.1.6 while 3.1.7 matures instead of failing the install.
   fast-uri: '>=3.1.6'
+  # express 4 and its body-parser both declare `~6.15.1`, which excludes the
+  # 6.16.0 that patches the two advisories the lockfile was carrying. An
+  # override is the only way past a range that stops short of the fix.
+  #
+  # Scoped to a floor rather than an exact version, per the reasoning above,
+  # and deliberately not applied as a bare `qs` bump: @xmldom/xmldom needed no
+  # entry here at all, because its consumer's range already admitted the
+  # patched release and a plain lockfile update reached it. Prefer that when it
+  # works — an override is a standing commitment to re-check by hand.
+  qs: '>=6.16.0'
   websocket-driver: 0.7.5
   sharp: 0.35.3
 
