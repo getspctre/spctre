@@ -1,5 +1,6 @@
 import { getAuthSession } from "@/lib/auth-session";
 import { findActorById } from "@/lib/actors";
+import { verifyWriteAccess } from "@/lib/demo-guard";
 import { listServiceKeys, recordAuthOperation } from "@/lib/domains/auth/service";
 
 import {
@@ -97,6 +98,20 @@ async function handlePostApiServiceKeys(request: Request) {
     return withTraceId(
       Response.json(
         { error: "Admin permission is required.", meta: makeMeta(traceId) },
+        { status: 403 },
+      ),
+      traceId,
+    );
+  }
+
+  // Same order as createServiceKey in app/admin/service-keys/actions.ts: admin
+  // first, then the demo-tenant write check, so a non-admin still learns the
+  // more specific truth about their own request.
+  const write = verifyWriteAccess(session.tenantId);
+  if (!write.allowed) {
+    return withTraceId(
+      Response.json(
+        { error: write.error ?? "Write access denied.", meta: makeMeta(traceId) },
         { status: 403 },
       ),
       traceId,
