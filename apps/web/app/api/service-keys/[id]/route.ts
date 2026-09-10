@@ -1,5 +1,6 @@
 import { getAuthSession } from "@/lib/auth-session";
 import { findActorById } from "@/lib/actors";
+import { verifyWriteAccess } from "@/lib/demo-guard";
 import { recordAuthOperation, revokeServiceKeyById } from "@/lib/domains/auth/service";
 
 import { extractTraceId, makeMeta, withTraceId } from "@spctre/api-contracts";
@@ -45,6 +46,17 @@ async function handleDeleteApiServiceKeysByid(
     return withTraceId(
       Response.json(
         { error: "Admin permission is required.", meta: makeMeta(traceId) },
+        { status: 403 },
+      ),
+      traceId,
+    );
+  }
+
+  const write = verifyWriteAccess(session.tenantId);
+  if (!write.allowed) {
+    return withTraceId(
+      Response.json(
+        { error: write.error ?? "Write access denied.", meta: makeMeta(traceId) },
         { status: 403 },
       ),
       traceId,
