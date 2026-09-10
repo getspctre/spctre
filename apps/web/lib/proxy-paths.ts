@@ -12,6 +12,12 @@
 export const PUBLIC_PATHS = new Set([
   "/login",
   "/signup",
+  // Where `spctre cloud login` and `spctre init` send an operator to approve a
+  // CLI. Both pages resolve their session themselves and render a sign-up offer
+  // when there is none — /auth/device says so in as many words — so gating them
+  // here made the first page a prospect ever sees a redirect to /login.
+  "/auth/device",
+  "/onboarding/cli/approve",
   "/api/auth/oidc/authorize",
   "/api/auth/oidc/callback",
   "/icon.svg",
@@ -77,6 +83,13 @@ export const SERVICE_API_PATHS = new Set([
   "/api/token/revoke",
   "/api/v1/token/revoke",
   "/api/search",
+  // The device flow's pre-auth bootstrap. `spctre cloud login` calls
+  // device/start before any credential exists and then polls device/token, and
+  // self-serve is how a caller with no account gets one. See
+  // PRE_AUTH_BOOTSTRAP_PATHS.
+  "/api/onboarding/device/start",
+  "/api/onboarding/device/token",
+  "/api/onboarding/self-serve",
   "/api/workspace/mcp-policy",
   "/api/approvals/queue",
   "/api/compliance/status",
@@ -221,6 +234,9 @@ export const MACHINE_API_PATH_PREFIXES = [PUBLIC_API_PREFIX];
 export const PRE_AUTH_BOOTSTRAP_PATHS = new Set([
   "/api/onboarding/cli/start",
   "/api/onboarding/cli/exchange",
+  "/api/onboarding/device/start",
+  "/api/onboarding/device/token",
+  "/api/onboarding/self-serve",
 ]);
 
 // Callers whose source address is not an operator address and never will be:
