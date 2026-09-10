@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { SESSION_GUARD_COOKIE, verifySessionGuardToken } from "@/lib/session-guard";
 import { swallow } from "@/lib/platform/swallow";
+import { runWithTenantContext } from "@/lib/tenant-context";
 import {
   ensureAuthDemoTenant,
   fetchSessionForAuth,
@@ -71,7 +72,38 @@ export async function getAuthSession(): Promise<AuthSession | null> {
   };
 }
 
+/**
+ * Every sign-in route ends here, and every one of them arrives on a pre-session
+ * request: the whole point of the call is that no session exists yet, so no
+ * session-guard cookie has bound a tenant. `createSessionRow` takes an
+ * injectable client defaulting to the tenant-aware `sql`, so a caller that does
+ * not pass one queries unbound and the write throws "No tenant context is
+ * bound" — which is what passkey login did, as a 500 after the assertion had
+ * already verified.
+ *
+ * The tenant is known and trusted by this point (it comes from the verified
+ * credential, never from the client), so bind it here rather than leaving each
+ * sign-in route to remember. That is the rule check-pre-session-tenant-binding
+ * states for a known tenant; the guard could not enforce it here because it
+ * matches on the `sql` identifier and this path reaches it through a parameter
+ * default.
+ *
+ * Callers that inject the owner connection are unaffected — it ignores RLS
+ * either way — so the magic-link path keeps working unchanged.
+ */
 export async function createAuthSession(params: {
+  principalId: string;
+  tenantId: string;
+  authMethod?: "SESSION" | "OIDC" | "SAML" | "API_KEY";
+  mfaVerifiedAt?: string | null;
+  userAgent?: string;
+  ipAddress?: string;
+  db?: Parameters<typeof createSessionRow>[1];
+}): Promise<string> {
+  return runWithTenantContext(params.tenantId, () => createAuthSessionBound(params));
+}
+
+async function createAuthSessionBound(params: {
   principalId: string;
   tenantId: string;
   authMethod?: "SESSION" | "OIDC" | "SAML" | "API_KEY";
