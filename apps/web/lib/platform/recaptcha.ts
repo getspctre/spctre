@@ -27,7 +27,14 @@ export async function getRecaptchaToken(): Promise<string> {
   const appId = process.env.NEXT_PUBLIC_FIREBASE_APP_ID?.trim();
 
   if (!apiKey || !authDomain) {
-    throw new Error("Firebase reCAPTCHA is not configured.");
+    // Reaches the operator as-is: both callers surface the thrown message. Say
+    // that the deployment is missing configuration rather than that something
+    // went wrong, because nothing the user can do will change it. NEXT_PUBLIC_*
+    // values are inlined at build time, so this cannot be fixed by setting an
+    // environment variable on an already-built image.
+    throw new Error(
+      "SMS verification is unavailable: this deployment was built without Firebase reCAPTCHA configuration.",
+    );
   }
 
   const [{ getApps, initializeApp }, { getAuth, RecaptchaVerifier }] = await Promise.all([
