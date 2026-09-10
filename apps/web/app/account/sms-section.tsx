@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { useTranslations } from "next-intl";
 import { getRecaptchaToken } from "@/lib/platform/recaptcha";
+import { errorText } from "@/lib/error-message";
 import { deleteMfaEnrollmentForm } from "./account-actions";
 import type { PrincipalMfaEnrollment } from "@/lib/domains/auth/service";
 
@@ -58,8 +59,15 @@ export function SmsSection({ existingEnrollments }: SmsSectionProps) {
 
       setEnrollmentId(data.enrollmentId);
       setStatus("verifying");
-    } catch {
-      setError(t("errors.unexpected"));
+    } catch (err) {
+      // getRecaptchaToken throws "Firebase reCAPTCHA is not configured." when a
+      // deployment has no NEXT_PUBLIC_FIREBASE_* build config, and it throws
+      // before the fetch — so the request never reaches the server and there is
+      // nothing in the logs to diagnose from. Discarding the reason here left an
+      // operator with "an unexpected error occurred" and no way to tell a missing
+      // deployment config from a network failure. Same shape as SmsMfaTrigger.
+      console.error("[sms-enrollment] start failed", err);
+      setError(errorText(err) || t("errors.unexpected"));
       setStatus("idle");
     }
   }
@@ -89,8 +97,9 @@ export function SmsSection({ existingEnrollments }: SmsSectionProps) {
 
       setStatus("done");
       window.location.reload();
-    } catch {
-      setError(t("errors.unexpected_verify"));
+    } catch (err) {
+      console.error("[sms-enrollment] verify failed", err);
+      setError(errorText(err) || t("errors.unexpected_verify"));
     }
   }
 

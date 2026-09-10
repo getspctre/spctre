@@ -4,7 +4,6 @@
   "apps/web/app/[workspace]/alerting/alerting-siem.tsx": 3,
   "apps/web/app/account/passkey-section.tsx": 1,
   "apps/web/app/account/recovery-codes-section.tsx": 1,
-  "apps/web/app/account/sms-section.tsx": 2,
   "apps/web/app/account/totp-section.tsx": 2,
   "apps/web/app/admin/auth/scim-token-actions.ts": 1,
   "apps/web/app/admin/localization/localization-actions.ts": 2,
