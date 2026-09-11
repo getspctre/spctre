@@ -19,14 +19,32 @@ type InstrumentedSqlClient = SqlClient & { counts: PostgresInternalCounts };
 export type { TransactionSql as TxClient } from "postgres";
 
 declare global {
-  // Reuse the postgres pool across Next.js module reloads in dev.
-  var __spctreSqlClient:
+  /**
+   * The process-wide connection pools, shared across Next.js module reloads in
+   * dev and across every copy of this module in a build.
+   *
+   * Pools only — deliberately no tenant-aware client. The wrapper returned by
+   * `createTenantAwareClient` closes over *this copy's* `resolveTenantContext`,
+   * and a commercial slot is a standalone bundle that carries its own inlined
+   * copy of this module. Caching the wrapper here handed the whole process
+   * whichever copy evaluated first: when a slot was imported before the app's
+   * own chunk, every query in the process — the app's included — resolved its
+   * tenant inside the slot bundle, where
+   * `next/headers` is the node_modules copy rather than the one compiled into
+   * the server chunks. `cookies()` throws there, so the session-guard cookie
+   * could not be read and every cookie-authenticated request failed: 401 from
+   * routes whose `getAuthSession` swallowed it, 500 from every page render.
+   *
+   * A pool is copy-agnostic, so sharing one is safe. Each copy wraps it in its
+   * own tenant-aware client.
+   */
+  var __spctreSqlPools:
     | {
         url: string;
         ownerUrl: string | null;
         poolSize: number;
-        client: SqlClient;
-        rawClient: SqlClient;
+        tenantPool: SqlClient;
+        ownerPool: SqlClient;
       }
     | undefined;
 }
@@ -213,34 +231,37 @@ function createClient() {
   const max = Number.isFinite(poolSize) && poolSize > 0 ? poolSize : 5;
   const ownerUrl = process.env.DATABASE_OWNER_URL?.trim() || null;
 
+  const cached = globalThis.__spctreSqlPools;
   if (
-    globalThis.__spctreSqlClient?.url === process.env.DATABASE_URL &&
-    globalThis.__spctreSqlClient.ownerUrl === ownerUrl &&
-    globalThis.__spctreSqlClient.poolSize === max
+    cached?.url === process.env.DATABASE_URL &&
+    cached.ownerUrl === ownerUrl &&
+    cached.poolSize === max
   ) {
-    return globalThis.__spctreSqlClient.client;
+    // Wrapped again rather than reused: the wrapper belongs to the copy that
+    // created it. See the __spctreSqlPools docblock.
+    return createTenantAwareClient(cached.tenantPool);
   }
 
-  const rawClient = postgres(process.env.DATABASE_URL, {
+  const tenantPool = postgres(process.env.DATABASE_URL, {
     max,
     idle_timeout: 20,
     max_lifetime: 60 * 30,
   });
-  const ownerClient =
+  const ownerPool =
     ownerUrl && ownerUrl !== process.env.DATABASE_URL
       ? postgres(ownerUrl, { max: Math.min(max, 2), idle_timeout: 20, max_lifetime: 60 * 30 })
-      : rawClient;
-  const client = createTenantAwareClient(rawClient);
+      : tenantPool;
+  const client = createTenantAwareClient(tenantPool);
 
-  globalThis.__spctreSqlClient = {
+  globalThis.__spctreSqlPools = {
     url: process.env.DATABASE_URL,
     ownerUrl,
     poolSize: max,
-    client,
-    rawClient: ownerClient,
+    tenantPool,
+    ownerPool,
   };
 
-  const instrumented = rawClient as unknown as InstrumentedSqlClient;
+  const instrumented = tenantPool as unknown as InstrumentedSqlClient;
   if (instrumented.counts !== undefined) {
     registerDbPoolMetrics("spctre-web", () => {
       return {
@@ -256,7 +277,7 @@ function createClient() {
 }
 
 export const sql = createClient() as SqlClient;
-export const rawSql = (globalThis.__spctreSqlClient?.rawClient ?? sql) as SqlClient;
+export const rawSql = (globalThis.__spctreSqlPools?.ownerPool ?? sql) as SqlClient;
 
 /**
  * Executes a callback inside a transaction with the RLS tenant context set.
