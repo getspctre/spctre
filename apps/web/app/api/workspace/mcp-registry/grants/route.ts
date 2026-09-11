@@ -18,11 +18,15 @@ async function handlePostApiWorkspaceMcpRegistryGrants(request: Request) {
   let body: Record<string, unknown>;
   try {
     const parsed = (await request.json()) as unknown;
-    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("not an object");
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed))
+      throw new Error("not an object");
     body = parsed as Record<string, unknown>;
   } catch {
     return withTraceId(
-      Response.json({ error: "Request body must be an object.", meta: makeMeta(traceId) }, { status: 400 }),
+      Response.json(
+        { error: "Request body must be an object.", meta: makeMeta(traceId) },
+        { status: 400 },
+      ),
       traceId,
     );
   }
@@ -30,13 +34,18 @@ async function handlePostApiWorkspaceMcpRegistryGrants(request: Request) {
   const registryId = typeof body.registryId === "string" ? body.registryId.trim() : "";
   if (!UUID.test(registryId)) {
     return withTraceId(
-      Response.json({ error: "registryId must be a UUID.", meta: makeMeta(traceId) }, { status: 400 }),
+      Response.json(
+        { error: "registryId must be a UUID.", meta: makeMeta(traceId) },
+        { status: 400 },
+      ),
       traceId,
     );
   }
 
   const agentId =
-    typeof body.agentId === "string" && body.agentId.trim() ? body.agentId.trim().slice(0, 128) : null;
+    typeof body.agentId === "string" && body.agentId.trim()
+      ? body.agentId.trim().slice(0, 128)
+      : null;
   const environment =
     typeof body.environment === "string" && body.environment.trim()
       ? body.environment.trim().slice(0, 64)

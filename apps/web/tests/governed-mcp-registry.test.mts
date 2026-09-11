@@ -28,9 +28,7 @@ vi.mock("@/lib/workspace", () => ({ getActiveScope: getActiveScopeSpy }));
 const state = { rows: [] as unknown[], failQuery: false };
 const tx = Object.assign(
   (..._args: unknown[]) =>
-    state.failQuery
-      ? Promise.reject(new Error("connection reset"))
-      : Promise.resolve(state.rows),
+    state.failQuery ? Promise.reject(new Error("connection reset")) : Promise.resolve(state.rows),
   { json: (value: unknown) => value },
 );
 vi.mock("@/lib/db", () => ({
@@ -48,9 +46,8 @@ vi.mock("@/lib/repositories/operations-log", () => ({
   appendOperationsLogInTransaction: appendOperationsLogInTransactionSpy,
 }));
 
-const { registerMcpTool, grantMcpToolCapability, revokeMcpToolCapability } = await import(
-  "../lib/domains/mcp/service"
-);
+const { registerMcpTool, grantMcpToolCapability, revokeMcpToolCapability } =
+  await import("../lib/domains/mcp/service");
 
 const REGISTRY_ID = "11111111-1111-4111-8111-111111111111";
 const GRANT_ID = "22222222-2222-4222-8222-222222222222";
@@ -131,7 +128,11 @@ describe("governed MCP registry — audit is part of the write", () => {
     expect(revoked).toBe(true);
     const [, entry] = appendOperationsLogInTransactionSpy.mock.calls[0];
     expect(entry.eventType).toBe("MCP_TOOL_REVOKED");
-    expect(entry.payload).toMatchObject({ scope: "AGENT", agentId: "agent-7", environment: "production" });
+    expect(entry.payload).toMatchObject({
+      scope: "AGENT",
+      agentId: "agent-7",
+      environment: "production",
+    });
   });
 
   // appendOperationsLogInTransaction rethrows by design. A registry change that
@@ -200,14 +201,24 @@ describe("governed MCP registry — route guards", () => {
 
   it("refuses an unauthenticated caller", async () => {
     getAuthSessionSpy.mockResolvedValue(null);
-    const res = await postTool({ serverName: "github", toolName: "repo.read", connector: "github", action: "repo.read" });
+    const res = await postTool({
+      serverName: "github",
+      toolName: "repo.read",
+      connector: "github",
+      action: "repo.read",
+    });
     expect(res.status).toBe(401);
   });
 
   it("refuses a signed-in non-admin", async () => {
     signedInAdmin();
     findActorByIdSpy.mockResolvedValue({ id: "p-123", reviewerRoles: ["Security"] });
-    const res = await postTool({ serverName: "github", toolName: "repo.read", connector: "github", action: "repo.read" });
+    const res = await postTool({
+      serverName: "github",
+      toolName: "repo.read",
+      connector: "github",
+      action: "repo.read",
+    });
     expect(res.status).toBe(403);
   });
 
@@ -216,7 +227,12 @@ describe("governed MCP registry — route guards", () => {
   // visitor could perform on shared data.
   it("refuses the demo tenant even for an admin", async () => {
     signedInAdmin("00000000-0000-0000-0000-000000000001");
-    const res = await postTool({ serverName: "github", toolName: "repo.read", connector: "github", action: "repo.read" });
+    const res = await postTool({
+      serverName: "github",
+      toolName: "repo.read",
+      connector: "github",
+      action: "repo.read",
+    });
     expect(res.status).toBe(403);
   });
 

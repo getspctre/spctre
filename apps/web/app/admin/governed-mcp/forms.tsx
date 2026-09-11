@@ -58,7 +58,12 @@ export function RegisterToolForm({ connectorSuggestions }: { connectorSuggestion
         </label>
         <label className="field">
           <span>Server URL (optional)</span>
-          <input name="serverUrl" type="url" placeholder="https://mcp.example.com" maxLength={512} />
+          <input
+            name="serverUrl"
+            type="url"
+            placeholder="https://mcp.example.com"
+            maxLength={512}
+          />
         </label>
         <label className="field">
           <span>Description (optional)</span>

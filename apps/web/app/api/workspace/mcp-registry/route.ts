@@ -11,10 +11,7 @@ async function handleGetApiWorkspaceMcpRegistry(request: Request) {
 
   let tools;
   try {
-    tools = await listMcpToolRegistry({
-      tenantId: scope.tenantId,
-      workspaceId: scope.workspaceId,
-    });
+    tools = await listMcpToolRegistry({ tenantId: scope.tenantId, workspaceId: scope.workspaceId });
   } catch (error) {
     console.error("[workspace/mcp-registry] listMcpToolRegistry failed", error);
     return withTraceId(
@@ -43,11 +40,15 @@ async function handlePostApiWorkspaceMcpRegistry(request: Request) {
   let body: Record<string, unknown>;
   try {
     const parsed = (await request.json()) as unknown;
-    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("not an object");
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed))
+      throw new Error("not an object");
     body = parsed as Record<string, unknown>;
   } catch {
     return withTraceId(
-      Response.json({ error: "Request body must be an object.", meta: makeMeta(traceId) }, { status: 400 }),
+      Response.json(
+        { error: "Request body must be an object.", meta: makeMeta(traceId) },
+        { status: 400 },
+      ),
       traceId,
     );
   }
@@ -67,7 +68,10 @@ async function handlePostApiWorkspaceMcpRegistry(request: Request) {
   if (missing.length) {
     return withTraceId(
       Response.json(
-        { error: `${missing.join(", ")} ${missing.length > 1 ? "are" : "is"} required.`, meta: makeMeta(traceId) },
+        {
+          error: `${missing.join(", ")} ${missing.length > 1 ? "are" : "is"} required.`,
+          meta: makeMeta(traceId),
+        },
         { status: 400 },
       ),
       traceId,
@@ -78,7 +82,10 @@ async function handlePostApiWorkspaceMcpRegistry(request: Request) {
   const serverUrl = text(body.serverUrl, 512) || null;
   if (serverUrl && !isHttpUrl(serverUrl)) {
     return withTraceId(
-      Response.json({ error: "serverUrl must be an http(s) URL.", meta: makeMeta(traceId) }, { status: 400 }),
+      Response.json(
+        { error: "serverUrl must be an http(s) URL.", meta: makeMeta(traceId) },
+        { status: 400 },
+      ),
       traceId,
     );
   }
@@ -112,7 +119,16 @@ async function handlePostApiWorkspaceMcpRegistry(request: Request) {
 
   return withTraceId(
     Response.json(
-      { id: result.id, created: result.created, serverName, toolName, connector, action, status, meta: makeMeta(traceId) },
+      {
+        id: result.id,
+        created: result.created,
+        serverName,
+        toolName,
+        connector,
+        action,
+        status,
+        meta: makeMeta(traceId),
+      },
       { status: result.created ? 201 : 200 },
     ),
     traceId,
