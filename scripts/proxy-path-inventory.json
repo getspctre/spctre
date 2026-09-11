@@ -198,6 +198,12 @@
   "/api/verification": { "sessionGate": "exempt", "sourceIpGate": "exempt" },
   "/api/workflow/config": { "sessionGate": "exempt", "sourceIpGate": "exempt" },
   "/api/workspace/mcp-policy": { "sessionGate": "exempt", "sourceIpGate": "exempt" },
+  "/api/workspace/mcp-registry": { "sessionGate": "gated", "sourceIpGate": "restricted" },
+  "/api/workspace/mcp-registry/grants": { "sessionGate": "gated", "sourceIpGate": "restricted" },
+  "/api/workspace/mcp-registry/grants/[grantId]": {
+    "sessionGate": "gated",
+    "sourceIpGate": "restricted"
+  },
   "/api/workspace/normalize": { "sessionGate": "gated", "sourceIpGate": "restricted" },
   "/api/workspaces": { "sessionGate": "exempt", "sourceIpGate": "exempt" }
 }

@@ -293,3 +293,43 @@ Evaluates whether a downstream MCP tool call is permitted and returns a cryptogr
 | `tool_arguments` | object | No | Arguments that will be passed to the downstream tool |
 
 **Returns:** `{ decision_id, outcome, reason, server_name, tool_name, connector, action, audit_seal, issued_at, capability, wrapper_contract }` — `wrapper_contract.execute_downstream` is `true` only when `outcome` is `ALLOW`.
+
+### Approving a tool before it can be called
+
+`authorize_mcp_tool_call` answers from the workspace's MCP tool registry: a tool
+that is not registered and granted is denied, and Spctre's own governance tools
+are the only ones available by default. A workspace with an empty registry can
+therefore call nothing downstream — the registry working as intended, but worth
+knowing before the first DENY.
+
+Registering and granting is an admin act, done under **Workspace administration
+→ MCP tool registry**, or through the API:
+
+```bash
+# Describe the tool. This authorizes nothing on its own.
+curl -X POST https://app.spctre.dev/api/workspace/mcp-registry \
+  -H 'content-type: application/json' \
+  -d '{"serverName":"github","toolName":"repo.read",
+       "connector":"github","action":"repo.read"}'
+
+# Grant it. Omit agentId for every agent in the workspace, and
+# environment for every environment.
+curl -X POST https://app.spctre.dev/api/workspace/mcp-registry/grants \
+  -H 'content-type: application/json' \
+  -d '{"registryId":"<id from the call above>","agentId":"deploy-bot",
+       "environment":"production"}'
+
+# Withdraw it. The next call for it is denied.
+curl -X DELETE https://app.spctre.dev/api/workspace/mcp-registry/grants/<grantId>
+```
+
+Both routes take an operator session and require the `Admin` reviewer role.
+Registering, granting and revoking are recorded in the operations log as
+`MCP_TOOL_REGISTERED`, `MCP_TOOL_GRANTED` and `MCP_TOOL_REVOKED` — approving a
+tool decides what a runtime may do, so it is audited rather than treated as
+configuration.
+
+A registered tool's connector is also added to the workspace's MCP connector
+allowlist, which the server enforces before it consults the gateway. The
+allowlist otherwise carries the runtime names the adapters use (`bedrock`,
+`langchain`, `crewai`, …) plus the connector of every installed policy pack.
