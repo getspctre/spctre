@@ -527,6 +527,7 @@ export class SpctreMcpServer {
   }
 
   private mcpPolicyLoaded = false;
+  private mcpPolicyLoadedAt = 0;
   private mcpPolicyCacheKey = "";
   private mcpPolicyRetryAfter = 0;
   private mcpPolicyInFlight: Promise<void> | null = null;
@@ -564,6 +565,20 @@ export class SpctreMcpServer {
   // every tool call.
   private static readonly MCP_POLICY_RETRY_BACKOFF_MS = 30_000;
 
+  // How long a successful policy fetch is reused before the next call refetches.
+  //
+  // Without a bound, a session that loaded the policy once kept it for the life
+  // of the process: granting an agent a tool changed nothing for any MCP server
+  // already running, with no expiry to wait out and no way to tell from the
+  // client which capabilities it was deciding against. A grant that does not
+  // take effect is not a grant.
+  //
+  // A minute is chosen against what this gate is: advisory, in front of the
+  // control plane's own enforcement on every call, so the cost of being a
+  // minute stale is bounded and the cost of refetching more often is paid on
+  // every tool call.
+  private static readonly MCP_POLICY_TTL_MS = 60_000;
+
   private async ensureMcpPolicyLoaded(
     options: { agentId?: string; environment?: string } = {},
   ): Promise<void> {
@@ -574,10 +589,18 @@ export class SpctreMcpServer {
     if (this.mcpPolicyCacheKey !== cacheKey) {
       this.mcpPolicyCacheKey = cacheKey;
       this.mcpPolicyLoaded = false;
+      this.mcpPolicyLoadedAt = 0;
       this.mcpPolicyRetryAfter = 0;
       this.mcpPolicyInFlight = null;
     }
-    if (this.mcpPolicyLoaded) return;
+    if (this.mcpPolicyLoaded) {
+      const age = Date.now() - this.mcpPolicyLoadedAt;
+      if (age < SpctreMcpServer.MCP_POLICY_TTL_MS) return;
+      // Expired. The previously loaded allowlists and capabilities stay in
+      // place while the refetch runs, so an expiry never widens this gate and a
+      // control-plane blip does not strand the session on env vars.
+      this.mcpPolicyLoaded = false;
+    }
     // Concurrent tool calls share one fetch rather than racing.
     if (this.mcpPolicyInFlight) return await this.mcpPolicyInFlight;
     if (Date.now() < this.mcpPolicyRetryAfter) return;
@@ -603,6 +626,7 @@ export class SpctreMcpServer {
       if (this.mcpPolicyCacheKey !== cacheKey) return;
       this.mergeMcpPolicyData(response.data ?? {});
       this.mcpPolicyLoaded = true;
+      this.mcpPolicyLoadedAt = Date.now();
       this.mcpPolicyRetryAfter = 0;
       emitTokenEvent("mcp.policy_loaded", {
         tools: this.policyAllowedTools?.length,

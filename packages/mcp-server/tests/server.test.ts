@@ -54,6 +54,7 @@ type PolicyGateInternals = {
   ensureMcpPolicyLoaded(options?: { agentId?: string; environment?: string }): Promise<void>;
   getWithAuth(path: string, params?: Record<string, unknown>): Promise<unknown>;
   mcpPolicyLoaded: boolean;
+  mcpPolicyLoadedAt: number;
   mcpPolicyCacheKey: string;
 };
 
@@ -65,6 +66,7 @@ function gateFor(config: SpctreConfig): PolicyGateInternals {
   // Skip the control-plane fetch; tests drive mergeMcpPolicyData directly.
   gate.mcpPolicyCacheKey = `${config.agentId}:production`;
   gate.mcpPolicyLoaded = true;
+  gate.mcpPolicyLoadedAt = Date.now();
   return gate;
 }
 
@@ -134,6 +136,54 @@ describe("MCP tool/connector allowlist gate", () => {
     expect(() => gate.assertConnectorAllowed("mcp")).toThrow(
       /not allowed by the workspace MCP policy/,
     );
+  });
+});
+
+// A capability granted in the control plane has to reach a server that is
+// already running. Before the TTL, a successful load was kept for the life of
+// the process: granting an agent a tool changed nothing for any MCP session
+// already up, with no expiry to wait out.
+describe("MCP policy cache lifetime", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("serves the cached policy inside the TTL and refetches after it", async () => {
+    vi.useFakeTimers();
+    const gate = new SpctreMcpServer(baseConfig) as unknown as PolicyGateInternals;
+    const fetchPolicy = vi
+      .fn()
+      .mockResolvedValue({ data: { allowedTools: ["get_policy_status"] } });
+    gate.getWithAuth = fetchPolicy;
+
+    await gate.ensureMcpPolicyLoaded();
+    await gate.ensureMcpPolicyLoaded();
+    expect(fetchPolicy).toHaveBeenCalledTimes(1);
+
+    vi.advanceTimersByTime(59_000);
+    await gate.ensureMcpPolicyLoaded();
+    expect(fetchPolicy).toHaveBeenCalledTimes(1);
+
+    vi.advanceTimersByTime(1_001);
+    await gate.ensureMcpPolicyLoaded();
+    expect(fetchPolicy).toHaveBeenCalledTimes(2);
+  });
+
+  // An expiry must never widen the gate: the previously loaded allowlist stays
+  // in force while the refetch runs and if it fails.
+  it("keeps enforcing the last known policy when the refetch fails", async () => {
+    vi.useFakeTimers();
+    const gate = new SpctreMcpServer(baseConfig) as unknown as PolicyGateInternals;
+    gate.getWithAuth = vi
+      .fn()
+      .mockResolvedValueOnce({ data: { allowedTools: ["get_policy_status"] } })
+      .mockRejectedValue(new Error("control plane unreachable"));
+
+    await gate.ensureMcpPolicyLoaded();
+    await expect(gate.assertToolAllowed("create_evidence_record")).rejects.toThrow(/not allowed/);
+
+    vi.advanceTimersByTime(61_000);
+    await expect(gate.assertToolAllowed("create_evidence_record")).rejects.toThrow(/not allowed/);
   });
 });
 
