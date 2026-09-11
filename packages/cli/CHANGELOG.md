@@ -1,5 +1,12 @@
 # @spctre/cli
 
+## 0.5.1
+
+### Patch Changes
+
+- Updated dependencies [8f80d92]
+  - @spctre/policy-schema@0.9.0
+
 ## 0.5.0
 
 ### Minor Changes
