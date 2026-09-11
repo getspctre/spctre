@@ -250,6 +250,9 @@ function UserDropdown({
                 <Link className="topNavAction" href="/admin/webhooks" role="menuitem">
                   Gateway webhooks
                 </Link>
+                <Link className="topNavAction" href="/admin/governed-mcp" role="menuitem">
+                  MCP tool registry
+                </Link>
               </section>
 
               <section className="topNavMenuGroup" aria-label="Organization administration">

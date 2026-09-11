@@ -290,6 +290,16 @@ export type OperationsLogEventType =
   | "VERIFICATION_RUN"
   | "ACTION_RECEIPT_ISSUED"
   | "COMPLIANCE_EXPORT"
+  | "USAGE_RECONCILED"
+  /**
+   * Governed MCP: a tool entered the workspace registry, or a grant that lets
+   * an agent call one was given or withdrawn. Approving a tool decides what a
+   * runtime may do, so it belongs in the operations log rather than in
+   * configuration history.
+   */
+  | "MCP_TOOL_REGISTERED"
+  | "MCP_TOOL_GRANTED"
+  | "MCP_TOOL_REVOKED"
   /**
    * A replayed gateway decision whose evaluation disagreed with the persisted
    * decision of record. The original row is never rewritten, so the divergence
