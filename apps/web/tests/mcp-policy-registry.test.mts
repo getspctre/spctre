@@ -9,11 +9,18 @@ const {
   getAuthSessionMock,
   getActiveScopeMock,
 } = vi.hoisted(() => {
-  const state = { registryRows: [] as any[] };
+  const state = { registryRows: [] as any[], connectorRows: [] as any[], connectorsFail: false };
 
   const fn = (...args: unknown[]): Promise<unknown[]> => {
     const strings = args[0] as TemplateStringsArray;
     const joined = Array.from(strings).join("").replace(/\s+/g, " ").trim().toUpperCase();
+    // The connector vocabulary reads both tables at once, so it has to be
+    // matched before the capability query it would otherwise look like.
+    if (joined.includes("FROM POLICY_BRANCH")) {
+      return state.connectorsFail
+        ? Promise.reject(new Error("connection reset"))
+        : Promise.resolve(state.connectorRows);
+    }
     if (joined.includes("FROM MCP_TOOL_REGISTRY")) {
       return Promise.resolve(state.registryRows);
     }
@@ -50,6 +57,8 @@ import { GET } from "../app/api/workspace/mcp-policy/route";
 describe("workspace MCP policy registry", () => {
   beforeEach(() => {
     state.registryRows = [];
+    state.connectorRows = [];
+    state.connectorsFail = false;
     hasBearerTokenMock.mockReset();
     authenticateServiceTokenMock.mockReset();
     getAuthSessionMock.mockReset();
@@ -123,6 +132,38 @@ describe("workspace MCP policy registry", () => {
         grantScope: "AGENT",
       }),
     ]);
+  });
+
+  // The MCP server checks this allowlist before it calls the gateway, so a
+  // connector missing from it is refused without a decision being made. It was
+  // a module constant of runtime names — bedrock, langchain, crewai — which is
+  // why a governed `github` tool call was denied on every deployment.
+  it("allows the connectors the tenant governs, not just the runtime defaults", async () => {
+    state.connectorRows = [{ connector: "github" }, { connector: "stripe" }];
+
+    const response = await GET(
+      createRouteRequest({ path: "/api/workspace/mcp-policy", method: "GET", token: "token" }),
+    );
+
+    expect(response.status).toBe(200);
+    const data = await response.json();
+    expect(data.allowedConnectors).toContain("github");
+    expect(data.allowedConnectors).toContain("stripe");
+    // Still a superset: adapters address the control plane by runtime name.
+    expect(data.allowedConnectors).toContain("langchain");
+  });
+
+  // Answering with the defaults would deny every connector the tenant
+  // installed, which is the failure this list exists to fix. A 503 leaves the
+  // MCP server on the policy it already cached instead.
+  it("fails the read rather than narrowing the allowlist", async () => {
+    state.connectorsFail = true;
+
+    const response = await GET(
+      createRouteRequest({ path: "/api/workspace/mcp-policy", method: "GET", token: "token" }),
+    );
+
+    expect(response.status).toBe(503);
   });
 
   it("returns a stable denial envelope when the service token is invalid", async () => {
