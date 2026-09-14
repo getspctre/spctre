@@ -12,7 +12,15 @@
  * is unique per (revision, reviewer), so the same reviewer approving twice
  * replaces their own decision rather than adding a second. Exercising the
  * reviewed path -- in the UI or through `approvals:write` -- therefore needs two
- * principals holding different reviewer roles. This creates them.
+ * principals holding different reviewer roles. This creates them, and the
+ * workflow that requires both.
+ *
+ * The workflow half is not optional. A workspace with no approval-workflow rows
+ * falls back to a single `Admin` approval (see `approvalRulesFromWorkflow`),
+ * which is the right default for the operator who just provisioned a tenant and
+ * is the wrong shape for this fixture: one reviewer satisfies it, so nothing
+ * about two seats is exercised. Seeding reviewers without seeding the workflow
+ * produces principals no workflow asks for.
  *
  * Idempotent: re-running updates the grants and rotates the keys.
  *
@@ -115,6 +123,36 @@ const REVIEWERS: SeedReviewer[] = [
 
 const sql = postgres(DATABASE_URL, { max: 1, onnotice: () => {} });
 
+/**
+ * Requires one approval from each seeded reviewer's role, replacing whatever
+ * the workspace had. Scoped to the workspace with no environment, which is the
+ * row `getApprovalWorkflowForContext` resolves for an unscoped branch.
+ */
+async function seedApprovalWorkflow(): Promise<string[]> {
+  const roles = REVIEWERS.flatMap((reviewer) => reviewer.reviewerRoles);
+
+  const [workflow] = await sql<{ id: string }[]>`
+    INSERT INTO approval_workflow_config (tenant_id, workspace_id, environment, name, review_mode)
+    VALUES (${TENANT_ID}, ${WORKSPACE_ID}, NULL, 'Seeded review workflow', 'PARALLEL')
+    ON CONFLICT (tenant_id, workspace_id, environment)
+      DO UPDATE SET name = EXCLUDED.name, review_mode = EXCLUDED.review_mode, enabled = true,
+                    updated_at = now()
+    RETURNING id
+  `;
+
+  // Rewritten rather than merged: a seed that only ever adds rules cannot
+  // narrow a workflow it widened on an earlier run.
+  await sql`DELETE FROM approval_workflow_rule WHERE workflow_id = ${workflow.id}`;
+  for (const [index, role] of roles.entries()) {
+    await sql`
+      INSERT INTO approval_workflow_rule (workflow_id, sequence, role, required_count, eligible_roles)
+      VALUES (${workflow.id}, ${index + 1}, ${role}, 1, ARRAY[${role}]::text[])
+    `;
+  }
+
+  return roles;
+}
+
 async function seedReviewer(
   reviewer: SeedReviewer,
 ): Promise<{ principalId: string; token: string }> {
@@ -200,6 +238,9 @@ async function publishKeys(body: string): Promise<void> {
 
 async function main() {
   console.log(`Seeding reviewers in workspace ${WORKSPACE_ID} (tenant ${TENANT_ID})\n`);
+
+  const roles = await seedApprovalWorkflow();
+  console.log(`Approval workflow requires: ${roles.join(", ")}\n`);
 
   const envLines: string[] = [];
   const publicLines: string[] = [];
