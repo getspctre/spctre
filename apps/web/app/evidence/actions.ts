@@ -42,11 +42,14 @@ export async function runSimulation(
   const branchId = (formData.get("branchId") as string | null) ?? "";
   const revisionId = (formData.get("revisionId") as string | null) ?? "";
 
-  const scope = await getActiveScope();
-  const { actor } = await getActiveActor(scope);
+  // The context the write check already resolved, rather than a second lookup:
+  // getActiveScope() re-reads the principal's workspaces, and the answer here
+  // must be the workspace whose write access was just verified.
+  const context = await getWorkspaceContext();
+  const { actor } = await getActiveActor(context);
   const result = await runSimulationDecision(
     { branchId, revisionId },
-    { ...scope, actorId: actor.id },
+    { tenantId: context.tenantId, workspaceId: context.workspaceId, actorId: actor.id },
   );
   if ("error" in result) {
     return result;
