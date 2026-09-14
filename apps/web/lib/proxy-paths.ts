@@ -78,6 +78,7 @@ export const SERVICE_API_PATHS = new Set([
   "/api/v1/policy/publishes",
   "/api/v1/policy/publishes/readiness",
   "/api/v1/approvals",
+  "/api/v1/simulations",
   "/api/v1/blueprint/imports",
   "/api/compliance/seal",
   "/api/internal/provisioning/tenant",

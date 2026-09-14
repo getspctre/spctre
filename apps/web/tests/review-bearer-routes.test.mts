@@ -9,9 +9,14 @@ const authenticateServiceTokenSpy = vi.fn();
 const addApprovalDecisionSpy = vi.fn();
 const publishRevisionDecisionSpy = vi.fn();
 const getPublishReadinessSpy = vi.fn();
+const runSimulationDecisionSpy = vi.fn();
 const tokenReviewActorSpy = vi.fn((principalId: string) => `resolver:${principalId}`);
 
 vi.mock("@/lib/service-tokens", () => ({ authenticateServiceToken: authenticateServiceTokenSpy }));
+
+vi.mock("@/lib/domains/evidence/service", () => ({
+  runSimulationDecision: runSimulationDecisionSpy,
+}));
 
 vi.mock("@/lib/domains/review/service", () => ({
   addApprovalDecision: addApprovalDecisionSpy,
@@ -23,6 +28,7 @@ vi.mock("@/lib/domains/review/service", () => ({
 const { POST: submitApproval } = await import("../app/api/v1/approvals/route");
 const { POST: publishRevision } = await import("../app/api/v1/policy/publishes/route");
 const { GET: readiness } = await import("../app/api/v1/policy/publishes/readiness/route");
+const { POST: runSimulation } = await import("../app/api/v1/simulations/route");
 
 const DEMO_TENANT = "00000000-0000-0000-0000-000000000001";
 const REGULAR_TENANT = "11111111-1111-4111-8111-111111111111";
@@ -54,6 +60,15 @@ beforeEach(() => {
   vi.clearAllMocks();
   addApprovalDecisionSpy.mockResolvedValue({ ok: true });
   publishRevisionDecisionSpy.mockResolvedValue({ artifactHash: "sha256:abc" });
+  runSimulationDecisionSpy.mockResolvedValue({
+    runId: "run-1",
+    branchId: "branch-1",
+    revisionId: "rev-1",
+    total: 12,
+    newlyDenied: 1,
+    newlyAllowed: 0,
+    unchanged: 11,
+  });
   getPublishReadinessSpy.mockResolvedValue({
     status: "READY",
     blockingReasons: [],
@@ -213,5 +228,75 @@ describe("GET /api/v1/policy/publishes/readiness", () => {
     );
 
     expect(response.status).toBe(400);
+  });
+});
+
+describe("POST /api/v1/simulations", () => {
+  function simulationRequest(body: unknown) {
+    return new Request("http://localhost/api/v1/simulations", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  }
+
+  it("requires the simulation:run scope", async () => {
+    authenticateServiceTokenSpy.mockResolvedValue({
+      ok: false,
+      error: "Token is missing simulation:run scope.",
+    });
+
+    const response = await runSimulation(
+      simulationRequest({ branchId: "branch-1", revisionId: "rev-1" }),
+    );
+
+    expect(response.status).toBe(401);
+    expect(authenticateServiceTokenSpy).toHaveBeenCalledWith(expect.anything(), "simulation:run");
+  });
+
+  it("attributes the run to the token's principal", async () => {
+    authenticateAs(REGULAR_TENANT, "principal-platform");
+
+    const response = await runSimulation(
+      simulationRequest({ branchId: "branch-1", revisionId: "rev-1" }),
+    );
+
+    expect(response.status).toBe(201);
+    await expect(response.json()).resolves.toMatchObject({ runId: "run-1", newlyDenied: 1 });
+    expect(runSimulationDecisionSpy).toHaveBeenCalledWith(
+      { branchId: "branch-1", revisionId: "rev-1" },
+      { tenantId: REGULAR_TENANT, workspaceId: "workspace-1", actorId: "principal-platform" },
+    );
+  });
+
+  it("separates nothing-to-replay from a failure", async () => {
+    authenticateAs(REGULAR_TENANT);
+    runSimulationDecisionSpy.mockResolvedValueOnce({
+      error: "No evidence or revision data available to simulate against.",
+    });
+
+    const empty = await runSimulation(
+      simulationRequest({ branchId: "branch-1", revisionId: "rev-1" }),
+    );
+    expect(empty.status).toBe(422);
+
+    runSimulationDecisionSpy.mockResolvedValueOnce({
+      error: "An unexpected error occurred during simulation.",
+    });
+    const failed = await runSimulation(
+      simulationRequest({ branchId: "branch-1", revisionId: "rev-1" }),
+    );
+    expect(failed.status).toBe(500);
+  });
+
+  it("refuses to replay for the demo tenant", async () => {
+    authenticateAs(DEMO_TENANT);
+
+    const response = await runSimulation(
+      simulationRequest({ branchId: "branch-1", revisionId: "rev-1" }),
+    );
+
+    expect(response.status).toBe(403);
+    expect(runSimulationDecisionSpy).not.toHaveBeenCalled();
   });
 });

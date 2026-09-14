@@ -32,6 +32,14 @@ vi.mock("@spctre/platform", () => ({
 
 const service = await import("../lib/domains/evidence/service");
 
+// Who is running the simulation and where. Supplied by the caller now: the
+// console reads it from the session, the API route from the token.
+const SIMULATION_CONTEXT = {
+  tenantId: "00000000-0000-0000-0000-000000000001",
+  workspaceId: "w1",
+  actorId: "maya-security",
+};
+
 describe("evidence simulation domain service", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -72,10 +80,10 @@ describe("evidence simulation domain service", () => {
   });
 
   it("persists and audits simulation runs", async () => {
-    const result = await service.runSimulationDecision({
-      branchId: "br-prod-support",
-      revisionId: "rev-8f12",
-    });
+    const result = await service.runSimulationDecision(
+      { branchId: "br-prod-support", revisionId: "rev-8f12" },
+      SIMULATION_CONTEXT,
+    );
 
     expect(result).toMatchObject({
       newlyDenied: 1,
@@ -104,18 +112,18 @@ describe("evidence simulation domain service", () => {
     );
   });
 
-  it("returns an explicit error instead of falling back to the demo tenant when workspace context is missing", async () => {
-    getWorkspaceContextSpy.mockRejectedValueOnce(new Error("missing context"));
+  it("binds the tenant the caller named rather than resolving one", async () => {
+    // The domain used to read the session for its workspace, which is why no
+    // bearer caller could reach it. The context is now an argument, so the run
+    // is attributed to the principal the caller names.
+    const result = await service.runSimulationDecision(
+      { branchId: "br-prod-support", revisionId: "rev-8f12" },
+      { ...SIMULATION_CONTEXT, actorId: "principal-from-token" },
+    );
 
-    const result = await service.runSimulationDecision({
-      branchId: "br-prod-support",
-      revisionId: "rev-8f12",
-    });
-
-    expect(result).toEqual({ error: "Workspace context unavailable." });
-    expect(getActiveActorSpy).not.toHaveBeenCalled();
-    expect(getEvidenceSimulationRunSpy).not.toHaveBeenCalled();
-    expect(persistSimulationRunSpy).not.toHaveBeenCalled();
-    expect(appendOperationsLogSpy).not.toHaveBeenCalled();
+    expect(result).not.toHaveProperty("error");
+    expect(appendOperationsLogSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ actorId: "principal-from-token" }),
+    );
   });
 });

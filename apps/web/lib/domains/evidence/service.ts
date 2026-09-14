@@ -1,5 +1,4 @@
 import { logger } from "@spctre/platform/logging";
-import { getActiveActor } from "@/lib/actors";
 import { getWorkspaceContext } from "@/lib/workspace";
 import { appendOperationsLog } from "@/lib/repositories/operations-log";
 import {
@@ -387,101 +386,107 @@ export type RunSimulationResult =
     }
   | { error: string };
 
-export async function runSimulationDecision(input: {
-  branchId: string;
-  revisionId: string;
-}): Promise<RunSimulationResult> {
+/**
+ * Who a simulation run is attributed to, and in which workspace.
+ *
+ * Taken from the caller rather than read here, because the two callers learn it
+ * differently: the console has a session, and `POST /api/v1/simulations` has a
+ * service token whose principal is the actor. The actor is attribution only --
+ * a simulation authorizes on the `simulation:run` scope, not on reviewer roles.
+ */
+export interface SimulationRunContext {
+  tenantId: string;
+  workspaceId: string;
+  actorId: string;
+}
+
+export async function runSimulationDecision(
+  input: { branchId: string; revisionId: string },
+  context: SimulationRunContext,
+): Promise<RunSimulationResult> {
   const started = Date.now();
   return await withSpan(
     "evidence.simulation.run",
     { "spctre.branch_id": input.branchId, "spctre.revision_id": input.revisionId },
     async (span) => {
-      const workspaceContext = await getWorkspaceContext().catch(
-        swallow("getWorkspaceContext", null),
-      );
-      if (!workspaceContext) {
-        recordDuration("spctre.evidence.simulation.duration", Date.now() - started, {
-          outcome: "missing_workspace_context",
-        });
-        return { error: "Workspace context unavailable." };
-      }
-      const { workspaceId, tenantId } = workspaceContext;
+      const { workspaceId, tenantId, actorId } = context;
 
-      try {
-        const { actor } = await getActiveActor({ workspaceId, tenantId }).catch(
-          swallow("getActiveActor", { actor: { id: "system", name: "system" } }),
-        );
+      // Bound here, not by the caller: a bearer request arrives with no tenant
+      // on the connection, and everything below reads and writes tenant-scoped
+      // rows. The console path binds the same tenant twice, which is a no-op.
+      return runWithTenantContext(tenantId, async () => {
+        try {
+          const run = await getEvidenceSimulationRun(
+            input.branchId || undefined,
+            input.revisionId || undefined,
+            workspaceId,
+            tenantId,
+            actorId,
+            { allowBulk: await isFeatureEntitled("bulkProductionSimulation", tenantId) },
+          );
+          if (!run) {
+            recordDuration("spctre.evidence.simulation.duration", Date.now() - started, {
+              outcome: "empty",
+            });
+            return { error: "No evidence or revision data available to simulate against." };
+          }
 
-        const run = await getEvidenceSimulationRun(
-          input.branchId || undefined,
-          input.revisionId || undefined,
-          workspaceId,
-          tenantId,
-          actor.id,
-          { allowBulk: await isFeatureEntitled("bulkProductionSimulation", tenantId) },
-        );
-        if (!run) {
-          recordDuration("spctre.evidence.simulation.duration", Date.now() - started, {
-            outcome: "empty",
+          const persistedRunId = await persistSimulationRun(run, workspaceId, tenantId).catch(
+            swallow("persistSimulationRun", null),
+          );
+          if (!persistedRunId) {
+            recordDuration("spctre.evidence.simulation.duration", Date.now() - started, {
+              outcome: "persistence_failed",
+            });
+            return { error: "Simulation completed but could not be saved. Please retry." };
+          }
+          appendOperationsLog({
+            tenantId,
+            workspaceId,
+            eventType: "SIMULATION_RUN",
+            sourceId: persistedRunId,
+            sourceTable: "simulation_run",
+            actorId,
+            payload: {
+              branchId: run.branchId,
+              revisionId: run.revisionId,
+              simulationRunId: persistedRunId,
+              sourceEventCount: run.sourceEventCount,
+              newlyDeniedCount: run.newlyDeniedCount,
+              newlyAllowedCount: run.newlyAllowedCount,
+              unchangedCount: run.unchangedCount,
+              regressionSummary: run.regressionSummary,
+              sampledEventIds: run.results.slice(0, 10).map((result) => result.eventId),
+            },
+          }).catch(swallow("appendOperationsLog", undefined));
+
+          span.setAttributes({
+            "spctre.simulation.total": run.sourceEventCount,
+            "spctre.simulation.newly_denied": run.newlyDeniedCount,
+            "spctre.simulation.newly_allowed": run.newlyAllowedCount,
           });
-          return { error: "No evidence or revision data available to simulate against." };
-        }
-
-        const persistedRunId = await persistSimulationRun(run, workspaceId, tenantId).catch(
-          swallow("persistSimulationRun", null),
-        );
-        if (!persistedRunId) {
           recordDuration("spctre.evidence.simulation.duration", Date.now() - started, {
-            outcome: "persistence_failed",
+            outcome: "success",
           });
-          return { error: "Simulation completed but could not be saved. Please retry." };
-        }
-        appendOperationsLog({
-          tenantId,
-          workspaceId,
-          eventType: "SIMULATION_RUN",
-          sourceId: persistedRunId,
-          sourceTable: "simulation_run",
-          actorId: actor.id,
-          payload: {
+          return {
+            newlyDenied: run.newlyDeniedCount,
+            newlyAllowed: run.newlyAllowedCount,
+            unchanged: run.unchangedCount,
+            total: run.sourceEventCount,
             branchId: run.branchId,
             revisionId: run.revisionId,
-            simulationRunId: persistedRunId,
-            sourceEventCount: run.sourceEventCount,
-            newlyDeniedCount: run.newlyDeniedCount,
-            newlyAllowedCount: run.newlyAllowedCount,
-            unchangedCount: run.unchangedCount,
-            regressionSummary: run.regressionSummary,
-            sampledEventIds: run.results.slice(0, 10).map((result) => result.eventId),
-          },
-        }).catch(swallow("appendOperationsLog", undefined));
-
-        span.setAttributes({
-          "spctre.simulation.total": run.sourceEventCount,
-          "spctre.simulation.newly_denied": run.newlyDeniedCount,
-          "spctre.simulation.newly_allowed": run.newlyAllowedCount,
-        });
-        recordDuration("spctre.evidence.simulation.duration", Date.now() - started, {
-          outcome: "success",
-        });
-        return {
-          newlyDenied: run.newlyDeniedCount,
-          newlyAllowed: run.newlyAllowedCount,
-          unchanged: run.unchangedCount,
-          total: run.sourceEventCount,
-          branchId: run.branchId,
-          revisionId: run.revisionId,
-          runId: persistedRunId,
-        };
-      } catch (error) {
-        logger.error("[runSimulationDecision] error:", {
-          error: error instanceof Error ? error.message : String(error),
-        });
-        recordDuration("spctre.evidence.simulation.duration", Date.now() - started, {
-          outcome: "error",
-        });
-        return { error: "An unexpected error occurred during simulation." };
-      }
+            runId: persistedRunId,
+          };
+        } catch (error) {
+          logger.error("[runSimulationDecision] error:", {
+            error: error instanceof Error ? error.message : String(error),
+          });
+          recordDuration("spctre.evidence.simulation.duration", Date.now() - started, {
+            outcome: "error",
+          });
+          return { error: "An unexpected error occurred during simulation." };
+        }
+      });
     },
   );
 }

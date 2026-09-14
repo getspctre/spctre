@@ -9,6 +9,7 @@ import {
 import { revalidatePaths } from "@/lib/platform/cache";
 import { verifyWriteAccess } from "@/lib/demo-guard";
 import { getActiveScope, getWorkspaceContext } from "@/lib/workspace";
+import { getActiveActor } from "@/lib/actors";
 import { swallow } from "@/lib/platform/swallow";
 
 export type SimulationState =
@@ -41,7 +42,15 @@ export async function runSimulation(
   const branchId = (formData.get("branchId") as string | null) ?? "";
   const revisionId = (formData.get("revisionId") as string | null) ?? "";
 
-  const result = await runSimulationDecision({ branchId, revisionId });
+  // The context the write check already resolved, rather than a second lookup:
+  // getActiveScope() re-reads the principal's workspaces, and the answer here
+  // must be the workspace whose write access was just verified.
+  const context = await getWorkspaceContext();
+  const { actor } = await getActiveActor(context);
+  const result = await runSimulationDecision(
+    { branchId, revisionId },
+    { tenantId: context.tenantId, workspaceId: context.workspaceId, actorId: actor.id },
+  );
   if ("error" in result) {
     return result;
   }
