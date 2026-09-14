@@ -3,6 +3,12 @@
 from .api_error import ApiError
 from .api_error_issues_item import ApiErrorIssuesItem
 from .api_meta import ApiMeta
+from .approval_decision_request import ApprovalDecisionRequest
+from .approval_decision_request_approval_status import (
+    ApprovalDecisionRequestApprovalStatus,
+)
+from .approval_decision_request_role import ApprovalDecisionRequestRole
+from .approval_decision_response import ApprovalDecisionResponse
 from .approval_response import ApprovalResponse
 from .approval_response_approval import ApprovalResponseApproval
 from .blueprint_import_request import BlueprintImportRequest
@@ -166,6 +172,15 @@ from .policy_import_request import PolicyImportRequest
 from .policy_import_request_scope import PolicyImportRequestScope
 from .policy_import_request_source_format import PolicyImportRequestSourceFormat
 from .policy_import_response import PolicyImportResponse
+from .policy_publish_readiness_response import PolicyPublishReadinessResponse
+from .policy_publish_readiness_response_approvals_item import (
+    PolicyPublishReadinessResponseApprovalsItem,
+)
+from .policy_publish_readiness_response_status import (
+    PolicyPublishReadinessResponseStatus,
+)
+from .policy_publish_request import PolicyPublishRequest
+from .policy_publish_response import PolicyPublishResponse
 from .publication_attestation_ingest_request import PublicationAttestationIngestRequest
 from .publication_attestation_ingest_request_attestation import (
     PublicationAttestationIngestRequestAttestation,
@@ -261,6 +276,10 @@ __all__ = (
     "ApiError",
     "ApiErrorIssuesItem",
     "ApiMeta",
+    "ApprovalDecisionRequest",
+    "ApprovalDecisionRequestApprovalStatus",
+    "ApprovalDecisionRequestRole",
+    "ApprovalDecisionResponse",
     "ApprovalResponse",
     "ApprovalResponseApproval",
     "BlueprintImportRequest",
@@ -360,6 +379,11 @@ __all__ = (
     "PolicyImportRequestScope",
     "PolicyImportRequestSourceFormat",
     "PolicyImportResponse",
+    "PolicyPublishReadinessResponse",
+    "PolicyPublishReadinessResponseApprovalsItem",
+    "PolicyPublishReadinessResponseStatus",
+    "PolicyPublishRequest",
+    "PolicyPublishResponse",
     "PublicationAttestationIngestRequest",
     "PublicationAttestationIngestRequestAttestation",
     "PublicationAttestationIngestRequestAttestationClassification",

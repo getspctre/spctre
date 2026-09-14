@@ -1,5 +1,4 @@
 import { assertTenantId } from "@/lib/tenant-id";
-import { parseBooleanEnvValue } from "@/lib/platform/config";
 import type { SpctrePlan } from "@/lib/feature-flags";
 
 export type SpctreRuntimeMode = "development" | "production";
@@ -12,7 +11,6 @@ export interface RuntimeConfig {
   demoTenantEnabled: boolean;
   singleTenantMode: boolean;
   defaultTenantId: string | null;
-  e2eApiEnabled: boolean;
 }
 
 const VALID_PLANS = new Set<SpctrePlan>(["oss", "cloud", "business", "enterprise"]);
@@ -51,16 +49,6 @@ function buildRuntimeConfig(env: NodeJS.ProcessEnv): RuntimeConfig {
   const demoTenantEnabled = parseBoolean(env, "SPCTRE_ENABLE_DEMO_TENANT");
   const singleTenantMode = parseBoolean(env, "SPCTRE_SINGLE_TENANT_MODE");
   const defaultTenantId = envValue(env, "SPCTRE_DEFAULT_TENANT_ID");
-  // Parsed leniently, matching getBooleanEnv, so this guard and the routes it
-  // protects cannot disagree about whether the flag is set.
-  const e2eApiEnabled = parseBooleanEnvValue(env.SPCTRE_E2E_API_ENABLED, false);
-
-  // The E2E support API drafts, approves and publishes policy revisions outside
-  // the reviewed path. It is a development affordance, so a production runtime
-  // refuses to start with it enabled rather than serving it behind one flag.
-  if (mode === "production" && e2eApiEnabled) {
-    throw new Error("SPCTRE_E2E_API_ENABLED cannot be set in a production runtime.");
-  }
   if (mode === "production" && !sessionGuardSecret) {
     throw new Error("SPCTRE_SESSION_GUARD_SECRET is required in production.");
   }
@@ -83,7 +71,6 @@ function buildRuntimeConfig(env: NodeJS.ProcessEnv): RuntimeConfig {
     demoTenantEnabled,
     singleTenantMode,
     defaultTenantId,
-    e2eApiEnabled,
   };
 }
 

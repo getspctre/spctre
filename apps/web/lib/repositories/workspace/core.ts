@@ -9,7 +9,7 @@ export async function insertAuthorizationDenialEvent(params: {
   reason: string;
   resourceType: string;
   resourceId?: string;
-  principalId?: string;
+  principalId?: string | null;
   workspaceId?: string | null;
 }): Promise<void> {
   if (!sql) return;

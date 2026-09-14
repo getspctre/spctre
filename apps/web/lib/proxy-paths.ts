@@ -75,6 +75,9 @@ export const SERVICE_API_PATHS = new Set([
   "/api/v1/verification",
   "/api/v1/openapi.json",
   "/api/v1/policy/imports",
+  "/api/v1/policy/publishes",
+  "/api/v1/policy/publishes/readiness",
+  "/api/v1/approvals",
   "/api/v1/blueprint/imports",
   "/api/compliance/seal",
   "/api/internal/provisioning/tenant",
@@ -102,7 +105,6 @@ export const SERVICE_API_PATHS = new Set([
 ]);
 
 export const SERVICE_API_PATH_PREFIXES = [
-  "/api/e2e/",
   "/api/scim/v2/",
   "/api/v1/scim/v2/",
   "/api/gateway-ingest/",
@@ -121,10 +123,8 @@ export const SERVICE_API_PATH_PREFIXES = [
 // This is deliberately NOT `SERVICE_API_PATHS`. That set answers a different
 // question — "may this proceed without a session cookie?" — and its members
 // include pre-auth bootstrap paths (`/api/onboarding/cli/start` accepts an
-// unauthenticated body) and the e2e policy routes, whose only guard is the
-// SPCTRE_E2E_API_ENABLED flag. Reusing it here would put both on the open
-// internet and reduce the e2e routes to a single boolean's worth of
-// protection. The two sets overlap; they are not the same judgement.
+// unauthenticated body). Reusing it here would put those on the open internet.
+// The two sets overlap; they are not the same judgement.
 //
 // Enumerated exactly, so the set fails closed: a route added under some future
 // `/api/agents/...` path is IP-restricted until someone deliberately lists it.

@@ -115,6 +115,14 @@ vi.mock("@spctre/policy-schema", async (importOriginal) => {
 
 const { publishRevisionDecision } = await import("../lib/domains/review/service");
 
+// The publishing reviewer. The domain no longer reads the session itself — the
+// caller says who is acting — so these tests supply the actor the same way the
+// server action and the bearer route do.
+const testActor = async () => ({
+  principalId: "actor-1",
+  actor: { id: "actor-1", role: "OWNER", name: "Owner" },
+});
+
 const BRANCH_ROW = {
   workspace_id: TEST_WORKSPACE_ID,
   scope: "WORKSPACE",
@@ -160,6 +168,7 @@ describe("Publish gating — approval not satisfied", () => {
     const result = await publishRevisionDecision(
       { branchId: "branch-1", revisionId: "rev-1" },
       { tenantId: TEST_TENANT_ID, workspaceId: TEST_WORKSPACE_ID },
+      testActor as never,
     );
     expect(result).toHaveProperty("error");
     if ("error" in result) {
@@ -189,6 +198,7 @@ describe("Publish gating — approval not satisfied", () => {
     const result = await publishRevisionDecision(
       { branchId: "branch-1", revisionId: "rev-1" },
       { tenantId: TEST_TENANT_ID, workspaceId: TEST_WORKSPACE_ID },
+      testActor as never,
     );
     if ("error" in result) {
       expect(result.error).toContain("Security");
@@ -232,6 +242,7 @@ describe("Publish gating — open gateway escalations", () => {
     const result = await publishRevisionDecision(
       { branchId: "branch-1", revisionId: "rev-1" },
       { tenantId: TEST_TENANT_ID, workspaceId: TEST_WORKSPACE_ID },
+      testActor as never,
     );
     expect(result).toHaveProperty("error");
     if ("error" in result) {
@@ -246,6 +257,7 @@ describe("Publish gating — open gateway escalations", () => {
     const result = await publishRevisionDecision(
       { branchId: "branch-1", revisionId: "rev-1" },
       { tenantId: TEST_TENANT_ID, workspaceId: TEST_WORKSPACE_ID },
+      testActor as never,
     );
 
     expect(result).toEqual({
@@ -261,6 +273,7 @@ describe("Publish gating — open gateway escalations", () => {
     const result = await publishRevisionDecision(
       { branchId: "branch-1", revisionId: "rev-1" },
       { tenantId: TEST_TENANT_ID, workspaceId: TEST_WORKSPACE_ID },
+      testActor as never,
     );
     expect(result).toHaveProperty("artifactHash");
   });
@@ -272,6 +285,7 @@ describe("Publish gating — open gateway escalations", () => {
     const result = await publishRevisionDecision(
       { branchId: "branch-1", revisionId: "rev-1" },
       { tenantId: TEST_TENANT_ID, workspaceId: TEST_WORKSPACE_ID },
+      testActor as never,
     );
     expect(result).toHaveProperty("artifactHash");
   });
@@ -288,6 +302,7 @@ describe("Publish gating — open gateway escalations", () => {
     const result = await publishRevisionDecision(
       { branchId: "branch-1", revisionId: "rev-1" },
       { tenantId: TEST_TENANT_ID, workspaceId: TEST_WORKSPACE_ID },
+      testActor as never,
     );
 
     expect(result).toEqual({ error: expect.stringMatching(/managed retained-log simulation/i) });
@@ -301,6 +316,7 @@ describe("Publish gating — open gateway escalations", () => {
     const result = await publishRevisionDecision(
       { branchId: "branch-1", revisionId: "rev-1" },
       { tenantId: TEST_TENANT_ID, workspaceId: TEST_WORKSPACE_ID },
+      testActor as never,
     );
 
     expect(result).toHaveProperty("artifactHash");
@@ -319,6 +335,7 @@ describe("Publish gating — open gateway escalations", () => {
     const result = await publishRevisionDecision(
       { branchId: "branch-1", revisionId: "rev-1" },
       { tenantId: TEST_TENANT_ID, workspaceId: TEST_WORKSPACE_ID },
+      testActor as never,
     );
 
     expect(result).toEqual({ error: expect.stringMatching(/6 regression/i) });

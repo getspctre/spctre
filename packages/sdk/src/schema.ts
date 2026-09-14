@@ -841,6 +841,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/approvals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Submit a review decision for a policy revision
+         * @description Records an approval or a change request against a policy revision, as the principal the token was issued to. Requires the `approvals:write` scope, which is admin-issuable only and never granted to runtime agent tokens — so a governed agent can never approve the policy that governs it. There is no actor field: the reviewer is read from the token, so a key can only review in the roles its own principal holds. An approval is unique per (revision, reviewer), so a workflow requiring two roles requires two keys held by two reviewers — the same rule the review console applies. 422 means the revision exists but the review state refused the decision, including when the principal holds no grant in the workspace.
+         */
+        post: operations["submitApproval"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/policy/publishes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Publish an approved policy revision
+         * @description Publishes a reviewed revision as the principal the token was issued to, for automation/CI. Requires the `publish:write` scope, which is admin-issuable only and never granted to runtime agent tokens. Every gate the review console applies applies here — required approvals, verification policy, rule validation, the evaluation request budget, managed-replay regressions, and unresolved gateway escalations — because this runs the same publish path. Idempotent: publishing an already-published revision returns its existing artifact hash. 422 carries the reason a revision is not publishable yet; poll `/policy/publishes/readiness` to learn that without attempting a publish.
+         */
+        post: operations["publishPolicyRevision"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/policy/publishes/readiness": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Report whether a revision can be published yet
+         * @description Runs the same readiness check the publish path runs and reports what is still blocking, without publishing anything. Requires only `approvals:read`. A READY answer is the answer `POST /policy/publishes` would act on.
+         */
+        get: operations["getPolicyPublishReadiness"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/blueprint/imports": {
         parameters: {
             query?: never;
@@ -1666,6 +1726,56 @@ export interface components {
             /** @description Optional AGT-compatible export target stacks recorded with the revision. */
             targetStacks?: string[];
         };
+        ApprovalDecisionRequest: {
+            /** @description The policy revision under review. */
+            revisionId: string;
+            /**
+             * @description The reviewer role this decision is cast in. The token's principal must hold it.
+             * @enum {string}
+             */
+            role: "Security" | "Platform" | "Legal" | "Ops" | "Admin";
+            /**
+             * @description The decision. Re-submitting replaces this reviewer's previous decision.
+             * @enum {string}
+             */
+            approvalStatus: "APPROVED" | "CHANGES_REQUESTED" | "PENDING";
+            /** @description Optional reviewer note recorded with the decision. */
+            note?: string;
+        };
+        ApprovalDecisionResponse: {
+            /** @enum {boolean} */
+            ok: true;
+            meta: components["schemas"]["ApiMeta"];
+        };
+        PolicyPublishRequest: {
+            /** @description The branch to publish from. */
+            branchId: string;
+            /** @description The reviewed revision to publish. */
+            revisionId: string;
+        };
+        PolicyPublishResponse: {
+            /** @description Content hash of the published artifact. Republishing the same revision returns the existing hash. */
+            artifactHash: string;
+            meta: components["schemas"]["ApiMeta"];
+        };
+        PolicyPublishReadinessResponse: {
+            /**
+             * @description Whether publishing this revision would be accepted right now.
+             * @enum {string}
+             */
+            status: "READY" | "BLOCKED";
+            /** @description Why it would be refused. Empty when READY. */
+            blockingReasons: string[];
+            /** @description Reviewer roles the workflow requires for this revision. */
+            requiredRoles: string[];
+            /** @description Decisions recorded so far, by reviewer and role. */
+            approvals: {
+                [key: string]: unknown;
+            }[];
+            /** @description Whether the workflow requires a verification run before publishing. */
+            verificationRequired: boolean;
+            meta: components["schemas"]["ApiMeta"];
+        };
         PolicyImportResponse: {
             branchId: string;
             revisionId: string;
@@ -1737,6 +1847,15 @@ export interface components {
         };
         /** @description Request body failed schema validation. */
         BadRequest: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ApiError"];
+            };
+        };
+        /** @description The request was understood, but the resource's current state refuses it — an unmet review gate rather than a malformed request. */
+        UnprocessableEntity: {
             headers: {
                 [name: string]: unknown;
             };
@@ -3286,6 +3405,92 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PolicyImportResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    submitApproval: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApprovalDecisionRequest"];
+            };
+        };
+        responses: {
+            /** @description Decision recorded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApprovalDecisionResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    publishPolicyRevision: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PolicyPublishRequest"];
+            };
+        };
+        responses: {
+            /** @description Revision published. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PolicyPublishResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    getPolicyPublishReadiness: {
+        parameters: {
+            query: {
+                /** @description The branch the revision belongs to. */
+                branchId: string;
+                /** @description The revision to evaluate. */
+                revisionId: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Publish readiness for the revision. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PolicyPublishReadinessResponse"];
                 };
             };
             400: components["responses"]["BadRequest"];

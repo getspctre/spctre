@@ -106,3 +106,5 @@ Import is **idempotent** on the branch identity `(workspace, scope, environment,
 | Source changed | New draft revision appended to the same branch (`200`) |
 
 Import **only drafts** a branch/revision — it never approves or publishes, and the currently published bundle is unchanged until someone re-publishes. Review and approve the draft in the control plane (**Policies → Review**), then publish it.
+
+A pipeline can drive the rest of that path too, under its own scopes and as its own reviewer principals — see [Review & Publish](/docs/developer/policies/review#reviewing-and-publishing-from-ci).

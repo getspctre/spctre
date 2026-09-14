@@ -36,6 +36,10 @@ const exempt = new Map([
     "apps/web/lib/domains/packs/service.ts::upsertAdapterDeclarationForWorkspace",
     "session-only-write",
   ],
+  // Resolves the acting reviewer, and is only ever invoked from inside the
+  // review domain's own runWithTenantContext — the workspace it looks the
+  // principal up in is not known until the revision or branch has been read.
+  ["apps/web/lib/domains/review/actor.ts::tokenReviewActor", "called-inside-caller-binding"],
 ]);
 
 const BEARER_ROUTE = /resolveRouteScope\s*\(|authenticateServiceToken\s*\(/;

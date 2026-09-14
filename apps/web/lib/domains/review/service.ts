@@ -7,7 +7,10 @@ export type { BlastRadius, BranchRevision } from "@/lib/repositories/policy";
 
 export { addApprovalDecision, getApprovalDetail, listPendingApprovals } from "./approvals";
 
-export { publishRevisionDecision } from "./publish";
+export { getPublishReadiness, publishRevisionDecision } from "./publish";
+export type { PublishReadiness } from "./publish";
+export { sessionReviewActor, tokenReviewActor } from "./actor";
+export type { ReviewActorResolution, ReviewActorResolver } from "./actor";
 
 export {
   type DraftRevisionState,

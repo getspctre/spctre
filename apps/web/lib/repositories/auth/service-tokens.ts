@@ -11,11 +11,12 @@ export type ServiceTokenScope =
   | "compliance:read"
   | "simulation:run"
   | "approvals:read"
+  | "approvals:write"
+  | "publish:write"
   | "operations:read"
   | "workflow:read"
   | "members:read"
   | "workspaces:read"
-  | "e2e:write"
   | "evidence:export"
   | "evidence:read"
   | "evidence:manage";
@@ -37,18 +38,21 @@ export const ALL_API_KEY_SCOPES: ServiceTokenScope[] = [
   "compliance:read",
   "simulation:run",
   "approvals:read",
+  "approvals:write",
+  "publish:write",
   "operations:read",
   "workflow:read",
   "members:read",
   "workspaces:read",
-  "e2e:write",
   "evidence:export",
   "evidence:read",
   "evidence:manage",
 ];
-export const ADMIN_ISSUABLE_API_KEY_SCOPES: ServiceTokenScope[] = ALL_API_KEY_SCOPES.filter(
-  (scope) => scope !== "e2e:write",
-);
+// Every API-key scope is admin-issuable. `approvals:write` and `publish:write`
+// are no exception and are not an escalation: a key acts as the principal it
+// was issued to, so it can only approve in the roles that principal already
+// holds and can only publish what that principal could publish in the UI.
+export const ADMIN_ISSUABLE_API_KEY_SCOPES: ServiceTokenScope[] = [...ALL_API_KEY_SCOPES];
 
 export interface ServiceTokenAuth {
   tokenId: string;

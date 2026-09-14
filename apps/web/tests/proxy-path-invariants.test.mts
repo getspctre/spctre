@@ -106,10 +106,11 @@ describe("proxy path invariants", () => {
     expect(overlap).toEqual([]);
   });
 
-  it("keeps the e2e policy routes off the machine API", () => {
-    // Their only guard is SPCTRE_E2E_API_ENABLED. The allowlist is the second
-    // layer that keeps a misconfigured flag from becoming anonymous policy
-    // publish, so it has to stay in front of them.
+  it("keeps a retired support surface from reappearing on the machine API", () => {
+    // /api/e2e/* drafted, approved and published outside the reviewed path
+    // behind one boolean. It is gone: drafting is `policy:import`, and
+    // approving and publishing are scoped routes under /api/v1 that authorize
+    // the token's own principal. Nothing should reintroduce the prefix.
     const exposed = [...MACHINE_API_PATHS].filter((pathname) => pathname.startsWith("/api/e2e/"));
 
     expect(exposed).toEqual([]);
