@@ -131,10 +131,19 @@ const sql = postgres(DATABASE_URL, { max: 1, onnotice: () => {} });
 async function seedApprovalWorkflow(): Promise<string[]> {
   const roles = REVIEWERS.flatMap((reviewer) => reviewer.reviewerRoles);
 
+  // Conflict target is the expression index, not the plain unique constraint on
+  // (tenant_id, workspace_id, environment). This row has a NULL environment, and
+  // NULLs are distinct to a plain constraint -- so that target never matches,
+  // the statement falls through to an INSERT, and the expression index rejects
+  // it. The seed worked exactly once per workspace before this.
   const [workflow] = await sql<{ id: string }[]>`
     INSERT INTO approval_workflow_config (tenant_id, workspace_id, environment, name, review_mode)
     VALUES (${TENANT_ID}, ${WORKSPACE_ID}, NULL, 'Seeded review workflow', 'PARALLEL')
-    ON CONFLICT (tenant_id, workspace_id, environment)
+    ON CONFLICT (
+      tenant_id,
+      COALESCE(workspace_id, '00000000-0000-0000-0000-000000000000'::uuid),
+      COALESCE(environment, '')
+    )
       DO UPDATE SET name = EXCLUDED.name, review_mode = EXCLUDED.review_mode, enabled = true,
                     updated_at = now()
     RETURNING id
