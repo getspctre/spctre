@@ -186,9 +186,7 @@ export async function emitRegistry(repoRoot: string, specRevision: string): Prom
       url: artifactUrl(artifact),
       path,
       sha256: sha256(join(repoRoot, path)),
-      ...("immutable" in artifact && artifact.immutable === false
-        ? { immutable: false }
-        : {}),
+      ...("immutable" in artifact && artifact.immutable === false ? { immutable: false } : {}),
     };
   });
 
