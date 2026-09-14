@@ -54,7 +54,7 @@ const LABEL = "e2e-test-token";
 
 // Must match the service_token_scopes_check constraint (latest migration).
 // Deliberately read-and-runtime only: drafting, approving and publishing are
-// the reviewer keys' job, and those come from seed-review-principals.ts so that
+// the reviewer keys' job, and those come from db/seeds/review-principals.ts so
 // each approval belongs to a principal that actually holds the role.
 const ALL_SCOPES = [
   "bundle:read",

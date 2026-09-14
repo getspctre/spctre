@@ -2,6 +2,12 @@
 /**
  * Seeds two reviewer principals in a workspace and issues one API key to each.
  *
+ * Lives beside the migrations because it needs the same credential they do: the
+ * tables it writes are RLS-scoped, so it runs on the owner connection. That is
+ * also why it ships in the migrate image -- `db/` is copied wholesale -- and can
+ * therefore be run inside a deployed environment's VPC without opening a path
+ * to the database from anywhere else.
+ *
  * A two-role approval workflow cannot be satisfied by one identity: an approval
  * is unique per (revision, reviewer), so the same reviewer approving twice
  * replaces their own decision rather than adding a second. Exercising the
@@ -11,12 +17,17 @@
  * Idempotent: re-running updates the grants and rotates the keys.
  *
  * Usage (local):
- *   pnpm --filter @spctre/web exec tsx scripts/seed-review-principals.ts
+ *   pnpm exec tsx db/seeds/review-principals.ts
  *
- * Usage (a deployed environment), through a Cloud SQL Auth Proxy or equivalent
- * -- the database is not reachable from the internet by design:
- *   DATABASE_URL=... SPCTRE_SEED_TENANT_ID=... SPCTRE_SEED_WORKSPACE_ID=... \
- *     pnpm --filter @spctre/web exec tsx scripts/seed-review-principals.ts
+ * Usage (a deployed environment) -- as a task on the migrate job, which already
+ * holds the owner connection and sits inside the VPC. The database has no public
+ * address, so this is the supported path rather than a workaround:
+ *
+ *   gcloud run jobs execute <prefix>-migrate --region <region> --wait \
+ *     --args="node_modules/.bin/tsx,db/seeds/review-principals.ts" \
+ *     --update-env-vars=SPCTRE_SEED_TENANT_ID=...,SPCTRE_SEED_WORKSPACE_ID=...
+ *
+ * The overrides apply to that execution only; the job keeps running migrations.
  *
  * Reads DATABASE_URL from (in order): shell env -> .env.local -> .env.
  */
@@ -27,10 +38,10 @@ import { fileURLToPath } from "node:url";
 import { randomBytes, createHash } from "node:crypto";
 import postgres from "postgres";
 
-const appRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 for (const file of [".env.local", ".env"]) {
   try {
-    const content = readFileSync(resolve(appRoot, file), "utf8");
+    const content = readFileSync(resolve(repoRoot, file), "utf8");
     for (const line of content.split("\n")) {
       const stripped = line.trim();
       if (!stripped || stripped.startsWith("#")) continue;
@@ -161,6 +172,11 @@ async function main() {
     console.log(`${reviewer.envVar.replace(/_TOKEN$/, "_EMAIL")}=${reviewer.email}\n`);
   }
   console.log("Copy the lines above into spctre-e2e/.env (or .env.staging).");
+  console.log(
+    "\nThese are live bearer tokens. Run as a job, they are written to that\n" +
+      "execution's logs -- treat the log entry accordingly. Re-running this seed\n" +
+      "deletes each key and issues a new one, which is also how you rotate them.",
+  );
 }
 
 main()

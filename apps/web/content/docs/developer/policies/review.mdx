@@ -68,4 +68,18 @@ curl -sS -X POST https://app.spctre.dev/api/v1/policy/publishes \
   `approvals:write` and `publish:write` are **admin-issuable only** and are **never** granted to a runtime agent token from `spctre init`. A governed agent cannot approve or publish the policy that governs it.
 </Callout>
 
+### Reviewer identities
+
+Two reviewers are needed for a workflow that requires two roles, and each needs their own key. `db/seeds/review-principals.ts` creates a Security reviewer and a Platform reviewer with a key each — only the second carrying `publish:write`, because publishing is a separate authority.
+
+It lives beside the migrations because it needs the same credential they do: the tables it writes are row-level-scoped, so it runs on the owner connection. It therefore ships inside the migrate image and can be run as a task on the migrate job, inside the deployment's own network, rather than by opening a path to the database:
+
+```bash
+gcloud run jobs execute <prefix>-migrate --region <region> --wait \
+  --args="node_modules/.bin/tsx,db/seeds/review-principals.ts" \
+  --update-env-vars=SPCTRE_SEED_TENANT_ID=...,SPCTRE_SEED_WORKSPACE_ID=...
+```
+
+The overrides apply to that execution only; the job goes on running migrations. It prints the keys, so on a deployed environment they land in that execution's logs — re-running the seed reissues them, which is also the rotation path.
+
 Every gate the console applies applies here, because it is the same publish path: required approvals, verification policy, rule validation, the evaluation request budget, managed-replay regressions, and unresolved gateway escalations. A revision that is not ready answers `422` with the reason rather than publishing. Publishing an already-published revision returns its existing `artifactHash`, so a retried pipeline step is safe.
