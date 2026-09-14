@@ -1,5 +1,11 @@
 # @spctre/sdk
 
+## 0.9.0
+
+### Minor Changes
+
+- a2852f6: Add the policy review and publish endpoints to the generated client: `POST /approvals`, `POST /policy/publishes`, and `GET /policy/publishes/readiness`. A pipeline can now approve and publish through the reviewed path, as the reviewer principal its key belongs to, rather than through a support API that bypassed review.
+
 ## 0.8.0
 
 ### Minor Changes
