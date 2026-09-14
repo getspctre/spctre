@@ -58,8 +58,12 @@ const TENANT_ID = process.env.SPCTRE_SEED_TENANT_ID ?? "00000000-0000-0000-0000-
 const WORKSPACE_ID = process.env.SPCTRE_SEED_WORKSPACE_ID ?? "00000000-0000-0000-0000-000000000002";
 
 interface SeedReviewer {
-  subject: string;
   displayName: string;
+  /**
+   * Also the principal's `subject`. A magic-link sign-in carries both, and the
+   * tenant provisioner keeps them equal; matching that here means a seeded
+   * reviewer can hold a browser session as well as a key.
+   */
   email: string;
   reviewerRoles: string[];
   publishScopes: string[];
@@ -70,7 +74,6 @@ interface SeedReviewer {
 
 const REVIEWERS: SeedReviewer[] = [
   {
-    subject: "seed:review-security",
     displayName: "Seed Security Reviewer",
     email: "seed-security-reviewer@spctre.invalid",
     reviewerRoles: ["Security"],
@@ -79,7 +82,6 @@ const REVIEWERS: SeedReviewer[] = [
     envVar: "SPCTRE_SECURITY_REVIEWER_TOKEN",
   },
   {
-    subject: "seed:review-platform",
     displayName: "Seed Platform Reviewer",
     email: "seed-platform-reviewer@spctre.invalid",
     reviewerRoles: ["Platform"],
@@ -91,11 +93,13 @@ const REVIEWERS: SeedReviewer[] = [
 
 const sql = postgres(DATABASE_URL, { max: 1, onnotice: () => {} });
 
-async function seedReviewer(reviewer: SeedReviewer): Promise<string> {
+async function seedReviewer(
+  reviewer: SeedReviewer,
+): Promise<{ principalId: string; token: string }> {
   const [principal] = await sql<{ id: string }[]>`
     INSERT INTO app_principal (tenant_id, subject, display_name, email, auth_method, org_role)
-    VALUES (${TENANT_ID}, ${reviewer.subject}, ${reviewer.displayName}, ${reviewer.email},
-            'SESSION', 'REVIEWER')
+    VALUES (${TENANT_ID}, ${reviewer.email}, ${reviewer.displayName}, ${reviewer.email},
+            'MAGIC_LINK', 'REVIEWER')
     ON CONFLICT (tenant_id, subject)
       DO UPDATE SET display_name = EXCLUDED.display_name, email = EXCLUDED.email
     RETURNING id
@@ -126,7 +130,7 @@ async function seedReviewer(reviewer: SeedReviewer): Promise<string> {
     ...(reviewer.canPublish ? ["publish:write"] : []),
   ];
 
-  const label = `${reviewer.subject}-key`;
+  const label = `${reviewer.email}-key`;
   await sql`
     DELETE FROM service_token
     WHERE tenant_id = ${TENANT_ID} AND workspace_id = ${WORKSPACE_ID} AND label = ${label}
@@ -144,15 +148,17 @@ async function seedReviewer(reviewer: SeedReviewer): Promise<string> {
     )
   `;
 
-  return rawToken;
+  return { principalId: principal.id, token: rawToken };
 }
 
 async function main() {
   console.log(`Seeding reviewers in workspace ${WORKSPACE_ID} (tenant ${TENANT_ID})\n`);
   for (const reviewer of REVIEWERS) {
-    const token = await seedReviewer(reviewer);
+    const { principalId, token } = await seedReviewer(reviewer);
     console.log(`# ${reviewer.displayName} -- roles: ${reviewer.reviewerRoles.join(", ")}`);
-    console.log(`${reviewer.envVar}=${token}\n`);
+    console.log(`${reviewer.envVar}=${token}`);
+    console.log(`${reviewer.envVar.replace(/_TOKEN$/, "_PRINCIPAL_ID")}=${principalId}`);
+    console.log(`${reviewer.envVar.replace(/_TOKEN$/, "_EMAIL")}=${reviewer.email}\n`);
   }
   console.log("Copy the lines above into spctre-e2e/.env (or .env.staging).");
 }
