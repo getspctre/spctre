@@ -182,12 +182,18 @@ async function seedReviewer(
 
   // The key inherits this principal, so it can only ever approve in the roles
   // granted above -- the token is a delegated credential, not an escalation.
+  // What driving the reviewed path actually takes, end to end. `workspaces:read`
+  // because a caller has to resolve the workspace it is acting in, and
+  // `simulation:run` on the publisher because publishing is blocked until a
+  // managed replay exists wherever the plan entitles bulk simulation -- a key
+  // that can publish but cannot replay stops at a gate it cannot satisfy.
   const scopes = [
     "bundle:read",
+    "workspaces:read",
     "approvals:read",
     "approvals:write",
     "policy:import",
-    ...(reviewer.canPublish ? ["publish:write"] : []),
+    ...(reviewer.canPublish ? ["publish:write", "simulation:run"] : []),
   ];
 
   const label = `${reviewer.email}-key`;
