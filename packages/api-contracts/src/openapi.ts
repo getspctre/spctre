@@ -26,7 +26,7 @@ export const SPCTRE_OPENAPI_SPEC = {
   // resets and never decreases; a new API version restarts it at `.1`.
   // Published alongside the artifact digests in the schema-registry manifest,
   // so a consumer can tell two builds of the same API version apart.
-  "x-spctre-spec-revision": "2026-01.1",
+  "x-spctre-spec-revision": "2026-01.2",
 
   info: {
     title: "Spctre API",
