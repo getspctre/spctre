@@ -46,7 +46,7 @@ importers:
         version: 3.0.2
       '@openapitools/openapi-generator-cli':
         specifier: ^2.41.0
-        version: 2.41.0(debug@4.4.3(supports-color@10.2.2))(supports-color@10.2.2)
+        version: 2.41.0(supports-color@10.2.2)
       '@vitest/coverage-v8':
         specifier: ^4.1.11
         version: 4.1.11(vitest@4.1.11)
@@ -75,14 +75,14 @@ importers:
   apps/docs:
     dependencies:
       fumadocs-core:
-        specifier: 16.15.7
-        version: 16.15.7(@mdx-js/mdx@3.1.1(supports-color@10.2.2))(@types/estree-jsx@1.0.5)(@types/hast@3.0.5)(@types/mdast@4.0.4)(@types/react@19.2.17)(lucide-react@1.41.0(react@19.2.8))(next@16.3.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@types/node@26.4.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@10.2.2)(zod@4.5.1)
+        specifier: 16.15.9
+        version: 16.15.9(@mdx-js/mdx@3.1.1(supports-color@10.2.2))(@modelcontextprotocol/server@2.0.0)(@types/estree-jsx@1.0.5)(@types/hast@3.0.5)(@types/mdast@4.0.4)(@types/react@19.2.17)(lucide-react@1.41.0(react@19.2.8))(next@16.3.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@types/node@26.4.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@10.2.2)(zod@4.5.1)
       fumadocs-mdx:
         specifier: 15.4.0
-        version: 15.4.0(@types/mdast@4.0.4)(@types/mdx@2.0.14)(@types/react@19.2.17)(fumadocs-core@16.15.7(@mdx-js/mdx@3.1.1(supports-color@10.2.2))(@types/estree-jsx@1.0.5)(@types/hast@3.0.5)(@types/mdast@4.0.4)(@types/react@19.2.17)(lucide-react@1.41.0(react@19.2.8))(next@16.3.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@types/node@26.4.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@10.2.2)(zod@4.5.1))(next@16.3.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@types/node@26.4.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8)(rolldown@1.2.4)(supports-color@10.2.2)(vite@8.2.1(@types/node@26.4.1)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
+        version: 15.4.0(@types/mdast@4.0.4)(@types/mdx@2.0.14)(@types/react@19.2.17)(fumadocs-core@16.15.9(@mdx-js/mdx@3.1.1(supports-color@10.2.2))(@modelcontextprotocol/server@2.0.0)(@types/estree-jsx@1.0.5)(@types/hast@3.0.5)(@types/mdast@4.0.4)(@types/react@19.2.17)(lucide-react@1.41.0(react@19.2.8))(next@16.3.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@types/node@26.4.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@10.2.2)(zod@4.5.1))(next@16.3.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@types/node@26.4.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8)(rolldown@1.2.4)(supports-color@10.2.2)(vite@8.2.1(@types/node@26.4.1)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
       fumadocs-ui:
-        specifier: 16.15.7
-        version: 16.15.7(@types/mdx@2.0.14)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(fumadocs-core@16.15.7(@mdx-js/mdx@3.1.1(supports-color@10.2.2))(@types/estree-jsx@1.0.5)(@types/hast@3.0.5)(@types/mdast@4.0.4)(@types/react@19.2.17)(lucide-react@1.41.0(react@19.2.8))(next@16.3.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@types/node@26.4.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@10.2.2)(zod@4.5.1))(next@16.3.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@types/node@26.4.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+        specifier: 16.15.9
+        version: 16.15.9(@types/mdx@2.0.14)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(fumadocs-core@16.15.9(@mdx-js/mdx@3.1.1(supports-color@10.2.2))(@modelcontextprotocol/server@2.0.0)(@types/estree-jsx@1.0.5)(@types/hast@3.0.5)(@types/mdast@4.0.4)(@types/react@19.2.17)(lucide-react@1.41.0(react@19.2.8))(next@16.3.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@types/node@26.4.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@10.2.2)(zod@4.5.1))(next@16.3.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@types/node@26.4.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       lucide-react:
         specifier: 1.41.0
         version: 1.41.0(react@19.2.8)
@@ -145,11 +145,11 @@ importers:
         specifier: ^12.18.0
         version: 12.18.0
       fumadocs-core:
-        specifier: ^16.15.7
-        version: 16.15.7(@mdx-js/mdx@3.1.1(supports-color@10.2.2))(@types/estree-jsx@1.0.5)(@types/hast@3.0.5)(@types/mdast@4.0.4)(@types/react@19.2.17)(lucide-react@1.41.0(react@19.2.8))(next@16.3.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@types/node@26.4.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@10.2.2)(zod@4.4.3)
+        specifier: ^16.15.9
+        version: 16.15.9(@mdx-js/mdx@3.1.1(supports-color@10.2.2))(@modelcontextprotocol/server@2.0.0)(@types/estree-jsx@1.0.5)(@types/hast@3.0.5)(@types/mdast@4.0.4)(@types/react@19.2.17)(lucide-react@1.41.0(react@19.2.8))(next@16.3.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@types/node@26.4.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@10.2.2)(zod@4.4.3)
       fumadocs-ui:
-        specifier: ^16.15.7
-        version: 16.15.7(@types/mdx@2.0.14)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(fumadocs-core@16.15.7(@mdx-js/mdx@3.1.1(supports-color@10.2.2))(@types/estree-jsx@1.0.5)(@types/hast@3.0.5)(@types/mdast@4.0.4)(@types/react@19.2.17)(lucide-react@1.41.0(react@19.2.8))(next@16.3.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@types/node@26.4.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@10.2.2)(zod@4.4.3))(next@16.3.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@types/node@26.4.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+        specifier: ^16.15.9
+        version: 16.15.9(@types/mdx@2.0.14)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(fumadocs-core@16.15.9(@mdx-js/mdx@3.1.1(supports-color@10.2.2))(@modelcontextprotocol/server@2.0.0)(@types/estree-jsx@1.0.5)(@types/hast@3.0.5)(@types/mdast@4.0.4)(@types/react@19.2.17)(lucide-react@1.41.0(react@19.2.8))(next@16.3.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@types/node@26.4.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@10.2.2)(zod@4.4.3))(next@16.3.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@types/node@26.4.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       jose:
         specifier: ^6.2.8
         version: 6.2.8
@@ -189,7 +189,7 @@ importers:
         version: 19.2.3(@types/react@19.2.17)
       fumadocs-mdx:
         specifier: ^15.4.0
-        version: 15.4.0(@types/mdast@4.0.4)(@types/mdx@2.0.14)(@types/react@19.2.17)(fumadocs-core@16.15.7(@mdx-js/mdx@3.1.1(supports-color@10.2.2))(@types/estree-jsx@1.0.5)(@types/hast@3.0.5)(@types/mdast@4.0.4)(@types/react@19.2.17)(lucide-react@1.41.0(react@19.2.8))(next@16.3.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@types/node@26.4.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@10.2.2)(zod@4.4.3))(next@16.3.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@types/node@26.4.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8)(rolldown@1.2.4)(supports-color@10.2.2)(vite@8.2.1(@types/node@26.4.1)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
+        version: 15.4.0(@types/mdast@4.0.4)(@types/mdx@2.0.14)(@types/react@19.2.17)(fumadocs-core@16.15.9(@mdx-js/mdx@3.1.1(supports-color@10.2.2))(@modelcontextprotocol/server@2.0.0)(@types/estree-jsx@1.0.5)(@types/hast@3.0.5)(@types/mdast@4.0.4)(@types/react@19.2.17)(lucide-react@1.41.0(react@19.2.8))(next@16.3.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@types/node@26.4.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@10.2.2)(zod@4.4.3))(next@16.3.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@types/node@26.4.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8)(rolldown@1.2.4)(supports-color@10.2.2)(vite@8.2.1(@types/node@26.4.1)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
       typescript:
         specifier: ^6.0.3
         version: 6.0.3
@@ -402,7 +402,7 @@ importers:
         version: 7.0.93(zod@4.4.3)
       genkit:
         specifier: 1.41.0
-        version: 1.41.0(@google-cloud/firestore@8.7.0(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(supports-color@10.2.2)
+        version: 1.41.0(@google-cloud/firestore@7.11.6(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(supports-color@10.2.2)
       typescript:
         specifier: ^6.0.3
         version: 6.0.3
@@ -455,7 +455,7 @@ importers:
         version: 10.5.10(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(esbuild@0.28.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(storybook@10.5.10(@types/react@19.2.17)(prettier@3.9.6)(react@19.2.8))(supports-color@10.2.2)(typescript@6.0.3)(vite@8.2.1(@types/node@26.4.1)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
       '@storybook/test-runner':
         specifier: ^0.24.5
-        version: 0.24.5(@swc/helpers@0.5.23)(@types/node@26.4.1)(debug@4.4.3(supports-color@10.2.2))(storybook@10.5.10(@types/react@19.2.17)(prettier@3.9.6)(react@19.2.8))(supports-color@10.2.2)
+        version: 0.24.5(@swc/helpers@0.5.23)(@types/node@26.4.1)(storybook@10.5.10(@types/react@19.2.17)(prettier@3.9.6)(react@19.2.8))(supports-color@10.2.2)
       '@types/react':
         specifier: ^19.2.17
         version: 19.2.17
@@ -4866,8 +4866,8 @@ packages:
     resolution: {integrity: sha512-eYm0QWBtUrBWZWG0d386OGAw16Z995PiOVo2B7bjWSbHedGl5e0ZWaq65kOGgUSNesEIDkB9ISbTg/JK9dhCZA==}
     engines: {node: '>=6'}
 
-  cn@0.2.5:
-    resolution: {integrity: sha512-OCjZtMeQfXbI4Es1+EIjkd77gvWzaE689gD8KhfexlqjClC06qR1MQBR+Z35ZMSPNEBWyHiItW1Soy0UvwNv9w==}
+  cn@0.2.6:
+    resolution: {integrity: sha512-+i4L0zUGgRcEnhsxueVrP7iBGxBx5iD0WOTYg1MwFEu2ZyCmH5Ov2V1cul2Ht5UchRQQgftCf4be/RxspuW6QQ==}
     engines: {node: '>=20'}
     hasBin: true
 
@@ -5619,11 +5619,12 @@ packages:
     engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
     os: [darwin]
 
-  fumadocs-core@16.15.7:
-    resolution: {integrity: sha512-EPr2Hckmm2yNV2GUGDDAkCOPeNc7fBworWXnurKWfMEomvT9C/oiy1Fm0wVORDGrvDn5RQcOYKFpAfRy13jIjg==}
+  fumadocs-core@16.15.9:
+    resolution: {integrity: sha512-aefFBU1e9w+pX23qpM2QT9g99hhGYe7fV1H19A8ozcyU9DqW0iBL3kH9/c6wMKOnVd643xaY8JzMdSiVA7XKIA==}
     peerDependencies:
       '@mdx-js/mdx': '*'
       '@mixedbread/sdk': 0.x.x
+      '@modelcontextprotocol/server': 2.x.x
       '@orama/core': 1.x.x
       '@oramacloud/client': 2.x.x
       '@tanstack/react-router': 1.x.x
@@ -5644,6 +5645,8 @@ packages:
       '@mdx-js/mdx':
         optional: true
       '@mixedbread/sdk':
+        optional: true
+      '@modelcontextprotocol/server':
         optional: true
       '@orama/core':
         optional: true
@@ -5715,12 +5718,12 @@ packages:
       vite:
         optional: true
 
-  fumadocs-ui@16.15.7:
-    resolution: {integrity: sha512-O+nPcqAOGl+7PKK7grM9keTzhMdM50fLGN1vDMBqEw7k9UBegOQgSLG3OAo5LGbDbrpcFP6bgspaHpsqfSpJtQ==}
+  fumadocs-ui@16.15.9:
+    resolution: {integrity: sha512-enwf49j9VzJLKD9Lkr2nQJiHMIMCk8on5MzlTE63KawdW5gPJh8t8qYTFhPtAcg5xSTdfP8I0Dbdr5B3Qtmk2g==}
     peerDependencies:
       '@types/mdx': '*'
       '@types/react': '*'
-      fumadocs-core: 16.15.7
+      fumadocs-core: 16.15.9
       next: 16.x.x
       react: ^19.2.0
       react-dom: ^19.2.0
@@ -6685,6 +6688,11 @@ packages:
     peerDependencies:
       react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
 
+  lucide-react@1.45.0:
+    resolution: {integrity: sha512-yH1ubCAduho9UR7oJhRXIQXogksRILBiTuZC4/bQIGeB9JOkxMlSuEHyyZpo1Z3S0yWJO2KTSUZbjiNvVxeOUw==}
+    peerDependencies:
+      react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
+
   lz-string@1.5.0:
     resolution: {integrity: sha512-h5bgJWpxJNswbU7qCrV0tIKQCaS3blPDrqKWx+QxzuzL1zGUzij9XCWLrSLsJPu5t+eWA/ycetzYAO5IOMcWAQ==}
     hasBin: true
@@ -6799,8 +6807,8 @@ packages:
   micromark-extension-gfm-strikethrough@2.1.0:
     resolution: {integrity: sha512-ADVjpOOkjz1hhkZLlBiYA9cR2Anf8F4HqZUO6e5eDcPQd0Txw5fxLzzxnEkSkfnD0wziSGiv7sYhk/ktvbf1uw==}
 
-  micromark-extension-gfm-table@2.1.1:
-    resolution: {integrity: sha512-t2OU/dXXioARrC6yWfJ4hqB7rct14e8f7m0cbI5hUmDyyIlwv5vEtooptH8INkbLzOatzKuVbQmAYcbWoyz6Dg==}
+  micromark-extension-gfm-table@2.1.2:
+    resolution: {integrity: sha512-pRzm4kDTu0MjlmBkxmS9yYhw60nncfcEwu9NNdPFSQEFXS95ZKyIIyTSHu/o3ReBUrLKYEq+7YaXCRn/bPB4MA==}
 
   micromark-extension-gfm-tagfilter@2.0.0:
     resolution: {integrity: sha512-xHlTOmuCSotIA8TW1mDIM6X2O1SiX5P9IuDtqGonFhEK0qgRI4yeC6vMxEV2dgyr2TiD+2PQ10o+cOhdVAcwfg==}
@@ -9534,9 +9542,9 @@ snapshots:
 
   '@fumari/image-size@0.1.0': {}
 
-  '@genkit-ai/ai@1.41.0(@google-cloud/firestore@8.7.0(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(genkit@1.41.0(@google-cloud/firestore@8.7.0(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(supports-color@10.2.2))(supports-color@10.2.2)':
+  '@genkit-ai/ai@1.41.0(@google-cloud/firestore@7.11.6(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(genkit@1.41.0(@google-cloud/firestore@7.11.6(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(supports-color@10.2.2))(supports-color@10.2.2)':
     dependencies:
-      '@genkit-ai/core': 1.41.0(@google-cloud/firestore@8.7.0(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(genkit@1.41.0(@google-cloud/firestore@8.7.0(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(supports-color@10.2.2))(supports-color@10.2.2)
+      '@genkit-ai/core': 1.41.0(@google-cloud/firestore@7.11.6(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(genkit@1.41.0(@google-cloud/firestore@7.11.6(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(supports-color@10.2.2))(supports-color@10.2.2)
       '@opentelemetry/api': 1.9.1
       '@types/node': 20.19.43
       colorette: 2.0.20
@@ -9557,7 +9565,7 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@genkit-ai/core@1.41.0(@google-cloud/firestore@8.7.0(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(genkit@1.41.0(@google-cloud/firestore@8.7.0(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(supports-color@10.2.2))(supports-color@10.2.2)':
+  '@genkit-ai/core@1.41.0(@google-cloud/firestore@7.11.6(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(genkit@1.41.0(@google-cloud/firestore@7.11.6(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(supports-color@10.2.2))(supports-color@10.2.2)':
     dependencies:
       '@opentelemetry/api': 1.9.1
       '@opentelemetry/api-logs': 0.52.1
@@ -9581,7 +9589,7 @@ snapshots:
       zod-to-json-schema: 3.25.2(zod@3.25.76)
     optionalDependencies:
       '@cfworker/json-schema': 4.1.1
-      '@genkit-ai/firebase': 1.41.0(@google-cloud/firestore@8.7.0(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(genkit@1.41.0(@google-cloud/firestore@8.7.0(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(supports-color@10.2.2))(supports-color@10.2.2)
+      '@genkit-ai/firebase': 1.41.0(@google-cloud/firestore@7.11.6(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(genkit@1.41.0(@google-cloud/firestore@7.11.6(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(supports-color@10.2.2))(supports-color@10.2.2)
     transitivePeerDependencies:
       - '@google-cloud/firestore'
       - bufferutil
@@ -9592,12 +9600,12 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@genkit-ai/firebase@1.41.0(@google-cloud/firestore@8.7.0(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(genkit@1.41.0(@google-cloud/firestore@8.7.0(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(supports-color@10.2.2))(supports-color@10.2.2)':
+  '@genkit-ai/firebase@1.41.0(@google-cloud/firestore@7.11.6(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(genkit@1.41.0(@google-cloud/firestore@7.11.6(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(supports-color@10.2.2))(supports-color@10.2.2)':
     dependencies:
-      '@genkit-ai/google-cloud': 1.41.0(genkit@1.41.0(@google-cloud/firestore@8.7.0(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(supports-color@10.2.2))(supports-color@10.2.2)
-      '@google-cloud/firestore': 8.7.0(supports-color@10.2.2)
+      '@genkit-ai/google-cloud': 1.41.0(genkit@1.41.0(@google-cloud/firestore@7.11.6(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(supports-color@10.2.2))(supports-color@10.2.2)
+      '@google-cloud/firestore': 7.11.6(supports-color@10.2.2)
       firebase-admin: 14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2)
-      genkit: 1.41.0(@google-cloud/firestore@8.7.0(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(supports-color@10.2.2)
+      genkit: 1.41.0(@google-cloud/firestore@7.11.6(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(supports-color@10.2.2)
     optionalDependencies:
       firebase: 12.18.0
     transitivePeerDependencies:
@@ -9605,7 +9613,7 @@ snapshots:
       - supports-color
     optional: true
 
-  '@genkit-ai/google-cloud@1.41.0(genkit@1.41.0(@google-cloud/firestore@8.7.0(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(supports-color@10.2.2))(supports-color@10.2.2)':
+  '@genkit-ai/google-cloud@1.41.0(genkit@1.41.0(@google-cloud/firestore@7.11.6(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(supports-color@10.2.2))(supports-color@10.2.2)':
     dependencies:
       '@google-cloud/firestore': 7.11.6(supports-color@10.2.2)
       '@google-cloud/logging-winston': 6.0.2(supports-color@10.2.2)(winston@3.19.0)
@@ -9623,7 +9631,7 @@ snapshots:
       '@opentelemetry/sdk-metrics': 1.25.1(@opentelemetry/api@1.9.1)
       '@opentelemetry/sdk-node': 0.220.0(@opentelemetry/api@1.9.1)(supports-color@10.2.2)
       '@opentelemetry/sdk-trace-base': 1.25.1(@opentelemetry/api@1.9.1)
-      genkit: 1.41.0(@google-cloud/firestore@8.7.0(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(supports-color@10.2.2)
+      genkit: 1.41.0(@google-cloud/firestore@7.11.6(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(supports-color@10.2.2)
       google-auth-library: 9.15.1(supports-color@10.2.2)
       node-fetch: 3.3.2
       winston: 3.19.0
@@ -10322,7 +10330,7 @@ snapshots:
       '@tybys/wasm-util': 0.10.3
     optional: true
 
-  '@nestjs/axios@4.0.1(@nestjs/common@11.2.1(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@10.2.2))(axios@1.20.0(debug@4.4.3(supports-color@10.2.2))(supports-color@10.2.2))(rxjs@7.8.2)':
+  '@nestjs/axios@4.0.1(@nestjs/common@11.2.1(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@10.2.2))(axios@1.20.0(supports-color@10.2.2))(rxjs@7.8.2)':
     dependencies:
       '@nestjs/common': 11.2.1(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@10.2.2)
       axios: 1.20.0(debug@4.4.3(supports-color@10.2.2))(supports-color@10.2.2)
@@ -10406,10 +10414,10 @@ snapshots:
     transitivePeerDependencies:
       - encoding
 
-  '@openapitools/openapi-generator-cli@2.41.0(debug@4.4.3(supports-color@10.2.2))(supports-color@10.2.2)':
+  '@openapitools/openapi-generator-cli@2.41.0(supports-color@10.2.2)':
     dependencies:
       '@inquirer/select': 1.3.3
-      '@nestjs/axios': 4.0.1(@nestjs/common@11.2.1(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@10.2.2))(axios@1.20.0(debug@4.4.3(supports-color@10.2.2))(supports-color@10.2.2))(rxjs@7.8.2)
+      '@nestjs/axios': 4.0.1(@nestjs/common@11.2.1(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@10.2.2))(axios@1.20.0(supports-color@10.2.2))(rxjs@7.8.2)
       '@nestjs/common': 11.2.1(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@10.2.2)
       '@nestjs/core': 11.2.1(@nestjs/common@11.2.1(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@10.2.2))(reflect-metadata@0.2.2)(rxjs@7.8.2)
       '@nuxtjs/opencollective': 0.3.2
@@ -12309,7 +12317,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@storybook/test-runner@0.24.5(@swc/helpers@0.5.23)(@types/node@26.4.1)(debug@4.4.3(supports-color@10.2.2))(storybook@10.5.10(@types/react@19.2.17)(prettier@3.9.6)(react@19.2.8))(supports-color@10.2.2)':
+  '@storybook/test-runner@0.24.5(@swc/helpers@0.5.23)(@types/node@26.4.1)(storybook@10.5.10(@types/react@19.2.17)(prettier@3.9.6)(react@19.2.8))(supports-color@10.2.2)':
     dependencies:
       '@babel/core': 7.29.7(supports-color@10.2.2)
       '@babel/generator': 7.29.8
@@ -12323,7 +12331,7 @@ snapshots:
       jest-circus: 30.5.1(supports-color@10.2.2)
       jest-environment-node: 30.5.1
       jest-junit: 16.0.0
-      jest-process-manager: 0.4.0(debug@4.4.3(supports-color@10.2.2))(supports-color@10.2.2)
+      jest-process-manager: 0.4.0(supports-color@10.2.2)
       jest-runner: 30.5.1(supports-color@10.2.2)
       jest-serializer-html: 7.1.0
       jest-watch-typeahead: 3.0.1(jest@30.5.1(@types/node@26.4.1)(supports-color@10.2.2))
@@ -13475,7 +13483,7 @@ snapshots:
 
   clsx@2.1.1: {}
 
-  cn@0.2.5: {}
+  cn@0.2.6: {}
 
   co@4.6.0: {}
 
@@ -14349,7 +14357,7 @@ snapshots:
   fsevents@2.3.3:
     optional: true
 
-  fumadocs-core@16.15.7(@mdx-js/mdx@3.1.1(supports-color@10.2.2))(@types/estree-jsx@1.0.5)(@types/hast@3.0.5)(@types/mdast@4.0.4)(@types/react@19.2.17)(lucide-react@1.41.0(react@19.2.8))(next@16.3.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@types/node@26.4.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@10.2.2)(zod@4.4.3):
+  fumadocs-core@16.15.9(@mdx-js/mdx@3.1.1(supports-color@10.2.2))(@modelcontextprotocol/server@2.0.0)(@types/estree-jsx@1.0.5)(@types/hast@3.0.5)(@types/mdast@4.0.4)(@types/react@19.2.17)(lucide-react@1.41.0(react@19.2.8))(next@16.3.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@types/node@26.4.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@10.2.2)(zod@4.4.3):
     dependencies:
       '@fumari/image-size': 0.1.0
       estree-util-value-to-estree: 3.5.0
@@ -14372,6 +14380,7 @@ snapshots:
       zbsearch: 4.0.0
     optionalDependencies:
       '@mdx-js/mdx': 3.1.1(supports-color@10.2.2)
+      '@modelcontextprotocol/server': 2.0.0
       '@types/estree-jsx': 1.0.5
       '@types/hast': 3.0.5
       '@types/mdast': 4.0.4
@@ -14384,7 +14393,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  fumadocs-core@16.15.7(@mdx-js/mdx@3.1.1(supports-color@10.2.2))(@types/estree-jsx@1.0.5)(@types/hast@3.0.5)(@types/mdast@4.0.4)(@types/react@19.2.17)(lucide-react@1.41.0(react@19.2.8))(next@16.3.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@types/node@26.4.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@10.2.2)(zod@4.5.1):
+  fumadocs-core@16.15.9(@mdx-js/mdx@3.1.1(supports-color@10.2.2))(@modelcontextprotocol/server@2.0.0)(@types/estree-jsx@1.0.5)(@types/hast@3.0.5)(@types/mdast@4.0.4)(@types/react@19.2.17)(lucide-react@1.41.0(react@19.2.8))(next@16.3.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@types/node@26.4.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@10.2.2)(zod@4.5.1):
     dependencies:
       '@fumari/image-size': 0.1.0
       estree-util-value-to-estree: 3.5.0
@@ -14407,6 +14416,7 @@ snapshots:
       zbsearch: 4.0.0
     optionalDependencies:
       '@mdx-js/mdx': 3.1.1(supports-color@10.2.2)
+      '@modelcontextprotocol/server': 2.0.0
       '@types/estree-jsx': 1.0.5
       '@types/hast': 3.0.5
       '@types/mdast': 4.0.4
@@ -14419,14 +14429,14 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  fumadocs-mdx@15.4.0(@types/mdast@4.0.4)(@types/mdx@2.0.14)(@types/react@19.2.17)(fumadocs-core@16.15.7(@mdx-js/mdx@3.1.1(supports-color@10.2.2))(@types/estree-jsx@1.0.5)(@types/hast@3.0.5)(@types/mdast@4.0.4)(@types/react@19.2.17)(lucide-react@1.41.0(react@19.2.8))(next@16.3.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@types/node@26.4.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@10.2.2)(zod@4.4.3))(next@16.3.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@types/node@26.4.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8)(rolldown@1.2.4)(supports-color@10.2.2)(vite@8.2.1(@types/node@26.4.1)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0)):
+  fumadocs-mdx@15.4.0(@types/mdast@4.0.4)(@types/mdx@2.0.14)(@types/react@19.2.17)(fumadocs-core@16.15.9(@mdx-js/mdx@3.1.1(supports-color@10.2.2))(@modelcontextprotocol/server@2.0.0)(@types/estree-jsx@1.0.5)(@types/hast@3.0.5)(@types/mdast@4.0.4)(@types/react@19.2.17)(lucide-react@1.41.0(react@19.2.8))(next@16.3.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@types/node@26.4.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@10.2.2)(zod@4.4.3))(next@16.3.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@types/node@26.4.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8)(rolldown@1.2.4)(supports-color@10.2.2)(vite@8.2.1(@types/node@26.4.1)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0)):
     dependencies:
       '@mdx-js/mdx': 3.1.1(supports-color@10.2.2)
       '@standard-schema/spec': 1.1.0
       chokidar: 5.0.0
       esbuild: 0.28.1
       estree-util-value-to-estree: 3.5.0
-      fumadocs-core: 16.15.7(@mdx-js/mdx@3.1.1(supports-color@10.2.2))(@types/estree-jsx@1.0.5)(@types/hast@3.0.5)(@types/mdast@4.0.4)(@types/react@19.2.17)(lucide-react@1.41.0(react@19.2.8))(next@16.3.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@types/node@26.4.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@10.2.2)(zod@4.4.3)
+      fumadocs-core: 16.15.9(@mdx-js/mdx@3.1.1(supports-color@10.2.2))(@modelcontextprotocol/server@2.0.0)(@types/estree-jsx@1.0.5)(@types/hast@3.0.5)(@types/mdast@4.0.4)(@types/react@19.2.17)(lucide-react@1.41.0(react@19.2.8))(next@16.3.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@types/node@26.4.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@10.2.2)(zod@4.4.3)
       github-slugger: 2.0.0
       magic-string: 1.2.3
       mdast-util-mdx: 3.0.0(supports-color@10.2.2)
@@ -14452,14 +14462,14 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  fumadocs-mdx@15.4.0(@types/mdast@4.0.4)(@types/mdx@2.0.14)(@types/react@19.2.17)(fumadocs-core@16.15.7(@mdx-js/mdx@3.1.1(supports-color@10.2.2))(@types/estree-jsx@1.0.5)(@types/hast@3.0.5)(@types/mdast@4.0.4)(@types/react@19.2.17)(lucide-react@1.41.0(react@19.2.8))(next@16.3.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@types/node@26.4.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@10.2.2)(zod@4.5.1))(next@16.3.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@types/node@26.4.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8)(rolldown@1.2.4)(supports-color@10.2.2)(vite@8.2.1(@types/node@26.4.1)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0)):
+  fumadocs-mdx@15.4.0(@types/mdast@4.0.4)(@types/mdx@2.0.14)(@types/react@19.2.17)(fumadocs-core@16.15.9(@mdx-js/mdx@3.1.1(supports-color@10.2.2))(@modelcontextprotocol/server@2.0.0)(@types/estree-jsx@1.0.5)(@types/hast@3.0.5)(@types/mdast@4.0.4)(@types/react@19.2.17)(lucide-react@1.41.0(react@19.2.8))(next@16.3.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@types/node@26.4.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@10.2.2)(zod@4.5.1))(next@16.3.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@types/node@26.4.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8)(rolldown@1.2.4)(supports-color@10.2.2)(vite@8.2.1(@types/node@26.4.1)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0)):
     dependencies:
       '@mdx-js/mdx': 3.1.1(supports-color@10.2.2)
       '@standard-schema/spec': 1.1.0
       chokidar: 5.0.0
       esbuild: 0.28.1
       estree-util-value-to-estree: 3.5.0
-      fumadocs-core: 16.15.7(@mdx-js/mdx@3.1.1(supports-color@10.2.2))(@types/estree-jsx@1.0.5)(@types/hast@3.0.5)(@types/mdast@4.0.4)(@types/react@19.2.17)(lucide-react@1.41.0(react@19.2.8))(next@16.3.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@types/node@26.4.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@10.2.2)(zod@4.5.1)
+      fumadocs-core: 16.15.9(@mdx-js/mdx@3.1.1(supports-color@10.2.2))(@modelcontextprotocol/server@2.0.0)(@types/estree-jsx@1.0.5)(@types/hast@3.0.5)(@types/mdast@4.0.4)(@types/react@19.2.17)(lucide-react@1.41.0(react@19.2.8))(next@16.3.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@types/node@26.4.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@10.2.2)(zod@4.5.1)
       github-slugger: 2.0.0
       magic-string: 1.2.3
       mdast-util-mdx: 3.0.0(supports-color@10.2.2)
@@ -14485,7 +14495,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  fumadocs-ui@16.15.7(@types/mdx@2.0.14)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(fumadocs-core@16.15.7(@mdx-js/mdx@3.1.1(supports-color@10.2.2))(@types/estree-jsx@1.0.5)(@types/hast@3.0.5)(@types/mdast@4.0.4)(@types/react@19.2.17)(lucide-react@1.41.0(react@19.2.8))(next@16.3.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@types/node@26.4.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@10.2.2)(zod@4.4.3))(next@16.3.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@types/node@26.4.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8):
+  fumadocs-ui@16.15.9(@types/mdx@2.0.14)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(fumadocs-core@16.15.9(@mdx-js/mdx@3.1.1(supports-color@10.2.2))(@modelcontextprotocol/server@2.0.0)(@types/estree-jsx@1.0.5)(@types/hast@3.0.5)(@types/mdast@4.0.4)(@types/react@19.2.17)(lucide-react@1.41.0(react@19.2.8))(next@16.3.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@types/node@26.4.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@10.2.2)(zod@4.4.3))(next@16.3.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@types/node@26.4.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8):
     dependencies:
       '@fuma-translate/react': 1.0.2(@types/react@19.2.17)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@fumadocs/tailwind': 0.1.1
@@ -14500,9 +14510,9 @@ snapshots:
       '@radix-ui/react-slot': 1.3.3(@types/react@19.2.17)(react@19.2.8)
       '@radix-ui/react-tabs': 1.1.21(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       class-variance-authority: 0.7.1
-      cn: 0.2.5
-      fumadocs-core: 16.15.7(@mdx-js/mdx@3.1.1(supports-color@10.2.2))(@types/estree-jsx@1.0.5)(@types/hast@3.0.5)(@types/mdast@4.0.4)(@types/react@19.2.17)(lucide-react@1.41.0(react@19.2.8))(next@16.3.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@types/node@26.4.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@10.2.2)(zod@4.4.3)
-      lucide-react: 1.41.0(react@19.2.8)
+      cn: 0.2.6
+      fumadocs-core: 16.15.9(@mdx-js/mdx@3.1.1(supports-color@10.2.2))(@modelcontextprotocol/server@2.0.0)(@types/estree-jsx@1.0.5)(@types/hast@3.0.5)(@types/mdast@4.0.4)(@types/react@19.2.17)(lucide-react@1.41.0(react@19.2.8))(next@16.3.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@types/node@26.4.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@10.2.2)(zod@4.4.3)
+      lucide-react: 1.45.0(react@19.2.8)
       motion: 13.2.0(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       next-themes: 0.4.6(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       react: 19.2.8
@@ -14520,7 +14530,7 @@ snapshots:
       - '@types/react-dom'
       - tailwindcss
 
-  fumadocs-ui@16.15.7(@types/mdx@2.0.14)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(fumadocs-core@16.15.7(@mdx-js/mdx@3.1.1(supports-color@10.2.2))(@types/estree-jsx@1.0.5)(@types/hast@3.0.5)(@types/mdast@4.0.4)(@types/react@19.2.17)(lucide-react@1.41.0(react@19.2.8))(next@16.3.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@types/node@26.4.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@10.2.2)(zod@4.5.1))(next@16.3.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@types/node@26.4.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8):
+  fumadocs-ui@16.15.9(@types/mdx@2.0.14)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(fumadocs-core@16.15.9(@mdx-js/mdx@3.1.1(supports-color@10.2.2))(@modelcontextprotocol/server@2.0.0)(@types/estree-jsx@1.0.5)(@types/hast@3.0.5)(@types/mdast@4.0.4)(@types/react@19.2.17)(lucide-react@1.41.0(react@19.2.8))(next@16.3.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@types/node@26.4.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@10.2.2)(zod@4.5.1))(next@16.3.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@types/node@26.4.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8):
     dependencies:
       '@fuma-translate/react': 1.0.2(@types/react@19.2.17)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@fumadocs/tailwind': 0.1.1
@@ -14535,9 +14545,9 @@ snapshots:
       '@radix-ui/react-slot': 1.3.3(@types/react@19.2.17)(react@19.2.8)
       '@radix-ui/react-tabs': 1.1.21(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       class-variance-authority: 0.7.1
-      cn: 0.2.5
-      fumadocs-core: 16.15.7(@mdx-js/mdx@3.1.1(supports-color@10.2.2))(@types/estree-jsx@1.0.5)(@types/hast@3.0.5)(@types/mdast@4.0.4)(@types/react@19.2.17)(lucide-react@1.41.0(react@19.2.8))(next@16.3.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@types/node@26.4.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@10.2.2)(zod@4.5.1)
-      lucide-react: 1.41.0(react@19.2.8)
+      cn: 0.2.6
+      fumadocs-core: 16.15.9(@mdx-js/mdx@3.1.1(supports-color@10.2.2))(@modelcontextprotocol/server@2.0.0)(@types/estree-jsx@1.0.5)(@types/hast@3.0.5)(@types/mdast@4.0.4)(@types/react@19.2.17)(lucide-react@1.41.0(react@19.2.8))(next@16.3.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@types/node@26.4.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@10.2.2)(zod@4.5.1)
+      lucide-react: 1.45.0(react@19.2.8)
       motion: 13.2.0(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       next-themes: 0.4.6(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       react: 19.2.8
@@ -14635,10 +14645,10 @@ snapshots:
       - supports-color
     optional: true
 
-  genkit@1.41.0(@google-cloud/firestore@8.7.0(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(supports-color@10.2.2):
+  genkit@1.41.0(@google-cloud/firestore@7.11.6(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(supports-color@10.2.2):
     dependencies:
-      '@genkit-ai/ai': 1.41.0(@google-cloud/firestore@8.7.0(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(genkit@1.41.0(@google-cloud/firestore@8.7.0(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(supports-color@10.2.2))(supports-color@10.2.2)
-      '@genkit-ai/core': 1.41.0(@google-cloud/firestore@8.7.0(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(genkit@1.41.0(@google-cloud/firestore@8.7.0(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(supports-color@10.2.2))(supports-color@10.2.2)
+      '@genkit-ai/ai': 1.41.0(@google-cloud/firestore@7.11.6(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(genkit@1.41.0(@google-cloud/firestore@7.11.6(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(supports-color@10.2.2))(supports-color@10.2.2)
+      '@genkit-ai/core': 1.41.0(@google-cloud/firestore@7.11.6(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(genkit@1.41.0(@google-cloud/firestore@7.11.6(supports-color@10.2.2))(firebase-admin@14.1.0(@firebase/app-compat@0.5.17)(@firebase/app@0.16.1)(supports-color@10.2.2))(firebase@12.18.0)(supports-color@10.2.2))(supports-color@10.2.2)
       uuid: 11.1.1
     transitivePeerDependencies:
       - '@google-cloud/firestore'
@@ -15464,7 +15474,7 @@ snapshots:
       '@types/node': 26.4.1
       jest-util: 30.5.1
 
-  jest-process-manager@0.4.0(debug@4.4.3(supports-color@10.2.2))(supports-color@10.2.2):
+  jest-process-manager@0.4.0(supports-color@10.2.2):
     dependencies:
       '@types/wait-on': 5.3.4
       chalk: 4.1.2
@@ -15475,7 +15485,7 @@ snapshots:
       signal-exit: 3.0.7
       spawnd: 5.0.0(supports-color@10.2.2)
       tree-kill: 1.2.2
-      wait-on: 7.2.0(debug@4.4.3(supports-color@10.2.2))(supports-color@10.2.2)
+      wait-on: 7.2.0(supports-color@10.2.2)
     transitivePeerDependencies:
       - debug
       - supports-color
@@ -15954,6 +15964,10 @@ snapshots:
     dependencies:
       react: 19.2.8
 
+  lucide-react@1.45.0(react@19.2.8):
+    dependencies:
+      react: 19.2.8
+
   lz-string@1.5.0: {}
 
   magic-string@0.30.21:
@@ -16205,7 +16219,7 @@ snapshots:
       micromark-util-symbol: 2.0.1
       micromark-util-types: 2.0.2
 
-  micromark-extension-gfm-table@2.1.1:
+  micromark-extension-gfm-table@2.1.2:
     dependencies:
       devlop: 1.1.0
       micromark-factory-space: 2.0.1
@@ -16230,7 +16244,7 @@ snapshots:
       micromark-extension-gfm-autolink-literal: 2.1.0
       micromark-extension-gfm-footnote: 2.1.0
       micromark-extension-gfm-strikethrough: 2.1.0
-      micromark-extension-gfm-table: 2.1.1
+      micromark-extension-gfm-table: 2.1.2
       micromark-extension-gfm-tagfilter: 2.0.0
       micromark-extension-gfm-task-list-item: 2.1.0
       micromark-util-combine-extensions: 2.0.1
@@ -18124,7 +18138,7 @@ snapshots:
     transitivePeerDependencies:
       - msw
 
-  wait-on@7.2.0(debug@4.4.3(supports-color@10.2.2))(supports-color@10.2.2):
+  wait-on@7.2.0(supports-color@10.2.2):
     dependencies:
       axios: 1.20.0(debug@4.4.3(supports-color@10.2.2))(supports-color@10.2.2)
       joi: 17.13.7
