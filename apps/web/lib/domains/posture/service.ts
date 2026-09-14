@@ -9,10 +9,10 @@ import { getRulesForRevision } from "@/lib/repositories/policy/rules";
 import { listAgentSummaries } from "@/lib/repositories/evidence";
 import { swallow } from "@/lib/platform/swallow";
 
-export type PostureDimension = "CONTROL_HEALTH" | "SCOPE_INTEGRITY" | "OPERATIONAL_EFFICIENCY";
-export type PostureSeverity = "HIGH" | "MEDIUM" | "LOW";
+type PostureDimension = "CONTROL_HEALTH" | "SCOPE_INTEGRITY" | "OPERATIONAL_EFFICIENCY";
+type PostureSeverity = "HIGH" | "MEDIUM" | "LOW";
 
-export interface PostureFinding {
+interface PostureFinding {
   id: string;
   dimension: PostureDimension;
   severity: PostureSeverity;

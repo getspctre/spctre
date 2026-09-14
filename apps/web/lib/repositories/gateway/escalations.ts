@@ -211,29 +211,6 @@ export async function getOpenEscalationQueueItem(params: {
   return items.find((item) => item.id === params.queueId) ?? null;
 }
 
-export async function getOpenEscalationAssigneeCounts(params: {
-  tenantId: string;
-  workspaceId: string;
-}): Promise<Record<string, number>> {
-  if (!sql) return {};
-
-  try {
-    const rows = await sql<{ assigned_to: string; count: string }[]>`
-      SELECT assigned_to, COUNT(*)::text AS count
-      FROM gateway_escalation_queue
-      WHERE tenant_id = ${params.tenantId}
-        AND workspace_id = ${params.workspaceId}
-        AND status IN ('PENDING', 'IN_REVIEW')
-        AND assigned_to IS NOT NULL
-      GROUP BY assigned_to
-    `;
-    return Object.fromEntries(rows.map((row) => [row.assigned_to, Number.parseInt(row.count, 10)]));
-  } catch (error) {
-    reportSwallowedError("getOpenEscalationAssigneeCounts", error);
-    return {};
-  }
-}
-
 export async function listResolvedEscalationsForRevision(
   revisionId: string,
   tenantId: string,
@@ -436,36 +413,6 @@ export async function assignEscalationQueueItem(params: {
     // A failed write is not "already claimed" or "not found", which is how the
     // caller reads false. Keep the fallback, but record which one happened.
     reportSwallowedError("assignEscalationQueueItem", error);
-    return false;
-  }
-}
-
-export async function assignEscalationQueueItemFromTriage(params: {
-  queueId: string;
-  tenantId: string;
-  workspaceId: string;
-  assignedTo: string;
-}): Promise<boolean> {
-  if (!sql) return false;
-
-  try {
-    const rows = await sql<{ id: string }[]>`
-      UPDATE gateway_escalation_queue
-      SET
-        assigned_to = ${params.assignedTo},
-        status = 'IN_REVIEW',
-        updated_at = now()
-      WHERE id = ${params.queueId}
-        AND tenant_id = ${params.tenantId}
-        AND workspace_id = ${params.workspaceId}
-        AND status IN ('PENDING', 'IN_REVIEW')
-      RETURNING id
-    `;
-    return rows.length > 0;
-  } catch (error) {
-    // A failed write is not "already claimed" or "not found", which is how the
-    // caller reads false. Keep the fallback, but record which one happened.
-    reportSwallowedError("assignEscalationQueueItemFromTriage", error);
     return false;
   }
 }

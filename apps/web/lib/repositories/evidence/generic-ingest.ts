@@ -130,7 +130,7 @@ export async function listEvidenceIntegrations(params: {
   `;
 }
 
-export async function createEvidenceIntegrationInTransaction(
+async function createEvidenceIntegrationInTransaction(
   tx: TxClient,
   params: {
     tenantId: string;

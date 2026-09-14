@@ -31,9 +31,3 @@ export function fromBase64Url(input: string): Uint8Array<ArrayBuffer> {
   const padded = base64 + "=".repeat((4 - (base64.length % 4 || 4)) % 4);
   return decodeBase64(padded);
 }
-
-export function randomBytes(length: number): Uint8Array<ArrayBuffer> {
-  const bytes = new Uint8Array(length);
-  crypto.getRandomValues(bytes);
-  return bytes;
-}

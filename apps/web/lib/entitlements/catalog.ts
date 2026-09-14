@@ -158,15 +158,6 @@ export function planEntitlements(
 }
 
 /**
- * The value of an entitlement, regardless of enforcement state. Use this for
- * provisioning and measurement. Use {@link enforcedEntitlementValue} anywhere
- * the number is presented to a user as a limit.
- */
-export function entitlementValue<T>(entitlement: Entitlement<T>): T {
-  return entitlement.value;
-}
-
-/**
  * The value of an entitlement only if the product actually enforces it, and
  * `null` otherwise. Presentation surfaces must use this so an unenforced
  * intention never renders as an active limit, and enforcement paths must use it

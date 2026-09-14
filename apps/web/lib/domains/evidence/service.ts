@@ -91,7 +91,7 @@ function emptySimulationRun(): SimulationRun {
   };
 }
 
-export interface EvidenceControlMappingEntry {
+interface EvidenceControlMappingEntry {
   stableRuleId: string;
   framework: string;
   controlId: string;
@@ -344,26 +344,6 @@ export async function listEvidenceForTokenExport(params: {
       );
     }),
   );
-}
-
-export async function getAgtVerificationExportInputs(params: {
-  workspaceId: string;
-  tenantId: string;
-}) {
-  const published = await getLatestPublishedBundle(params.workspaceId, params.tenantId);
-  if (!published) return null;
-
-  const escalations = await listResolvedEscalationsForRevision(
-    published.revisionId,
-    params.tenantId,
-  ).catch(swallow("listResolvedEscalationsForRevision", []));
-  const verificationResults = await listVerificationResults(params.workspaceId, params.tenantId, {
-    revisionId: published.revisionId,
-    artifactHash: published.artifactHash,
-    limit: 25,
-  }).catch(swallow("listVerificationResults", []));
-
-  return { published, escalations, verificationResults };
 }
 
 export async function getGatewayOutcomeMapForEvidence(params: {

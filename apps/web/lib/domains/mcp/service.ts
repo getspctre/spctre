@@ -1,5 +1,4 @@
 import {
-  DEFAULT_MCP_CONNECTORS,
   DEFAULT_MCP_TOOLS,
   grantMcpTool as grantMcpToolInTenant,
   listGovernedMcpCapabilities as listGovernedMcpCapabilitiesInTenant,
@@ -12,7 +11,7 @@ import {
 } from "@/lib/repositories/workspace/mcp-registry";
 import { runWithTenantContext } from "@/lib/tenant-context";
 
-export { DEFAULT_MCP_CONNECTORS, DEFAULT_MCP_TOOLS };
+export { DEFAULT_MCP_TOOLS };
 export type { McpToolGrantRecord, McpToolRegistryEntry };
 
 export async function listGovernedMcpCapabilities(

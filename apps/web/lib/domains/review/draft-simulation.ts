@@ -17,7 +17,7 @@ import { swallow } from "@/lib/platform/swallow";
  * apply to committed revisions. Nothing is written; the draft never needs to be
  * committed to preview its blast radius.
  */
-export interface DraftSimulationFinding {
+interface DraftSimulationFinding {
   decisionId: string;
   connector: string;
   action: string;

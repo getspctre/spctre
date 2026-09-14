@@ -432,4 +432,3 @@ export function simulateAgentBlueprintRevision(
     simulateAgentBlueprintRevisionInTenant(params),
   );
 }
-export type { AgentBlueprintStatus };

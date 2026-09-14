@@ -288,7 +288,7 @@ export interface SimulationReplayFinding {
   reason: string;
 }
 
-export async function listSimulationReplayFindings(params: {
+async function listSimulationReplayFindings(params: {
   tenantId: string;
   workspaceId: string | null;
   simulationRunId: string;

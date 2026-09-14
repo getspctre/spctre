@@ -144,23 +144,19 @@ export {
   updateSmsEnrollmentSecret,
   upsertPasskeyCredential,
 } from "@/lib/repositories/mfa";
-export type { StoredPasskeyCredential } from "@/lib/repositories/mfa";
 export {
   consumeWebauthnChallenge,
   saveWebauthnChallenge,
 } from "@/lib/repositories/auth/webauthn-challenge";
-export type { WebauthnChallengePurpose } from "@/lib/repositories/auth/webauthn-challenge";
 export {
   ensureAuthDemoTenant,
   getPrincipalForLogin,
   getPrimaryWorkspaceIdForTenant,
   getTenantRequireMfa,
   isAuthDatabaseConfigured,
-  resolveTenantIdOrDemo,
 } from "@/lib/repositories/auth/session";
 export { ensurePrincipalPermissionGrant } from "@/lib/repositories/auth/grants";
 export {
-  findUserPrincipalIdByIdentifier,
   getPrincipalSubject,
   linkSocialIdentity,
   upsertOidcPrincipal,

@@ -1,6 +1,6 @@
 import type { PolicyRuleSummary } from "@spctre/policy-schema";
 
-export const SPCTRE_ADVISOR_RULE_ID_PREFIX = "spctre-agent.";
+const SPCTRE_ADVISOR_RULE_ID_PREFIX = "spctre-agent.";
 
 export function reservedStableRuleIdError(stableRuleIds: Iterable<string>): string | null {
   const reservedId = Array.from(stableRuleIds).find((stableRuleId) =>

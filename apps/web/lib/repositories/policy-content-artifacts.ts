@@ -89,21 +89,6 @@ export async function retainPublishedPolicyContentArtifact(params: {
   });
 }
 
-export async function bindEvidenceToPolicyContentArtifact(params: {
-  tenantId: string;
-  workspaceId: string;
-  decisionId: string;
-  revisionId?: string;
-  contentHash: string;
-}) {
-  if (!sql) throw new Error("Database not configured.");
-  await sql`
-    INSERT INTO runtime_evidence_policy_content_ref (tenant_id, workspace_id, decision_id, revision_id, content_hash)
-    VALUES (${params.tenantId}, ${params.workspaceId}, ${params.decisionId}, ${params.revisionId ?? null}, ${params.contentHash})
-    ON CONFLICT DO NOTHING
-  `;
-}
-
 export async function readPolicyContentArtifactForEvidenceToken(params: {
   tenantId: string;
   workspaceId: string;

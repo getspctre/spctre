@@ -14,7 +14,7 @@ import {
 } from "@/lib/repositories/usage/submissions";
 import { logger } from "@spctre/platform/logging";
 
-export type PeriodReportOutcome =
+type PeriodReportOutcome =
   | { status: "reported"; periodId: string; submissionId: string; charged: boolean }
   | { status: "already_reported"; periodId: string; submissionId: string }
   | { status: "skipped"; periodId: string; reason: string }

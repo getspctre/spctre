@@ -6,14 +6,17 @@
     "apps/web/lib/node-saml.ts",
     "apps/web/scripts/create-e2e-token.ts",
     "apps/web/scripts/run-seed.ts",
-    "apps/web/source.config.ts",
+    "db/seeds/review-principals.ts",
     "packages/cli/src/frameworks/templates/notion-worker.js",
     "packages/mcp-server/src/example.ts",
     "packages/policy-schema/native/index.d.ts",
     "packages/policy-schema/native/index.js",
-    "packages/sdk/src/schema.ts"
+    "packages/sdk/src/schema.ts",
+    "scripts/backfill-gateway-decision-connector-action.mjs",
+    "scripts/backfill-policy-rule-matchers.mjs",
+    "scripts/emit-agt-runtime-evidence-contract.mts"
   ],
   "tags": ["-eeBoundary"],
   "ignoreDependencies": ["@spctre/design-tokens", "@openapitools/openapi-generator-cli"],
-  "ignoreBinaries": ["uv", "gitleaks", "osv-scanner", "python3", "opa", "cedar", "du"]
+  "ignoreBinaries": ["cedar", "du", "gitleaks", "opa", "osv-scanner", "rustup", "uv"]
 }
