@@ -1,5 +1,6 @@
 import { ALL_REVIEWER_ROLES } from "@/lib/approval-config";
-import { canActorReviewRole, getActiveActor } from "@/lib/actors";
+import { canActorReviewRole } from "@/lib/actors";
+import type { ReviewActorResolver } from "./actor";
 import type { ActiveScope } from "@/lib/workspace";
 import {
   getApprovalById,
@@ -22,6 +23,7 @@ export type AddApprovalResult = { ok: true } | { error: string };
 export async function addApprovalDecision(
   input: AddApprovalInput,
   scope: ActiveScope,
+  resolveActor: ReviewActorResolver,
 ): Promise<AddApprovalResult> {
   if (!input.revisionId || !input.role || !input.approvalStatus) {
     return { error: "Review action is unavailable." };
@@ -36,39 +38,56 @@ export async function addApprovalDecision(
   const workspaceContext = scope;
   const tenantId = workspaceContext.tenantId;
 
-  const revisionRow = await getRevisionWorkspaceScope({ tenantId, revisionId: input.revisionId });
-  if (!revisionRow) return { error: "Revision not found." };
+  // Bound here rather than by the caller: a bearer request has no tenant on the
+  // connection until the token is authenticated, and every read below is
+  // tenant-scoped. Binding the same tenant twice on the session path is a no-op.
+  return runWithTenantContext(tenantId, async () => {
+    const revisionRow = await getRevisionWorkspaceScope({ tenantId, revisionId: input.revisionId });
+    if (!revisionRow) return { error: "Revision not found." };
 
-  const { actor } = await getActiveActor({
-    workspaceId: revisionRow.workspace_id ?? workspaceContext.workspaceId,
-    tenantId,
-  });
-
-  const workspaceSlug = revisionRow.workspace_slug ?? "workspace-demo";
-  const reviewCheck = canActorReviewRole(actor, workspaceSlug, input.role);
-  if (!reviewCheck.allowed) {
-    await insertAuthorizationDenialEvent({
+    const { principalId, actor } = await resolveActor({
+      workspaceId: revisionRow.workspace_id ?? workspaceContext.workspaceId,
       tenantId,
-      action: "approval.write",
-      reason: reviewCheck.reason ?? "Review is not allowed.",
-      resourceType: "policy_revision",
-      resourceId: input.revisionId,
-      principalId: actor.id,
-      workspaceId: revisionRow.workspace_id,
     });
-    return { error: reviewCheck.reason ?? "Review is not allowed." };
-  }
+    if (!actor) {
+      await insertAuthorizationDenialEvent({
+        tenantId,
+        action: "approval.write",
+        reason: "No permission grant for the acting principal.",
+        resourceType: "policy_revision",
+        resourceId: input.revisionId,
+        principalId,
+        workspaceId: revisionRow.workspace_id,
+      });
+      return { error: "No permission grants are configured for the acting principal." };
+    }
 
-  await upsertApprovalForRevision({
-    tenantId,
-    revisionId: input.revisionId,
-    actorId: actor.id,
-    role: input.role,
-    approvalStatus: input.approvalStatus,
-    note: input.note,
+    const workspaceSlug = revisionRow.workspace_slug ?? "workspace-demo";
+    const reviewCheck = canActorReviewRole(actor, workspaceSlug, input.role);
+    if (!reviewCheck.allowed) {
+      await insertAuthorizationDenialEvent({
+        tenantId,
+        action: "approval.write",
+        reason: reviewCheck.reason ?? "Review is not allowed.",
+        resourceType: "policy_revision",
+        resourceId: input.revisionId,
+        principalId: actor.id,
+        workspaceId: revisionRow.workspace_id,
+      });
+      return { error: reviewCheck.reason ?? "Review is not allowed." };
+    }
+
+    await upsertApprovalForRevision({
+      tenantId,
+      revisionId: input.revisionId,
+      actorId: actor.id,
+      role: input.role,
+      approvalStatus: input.approvalStatus,
+      note: input.note,
+    });
+
+    return { ok: true };
   });
-
-  return { ok: true };
 }
 
 export async function getApprovalDetail(params: {

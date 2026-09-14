@@ -1,6 +1,10 @@
 "use server";
 
-import { addApprovalDecision, publishRevisionDecision } from "@/lib/domains/review/service";
+import {
+  addApprovalDecision,
+  publishRevisionDecision,
+  sessionReviewActor,
+} from "@/lib/domains/review/service";
 import { rollbackBranchDecision } from "@/lib/domains/policy/service";
 import { revalidatePaths } from "@/lib/platform/cache";
 import { getActiveScope, getWorkspaceContext } from "@/lib/workspace";
@@ -32,6 +36,7 @@ export async function addApproval(
   const result = await addApprovalDecision(
     { revisionId, role, approvalStatus, note },
     await getActiveScope(),
+    sessionReviewActor,
   );
   if ("error" in result) {
     return result;
@@ -72,7 +77,11 @@ export async function publishRevision(
   const revisionId = formData.get("revisionId") as string;
   const branchId = formData.get("branchId") as string;
 
-  const result = await publishRevisionDecision({ revisionId, branchId }, await getActiveScope());
+  const result = await publishRevisionDecision(
+    { revisionId, branchId },
+    await getActiveScope(),
+    sessionReviewActor,
+  );
   if ("error" in result) {
     return result;
   }

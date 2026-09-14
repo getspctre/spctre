@@ -6,9 +6,17 @@ import {
 } from "../lib/repositories/auth/service-tokens";
 
 describe("service token scopes", () => {
-  it("keeps e2e:write valid but unavailable to normal admin-issued API keys", () => {
-    expect(ALL_API_KEY_SCOPES).toContain("e2e:write");
-    expect(ADMIN_ISSUABLE_API_KEY_SCOPES).not.toContain("e2e:write");
+  it("keeps review and publish authority out of runtime agent tokens", () => {
+    // A governed agent must never be able to approve or publish the policy that
+    // governs it, however its token is issued.
+    expect(DEV_TOKEN_SCOPES).not.toContain("approvals:write");
+    expect(DEV_TOKEN_SCOPES).not.toContain("publish:write");
+    expect(ADMIN_ISSUABLE_API_KEY_SCOPES).toContain("approvals:write");
+    expect(ADMIN_ISSUABLE_API_KEY_SCOPES).toContain("publish:write");
+  });
+
+  it("no longer carries the retired e2e support scope", () => {
+    expect(ALL_API_KEY_SCOPES).not.toContain("e2e:write");
   });
 
   it("includes runtime decision evaluation in developer and admin-issued tokens", () => {

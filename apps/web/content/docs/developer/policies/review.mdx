@@ -39,3 +39,33 @@ Once all readiness checks are satisfied (all required approvals are complete, ve
 2. Click **Publish bundle**.
 3. Confirm the action in the prompt.
 4. The bundle is immediately registered as active. Connected agents will sync the new policy bundle automatically within their next heartbeat poll (default: 30 seconds).
+
+## Reviewing and publishing from CI
+
+The same two actions are available over the API, so a pipeline can gate a release on the reviewed path rather than bypassing it.
+
+```bash
+# 1. Is it publishable yet? (approvals:read)
+curl -sS "https://app.spctre.dev/api/v1/policy/publishes/readiness?branchId=$BRANCH&revisionId=$REVISION" \
+  -H "Authorization: Bearer $SPCTRE_REVIEWER_TOKEN"
+
+# 2. Approve, in a role your principal holds (approvals:write)
+curl -sS -X POST https://app.spctre.dev/api/v1/approvals \
+  -H "Authorization: Bearer $SPCTRE_SECURITY_REVIEWER_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"revisionId":"'"$REVISION"'","role":"Security","approvalStatus":"APPROVED"}'
+
+# 3. Publish once readiness reports READY (publish:write)
+curl -sS -X POST https://app.spctre.dev/api/v1/policy/publishes \
+  -H "Authorization: Bearer $SPCTRE_PLATFORM_REVIEWER_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"branchId":"'"$BRANCH"'","revisionId":"'"$REVISION"'"}'
+```
+
+**The key is the reviewer, not a way around them.** A service key acts as the principal it was issued to, and there is no actor field in either request body. So a key can only approve in the roles its owner holds, and can only publish what its owner could publish in the console. Because an approval is unique per revision and reviewer, a workflow requiring two roles still requires two keys held by two people — the same rule the Approvals panel applies.
+
+<Callout type="warn">
+  `approvals:write` and `publish:write` are **admin-issuable only** and are **never** granted to a runtime agent token from `spctre init`. A governed agent cannot approve or publish the policy that governs it.
+</Callout>
+
+Every gate the console applies applies here, because it is the same publish path: required approvals, verification policy, rule validation, the evaluation request budget, managed-replay regressions, and unresolved gateway escalations. A revision that is not ready answers `422` with the reason rather than publishing. Publishing an already-published revision returns its existing `artifactHash`, so a retried pipeline step is safe.

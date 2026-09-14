@@ -7,7 +7,8 @@ import {
   measurePolicyRequestBudget,
   validatePolicyRules,
 } from "@spctre/policy-schema";
-import { getBranchPermissions, getActiveActor } from "@/lib/actors";
+import { getBranchPermissions, type Principal } from "@/lib/actors";
+import type { ReviewActorResolver } from "./actor";
 import type { ActiveScope } from "@/lib/workspace";
 import { getBooleanEnv } from "@/lib/platform/config";
 import { recordDuration, setGauge } from "@spctre/platform/metrics";
@@ -45,13 +46,14 @@ export interface PublishRevisionInput {
 export type PublishRevisionResult = { artifactHash: string } | { error: string };
 
 type PublishBranchRow = NonNullable<Awaited<ReturnType<typeof getPublishBranchScope>>>;
-type PublishActor = Awaited<ReturnType<typeof getActiveActor>>["actor"];
+type PublishActor = Principal;
 
 // Validate the branch/revision exist and the actor may publish. Returns the
 // resolved context, or an error result to surface directly.
 async function authorizePublish(
   input: PublishRevisionInput,
   scope: ActiveScope,
+  resolveActor: ReviewActorResolver,
 ): Promise<{ branchRow: PublishBranchRow; actor: PublishActor } | { error: string }> {
   const tenantId = scope.tenantId;
 
@@ -66,10 +68,22 @@ async function authorizePublish(
   });
   if (!hasRevision) return { error: "Revision not found on this branch." };
 
-  const { actor } = await getActiveActor({
+  const { principalId, actor } = await resolveActor({
     workspaceId: branchRow.workspace_id ?? scope.workspaceId,
     tenantId,
   });
+  if (!actor) {
+    await insertAuthorizationDenialEvent({
+      tenantId,
+      action: "publish.execute",
+      reason: "No permission grant for the acting principal.",
+      resourceType: "policy_branch",
+      resourceId: input.branchId,
+      principalId,
+      workspaceId: branchRow.workspace_id,
+    });
+    return { error: "No permission grants are configured for the acting principal." };
+  }
 
   const permissions = getBranchPermissions({
     actor,
@@ -113,12 +127,9 @@ async function checkEvaluationBudget(
   rules: Awaited<ReturnType<typeof getRulesForRevision>>,
 ): Promise<string | null> {
   const workspaceId = branchRow.workspace_id ?? scope.workspaceId;
-  // Bound explicitly: this runs inside a server action whose other reads are
-  // repository calls that bind their own context, so nothing here would have a
-  // tenant on the connection and RLS would reject the read.
-  const published = await runWithTenantContext(scope.tenantId, () =>
-    listPublishedCompositionLayers(workspaceId, scope.tenantId),
-  );
+  // The caller has already bound the tenant; this read is not self-binding, so
+  // it would otherwise be the one RLS rejects.
+  const published = await listPublishedCompositionLayers(workspaceId, scope.tenantId);
   // What enforcement would load after this publish: every other branch's
   // current layer, with this branch's contributed by the revision under review.
   const prospective = [
@@ -227,9 +238,65 @@ async function checkPublishReadiness(
   return null;
 }
 
+export interface PublishReadiness {
+  status: "READY" | "BLOCKED";
+  blockingReasons: string[];
+  requiredRoles: string[];
+  approvals: Awaited<ReturnType<typeof getApprovals>>;
+  verificationRequired: boolean;
+}
+
+/**
+ * What publishing this revision would answer right now, without publishing it.
+ *
+ * Deliberately runs `checkPublishReadiness` — the same function the publish
+ * path runs — so READY here and a refusal there cannot disagree. A CI job polls
+ * this to know whether the reviewers are done; it is a read and takes no
+ * write scope.
+ */
+export async function getPublishReadiness(
+  input: PublishRevisionInput,
+  scope: ActiveScope,
+): Promise<PublishReadiness | { error: string }> {
+  const tenantId = scope.tenantId;
+  // Bound here for the same reason as the publish path: a bearer caller has no
+  // tenant on the connection until its token is authenticated.
+  return runWithTenantContext(tenantId, async () => {
+    const branchRow = await getPublishBranchScope({ tenantId, branchId: input.branchId });
+    if (!branchRow) return { error: "Branch not found." };
+
+    const hasRevision = await revisionExistsOnPublishBranch({
+      tenantId,
+      branchId: input.branchId,
+      revisionId: input.revisionId,
+      workspaceId: branchRow.workspace_id,
+    });
+    if (!hasRevision) return { error: "Revision not found on this branch." };
+
+    const [approvals, approvalWorkflow, blocking] = await Promise.all([
+      getApprovals(input.revisionId, tenantId),
+      getApprovalWorkflowForContext({
+        tenantId,
+        workspaceId: branchRow.workspace_id ?? scope.workspaceId,
+        environment: branchRow.environment,
+      }),
+      checkPublishReadiness(input, scope, branchRow),
+    ]);
+
+    return {
+      status: blocking ? "BLOCKED" : "READY",
+      blockingReasons: blocking ? [blocking] : [],
+      requiredRoles: approvalRulesFromWorkflow(approvalWorkflow).map((rule) => rule.role),
+      approvals,
+      verificationRequired: approvalWorkflow.verificationPolicy?.requireVerification ?? false,
+    };
+  });
+}
+
 export async function publishRevisionDecision(
   input: PublishRevisionInput,
   scope: ActiveScope,
+  resolveActor: ReviewActorResolver,
 ): Promise<PublishRevisionResult> {
   const started = Date.now();
   return await withSpan(
@@ -241,60 +308,66 @@ export async function publishRevisionDecision(
       const workspaceContext = scope;
       const tenantId = workspaceContext.tenantId;
 
-      const authorized = await authorizePublish(input, scope);
-      if ("error" in authorized) return authorized;
-      const { branchRow, actor } = authorized;
+      // Bound once for the whole publish: a bearer caller arrives with no
+      // tenant on the connection, and everything below reads or writes
+      // tenant-scoped rows. Re-binding the same tenant on the session path,
+      // where the session guard already bound it, changes nothing.
+      return runWithTenantContext(tenantId, async () => {
+        const authorized = await authorizePublish(input, scope, resolveActor);
+        if ("error" in authorized) return authorized;
+        const { branchRow, actor } = authorized;
 
-      const readinessError = await checkPublishReadiness(input, scope, branchRow);
-      if (readinessError) return { error: readinessError };
+        const readinessError = await checkPublishReadiness(input, scope, branchRow);
+        if (readinessError) return { error: readinessError };
 
-      const existingArtifactHash = await getExistingPublishArtifactHash({
-        tenantId,
-        branchId: input.branchId,
-        revisionId: input.revisionId,
-      });
-      if (existingArtifactHash) {
-        recordDuration("spctre.review.publish.duration", Date.now() - started, {
-          outcome: "already_published",
-        });
-        return { artifactHash: existingArtifactHash };
-      }
-
-      const artifactHash = `sha256:${createHash("sha256")
-        .update(`${input.revisionId}-${Date.now()}`)
-        .digest("hex")
-        .slice(0, 16)}`;
-
-      try {
-        await insertPolicyPublish({
+        const existingArtifactHash = await getExistingPublishArtifactHash({
           tenantId,
           branchId: input.branchId,
           revisionId: input.revisionId,
-          artifactHash,
+        });
+        if (existingArtifactHash) {
+          recordDuration("spctre.review.publish.duration", Date.now() - started, {
+            outcome: "already_published",
+          });
+          return { artifactHash: existingArtifactHash };
+        }
+
+        const artifactHash = `sha256:${createHash("sha256")
+          .update(`${input.revisionId}-${Date.now()}`)
+          .digest("hex")
+          .slice(0, 16)}`;
+
+        try {
+          await insertPolicyPublish({
+            tenantId,
+            branchId: input.branchId,
+            revisionId: input.revisionId,
+            artifactHash,
+            actorId: actor.id,
+          });
+        } catch (error) {
+          logger.error("[publishRevisionDecision] database error:", {
+            error: error instanceof Error ? error.message : String(error),
+          });
+          return { error: "An unexpected error occurred. Please try again." };
+        }
+
+        appendOperationsLog({
+          tenantId,
+          workspaceId: workspaceContext.workspaceId,
+          eventType: "POLICY_PUBLISH",
+          sourceId: input.revisionId,
+          sourceTable: "policy_publish",
           actorId: actor.id,
-        });
-      } catch (error) {
-        logger.error("[publishRevisionDecision] database error:", {
-          error: error instanceof Error ? error.message : String(error),
-        });
-        return { error: "An unexpected error occurred. Please try again." };
-      }
+          payload: { branchId: input.branchId, revisionId: input.revisionId, artifactHash },
+        }).catch(swallow("appendOperationsLog", undefined));
 
-      appendOperationsLog({
-        tenantId,
-        workspaceId: workspaceContext.workspaceId,
-        eventType: "POLICY_PUBLISH",
-        sourceId: input.revisionId,
-        sourceTable: "policy_publish",
-        actorId: actor.id,
-        payload: { branchId: input.branchId, revisionId: input.revisionId, artifactHash },
-      }).catch(swallow("appendOperationsLog", undefined));
-
-      span.setAttribute("spctre.artifact_hash", artifactHash);
-      recordDuration("spctre.review.publish.duration", Date.now() - started, {
-        outcome: "published",
+        span.setAttribute("spctre.artifact_hash", artifactHash);
+        recordDuration("spctre.review.publish.duration", Date.now() - started, {
+          outcome: "published",
+        });
+        return { artifactHash };
       });
-      return { artifactHash };
     },
   );
 }

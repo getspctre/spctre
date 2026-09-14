@@ -221,16 +221,15 @@ describe("proxy rate limiting", () => {
     }
   });
 
-  it("keeps the allowlist in front of pre-auth and e2e routes", async () => {
-    // Both are reachable past the session gate, and neither verifies a
-    // credential the way the machine API does: onboarding start accepts an
-    // unauthenticated body, and the e2e routes are guarded only by a flag.
+  it("keeps the allowlist in front of pre-auth routes", async () => {
+    // Reachable past the session gate, and verifying no credential the way the
+    // machine API does: onboarding start accepts an unauthenticated body.
     process.env.DATABASE_URL = "postgres://spctre.test/app";
     process.env.SPCTRE_ALLOWED_SOURCE_IPS = "198.51.100.7";
 
     const { proxy } = await import("../proxy");
 
-    for (const pathname of ["/api/onboarding/cli/start", "/api/e2e/policy/publish"]) {
+    for (const pathname of ["/api/onboarding/cli/start"]) {
       const response = await proxy(makeRequest(pathname, "203.0.113.10", { method: "POST" }));
 
       expect(response.status, pathname).toBe(403);

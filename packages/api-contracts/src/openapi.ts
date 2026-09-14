@@ -1218,6 +1218,99 @@ export const SPCTRE_OPENAPI_SPEC = {
         },
       },
 
+      ApprovalDecisionRequest: {
+        type: "object",
+        required: ["revisionId", "role", "approvalStatus"],
+        properties: {
+          revisionId: { type: "string", description: "The policy revision under review." },
+          role: {
+            type: "string",
+            enum: ["Security", "Platform", "Legal", "Ops", "Admin"],
+            description:
+              "The reviewer role this decision is cast in. The token's principal must hold it.",
+          },
+          approvalStatus: {
+            type: "string",
+            enum: ["APPROVED", "CHANGES_REQUESTED", "PENDING"],
+            description: "The decision. Re-submitting replaces this reviewer's previous decision.",
+          },
+          note: {
+            type: "string",
+            description: "Optional reviewer note recorded with the decision.",
+          },
+        },
+      },
+
+      ApprovalDecisionResponse: {
+        type: "object",
+        required: ["ok", "meta"],
+        properties: {
+          ok: { type: "boolean", enum: [true] },
+          meta: { $ref: "#/components/schemas/ApiMeta" },
+        },
+      },
+
+      PolicyPublishRequest: {
+        type: "object",
+        required: ["branchId", "revisionId"],
+        properties: {
+          branchId: { type: "string", description: "The branch to publish from." },
+          revisionId: { type: "string", description: "The reviewed revision to publish." },
+        },
+      },
+
+      PolicyPublishResponse: {
+        type: "object",
+        required: ["artifactHash", "meta"],
+        properties: {
+          artifactHash: {
+            type: "string",
+            description:
+              "Content hash of the published artifact. Republishing the same revision returns the existing hash.",
+          },
+          meta: { $ref: "#/components/schemas/ApiMeta" },
+        },
+      },
+
+      PolicyPublishReadinessResponse: {
+        type: "object",
+        required: [
+          "status",
+          "blockingReasons",
+          "requiredRoles",
+          "approvals",
+          "verificationRequired",
+          "meta",
+        ],
+        properties: {
+          status: {
+            type: "string",
+            enum: ["READY", "BLOCKED"],
+            description: "Whether publishing this revision would be accepted right now.",
+          },
+          blockingReasons: {
+            type: "array",
+            items: { type: "string" },
+            description: "Why it would be refused. Empty when READY.",
+          },
+          requiredRoles: {
+            type: "array",
+            items: { type: "string" },
+            description: "Reviewer roles the workflow requires for this revision.",
+          },
+          approvals: {
+            type: "array",
+            items: { type: "object", additionalProperties: true },
+            description: "Decisions recorded so far, by reviewer and role.",
+          },
+          verificationRequired: {
+            type: "boolean",
+            description: "Whether the workflow requires a verification run before publishing.",
+          },
+          meta: { $ref: "#/components/schemas/ApiMeta" },
+        },
+      },
+
       PolicyImportResponse: {
         type: "object",
         required: [
@@ -1338,6 +1431,11 @@ export const SPCTRE_OPENAPI_SPEC = {
       },
       BadRequest: {
         description: "Request body failed schema validation.",
+        content: { "application/json": { schema: { $ref: "#/components/schemas/ApiError" } } },
+      },
+      UnprocessableEntity: {
+        description:
+          "The request was understood, but the resource's current state refuses it — an unmet review gate rather than a malformed request.",
         content: { "application/json": { schema: { $ref: "#/components/schemas/ApiError" } } },
       },
       ServiceUnavailable: {
@@ -2826,6 +2924,112 @@ export const SPCTRE_OPENAPI_SPEC = {
             description: "New draft branch created.",
             content: {
               "application/json": { schema: { $ref: "#/components/schemas/PolicyImportResponse" } },
+            },
+          },
+          "400": { $ref: "#/components/responses/BadRequest" },
+          "401": { $ref: "#/components/responses/Unauthorized" },
+          "404": { $ref: "#/components/responses/NotFound" },
+        },
+      },
+    },
+    "/approvals": {
+      post: {
+        operationId: "submitApproval",
+        summary: "Submit a review decision for a policy revision",
+        description:
+          "Records an approval or a change request against a policy revision, as the principal the token was issued to. Requires the `approvals:write` scope, which is admin-issuable only and never granted to runtime agent tokens — so a governed agent can never approve the policy that governs it. There is no actor field: the reviewer is read from the token, so a key can only review in the roles its own principal holds. An approval is unique per (revision, reviewer), so a workflow requiring two roles requires two keys held by two reviewers — the same rule the review console applies. 422 means the revision exists but the review state refused the decision, including when the principal holds no grant in the workspace.",
+        "x-spctre-plan": "oss",
+        tags: ["Review"],
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/ApprovalDecisionRequest" },
+            },
+          },
+        },
+        responses: {
+          "200": {
+            description: "Decision recorded.",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/ApprovalDecisionResponse" },
+              },
+            },
+          },
+          "400": { $ref: "#/components/responses/BadRequest" },
+          "401": { $ref: "#/components/responses/Unauthorized" },
+          "403": { $ref: "#/components/responses/Forbidden" },
+          "404": { $ref: "#/components/responses/NotFound" },
+          "422": { $ref: "#/components/responses/UnprocessableEntity" },
+        },
+      },
+    },
+    "/policy/publishes": {
+      post: {
+        operationId: "publishPolicyRevision",
+        summary: "Publish an approved policy revision",
+        description:
+          "Publishes a reviewed revision as the principal the token was issued to, for automation/CI. Requires the `publish:write` scope, which is admin-issuable only and never granted to runtime agent tokens. Every gate the review console applies applies here — required approvals, verification policy, rule validation, the evaluation request budget, managed-replay regressions, and unresolved gateway escalations — because this runs the same publish path. Idempotent: publishing an already-published revision returns its existing artifact hash. 422 carries the reason a revision is not publishable yet; poll `/policy/publishes/readiness` to learn that without attempting a publish.",
+        "x-spctre-plan": "oss",
+        tags: ["Review"],
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": { schema: { $ref: "#/components/schemas/PolicyPublishRequest" } },
+          },
+        },
+        responses: {
+          "201": {
+            description: "Revision published.",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/PolicyPublishResponse" },
+              },
+            },
+          },
+          "400": { $ref: "#/components/responses/BadRequest" },
+          "401": { $ref: "#/components/responses/Unauthorized" },
+          "403": { $ref: "#/components/responses/Forbidden" },
+          "404": { $ref: "#/components/responses/NotFound" },
+          "422": { $ref: "#/components/responses/UnprocessableEntity" },
+        },
+      },
+    },
+    "/policy/publishes/readiness": {
+      get: {
+        operationId: "getPolicyPublishReadiness",
+        summary: "Report whether a revision can be published yet",
+        description:
+          "Runs the same readiness check the publish path runs and reports what is still blocking, without publishing anything. Requires only `approvals:read`. A READY answer is the answer `POST /policy/publishes` would act on.",
+        "x-spctre-plan": "oss",
+        tags: ["Review"],
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          {
+            name: "branchId",
+            in: "query",
+            required: true,
+            schema: { type: "string" },
+            description: "The branch the revision belongs to.",
+          },
+          {
+            name: "revisionId",
+            in: "query",
+            required: true,
+            schema: { type: "string" },
+            description: "The revision to evaluate.",
+          },
+        ],
+        responses: {
+          "200": {
+            description: "Publish readiness for the revision.",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/PolicyPublishReadinessResponse" },
+              },
             },
           },
           "400": { $ref: "#/components/responses/BadRequest" },

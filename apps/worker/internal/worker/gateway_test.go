@@ -220,10 +220,6 @@ func TestIsDemoTenant(t *testing.T) {
 		t.Fatal("expected default demo UUID to be demo tenant when env is empty")
 	}
 
-	t.Setenv("SPCTRE_E2E_API_ENABLED", "true")
-	if !isDemoTenant("00000000-0000-0000-0000-000000000001") {
-		t.Fatal("expected E2E API flag to leave demo tenant classification unchanged")
-	}
 }
 
 func TestGatewayDecisionRequestSanitization(t *testing.T) {
