@@ -26,7 +26,7 @@ export const SPCTRE_OPENAPI_SPEC = {
   // resets and never decreases; a new API version restarts it at `.1`.
   // Published alongside the artifact digests in the schema-registry manifest,
   // so a consumer can tell two builds of the same API version apart.
-  "x-spctre-spec-revision": "2026-01.2",
+  "x-spctre-spec-revision": "2026-01.3",
 
   info: {
     title: "Spctre API",
@@ -1246,6 +1246,45 @@ export const SPCTRE_OPENAPI_SPEC = {
         required: ["ok", "meta"],
         properties: {
           ok: { type: "boolean", enum: [true] },
+          meta: { $ref: "#/components/schemas/ApiMeta" },
+        },
+      },
+
+      SimulationRunRequest: {
+        type: "object",
+        required: ["branchId", "revisionId"],
+        properties: {
+          branchId: { type: "string", description: "The branch the revision belongs to." },
+          revisionId: { type: "string", description: "The revision to replay evidence against." },
+        },
+      },
+
+      SimulationRunResponse: {
+        type: "object",
+        required: [
+          "runId",
+          "branchId",
+          "revisionId",
+          "total",
+          "newlyDenied",
+          "newlyAllowed",
+          "unchanged",
+          "meta",
+        ],
+        properties: {
+          runId: { type: "string", description: "Identifier of the recorded simulation run." },
+          branchId: { type: "string" },
+          revisionId: { type: "string" },
+          total: { type: "integer", description: "Evidence events replayed." },
+          newlyDenied: {
+            type: "integer",
+            description: "Events the revision would deny that the published policy allowed.",
+          },
+          newlyAllowed: {
+            type: "integer",
+            description: "Events the revision would allow that the published policy denied.",
+          },
+          unchanged: { type: "integer", description: "Events whose outcome does not change." },
           meta: { $ref: "#/components/schemas/ApiMeta" },
         },
       },
@@ -2962,6 +3001,37 @@ export const SPCTRE_OPENAPI_SPEC = {
           "401": { $ref: "#/components/responses/Unauthorized" },
           "403": { $ref: "#/components/responses/Forbidden" },
           "404": { $ref: "#/components/responses/NotFound" },
+          "422": { $ref: "#/components/responses/UnprocessableEntity" },
+        },
+      },
+    },
+    "/simulations": {
+      post: {
+        operationId: "runSimulation",
+        summary: "Replay retained evidence against a revision",
+        description:
+          "Runs a managed simulation for a revision, replaying the workspace's retained evidence against it and recording the run with its regression summary. Requires the `simulation:run` scope; the run is attributed to the principal the token was issued to. Unlike approving or publishing, this authorizes on the scope alone — a replay decides nothing, it reports what the revision would have done to traffic that already happened. On a workspace entitled to bulk production simulation, publishing is blocked until a managed run exists for the revision, so an automated promotion needs this to finish the reviewed path. The gate is unchanged: publish still refuses a run whose regressions are blocking. 422 means there is nothing to replay yet.",
+        "x-spctre-plan": "oss",
+        tags: ["Simulation"],
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": { schema: { $ref: "#/components/schemas/SimulationRunRequest" } },
+          },
+        },
+        responses: {
+          "201": {
+            description: "Simulation run recorded.",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/SimulationRunResponse" },
+              },
+            },
+          },
+          "400": { $ref: "#/components/responses/BadRequest" },
+          "401": { $ref: "#/components/responses/Unauthorized" },
+          "403": { $ref: "#/components/responses/Forbidden" },
           "422": { $ref: "#/components/responses/UnprocessableEntity" },
         },
       },

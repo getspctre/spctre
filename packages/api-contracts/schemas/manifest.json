@@ -3,7 +3,7 @@
   "manifestUrl": "https://schema.spctre.dev/manifest.json",
   "dialect": "https://json-schema.org/draft/2020-12/schema",
   "pathBase": "repository-root",
-  "specRevision": "2026-01.2",
+  "specRevision": "2026-01.3",
   "artifacts": [
     {
       "id": "spctre.adapter.declaration.v1",
@@ -111,7 +111,7 @@
       "description": "OpenAPI 3.1 description of the public /api/v1/ surface. The version segment is `info.version`, which is frozen; revisions within it are identified by the spec's `x-spctre-spec-revision`.",
       "url": "https://schema.spctre.dev/openapi/spctre-api/2026-01.json",
       "path": "packages/api-contracts/openapi.json",
-      "sha256": "25c08f857ce97b77562ae513b7b08cad61f60e2fdc987d9d6bcd99c208241aef",
+      "sha256": "30f14065a6f871977b7e8934cadd81281017281d001145c03490574c1ca58dd3",
       "immutable": false
     },
     {

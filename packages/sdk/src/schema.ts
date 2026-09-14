@@ -861,6 +861,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/simulations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Replay retained evidence against a revision
+         * @description Runs a managed simulation for a revision, replaying the workspace's retained evidence against it and recording the run with its regression summary. Requires the `simulation:run` scope; the run is attributed to the principal the token was issued to. Unlike approving or publishing, this authorizes on the scope alone — a replay decides nothing, it reports what the revision would have done to traffic that already happened. On a workspace entitled to bulk production simulation, publishing is blocked until a managed run exists for the revision, so an automated promotion needs this to finish the reviewed path. The gate is unchanged: publish still refuses a run whose regressions are blocking. 422 means there is nothing to replay yet.
+         */
+        post: operations["runSimulation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/policy/publishes": {
         parameters: {
             query?: never;
@@ -1745,6 +1765,27 @@ export interface components {
         ApprovalDecisionResponse: {
             /** @enum {boolean} */
             ok: true;
+            meta: components["schemas"]["ApiMeta"];
+        };
+        SimulationRunRequest: {
+            /** @description The branch the revision belongs to. */
+            branchId: string;
+            /** @description The revision to replay evidence against. */
+            revisionId: string;
+        };
+        SimulationRunResponse: {
+            /** @description Identifier of the recorded simulation run. */
+            runId: string;
+            branchId: string;
+            revisionId: string;
+            /** @description Evidence events replayed. */
+            total: number;
+            /** @description Events the revision would deny that the published policy allowed. */
+            newlyDenied: number;
+            /** @description Events the revision would allow that the published policy denied. */
+            newlyAllowed: number;
+            /** @description Events whose outcome does not change. */
+            unchanged: number;
             meta: components["schemas"]["ApiMeta"];
         };
         PolicyPublishRequest: {
@@ -3438,6 +3479,34 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    runSimulation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SimulationRunRequest"];
+            };
+        };
+        responses: {
+            /** @description Simulation run recorded. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SimulationRunResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
             422: components["responses"]["UnprocessableEntity"];
         };
     };

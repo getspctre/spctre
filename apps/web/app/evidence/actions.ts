@@ -9,6 +9,7 @@ import {
 import { revalidatePaths } from "@/lib/platform/cache";
 import { verifyWriteAccess } from "@/lib/demo-guard";
 import { getActiveScope, getWorkspaceContext } from "@/lib/workspace";
+import { getActiveActor } from "@/lib/actors";
 import { swallow } from "@/lib/platform/swallow";
 
 export type SimulationState =
@@ -41,7 +42,12 @@ export async function runSimulation(
   const branchId = (formData.get("branchId") as string | null) ?? "";
   const revisionId = (formData.get("revisionId") as string | null) ?? "";
 
-  const result = await runSimulationDecision({ branchId, revisionId });
+  const scope = await getActiveScope();
+  const { actor } = await getActiveActor(scope);
+  const result = await runSimulationDecision(
+    { branchId, revisionId },
+    { ...scope, actorId: actor.id },
+  );
   if ("error" in result) {
     return result;
   }
