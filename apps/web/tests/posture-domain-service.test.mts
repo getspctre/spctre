@@ -110,20 +110,17 @@ describe("overall status", () => {
     expect(model.findings.every((f) => f.severity !== "HIGH")).toBe(true);
   });
 
-  it("never reports READY, because one finding is always emitted", async () => {
-    // The control-mapping branch emits a finding in all three of its cases,
-    // including the affirmative one ("Published pack controls are mapped").
-    // So `findings` is never empty, and READY, the "aligned" summary and a
-    // READY CONTROL_HEALTH dimension are all unreachable today. Pinned as it
-    // behaves, not as the type suggests — see the note in the pull request.
+  it("is READY when a published workspace has nothing outstanding", async () => {
+    // Reachable only since the control-mapping branch stopped emitting an
+    // affirmative finding: a positive statement is not something to act on, and
+    // emitting one made every workspace in existence report ATTENTION.
     published();
 
     const model = await getPostureModel(PARAMS);
 
-    expect(model.status).toBe("ATTENTION");
-    expect(model.findings).toEqual([
-      expect.objectContaining({ id: "pack-maturity", severity: "LOW" }),
-    ]);
+    expect(model.status).toBe("READY");
+    expect(model.findings).toEqual([]);
+    expect(model.summary).toBe("Declared policy, runtimes, and evidence signals are aligned.");
   });
 
   it("treats an unpublished workspace as something to act on", async () => {
@@ -151,8 +148,7 @@ describe("severity ordering", () => {
 
     const model = await getPostureModel(PARAMS);
 
-    // Trailing LOW is the always-present pack-maturity note.
-    expect(model.findings.map((f) => f.severity)).toEqual(["HIGH", "MEDIUM", "LOW", "LOW"]);
+    expect(model.findings.map((f) => f.severity)).toEqual(["HIGH", "MEDIUM", "LOW"]);
   });
 
   it("counts the findings in the summary", async () => {
@@ -164,13 +160,12 @@ describe("severity ordering", () => {
 
     const model = await getPostureModel(PARAMS);
 
-    // Two unused rules plus the always-present pack-maturity note.
-    expect(model.summary).toBe("3 prioritized findings need review.");
+    expect(model.summary).toBe("2 prioritized findings need review.");
   });
 
   it("uses the singular for one finding", async () => {
-    // The pack-maturity note on its own is the only way to reach a count of one.
     published();
+    getUnusedActiveRulesSpy.mockResolvedValue([{ stableRuleId: "a", connectors: [] }]);
 
     const model = await getPostureModel(PARAMS);
 
@@ -311,24 +306,17 @@ describe("control mapping maturity", () => {
       expect.objectContaining({
         id: "control-mappings",
         severity: "LOW",
-        title: "1 published rules lack control mappings",
+        title: "1 published rule lacks control mappings",
       }),
     ]);
   });
 
-  it("reports maturity as a finding even when every rule is mapped", async () => {
+  it("says nothing at all when every published rule is mapped", async () => {
     published();
 
     const model = await getPostureModel(PARAMS);
 
-    expect(model.findings).toEqual([
-      expect.objectContaining({
-        id: "pack-maturity",
-        severity: "LOW",
-        title: "Published pack controls are mapped",
-        detail: "1 published rule carries at least one control mapping.",
-      }),
-    ]);
+    expect(model.findings).toEqual([]);
   });
 });
 
@@ -344,11 +332,8 @@ describe("dimensions", () => {
       "SCOPE_INTEGRITY",
       "OPERATIONAL_EFFICIENCY",
     ]);
-    // The two without findings are READY; CONTROL_HEALTH carries the
-    // always-present pack-maturity note.
-    expect(byId.SCOPE_INTEGRITY).toBe("READY");
-    expect(byId.OPERATIONAL_EFFICIENCY).toBe("READY");
-    expect(byId.CONTROL_HEALTH).toBe("ATTENTION");
+    expect(model.dimensions.every((d) => d.status === "READY")).toBe(true);
+    expect(byId.CONTROL_HEALTH).toBe("READY");
   });
 
   it("marks only the dimension carrying a HIGH finding as AT_RISK", async () => {
@@ -361,7 +346,7 @@ describe("dimensions", () => {
 
     expect(byId.SCOPE_INTEGRITY).toBe("AT_RISK");
     expect(byId.OPERATIONAL_EFFICIENCY).toBe("ATTENTION");
-    expect(byId.CONTROL_HEALTH).toBe("ATTENTION");
+    expect(byId.CONTROL_HEALTH).toBe("READY");
   });
 });
 
