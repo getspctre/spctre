@@ -15,10 +15,14 @@ overrides:
   axios>form-data: 4.0.6
   esbuild: 0.28.1
   '@types/request>form-data': 2.5.6
-  '@opentelemetry/core': 2.8.0
-  '@opentelemetry/sdk-node': 0.220.0
-  '@opentelemetry/auto-instrumentations-node': 0.78.0
-  '@opentelemetry/propagator-jaeger': 2.9.0
+  # Floors, not pins. As exact versions these outranked the manifests, and
+  # auto-instrumentations-node proved it: the packages asked for ^0.79.0 while
+  # the lockfile stayed on 0.78.0, a version they no longer permit, so the bump
+  # that raised them changed nothing. Same correction as @grpc/grpc-js and axios.
+  '@opentelemetry/core': '>=2.8.0'
+  '@opentelemetry/sdk-node': '>=0.220.0'
+  '@opentelemetry/auto-instrumentations-node': '>=0.78.0'
+  '@opentelemetry/propagator-jaeger': '>=2.9.0'
   # A floor, not a pin. This was `4.12.34`, which cleared an advisory when it was
   # written and then became one: an exact override outranks whatever a manifest
   # asks for, so the lockfile could not leave 4.12.34 until this line did.
