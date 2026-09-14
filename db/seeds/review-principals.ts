@@ -29,6 +29,11 @@
  *
  * The overrides apply to that execution only; the job keeps running migrations.
  *
+ * There, the keys are written to the Secret Manager secret named by
+ * SPCTRE_SEED_KEYS_SECRET and never printed -- a job's stdout is its execution
+ * log, which is the wrong home for a live bearer token. Locally, with no secret
+ * named, they are printed to the terminal instead.
+ *
  * Reads DATABASE_URL from (in order): shell env -> .env.local -> .env.
  */
 
@@ -66,6 +71,12 @@ if (!DATABASE_URL) {
 }
 
 const TENANT_ID = process.env.SPCTRE_SEED_TENANT_ID ?? "00000000-0000-0000-0000-000000000001";
+/**
+ * Where to put the keys when there is somewhere safe to put them: a Secret
+ * Manager secret, as `projects/<p>/secrets/<name>`. Set on a deployed
+ * environment, unset locally.
+ */
+const KEYS_SECRET = process.env.SPCTRE_SEED_KEYS_SECRET ?? "";
 const WORKSPACE_ID = process.env.SPCTRE_SEED_WORKSPACE_ID ?? "00000000-0000-0000-0000-000000000002";
 
 interface SeedReviewer {
@@ -162,20 +173,79 @@ async function seedReviewer(
   return { principalId: principal.id, token: rawToken };
 }
 
+/**
+ * Publishes the keys as a new version of `KEYS_SECRET`, using the runtime
+ * service account from the metadata server -- no client library, because this
+ * image carries a Postgres driver and nothing else.
+ */
+async function publishKeys(body: string): Promise<void> {
+  const tokenRes = await fetch(
+    "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token",
+    { headers: { "Metadata-Flavor": "Google" } },
+  );
+  if (!tokenRes.ok) {
+    throw new Error(`metadata server refused a token: ${tokenRes.status} ${await tokenRes.text()}`);
+  }
+  const { access_token: accessToken } = (await tokenRes.json()) as { access_token: string };
+
+  const res = await fetch(`https://secretmanager.googleapis.com/v1/${KEYS_SECRET}:addVersion`, {
+    method: "POST",
+    headers: { authorization: `Bearer ${accessToken}`, "content-type": "application/json" },
+    body: JSON.stringify({ payload: { data: Buffer.from(body, "utf8").toString("base64") } }),
+  });
+  if (!res.ok) {
+    throw new Error(`addVersion on ${KEYS_SECRET} failed: ${res.status} ${await res.text()}`);
+  }
+}
+
 async function main() {
   console.log(`Seeding reviewers in workspace ${WORKSPACE_ID} (tenant ${TENANT_ID})\n`);
+
+  const envLines: string[] = [];
+  const publicLines: string[] = [];
+
   for (const reviewer of REVIEWERS) {
     const { principalId, token } = await seedReviewer(reviewer);
-    console.log(`# ${reviewer.displayName} -- roles: ${reviewer.reviewerRoles.join(", ")}`);
-    console.log(`${reviewer.envVar}=${token}`);
-    console.log(`${reviewer.envVar.replace(/_TOKEN$/, "_PRINCIPAL_ID")}=${principalId}`);
-    console.log(`${reviewer.envVar.replace(/_TOKEN$/, "_EMAIL")}=${reviewer.email}\n`);
+    const idVar = reviewer.envVar.replace(/_TOKEN$/, "_PRINCIPAL_ID");
+    const emailVar = reviewer.envVar.replace(/_TOKEN$/, "_EMAIL");
+
+    envLines.push(`# ${reviewer.displayName} -- roles: ${reviewer.reviewerRoles.join(", ")}`);
+    envLines.push(`${reviewer.envVar}=${token}`);
+    envLines.push(`${idVar}=${principalId}`);
+    envLines.push(`${emailVar}=${reviewer.email}`, "");
+
+    // Everything except the key itself. Safe to log anywhere.
+    publicLines.push(`${reviewer.displayName} -- roles: ${reviewer.reviewerRoles.join(", ")}`);
+    publicLines.push(`  ${idVar}=${principalId}`);
+    publicLines.push(`  ${emailVar}=${reviewer.email}`);
   }
-  console.log("Copy the lines above into spctre-e2e/.env (or .env.staging).");
+
+  const body = `${envLines.join("\n")}\n`;
+
+  if (!KEYS_SECRET) {
+    // No secret store named, which is the local case: the operator's terminal
+    // is where these belong.
+    console.log(body);
+    console.log("Copy the lines above into spctre-e2e/.env.");
+    console.log(
+      "\nThese are live bearer tokens. Re-running this seed deletes each key and\n" +
+        "issues a new one, which is also how you rotate them.",
+    );
+    return;
+  }
+
+  // Written, never printed. If the write fails the run fails with it: the keys
+  // exist in the database but nothing has seen them, and the next run replaces
+  // both. Printing them as a fallback would defeat the point of the secret.
+  await publishKeys(body);
+
+  console.log(publicLines.join("\n"));
+  console.log(`\nKeys written to ${KEYS_SECRET} (new version). Read them with:\n`);
+  console.log(`  gcloud secrets versions access latest --secret=${KEYS_SECRET.split("/").pop()}\n`);
   console.log(
-    "\nThese are live bearer tokens. Run as a job, they are written to that\n" +
-      "execution's logs -- treat the log entry accordingly. Re-running this seed\n" +
-      "deletes each key and issues a new one, which is also how you rotate them.",
+    "The output is env-file lines, so it appends straight into the e2e suite's\n" +
+      "env file. Re-running this seed issues new keys and adds a new version,\n" +
+      "which is also how you rotate them.",
   );
 }
 
