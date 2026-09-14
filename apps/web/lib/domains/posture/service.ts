@@ -94,7 +94,6 @@ export async function getPostureModel(params: {
       !agent.latestPublishedHash || agent.currentArtifactHash !== agent.latestPublishedHash,
   );
   const unmappedRules = publishedRules.filter((rule) => !rule.controlMappings?.length);
-  const mappedRules = publishedRules.length - unmappedRules.length;
   const findings: PostureFinding[] = [
     ...ungoverned
       .slice(0, 6)
@@ -164,7 +163,7 @@ export async function getPostureModel(params: {
             id: "control-mappings",
             dimension: "CONTROL_HEALTH" as const,
             severity: "LOW" as const,
-            title: `${unmappedRules.length} published rules lack control mappings`,
+            title: `${unmappedRules.length} published rule${unmappedRules.length === 1 ? " lacks" : "s lack"} control mappings`,
             detail: "Map controls before relying on the export for external assurance.",
             affectedScope: "Published artifact",
             action: {
@@ -174,20 +173,13 @@ export async function getPostureModel(params: {
           },
         ]
       : published
-        ? [
-            {
-              id: "pack-maturity",
-              dimension: "CONTROL_HEALTH" as const,
-              severity: "LOW" as const,
-              title: "Published pack controls are mapped",
-              detail: `${mappedRules} published rule${mappedRules === 1 ? " carries" : "s carry"} at least one control mapping.`,
-              affectedScope: "Published artifact",
-              action: {
-                label: "Open compliance packet",
-                href: `/${params.workspaceSlug}/compliance/packet#control-mappings`,
-              },
-            },
-          ]
+        ? // Nothing to report: every published rule carries a control mapping.
+          // This branch used to emit an affirmative finding, which made
+          // `findings` non-empty for every workspace in existence -- so READY,
+          // the "signals are aligned" summary, a READY CONTROL_HEALTH
+          // dimension, and the section's ShieldCheck icon and empty-state line
+          // were all unreachable. A finding is something to act on.
+          []
         : [
             {
               id: "pack-maturity",
