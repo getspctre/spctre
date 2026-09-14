@@ -119,6 +119,20 @@ export interface FileArtifact extends ArtifactCoordinates {
   description: string;
   /** Repo-relative path of the file to publish. */
   path: string;
+  /**
+   * Whether the published URL's bytes may change. Defaults to true, which is
+   * the rule for every JSON Schema here: a contract revision ships as a new
+   * `<version>` segment, and the publisher refuses an in-place edit.
+   *
+   * Set false only where the version segment is not a document revision. The
+   * OpenAPI document is the case: its segment is `info.version`, the API
+   * version echoed to clients in every response envelope, and an API version
+   * legitimately gains endpoints over its life. Freezing its bytes would mean
+   * either never describing a new endpoint or minting a new API version for
+   * each one. Which revision is published is still identifiable — from the
+   * spec's own `x-spctre-spec-revision` and this manifest's digest.
+   */
+  immutable?: boolean;
 }
 
 export type RegistryArtifact = ZodArtifact | FileArtifact;
@@ -341,5 +355,6 @@ export const REGISTRY_ARTIFACTS: RegistryArtifact[] = [
     description:
       "OpenAPI 3.1 description of the public /api/v1/ surface. The version segment is `info.version`, which is frozen; revisions within it are identified by the spec's `x-spctre-spec-revision`.",
     path: "packages/api-contracts/openapi.json",
+    immutable: false,
   },
 ];

@@ -49,6 +49,11 @@ interface ManifestEntry {
   url: string;
   path: string;
   sha256: string;
+  /**
+   * Emitted only where it differs from the publisher's own inference, which
+   * treats every non-`latest` path as immutable. See `FileArtifact.immutable`.
+   */
+  immutable?: boolean;
 }
 
 /**
@@ -181,6 +186,9 @@ export async function emitRegistry(repoRoot: string, specRevision: string): Prom
       url: artifactUrl(artifact),
       path,
       sha256: sha256(join(repoRoot, path)),
+      ...("immutable" in artifact && artifact.immutable === false
+        ? { immutable: false }
+        : {}),
     };
   });
 
