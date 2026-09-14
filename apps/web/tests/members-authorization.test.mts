@@ -65,8 +65,13 @@ const ACTOR = "principal-actor";
 const TARGET = "principal-target";
 const WORKSPACE = "workspace-1";
 
-/** Ranked most privileged first, matching ROLE_RANK. */
-const LADDER: OrgRole[] = ["OWNER", "ADMIN", "REVIEWER", "CONTRIBUTOR", "VIEWER"];
+/**
+ * Derived from ORG_ROLES rather than restated, so a role added to the product
+ * joins this matrix on its own. ORG_ROLES is declared most-privileged first,
+ * matching ROLE_RANK; a role inserted at the wrong position fails the pairs
+ * below rather than needing a separate assertion about the list itself.
+ */
+const LADDER: OrgRole[] = [...ORG_ROLES];
 
 /** The rule under test, restated independently of the implementation. */
 function shouldAllow(actor: OrgRole, target: OrgRole): boolean {
@@ -95,14 +100,6 @@ beforeEach(() => {
   upsertOrganizationInviteSpy.mockResolvedValue({ id: TARGET });
   getPrincipalBySubjectSpy.mockResolvedValue(null);
   sendMemberInviteEmailSpy.mockResolvedValue(undefined);
-});
-
-describe("the role ladder is complete", () => {
-  it("covers every ordered pair of organization roles", () => {
-    // Guards the table below: a new role added to ORG_ROLES without a rank
-    // would otherwise be silently untested.
-    expect([...ORG_ROLES].sort()).toEqual([...LADDER].sort());
-  });
 });
 
 describe("inviting a member", () => {
