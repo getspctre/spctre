@@ -31,7 +31,12 @@ vi.mock("@/lib/db", () => ({
 
 vi.mock("@/lib/repositories/seed/local-dev", () => ({ ensureDemoTenant: ensureDemoTenantMock }));
 
-vi.mock("@/lib/service-tokens", () => ({ issueAccessRefreshPair: issueAccessRefreshPairMock }));
+vi.mock("@/lib/service-tokens", async (importOriginal) => ({
+  // The real scope list: onboarding reads it rather than keeping its own copy,
+  // so stubbing it here would hide the thing the exchange is asserted on.
+  ...(await importOriginal<typeof import("@/lib/service-tokens")>()),
+  issueAccessRefreshPair: issueAccessRefreshPairMock,
+}));
 
 vi.mock("@/lib/repositories/onboarding/shared", () => ({
   ONBOARDING_TTL_MINUTES: 10,
