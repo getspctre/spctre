@@ -1,60 +1,32 @@
 ---
-title: Using the audit trail
-description: Tracing a specific decision back to its policy revision and reading the evaluation trace.
+title: Investigating decision evidence
+description: Find a recorded agent decision and inspect its rule and policy provenance.
 ---
 
-The audit trail is an immutable, append-only log of every governance event in Spctre — every agent decision, policy revision, review approval, and escalation resolution. It's the source of truth for compliance investigations and auditor queries.
+Open **Audit → Decision evidence** to investigate recorded agent decisions. Policy publication, approval, and other administrative events are listed separately in **Change ledger**.
 
-## Opening the audit trail
+## Finding a decision
 
-In the left nav under **Audit**, click **Decision evidence**.
+Choose **Search** to filter the evidence loaded on the current page by text, status, connector, runtime stack, branch, revision, or date. A new search has no implicit connector or status filter. Use **Reset** to clear the filters.
 
-## Searching
+Branch and revision inputs suggest references from the loaded evidence. A branch name is shown when its provenance includes one. You can also enter an exact ID; revision suggestions narrow when you select a branch. These suggestions are not a catalog of every revision in the workspace.
 
-Use the search bar to find a specific record:
+## Inspecting a result
 
-| Search field | Example |
-|---|---|
-| Decision ID | `dec_01j9xk…` |
-| Agent ID | `agt_stripe-worker-01` |
-| Policy branch name | `stripe-high-value` |
-| Reviewer name or email | `jane@example.com` |
-| Rule ID | `stripe.deny_high_value_charge` |
+Choose **Inspect decision** on a search result. The same details used by the evidence table appear in the search panel:
 
-Results are ordered by timestamp descending. Use the date filter to narrow to a specific period before searching.
+- Recorded outcome, reason, agent, runtime, and environment.
+- Decision ID, artifact hash, and evidence source.
+- Policy references linking to the rule inventory.
+- Policy context linking to the governing branch, with approval and publication metadata when recorded.
+- Additional intent, parameters, and adapter metadata when available.
 
-## Event types
+Choose **Back to search results** to return with your search fields intact. In the main evidence table, choose the action button to inspect a record with the keyboard, or click its row.
 
-| Event type | Description |
-|---|---|
-| `decision.allow` | Agent decision permitted by policy |
-| `decision.deny` | Agent decision blocked by policy |
-| `decision.warn` | Agent decision permitted but flagged |
-| `decision.escalate` | Agent decision paused for human review |
-| `decision.gap` | Agent decision with no policy coverage |
-| `escalation.resolved` | Human resolved a live escalation |
-| `policy.published` | Policy branch approved and bundle generated |
-| `policy.branch_submitted` | Branch submitted for review |
-| `policy.branch_approved` | Reviewer approved a branch |
-| `policy.branch_rejected` | Reviewer rejected a branch |
+## Reading timestamps
 
-## Tracing a decision
+Evidence timestamps include seconds and an explicit **UTC** timezone. Their presentation follows your interface language. Hover over a timestamp to see the precise ISO timestamp.
 
-Click any decision event to open the full trace. The trace shows:
+## Evidence limits
 
-1. **Decision context** — agent, connector, action, payload hash, timestamp
-2. **Policy evaluation** — which bundle revision was loaded; which rules were evaluated in order
-3. **Matched rule** — the rule that produced the final decision, with its conditions and their evaluation results
-4. **Policy provenance** — the branch, revision, review approvals, and publish timestamp for the matched rule
-
-This gives you an unbroken chain from a single agent action back to the human review that approved the governing rule.
-
-## Sharing a trace with an auditor
-
-Click **Copy link** on any audit trail entry to get a permanent link to that record. The link includes the record ID — share it directly with an auditor.
-
-Alternatively, use the decision ID in a compliance export and let the auditor cross-reference with the audit trail.
-
-## Immutability guarantee
-
-Audit trail records cannot be edited or deleted by any user — including admins. The trail is append-only. If a record needs annotation, use the **Add note** feature which appends a timestamped note without modifying the original record.
+Inspect the information actually recorded for the decision. Missing policy context or provenance is displayed as missing; it is not proof that an approval occurred. Use the evidence export and the Change ledger when an investigation also requires administrative events.

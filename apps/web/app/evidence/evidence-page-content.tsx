@@ -115,6 +115,9 @@ export async function EvidencePageContent({
             ) : null}
             <EvidenceSearchInspector
               actionPath={evidencePath}
+              evidence={evidence}
+              workspaceSlug={workspaceContext.workspaceSlug}
+              controlMappingIndex={controlMappingIndex}
               defaultOpen={searchInspectorOpen}
               forensicMode={forensicMode}
               runtimeStacks={[...runtimeStacks]}

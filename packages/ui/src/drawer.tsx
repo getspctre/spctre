@@ -3,6 +3,9 @@
 import { useEffect, useId, useRef, type HTMLAttributes, type ReactNode } from "react";
 import { cx } from "./utils";
 
+const openDrawers: HTMLElement[] = [];
+let unlockedOverflow = "";
+
 const FOCUSABLE = [
   "a[href]",
   "button:not([disabled])",
@@ -42,30 +45,62 @@ export function Drawer({
   const descriptionId = useId();
   const panelRef = useRef<HTMLElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
+  const closeRef = useRef(onClose);
+  useEffect(() => {
+    closeRef.current = onClose;
+  }, [onClose]);
 
   useEffect(() => {
     if (!open) return;
 
+    const panel = panelRef.current;
+    if (!panel) return;
+    if (openDrawers.length === 0) unlockedOverflow = document.body.style.overflow;
     previousFocusRef.current =
       document.activeElement instanceof HTMLElement ? document.activeElement : null;
     document.body.style.overflow = "hidden";
-    panelRef.current?.focus();
-
+    openDrawers.push(panel);
+    const isTop = () => openDrawers[openDrawers.length - 1] === panel;
+    const focusableElements = () =>
+      Array.from(panel.querySelectorAll<HTMLElement>(FOCUSABLE)).filter((element) => {
+        if (element.closest("[hidden], [inert]")) return false;
+        let ancestor: HTMLElement | null = element;
+        while (ancestor && ancestor !== panel) {
+          const style = getComputedStyle(ancestor);
+          if (style.display === "none" || style.visibility === "hidden") return false;
+          if (
+            ancestor.tagName === "DETAILS" &&
+            !ancestor.hasAttribute("open") &&
+            !ancestor.querySelector("summary")?.contains(element)
+          )
+            return false;
+          ancestor = ancestor.parentElement;
+        }
+        return true;
+      });
+    const focusFirst = () => (focusableElements()[0] ?? panel).focus();
+    focusFirst();
+    const onFocus = (event: FocusEvent) => {
+      if (isTop() && event.target instanceof Node && !panel.contains(event.target)) focusFirst();
+    };
     const onKeyDown = (event: KeyboardEvent) => {
+      if (!isTop()) return;
       if (event.key === "Escape") {
-        onClose();
-        return;
-      }
-      if (event.key !== "Tab" || !panelRef.current) return;
-
-      const focusable = Array.from(panelRef.current.querySelectorAll<HTMLElement>(FOCUSABLE));
-      if (!focusable.length) {
         event.preventDefault();
+        closeRef.current();
         return;
       }
+      if (event.key !== "Tab") return;
+      const focusable = focusableElements();
       const first = focusable[0];
       const last = focusable[focusable.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
+      if (!first || !last) {
+        event.preventDefault();
+        panel.focus();
+      } else if (!panel.contains(document.activeElement) || document.activeElement === panel) {
+        event.preventDefault();
+        (event.shiftKey ? last : first).focus();
+      } else if (event.shiftKey && document.activeElement === first) {
         event.preventDefault();
         last.focus();
       } else if (!event.shiftKey && document.activeElement === last) {
@@ -73,14 +108,16 @@ export function Drawer({
         first.focus();
       }
     };
-
     window.addEventListener("keydown", onKeyDown);
+    document.addEventListener("focusin", onFocus);
     return () => {
-      document.body.style.overflow = "";
+      openDrawers.splice(openDrawers.indexOf(panel), 1);
+      if (openDrawers.length === 0) document.body.style.overflow = unlockedOverflow;
       window.removeEventListener("keydown", onKeyDown);
+      document.removeEventListener("focusin", onFocus);
       previousFocusRef.current?.focus();
     };
-  }, [open, onClose]);
+  }, [open]);
 
   if (!open) return null;
 

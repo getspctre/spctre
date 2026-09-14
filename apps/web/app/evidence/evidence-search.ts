@@ -44,18 +44,6 @@ const EVIDENCE_TRIGGER_KINDS: TriggerKind[] = [
 const EVIDENCE_LAYERS: EvidenceLayer[] = ["agent", "sandbox"];
 
 export function getEvidenceSearchQuery(params: EvidenceSearchParams): RuntimeEvidenceSearchQuery {
-  const hasFilters = [
-    "q",
-    "status",
-    "connector",
-    "stack",
-    "triggerKind",
-    "layer",
-    "branch",
-    "revision",
-    "from",
-    "to",
-  ].some((key) => Object.prototype.hasOwnProperty.call(params, key));
   const status = enumParam(params.status, EVIDENCE_STATUSES);
   const stack = enumParam(params.stack, EVIDENCE_RUNTIME_STACKS);
   const triggerKind = enumParam(params.triggerKind, EVIDENCE_TRIGGER_KINDS);
@@ -68,12 +56,12 @@ export function getEvidenceSearchQuery(params: EvidenceSearchParams): RuntimeEvi
   const to = dateParam(params.to, "to");
 
   return {
-    text: text ?? (hasFilters ? undefined : "refund"),
-    statuses: status ? [status] : hasFilters ? undefined : ["DENY"],
+    text,
+    statuses: status ? [status] : undefined,
     runtimeStacks: stack ? [stack] : undefined,
     triggerKinds: triggerKind ? [triggerKind] : undefined,
     layers: layer ? [layer] : undefined,
-    connectors: connector ? [connector] : hasFilters ? undefined : ["stripe"],
+    connectors: connector ? [connector] : undefined,
     branchId,
     revisionId,
     from,

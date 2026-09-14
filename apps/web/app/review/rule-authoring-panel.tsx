@@ -1,18 +1,8 @@
 "use client";
 
-import { useActionState, useEffect, useMemo, useState } from "react";
+import { useActionState, useEffect, useId, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  Activity,
-  FilePlus2,
-  Lock,
-  Loader,
-  Play,
-  Plus,
-  RotateCcw,
-  Save,
-  Trash2,
-} from "lucide-react";
+import { Activity, Lock, Loader, Play, Plus, RotateCcw, Save, Trash2 } from "lucide-react";
 import { Drawer } from "@spctre/ui";
 import type {
   PolicyRuleSummary,
@@ -28,19 +18,14 @@ import {
   type RuleEnforcementAssessment,
   type EnforcementCoverage,
 } from "@/lib/policy/rule-enforcement";
-import {
-  commitRuleRevision,
-  createDraftRuleRevision,
-  evaluateExampleDecision,
-  simulateDraftDecision,
-} from "./rule-actions";
+import { commitRuleRevision, evaluateExampleDecision, simulateDraftDecision } from "./rule-actions";
 import type {
   CommitRevisionState,
-  DraftRevisionState,
   ExampleDecisionState,
   DraftSimulationState,
 } from "./rule-actions";
 import { formatArtifactHash, formatProvenanceId, type AppViewMode } from "@/lib/app-view-mode";
+import { useUnsavedChanges } from "@/lib/use-unsaved-changes";
 import { hashToFingerprint } from "@/lib/fingerprint";
 
 interface RuleAuthoringPanelProps {
@@ -504,38 +489,12 @@ function DraftRulesTable({
   );
 }
 
-function AuthoringStatusMessages({
-  draftState,
-  state,
-  parentRevisionId,
-  viewMode,
-}: {
-  draftState: DraftRevisionState;
-  state: CommitRevisionState;
-  parentRevisionId: string;
-  viewMode: AppViewMode;
-}) {
-  return (
-    <>
-      {draftState?.error ? <div className="importError">{draftState.error}</div> : null}
-      {state?.error ? <div className="importError">{state.error}</div> : null}
-      {draftState?.revisionId ? (
-        <div className="revisionRollbackSuccess">
-          Draft{" "}
-          <code>{formatProvenanceId(draftState.revisionId, viewMode, 12, hashToFingerprint)}</code>{" "}
-          created from{" "}
-          <code>{formatProvenanceId(parentRevisionId, viewMode, 12, hashToFingerprint)}</code>
-        </div>
-      ) : null}
-      {state?.revisionId ? (
-        <div className="revisionRollbackSuccess">
-          Saved revision{" "}
-          <code>{formatProvenanceId(state.revisionId, viewMode, 12, hashToFingerprint)}</code> —
-          hash <code>{formatArtifactHash(state.sourceHash, viewMode, hashToFingerprint)}</code>
-        </div>
-      ) : null}
-    </>
-  );
+function AuthoringStatusMessages({ state }: { state: CommitRevisionState }) {
+  return state?.error ? (
+    <div className="importError" role="alert">
+      {state.error}
+    </div>
+  ) : null;
 }
 
 export function RuleAuthoringPanel({
@@ -553,31 +512,42 @@ export function RuleAuthoringPanel({
   // null = closed, -1 = new rule, >=0 = editing index
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
 
-  const [draftState, createDraftAction, draftPending] = useActionState<
-    DraftRevisionState,
-    FormData
-  >(createDraftRuleRevision, null);
   const [state, action, isPending] = useActionState<CommitRevisionState, FormData>(
     commitRuleRevision,
     null,
   );
 
-  useEffect(() => {
-    setDraftRules(baselineRules);
-  }, [baselineRules, parentRevisionId]);
-
-  useEffect(() => {
-    if (state?.revisionId) router.refresh();
-  }, [router, state?.revisionId]);
-
-  useEffect(() => {
-    if (draftState?.revisionId) router.refresh();
-  }, [router, draftState?.revisionId]);
-
+  const baselinePayload = useMemo(
+    () => JSON.stringify(baselineRules.map(serializeRuleForCommit)),
+    [baselineRules],
+  );
   const payload = useMemo(
     () => JSON.stringify(draftRules.map(serializeRuleForCommit)),
     [draftRules],
   );
+  const [savedPayload, setSavedPayload] = useState(baselinePayload);
+  const [draftBaseRevision, setDraftBaseRevision] = useState(parentRevisionId);
+  const [editorDirty, setEditorDirty] = useState(false);
+  const submittedPayload = useRef(payload);
+  const dirty = payload !== savedPayload;
+  useUnsavedChanges(dirty || editorDirty);
+
+  useEffect(() => {
+    // A refresh must not overwrite edits made since the last save.
+    if (!dirty) {
+      setDraftRules(baselineRules);
+      setSavedPayload(baselinePayload);
+      setDraftBaseRevision(parentRevisionId);
+    }
+  }, [baselinePayload, parentRevisionId]);
+
+  useEffect(() => {
+    if (state?.revisionId) {
+      setSavedPayload(submittedPayload.current);
+      setDraftBaseRevision(state.revisionId);
+      router.refresh();
+    }
+  }, [router, state?.revisionId]);
 
   const applyEdit = (updated: EditableRule) => {
     if (editingIndex === -1) {
@@ -604,7 +574,7 @@ export function RuleAuthoringPanel({
           <div>
             <p className="eyebrow">In-app rule authoring</p>
             <h2>
-              Edit active revision rules
+              Edit draft rules
               <span className="headCount">{draftRules.length}</span>
             </h2>
             <p className="meta">
@@ -626,6 +596,7 @@ export function RuleAuthoringPanel({
             <button
               className="button buttonPrimary"
               type="button"
+              disabled={isPending}
               onClick={() => setEditingIndex(-1)}
             >
               <Plus size={15} />
@@ -633,6 +604,22 @@ export function RuleAuthoringPanel({
             </button>
           </div>
         </div>
+
+        <p className="meta" role="status" aria-live="polite">
+          {isPending
+            ? "Saving draft..."
+            : dirty || editorDirty
+              ? "Unsaved changes"
+              : "All changes saved"}
+          . Draft edits do not affect agents until this revision is reviewed and published.
+        </p>
+
+        {dirty && draftBaseRevision !== parentRevisionId ? (
+          <p className="meta" role="alert">
+            A newer revision is available. Your edits are preserved here. Copy any changes you need,
+            then discard unsaved changes to load the latest revision before editing again.
+          </p>
+        ) : null}
 
         {showDraftTest ? (
           <ExampleDecisionTester
@@ -643,65 +630,76 @@ export function RuleAuthoringPanel({
           />
         ) : null}
 
-        <form action={createDraftAction} className="ruleAuthoringDraftAction">
+        <form
+          action={action}
+          className="ruleAuthoringCommit"
+          onSubmit={() => {
+            submittedPayload.current = payload;
+          }}
+        >
           <input type="hidden" name="branchId" value={branchId} />
-          <input type="hidden" name="baseRevisionId" value={parentRevisionId} />
-          <input
-            type="hidden"
-            name="message"
-            value={`Draft from ${parentRevisionId.slice(0, 8)}`}
-          />
-          <button className="button" type="submit" disabled={draftPending}>
-            {draftPending ? <Loader size={15} className="spin" /> : <FilePlus2 size={15} />}
-            {draftPending ? "Creating draft..." : "Create persisted draft revision"}
-          </button>
-        </form>
-
-        <form action={action} className="ruleAuthoringCommit">
-          <input type="hidden" name="branchId" value={branchId} />
-          <input type="hidden" name="parentRevisionId" value={parentRevisionId} />
+          <input type="hidden" name="parentRevisionId" value={draftBaseRevision} />
           <input type="hidden" name="rulesPayload" value={payload} />
           <input
             className="input"
             name="message"
-            defaultValue="Commit via in-app rule editor"
-            placeholder="Commit message"
+            defaultValue="Update policy rules"
+            placeholder="Describe your changes"
+            aria-label="Change summary"
             required
             style={{ flex: 1, minWidth: 180 }}
           />
-          <input
-            className="input"
-            name="sourcePath"
-            defaultValue="ui/review-rule-editor"
-            placeholder="Source path"
-            style={{ width: 190 }}
-          />
+          <details>
+            <summary>Advanced metadata</summary>
+            <input
+              aria-label="Source path"
+              className="input"
+              name="sourcePath"
+              defaultValue="ui/review-rule-editor"
+              placeholder="Source path"
+              style={{ width: 190 }}
+            />
+          </details>
           <button
             className="button"
             type="button"
-            onClick={() => setDraftRules(baselineRules)}
+            onClick={() => {
+              if (!dirty || window.confirm("Discard all unsaved draft changes?")) {
+                setDraftRules(baselineRules);
+                setSavedPayload(baselinePayload);
+                setDraftBaseRevision(parentRevisionId);
+              }
+            }}
+            aria-label="Discard unsaved changes"
+            disabled={isPending || !dirty}
             title="Reset all unsaved changes"
           >
             <RotateCcw size={15} />
           </button>
-          <button className="button buttonPrimary" type="submit" disabled={isPending}>
+          <button
+            className="button buttonPrimary"
+            type="submit"
+            disabled={isPending || !dirty || draftBaseRevision !== parentRevisionId}
+          >
             {isPending ? <Loader size={15} className="spin" /> : <Save size={15} />}
-            {isPending ? "Committing..." : "Commit revision"}
+            {isPending ? "Saving draft..." : "Save draft"}
           </button>
         </form>
 
-        <AuthoringStatusMessages
-          draftState={draftState}
-          state={state}
-          parentRevisionId={parentRevisionId}
-          viewMode={viewMode}
-        />
+        <AuthoringStatusMessages state={state} />
 
-        <DraftRulesTable draftRules={draftRules} onEdit={setEditingIndex} coverage={coverage} />
+        <DraftRulesTable
+          draftRules={draftRules}
+          onEdit={(index) => {
+            if (!isPending) setEditingIndex(index);
+          }}
+          coverage={coverage}
+        />
 
         <button
           className="button"
           type="button"
+          disabled={isPending}
           onClick={() => setEditingIndex(-1)}
           style={{ alignSelf: "flex-start" }}
         >
@@ -715,6 +713,7 @@ export function RuleAuthoringPanel({
             isNew={editingIndex === -1}
             vocabulary={vocabulary}
             onApply={applyEdit}
+            onDirtyChange={setEditorDirty}
             onRemove={
               editingIndex >= 0 && !draftRules[editingIndex]?.inheritedImmutable
                 ? () => removeAtIndex(editingIndex)
@@ -743,7 +742,7 @@ function DraftSimulationSection({ rulesPayload }: { rulesPayload: string }) {
           <h2>Simulate against recent evidence</h2>
           <p className="meta">
             Replays your draft rules over the most recent retained decisions and reports what would
-            change — before you commit. Read-only; nothing is written.
+            change — before you save. Read-only; nothing is written.
           </p>
         </div>
         <form action={formAction}>
@@ -875,6 +874,7 @@ function ExampleDecisionTester({
   draftRules: EditableRule[];
   coverage?: EnforcementCoverage;
 }) {
+  const fieldId = useId();
   const [connector, setConnector] = useState("");
   const [action, setAction] = useState("");
   const [domainsText, setDomainsText] = useState("");
@@ -913,8 +913,12 @@ function ExampleDecisionTester({
         <DatalistOptions id="example-domains" options={scoped.domains} />
         <div className="exampleTesterGrid">
           <div>
-            <label className="meta">Connector</label>
+            <label className="meta" htmlFor={`${fieldId}-field-1`}>
+              {" "}
+              Connector{" "}
+            </label>
             <input
+              id={`${fieldId}-field-1`}
               className="input"
               name="connector"
               list="example-connectors"
@@ -924,8 +928,12 @@ function ExampleDecisionTester({
             />
           </div>
           <div>
-            <label className="meta">Action</label>
+            <label className="meta" htmlFor={`${fieldId}-field-2`}>
+              {" "}
+              Action{" "}
+            </label>
             <input
+              id={`${fieldId}-field-2`}
               className="input"
               name="action"
               list="example-actions"
@@ -935,8 +943,12 @@ function ExampleDecisionTester({
             />
           </div>
           <div>
-            <label className="meta">Domains (optional, comma separated)</label>
+            <label className="meta" htmlFor={`${fieldId}-field-3`}>
+              {" "}
+              Domains (optional, comma separated){" "}
+            </label>
             <input
+              id={`${fieldId}-field-3`}
               className="input"
               name="domains"
               list="example-domains"
@@ -946,8 +958,12 @@ function ExampleDecisionTester({
             />
           </div>
           <div>
-            <label className="meta">Agent intent (optional, for semantic checks)</label>
+            <label className="meta" htmlFor={`${fieldId}-field-4`}>
+              {" "}
+              Agent intent (optional, for semantic checks){" "}
+            </label>
             <input
+              id={`${fieldId}-field-4`}
               className="input"
               name="toolIntent"
               value={intent}
@@ -956,8 +972,12 @@ function ExampleDecisionTester({
             />
           </div>
           <div style={{ gridColumn: "span 2" }}>
-            <label className="meta">Tool parameters (optional JSON object)</label>
+            <label className="meta" htmlFor={`${fieldId}-field-5`}>
+              {" "}
+              Tool parameters (optional JSON object){" "}
+            </label>
             <textarea
+              id={`${fieldId}-field-5`}
               className="input"
               name="toolParameters"
               style={{ height: 72, resize: "vertical", fontFamily: "var(--font-mono, monospace)" }}
@@ -1059,6 +1079,7 @@ interface RuleEditPanelProps {
   onApply: (updated: EditableRule) => void;
   onRemove?: () => void;
   onClose: () => void;
+  onDirtyChange: (dirty: boolean) => void;
 }
 
 function RuleEditFields({
@@ -1070,6 +1091,7 @@ function RuleEditFields({
   update: (patch: Partial<EditableRule>) => void;
   vocabulary: AuthoringVocabularyEntry[];
 }) {
+  const fieldId = useId();
   const scoped = useMemo(
     () => scopeVocabulary(vocabulary, draft.connectorsText),
     [vocabulary, draft.connectorsText],
@@ -1091,8 +1113,12 @@ function RuleEditFields({
         </div>
         <div className="ruleEditGrid">
           <div>
-            <label className="meta">Stable rule ID</label>
+            <label className="meta" htmlFor={`${fieldId}-field-1`}>
+              {" "}
+              Stable rule ID{" "}
+            </label>
             <input
+              id={`${fieldId}-field-1`}
               className="input"
               type="text"
               value={draft.stableRuleId}
@@ -1102,8 +1128,12 @@ function RuleEditFields({
             />
           </div>
           <div>
-            <label className="meta">Title</label>
+            <label className="meta" htmlFor={`${fieldId}-field-2`}>
+              {" "}
+              Title{" "}
+            </label>
             <input
+              id={`${fieldId}-field-2`}
               className="input"
               type="text"
               value={draft.title}
@@ -1128,8 +1158,12 @@ function RuleEditFields({
         </div>
         <div className="ruleEditGrid">
           <div>
-            <label className="meta">Connectors</label>
+            <label className="meta" htmlFor={`${fieldId}-field-3`}>
+              {" "}
+              Connectors{" "}
+            </label>
             <input
+              id={`${fieldId}-field-3`}
               className="input"
               type="text"
               list="authoring-connectors"
@@ -1140,8 +1174,12 @@ function RuleEditFields({
             />
           </div>
           <div>
-            <label className="meta">Actions</label>
+            <label className="meta" htmlFor={`${fieldId}-field-4`}>
+              {" "}
+              Actions{" "}
+            </label>
             <input
+              id={`${fieldId}-field-4`}
               className="input"
               type="text"
               list="authoring-actions"
@@ -1152,8 +1190,12 @@ function RuleEditFields({
             />
           </div>
           <div>
-            <label className="meta">Domains (optional)</label>
+            <label className="meta" htmlFor={`${fieldId}-field-5`}>
+              {" "}
+              Domains (optional){" "}
+            </label>
             <input
+              id={`${fieldId}-field-5`}
               className="input"
               type="text"
               list="authoring-domains"
@@ -1178,8 +1220,12 @@ function RuleEditFields({
         </div>
         <div className="ruleEditGrid ruleEffectField">
           <div>
-            <label className="meta">Effect</label>
+            <label className="meta" htmlFor={`${fieldId}-field-6`}>
+              {" "}
+              Effect{" "}
+            </label>
             <select
+              id={`${fieldId}-field-6`}
               className="input"
               value={draft.effect}
               onChange={(e) => update({ effect: e.target.value as EditableRule["effect"] })}
@@ -1208,10 +1254,12 @@ function RuleEditFields({
         </summary>
         <div className="ruleEditAdvancedBody">
           <div>
-            <label className="meta">
-              Semantic prompts / natural language checks (one per line)
+            <label className="meta" htmlFor={`${fieldId}-field-7`}>
+              {" "}
+              Semantic prompts / natural language checks (one per line){" "}
             </label>
             <textarea
+              id={`${fieldId}-field-7`}
               className="input"
               style={{ height: 100, resize: "vertical", fontFamily: "var(--font-sans)" }}
               value={draft.semanticChecksText}
@@ -1221,10 +1269,12 @@ function RuleEditFields({
             />
           </div>
           <div>
-            <label className="meta">
-              Control mappings (one per line: FRAMEWORK:CONTROL_ID | rationale)
+            <label className="meta" htmlFor={`${fieldId}-field-8`}>
+              {" "}
+              Control mappings (one per line: FRAMEWORK:CONTROL_ID | rationale){" "}
             </label>
             <textarea
+              id={`${fieldId}-field-8`}
               className="input"
               style={{ height: 76, resize: "vertical", fontFamily: "var(--font-sans)" }}
               value={draft.controlMappingsText}
@@ -1541,12 +1591,23 @@ function RuleEditPanel({
   onApply,
   onRemove,
   onClose,
+  onDirtyChange,
 }: RuleEditPanelProps) {
   const [draft, setDraft] = useState<EditableRule>(initialRule);
   const [mode, setMode] = useState<"form" | "raw">("form");
   const [rawText, setRawText] = useState("");
   const [rawError, setRawError] = useState<string | null>(null);
 
+  const dirty =
+    JSON.stringify(draft) !== JSON.stringify(initialRule) ||
+    (mode === "raw" && rawText !== rawJsonForRule(draft));
+  useEffect(() => {
+    onDirtyChange(dirty);
+    return () => onDirtyChange(false);
+  }, [dirty, onDirtyChange]);
+  const close = () => {
+    if (!dirty || window.confirm("Discard your changes to this rule?")) onClose();
+  };
   const update = (patch: Partial<EditableRule>) => setDraft((prev) => ({ ...prev, ...patch }));
 
   const enterRawMode = () => {
@@ -1584,7 +1645,7 @@ function RuleEditPanel({
   return (
     <Drawer
       open
-      onClose={onClose}
+      onClose={close}
       width="wide"
       eyebrow={isNew ? "New rule" : "Edit rule"}
       title={draft.title || <span style={{ color: "var(--muted)" }}>Untitled rule</span>}
@@ -1602,16 +1663,30 @@ function RuleEditPanel({
         <RuleEditFormBody draft={draft} update={update} vocabulary={vocabulary} />
       )}
 
+      <p className="meta" role="status">
+        Update the working draft here, then choose Save draft on the authoring page.
+      </p>
       <div className="ruleEditFooter">
         <div>
           {onRemove ? (
-            <button className="button buttonPillDanger" type="button" onClick={onRemove}>
+            <button
+              className="button buttonPillDanger"
+              type="button"
+              onClick={() => {
+                if (
+                  window.confirm(
+                    "Remove this rule from the working draft? You must save the draft to persist the removal.",
+                  )
+                )
+                  onRemove?.();
+              }}
+            >
               Remove rule
             </button>
           ) : null}
         </div>
         <div style={{ display: "flex", gap: 8 }}>
-          <button className="button" type="button" onClick={onClose}>
+          <button className="button" type="button" onClick={close}>
             Cancel
           </button>
           <button
@@ -1620,7 +1695,7 @@ function RuleEditPanel({
             onClick={handleApply}
             disabled={draft.inheritedImmutable}
           >
-            {isNew ? "Add rule" : "Apply changes"}
+            {isNew ? "Add to draft" : "Update working draft"}
           </button>
         </div>
       </div>
