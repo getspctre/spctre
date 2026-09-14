@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useId, useState } from "react";
 import {
   ArrowRight,
   CheckCircle2,
@@ -82,11 +82,17 @@ function buildSetupSnippets(
   return { cliBlock, fetchBlock, curlBlock };
 }
 
-function starterStateLabel(starterState: "idle" | "pending" | "ready" | "blocked"): string {
+type StarterState = "idle" | "pending" | "ready" | "forbidden" | "signed-out" | "error";
+
+function starterStateLabel(starterState: StarterState): string {
   if (starterState === "ready") return "Starter policy is published for this workspace.";
   if (starterState === "pending") return "Publishing the starter policy...";
-  if (starterState === "blocked")
-    return "Starter policy will be published when an admin sends the sample decision.";
+  if (starterState === "forbidden")
+    return "An administrator must publish the starter policy for this workspace. Ask your workspace administrator to complete this step.";
+  if (starterState === "signed-out")
+    return "Your session has expired. Sign in again to prepare the starter policy.";
+  if (starterState === "error")
+    return "Could not prepare the starter policy. Check your connection and try again.";
   return "Preparing starter policy...";
 }
 
@@ -98,7 +104,7 @@ function RealEvidenceBanner({ evidenceHref }: { evidenceHref: string }) {
           <p className="eyebrow">Onboarding · Real evidence</p>
           <h2>Real agent evidence is flowing</h2>
           <p className="meta">
-            Your sample decision has been replaced by live runtime evidence from an agent.
+            Your agent has sent real runtime evidence. Sample decisions remain available separately.
           </p>
         </div>
         <CheckCircle2 size={20} className="sectionIcon" style={{ color: "var(--allow)" }} />
@@ -178,7 +184,9 @@ function SetupTokenRow({
 // workspaces and poll for the first real evidence after a sample decision.
 function useLiveOnboardingStatus(status: WebOnboardingStatus) {
   const [liveStatus, setLiveStatus] = useState(status);
-  const [starterState, setStarterState] = useState<"idle" | "pending" | "ready" | "blocked">(
+  const [attempt, setAttempt] = useState(0);
+  const [statusError, setStatusError] = useState(false);
+  const [starterState, setStarterState] = useState<StarterState>(
     status.publishedBundle ? "ready" : "idle",
   );
 
@@ -191,27 +199,38 @@ function useLiveOnboardingStatus(status: WebOnboardingStatus) {
   }, [status]);
 
   useEffect(() => {
-    if (liveStatus.publishedBundle || starterState !== "idle") return;
-    let cancelled = false;
+    if (liveStatus.publishedBundle) return;
+    const controller = new AbortController();
     setStarterState("pending");
-    fetch("/api/onboarding/starter", { method: "POST", cache: "no-store" })
-      .then((response) => (response.ok ? response.json() : null))
-      .then((payload: { status?: WebOnboardingStatus } | null) => {
-        if (cancelled) return;
-        if (payload?.status) {
+    fetch("/api/onboarding/starter", {
+      method: "POST",
+      cache: "no-store",
+      signal: controller.signal,
+    })
+      .then(async (response) => {
+        if (controller.signal.aborted) return;
+        if (!response.ok) {
+          setStarterState(
+            response.status === 403
+              ? "forbidden"
+              : response.status === 401
+                ? "signed-out"
+                : "error",
+          );
+          return;
+        }
+        const payload = (await response.json()) as { status?: WebOnboardingStatus };
+        if (controller.signal.aborted) return;
+        if (payload.status?.publishedBundle) {
           setLiveStatus(payload.status);
           setStarterState("ready");
-        } else {
-          setStarterState("blocked");
-        }
+        } else setStarterState("error");
       })
       .catch(() => {
-        if (!cancelled) setStarterState("blocked");
+        if (!controller.signal.aborted) setStarterState("error");
       });
-    return () => {
-      cancelled = true;
-    };
-  }, [liveStatus.publishedBundle, starterState]);
+    return () => controller.abort();
+  }, [liveStatus.publishedBundle, attempt]);
 
   useEffect(() => {
     if (!hasSampleDecision || hasRealEvidence) return;
@@ -221,10 +240,12 @@ function useLiveOnboardingStatus(status: WebOnboardingStatus) {
       fetch("/api/onboarding/status", { cache: "no-store" })
         .then((response) => (response.ok ? response.json() : null))
         .then((payload: { status?: WebOnboardingStatus } | null) => {
-          if (!cancelled && payload?.status) setLiveStatus(payload.status);
+          if (cancelled) return;
+          setStatusError(!payload?.status);
+          if (payload?.status) setLiveStatus(payload.status);
         })
         .catch(() => {
-          // A transient browser fetch failure is retried by the polling interval.
+          if (!cancelled) setStatusError(true);
         });
     };
 
@@ -236,7 +257,14 @@ function useLiveOnboardingStatus(status: WebOnboardingStatus) {
     };
   }, [hasSampleDecision, hasRealEvidence]);
 
-  return { liveStatus, starterState, hasSampleDecision, hasRealEvidence };
+  return {
+    liveStatus,
+    starterState,
+    hasSampleDecision,
+    hasRealEvidence,
+    statusError,
+    retryStarter: () => setAttempt((value) => value + 1),
+  };
 }
 
 export function QuickStartBanner({
@@ -257,9 +285,18 @@ export function QuickStartBanner({
     generateOnboardingSetupToken,
     null,
   );
+  const methodId = useId();
+  const [method, setMethod] = useState<"cli" | "fetch" | "curl">("cli");
+  const [copyError, setCopyError] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
-  const { liveStatus, starterState, hasSampleDecision, hasRealEvidence } =
-    useLiveOnboardingStatus(status);
+  const {
+    liveStatus,
+    starterState,
+    hasSampleDecision,
+    hasRealEvidence,
+    statusError,
+    retryStarter,
+  } = useLiveOnboardingStatus(status);
 
   const pending = allowPending || blockPending;
   const error = allowState?.error ?? blockState?.error;
@@ -276,8 +313,7 @@ export function QuickStartBanner({
     revisionId: "<revision-id>",
     artifactHash: "<artifact-hash>",
   };
-  const starterPolicyHref =
-    surface === "policies" ? "#branches" : buildWorkspacePath(workspaceSlug, "/#branches");
+  const starterPolicyHref = buildWorkspacePath(workspaceSlug, "/#branches");
   const apiBase = controlPlaneUrl.replace(/\/$/, "");
   const { cliBlock, fetchBlock, curlBlock } = buildSetupSnippets(
     apiBase,
@@ -287,14 +323,15 @@ export function QuickStartBanner({
   );
 
   function copyBlock(id: string, value: string) {
-    navigator.clipboard
-      .writeText(value)
+    setCopyError(false);
+    Promise.resolve()
+      .then(() => navigator.clipboard.writeText(value))
       .then(() => {
         setCopied(id);
         setTimeout(() => setCopied(null), 2000);
       })
       .catch(() => {
-        // Clipboard access is browser-local; keep the value visible for manual copying.
+        setCopyError(true);
       });
   }
 
@@ -317,36 +354,55 @@ export function QuickStartBanner({
           <Terminal size={20} className="sectionIcon" />
         </div>
 
-        <SetupTokenRow
-          tokenAction={tokenAction}
-          tokenPending={tokenPending}
-          tokenState={tokenState}
-          liveStatus={liveStatus}
-          copied={copied}
-          copyBlock={copyBlock}
-        />
-
-        <div className="quickStartCodeGrid">
-          <SetupCodeBlock id="cli" title="CLI" code={cliBlock} copied={copied} onCopy={copyBlock} />
-          <SetupCodeBlock
-            id="fetch"
-            title="JavaScript"
-            code={fetchBlock}
+        <label className="meta" htmlFor={methodId}>
+          How will you connect your agent?
+        </label>
+        <select
+          className="input"
+          id={methodId}
+          value={method}
+          onChange={(event) => setMethod(event.target.value as typeof method)}
+        >
+          <option value="cli">CLI (recommended for local setup)</option>
+          <option value="fetch">JavaScript</option>
+          <option value="curl">HTTP with curl</option>
+        </select>
+        <p className="meta">
+          {method === "cli"
+            ? "Install the CLI, sign in during init, then sync this workspace. No setup token is needed for this path."
+            : "Generate a setup token, then run this request from your agent environment to test the decision gateway."}
+        </p>
+        {method !== "cli" ? (
+          <SetupTokenRow
+            tokenAction={tokenAction}
+            tokenPending={tokenPending}
+            tokenState={tokenState}
+            liveStatus={liveStatus}
             copied={copied}
-            onCopy={copyBlock}
-            disabled={!hasToken}
-            disabledMessage="Generate a setup token before copying this gateway request."
+            copyBlock={copyBlock}
           />
+        ) : null}
+        <div className="quickStartCodeGrid" style={{ gridTemplateColumns: "minmax(0, 1fr)" }}>
           <SetupCodeBlock
-            id="curl"
-            title="curl"
-            code={curlBlock}
+            id={method}
+            title={method === "cli" ? "CLI" : method === "fetch" ? "JavaScript" : "curl"}
+            code={method === "cli" ? cliBlock : method === "fetch" ? fetchBlock : curlBlock}
             copied={copied}
             onCopy={copyBlock}
-            disabled={!hasToken}
+            disabled={method !== "cli" && !hasToken}
             disabledMessage="Generate a setup token before copying this gateway request."
           />
         </div>
+        <p className="meta" role="status" aria-live="polite">
+          {copyError
+            ? "Copy failed. Select the visible code and copy it manually."
+            : statusError
+              ? "Could not check for agent evidence. We will retry automatically; you can also open Decision evidence."
+              : "Waiting for your first non-sample decision. This page checks automatically."}
+        </p>
+        <a className="button" href={evidenceHref}>
+          Open decision evidence
+        </a>
       </section>
     );
   }
@@ -366,7 +422,19 @@ export function QuickStartBanner({
             evidence row will include the rule, branch, revision, and artifact hash that governed
             it.
           </p>
-          <p className="meta">{starterStateLabel(starterState)}</p>
+          <p className="meta" role="status" aria-live="polite">
+            {starterStateLabel(starterState)}
+          </p>
+          {starterState === "error" ? (
+            <button className="button" type="button" onClick={retryStarter}>
+              Retry starter setup
+            </button>
+          ) : null}
+          {starterState === "signed-out" ? (
+            <a className="button" href="/login">
+              Sign in again
+            </a>
+          ) : null}
         </div>
         <CheckCircle2 size={20} className="sectionIcon" style={{ color: "var(--allow)" }} />
       </div>
@@ -404,7 +472,7 @@ export function QuickStartBanner({
       </div>
 
       {error ? (
-        <p className="meta" style={{ color: "var(--block)", marginTop: 8 }}>
+        <p className="meta" role="alert" style={{ color: "var(--block)", marginTop: 8 }}>
           {error}
         </p>
       ) : null}
@@ -451,7 +519,9 @@ function SetupCodeBlock({
         <code>{code}</code>
       </pre>
       {disabled && disabledMessage ? <p className="meta">{disabledMessage}</p> : null}
-      {copied === id ? <p className="meta">Copied</p> : null}
+      <p className="meta" role="status" aria-live="polite">
+        {copied === id ? "Copied" : ""}
+      </p>
     </div>
   );
 }

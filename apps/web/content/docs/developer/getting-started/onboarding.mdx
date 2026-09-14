@@ -5,6 +5,19 @@ description: How the CLI device-approval flow works and what it sets up.
 
 The `spctre init` command runs a device-approval flow to connect your agent to the control plane without storing long-lived credentials in your repo.
 
+## Starting in the browser
+
+Open **Try a sample decision** from your workspace's policy page. Sending an allowed or blocked sample creates example evidence, not a real agent connection.
+
+After the sample, choose one connection method:
+
+- **CLI** is the default for local setup. Install the CLI, approve sign-in during `init`, then sync the workspace. This path does not need a browser-generated setup token.
+- **JavaScript** or **HTTP with curl** shows a gateway request after you generate a setup token. Copy the token before leaving; it is shown once.
+
+The page displays one set of instructions at a time and checks automatically for non-sample evidence. **Real agent evidence is flowing** confirms that real evidence arrived. If status checks fail, the page reports the problem and retries automatically.
+
+If preparing the starter policy fails temporarily, choose **Retry starter setup**. A permission error instead explains that a workspace administrator must complete the step. **View starter policy** opens the workspace policy inventory.
+
 ## The approval flow
 
 <Steps>

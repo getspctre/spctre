@@ -41,6 +41,7 @@ function NavItem({ href, icon, badge, children, exact = false }: NavItemProps) {
       className="navItem"
       href={href}
       data-active={active ? "true" : undefined}
+      aria-current={active ? "page" : undefined}
       title={typeof children === "string" ? children : undefined}
       aria-label={typeof children === "string" ? children : undefined}
       data-tooltip={typeof children === "string" ? children : undefined}

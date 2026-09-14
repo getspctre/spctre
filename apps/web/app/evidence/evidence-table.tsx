@@ -1,5 +1,6 @@
 "use client";
 
+import { EvidenceTimestamp } from "./evidence-timestamp";
 import { useEffect, useRef, useState } from "react";
 import { Link2 } from "lucide-react";
 import type { RuntimeDecisionEvidenceRecord } from "@spctre/policy-schema";
@@ -20,7 +21,7 @@ type EnrichedPolicyContext = RuntimeDecisionEvidenceRecord["policyContext"][numb
   publishedBy?: string;
 };
 
-interface ControlMappingEntry {
+export interface ControlMappingEntry {
   stableRuleId: string;
   framework: string;
   controlId: string;
@@ -82,22 +83,16 @@ export function EvidenceTable({
                   ref={isHighlighted ? highlightRowRef : undefined}
                   className={`auditRow${isHighlighted ? " auditRowHighlight" : ""}`}
                   onClick={() => setSelected(audit)}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      setSelected(audit);
-                    } else if (e.key === " ") {
-                      e.preventDefault();
-                      setSelected(audit);
-                    }
-                  }}
-                  aria-label={`Inspect decision ${audit.decisionId}`}
                 >
                   <td>
-                    <strong>
+                    <button
+                      className="button buttonSmall"
+                      type="button"
+                      onClick={() => setSelected(audit)}
+                      aria-label={`Inspect ${audit.connector}.${audit.action} by ${audit.agentId}`}
+                    >
                       {audit.connector}.{audit.action}
-                    </strong>
+                    </button>
                     {isHeartbeat ? null : (
                       <code className="auditHash">
                         {formatArtifactHash(audit.artifactHash, viewMode, hashToFingerprint)}
@@ -122,7 +117,9 @@ export function EvidenceTable({
                     ) : null}
                   </td>
                   <td>{audit.latencyMs}ms</td>
-                  <td>{audit.createdAt.slice(0, 16).replace("T", " ")}</td>
+                  <td>
+                    <EvidenceTimestamp value={audit.createdAt} />
+                  </td>
                 </tr>
               );
             })}
@@ -407,7 +404,7 @@ function ContextChainNode({
             ) : null}
             {enriched.publishedAt ? (
               <span className="meta">
-                Published {enriched.publishedAt.slice(0, 16).replace("T", " ")}
+                Published <EvidenceTimestamp value={enriched.publishedAt} />
                 {enriched.publishedBy
                   ? ` by ${formatProvenanceId(enriched.publishedBy, viewMode, 14)}`
                   : ""}
@@ -463,7 +460,7 @@ function PolicyRefWithControls({
   );
 }
 
-function EvidencePanelBody({
+export function EvidencePanelBody({
   audit,
   viewMode,
   workspaceSlug,
@@ -530,7 +527,9 @@ function EvidencePanelBody({
           ) : null}
           <div>
             <span className="meta">Recorded</span>
-            <strong>{audit.createdAt.slice(0, 16).replace("T", " ")}</strong>
+            <strong>
+              <EvidenceTimestamp value={audit.createdAt} />
+            </strong>
           </div>
         </div>
       </div>
