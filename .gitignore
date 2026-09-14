@@ -27,6 +27,8 @@ packages/ui/storybook-static/
 .turbo/
 .cache/
 coverage/
+# Vitest 5 writes reports, blobs and attachments here by default.
+.vitest/
 cover.out
 .nyc_output/
 .pytest_cache/
