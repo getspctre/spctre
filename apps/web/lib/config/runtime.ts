@@ -1,7 +1,7 @@
 import { assertTenantId } from "@/lib/tenant-id";
 import type { SpctrePlan } from "@/lib/feature-flags";
 
-export type SpctreRuntimeMode = "development" | "production";
+type SpctreRuntimeMode = "development" | "production";
 
 export interface RuntimeConfig {
   mode: SpctreRuntimeMode;
@@ -92,8 +92,4 @@ export function validateRuntimeConfig(): RuntimeConfig {
 /** Test-only reset for suites that exercise post-startup process configuration. */
 export function resetRuntimeConfigCacheForTests(): void {
   validatedProcessConfig = undefined;
-}
-
-export function isProductionRuntime(): boolean {
-  return getRuntimeConfig().mode === "production";
 }

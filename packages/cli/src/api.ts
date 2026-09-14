@@ -2,7 +2,7 @@ import * as fs from "node:fs";
 import { readConfig } from "./config";
 import { getOutputFormat, printJson } from "./output";
 
-export type ApiMethod = "GET" | "POST" | "DELETE";
+type ApiMethod = "GET" | "POST" | "DELETE";
 
 export interface ApiRequestOptions {
   method: ApiMethod | string;

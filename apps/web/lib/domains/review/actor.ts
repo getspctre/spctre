@@ -15,7 +15,7 @@ import { findActorById, getActiveActor, type Principal } from "@/lib/actors";
  * does not belong to — the principal comes from the token row, not the request
  * body.
  */
-export interface ReviewActorResolution {
+interface ReviewActorResolution {
   /**
    * Who the caller claims to be, known even when no grant backs it, so a
    * refusal names the principal that was refused.

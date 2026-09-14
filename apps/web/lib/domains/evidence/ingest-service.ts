@@ -278,7 +278,7 @@ export function policyContentReferenceFromEvidence(
  * merely evidence metadata. The runtime token must be bound to the same
  * connector and an active revision grant covering the evidence timestamp.
  */
-export function validatePolicyContentReferenceAuthorization(
+function validatePolicyContentReferenceAuthorization(
   evidence: RuntimeDecisionEvidenceRecord,
   auth: {
     connector?: string;

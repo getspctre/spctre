@@ -3,7 +3,7 @@
  * the same verdict as one reading `process.env`. A startup guard and the route
  * it protects must never disagree about whether a flag is set.
  */
-export function parseBooleanEnvValue(raw: string | undefined, defaultValue = false): boolean {
+function parseBooleanEnvValue(raw: string | undefined, defaultValue = false): boolean {
   if (raw === undefined) return defaultValue;
   const normalized = raw.trim().toLowerCase();
   if (["1", "true", "yes", "on"].includes(normalized)) return true;
@@ -15,7 +15,7 @@ export function getBooleanEnv(name: string, defaultValue = false): boolean {
   return parseBooleanEnvValue(process.env[name], defaultValue);
 }
 
-export function getStringEnv(name: string, defaultValue = ""): string {
+function getStringEnv(name: string, defaultValue = ""): string {
   return process.env[name]?.trim() ?? defaultValue;
 }
 

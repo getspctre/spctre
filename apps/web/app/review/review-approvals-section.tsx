@@ -63,7 +63,7 @@ interface ReviewHistorySectionProps {
   viewMode: AppViewMode;
 }
 
-export function ReviewApprovalsSection({
+function ReviewApprovalsSection({
   activeBranch,
   usingRealBranch,
   approvalRules,

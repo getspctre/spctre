@@ -173,7 +173,7 @@ export async function getCommercialProfile(tenantId: string): Promise<Commercial
  * established by a query that ran. A failure throws, leaving the decision to a
  * caller that knows whether to deny or degrade.
  */
-export async function getTenantPlanCode(tenantId: string): Promise<CommercialPlanCode | null> {
+async function getTenantPlanCode(tenantId: string): Promise<CommercialPlanCode | null> {
   if (!sql) return null;
   const rows = await sql<{ plan_code: string }[]>`
     SELECT plan_code

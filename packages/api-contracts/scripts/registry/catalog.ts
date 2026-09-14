@@ -78,7 +78,7 @@ interface ArtifactCoordinates {
 }
 
 /** A document generated from a Zod schema in `src/schemas/`. */
-export interface ZodArtifact extends ArtifactCoordinates {
+interface ZodArtifact extends ArtifactCoordinates {
   kind: "json-schema";
   source: "zod";
   title: string;
@@ -112,7 +112,7 @@ export interface ZodArtifact extends ArtifactCoordinates {
  * to. Nothing is copied into `EMIT_ROOT`, so the file has exactly one
  * on-disk representation and cannot drift against a duplicate.
  */
-export interface FileArtifact extends ArtifactCoordinates {
+interface FileArtifact extends ArtifactCoordinates {
   kind: "json-schema" | "openapi";
   source: "file";
   title: string;

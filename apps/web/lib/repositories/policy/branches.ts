@@ -415,22 +415,6 @@ export async function getRevisionWorkspaceScope(params: {
   return rows[0] ?? null;
 }
 
-export async function getRevisionAgeHours(
-  revisionId: string,
-  tenantId: string,
-): Promise<number | null> {
-  if (!sql || !revisionId) return null;
-  const rows = await sql<{ age_hours: number }[]>`
-    SELECT EXTRACT(EPOCH FROM (now() - created_at)) / 3600 AS age_hours
-    FROM policy_revision
-    WHERE tenant_id = ${tenantId}
-      AND id = ${revisionId}
-    LIMIT 1
-  `;
-  const value = rows[0]?.age_hours;
-  return typeof value === "number" ? Math.round(value * 10) / 10 : null;
-}
-
 export async function getRevisionForDraft(params: {
   tenantId: string;
   branchId: string;
