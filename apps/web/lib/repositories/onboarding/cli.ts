@@ -3,19 +3,12 @@ import type { RuntimePolicyContext } from "@spctre/policy-schema";
 import { rawSql, runWithTenantContext, sql } from "@/lib/db";
 import type { AuthSession } from "@/lib/auth-session";
 import { ensureDemoTenant } from "@/lib/repositories/seed/local-dev";
-import { issueAccessRefreshPair, type ServiceTokenScope } from "@/lib/service-tokens";
+import { DEV_TOKEN_SCOPES, issueAccessRefreshPair } from "@/lib/service-tokens";
 import { planEntitlements } from "@/lib/entitlements/catalog";
 import { resolveEntitlementCatalog } from "@/lib/ee-adapters/entitlement-catalog";
 import { ensureStarterPublishedBundle, ONBOARDING_TTL_MINUTES, slugifyWorkspace } from "./shared";
 import { recordConversionTelemetry } from "./telemetry";
 import { swallow } from "@/lib/platform/swallow";
-
-const DEV_TOKEN_SCOPES: ServiceTokenScope[] = [
-  "bundle:read",
-  "decision:evaluate",
-  "evidence:write",
-  "heartbeat:write",
-];
 
 export interface CliOnboardingStart {
   code: string;
