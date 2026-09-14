@@ -26,6 +26,12 @@ name: Release (Python)
 # Releases are manual for now. There is no version automation for these
 # packages (Changesets covers only the npm packages), so the operator bumps
 # the version in the source of truth, merges, and dispatches this workflow.
+#
+# The bump is not left to memory: `pnpm check:python-release` fails a pull
+# request that changes what a distribution ships without moving its version
+# forward. That is what makes the manual half reviewable -- the regenerated
+# SDK tree keeps the repository self-consistent, so nothing else would show
+# that PyPI is a version behind.
 
 on:
   workflow_dispatch:

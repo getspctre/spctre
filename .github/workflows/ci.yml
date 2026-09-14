@@ -132,6 +132,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          # The Python release check diffs this branch against the pull
+          # request's base, which a depth-1 checkout cannot resolve. It fails
+          # loudly rather than passing on a base it cannot see, so the history
+          # has to be here.
+          fetch-depth: 0
       - name: Set up uv
         uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d
       - uses: pnpm/action-setup@v6.0.10
@@ -155,6 +161,15 @@ jobs:
       # keeps building and testing green while no longer matching the API.
       - name: Python SDK is in sync with the spec
         run: pnpm check:python-sdk
+      # The Python distributions are released by hand — Changesets covers npm
+      # only — so a regenerated tree can merge while PyPI serves the previous
+      # wheel. The sync check above cannot see that: it makes the repository
+      # self-consistent, which is precisely what hides the gap.
+      - name: Python distributions declare a release
+        if: github.event_name == 'pull_request' && github.repository == 'getspctre/spctre'
+        env:
+          SPCTRE_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: pnpm check:python-release
       - name: Python package tests
         run: pnpm test:python
 
