@@ -180,7 +180,7 @@ export async function getPostureModel(params: {
               dimension: "CONTROL_HEALTH" as const,
               severity: "LOW" as const,
               title: "Published pack controls are mapped",
-              detail: `${mappedRules} published rule${mappedRules === 1 ? "" : "s"} carry at least one control mapping.`,
+              detail: `${mappedRules} published rule${mappedRules === 1 ? " carries" : "s carry"} at least one control mapping.`,
               affectedScope: "Published artifact",
               action: {
                 label: "Open compliance packet",
@@ -224,7 +224,7 @@ export async function getPostureModel(params: {
   return {
     status,
     summary: findings.length
-      ? `${findings.length} prioritized finding${findings.length === 1 ? "" : "s"} need review.`
+      ? `${findings.length} prioritized finding${findings.length === 1 ? " needs" : "s need"} review.`
       : "Declared policy, runtimes, and evidence signals are aligned.",
     findings,
     dimensions: [
