@@ -19,11 +19,16 @@ overrides:
   '@opentelemetry/sdk-node': 0.220.0
   '@opentelemetry/auto-instrumentations-node': 0.78.0
   '@opentelemetry/propagator-jaeger': 2.9.0
-  hono: 4.12.34
+  # A floor, not a pin. This was `4.12.34`, which cleared an advisory when it was
+  # written and then became one: an exact override outranks whatever a manifest
+  # asks for, so the lockfile could not leave 4.12.34 until this line did.
+  hono: ^4.13.5
   '@hono/node-server': 2.0.12
   ip-address: 10.3.1
-  js-yaml@^4.0.0: 4.3.1
-  js-yaml@<3.15.1: 3.15.1
+  # Kept inside their own majors: the selector only decides which requests are
+  # rewritten, so an open floor here would answer a 3.x request with 5.x.
+  js-yaml@^4.0.0: ^4.3.2
+  js-yaml@<3.15.2: ^3.15.2
   postcss: 8.5.23
   protobufjs: 8.6.6
   shell-quote: 1.9.0
