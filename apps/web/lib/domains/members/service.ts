@@ -90,16 +90,20 @@ export async function inviteOrganizationMemberDecision(params: {
   const writeCheck = checkWriteAccess(guard.session.tenantId);
   if ("error" in writeCheck) return { error: writeCheck.error };
 
-  const { displayName, email, orgRole } = params;
+  // Normalize before validating. The address is trimmed either way to form the
+  // subject, and validating the raw value first rejected a pasted address with
+  // a trailing space as malformed -- which it is not, and which the message
+  // gave no way to work out.
+  const displayName = params.displayName.trim();
+  const subject = params.email.trim().toLowerCase();
+  const { orgRole } = params;
 
   if (!displayName) return { error: "Display name is required." };
-  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(subject))
     return { error: "A valid email address is required." };
   if (!orgRole) return { error: "Select a built-in organization role." };
   if (!canGrantRole(guard.actorOrgRole, orgRole))
     return { error: "You cannot assign a role higher than your own." };
-
-  const subject = email.trim().toLowerCase();
 
   const existingRow = await getPrincipalBySubject({ tenantId: guard.session.tenantId, subject });
   if (existingRow) {
@@ -113,7 +117,7 @@ export async function inviteOrganizationMemberDecision(params: {
     tenantId: guard.session.tenantId,
     subject,
     displayName,
-    email,
+    email: subject,
     orgRole,
     invitedBy: guard.session.principalId,
   });
@@ -132,7 +136,7 @@ export async function inviteOrganizationMemberDecision(params: {
     actorId: guard.session.principalId,
     targetPrincipalId: principalId,
     action: "INVITE_CREATED",
-    detail: { email, orgRole, roleSummary: roleDefinition(orgRole).summary },
+    detail: { email: subject, orgRole, roleSummary: roleDefinition(orgRole).summary },
   });
 
   const appUrl = (
@@ -142,7 +146,7 @@ export async function inviteOrganizationMemberDecision(params: {
   ).replace(/\/$/, "");
   const loginUrl = `${appUrl}/login?email=${encodeURIComponent(subject)}`;
   sendMemberInviteEmail({
-    to: email,
+    to: subject,
     inviterName: guard.session.principalId,
     role: roleDefinition(orgRole).label,
     loginUrl,
@@ -155,8 +159,8 @@ export async function inviteOrganizationMemberDecision(params: {
   return {
     ok: true,
     message: principalResult?.created
-      ? `Created invite for ${email}.`
-      : `Updated invite and role for ${email}.`,
+      ? `Created invite for ${subject}.`
+      : `Updated invite and role for ${subject}.`,
   };
 }
 
