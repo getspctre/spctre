@@ -20,7 +20,7 @@ overrides:
   # the lockfile stayed on 0.78.0, a version they no longer permit, so the bump
   # that raised them changed nothing. Same correction as @grpc/grpc-js and axios.
   '@opentelemetry/core': '>=2.8.0'
-  '@opentelemetry/sdk-node': '>=0.220.0'
+  '@opentelemetry/sdk-node': '>=0.222.0'
   '@opentelemetry/auto-instrumentations-node': '>=0.78.0'
   '@opentelemetry/propagator-jaeger': '>=2.9.0'
   # A floor, not a pin. This was `4.12.34`, which cleared an advisory when it was
