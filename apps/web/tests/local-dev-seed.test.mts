@@ -64,6 +64,12 @@ const seedState = vi.hoisted(() => {
   };
 
   function handleQuery(query: string, values: unknown[]) {
+    // 0. Steady-state seed probe. Reports seeded once the telemetry builders
+    // have run, mirroring the EXISTS check against real rows.
+    if (query.includes("AS seeded")) {
+      return Promise.resolve([{ seeded: state.gatewayDecisions.length > 0 }]);
+    }
+
     // 1. SELECT pb.id AS branch_id or general active revision checks
     if (
       query.includes("SELECT pb.id AS branch_id") ||
@@ -475,4 +481,34 @@ describe("local dev seeded workspace", () => {
     // records. Operations logs are populated only by actual governed activity.
     expect(seedState.operationsLogs).toEqual([]);
   });
+
+  it("does not rebuild the demo tenant once it is already seeded", async () => {
+    await ensureDemoTenant();
+    expect(seedState.gatewayDecisions).toHaveLength(3);
+
+    seedState.sql.mockClear();
+    await ensureDemoTenant();
+
+    // The builders append rather than replace, so a second full run would
+    // leave six decisions behind.
+    expect(seedState.gatewayDecisions).toHaveLength(3);
+    expect(issuedQueries()).not.toContain("DELETE FROM gateway_decision");
+    expect(issuedQueries()).not.toContain("INSERT INTO gateway_decision");
+  });
+
+  it("collapses concurrent callers onto a single seed run", async () => {
+    await Promise.all([ensureDemoTenant(), ensureDemoTenant(), ensureDemoTenant()]);
+
+    // Three unguarded runs would interleave nine inserts around three rounds
+    // of deletes.
+    expect(seedState.gatewayDecisions).toHaveLength(3);
+    expect(seedState.runtimeEvidenceEvents).toHaveLength(20);
+  });
 });
+
+/** Flattens the tagged-template SQL the mock client received. */
+function issuedQueries(): string {
+  return seedState.sql.mock.calls
+    .map((call) => (Array.isArray(call[0]) ? call[0].join(" ") : ""))
+    .join("\n");
+}

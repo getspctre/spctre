@@ -28,10 +28,59 @@ export function canBootstrapDemoTenant(): boolean {
   return config.mode === "development" || config.demoTenantEnabled;
 }
 
+/**
+ * Collapses concurrent callers onto a single seed run. The orchestration
+ * deletes before it inserts, so two overlapping runs can observe each other's
+ * half-built state.
+ */
+let inFlightSeed: Promise<void> | null = null;
+
 export async function ensureDemoTenant(): Promise<boolean> {
   if (!sql || !canBootstrapDemoTenant()) return false;
-  await runWithTenantContext(DEMO_TENANT_ID, ensureDemoTenantInTenant);
+  if (await isDemoTenantSeeded()) return true;
+  inFlightSeed ??= runWithTenantContext(DEMO_TENANT_ID, ensureDemoTenantInTenant).finally(() => {
+    inFlightSeed = null;
+  });
+  await inFlightSeed;
   return true;
+}
+
+/**
+ * Has a previous run already built the demo tenant?
+ *
+ * The orchestration this guards is destructive by construction:
+ * `cleanDemoRecords` empties nine tables so the builders can re-insert rows
+ * that carry fixed ids and no ON CONFLICT clause. Its callers are ordinary
+ * request paths — session resolution, workspace routing, packs, evidence,
+ * policy branches — so without this probe a hosted demo rebuilds its own
+ * telemetry on every request that touches one of them. A visitor's resolved
+ * escalation disappears on their next page load, and the agt_operations_log
+ * hash chain is rewritten from scratch each time.
+ *
+ * Probing rows rather than memoising in-process keeps the seed self-healing:
+ * drop the demo telemetry and the next call rebuilds it. The cost of that is
+ * one round trip on the steady-state path, against the full rebuild it
+ * replaces.
+ */
+async function isDemoTenantSeeded(): Promise<boolean> {
+  try {
+    return await runWithTenantContext(DEMO_TENANT_ID, async () => {
+      const rows = await sql<{ seeded: boolean }[]>`
+        SELECT (
+          EXISTS (SELECT 1 FROM workspace WHERE id = ${DEMO_WORKSPACE_ID})
+          AND EXISTS (SELECT 1 FROM gateway_decision WHERE tenant_id = ${DEMO_TENANT_ID})
+        ) AS seeded
+      `;
+      return rows[0]?.seeded === true;
+    });
+  } catch (err) {
+    // A schema that predates these tables reports a missing relation. Fall
+    // through to the seed path, which already tolerates that.
+    logger.warn("Demo tenant seed probe failed; running the full seed", {
+      error: err instanceof Error ? err.message : String(err),
+    });
+    return false;
+  }
 }
 
 async function ensureDemoTenantInTenant(): Promise<void> {
