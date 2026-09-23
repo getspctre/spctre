@@ -28,6 +28,16 @@ export interface UsageSubmissionRequest {
   entitlementVersion: string | null;
   periodStart: string;
   periodEnd: string;
+  /**
+   * The tenant's plan code at the moment the period was measured.
+   *
+   * Carried because an overage rate is per-plan: a provider implementation has
+   * to pick the right priced unit, and the plan is not derivable from anything
+   * else in this request. Frozen with the rest of the measurement, so a tenant
+   * that changes plan mid-period is still billed against the plan the period
+   * was measured under.
+   */
+  planCode: string;
 }
 
 export interface UsageSubmissionResult {

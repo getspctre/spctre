@@ -97,6 +97,7 @@ async function reportPeriod(
     entitlementVersion: period.entitlementVersion,
     periodStart: period.periodStart,
     periodEnd: period.periodEnd,
+    planCode,
   };
 
   const result = await billingMeteringService.submitUsage(request);
