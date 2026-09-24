@@ -1,5 +1,25 @@
 import { fetchWithTimeout } from "@/lib/platform/fetch-timeout";
 import { logger } from "@spctre/platform/logging";
+import { getRuntimeConfig } from "@/lib/config/runtime";
+
+/**
+ * Whether the offline development path below may be taken.
+ *
+ * That path is a genuine authentication bypass, not a stub: it issues a
+ * placeholder `sessionInfo` and then accepts any six-digit code against it, so
+ * a deployment that reaches it has SMS MFA that reports as enrolled and
+ * enforces nothing. It is correct with no Firebase project to talk to and a
+ * developer reading the code off their own console; it is a hole anywhere else.
+ *
+ * Gated on the runtime mode rather than NODE_ENV because
+ * `lib/config/runtime.ts` makes SPCTRE_RUNTIME_MODE the authoritative
+ * declaration and refuses to start a production Node process without it. The
+ * client-side reCAPTCHA guard in `lib/platform/recaptcha.ts` is not a
+ * substitute: it runs in the browser, and both MFA routes accept a direct POST.
+ */
+function offlineDevFallbackAllowed(): boolean {
+  return getRuntimeConfig().mode !== "production";
+}
 
 function maskPhone(phoneNumber: string): string {
   const digits = phoneNumber.replace(/\D/g, "");
@@ -16,6 +36,16 @@ export async function sendSmsOtp(
 ): Promise<string> {
   const firebaseApiKey = process.env.FIREBASE_API_KEY?.trim();
   if (!firebaseApiKey) {
+    if (!offlineDevFallbackAllowed()) {
+      // Refuse to mint an enrollment that nothing can verify. The caller
+      // answers 502 with this message, so the operator learns the deployment
+      // is misconfigured instead of the tenant acquiring a factor that accepts
+      // any code.
+      logger.error("sms.not_configured", { delivery_kind: "sms-otp" });
+      throw new Error(
+        "SMS verification is unavailable: this deployment has no FIREBASE_API_KEY configured.",
+      );
+    }
     // Dev fallback mode: write to console for offline testing
     console.log(`\n==================================================`);
     console.log(`[SMS-DEV-OTP] Phone: ${maskPhone(phoneNumber)}`);
@@ -52,6 +82,14 @@ export async function sendSmsOtp(
 export async function verifyFirebasePhoneAuth(sessionInfo: string, code: string): Promise<boolean> {
   const firebaseApiKey = process.env.FIREBASE_API_KEY?.trim();
   if (!firebaseApiKey) {
+    if (!offlineDevFallbackAllowed()) {
+      // Fail closed rather than throw: a rejected code is the honest answer to
+      // this request, and it is also what retires any enrollment already
+      // holding the placeholder sessionInfo. The log is what tells an operator
+      // why a factor stopped verifying.
+      logger.error("sms.verify_not_configured");
+      return false;
+    }
     // Dev fallback mode
     return sessionInfo === "dev-session-info" && /^\d{6}$/.test(code);
   }
