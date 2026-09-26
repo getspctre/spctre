@@ -14,6 +14,15 @@ export const HOSTED_PLAN_CODES: readonly HostedPlanCode[] = [
 
 export type HostedLifecycleStatus = "EVALUATING" | "ACTIVE" | "EXPANDING" | "PAUSED";
 
+/**
+ * How a provisioned tenant came to exist. A hosted checkout produces a
+ * CUSTOMER; an operator grant for an employee, tester or dogfood tenant
+ * produces an INTERNAL account, which is never billed.
+ */
+export type HostedSalesStatus = "CUSTOMER" | "INTERNAL";
+
+export const HOSTED_SALES_STATUSES: readonly HostedSalesStatus[] = ["CUSTOMER", "INTERNAL"];
+
 export const HOSTED_LIFECYCLE_STATUSES: readonly HostedLifecycleStatus[] = [
   "EVALUATING",
   "ACTIVE",
@@ -152,6 +161,7 @@ export async function createHostedTenant(params: {
   planCode: HostedPlanCode;
   lifecycleStatus: HostedLifecycleStatus;
   billingCustomerId: string | null;
+  salesStatus?: HostedSalesStatus;
 }): Promise<CreateHostedTenantOutcome> {
   if (!rawSql || !sql) return { status: "failed" };
 
@@ -183,6 +193,7 @@ async function writeTenantDependents(
     planCode: HostedPlanCode;
     lifecycleStatus: HostedLifecycleStatus;
     billingCustomerId: string | null;
+    salesStatus?: HostedSalesStatus;
   },
 ): Promise<ProvisionedTenant | null> {
   return sql!.begin(async (tx) => {
@@ -202,7 +213,7 @@ async function writeTenantDependents(
         retention_window_days, retained_event_capacity,
         entitlement_version, entitlement_effective_at
       ) VALUES (
-        ${tenantId}, ${params.planCode}, ${params.lifecycleStatus}, 'CUSTOMER',
+        ${tenantId}, ${params.planCode}, ${params.lifecycleStatus}, ${params.salesStatus ?? "CUSTOMER"},
         ${params.email}, ${params.billingCustomerId},
         ${entitlements.retentionWindowDays.value}, ${entitlements.retainedEvents.value},
         ${catalog.version}, now()
