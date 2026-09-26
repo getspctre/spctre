@@ -4,8 +4,10 @@ import {
   findHostedOwnerByEmail,
   HOSTED_LIFECYCLE_STATUSES,
   HOSTED_PLAN_CODES,
+  HOSTED_SALES_STATUSES,
   type HostedLifecycleStatus,
   type HostedPlanCode,
+  type HostedSalesStatus,
   type ProvisionedTenant,
 } from "@/lib/repositories/provisioning";
 import { isDatabaseConfigured } from "@/lib/repositories/shared/database";
@@ -20,6 +22,13 @@ function normalizePlan(plan: string | undefined): HostedPlanCode {
   return HOSTED_PLAN_CODES.includes(candidate as HostedPlanCode)
     ? (candidate as HostedPlanCode)
     : "TEAM";
+}
+
+function normalizeSalesStatus(status: string | undefined): HostedSalesStatus {
+  const candidate = status?.trim().toUpperCase();
+  return HOSTED_SALES_STATUSES.includes(candidate as HostedSalesStatus)
+    ? (candidate as HostedSalesStatus)
+    : "CUSTOMER";
 }
 
 function normalizeLifecycleStatus(status: string | undefined): HostedLifecycleStatus {
@@ -49,6 +58,7 @@ export async function provisionHostedTenant(params: {
   plan?: string;
   lifecycleStatus?: string;
   billingCustomerId?: string;
+  salesStatus?: string;
 }): Promise<ProvisionHostedTenantResult> {
   if (!isDatabaseConfigured()) return { error: "database_required" };
 
@@ -67,6 +77,7 @@ export async function provisionHostedTenant(params: {
     planCode: normalizePlan(params.plan),
     lifecycleStatus: normalizeLifecycleStatus(params.lifecycleStatus),
     billingCustomerId: params.billingCustomerId?.trim() || null,
+    salesStatus: normalizeSalesStatus(params.salesStatus),
   });
 
   // A subscription webhook arrives alongside its siblings, so several callers

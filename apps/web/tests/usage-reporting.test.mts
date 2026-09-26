@@ -64,8 +64,8 @@ function period(overrides: Record<string, unknown> = {}) {
   };
 }
 
-function onPlan(planCode: string) {
-  getCommercialProfileSpy.mockResolvedValue({ planCode });
+function onPlan(planCode: string, salesStatus = "CUSTOMER") {
+  getCommercialProfileSpy.mockResolvedValue({ planCode, salesStatus });
 }
 
 beforeEach(() => {
@@ -225,6 +225,30 @@ describe("who gets charged for overage", () => {
     expect(createOverageInvoiceItemSpy).not.toHaveBeenCalled();
     expect(resolvePlanEntitlementsSpy).not.toHaveBeenCalled();
     expect(summary.outcomes[0]).toMatchObject({ status: "reported", charged: false });
+  });
+
+  it("never charges an internal grant, whatever its plan says", async () => {
+    // An internal account — an employee, a tester, a dogfood tenant — has no
+    // subscription behind it, so an overage charge has nothing to settle
+    // against. Same reasoning as the trial tier, different reason for existing.
+    onPlan("BUSINESS", "INTERNAL");
+
+    const summary = await reportClosedPeriods(TENANT);
+
+    expect(createOverageInvoiceItemSpy).not.toHaveBeenCalled();
+    expect(resolvePlanEntitlementsSpy).not.toHaveBeenCalled();
+    expect(summary.outcomes[0]).toMatchObject({ status: "reported", charged: false });
+  });
+
+  it("still measures and reports an internal grant's usage", async () => {
+    // Only the charge is skipped. Losing the measurement would make a dogfood
+    // tenant invisible in the usage surfaces it exists to exercise.
+    onPlan("ENTERPRISE", "INTERNAL");
+
+    const summary = await reportClosedPeriods(TENANT);
+
+    expect(submitUsageSpy).toHaveBeenCalledTimes(1);
+    expect(summary.outcomes[0]).toMatchObject({ status: "reported" });
   });
 
   it("does not charge when the entitlement is measured but not enforced", async () => {

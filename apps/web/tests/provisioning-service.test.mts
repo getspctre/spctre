@@ -14,6 +14,7 @@ vi.mock("@/lib/repositories/provisioning", () => ({
   createHostedTenant: (...args: unknown[]) => createHostedTenantSpy(...args),
   HOSTED_PLAN_CODES: ["HOSTED_TRIAL", "TEAM", "BUSINESS", "ENTERPRISE"],
   HOSTED_LIFECYCLE_STATUSES: ["EVALUATING", "ACTIVE", "EXPANDING", "PAUSED"],
+  HOSTED_SALES_STATUSES: ["CUSTOMER", "INTERNAL"],
 }));
 
 vi.mock("@/lib/repositories/default-policy", () => ({
@@ -66,6 +67,9 @@ describe("provisionHostedTenant", () => {
       planCode: "BUSINESS",
       lifecycleStatus: "ACTIVE",
       billingCustomerId: null,
+      // A checkout provisions customers. An internal grant is the only caller
+      // that produces anything else, and it has to ask for it.
+      salesStatus: "CUSTOMER",
     });
     expect(ensureDefaultPublishedPolicyPackSpy).toHaveBeenCalledWith({
       tenantId: TENANT_ID,
@@ -73,6 +77,31 @@ describe("provisionHostedTenant", () => {
       actorId: PRINCIPAL_ID,
     });
     expect(boundTenants).toEqual([TENANT_ID]);
+  });
+
+  it("provisions an internal grant when the caller asks for one", async () => {
+    await provisionHostedTenant({
+      email: "employee@spctre.dev",
+      displayName: "Employee",
+      plan: "ENTERPRISE",
+      salesStatus: "INTERNAL",
+    });
+
+    expect(createHostedTenantSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ planCode: "ENTERPRISE", salesStatus: "INTERNAL" }),
+    );
+  });
+
+  it("falls back to a customer when the sales status is unrecognised", async () => {
+    await provisionHostedTenant({
+      email: "buyer@example.com",
+      displayName: "Buyer",
+      salesStatus: "SOMETHING_ELSE",
+    });
+
+    expect(createHostedTenantSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ salesStatus: "CUSTOMER" }),
+    );
   });
 
   it("passes billing details through so checkout never writes the profile itself", async () => {

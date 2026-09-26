@@ -47,7 +47,7 @@ export async function reportClosedPeriods(tenantId: string): Promise<UsageReport
     const profile = await getCommercialProfile(tenantId);
     const outcomes: PeriodReportOutcome[] = [];
     for (const period of periods) {
-      outcomes.push(await reportPeriod(tenantId, profile.planCode, period));
+      outcomes.push(await reportPeriod(tenantId, profile.planCode, profile.salesStatus, period));
     }
     return { tenantId, considered: periods.length, outcomes };
   });
@@ -56,6 +56,7 @@ export async function reportClosedPeriods(tenantId: string): Promise<UsageReport
 async function reportPeriod(
   tenantId: string,
   planCode: string,
+  salesStatus: string,
   period: UsagePeriodSummary,
 ): Promise<PeriodReportOutcome> {
   // Narrowed by listUnreportedClosedPeriods; kept so this function is safe to
@@ -126,7 +127,7 @@ async function reportPeriod(
     };
   }
 
-  const charged = await chargeOverageIfEnforced(planCode, request);
+  const charged = await chargeOverageIfEnforced(planCode, salesStatus, request);
 
   await recordUsageSubmissionOutcome({
     id: claim.record.id,
@@ -159,8 +160,15 @@ async function reportPeriod(
  */
 async function chargeOverageIfEnforced(
   planCode: string,
+  salesStatus: string,
   request: Parameters<typeof billingMeteringService.createOverageInvoiceItem>[0],
 ): Promise<boolean> {
+  // An internal grant is never billed, for the same reason the free tier is
+  // not: there is no subscription behind it through which a charge could be
+  // settled. Its capacity still applies and its usage is still measured and
+  // reported — what is skipped is only the charge.
+  if (salesStatus === "INTERNAL") return false;
+
   // The free tier is never billed. Its capacity *is* enforced — ingest returns
   // 429 past it — but that enforcement is a refusal, not an overage: a trial
   // tenant has no subscription through which a charge could be settled. Without

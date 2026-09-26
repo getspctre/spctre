@@ -19,7 +19,10 @@ export interface CommercialUsageSummary {
 export interface CommercialProfile {
   planCode: CommercialPlanCode;
   lifecycleStatus: "EVALUATING" | "ACTIVE" | "EXPANDING" | "PAUSED";
-  salesStatus: "NONE" | "REQUESTED" | "QUALIFIED" | "CONTRACTING" | "CUSTOMER";
+  // INTERNAL marks a grant an operator provisioned — an employee, a tester, or
+  // a dogfood tenant. It is deliberately outside the sales funnel rather than a
+  // stage within it: no subscription exists behind it and it is never billed.
+  salesStatus: "NONE" | "REQUESTED" | "QUALIFIED" | "CONTRACTING" | "CUSTOMER" | "INTERNAL";
   billingContactEmail: string | null;
   updatedAt: string | null;
   downgradedAt?: string | null;
