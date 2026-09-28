@@ -46,7 +46,7 @@ importers:
         version: 3.0.2
       '@openapitools/openapi-generator-cli':
         specifier: ^2.41.0
-        version: 2.41.0(debug@4.4.3(supports-color@10.2.2))(supports-color@10.2.2)
+        version: 2.41.0(supports-color@10.2.2)
       '@vitest/coverage-v8':
         specifier: ^5.0.0
         version: 5.0.0(vitest@5.0.0)
@@ -121,8 +121,8 @@ importers:
         specifier: ^13.1.0
         version: 13.3.0
       '@simplewebauthn/server':
-        specifier: ^13.1.1
-        version: 13.3.2
+        specifier: ^14.0.2
+        version: 14.0.2
       '@spctre/api-contracts':
         specifier: workspace:*
         version: link:../../packages/api-contracts
@@ -455,7 +455,7 @@ importers:
         version: 10.6.0(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(storybook@10.6.0(@types/react@19.2.17)(prettier@3.9.6)(react@19.2.8))(supports-color@10.2.2)(typescript@6.0.3)(vite@8.2.1(@types/node@26.4.1)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
       '@storybook/test-runner':
         specifier: ^0.24.5
-        version: 0.24.5(@swc/helpers@0.5.23)(@types/node@26.4.1)(debug@4.4.3(supports-color@10.2.2))(storybook@10.6.0(@types/react@19.2.17)(prettier@3.9.6)(react@19.2.8))(supports-color@10.2.2)
+        version: 0.24.5(@swc/helpers@0.5.23)(@types/node@26.4.1)(storybook@10.6.0(@types/react@19.2.17)(prettier@3.9.6)(react@19.2.8))(supports-color@10.2.2)
       '@types/react':
         specifier: ^19.2.17
         version: 19.2.17
@@ -3019,44 +3019,63 @@ packages:
     resolution: {integrity: sha512-7FNeNl8NCE7aINx7WXiKQrPYZWC/hvrTsmk6zmxbI7LTXE7hVek/n8AfVgpe2y82zl3w0HvCHN0bVKMBoJcC0w==}
     engines: {node: '>= 10.0.0'}
 
-  '@peculiar/asn1-android@2.8.0':
-    resolution: {integrity: sha512-skLbS+IOGv1lUgDqtChr8xvtvEr3HMse/JGBaL2r1J1o/n7a8wqOrovMtlRq/UXLhxvmLaONP67hwtshgzwfzA==}
+  '@peculiar/asn1-android@2.9.5':
+    resolution: {integrity: sha512-KnNE4l033gbJ3ZzfYk7fJpSZwhd5xT+dPAnrB8bcwqylHiLN2zjZ0OyFao0LDIOI/ZdXRabV0n3Ww/KvpgZq6w==}
+    engines: {node: '>=14'}
 
-  '@peculiar/asn1-cms@2.8.0':
-    resolution: {integrity: sha512-NgekZOrSJFSBFLFoLfwePguAWAx7z1+f2TEsWFUMyiqqfntZ4+S/S5hzqME3q4pCA0iOsFKdwiQ35dwY24eVqA==}
+  '@peculiar/asn1-asym-key@2.9.5':
+    resolution: {integrity: sha512-U3Q2bUWYNVpfk+oOhPl/+OSHxXaBTQBwMf93jJ7oPi/sbmcY5CnARdjGMwLoXT/ggWSryo5t7A7o3/Gfz0U2WA==}
+    engines: {node: '>=14'}
 
-  '@peculiar/asn1-csr@2.8.0':
-    resolution: {integrity: sha512-akbF8+uvleHs8sejNPQxwmVFuInAg6FMNHOwMILXfP518YfFJwdR3jr6oNUPOaEJfuEhn/vkNOCIT6ASUd4mbg==}
+  '@peculiar/asn1-cms@2.9.5':
+    resolution: {integrity: sha512-4Ivz0fsyFofe0bslNsYcGN9+iETdHX4v+BFwIPr+K/BAt61sHXECP63ff9FntU9zcfVQELJFdUG9so44OjUlBQ==}
+    engines: {node: '>=14'}
 
-  '@peculiar/asn1-ecc@2.8.0':
-    resolution: {integrity: sha512-ohwlk+u9Rv2NOAY1c6MfHj45ATVF8R1DUN/WCgABiRtLi2ZftlZWZX7KvpAbU8v9xPcmoILfELeEABj/rn18AQ==}
+  '@peculiar/asn1-csr@2.9.5':
+    resolution: {integrity: sha512-9dO6PcoJeI+1xJ4rG7eINMa6f9Ix/QdRs5UGZ0D7v/R3TzmsbVr5cqAgfYw4xgS9U54ouHYqEz0bIZBbM/UY1g==}
+    engines: {node: '>=14'}
 
-  '@peculiar/asn1-pfx@2.8.0':
-    resolution: {integrity: sha512-5yof1ytoB++RQtaFbqSUJ8pxDJtZT6vbVqZ8XoJ61ph7UjNVvfFwAilnCodqkNsAodpy13gDhoxZXw00pghnyg==}
+  '@peculiar/asn1-ecc@2.9.5':
+    resolution: {integrity: sha512-OD+HLlcV7wCL64w0rheX/C0J31DbJce0nf8ulv3UNftQ617JEZE3sQ4cMN6PotXWlJ1M5GQx90G3bywtdKOstw==}
+    engines: {node: '>=14'}
 
-  '@peculiar/asn1-pkcs8@2.8.0':
-    resolution: {integrity: sha512-qAKXtLpBEw9LqhKpjw3ajZSXlBur+ipW+y2ivVBQAG6F6qRx94yO+1ZR4mvw+YaCfKSaOzLeYEzsPaBp4SJELA==}
+  '@peculiar/asn1-pfx@2.9.5':
+    resolution: {integrity: sha512-btcH7lbcD4410qnjHvv7F0kEuMNKbX8CFAZSs9CDPWHKzT1byLPHYeR40AnUw9z4CzsijMY0daBFYUvVx75sdA==}
+    engines: {node: '>=14'}
 
-  '@peculiar/asn1-pkcs9@2.8.0':
-    resolution: {integrity: sha512-b5nDWCnkV60+cQ141D6sVVwK9nz64R5n3zSVnklGd+ECdkW2Ol3U1a6yYFlalpSOaD557yuJB64A+q42jG7lUQ==}
+  '@peculiar/asn1-pkcs8@2.9.5':
+    resolution: {integrity: sha512-c7UghAGQdBfAHL9JdwcJkAc/lDJKNXfCdYXPXlf8BZdD/fVJjJnXKHxX4gyLhkFTvnGhME7caieSgc2ROtqYTQ==}
+    engines: {node: '>=14'}
 
-  '@peculiar/asn1-rsa@2.8.0':
-    resolution: {integrity: sha512-zHEUlCqB2mk7x2lxDwHHJy7hWZOPdGHVlsmITWKB5/PbQo61atbu9PJ/0r9dQNMwFzbKPXZ8uK8/91eUhRznSg==}
+  '@peculiar/asn1-pkcs9@2.9.5':
+    resolution: {integrity: sha512-4R/zMgLSHbQIZRBwP1KzX6iuNHmW3xFWwu9TS9A00N60fmQqp9DkkqnQFyd0mAYMQTrQefuzQ/yP4U8sOLGUgQ==}
+    engines: {node: '>=14'}
 
-  '@peculiar/asn1-schema@2.8.0':
-    resolution: {integrity: sha512-7YT0U/ze0tF2QOBbE15gKZwy5tvgGyLRiRHLzhlbOpf7BT032oBSd0haZqXn5W6l26WLlu3dyxzjM+2638/z2Q==}
+  '@peculiar/asn1-rsa@2.9.5':
+    resolution: {integrity: sha512-kHwBLVMkm9ljlM521ovS7y4z4mr8xuHTdNyyoPlDvckBwFKSgs9HqKBryLBeqHqL2YpIgl+Vspl7kzNGG2phzA==}
+    engines: {node: '>=14'}
 
-  '@peculiar/asn1-x509-attr@2.8.0':
-    resolution: {integrity: sha512-tHjkfS/qhMnmrlB2J9NhflQlQ7In3khO3CfmVrriOlpTeErY9ZIKOso1hQ5JQiyrJ7ShvqVPk7E5fQmbclkSKA==}
+  '@peculiar/asn1-schema@2.9.5':
+    resolution: {integrity: sha512-Ez3wLKVjaxdsLcgeWN4OE31QkM7oBOgKuuBJxldRYAkfYw2C+8zJPcSd/SThnbhszsEOlAmoaS5kIIkN29fGKQ==}
+    engines: {node: '>=14'}
 
-  '@peculiar/asn1-x509@2.8.0':
-    resolution: {integrity: sha512-N0CMuhWUzsWEVq6F1q9X6+VKUnWzSW+cSVg+aPaGGwDdbFoFWTYgin5MHwXgpWd6y9COMBxnfy/Qc+Xc7F0Zwg==}
+  '@peculiar/asn1-x509-attr@2.9.5':
+    resolution: {integrity: sha512-PlbL1a74RZiry7puPCZ5hdk/puvivxYJPbjadr2i7DBjHCJFEKCfTRPKL3DILeZFtzJjn95J5EBtSc4/TB9/6Q==}
+    engines: {node: '>=14'}
+
+  '@peculiar/asn1-x509-post-quantum@2.9.5':
+    resolution: {integrity: sha512-CTznDkboSgwRpXSFhta+Pe5cQ12JtojdMrmOZTWYkBSvbW/1R5pflPIHkpSlaILIfGcAaxIVpXq880xCfJYzow==}
+    engines: {node: '>=14'}
+
+  '@peculiar/asn1-x509@2.9.5':
+    resolution: {integrity: sha512-NP3ecvN6zTDlwCvogIWL7MJN9AZNuskkIbnlhrlkB97Mn2EqirBUQ8GKzsOmdAL3pRvjGu1Uk/a4DNfiZrWxhw==}
+    engines: {node: '>=14'}
 
   '@peculiar/utils@2.0.3':
     resolution: {integrity: sha512-+oL3HPFRIZ1St2K50lWCXiioIgSoxzz7R1J3uF6neO2yl1sgmpgY6XXJH4BdpoDkMWznQTeYF6oWNDZLCdQ4eQ==}
 
-  '@peculiar/x509@1.14.3':
-    resolution: {integrity: sha512-C2Xj8FZ0uHWeCXXqX5B4/gVFQmtSkiuOolzAgutjTfseNOHT3pUjljDZsTSxXFGgio54bCzVFqmEOUrIVk8RDA==}
+  '@peculiar/x509@2.1.0':
+    resolution: {integrity: sha512-IYbg1R03CSQGWwl24kGyqrdVtixNSbRaDvBg1r5wyYjTP+VwPQkka1BzTgU5+vxiuwqg04OxdvdJ1xYYFIdUSA==}
     engines: {node: '>=20.0.0'}
 
   '@pkgjs/parseargs@0.11.0':
@@ -3612,8 +3631,8 @@ packages:
   '@simplewebauthn/browser@13.3.0':
     resolution: {integrity: sha512-BE/UWv6FOToAdVk0EokzkqQQDOWtNydYlY6+OrmiZ5SCNmb41VehttboTetUM3T/fr6EAFYVXjz4My2wg230rQ==}
 
-  '@simplewebauthn/server@13.3.2':
-    resolution: {integrity: sha512-KEDhfcGP1PAKRVSDjA3npTQFqS2b/srm+ipoNBNHdkzrHAlaRQUTE+a5f4ywsx6thxAw1NU2rYcLEY1949RGbQ==}
+  '@simplewebauthn/server@14.0.2':
+    resolution: {integrity: sha512-g+m/xv9/8FRWsDY22CwsTYRzt3WwS9fJrR3P7eY3Ti01FXH5FQ36Xn55v6D+5tb6VajlqOj4hywP/Vxsb6a3Sg==}
     engines: {node: '>=20.0.0'}
 
   '@sinclair/typebox@0.34.52':
@@ -7365,8 +7384,8 @@ packages:
   pvtsutils@1.3.6:
     resolution: {integrity: sha512-PLgQXQ6H2FWCaeRak8vvk1GW462lMxB5s3Jm673N82zI4vqtVUPuZdffdZbPDFRoU8kAhItWFtPCWiPpp4/EDg==}
 
-  pvutils@1.1.5:
-    resolution: {integrity: sha512-KTqnxsgGiQ6ZAzZCVlJH5eOjSnvlyEgx1m8bkRJfOhmGRqfo5KLvmAlACQkrjEtOQ4B7wF9TdSLIs9O90MX9xA==}
+  pvutils@1.2.0:
+    resolution: {integrity: sha512-BbubeCEyTuQjVMakvJQ/Sxbc93F2pwmbsxONT/ZRrwU7Ua38d8unYTwXpTVLAKJ4BDuH9IGztCjQcd/N/39Dvg==}
     engines: {node: '>=16.0.0'}
 
   qs@6.16.0:
@@ -10324,7 +10343,7 @@ snapshots:
       '@tybys/wasm-util': 0.10.3
     optional: true
 
-  '@nestjs/axios@4.0.1(@nestjs/common@11.2.1(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@10.2.2))(axios@1.20.0(debug@4.4.3(supports-color@10.2.2))(supports-color@10.2.2))(rxjs@7.8.2)':
+  '@nestjs/axios@4.0.1(@nestjs/common@11.2.1(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@10.2.2))(axios@1.20.0(supports-color@10.2.2))(rxjs@7.8.2)':
     dependencies:
       '@nestjs/common': 11.2.1(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@10.2.2)
       axios: 1.20.0(debug@4.4.3(supports-color@10.2.2))(supports-color@10.2.2)
@@ -10408,10 +10427,10 @@ snapshots:
     transitivePeerDependencies:
       - encoding
 
-  '@openapitools/openapi-generator-cli@2.41.0(debug@4.4.3(supports-color@10.2.2))(supports-color@10.2.2)':
+  '@openapitools/openapi-generator-cli@2.41.0(supports-color@10.2.2)':
     dependencies:
       '@inquirer/select': 1.3.3
-      '@nestjs/axios': 4.0.1(@nestjs/common@11.2.1(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@10.2.2))(axios@1.20.0(debug@4.4.3(supports-color@10.2.2))(supports-color@10.2.2))(rxjs@7.8.2)
+      '@nestjs/axios': 4.0.1(@nestjs/common@11.2.1(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@10.2.2))(axios@1.20.0(supports-color@10.2.2))(rxjs@7.8.2)
       '@nestjs/common': 11.2.1(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@10.2.2)
       '@nestjs/core': 11.2.1(@nestjs/common@11.2.1(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@10.2.2))(reflect-metadata@0.2.2)(rxjs@7.8.2)
       '@nuxtjs/opencollective': 0.3.2
@@ -11488,84 +11507,100 @@ snapshots:
       '@parcel/watcher-win32-arm64': 2.6.0
       '@parcel/watcher-win32-x64': 2.6.0
 
-  '@peculiar/asn1-android@2.8.0':
+  '@peculiar/asn1-android@2.9.5':
     dependencies:
-      '@peculiar/asn1-schema': 2.8.0
+      '@peculiar/asn1-schema': 2.9.5
       asn1js: 3.0.10
       tslib: 2.8.1
 
-  '@peculiar/asn1-cms@2.8.0':
+  '@peculiar/asn1-asym-key@2.9.5':
     dependencies:
-      '@peculiar/asn1-schema': 2.8.0
-      '@peculiar/asn1-x509': 2.8.0
-      '@peculiar/asn1-x509-attr': 2.8.0
+      '@peculiar/asn1-pkcs8': 2.9.5
+      '@peculiar/asn1-schema': 2.9.5
+      '@peculiar/asn1-x509': 2.9.5
       asn1js: 3.0.10
       tslib: 2.8.1
 
-  '@peculiar/asn1-csr@2.8.0':
+  '@peculiar/asn1-cms@2.9.5':
     dependencies:
-      '@peculiar/asn1-schema': 2.8.0
-      '@peculiar/asn1-x509': 2.8.0
+      '@peculiar/asn1-schema': 2.9.5
+      '@peculiar/asn1-x509': 2.9.5
+      '@peculiar/asn1-x509-attr': 2.9.5
       asn1js: 3.0.10
       tslib: 2.8.1
 
-  '@peculiar/asn1-ecc@2.8.0':
+  '@peculiar/asn1-csr@2.9.5':
     dependencies:
-      '@peculiar/asn1-schema': 2.8.0
-      '@peculiar/asn1-x509': 2.8.0
+      '@peculiar/asn1-schema': 2.9.5
+      '@peculiar/asn1-x509': 2.9.5
       asn1js: 3.0.10
       tslib: 2.8.1
 
-  '@peculiar/asn1-pfx@2.8.0':
+  '@peculiar/asn1-ecc@2.9.5':
     dependencies:
-      '@peculiar/asn1-cms': 2.8.0
-      '@peculiar/asn1-pkcs8': 2.8.0
-      '@peculiar/asn1-rsa': 2.8.0
-      '@peculiar/asn1-schema': 2.8.0
+      '@peculiar/asn1-schema': 2.9.5
+      '@peculiar/asn1-x509': 2.9.5
       asn1js: 3.0.10
       tslib: 2.8.1
 
-  '@peculiar/asn1-pkcs8@2.8.0':
+  '@peculiar/asn1-pfx@2.9.5':
     dependencies:
-      '@peculiar/asn1-schema': 2.8.0
-      '@peculiar/asn1-x509': 2.8.0
+      '@peculiar/asn1-cms': 2.9.5
+      '@peculiar/asn1-pkcs8': 2.9.5
+      '@peculiar/asn1-rsa': 2.9.5
+      '@peculiar/asn1-schema': 2.9.5
       asn1js: 3.0.10
       tslib: 2.8.1
 
-  '@peculiar/asn1-pkcs9@2.8.0':
+  '@peculiar/asn1-pkcs8@2.9.5':
     dependencies:
-      '@peculiar/asn1-cms': 2.8.0
-      '@peculiar/asn1-pfx': 2.8.0
-      '@peculiar/asn1-pkcs8': 2.8.0
-      '@peculiar/asn1-schema': 2.8.0
-      '@peculiar/asn1-x509': 2.8.0
-      '@peculiar/asn1-x509-attr': 2.8.0
+      '@peculiar/asn1-schema': 2.9.5
+      '@peculiar/asn1-x509': 2.9.5
       asn1js: 3.0.10
       tslib: 2.8.1
 
-  '@peculiar/asn1-rsa@2.8.0':
+  '@peculiar/asn1-pkcs9@2.9.5':
     dependencies:
-      '@peculiar/asn1-schema': 2.8.0
-      '@peculiar/asn1-x509': 2.8.0
+      '@peculiar/asn1-cms': 2.9.5
+      '@peculiar/asn1-pfx': 2.9.5
+      '@peculiar/asn1-pkcs8': 2.9.5
+      '@peculiar/asn1-schema': 2.9.5
+      '@peculiar/asn1-x509': 2.9.5
+      '@peculiar/asn1-x509-attr': 2.9.5
       asn1js: 3.0.10
       tslib: 2.8.1
 
-  '@peculiar/asn1-schema@2.8.0':
+  '@peculiar/asn1-rsa@2.9.5':
+    dependencies:
+      '@peculiar/asn1-schema': 2.9.5
+      '@peculiar/asn1-x509': 2.9.5
+      asn1js: 3.0.10
+      tslib: 2.8.1
+
+  '@peculiar/asn1-schema@2.9.5':
     dependencies:
       '@peculiar/utils': 2.0.3
       asn1js: 3.0.10
       tslib: 2.8.1
 
-  '@peculiar/asn1-x509-attr@2.8.0':
+  '@peculiar/asn1-x509-attr@2.9.5':
     dependencies:
-      '@peculiar/asn1-schema': 2.8.0
-      '@peculiar/asn1-x509': 2.8.0
+      '@peculiar/asn1-schema': 2.9.5
+      '@peculiar/asn1-x509': 2.9.5
       asn1js: 3.0.10
       tslib: 2.8.1
 
-  '@peculiar/asn1-x509@2.8.0':
+  '@peculiar/asn1-x509-post-quantum@2.9.5':
     dependencies:
-      '@peculiar/asn1-schema': 2.8.0
+      '@peculiar/asn1-asym-key': 2.9.5
+      '@peculiar/asn1-schema': 2.9.5
+      '@peculiar/asn1-x509': 2.9.5
+      asn1js: 3.0.10
+      tslib: 2.8.1
+
+  '@peculiar/asn1-x509@2.9.5':
+    dependencies:
+      '@peculiar/asn1-schema': 2.9.5
       '@peculiar/utils': 2.0.3
       asn1js: 3.0.10
       tslib: 2.8.1
@@ -11574,17 +11609,17 @@ snapshots:
     dependencies:
       tslib: 2.8.1
 
-  '@peculiar/x509@1.14.3':
+  '@peculiar/x509@2.1.0':
     dependencies:
-      '@peculiar/asn1-cms': 2.8.0
-      '@peculiar/asn1-csr': 2.8.0
-      '@peculiar/asn1-ecc': 2.8.0
-      '@peculiar/asn1-pkcs9': 2.8.0
-      '@peculiar/asn1-rsa': 2.8.0
-      '@peculiar/asn1-schema': 2.8.0
-      '@peculiar/asn1-x509': 2.8.0
+      '@peculiar/asn1-cms': 2.9.5
+      '@peculiar/asn1-csr': 2.9.5
+      '@peculiar/asn1-ecc': 2.9.5
+      '@peculiar/asn1-pkcs9': 2.9.5
+      '@peculiar/asn1-rsa': 2.9.5
+      '@peculiar/asn1-schema': 2.9.5
+      '@peculiar/asn1-x509': 2.9.5
+      '@peculiar/asn1-x509-post-quantum': 2.9.5
       pvtsutils: 1.3.6
-      reflect-metadata: 0.2.2
       tslib: 2.8.1
       tsyringe: 4.10.0
 
@@ -12099,16 +12134,18 @@ snapshots:
 
   '@simplewebauthn/browser@13.3.0': {}
 
-  '@simplewebauthn/server@13.3.2':
+  '@simplewebauthn/server@14.0.2':
     dependencies:
       '@hexagon/base64': 1.1.28
       '@levischuck/tiny-cbor': 0.2.11
-      '@peculiar/asn1-android': 2.8.0
-      '@peculiar/asn1-ecc': 2.8.0
-      '@peculiar/asn1-rsa': 2.8.0
-      '@peculiar/asn1-schema': 2.8.0
-      '@peculiar/asn1-x509': 2.8.0
-      '@peculiar/x509': 1.14.3
+      '@peculiar/asn1-android': 2.9.5
+      '@peculiar/asn1-ecc': 2.9.5
+      '@peculiar/asn1-rsa': 2.9.5
+      '@peculiar/asn1-schema': 2.9.5
+      '@peculiar/asn1-x509': 2.9.5
+      '@peculiar/asn1-x509-post-quantum': 2.9.5
+      '@peculiar/x509': 2.1.0
+      reflect-metadata: 0.2.2
 
   '@sinclair/typebox@0.34.52': {}
 
@@ -12209,7 +12246,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@storybook/test-runner@0.24.5(@swc/helpers@0.5.23)(@types/node@26.4.1)(debug@4.4.3(supports-color@10.2.2))(storybook@10.6.0(@types/react@19.2.17)(prettier@3.9.6)(react@19.2.8))(supports-color@10.2.2)':
+  '@storybook/test-runner@0.24.5(@swc/helpers@0.5.23)(@types/node@26.4.1)(storybook@10.6.0(@types/react@19.2.17)(prettier@3.9.6)(react@19.2.8))(supports-color@10.2.2)':
     dependencies:
       '@babel/core': 7.29.7(supports-color@10.2.2)
       '@babel/generator': 7.29.8
@@ -12223,7 +12260,7 @@ snapshots:
       jest-circus: 30.5.1(supports-color@10.2.2)
       jest-environment-node: 30.5.1
       jest-junit: 16.0.0
-      jest-process-manager: 0.4.0(debug@4.4.3(supports-color@10.2.2))(supports-color@10.2.2)
+      jest-process-manager: 0.4.0(supports-color@10.2.2)
       jest-runner: 30.5.1(supports-color@10.2.2)
       jest-serializer-html: 7.1.0
       jest-watch-typeahead: 3.0.1(jest@30.5.1(@types/node@26.4.1)(supports-color@10.2.2))
@@ -12978,7 +13015,7 @@ snapshots:
   asn1js@3.0.10:
     dependencies:
       pvtsutils: 1.3.6
-      pvutils: 1.1.5
+      pvutils: 1.2.0
       tslib: 2.8.1
 
   assertion-error@2.0.1: {}
@@ -15282,7 +15319,7 @@ snapshots:
       '@types/node': 26.4.1
       jest-util: 30.5.1
 
-  jest-process-manager@0.4.0(debug@4.4.3(supports-color@10.2.2))(supports-color@10.2.2):
+  jest-process-manager@0.4.0(supports-color@10.2.2):
     dependencies:
       '@types/wait-on': 5.3.4
       chalk: 4.1.2
@@ -15293,7 +15330,7 @@ snapshots:
       signal-exit: 3.0.7
       spawnd: 5.0.0(supports-color@10.2.2)
       tree-kill: 1.2.2
-      wait-on: 7.2.0(debug@4.4.3(supports-color@10.2.2))(supports-color@10.2.2)
+      wait-on: 7.2.0(supports-color@10.2.2)
     transitivePeerDependencies:
       - debug
       - supports-color
@@ -16896,7 +16933,7 @@ snapshots:
     dependencies:
       tslib: 2.8.1
 
-  pvutils@1.1.5: {}
+  pvutils@1.2.0: {}
 
   qs@6.16.0:
     dependencies:
@@ -18010,7 +18047,7 @@ snapshots:
     dependencies:
       xml-name-validator: 5.0.0
 
-  wait-on@7.2.0(debug@4.4.3(supports-color@10.2.2))(supports-color@10.2.2):
+  wait-on@7.2.0(supports-color@10.2.2):
     dependencies:
       axios: 1.20.0(debug@4.4.3(supports-color@10.2.2))(supports-color@10.2.2)
       joi: 17.13.7
