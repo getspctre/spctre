@@ -19,11 +19,11 @@
     "@spctre/platform": "workspace:*",
     "@spctre/policy-schema": "workspace:*",
     "@spctre/ui": "workspace:*",
-    "@upstash/ratelimit": "^2.0.8",
+    "@upstash/ratelimit": "^2.2.0",
     "@upstash/redis": "^1.38.2",
     "firebase": "^12.18.0",
-    "fumadocs-core": "^16.15.11",
-    "fumadocs-ui": "^16.15.11",
+    "fumadocs-core": "^16.15.14",
+    "fumadocs-ui": "^16.15.14",
     "jose": "^6.2.12",
     "lucide-react": "^1.41.0",
     "next": "^16.3.8",
@@ -36,14 +36,14 @@
   },
   "optionalDependencies": {
     "@google-cloud/firestore": "^8.7.0",
-    "@google-cloud/storage": "^7.21.0",
+    "@google-cloud/storage": "^8.2.0",
     "@node-saml/node-saml": "5.1.0"
   },
   "devDependencies": {
     "@types/node": "^26.2.0",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
-    "fumadocs-mdx": "^15.4.1",
+    "fumadocs-mdx": "^15.4.5",
     "jsdom": "^30.0.1",
     "typescript": "^6.0.3",
     "vitest": "^5.0.0"
