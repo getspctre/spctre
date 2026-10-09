@@ -6,7 +6,7 @@ packages:
 overrides:
   postcss>nanoid: 3.3.18
   '@scalar/types>nanoid': 5.1.16
-  '@grpc/grpc-js': '>=1.14.4'
+  '@grpc/grpc-js': '>=1.14.5'
   # Also a floor. 857b24bc pinned this at 1.18.1 to clear an advisory, but an
   # exact override outranks a declared range, so when Dependabot #260 raised
   # packages/mcp-server to `^1.20.0` the lockfile stayed on 1.18.1 — a version
@@ -28,21 +28,24 @@ overrides:
   # asks for, so the lockfile could not leave 4.12.34 until this line did.
   hono: ^4.13.5
   '@hono/node-server': 2.0.12
-  ip-address: 10.3.1
+  # Floors from here down to busboy, for the reason the axios entry gives: the
+  # exact pins on ip-address, shell-quote and brace-expansion each held the tree
+  # on the very versions the October advisories name.
+  ip-address: '>=10.7.1'
   # Kept inside their own majors: the selector only decides which requests are
   # rewritten, so an open floor here would answer a 3.x request with 5.x.
   js-yaml@^4.0.0: ^4.3.2
   js-yaml@<3.15.2: ^3.15.2
   postcss: 8.5.23
   protobufjs: 8.6.6
-  shell-quote: 1.9.0
+  shell-quote: '>=1.11.0'
   body-parser@1: 1.20.6
   body-parser@2: 2.3.0
   uuid: 11.1.1
   ws: ^8.21.0
-  joi: ^17.13.4
+  joi: ^17.13.8
   '@babel/core': ^7.29.6
-  brace-expansion: 5.0.9
+  brace-expansion: ^5.0.12
   browserslist: 4.28.8
   # A floor, not a pin. This entry was `3.1.5` — correct when 857b24bc added it,
   # and the reason four later high advisories (host confusion via skipped IDN
@@ -54,9 +57,8 @@ overrides:
   #
   # A floor lets the next patch in without another advisory first, and it
   # composes with the maturity hold below rather than fighting it: pnpm
-  # resolves to the newest version past the hold, so this currently lands on
-  # 3.1.6 while 3.1.7 matures instead of failing the install.
-  fast-uri: '>=3.1.6'
+  # resolves to the newest version past the hold instead of failing the install.
+  fast-uri: '>=3.1.8'
   # express 4 and its body-parser both declare `~6.15.1`, which excludes the
   # 6.16.0 that patches the two advisories the lockfile was carrying. An
   # override is the only way past a range that stops short of the fix.
@@ -72,7 +74,14 @@ overrides:
   # an exact override outranks whatever next asks for, so pinning 0.35.3 held
   # sharp *at* the version carrying GHSA-g89c-p67h-r497 and GHSA-2jg2-4ch7-h545
   # and no upstream bump could lift it. Same shape as the axios entry above.
-  sharp: '>=0.35.4'
+  sharp: '>=0.35.5'
+  # Transitive-only, each behind a consumer range that stops short of the fix.
+  basic-ftp: '>=6.2.1'
+  '@fastify/busboy': '>=3.2.2'
+  proxy-addr: ^2.0.8
+  source-map-js: ^1.2.2
+  smol-toml: ^1.9.0
+  handlebars: ^4.7.10
 
 # Hold newly published dependency versions for 3 days before normal installs.
 # This gives the ecosystem time to detect and yank compromised releases.
