@@ -1,10 +1,7 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { verifyAuthenticationResponse } from "@simplewebauthn/server";
-import type {
-  AuthenticationResponseJSON,
-  AuthenticatorTransportFuture,
-} from "@simplewebauthn/server";
+import type { AuthenticationResponseJSON } from "@simplewebauthn/server";
 import { createAuthSession } from "@/lib/auth-session";
 import { PASSKEY_LOGIN_CHALLENGE_COOKIE } from "@/lib/auth-challenge";
 import { setControlPlaneSessionCookies } from "@/lib/auth-session-cookies";
@@ -76,7 +73,7 @@ async function handlePostApiAuthPasskeyLoginFinish(request: Request) {
         id: credential.credentialIdB64,
         publicKey: fromBase64Url(credential.publicKeyB64),
         counter: credential.counter,
-        transports: credential.transports as AuthenticatorTransportFuture[],
+        transports: credential.transports,
       },
       requireUserVerification: false,
     });
