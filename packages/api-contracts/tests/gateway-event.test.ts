@@ -89,11 +89,17 @@ describe("GatewayEventV1Schema", () => {
   });
 
   it("renders to JSON Schema without loss", () => {
-    const rendered = z.toJSONSchema(GatewayEventV1Schema);
+    // Since zod 4.6 a root that carries an id renders as a `$ref` into `$defs`;
+    // the registry emitter folds it back inline (see `inlineRoot`).
+    const standalone = z.toJSONSchema(GatewayEventV1Schema);
     const registry = z.toJSONSchema(z.globalRegistry);
+    const { $schema, ...registered } = registry.schemas[GATEWAY_EVENT_V1_SCHEMA_ID];
+    const rendered = standalone.$defs?.[GATEWAY_EVENT_V1_SCHEMA_ID] as z.core.JSONSchema.JSONSchema;
 
     expect(z.globalRegistry.get(GatewayEventV1Schema)?.id).toBe(GATEWAY_EVENT_V1_SCHEMA_ID);
-    expect(registry.schemas[GATEWAY_EVENT_V1_SCHEMA_ID]).toEqual(rendered);
+    expect(standalone.$ref).toBe(`#/$defs/${GATEWAY_EVENT_V1_SCHEMA_ID}`);
+    expect($schema).toBe(standalone.$schema);
+    expect(registered).toEqual(rendered);
     expect(rendered.type).toBe("object");
     expect(rendered.required).toEqual([
       "provider",

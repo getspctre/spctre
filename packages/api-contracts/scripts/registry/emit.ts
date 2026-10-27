@@ -112,10 +112,12 @@ async function materialize(repoRoot: string, artifact: RegistryArtifact): Promis
   // along with every refinement JSON Schema cannot express, are enumerated in
   // the catalog and rendered here as `$comment`; the emitted keywords alone
   // are necessary but not sufficient for a payload to be accepted.
-  const generated = z.toJSONSchema(artifact.schema, {
-    target: "draft-2020-12",
-    io: "input",
-  }) as Record<string, unknown>;
+  const generated = inlineRoot(
+    z.toJSONSchema(artifact.schema, { target: "draft-2020-12", io: "input" }) as Record<
+      string,
+      unknown
+    >,
+  );
   delete generated.$schema;
   delete generated.$id;
   delete generated.title;
@@ -129,6 +131,33 @@ async function materialize(repoRoot: string, artifact: RegistryArtifact): Promis
     ...(artifact.unrepresentable ? { $comment: artifact.unrepresentable } : {}),
     ...generated,
   });
+}
+
+/**
+ * Since zod 4.6, a root schema that carries a registry `id` (`.meta({ id })`)
+ * renders as a bare `$ref` into `$defs` rather than inline. The registry sets
+ * `$id` itself, so the indirection says nothing, and it would change the bytes
+ * of an already-published, immutable document. Fold that one definition back
+ * into the root; any other `$defs` stay where they are.
+ */
+function inlineRoot(generated: Record<string, unknown>): Record<string, unknown> {
+  const { $ref, $defs, ...rest } = generated;
+  const prefix = "#/$defs/";
+  if (
+    typeof $ref !== "string" ||
+    !$ref.startsWith(prefix) ||
+    typeof $defs !== "object" ||
+    $defs === null
+  ) {
+    return generated;
+  }
+  const { [$ref.slice(prefix.length)]: body, ...otherDefs } = $defs as Record<string, unknown>;
+  if (typeof body !== "object" || body === null) return generated;
+  return {
+    ...rest,
+    ...(body as Record<string, unknown>),
+    ...(Object.keys(otherDefs).length > 0 ? { $defs: otherDefs } : {}),
+  };
 }
 
 /** Removes generated documents under `EMIT_ROOT` that the catalog no longer lists. */

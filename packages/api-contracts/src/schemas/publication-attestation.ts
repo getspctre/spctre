@@ -1,7 +1,8 @@
 import { z } from "zod";
+import { offsetDateTimeV1 } from "./timestamp";
 
 const Sha256Schema = z.string().regex(/^sha256:[0-9a-f]{64}$/, "Expected sha256:<hex>.");
-const TimestampSchema = z.string().datetime({ offset: true });
+const TimestampSchema = offsetDateTimeV1();
 const NonEmptyString = z.string().trim().min(1).max(512);
 const EntityReferenceSchema = z
   .string()

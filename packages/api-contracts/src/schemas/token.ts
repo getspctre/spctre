@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { offsetDateTimeV1 } from "./timestamp";
 
 /**
  * Schema for token refresh (POST /api/token/refresh).
@@ -14,9 +15,9 @@ export type TokenRefreshInput = z.infer<typeof TokenRefreshSchema>;
  */
 export const TokenPairResponseSchema = z.object({
   accessToken: z.string(),
-  accessTokenExpiresAt: z.string().datetime({ offset: true }),
+  accessTokenExpiresAt: offsetDateTimeV1(),
   refreshToken: z.string(),
-  refreshTokenExpiresAt: z.string().datetime({ offset: true }),
+  refreshTokenExpiresAt: offsetDateTimeV1(),
 });
 
 export type TokenPairResponse = z.infer<typeof TokenPairResponseSchema>;
