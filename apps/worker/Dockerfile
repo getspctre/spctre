@@ -7,7 +7,7 @@ COPY packages/policy-schema/native/Cargo.toml packages/policy-schema/native/Carg
 COPY packages/policy-schema/native/src ./src
 RUN cargo build --release --no-default-features
 
-FROM golang:1.26.3-alpine AS builder
+FROM golang:1.26.10-alpine AS builder
 WORKDIR /src/apps/worker
 
 RUN apk add --no-cache build-base
@@ -30,7 +30,11 @@ RUN CGO_ENABLED=1 go build -tags spctre_policy_kernel -trimpath \
 FROM alpine:3.21 AS runner
 WORKDIR /app
 
-RUN addgroup -S worker && adduser -S worker -G worker
+# The worker verifies outbound TLS (alert webhooks, SIEM forwarding) against
+# the system bundle, so refresh it rather than trusting whatever the base tag
+# shipped with — a stale bundle kept distrusted roots such as the eMudhra ones.
+RUN apk upgrade --no-cache ca-certificates-bundle \
+  && addgroup -S worker && adduser -S worker -G worker
 
 COPY --from=builder --chown=worker:worker /out/spctre-worker ./spctre-worker
 
