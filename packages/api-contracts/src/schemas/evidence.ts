@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { sanitizeText, redactAndBoundParameters } from "./sanitization";
+import { offsetDateTimeV1 } from "./timestamp";
 
 export const RuntimeStackSchema = z.enum([
   "AWS_BEDROCK",
@@ -71,7 +72,7 @@ export const EvidenceIngestSchema = z.object({
   artifactHash: z.string().optional(),
   policyContext: z.array(RuntimePolicyContextSchema).min(1).optional(),
   latencyMs: z.number().int().nonnegative().optional(),
-  createdAt: z.string().datetime({ offset: true }).optional(),
+  createdAt: offsetDateTimeV1().optional(),
   rawEvidence: z.record(z.string(), z.unknown()).optional(),
   // Gateway context hints — all optional, forwarded to the gateway evaluator
   consequence: z.string().optional(),

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { offsetDateTimeV1 } from "./timestamp";
 
 const GitCommitSchema = z.string().trim().min(1).max(256);
 
@@ -21,7 +22,7 @@ export const GitCheckpointIngestSchema = z.object({
   reason: z.string().trim().min(1).max(4000),
   checkpoint: z.object({
     id: z.string().trim().min(1).max(512),
-    createdAt: z.string().datetime({ offset: true }),
+    createdAt: offsetDateTimeV1(),
     repository: z.object({
       id: z.string().trim().min(1).max(512),
       remoteUrl: z.string().trim().max(4096).optional(),
