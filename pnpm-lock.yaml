@@ -305,8 +305,8 @@ importers:
         specifier: ^2.2.0
         version: 2.3.1
       '@modelcontextprotocol/node':
-        specifier: ^2.0.0
-        version: 2.0.0(@modelcontextprotocol/server@2.4.0)(hono@4.13.7)
+        specifier: ^2.1.0
+        version: 2.1.0(@modelcontextprotocol/server@2.4.0)(hono@4.13.7)
       '@modelcontextprotocol/server':
         specifier: ^2.4.0
         version: 2.4.0
@@ -1833,11 +1833,11 @@ packages:
     resolution: {integrity: sha512-z8QBKqdfXLPzkLQuG4xp8hrVEMm1PZ1IgxMN2sMbJiFiAKOWXnAzogXn2W4aqIBlP1ea6U5yiqVquvUNM1Cj6Q==}
     engines: {node: '>=20'}
 
-  '@modelcontextprotocol/node@2.0.0':
-    resolution: {integrity: sha512-Y4hAC2XdGDUdDOCbLDOCA4+aL3NUldjsOWlDL/YwpAxrPhRm1xHd7lZ+mLacvZ9t3PaH28wgNoaLQGrIk1P2pg==}
+  '@modelcontextprotocol/node@2.1.0':
+    resolution: {integrity: sha512-6xg3iWVcOfiL8Y7rI6xUqXD0lI2AY5q3djsa/cOi1IJUSwx06t0gvhSwU/6mIIohrFlt40/ANUG56DQ0HLhILQ==}
     engines: {node: '>=20'}
     peerDependencies:
-      '@modelcontextprotocol/server': ^2.0.0
+      '@modelcontextprotocol/server': ^2.1.0
       hono: ^4.13.5
     peerDependenciesMeta:
       hono:
@@ -10390,7 +10390,7 @@ snapshots:
     dependencies:
       zod: 4.6.7
 
-  '@modelcontextprotocol/node@2.0.0(@modelcontextprotocol/server@2.4.0)(hono@4.13.7)':
+  '@modelcontextprotocol/node@2.1.0(@modelcontextprotocol/server@2.4.0)(hono@4.13.7)':
     dependencies:
       '@hono/node-server': 2.0.12(hono@4.13.7)
       '@modelcontextprotocol/server': 2.4.0
