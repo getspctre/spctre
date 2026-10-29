@@ -19,9 +19,9 @@ overrides:
   # auto-instrumentations-node proved it: the packages asked for ^0.79.0 while
   # the lockfile stayed on 0.78.0, a version they no longer permit, so the bump
   # that raised them changed nothing. Same correction as @grpc/grpc-js and axios.
-  '@opentelemetry/core': '>=2.8.0'
-  '@opentelemetry/sdk-node': '>=0.222.0'
-  '@opentelemetry/auto-instrumentations-node': '>=0.78.0'
+  '@opentelemetry/core': '>=3.0.0'
+  '@opentelemetry/sdk-node': '>=0.300.0'
+  '@opentelemetry/auto-instrumentations-node': '>=0.82.0'
   '@opentelemetry/propagator-jaeger': '>=2.9.0'
   # A floor, not a pin. This was `4.12.34`, which cleared an advisory when it was
   # written and then became one: an exact override outranks whatever a manifest
@@ -37,6 +37,13 @@ overrides:
   js-yaml@^4.0.0: ^4.3.2
   js-yaml@<3.15.2: ^3.15.2
   postcss: 8.5.23
+  # Kept inside 7.x: ai's provider-utils asks for ^7, and 7.30.1 carries the
+  # October TLS and redirect advisories' fixes without the 8.x major.
+  undici@^7.0.0: ^7.30.1
+  # Floors inside their majors for the October 28 advisories: re2js (via
+  # firebase) and systeminformation (via otel host-metrics).
+  re2js: ^2.8.7
+  systeminformation: ^5.33.16
   protobufjs: 8.6.6
   shell-quote: '>=1.11.0'
   body-parser@1: 1.20.6
