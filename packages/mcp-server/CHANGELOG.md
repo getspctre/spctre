@@ -1,5 +1,11 @@
 # @spctre/mcp-server
 
+## 0.3.4
+
+### Patch Changes
+
+- 072c4f1: Move OpenTelemetry to the SDK 3.0 line (`@opentelemetry/api` 1.10, `sdk-node` 0.300, `auto-instrumentations-node` 0.82).
+
 ## 0.3.3
 
 ### Patch Changes
