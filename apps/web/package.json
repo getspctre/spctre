@@ -46,6 +46,6 @@
     "fumadocs-mdx": "^15.4.10",
     "jsdom": "^30.0.1",
     "typescript": "^6.0.3",
-    "vitest": "^5.0.0"
+    "vitest": "^5.0.5"
   }
 }
