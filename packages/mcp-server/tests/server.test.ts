@@ -29,6 +29,31 @@ describe("SpctreMcpServer tool catalog", () => {
     expect(names).toContain("evaluate_policy");
     expect(names).toContain("authorize_mcp_tool_call");
   });
+
+  it("declares all four boolean annotation hints on every tool", () => {
+    for (const tool of TOOL_SCHEMAS) {
+      for (const hint of ["readOnlyHint", "destructiveHint", "idempotentHint", "openWorldHint"]) {
+        expect(
+          typeof (tool.annotations as Record<string, unknown>)[hint],
+          `${tool.name}.${hint}`,
+        ).toBe("boolean");
+      }
+    }
+  });
+
+  it("never marks a control-plane write as read-only", () => {
+    const readOnly = TOOL_SCHEMAS.filter((tool) => tool.annotations.readOnlyHint).map(
+      (t) => t.name,
+    );
+    for (const write of [
+      "evaluate_policy",
+      "create_evidence_record",
+      "escalate_to_review",
+      "ingest_gateway_event",
+    ]) {
+      expect(readOnly).not.toContain(write);
+    }
+  });
 });
 
 describe("resource telemetry types", () => {

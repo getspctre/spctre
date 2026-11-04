@@ -5,15 +5,46 @@
 // Hotspot 1) to end the ListTools/switch duplication: adding a tool is now a
 // schema entry here plus one handler binding, with no third edit.
 
+// MCP tool annotations. All four hints are required and boolean so clients
+// (and directories that reject tools with missing hints) never have to fall
+// back to the spec defaults, which assume a destructive, open-world tool.
+// "Read-only" means no write to the control plane: a tool that records a
+// decision or evidence is not read-only even though it never deletes anything.
+export interface McpToolAnnotations {
+  readOnlyHint: boolean;
+  destructiveHint: boolean;
+  idempotentHint: boolean;
+  openWorldHint: boolean;
+}
+
 export interface McpToolSchema {
   name: string;
   description: string;
+  annotations: McpToolAnnotations;
   inputSchema: Record<string, unknown>;
 }
+
+// Reads that change nothing. Every tool talks only to the Spctre control
+// plane, so none is open-world.
+const READ_ONLY: McpToolAnnotations = {
+  readOnlyHint: true,
+  destructiveHint: false,
+  idempotentHint: true,
+  openWorldHint: false,
+};
+
+// Writes that append a record and never overwrite or delete one.
+const APPENDS: McpToolAnnotations = {
+  readOnlyHint: false,
+  destructiveHint: false,
+  idempotentHint: false,
+  openWorldHint: false,
+};
 
 export const TOOL_SCHEMAS: McpToolSchema[] = [
   {
     name: "evaluate_policy",
+    annotations: APPENDS,
     description: "Evaluate whether a tool execution is allowed based on current policies",
     inputSchema: {
       type: "object",
@@ -49,6 +80,7 @@ export const TOOL_SCHEMAS: McpToolSchema[] = [
   },
   {
     name: "create_evidence_record",
+    annotations: { ...APPENDS, idempotentHint: true },
     description: "Ingest a runtime decision (evidence) for audit",
     inputSchema: {
       type: "object",
@@ -72,6 +104,7 @@ export const TOOL_SCHEMAS: McpToolSchema[] = [
   },
   {
     name: "escalate_to_review",
+    annotations: APPENDS,
     description: "Manually escalate a decision to human review",
     inputSchema: {
       type: "object",
@@ -86,6 +119,7 @@ export const TOOL_SCHEMAS: McpToolSchema[] = [
   },
   {
     name: "get_policy_status",
+    annotations: READ_ONLY,
     description: "Query current policy state and metadata",
     inputSchema: {
       type: "object",
@@ -99,6 +133,7 @@ export const TOOL_SCHEMAS: McpToolSchema[] = [
   },
   {
     name: "get_effective_policy",
+    annotations: READ_ONLY,
     description:
       "Resolve the composed runtime policy for a given agent, connector, and environment — returns the same bundle the decision gateway would evaluate",
     inputSchema: {
@@ -117,6 +152,7 @@ export const TOOL_SCHEMAS: McpToolSchema[] = [
   },
   {
     name: "list_pending_escalations",
+    annotations: READ_ONLY,
     description:
       "Surface open HITL queue items with SLA elapsed time, for AI agents that need to surface governance blockers to their operators",
     inputSchema: {
@@ -126,12 +162,14 @@ export const TOOL_SCHEMAS: McpToolSchema[] = [
   },
   {
     name: "get_compliance_status",
+    annotations: READ_ONLY,
     description:
       "Return the latest compliance packet summary (evidence count, approval count, pass/fail, staleness) for the current workspace",
     inputSchema: { type: "object", properties: {} },
   },
   {
     name: "ingest_gateway_event",
+    annotations: APPENDS,
     description:
       "Ingest a spctre.gateway.event.v1 payload into the evidence pipeline; intended for LiteLLM, Portkey, and Helicone gateway adapters acting as the MCP client",
     inputSchema: {
@@ -157,6 +195,7 @@ export const TOOL_SCHEMAS: McpToolSchema[] = [
   },
   {
     name: "discover_mcp_tools",
+    annotations: READ_ONLY,
     description:
       "Discover approved downstream MCP tools for this workspace and agent without taking over planning or execution",
     inputSchema: {
@@ -169,6 +208,7 @@ export const TOOL_SCHEMAS: McpToolSchema[] = [
   },
   {
     name: "authorize_mcp_tool_call",
+    annotations: READ_ONLY,
     description:
       "Authorize a downstream MCP tool call and return a cryptographic audit seal for the runtime wrapper to attach to evidence",
     inputSchema: {
