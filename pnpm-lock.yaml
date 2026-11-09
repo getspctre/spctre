@@ -124,8 +124,8 @@ importers:
   apps/web:
     dependencies:
       '@scalar/nextjs-api-reference':
-        specifier: ^0.11.3
-        version: 0.11.4(next@16.4.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.10.0)(@types/node@26.4.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8)
+        specifier: ^0.12.16
+        version: 0.12.16(next@16.4.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.10.0)(@types/node@26.4.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8)
       '@simplewebauthn/browser':
         specifier: ^14.0.0
         version: 14.0.0
@@ -3579,31 +3579,31 @@ packages:
       rollup:
         optional: true
 
-  '@scalar/client-side-rendering@0.2.4':
-    resolution: {integrity: sha512-IQC39aQQXKsZXOqQw0LNiZ/gQ1WxHpF+WLTo/hurn0S/FmNHlBGUAhFyt1BeDSUYxics7ixgzQatKJDggafBTw==}
+  '@scalar/client-side-rendering@0.4.17':
+    resolution: {integrity: sha512-RXoh55Dpizzgj/jIsgH6vqG22YySeuc5hIHQuu+5hgo6Etj6Rg51jljlhZCcOgLh34Yw3n6994wZh4HkXY8QOw==}
     engines: {node: '>=22'}
 
-  '@scalar/helpers@0.8.2':
-    resolution: {integrity: sha512-qNbqUjSB3S4Gr4A0oANcm5G1Ip+EqBxICYKhe9YzmnaBpbmW6shxqpiivApTvvuDf+uIhR3uMwWyVQbYcGLsxA==}
+  '@scalar/helpers@0.17.0':
+    resolution: {integrity: sha512-/XzBJDB/nr/Nzkx/a8ow0WdWb5LIb6KsWrjv7TsQYolkCxOM6ZT+iEJ635QssQG33wEzAK0os5Xbiub6RUU+Ng==}
     engines: {node: '>=22'}
 
-  '@scalar/nextjs-api-reference@0.11.4':
-    resolution: {integrity: sha512-kV1YmZPooQlDaJZF/HJPFZc8oHO3MB1urR8sWhWYXM0GYDigNZO3w9PIZdP2RN7IMvRr+bGxlD2U9g5SsSSW6Q==}
+  '@scalar/nextjs-api-reference@0.12.16':
+    resolution: {integrity: sha512-0KfRO5OdCNw9JR4PRDDEKxDDXXZnaqKlE1rh4tMJ/v1chidRNXJ78FJIxCf7/KQz16P8y1qs2sQgCTFtjbVc5g==}
     engines: {node: '>=22'}
     peerDependencies:
       next: ^15.0.0 || ^16.0.0
       react: ^19.0.0
 
-  '@scalar/schemas@0.5.0':
-    resolution: {integrity: sha512-aV0PWqFpQft9a6d4Z6HOTHKDaA+K4AquxSPfBDI1c5f6lMe5l3zViww/iBQA/Yw+V1+Y2iwSVzhuxaktC1UiMg==}
+  '@scalar/schemas@0.16.1':
+    resolution: {integrity: sha512-Dw/7ciVbUw17/z+MSXhn3LbA7czX8XSRJE9uQHHOg6SkVaGd7lMAkVPQfxp7lhraItqRNMDMrxNLWkx01qXkTA==}
     engines: {node: '>=22'}
 
-  '@scalar/types@0.14.0':
-    resolution: {integrity: sha512-aS1FvHbKhBC51mWqXmhkPe6lmhCd9+u//DQ1YTiCWOz4/fXAdWfwHvW9UZ7AzzcGwGiCo9diE81xV+UvSI1qIg==}
+  '@scalar/types@0.27.0':
+    resolution: {integrity: sha512-OoU/6O7ooJyaRywL1DN4xoPgPYjCURohwN6iGQ9WNmexNBIS504BW3s9gmYdg8CyJ/gcuThaFbdx45ICuBsI2g==}
     engines: {node: '>=22'}
 
-  '@scalar/validation@0.6.0':
-    resolution: {integrity: sha512-tpmmG+/xRE2Kn9RpflU3AIyZv08v10+E1ZrJCx7z6+/91zHVxy0M73kC1LT4/8PbYNt85ywyC8+n+D99JdMcGA==}
+  '@scalar/validation@0.6.7':
+    resolution: {integrity: sha512-xvmeYb0LOg9B598oVA/1fs9MvnMdtWjQYG3v2Wgftewizr7tQjsdDYT1TQahlDzqRG+r+ml6zlSkPrFiCE5jHQ==}
     engines: {node: '>=20'}
 
   '@schummar/icu-type-parser@1.21.5':
@@ -8098,8 +8098,8 @@ packages:
     resolution: {integrity: sha512-TeTSQ6H5YHvpqVwBRcnLDCBnDOHWYu7IvGbHT6N8AOymcr9PJGjc1GTtiWZTYg0NCgYwvnYWEkVChQAr9bjfwA==}
     engines: {node: '>=16'}
 
-  type-fest@5.6.0:
-    resolution: {integrity: sha512-8ZiHFm91orbSAe2PSAiSVBVko18pbhbiB3U9GglSzF/zCGkR+rxpHx6sEMCUm4kxY4LjDIUGgCfUMtwfZfjfUA==}
+  type-fest@5.10.0:
+    resolution: {integrity: sha512-NoSdpq/WEiAg5sjmBkmV/hfxv6HJH4NqPNrqjtSO5CwRmpsDfaf4begxW34KdJykH/l1yHtwBWQkCRdoXO8mPA==}
     engines: {node: '>=20'}
 
   type-is@1.6.18:
@@ -12092,33 +12092,35 @@ snapshots:
       estree-walker: 2.0.2
       picomatch: 4.0.7
 
-  '@scalar/client-side-rendering@0.2.4':
+  '@scalar/client-side-rendering@0.4.17':
     dependencies:
-      '@scalar/schemas': 0.5.0
-      '@scalar/types': 0.14.0
-      '@scalar/validation': 0.6.0
+      '@scalar/helpers': 0.17.0
+      '@scalar/schemas': 0.16.1
+      '@scalar/types': 0.27.0
+      '@scalar/validation': 0.6.7
 
-  '@scalar/helpers@0.8.2': {}
+  '@scalar/helpers@0.17.0': {}
 
-  '@scalar/nextjs-api-reference@0.11.4(next@16.4.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.10.0)(@types/node@26.4.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8)':
+  '@scalar/nextjs-api-reference@0.12.16(next@16.4.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.10.0)(@types/node@26.4.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8)':
     dependencies:
-      '@scalar/client-side-rendering': 0.2.4
+      '@scalar/client-side-rendering': 0.4.17
       next: 16.4.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.10.0)(@types/node@26.4.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       react: 19.2.8
 
-  '@scalar/schemas@0.5.0':
+  '@scalar/schemas@0.16.1':
     dependencies:
-      '@scalar/helpers': 0.8.2
-      '@scalar/validation': 0.6.0
+      '@scalar/helpers': 0.17.0
+      '@scalar/types': 0.27.0
+      '@scalar/validation': 0.6.7
 
-  '@scalar/types@0.14.0':
+  '@scalar/types@0.27.0':
     dependencies:
-      '@scalar/helpers': 0.8.2
+      '@scalar/helpers': 0.17.0
       nanoid: 5.1.16
-      type-fest: 5.6.0
+      type-fest: 5.10.0
       zod: 4.6.7
 
-  '@scalar/validation@0.6.0': {}
+  '@scalar/validation@0.6.7': {}
 
   '@schummar/icu-type-parser@1.21.5': {}
 
@@ -17679,7 +17681,7 @@ snapshots:
 
   type-fest@4.41.0: {}
 
-  type-fest@5.6.0:
+  type-fest@5.10.0:
     dependencies:
       tagged-tag: 1.0.0
 
