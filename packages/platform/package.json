@@ -27,7 +27,7 @@
     "@opentelemetry/resources": "^3.0.0",
     "@opentelemetry/sdk-metrics": "^3.0.0",
     "@opentelemetry/sdk-node": "^0.300.0",
-    "@opentelemetry/semantic-conventions": "^1.41.1"
+    "@opentelemetry/semantic-conventions": "^1.44.0"
   },
   "devDependencies": {
     "@types/node": "^26.2.0",
