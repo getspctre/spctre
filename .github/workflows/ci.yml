@@ -123,7 +123,7 @@ jobs:
       # for these packages runs here too, so all Python static checks are in
       # one job.
       - name: Set up uv
-        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2
+        uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d
       - run: pnpm format:python:check
       - run: pnpm typecheck:python
 
@@ -139,7 +139,7 @@ jobs:
           # has to be here.
           fetch-depth: 0
       - name: Set up uv
-        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2
+        uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d
       - uses: pnpm/action-setup@v6.1.1
       - uses: actions/setup-node@v7
         with:
